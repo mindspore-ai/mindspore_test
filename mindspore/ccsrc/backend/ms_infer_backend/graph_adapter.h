@@ -16,12 +16,15 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_
 #define MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_
 
+#include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "ir/kernel_tensor_value.h"
+#include "mindapi/base/shape_vector.h"
 #include "mindspore/core/include/base/base.h"
 #include "mindspore/core/include/base/base_ref.h"
 #include "runtime/hardware/device_context.h"
@@ -58,6 +61,7 @@ class GraphAdapter {
   void ConvertOutputs(VectorRef *outputs);
 
   void ConvertValueNode(const ValueNodePtr &value_node);
+  void RecordInputTensorShapes(const std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> &input_tensors);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
   void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node);
 
@@ -70,6 +74,8 @@ class GraphAdapter {
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> const_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> parameter_map_;
   std::unordered_map<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> frontend_params_to_backend_params_;
+  std::vector<ShapeVector> ordinary_input_tensors_shape_;
+  bool is_dynamic_shape_{false};
   std::unordered_set<ValuePtr> converted_values_;
   device::DeviceContext *device_context_{nullptr};
 };

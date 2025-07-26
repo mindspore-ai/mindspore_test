@@ -57,6 +57,9 @@ void SetTupleType(da::tensor::DATensor *tensor, const TuplePtr &tuple_type);
 // Set tuple shape to DATensorList
 void SetTupleShape(da::tensor::DATensor *tensor, const TupleShapePtr &tuple_shape);
 
+// Update shape vector from DATensor's shape
+void UpdateShapeVector(ShapeVector *shape_vector, da::tensor::DATensor *da_tensor);
+
 }  // namespace ms_infer_backend
 }  // namespace backend
 }  // namespace mindspore

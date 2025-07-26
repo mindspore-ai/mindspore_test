@@ -241,6 +241,14 @@ void SetTupleShape(da::tensor::DATensor *tensor, const TupleShapePtr &tuple_shap
   }
 }
 
+void UpdateShapeVector(ShapeVector *shape_vector, da::tensor::DATensor *da_tensor) {
+  MS_EXCEPTION_IF_NULL(da_tensor);
+  shape_vector->clear();
+  for (size_t i = 0; i < da_tensor->dim; ++i) {
+    (void)shape_vector->emplace_back(da_tensor->shape[i]);
+  }
+}
+
 }  // namespace ms_infer_backend
 }  // namespace backend
 }  // namespace mindspore

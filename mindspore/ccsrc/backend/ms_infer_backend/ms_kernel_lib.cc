@@ -22,11 +22,6 @@
 #include <utility>
 #include <unordered_map>
 
-#include "common/kernel_tensor.h"
-#include "common/kernel_mod_cache.h"
-#include "common/ms_factory.h"
-#include "common/format_utils.h"
-#include "ir/dtype.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
@@ -36,8 +31,6 @@
 
 #include "dalang/dair/tensor/tensor.h"
 #include "backend/ms_infer_backend/ms_kernel_lib.h"
-#include "backend/ms_infer_backend/host_value_store.h"
-#include "backend/ms_infer_backend/utils.h"
 
 namespace mindspore {
 namespace backend {
@@ -129,149 +122,42 @@ void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
 }
 }  // namespace
 
-// DAKernelTensor is a KernelTensor that wraps a DATensor.
-class DAKernelTensor : public kernel::KernelTensor {
- public:
-  DAKernelTensor() = delete;
-  ~DAKernelTensor() = default;
+DAKernelTensor::DAKernelTensor(da::tensor::DATensor *tensor) : tensor_(tensor) {
+  MS_EXCEPTION_IF_NULL(tensor_);
+  MS_LOG(INFO) << "New DAKernelTensor, DATensor: " << tensor << ", type: " << tensor->type;
+  UpdateShapeVector(&shape_vector_, tensor_);
 
-  explicit DAKernelTensor(da::tensor::DATensor *tensor) : tensor_(tensor) {
-    MS_EXCEPTION_IF_NULL(tensor_);
-    MS_LOG(INFO) << "New DAKernelTensor, DATensor: " << tensor << ", type: " << tensor->type;
-    for (size_t i = 0; i < tensor_->dim; i++) {
-      (void)shape_vector_.emplace_back(tensor_->shape[i]);
-    }
-
-    // Set host_info_ for GetValue<> call in complex kernel mod, only set value for HOST_TENSOR
-    if (tensor->tensorType == da::tensor::TensorType::HOST_TENSOR) {
-      auto host_value = HostValueStore::GetInstance().GetValueByDATensor(tensor);
-      auto host_value_abs = host_value->ToAbstract();
-      MS_EXCEPTION_IF_NULL(host_value_abs);
-      SetType(host_value_abs->GetType());
-      SetShape(host_value_abs->GetShape());
-      SetValue(host_value);
-    } else {
-      // currently only set object type for DEVICE_TENSOR/UNKNOW_TENSOR
-      if (tensor->type == da::tensor::Type_Monad || tensor->type == da::tensor::Type_None) {
-        SetType(TypeIdToType(ConvertDataType(tensor->type)));
-      } else {
-        SetType(TypeIdToType(kObjectTypeTensorType));
-      }
-      SetShape(std::make_shared<abstract::TensorShape>(shape_vector_));
-    }
-  }
-
-  // Set the shape vector for Tensor/Sequence/Scalar.
-  void SetShapeVector(const ShapeVector &shape_vector) override {
-    SetTensorShape(tensor_, shape_vector);
-    shape_vector_ = shape_vector;
-    SetShape(std::make_shared<abstract::TensorShape>(shape_vector_));
-  }
-
-  // Set the shape vector for Tensor/Sequence/Scalar with rvalue.
-  void SetShapeVector(ShapeVector &&shape_vector) override {
-    SetTensorShape(tensor_, shape_vector);
-    shape_vector_ = std::move(shape_vector);
-    SetShape(std::make_shared<abstract::TensorShape>(shape_vector_));
-  }
-
-  // Get the shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetShapeVector() const override { return shape_vector_; }
-
-  // Get the device shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetDeviceShapeVector() const override { return shape_vector_; }
-
-  // Get the data enum type id of the KernelTensor.
-  TypeId dtype_id() const override { return ConvertDataType(tensor_->type); }
-
-  // Get pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void *device_ptr() const override { return tensor_->data; }
-
-  // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void set_device_ptr(void *ptr) override { tensor_->data = ptr; }
-
-  // Get the memory size in byte of the KernelTensor.
-  size_t size() const override {
-    return UnitSizeInBytes(ConvertDataType(tensor_->type)) * da::tensor::ShapeSize(tensor_->shape);
-  }
-
-  // Get string representation of tensor format
-  std::string GetStringFormat() const override { return kernel::GetFormatFromEnumToStr(format_); }
-  void set_format(mindspore::Format format) override { format_ = format; }
-
- private:
-  da::tensor::DATensor *tensor_{nullptr};
-  ShapeVector shape_vector_;
-  mindspore::Format format_{mindspore::Format::DEFAULT_FORMAT};
-};
-
-class DAKernel {
- public:
-  explicit DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *device_context);
-  ~DAKernel();
-
-  void InferShapeAndResize();
-  void AllocateOutputDeviceMemory();
-  void AllocateWorkspaceDeviceMemory();
-  void FreeWorkspaceDeviceMemory();
-  void Launch();
-
- private:
-  kernel::KernelModPtr kernel_mod_;
-  AbstractBasePtrList abs_inputs_;
-  std::vector<kernel::KernelTensor *> inputs_;
-  std::vector<kernel::KernelTensor *> outputs_;
-  std::vector<kernel::KernelTensor *> workspaces_;
-  void *stream_{nullptr};
-  device::DeviceContext *device_context_{nullptr};
-};
-
-DAKernel::DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(da_tensor);
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context_ = device_context;
-  stream_ = device_context_->device_res_manager_->GetStream(kDefaultStreamIndex);
-  MS_EXCEPTION_IF_NULL(stream_);
-
-  auto prim = HostValueStore::GetInstance().GetPrimByDATensor(da_tensor);
-  MS_EXCEPTION_IF_NULL(prim);
-  MS_LOG(DEBUG) << "Primitive: " << prim->name();
-
-  // Initialize input kernel tensors
-  MS_LOG(INFO) << "Start create input DAKernelTensors";
-  for (size_t i = 0; i < da_tensor->inputSize; ++i) {
-    auto input_tensor = std::make_shared<DAKernelTensor>(da_tensor->input[i]);
-    MS_EXCEPTION_IF_NULL(input_tensor);
-    (void)abs_inputs_.emplace_back(input_tensor);
-    (void)inputs_.emplace_back(input_tensor.get());
-    MS_LOG(DEBUG) << "input kernel tensors: " << input_tensor->ToString();
-  }
-  MS_LOG(INFO) << "End create input DAKernelTensors";
-
-  // Initialize output kernel tensor
-  MS_LOG(INFO) << "Start create output DAKernelTensors";
-  if (da_tensor->type == da::tensor::Type_Tensor) {
-    auto **da_tensor_list = reinterpret_cast<da::tensor::DATensor **>(da_tensor->data);
-    MS_EXCEPTION_IF_NULL(da_tensor_list);
-    for (size_t i = 0; i < da_tensor->shape[0]; ++i) {
-      auto output_tensor = new DAKernelTensor(da_tensor_list[i]);
-      MS_EXCEPTION_IF_NULL(output_tensor);
-      (void)outputs_.emplace_back(output_tensor);
-      MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString() << ", index: " << i;
-    }
+  // Set host_info_ for GetValue<> call in complex kernel mod, only set value for HOST_TENSOR
+  if (tensor->tensorType == da::tensor::TensorType::HOST_TENSOR) {
+    auto host_value = HostValueStore::GetInstance().GetValueByDATensor(tensor);
+    auto host_value_abs = host_value->ToAbstract();
+    MS_EXCEPTION_IF_NULL(host_value_abs);
+    SetType(host_value_abs->GetType());
+    SetShape(host_value_abs->GetShape());
+    SetValue(host_value);
   } else {
-    auto output_tensor = new DAKernelTensor(da_tensor);
-    MS_EXCEPTION_IF_NULL(output_tensor);
-    (void)outputs_.emplace_back(output_tensor);
-    MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString();
+    // currently only set object type for DEVICE_TENSOR/UNKNOW_TENSOR
+    if (tensor->type == da::tensor::Type_Monad || tensor->type == da::tensor::Type_None) {
+      SetType(TypeIdToType(ConvertDataType(tensor->type)));
+    } else {
+      SetType(TypeIdToType(kObjectTypeTensorType));
+    }
+    SetShape(std::make_shared<abstract::TensorShape>(shape_vector_));
   }
-  MS_LOG(INFO) << "End create output DAKernelTensors";
-
-  // Create KernelMod
-  kernel_mod_ = SelectKernelMod(prim, inputs_, outputs_);
 }
 
-DAKernel::~DAKernel() {
+MsKernel::MsKernel(da::tensor::DATensor *tensor_node) : da::runtime::DAKernel(tensor_node) {
+  MS_EXCEPTION_IF_NULL(tensorNode_);
+  device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+     MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+  device_context_->Initialize();
+  MS_EXCEPTION_IF_NULL(device_context_);
+  stream_ = device_context_->device_res_manager_->GetStream(kDefaultStreamIndex);
+  MS_EXCEPTION_IF_NULL(stream_);
+}
+
+MsKernel::~MsKernel() {
   // Destroy kernel tensors
   auto destroy_tensors = [](std::vector<kernel::KernelTensor *> &kernel_tensors) {
     for (auto &tensor : kernel_tensors) {
@@ -284,7 +170,59 @@ DAKernel::~DAKernel() {
   destroy_tensors(workspaces_);
 }
 
-void DAKernel::InferShapeAndResize() {
+void MsKernel::Init() {
+  MS_EXCEPTION_IF_NULL(tensorNode_);
+
+  CreateInputKernelTensors();
+  CreateOutputKernelTensors();
+
+  auto prim = HostValueStore::GetInstance().GetPrimByDATensor(tensorNode_);
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_LOG(DEBUG) << "Begin select kernelmod for Primitive: " << prim->name();
+  kernel_mod_ = SelectKernelMod(prim, inputs_, outputs_);
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
+}
+
+void MsKernel::CreateInputKernelTensors() {
+  MS_EXCEPTION_IF_NULL(tensorNode_);
+  MS_LOG(INFO) << "Start create input DAKernelTensors";
+  for (size_t i = 0; i < tensorNode_->inputSize; ++i) {
+    MS_EXCEPTION_IF_NULL(tensorNode_->input[i]);
+    if (tensorNode_->input[i]->type == da::tensor::Type_Monad) {
+      continue;
+    }
+    auto input_tensor = std::make_shared<DAKernelTensor>(tensorNode_->input[i]);
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    (void)abs_inputs_.emplace_back(input_tensor);
+    (void)inputs_.emplace_back(input_tensor.get());
+    MS_LOG(DEBUG) << "input kernel tensors: " << input_tensor->ToString();
+  }
+  MS_LOG(INFO) << "End create input DAKernelTensors";
+}
+
+void MsKernel::CreateOutputKernelTensors() {
+  MS_EXCEPTION_IF_NULL(tensorNode_);
+  MS_LOG(INFO) << "Start create output DAKernelTensors";
+  if (tensorNode_->type == da::tensor::Type_Tensor) {
+    auto **da_tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensorNode_->data);
+    MS_EXCEPTION_IF_NULL(da_tensor_list);
+    for (size_t i = 0; i < tensorNode_->shape[0]; ++i) {
+      auto output_tensor = new DAKernelTensor(da_tensor_list[i]);
+      MS_EXCEPTION_IF_NULL(output_tensor);
+      (void)outputs_.emplace_back(output_tensor);
+      MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString() << ", index: " << i;
+    }
+  } else {
+    auto output_tensor = new DAKernelTensor(tensorNode_);
+    MS_EXCEPTION_IF_NULL(output_tensor);
+    (void)outputs_.emplace_back(output_tensor);
+    MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString();
+  }
+  MS_LOG(INFO) << "End create output DAKernelTensors";
+}
+
+void MsKernel::InferShape() {
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
   // 1. Infer operator's output's Shape.
   MS_LOG(INFO) << "Begin InferShape for kernel: " << kernel_mod_->primitive() << ", inputs: " << abs_inputs_;
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), abs_inputs_);
@@ -293,13 +231,39 @@ void DAKernel::InferShapeAndResize() {
 
   // 2. Update shape of output kernel tensor.
   UpdateKernelTensorShape(base_shape, outputs_);
+}
 
+void MsKernel::Resize() {
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
   if (kernel_mod_->Resize(inputs_, outputs_) == kernel::KRET_RESIZE_FAILED) {
     MS_LOG(EXCEPTION) << "KernelMod Resize failed";
   }
 }
 
-void DAKernel::AllocateOutputDeviceMemory() {
+void MsKernel::Launch() {
+  MS_EXCEPTION_IF_NULL(device_context_);
+  device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
+  AllocateOutputDeviceMemory();
+  AllocateWorkSpaceDeviceMemory();
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
+  MS_EXCEPTION_IF_NULL(stream_);
+  MS_LOG(INFO) << "Launch kernel " << kernel_mod_->kernel_name() << " start.";
+  MS_LOG(INFO) << "inputs_: " << inputs_;
+  MS_LOG(INFO) << "outputs_: " << outputs_;
+  MS_LOG(INFO) << "workspaces_: " << workspaces_;
+  MS_LOG(INFO) << "stream_: " << stream_;
+
+  if (!kernel_mod_->Launch(inputs_, workspaces_, outputs_, stream_)) {
+    MS_LOG(EXCEPTION) << "Launch kernel failed.";
+  }
+
+  MS_LOG(INFO) << "Launch kernel completed.";
+  FreeWorkSpaceDeviceMemory();
+}
+
+void MsKernel::AllocateOutputDeviceMemory() {
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
+  MS_EXCEPTION_IF_NULL(device_context_);
   auto output_size_list = kernel_mod_->GetOutputSizeList();
   MS_EXCEPTION_IF_CHECK_FAIL(output_size_list.size() == outputs_.size(), "Output size is not same");
   for (size_t i = 0; i < output_size_list.size(); ++i) {
@@ -311,8 +275,9 @@ void DAKernel::AllocateOutputDeviceMemory() {
   }
 }
 
-void DAKernel::AllocateWorkspaceDeviceMemory() {
-  // Allocate workspace device memory
+void MsKernel::AllocateWorkSpaceDeviceMemory() {
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
+  MS_EXCEPTION_IF_NULL(device_context_);
   for (auto &size : kernel_mod_->GetWorkspaceSizeList()) {
     auto ktensor = new kernel::KernelTensor();
     MS_EXCEPTION_IF_NULL(ktensor);
@@ -326,55 +291,28 @@ void DAKernel::AllocateWorkspaceDeviceMemory() {
   }
 }
 
-void DAKernel::FreeWorkspaceDeviceMemory() {
+void MsKernel::FreeWorkSpaceDeviceMemory() {
+  MS_EXCEPTION_IF_NULL(device_context_);
   for (auto &ws : workspaces_) {
     device_context_->device_res_manager_->FreeMemory(ws->device_ptr());
   }
   workspaces_.clear();
 }
 
-void DAKernel::Launch() {
-  MS_EXCEPTION_IF_NULL(kernel_mod_);
-  MS_LOG(INFO) << "Launch kernel " << kernel_mod_->kernel_name() << " start.";
-  MS_LOG(INFO) << "inputs_: " << inputs_;
-  MS_LOG(INFO) << "outputs_: " << outputs_;
-  MS_LOG(INFO) << "workspaces_: " << workspaces_;
-  MS_LOG(INFO) << "stream_: " << stream_;
-
-  if (!kernel_mod_->Launch(inputs_, workspaces_, outputs_, stream_)) {
-    MS_LOG(EXCEPTION) << "Launch kernel failed.";
-  }
-  MS_LOG(INFO) << "Launch kernel completed.";
-}
-
-bool MindsporeKernelLib::RunTensor(da::tensor::DATensor *tensor, da::runtime::MemoryPool *mempool) const {
-  MS_EXCEPTION_IF_NULL(tensor);
+MsKernelLib::MsKernelLib() : da::runtime::KernelLib(std::move(kMindsporeKernelLibName)) {
+  device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+     MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context_);
-
-  MS_LOG(INFO) << "Run tensor start.";
-
-  device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
-
-  static std::unordered_map<da::tensor::DATensor *, std::shared_ptr<DAKernel>> kernel_cache;
-  if (kernel_cache.find(tensor) == kernel_cache.end()) {
-    static std::mutex mutex;
-    std::unique_lock<std::mutex> lock(mutex);
-    auto kernel = std::make_shared<DAKernel>(tensor, device_context_);
-    kernel_cache[tensor] = kernel;
-  }
-
-  kernel_cache[tensor]->InferShapeAndResize();
-  kernel_cache[tensor]->AllocateOutputDeviceMemory();
-  kernel_cache[tensor]->AllocateWorkspaceDeviceMemory();
-  kernel_cache[tensor]->Launch();
-  kernel_cache[tensor]->FreeWorkspaceDeviceMemory();
-
-  MS_LOG(INFO) << "Run tensor end.";
-
-  return true;
+  device_context_->Initialize();
 }
 
-DART_REGISTER_KERNEL_LIB(kMindsporeKernelLibName, MindsporeKernelLib);
+da::runtime::DAKernel *MsKernelLib::CreateKernel(da::tensor::DATensor *tensor_node) const {
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  return new (std::nothrow) MsKernel(tensor_node);
+}
+
+DART_REGISTER_KERNEL_LIB(kMindsporeKernelLibName, MsKernelLib);
 }  // namespace ms_infer_backend
 }  // namespace backend
 }  // namespace mindspore

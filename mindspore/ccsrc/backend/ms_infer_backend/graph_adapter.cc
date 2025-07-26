@@ -244,12 +244,16 @@ void GraphAdapter::ConvertGraph() {
   InsertParameters();
   ConvertCNodes();
   graph_executor_.EndGraph();
+  graph_executor_.BuildKernels();
+  graph_executor_.RecordTensorRefCount();
 
   graph_executor_.DumpGraph();
 }
 
 void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
-  MS_LOG(INFO) << "Run graph: " << func_graph_->ToString();
+  MS_EXCEPTION_IF_NULL(func_graph_);
+  MS_LOG(INFO) << "Run graph: " << func_graph_->ToString()
+               << ", is_dynamic_shape_: " << func_graph_->is_dynamic_shape();
 
   if (AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph_->output(), inputs, outputs)) {
     return;
@@ -261,7 +265,8 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
     MS_EXCEPTION_IF_NULL(data);
     device_context_->device_res_manager_->FreeMemory(data);
   });
-  graph_executor_.RunGraph();
+  MS_LOG(INFO) << "Begin run DAGraph, is_dynamic_shape: " << is_dynamic_shape_;
+  graph_executor_.RunGraph(func_graph_->is_dynamic_shape() && is_dynamic_shape_);
   ConvertOutputs(outputs);
 
   auto &llm_manger = LLMManager::GetInstance();
@@ -310,6 +315,10 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
   const auto &frontend_params = func_graph_->GetFuncGraph()->parameters();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == frontend_params.size(),
                              "The inputs size is not equal to graph frontend params size.");
+  MS_LOG(DEBUG) << "Graph inputs size: " << inputs.size();
+  std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> graph_input_tensors;
+  graph_input_tensors.resize(inputs.size());
+  ordinary_input_tensors_shape_.resize(inputs.size());
 
   auto &llm_manger = LLMManager::GetInstance();
   llm_manger.Clear();
@@ -321,12 +330,12 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
 
     // find backend params
     auto frontend_param = frontend_params[i];
-    auto iter = frontend_params_to_backend_params_.find(frontend_param);
-    if (iter == frontend_params_to_backend_params_.end()) {
+    auto iter1 = frontend_params_to_backend_params_.find(frontend_param);
+    if (iter1 == frontend_params_to_backend_params_.end()) {
       MS_LOG(INTERNAL_EXCEPTION) << "Can not find the frontend parameters: " << frontend_param->fullname_with_scope();
       continue;
     }
-    auto backend_params = iter->second;
+    auto backend_params = iter1->second;
 
     for (auto &frontend_index_to_backend_param : backend_params) {
       // get input_tensor
@@ -343,18 +352,19 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
                                    << ", tensors size: " << flatten_input_tensors.size()
                                    << ", parameter: " << frontend_param->fullname_with_scope();
       }
-      auto input_tensor = flatten_input_tensors[input_tensor_index];
 
       // get da_param from parameter_map_
       auto backend_param = frontend_index_to_backend_param.second;
-      auto iter = parameter_map_.find(backend_param);
-      if (iter == parameter_map_.end()) {
+      auto iter2 = parameter_map_.find(backend_param);
+      if (iter2 == parameter_map_.end()) {
         MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
       }
-      auto da_param = iter->second;
+      auto da_param = iter2->second;
+      auto input_tensor = flatten_input_tensors[input_tensor_index];
+      auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
+      graph_input_tensors[i].emplace_back(std::make_pair(input_tensor, is_weight));
       UpdateDynamicShape(da_param, backend_param, input_tensor);
 
-      auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
       if (!is_weight) {
         llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor->data_ptr());
         MS_LOG(INFO) << "Record input tensor: " << input_tensor->ToString()
@@ -375,6 +385,36 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
 
       da_param->data = PrepareData(da_param, input_tensor);
     }
+  }
+  RecordInputTensorShapes(graph_input_tensors);
+}
+
+void GraphAdapter::RecordInputTensorShapes(
+  const std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> &input_tensors) {
+  MS_EXCEPTION_IF_CHECK_FAIL(input_tensors.size() == ordinary_input_tensors_shape_.size(),
+                             "args size is not equal to ordinary_input_tensors_shape_ size");
+  is_dynamic_shape_ = false;
+  for (size_t i = 0; i < input_tensors.size(); ++i) {
+    if (input_tensors[i].size() != 1) {
+      MS_LOG(INFO) << "Skip record list tensor input";
+      continue;
+    }
+    auto input_tensor = input_tensors[i][0].first;
+    auto is_weight = input_tensors[i][0].second;
+    if (is_weight) {
+      MS_LOG(INFO) << "Skip record weight's shape";
+      continue;
+    }
+    if (input_tensor == nullptr) {
+      MS_LOG(INFO) << "Input tensor is nullptr, outer index: " << i;
+      continue;
+    }
+    if (!is_dynamic_shape_) {
+      if (ordinary_input_tensors_shape_[i] != input_tensor->shape() || input_tensor->shape().empty()) {
+        is_dynamic_shape_ = true;
+      }
+    }
+    ordinary_input_tensors_shape_[i] = input_tensor->shape();
   }
 }
 
