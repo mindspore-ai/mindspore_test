@@ -20,6 +20,8 @@
 #include <string>
 #include <memory>
 
+#include "mindspore/core/include/base/base.h"
+
 namespace mindspore {
 class TraceInfo;
 using TraceInfoPtr = std::shared_ptr<TraceInfo>;

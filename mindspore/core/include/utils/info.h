@@ -26,7 +26,6 @@
 #include "base/base.h"
 #include "mindapi/base/macros.h"
 #include "ir/scope.h"
-#include "utils/trace_info.h"
 namespace mindspore {
 enum SourceLineTip {
   kSourceLineTipDiscard = 0,
@@ -42,6 +41,13 @@ const CacheBool False = 0;
 const CacheBool True = 1;
 
 MS_CORE_API void ClearThreadLocal();
+
+class TraceInfo;
+using TraceInfoPtr = std::shared_ptr<TraceInfo>;
+class Location;
+using LocationPtr = std::shared_ptr<Location>;
+class DebugInfo;
+using DebugInfoPtr = std::shared_ptr<DebugInfo>;
 
 // Location class record the location in source code.
 class Location {

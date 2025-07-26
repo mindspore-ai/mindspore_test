@@ -20,6 +20,8 @@
 
 #include "ir/manager.h"
 #include "ir/func_graph.h"
+#include "utils/trace_info.h"
+#include "utils/info.h"
 
 namespace mindspore {
 class TestBoostParse : public UT::Common {

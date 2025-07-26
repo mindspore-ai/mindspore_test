@@ -58,6 +58,7 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/symbolic.h"
+#include "utils/trace_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

@@ -22,6 +22,7 @@
 #include <map>
 #include "ir/anf.h"
 #include "utils/anf_utils.h"
+#include "utils/trace_info.h"
 
 namespace mindspore::graphkernel {
 namespace {

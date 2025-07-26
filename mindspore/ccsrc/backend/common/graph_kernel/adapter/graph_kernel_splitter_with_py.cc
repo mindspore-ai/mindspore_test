@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
+#include "utils/trace_info.h"
 #include "include/common/utils/python_adapter.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"

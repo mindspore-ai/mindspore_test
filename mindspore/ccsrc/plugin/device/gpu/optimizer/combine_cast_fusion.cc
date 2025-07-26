@@ -20,6 +20,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
+#include "utils/trace_info.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

@@ -46,6 +46,7 @@
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/utils/hook.h"
 #include "utils/log_adapter.h"
+#include "utils/trace_info.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

@@ -23,6 +23,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
 #include "utils/trace_base.h"
+#include "utils/trace_info.h"
 #include "utils/compile_config.h"
 
 namespace mindspore {

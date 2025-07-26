@@ -27,6 +27,7 @@
 #include "backend/common/session/jit_call_graph.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"
+#include "utils/trace_info.h"
 #include "ir/func_graph_cloner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"

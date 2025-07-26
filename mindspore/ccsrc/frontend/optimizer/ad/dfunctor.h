@@ -27,6 +27,7 @@
 #include <unordered_map>
 
 #include "utils/hash_map.h"
+#include "utils/trace_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"

@@ -41,6 +41,7 @@
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/interpret_node_recorder.h"
 #include "utils/ms_context.h"
+#include "utils/trace_info.h"
 #include "include/common/utils/utils.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"

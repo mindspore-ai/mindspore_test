@@ -31,6 +31,7 @@
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
+#include "utils/trace_info.h"
 #include "pipeline/jit/ps/static_analysis/stack_frame.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/executor/graph_executor_py.h"

@@ -32,6 +32,7 @@
 #include "common/device_address.h"
 #include "utils/file_utils.h"
 #include "utils/info.h"
+#include "utils/trace_info.h"
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #include "backend/ge_backend/dump/deprecated_env.h"

@@ -53,6 +53,7 @@
 #include "utils/llm_manager.h"
 #include "utils/ms_utils.h"
 #include "utils/info.h"
+#include "utils/trace_info.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif

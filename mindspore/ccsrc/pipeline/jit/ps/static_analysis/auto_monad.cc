@@ -40,6 +40,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ordered_map.h"
 #include "utils/ordered_set.h"
+#include "utils/trace_info.h"
 #include "base/effect_info.h"
 #include "abstract/abstract_value.h"
 #include "pipeline/jit/ps/debug/trace.h"
