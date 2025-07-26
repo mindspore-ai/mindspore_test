@@ -129,15 +129,22 @@ def test_silent_check_skip_float16_inputs(fp16_type):
     Description: Test silent check not insert check operator when network has fp16 weight.
     Expectation: SilentCheckV2 operator was not inserted to graph.
     """
-    ports_map = {"fp16_weight": 8155, "fp16_input": 8156, "fp16_getnext": 8157}
+    ports_map = {"fp16_weight": 17155, "fp16_input": 18156, "fp16_getnext": 19157}
     os.environ['NPU_ASD_ENABLE'] = "3"
     os.environ['MS_SAVE_GRAPHS'] = "1"
+    os.environ['GLOG_v'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     cmd = f"bash {sh_path}/msrun_silent_check.sh --master_port={ports_map[fp16_type]}" \
-          f" {sh_path}/data_parallel.py {fp16_type}&> /dev/null"
+          f" {sh_path}/data_parallel.py {fp16_type}&> test_silent_check_skip_float16_inputs_{fp16_type}.log"
     ret1 = os.system(cmd)
     ret2 = os.system(f"cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2('")
     ret3 = os.system(f"cat worker_0.log | grep ', skip inserting silent check operators'")
+    if ret1 != 0:
+        result = subprocess.run("grep 'port have been bound' worker_*", shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
+        result = subprocess.run(f"grep 'Error code' test_silent_check_skip_float16_inputs_{fp16_type}.log | head -n 1",
+                                shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
     assert ret1 == 0
     assert ret2 != 0
     assert ret3 == 0
