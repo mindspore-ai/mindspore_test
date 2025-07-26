@@ -208,6 +208,7 @@ void SetTensorShape(da::tensor::DATensor *tensor, const ShapeVector &shape_vecto
 }
 
 void SetTupleType(da::tensor::DATensor *tensor, const TuplePtr &tuple_type) {
+  MS_EXCEPTION_IF_NULL(tuple_type);
   auto element_types = tuple_type->elements();
   MS_EXCEPTION_IF_CHECK_FAIL(element_types.size() == tensor->shape[0], "Tuple size is not equal to DATensorList size");
   auto **tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensor->data);
@@ -227,6 +228,7 @@ void SetTupleType(da::tensor::DATensor *tensor, const TuplePtr &tuple_type) {
 }
 
 void SetTupleShape(da::tensor::DATensor *tensor, const TupleShapePtr &tuple_shape) {
+  MS_EXCEPTION_IF_NULL(tuple_shape);
   auto element_shapes = tuple_shape->shape();
   MS_EXCEPTION_IF_CHECK_FAIL(element_shapes.size() == tensor->shape[0], "Tuple size is not equal to DATensorList size");
   auto **tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensor->data);

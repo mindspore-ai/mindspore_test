@@ -38,20 +38,16 @@ class DeviceTensorStore {
   DeviceTensorStore &operator=(const DeviceTensorStore &) = delete;
   ~DeviceTensorStore() = default;
 
-  void Insert(const ValuePtr &k, da::tensor::DATensor *v) {
+  void Insert(const ValuePtr &k, void *v) {
     if (device_da_tensor_.find(k) != device_da_tensor_.end()) {
-      MS_LOG(EXCEPTION) << "Duplicate insert for " << k->ToString();
-    }
-
-    if (v->tensorType != da::tensor::TensorType::DEVICE_TENSOR) {
-      MS_LOG(EXCEPTION) << "Expect a device DATensor, but got tensorType: " << v->tensorType;
+      MS_LOG(INFO) << "Duplicate insert for " << k->ToString();
     }
 
     MS_LOG(INFO) << "Insert device tensor for DATensor: " << v << ", value: " << k->ToString();
     device_da_tensor_[k] = v;
   }
 
-  da::tensor::DATensor *Get(const ValuePtr &k) {
+  void *Get(const ValuePtr &k) {
     auto iter = device_da_tensor_.find(k);
     if (iter == device_da_tensor_.end()) {
       MS_LOG(EXCEPTION) << "Cannot find DATensor device store for value: " << k->ToString();
@@ -66,7 +62,7 @@ class DeviceTensorStore {
  private:
   DeviceTensorStore() = default;
 
-  std::unordered_map<ValuePtr, da::tensor::DATensor *> device_da_tensor_;
+  std::unordered_map<ValuePtr, void *> device_da_tensor_;
 };
 }  // namespace ms_infer_backend
 }  // namespace backend

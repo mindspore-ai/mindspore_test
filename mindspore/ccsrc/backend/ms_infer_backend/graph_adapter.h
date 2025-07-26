@@ -60,12 +60,12 @@ class GraphAdapter {
   void ConvertInputs(const VectorRef &inputs);
   void ConvertOutputs(VectorRef *outputs);
 
-  void ConvertValueNode(const ValueNodePtr &value_node);
+  da::tensor::DATensor *ConvertValueNode(const ValueNodePtr &value_node);
   void RecordInputTensorShapes(const std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> &input_tensors);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
   void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node);
 
-  void *PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value);
+  void PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value);
   void *PrepareTensorDataToDevice(const tensor::TensorPtr &tensor);
 
   KernelGraphPtr func_graph_;

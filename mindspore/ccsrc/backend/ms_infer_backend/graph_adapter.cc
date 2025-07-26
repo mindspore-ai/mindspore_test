@@ -98,12 +98,8 @@ void GraphAdapter::SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNode
   } else if (type->isa<Tuple>()) {
     graph_executor_.CastToTensorList(tensor, AnfUtils::GetOutputTensorNum(node));
     MS_EXCEPTION_IF_CHECK_FAIL(tensor->type == da::tensor::Type_Tensor, "The type of DATensor is not Type_Tensor");
-    auto tuple_type = type->cast<TuplePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_type);
-    SetTupleType(tensor, tuple_type);
-    auto tuple_shape = shape->cast<TupleShapePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_shape);
-    SetTupleShape(tensor, tuple_shape);
+    SetTupleType(tensor, type->cast<TuplePtr>());
+    SetTupleShape(tensor, shape->cast<TupleShapePtr>());
   } else if (type->isa<MonadType>()) {
     tensor->type = da::tensor::Type_Monad;
   } else {
@@ -111,54 +107,30 @@ void GraphAdapter::SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNode
   }
 }
 
-void GraphAdapter::ConvertValueNode(const ValueNodePtr &value_node) {
+da::tensor::DATensor *GraphAdapter::ConvertValueNode(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value_node);
   auto value = GetValueNode(value_node);
   MS_EXCEPTION_IF_NULL(value);
-
-  if (HostValueStore::GetInstance().HasValue(value)) {
-    auto da_tensor = HostValueStore::GetInstance().GetDATensorByValue(value);
-    MS_EXCEPTION_IF_NULL(da_tensor);
-    MS_LOG(INFO) << "Get DATensor: " << da_tensor << " for value: " << value.get() << ", " << value->ToString()
-                 << " from HostValueStore";
-    const_map_[value_node] = da_tensor;
-    graph_executor_.AddTensor(da_tensor);
-    (void)converted_values_.emplace(value);
-    return;
-  }
-
-  if (DeviceTensorStore::GetInstance().HasValue(value)) {
-    auto da_tensor = DeviceTensorStore::GetInstance().Get(value);
-    MS_EXCEPTION_IF_NULL(da_tensor);
-    MS_LOG(INFO) << "Get DATensor: " << da_tensor << " for value: " << value.get() << ", " << value->ToString()
-                 << " from DeviceTensorStore";
-    const_map_[value_node] = da_tensor;
-    graph_executor_.AddTensor(da_tensor);
-    (void)converted_values_.emplace(value);
-    return;
-  }
+  MS_LOG(INFO) << "Convert value to DATensor: " << value.get() << ", " << value->ToString();
 
   auto da_tensor = graph_executor_.AddTensor();
-  // Set tensor type and shape
-  SetDATensorTypeAndShape(da_tensor, value);
-  const_map_[value_node] = da_tensor;
-  MS_LOG(INFO) << "Convert value to DATensor: " << da_tensor << ", value: " << value.get() << ", " << value->ToString();
+  PrepareData(da_tensor, value);
 
-  if (da_tensor->type == da::tensor::Type_Monad || da_tensor->type == da::tensor::Type_None) {
+  return da_tensor;
+}
+
+void GraphAdapter::PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value) {
+  // Set tensor type and shape
+  SetDATensorTypeAndShape(da_value, value);
+
+  if (da_value->type == da::tensor::Type_Monad || da_value->type == da::tensor::Type_None) {
     return;
   }
 
   // malloc for all parameters and valuenodes and copy them to device
-  da_tensor->data = PrepareData(da_tensor, value);
-  // save the value in converted_values_ to keep data from being released
-  (void)converted_values_.emplace(value);
-}
-
-void *GraphAdapter::PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value) {
   if (value->isa<tensor::Tensor>()) {
     da_value->tensorType = da::tensor::TensorType::DEVICE_TENSOR;
-    DeviceTensorStore::GetInstance().Insert(value, da_value);
-    return PrepareTensorDataToDevice(value->cast<tensor::TensorPtr>());
+    da_value->data = PrepareTensorDataToDevice(value->cast<tensor::TensorPtr>());
   } else if (value->isa<ValueSequence>() || value->isa<Scalar>() || value->isa<StringImm>()) {
     da_value->tensorType = da::tensor::TensorType::HOST_TENSOR;
     HostValueStore::GetInstance().InsertValueForDATensor(da_value, value);
@@ -166,7 +138,7 @@ void *GraphAdapter::PrepareData(da::tensor::DATensor *da_value, const ValuePtr &
     MS_EXCEPTION_IF_NULL(kernel_tensor_value);
     (void)converted_values_.emplace(kernel_tensor_value);
     MS_LOG(INFO) << "Create ktvalue for DATensor: " << da_value << ", data_ptr: " << kernel_tensor_value->GetDataPtr();
-    return const_cast<void *>(kernel_tensor_value->GetDataPtr());
+    da_value->data = const_cast<void *>(kernel_tensor_value->GetDataPtr());
   } else {
     MS_LOG(EXCEPTION) << "Unsupported value: " << value->ToString();
   }
@@ -182,7 +154,12 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   if (device_address != nullptr && device_address->IsPtrValid()) {
     MS_LOG(WARNING) << "tensor already has device address: " << tensor->ToString();
-    return nullptr;
+    return device_address->GetMutablePtr();
+  }
+
+  // reuse tensor data from other graphs
+  if (DeviceTensorStore::GetInstance().HasValue(tensor)) {
+    return DeviceTensorStore::GetInstance().Get(tensor);
   }
 
   // malloc device memory for tensor
@@ -195,6 +172,8 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
                                                   device::CopyType::kH2D, kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "Copy tensor data failed for tensor: " << tensor->ToString();
   }
+  // cache tensor data for other graphs
+  DeviceTensorStore::GetInstance().Insert(tensor, device_ptr);
 
   MS_LOG(INFO) << "end prepare tensor value: " << tensor->ToString();
 
@@ -207,8 +186,7 @@ da::tensor::DATensor *GraphAdapter::GetNodeDATensor(const AnfNodePtr &node) {
   if (node->isa<ValueNode>()) {
     auto iter = const_map_.find(node);
     if (iter == const_map_.end()) {
-      auto value_node = node->cast<ValueNodePtr>();
-      ConvertValueNode(value_node);
+      const_map_[node] = ConvertValueNode(node->cast<ValueNodePtr>());
     }
     return const_map_[node];
   }
@@ -274,41 +252,23 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
 }
 
 void GraphAdapter::SetupFrontendParameterMapping() {
-  const auto &backend_params = func_graph_->input_nodes();
+  const auto &backend_params = func_graph_->parameters();
   for (size_t j = 0; j < backend_params.size(); j++) {
     const auto &backend_param = backend_params[j];
     MS_EXCEPTION_IF_NULL(backend_param);
 
     auto frontend_param_with_index = func_graph_->GetElementInTupleBackendFrontIndexMap(backend_param);
     if (frontend_param_with_index.first == nullptr) {
-      frontend_param_with_index = {AnfAlgo::FetchFrontNodeByBackendNode(backend_param, *func_graph_), 0};
+      frontend_param_with_index = func_graph_->GetFrontNodeByInternalParameter(backend_param);
+      if (frontend_param_with_index.first == nullptr) {
+        frontend_param_with_index = {func_graph_->GetFrontAnfByBackendAnf(backend_param), 0};
+      }
     }
     MS_EXCEPTION_IF_NULL(frontend_param_with_index.first);
 
     (void)frontend_params_to_backend_params_[frontend_param_with_index.first].emplace_back(
       std::make_pair(frontend_param_with_index.second, backend_param));
   }
-}
-
-void UpdateDynamicShape(da::tensor::DATensor *da_node, const AnfNodePtr &input_node,
-                        const tensor::TensorPtr &input_tensor) {
-  MS_EXCEPTION_IF_NULL(da_node);
-  MS_EXCEPTION_IF_NULL(input_node);
-  if (input_tensor == nullptr) {
-    return;
-  }
-  if (!input_node->isa<Parameter>()) {
-    return;
-  }
-  auto input_param = input_node->cast<ParameterPtr>();
-  MS_EXCEPTION_IF_NULL(input_param);
-  if (!input_param->has_dynamic_shape()) {
-    return;
-  }
-
-  // Update shape.
-  MS_LOG(INFO) << "Update dynamic shape for parameter:" << input_param->DebugString();
-  SetDATensorTypeAndShape(da_node, input_tensor);
 }
 
 void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
@@ -333,9 +293,9 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
     auto iter1 = frontend_params_to_backend_params_.find(frontend_param);
     if (iter1 == frontend_params_to_backend_params_.end()) {
       MS_LOG(INTERNAL_EXCEPTION) << "Can not find the frontend parameters: " << frontend_param->fullname_with_scope();
-      continue;
     }
     auto backend_params = iter1->second;
+    MS_LOG(INFO) << "frontend parameters: " << frontend_param->fullname_with_scope();
 
     for (auto &frontend_index_to_backend_param : backend_params) {
       // get input_tensor
@@ -352,6 +312,7 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
                                    << ", tensors size: " << flatten_input_tensors.size()
                                    << ", parameter: " << frontend_param->fullname_with_scope();
       }
+      auto input_tensor = flatten_input_tensors[input_tensor_index];
 
       // get da_param from parameter_map_
       auto backend_param = frontend_index_to_backend_param.second;
@@ -360,30 +321,15 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
         MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
       }
       auto da_param = iter2->second;
-      auto input_tensor = flatten_input_tensors[input_tensor_index];
+      PrepareData(da_param, input_tensor);
+
       auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
       graph_input_tensors[i].emplace_back(std::make_pair(input_tensor, is_weight));
-      UpdateDynamicShape(da_param, backend_param, input_tensor);
-
       if (!is_weight) {
         llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor->data_ptr());
         MS_LOG(INFO) << "Record input tensor: " << input_tensor->ToString()
                      << "for parameter: " << backend_param->fullname_with_scope();
       }
-
-      if (da_param->tensorType == da::tensor::TensorType::DEVICE_TENSOR && !is_weight) {
-        // free input device memory before new inputs come in
-        MS_EXCEPTION_IF_NULL(da_param->data);
-        device_context_->device_res_manager_->FreeMemory(da_param->data);
-        da_param->data = nullptr;
-      }
-
-      if (is_weight && DeviceTensorStore::GetInstance().HasValue(input_tensor)) {
-        da_param->data = DeviceTensorStore::GetInstance().Get(input_tensor)->data;
-        continue;
-      }
-
-      da_param->data = PrepareData(da_param, input_tensor);
     }
   }
   RecordInputTensorShapes(graph_input_tensors);

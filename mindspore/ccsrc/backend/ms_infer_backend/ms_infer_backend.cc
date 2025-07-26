@@ -60,6 +60,7 @@ KernelGraphPtr OptimizeMindIR(const FuncGraphPtr &func_graph, const BackendJitCo
   auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   kernel_executor->AddMindIRPass(kernel_graph);
+  kernel_graph->SetInputNodes();
   return kernel_graph;
 }
 }  // namespace
@@ -72,9 +73,6 @@ BackendGraphId MSInferBackend::Build(const FuncGraphPtr &func_graph, const Backe
   auto graph_adapter = std::make_shared<GraphAdapter>(kernel_graph);
   MS_EXCEPTION_IF_NULL(graph_adapter);
   graph_adapter_map_[backend_graph_id_] = graph_adapter;
-
-  // clear host value store before build new graph
-  HostValueStore::GetInstance().Clear();
 
   graph_adapter->ConvertGraph();
 
