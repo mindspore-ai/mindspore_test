@@ -34,12 +34,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendStreamMng {
  public:
   static AscendStreamMng &GetInstance();
 
-  ~AscendStreamMng() {
+  ~AscendStreamMng() = default;
+  void Clear() {
 #ifdef WITH_BACKEND
     for (auto iter = stream_call_backs_.begin(); iter != stream_call_backs_.end();) {
       aclrtStream stream = iter->first;
       iter++;
-      UnRegCallback(stream);
+      UnRegCallback(stream, false);
     }
 #endif
   }
@@ -71,7 +72,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendStreamMng {
   void CreateStream(aclrtStream *stream, int32_t priority = 0);
   void CreateStream(size_t *stream_id, int32_t priority = 0);
   void RegCallback(aclrtStream stream);
-  void UnRegCallback(aclrtStream stream);
+  void UnRegCallback(aclrtStream stream, bool delete_item = true);
   void CreateStreamWithFlags(aclrtStream *stream, uint32_t flags, int32_t priority = 0);
   void CreateStreamWithFlags(size_t *stream_id, uint32_t flags, int32_t priority = 0);
   bool DestroyStream(size_t stream_id);

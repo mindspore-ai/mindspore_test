@@ -133,20 +133,22 @@ void AscendStreamMng::RegCallback(aclrtStream stream) {
   callback_cached_streams_.clear();
 }
 
-void AscendStreamMng::UnRegCallback(aclrtStream stream) {
+void AscendStreamMng::UnRegCallback(aclrtStream stream, bool delete_item) {
   MS_LOG(INFO) << "Unregister callback thread, stream : " << stream << ".";
   if (!is_enable_callback_) {
     return;
   }
 #ifdef WITH_BACKEND
   if (stream_call_backs_.count(stream) == 0) {
-    MS_LOG(WARNING) << "Unregister callback thread failed, stream : " << stream << " is not exist.";
+    MS_LOG(INFO) << "Unregister callback thread failed, stream : " << stream << " is not exist.";
     return;
   }
   auto callback_thread = stream_call_backs_.at(stream);
   // Cannot call aclrtUnSubscribeReport.
   callback_thread->cancel();
-  stream_call_backs_.erase(stream);
+  if (delete_item) {
+    stream_call_backs_.erase(stream);
+  }
 #endif
 }
 
