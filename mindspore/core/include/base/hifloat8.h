@@ -196,7 +196,7 @@ class HiFloat8 {
       uint8_t exponent_width = ((hif8.value_ & hif8_dot_mask) >> exp_man_width) + 1;
       uint8_t mantissa_width_ = exp_man_width - exponent_width;
       hif8_exponent_sign_mask = 0x10;
-      exponent_sign = ((hif8.value_ & hif8_exponent_sign_mask) >> (exponent_width + mantissa_width_));
+      exponent_sign = ((hif8.value_ & hif8_exponent_sign_mask) >> (exp_man_width - 1));
       uint8_t hif8_exponent_mantissa_mask = 0x0F;
       exponent_val =
         ((exponent_sign == 1) ? -1 : 1) *
@@ -217,7 +217,7 @@ class HiFloat8 {
     constexpr Union32 f32infty{f32infty_value};
     constexpr uint32_t f8max_value = (127 + 15) << 23;
     constexpr Union32 f8max{f8max_value};
-    constexpr uint8_t fp8_DML_adjust = 23;
+    constexpr int8_t fp8_DML_adjust = 23;
     Union32 f;
     f.f = f32;
 
@@ -235,7 +235,7 @@ class HiFloat8 {
       return (f.u > f32infty.u) ? nan_value : (sign_bits | inf_value);
     }
 
-    uint32_t exponent = ((f.u >> 23) & 0xFF) - 127;  // 去除偏置
+    int32_t exponent = ((f.u >> 23) & 0xFF) - 127;  // 去除偏置
     uint32_t mantissa = f.u & 0x7FFFFF;
 
     ExponentRange range = GetExponentRange(exponent);
@@ -245,23 +245,20 @@ class HiFloat8 {
         return zero_value;
 
       case ExponentRange::INF:
-        return inf_value;
+        return sign_bits | inf_value;
 
       case ExponentRange::DOT_0000: {
         exponent += fp8_DML_adjust;
         uint8_t dot_bit = 0x00;
-        uint32_t mantissa_width = 3;
-        uint32_t exponent_width = 0;
+        int32_t mantissa_width = 3;
+        int32_t exponent_width = 0;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | exponent);
       }
 
       case ExponentRange::DOT_0001: {
-        if ((f.u & f32_value_mask) == f32_zero_value) {
-          return zero_value;
-        }
         uint8_t dot_bit = 0b0001;
-        uint32_t mantissa_width = 3;
-        uint32_t exponent_width = 0;
+        int32_t mantissa_width = 3;
+        int32_t exponent_width = 0;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) |
                 (mantissa >> (fp8_DML_adjust - mantissa_width)));
       }
@@ -269,8 +266,8 @@ class HiFloat8 {
       case ExponentRange::DOT_001: {
         uint8_t dot_bit = 0b001;
         uint8_t exponent_bit = ((exponent > 0) ? 0 : 1);
-        uint32_t mantissa_width = 3;
-        uint32_t exponent_width = 1;
+        int32_t mantissa_width = 3;
+        int32_t exponent_width = 1;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
                 (mantissa >> (fp8_DML_adjust - mantissa_width)));
       }
@@ -278,8 +275,8 @@ class HiFloat8 {
       case ExponentRange::DOT_01: {
         uint8_t dot_bit = 0b01;
         uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x1) : -exponent);
-        uint32_t mantissa_width = 3;
-        uint32_t exponent_width = 2;
+        int32_t mantissa_width = 3;
+        int32_t exponent_width = 2;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
                 (mantissa >> (fp8_DML_adjust - mantissa_width)));
       }
@@ -287,8 +284,8 @@ class HiFloat8 {
       case ExponentRange::DOT_10: {
         uint8_t dot_bit = 0b10;
         uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x3) : -exponent);
-        uint32_t mantissa_width = 2;
-        uint32_t exponent_width = 3;
+        int32_t mantissa_width = 2;
+        int32_t exponent_width = 3;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
                 (mantissa >> (fp8_DML_adjust - mantissa_width)));
       }
@@ -296,8 +293,8 @@ class HiFloat8 {
       case ExponentRange::DOT_11: {
         uint8_t dot_bit = 0b11;
         uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x7) : -exponent);
-        uint32_t mantissa_width = 1;
-        uint32_t exponent_width = 4;
+        int32_t mantissa_width = 1;
+        int32_t exponent_width = 4;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
                 (mantissa >> (fp8_DML_adjust - mantissa_width)));
       }
