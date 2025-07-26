@@ -81,8 +81,6 @@ void AscendVmmAdapter::ClearAllMemory() {
   vmm_map_.clear();
 }
 
-AscendVmmAdapter::~AscendVmmAdapter() { ClearAllMemory(); }
-
 namespace {
 void MoveBackMappedHandle(std::map<DeviceMemPtr, aclrtDrvMemHandle> *mapped_vmm_handle,
                           std::map<DeviceMemPtr, aclrtDrvMemHandle> *vmm_map,

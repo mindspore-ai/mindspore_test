@@ -222,7 +222,6 @@ struct MemoryReplayProcesser {
     std::ifstream tracker_file(file_path, std::ios::in);
     if (!tracker_file.is_open()) {
       MS_LOG(EXCEPTION) << "Failed to open file: " << file_path << ". Please check whether the file exists.";
-      return;
     }
     std::string line;
     size_t cur_time_stamp = 0L;
@@ -241,7 +240,9 @@ struct MemoryReplayProcesser {
         if (iter->first > block.start_time_stamp_) {
           break;
         }
-        mem_pool->FreeTensorMem(iter->second);
+        for (const auto &mem_addr : iter->second) {
+          mem_pool->FreeTensorMem(mem_addr);
+        }
         iter = to_free_mems_.erase(iter);
       }
       void *addr = mem_pool->AllocTensorMem(block.size_, block.IsPersistent(), false, block.stream_id_);
@@ -252,10 +253,12 @@ struct MemoryReplayProcesser {
                         << " block.actual_peak_mem_ : " << block.actual_peak_mem_
                         << " is not equal to cur peak : " << cur_peak << ".";
       }
-      to_free_mems_[block.end_time_stamp_] = addr;
+      to_free_mems_[block.end_time_stamp_].push_back(addr);
     }
     for (auto iter = to_free_mems_.begin(); iter != to_free_mems_.end();) {
-      mem_pool->FreeTensorMem(iter->second);
+      for (const auto &mem_addr : iter->second) {
+        mem_pool->FreeTensorMem(mem_addr);
+      }
       iter = to_free_mems_.erase(iter);
     }
   }
@@ -263,7 +266,7 @@ struct MemoryReplayProcesser {
  private:
   device::HalResBase *res_manager_;
   device::DeviceContext *device_context_;
-  std::map<size_t, void *> to_free_mems_;
+  std::map<size_t, std::vector<void *>> to_free_mems_;
 };
 
 void MemoryReplay(const std::string &file_path) {
