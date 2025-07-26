@@ -150,6 +150,7 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
           MS_LOG(DEBUG) << "Launch InplaceCopyH2D AsyncCopy end";
         }
       });
+      runtime::DeviceAddressUtils::ProcessCrossStreamAddress("inplace_copy_h2d", device_context, stream_id, dst, src);
     }
   }));
 
@@ -226,6 +227,7 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
           MS_LOG(DEBUG) << "Launch InplaceCopyD2H AsyncCopy end";
         }
       });
+      runtime::DeviceAddressUtils::ProcessCrossStreamAddress("inplace_copy_d2h", device_context, stream_id, dst, src);
     }
   }));
 
