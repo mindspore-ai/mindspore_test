@@ -31,8 +31,6 @@ set_property(SOURCE ${SRC_IN_910B}
 
 add_library(_mindspore_plugin_device_ascend_kernel_910b_obj OBJECT ${SRC_IN_910B})
 
-add_subdirectory(aicore)
-
 add_subdirectory(internal)
 
 add_subdirectory(atb)
