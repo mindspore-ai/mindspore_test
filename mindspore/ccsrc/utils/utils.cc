@@ -329,13 +329,19 @@ bool IsNeedProfilieMemoryLog() {
 }
 
 bool IsMemoryPoolRecycle() {
-  static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
+  static bool disable_optimize_mem = common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool disable_ge_kernel = IsDisableGeKernel();
+  if (!disable_ge_kernel || disable_optimize_mem) {
+    return false;
+  }
+  if (!IsJit()) {
+    return false;
+  }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto is_ge = context_ptr->GetBackend() == kBackendGE;
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  return disable_ge_kernel && optimize_mem && is_ge && task_sink;
+  return is_ge && task_sink;
 }
 
 bool IsEnableGraphPipeline() {
