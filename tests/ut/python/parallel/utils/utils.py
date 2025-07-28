@@ -284,7 +284,7 @@ class BasicValidator:
         :param target_count: The gold float16 count in the Ir files
         :param file_name: The extract file name
         """
-        ir_files = glob.glob(os.path.join(self.output_path, 'rank_0', f'*{file_name}*.ir'))
+        ir_files = glob.glob(os.path.join(self.output_path, f'*{file_name}*.ir'))
         assert len(ir_files) == 1, f"The filename {file_name} appears {len(ir_files)}, expect {target_count}"
         appear_count = 0
         with open(ir_files[0], 'r') as fp:

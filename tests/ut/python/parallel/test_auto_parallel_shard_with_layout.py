@@ -94,7 +94,7 @@ def test_layout_in_node_prim_attrs_correct():
     w2 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(NetTwoMatMul(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+    file = f"{ir_graph_path}/step_auto_parallel_begin_*"
     in_layout_cfg1 = (
         "in_layout: ({'device_matrix': (2, 4, 2, 2), 'tensor_map': ((3, 0), 2), 'interleaved_parallel': true, "
         "'alias_name': (dp, mp, sp, interleaved_parallel)}, {'device_matrix': (2, 4, 2, 2), 'tensor_map': (2, 1), "
@@ -138,7 +138,7 @@ def test_layout_propagation_in_two_matmul_net():
     w2 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(NetTwoMatMul(w1, w2, in_layout1, None, out_layout1)))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     in_strategy = "in_strategy: ((2, 2), (2, 1))"
     para1 = "%6(out2) = PrimFunc_MatMul"
     check_layout_config(para1, file, in_strategy)
@@ -163,7 +163,7 @@ def test_layout_propagation_with_mixed_strategy():
     w2 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(NetTwoMatMul(w1, w2, in_layout1, in_layout2)))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     in_strategy = "in_strategy: ((8, 1))"
     para = "$predict) = PrimFunc_ReLU"
     check_layout_config(para, file, in_strategy)

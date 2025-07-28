@@ -110,12 +110,12 @@ def test_dynamic_shape_merge_allgather():
     net = DynamicMulNet(strategy1, strategy2, strategy3, strategy4)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     context.set_context(save_graphs=True, save_graphs_path="./dynamic_shape_merge_allgather")
-    if os.path.exists("./dynamic_shape_merge_allgather/rank_0"):
-        shutil.rmtree("./dynamic_shape_merge_allgather/rank_0")
+    if os.path.exists("./dynamic_shape_merge_allgather"):
+        shutil.rmtree("./dynamic_shape_merge_allgather")
 
     compile_net(net)
 
-    file = "./dynamic_shape_merge_allgather/rank_0/*step_parallel_end*.ir"
+    file = "./dynamic_shape_merge_allgather/*step_parallel_end*.ir"
     para = "= AllGather("
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -123,7 +123,7 @@ def test_dynamic_shape_merge_allgather():
     out = str(output, 'utf-8').strip()
     assert out == "3"
 
-    file = "./dynamic_shape_merge_allgather/rank_0/*merge_comm*.ir"
+    file = "./dynamic_shape_merge_allgather/*merge_comm*.ir"
     para = "= AllGather("
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -131,5 +131,5 @@ def test_dynamic_shape_merge_allgather():
     out = str(output, 'utf-8').strip()
     assert out == "1"
 
-    if os.path.exists("./dynamic_shape_merge_allgather/rank_0"):
-        shutil.rmtree("./dynamic_shape_merge_allgather/rank_0")
+    if os.path.exists("./dynamic_shape_merge_allgather"):
+        shutil.rmtree("./dynamic_shape_merge_allgather")

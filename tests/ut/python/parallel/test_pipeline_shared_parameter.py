@@ -251,18 +251,18 @@ def test_vpp_with_shared_parameter_stage0():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
-        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./vpp_with_shared_parameter/rank_0/*validate*.ir"
+    file = "./vpp_with_shared_parameter/*validate*.ir"
     para = "pipeline_param"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
-        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
     context.set_context(save_graphs=False)
 
 
@@ -286,18 +286,18 @@ def test_vpp_with_shared_parameter_stage1():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
-        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./vpp_with_shared_parameter/rank_0/*validate*.ir"
+    file = "./vpp_with_shared_parameter/*validate*.ir"
     para = "pipeline_param"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "3"
-    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
-        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
     context.set_context(save_graphs=False)
 
 
@@ -453,7 +453,7 @@ def test_dump_parallel_info():
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./rank_0/dump_parallel_info_0.json"
+    file = "./dump_parallel_info_0.json"
     para = "\"comm_group_rank_ids\": \"(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)\""
     output = subprocess.check_output(
         ["grep '%s' %s | wc -l" % (para, file)],
@@ -491,18 +491,18 @@ def test_pipeline_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
-        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline"):
+        shutil.rmtree("./pipeline_with_begin_end_inline")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./pipeline_with_begin_end_inline/rank_0/*validate*.ir"
+    file = "./pipeline_with_begin_end_inline/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
-        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline"):
+        shutil.rmtree("./pipeline_with_begin_end_inline")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)
@@ -535,18 +535,18 @@ def test_grad_accumulation_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
-        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./grad_accumulation_with_begin_end_inline/rank_0/*validate*.ir"
+    file = "./grad_accumulation_with_begin_end_inline/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
-        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)

@@ -31,7 +31,7 @@ def setup_function():
 
 
 def check_output(dir_name, num_comm_ops=12):
-    file = "%s/rank_0/*validate*.ir" % dir_name
+    file = "%s/*validate*.ir" % dir_name
     prim_name = "Depend("
     tag_name = "split_concat_depend"
     output = subprocess.check_output(

@@ -245,7 +245,7 @@ def test_force_fp32_comm():
             out = self.matmul(x, y)
             out = self.mul(out, b)
             return out
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./test_force_fp32_comm/")
     assert not auto_parallel_context().get_force_fp32_communication()
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0,
                                       force_fp32_communication=True)
@@ -258,10 +258,10 @@ def test_force_fp32_comm():
     x = Tensor(np.ones([128, 32]), dtype=ms.float16)
     y = Tensor(np.ones([32, 64]), dtype=ms.float16)
     b = Tensor(np.ones([128, 64]), dtype=ms.float16)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0", ignore_errors=True)
+    if os.path.exists("./test_force_fp32_comm/"):
+        shutil.rmtree("./test_force_fp32_comm/", ignore_errors=True)
     compile_net(net, x, y, b)
-    file = "./rank_0/*validate*.ir"
+    file = "./test_force_fp32_comm/*validate*.ir"
     para = "PrimFunc_Cast"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],

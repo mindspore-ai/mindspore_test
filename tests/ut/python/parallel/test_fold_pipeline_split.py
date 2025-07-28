@@ -314,7 +314,7 @@ class TestPipelineSplitWithNoOptimizer:
         :param pattern: The match pattern for the specific count
         :param target_count: The gold float16 count in the Ir files
         """
-        ir_files = glob.glob(os.path.join(self.output_path, 'rank_0', '*_validate*.ir'))
+        ir_files = glob.glob(os.path.join(self.output_path, '*_validate*.ir'))
         assert len(ir_files) == 1
         appear_count = 0
         with open(ir_files[0], 'r') as fp:

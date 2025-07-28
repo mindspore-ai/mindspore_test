@@ -169,10 +169,10 @@ def test_pipeline_inference_without_lazy_inline_first_stage():
     net = PipelineInferenceWrapper(ShareParaNet(shape=(hidden_size, hidden_size)), micro_batch_num=2)
     net.set_train(False)
     x = Tensor(np.ones((batch_size, hidden_size)), mindspore.float32)
-    if os.path.exists("./pp_no_send_embed/rank_0"):
-        shutil.rmtree("./pp_no_send_embed/rank_0")
+    if os.path.exists("./pp_no_send_embed"):
+        shutil.rmtree("./pp_no_send_embed")
     compile_infer_net(net, x)
-    file = "./pp_no_send_embed/rank_0/*validate*.ir"
+    file = "./pp_no_send_embed/*validate*.ir"
     prim_name = "Send("
     output = subprocess.check_output(
         ["grep -r '%s' %s |wc -l" % (prim_name, file)],
@@ -197,10 +197,10 @@ def test_pipeline_inference_without_lazy_inline_last_stage():
     net = PipelineInferenceWrapper(ShareParaNet(shape=(hidden_size, hidden_size)), micro_batch_num=2)
     net.set_train(False)
     x = Tensor(np.ones((batch_size, hidden_size)), mindspore.float32)
-    if os.path.exists("./pp_no_send_embed/rank_0"):
-        shutil.rmtree("./pp_no_send_embed/rank_0")
+    if os.path.exists("./pp_no_send_embed"):
+        shutil.rmtree("./pp_no_send_embed")
     compile_infer_net(net, x)
-    file = "./pp_no_send_embed/rank_0/*validate*.ir"
+    file = "./pp_no_send_embed/*validate*.ir"
     prim_name = "Receive("
     output = subprocess.check_output(
         ["grep -r '%s' %s |wc -l" % (prim_name, file)],

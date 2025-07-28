@@ -113,7 +113,7 @@ def test_shard_with_in_strategy_4x1():
     """
     net, x, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
     compile_net(net, x, layout1, layout2)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%6)"
     in_strategy1 = "in_strategy: ((4, 1))"
     para2 = "PrimFunc_AShardIdentity(%10)"
