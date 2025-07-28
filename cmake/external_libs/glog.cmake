@@ -9,6 +9,7 @@ else()
 endif()
 set(glog_CFLAGS "-D_FORTIFY_SOURCE=2 -O2")
 set(glog_patch ${CMAKE_SOURCE_DIR}/third_party/patch/glog/glog.patch001)
+set(glog_patch_2 ${CMAKE_SOURCE_DIR}/third_party/patch/glog/glog.patch002)
 set(glog_lib mindspore_glog)
 
 if(NOT ENABLE_GLIBCXX)
@@ -56,6 +57,7 @@ mindspore_add_pkg(glog
         URL ${REQ_URL}
         SHA256 ${SHA256}
         PATCHES ${glog_patch}
+        PATCHES ${glog_patch_2}
         CMAKE_OPTION ${glog_option})
 include_directories(${glog_INC})
 add_library(mindspore::glog ALIAS glog::${glog_lib})
