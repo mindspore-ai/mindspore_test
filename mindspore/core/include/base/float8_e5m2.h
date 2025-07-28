@@ -64,7 +64,7 @@ class Float8_e5m2 {
   template <typename T>
   explicit Float8_e5m2(const T &v) : value_(FromFloat32(static_cast<float>(v))) {}
 
-  uint16_t int_value() const { return value_; }
+  uint8_t int_value() const { return value_; }
 
   template <typename T>
   explicit operator T() const {
@@ -152,7 +152,7 @@ class Float8_e5m2 {
       // Result is Inf or NaN (all exponent bits set).
       result = (f.u > f32infty.u) ? nan_value : inf_value;
     } else if (f.u < magic) {
-      // (De)normalized number or zero; resulting FP16 is subnormal or zero.
+      // (De)normalized number or zero; resulting float8_e5m2 is subnormal or zero.
       // Use a magic value to align our 10 mantissa bits at the bottom of
       // the float. as long as FP addition is round-to-nearest-even this
       // just works.
@@ -200,7 +200,7 @@ inline Float8_e5m2 operator/(const Float8_e5m2 &a, size_t b) {
 }
 
 inline Float8_e5m2 operator-(const Float8_e5m2 &a) {
-  constexpr uint16_t sign_mask = 0x8000;
+  constexpr uint8_t sign_mask = 0x80;
   return Float8_e5m2::FromRaw(a.int_value() ^ sign_mask);
 }
 
@@ -234,7 +234,9 @@ using float8_e5m2 = mindspore::Float8_e5m2;
 namespace std {
 template <>
 struct hash<float8_e5m2> {
-  std::size_t operator()(const float8_e5m2 &bf16) const noexcept { return static_cast<std::size_t>(bf16.int_value()); }
+  std::size_t operator()(const float8_e5m2 &fp8_e5m2) const noexcept {
+    return static_cast<std::size_t>(fp8_e5m2.int_value());
+  }
 };
 
 template <>
