@@ -44,7 +44,7 @@
 #include "backend/common/pass/const_input_to_attr.h"
 #include "backend/operator/ops_backend_infer_function.h"
 #include "frontend/operator/ops_front_infer_function.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "debug/profiler/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"

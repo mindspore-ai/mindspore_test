@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 
 #include <memory>
 #include <algorithm>
@@ -480,45 +480,6 @@ void UpdateKernelTensorType(const TypePtr &type, const std::vector<kernel::Kerne
   kernel_tensor->SetType(type);
 }
 
-bool IsRealCNode(const BaseRef &n) {
-  if (utils::isa<CNodePtr>(n)) {
-    CNodePtr cnode = utils::cast<CNodePtr>(n);
-    return AnfUtils::IsRealKernel(cnode);
-  }
-  return false;
-}
-
-AnfNodePtr GenInferNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  auto infer_node = AnfUtils::NewInferActorNode([cnode](void *args) { InferOp(cnode, args); }, cnode);
-  MS_EXCEPTION_IF_NULL(infer_node);
-  infer_node->set_kernel_info(std::make_shared<device::KernelInfo>());
-  return infer_node;
-}
-
-AnfNodePtr GenInitNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-
-  auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
-  MS_EXCEPTION_IF_NULL(kernel_mod);
-  AnfUtils::CustomActorCallback actor_func = [kernel_mod, cnode](void *) {
-    auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(cnode);
-    auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(cnode);
-    if (kernel_mod->Resize(inputs, outputs) == static_cast<int>(kernel::KRET_RESIZE_FAILED)) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node " << cnode->fullname_with_scope() << " Resize failed.";
-    }
-  };
-
-  auto init_node = AnfUtils::NewInitActorNode(actor_func, cnode);
-  MS_EXCEPTION_IF_NULL(init_node);
-  init_node->set_kernel_info(std::make_shared<device::KernelInfo>());
-  return init_node;
-}
-
 void InferOp(const CNodePtr &cnode, void *args) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
@@ -532,11 +493,6 @@ void InferOp(const CNodePtr &cnode, void *args) {
   update.depend_tensor_map = std::move(kernel_args.depend_tensor_map);
   kernel::SetInputsByDependMap(update.depend_tensor_map, &update.inputs, IsCpuKernelMod(kernel_mod_type));
   kernel::SetArgsToCNode(cnode, update);
-}
-
-CustomActorNodeManager &CustomActorNodeManager::Instance() {
-  static CustomActorNodeManager instance{};
-  return instance;
 }
 }  // namespace opt::dynamic_shape
 }  // namespace mindspore

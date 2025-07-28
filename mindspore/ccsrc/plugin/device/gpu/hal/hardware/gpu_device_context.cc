@@ -50,7 +50,7 @@
 #include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/optimizer/reg_gpu_const_input_to_attr.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "include/common/debug/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"

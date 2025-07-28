@@ -33,8 +33,6 @@
 #include "backend/common/pass/add_dynamic_shape_attr.h"
 #include "backend/common/pass/add_akg_kernel_attrs.h"
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
-#include "backend/common/optimizer/dynamic_shape/convert_custom_op.h"
-#include "backend/common/optimizer/dynamic_shape/link_custom_op.h"
 #include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
 #include "backend/common/pass/convert_dynamic_broadcast_to.h"
 #include "backend/common/pass/broadcast_to_fusion.h"
@@ -201,33 +199,6 @@ void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &k
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
       "hwopt_common_eliminate_illegal_data_type_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
-    DumpIR(file_name, kernel_graph);
-  }
-#endif
-}
-
-void DynamicShapeConvertPass(const std::shared_ptr<session::KernelGraph> &kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_LOG(INFO) << "Start dynamic shape convert for kernel graph id:" << kernel_graph->graph_id();
-#ifdef ENABLE_DUMP_IR
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name =
-      "hwopt_d_before_dynamic_shape_convert_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
-    DumpIR(file_name, kernel_graph);
-  }
-#endif
-  auto optimizer = std::make_shared<opt::GraphOptimizer>();
-  auto dynamic_shape_convert_pm = std::make_shared<opt::PassManager>("dynamic_shape_convert_pm");
-  dynamic_shape_convert_pm->AddPass(std::make_shared<opt::dynamic_shape::ConvertCustomOp>());
-  dynamic_shape_convert_pm->AddPass(std::make_shared<opt::dynamic_shape::LinkCustomOp>());
-  optimizer->AddPassManager(dynamic_shape_convert_pm);
-  (void)optimizer->Optimize(kernel_graph);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name =
-      "hwopt_d_after_dynamic_shape_convert_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
     DumpIR(file_name, kernel_graph);
   }
 #endif

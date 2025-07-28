@@ -16,7 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.h"
 #include <limits>
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "common/common_utils.h"
 #include "runtime/graph_scheduler/actor/rpc/rpc_actor.h"
 #include "proto/topology.pb.h"

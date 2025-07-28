@@ -41,7 +41,7 @@
 #include "kernel/framework_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "debug/profiler/profiling.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pynative/ir_converter.h"
 #include "mindspore/ops/op_def/framework_op_name.h"

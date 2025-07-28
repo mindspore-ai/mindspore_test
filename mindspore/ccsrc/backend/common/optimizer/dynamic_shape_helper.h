@@ -40,39 +40,7 @@ BACKEND_COMMON_EXPORT abstract::AbstractBasePtr InferShapeAndType(const Primitiv
 
 BACKEND_COMMON_EXPORT void UpdateKernelTensorType(const TypePtr &type,
                                                   const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
-
-bool IsRealCNode(const BaseRef &n);
 void InferOp(const CNodePtr &node, void *args = nullptr);
-AnfNodePtr GenInferNode(const AnfNodePtr &node);
-AnfNodePtr GenInitNode(const AnfNodePtr &node);
-
-struct RelatedCustomActorNode {
-  AnfNodePtr infer_node;
-  AnfNodePtr init_node;
-};
-
-class CustomActorNodeManager {
- public:
-  static CustomActorNodeManager &Instance();
-  void Reset() { custom_nodes_map_.clear(); }
-  void Register(const AnfNodePtr &node, const RelatedCustomActorNode &custom_nodes) {
-    (void)custom_nodes_map_.emplace(node, custom_nodes);
-  }
-  bool IsRegistered(const AnfNodePtr &node) const { return custom_nodes_map_.find(node) != custom_nodes_map_.end(); }
-  const RelatedCustomActorNode &GetCustomActorNodes(const AnfNodePtr &node) const {
-    if (auto iter = custom_nodes_map_.find(node); iter != custom_nodes_map_.end()) {
-      return iter->second;
-    }
-
-    MS_LOG(EXCEPTION) << "Not registered node!";
-  }
-
- private:
-  CustomActorNodeManager() = default;
-  ~CustomActorNodeManager() = default;
-  DISABLE_COPY_AND_ASSIGN(CustomActorNodeManager)
-  OrderedMap<AnfNodePtr, RelatedCustomActorNode> custom_nodes_map_;
-};
 
 /// \brief The class to implement an InferShape function, which is decoupled from the mindspore/core.
 class BACKEND_COMMON_EXPORT InferShapeFunctor : public Functor {

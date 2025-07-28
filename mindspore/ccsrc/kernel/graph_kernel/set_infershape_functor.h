@@ -22,7 +22,7 @@
 #include "include/backend/visible.h"
 #include "include/backend/optimizer/pass.h"
 #include "kernel/graph_kernel/symbol_engine/jit/cpp_visitor.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 
 namespace mindspore::graphkernel {
 using opt::dynamic_shape::InferShapeFunctor;
