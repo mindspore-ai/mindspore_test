@@ -81,6 +81,11 @@ bool MaxPoolGradGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
 }
 
 void MaxPoolGradGradCpuKernelMod::CheckInputVaild() const {
+  auto input_elements = std::accumulate(out_shapes_.begin(), out_shapes_.end(), 1, std::multiplies<int64_t>());
+  if (input_elements > static_cast<int64_t>((std::numeric_limits<int>::max)())) {
+    MS_LOG(EXCEPTION) << "PoolingGrad only supports data-volume <= INT32_MAX , but got input's data-volume "
+                      << input_elements;
+  }
   const size_t src_dim = in_shapes_.size();
   if (src_dim != SHAPE_4D && src_dim != SHAPE_5D) {
     MS_LOG(EXCEPTION) << "PoolingGrad only supports 4D/5D input, but got " << src_dim << "D";
@@ -144,6 +149,10 @@ int MaxPoolGradGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &input
   args_->output_h_ = LongToInt(out_shapes_[height_index_]);
   args_->output_w_ = LongToInt(out_shapes_[width_index_]);
   output_elements_ = LongToSize(std::accumulate(out_shapes_.begin(), out_shapes_.end(), 1, std::multiplies<int64_t>()));
+  if (output_elements_ > static_cast<size_t>((std::numeric_limits<int>::max)())) {
+    MS_LOG(EXCEPTION) << "PoolingGrad only supports data-volume <= INT32_MAX , but got output's data-volume "
+                      << output_elements_;
+  }
 
   args_->window_h_ = param_->window_h_;
   args_->window_w_ = param_->window_w_;
