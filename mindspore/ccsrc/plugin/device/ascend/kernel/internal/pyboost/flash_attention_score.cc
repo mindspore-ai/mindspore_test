@@ -57,6 +57,7 @@ void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
                           attn_mask.has_value() ? attn_mask.value() : nullptr};
   TensorPtrList outputs = {op->outputs()[kIndex3]};
   TransInternalShapes(inputs, outputs);
+
   auto attn_mask_tensor = inputs.back();
   if (attn_mask_tensor != nullptr) {
     param_.mask_dims = attn_mask_tensor->shape();

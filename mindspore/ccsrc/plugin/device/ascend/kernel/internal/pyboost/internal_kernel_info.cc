@@ -143,6 +143,7 @@ void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunn
   if (tiling_info_ == nullptr) {
     MS_LOG(EXCEPTION) << "Create tiling info failed for internal kernel, kernel_name: " << kernel_name_;
   }
+  return;
 }
 
 TilingCacheItemPtr InternalKernelInfo::GetOrGenerateTiling(const std::shared_ptr<pyboost::OpRunner> &op,

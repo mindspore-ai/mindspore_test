@@ -24,3 +24,6 @@ group_topk:
         name: GroupTopk 
     function:
         name: group_topk
+    dispatch:
+        enable: True
+        InternalOpAscend: AutoGen

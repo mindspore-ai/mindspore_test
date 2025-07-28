@@ -56,7 +56,6 @@ class InternalKernelInfo {
 
   void GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
                          const uint64_t &tiling_key, const TensorPtrList &inputs, const TensorPtrList &outputs);
-
   static void UpdateAddr(std::vector<internal::RawDeviceAddr> *addrlist, const TensorPtrList &tensorlist) {
     addrlist->resize(tensorlist.size());
     for (size_t i = 0; i < tensorlist.size(); i++) {
@@ -116,7 +115,7 @@ class InternalKernelInfo {
 using InternalKernelInfoPtr = std::shared_ptr<InternalKernelInfo>;
 
 #define MS_INTERNAL_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, DERIVE) \
-  MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(InternalKernelInfo, PRIM_NAME_STR, DERIVE)
+  MS_KERNEL_FACTORY_REG_WITH_NAME_PARAM(InternalKernelInfo, PRIM_NAME_STR, DERIVE);
 
 #define LAUNCH_INTERNAL_KERNEL(op, internal_op, device_context, tiling_ptr, inputs_addr, outputs_addr,             \
                                internal_wss_addr, kernel_name)                                                     \

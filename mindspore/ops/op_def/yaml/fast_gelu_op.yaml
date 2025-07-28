@@ -8,3 +8,6 @@ fast_gelu:
             dtype: tensor
     class:
         name: FastGeLU
+    dispatch:
+        enable: True
+        InternalOpAscend: AutoGen

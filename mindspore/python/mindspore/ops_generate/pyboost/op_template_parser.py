@@ -29,7 +29,7 @@ from common.op_proto import OpProto
 from . import pyboost_utils
 from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
     number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
-    get_input_args_type_str, basic_type_convert_str
+    get_input_args_type_str, input_dtype_to_cpp_type, basic_type_convert_str
 
 
 class OpTemplateParser:
@@ -45,13 +45,14 @@ class OpTemplateParser:
 
     def __init__(self, op_proto: OpProto):
         self.op_proto = op_proto
-
-    def _parse_call_args_types(self, op_proto, basic_type=False):
+    @staticmethod
+    def _parse_call_args_types(op_proto, basic_type=False, is_convert=False):
         """
         Parses the data types of the call arguments for the operator.
 
         Args:
             op_args (list): A list of operator arguments.
+            is_convert (bool): A flag to control whether to convert the types.
 
         Returns:
             list: A list of data types for the call arguments.
@@ -62,20 +63,35 @@ class OpTemplateParser:
             raise Exception("Only view op support basic type now, please check.")
         for op_arg in op_proto.op_args:
             is_optional = is_optional_param(op_arg)
-            call_args_types.append(get_input_dtype(
-                op_arg.arg_dtype, is_optional, basic_type))
+            if is_convert:
+                if op_arg.is_type_id:
+                    call_args_types.append('TypeId')
+                    continue
+                call_args_types.append(input_dtype_to_cpp_type(
+                    op_arg.arg_dtype, is_optional))
+            else:
+                call_args_types.append(get_input_dtype(
+                    op_arg.arg_dtype, is_optional, basic_type))
         return call_args_types
 
-    def parse_call_args_with_types(self, basic_type=False):
+    def parse_call_args_with_types(self, basic_type=False, is_convert=False):
         """
         Parses the original call arguments and their types for the operator.
+
+        Args:
+            is_convert (bool): A flag to control whether to convert the types.
 
         Returns:
             list: A list of formatted strings representing the call arguments with their types.
         """
         call_args = self.parse_original_call_args(self.op_proto.op_args)
-        call_args_types = self._parse_call_args_types(self.op_proto, basic_type)
+        call_args_after_convert, _, _ = self.op_args_converter()
+        call_args_types = self._parse_call_args_types(self.op_proto, basic_type, is_convert)
         call_args_with_types = []
+        if is_convert:
+            for type_name, arg_name in zip(call_args_types, call_args_after_convert):
+                call_args_with_types.append("const " + type_name + " &" + arg_name)
+            return call_args_with_types
         for type_name, arg_name in zip(call_args_types, call_args):
             call_args_with_types.append("const " + type_name + " &" + arg_name)
         return call_args_with_types
@@ -108,7 +124,8 @@ class OpTemplateParser:
                 call_args_with_tensor.append(call_arg)
         return need_malloc_tensors, tensor_list_convert, call_args_with_tensor
 
-    def parse_original_call_args(self, op_args):
+    @staticmethod
+    def parse_original_call_args(op_args):
         """
         Parses the original call arguments from the operator prototype.
 

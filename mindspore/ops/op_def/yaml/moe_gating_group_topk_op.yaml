@@ -44,3 +44,6 @@ moe_gating_group_topk:
     name: MoeGatingGroupTopK
   function:
     name: moe_gating_group_topk_
+  dispatch:
+    enable: True
+    InternalOpAscend: AutoGen
