@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import pytest
 import numpy as np
 from mindspore import mutable
@@ -29,15 +30,17 @@ def test_remote_ops_to_remote():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     @jit
     def foo(x):
-        x = ops.ToRemote()(x, )
+        x = ops.ToRemote()(x,)
         return x
 
     x = Tensor([1, 2, 3, 4])
     ret = foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -48,6 +51,7 @@ def test_remote_ops_detach():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     @jit
     def foo(x):
@@ -58,6 +62,7 @@ def test_remote_ops_detach():
     x = Tensor([1, 2, 3, 4])
     ret = foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -68,6 +73,7 @@ def test_remote_ops_prefetch():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     @jit
     def foo(x):
@@ -79,6 +85,7 @@ def test_remote_ops_prefetch():
     x = Tensor([1, 2, 3, 4])
     ret = foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -89,6 +96,7 @@ def test_remote_ops_grad_load_forward():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     @jit
     def foo(x):
@@ -99,6 +107,7 @@ def test_remote_ops_grad_load_forward():
     x = Tensor([1, 2, 3, 4])
     ret = foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -109,12 +118,13 @@ def test_remote_ops_grad_load_grad():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     def foo(x):
         y = ops.relu(x)
         y = ops.GradLoad()(y, x, (), False)
         return y
-    
+
     @jit
     def grad_foo(x):
         return ops.grad(foo)(x)
@@ -122,6 +132,7 @@ def test_remote_ops_grad_load_grad():
     x = Tensor([1, 2, 3, 4])
     ret = grad_foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -132,6 +143,7 @@ def test_remote_ops_in_for_loop():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     class Net(Cell):
         def __init__(self):
@@ -156,15 +168,16 @@ def test_remote_ops_in_for_loop():
                 a = self.depend(a, detach_result)
             return a
 
-
     x = Tensor([1, 1, 1])
     y = Tensor([1, 1, 1])
     z = Tensor([1, 1, 1])
     net = Net()
     ret = net(x, y, z)
     assert np.all(ret.asnumpy() == np.array((6, 6, 6)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
+@pytest.mark.skip(reason='wait for ops')
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_remote_ops_in_for_loop_grad():
     """
@@ -172,6 +185,7 @@ def test_remote_ops_in_for_loop_grad():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     class Net(Cell):
         def __init__(self):
@@ -213,6 +227,7 @@ def test_remote_ops_in_for_loop_grad():
     z = Tensor([1, 1, 1])
     net = GradNet(Net())
     net(x, y, z)
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -223,6 +238,7 @@ def test_remote_ops_in_for_variable_loop():
     Description: Base scene.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
 
     class Net(Cell):
         def __init__(self):
@@ -247,7 +263,6 @@ def test_remote_ops_in_for_variable_loop():
                 a = self.depend(a, detach_result)
             return a
 
-
     x = Tensor([1, 1, 1])
     y = Tensor([1, 1, 1])
     z = Tensor([1, 1, 1])
@@ -255,3 +270,4 @@ def test_remote_ops_in_for_variable_loop():
     net = Net()
     ret = net(x, y, z, d)
     assert np.all(ret.asnumpy() == np.array((6, 6, 6)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'

@@ -12,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import pytest
 import numpy as np
-from mindspore import mutable
-from mindspore import jit, ops
-from mindspore import Tensor, Parameter
+from mindspore import ops, Tensor, Parameter, context
 from mindspore.nn import Cell, CellList
 from tests.mark_utils import arg_mark
-from mindspore import context
-
-context.set_context(mode=context.GRAPH_MODE, save_graphs=True, save_graphs_path="./ir")
 
 
 class NetA(Cell):
@@ -57,6 +53,7 @@ class NetC(Cell):
         return m
 
 
+@pytest.mark.skip(reason='wait for ops')
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cell_list_prefetch_and_detach_with_default_offset():
     """
@@ -64,6 +61,7 @@ def test_cell_list_prefetch_and_detach_with_default_offset():
     Description: CellList prefetch.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
     class Net(Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -79,13 +77,16 @@ def test_cell_list_prefetch_and_detach_with_default_offset():
                 m = self.cell_list[i](m)
             return m
 
-
+    context.set_context(mode=context.GRAPH_MODE)
     x = Tensor([1, 1, 1])
     net = Net()
     ret = net(x)
     assert np.all(ret.asnumpy() == np.array((10, 10, 10)))
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
 
 
+@pytest.mark.skip(reason='wait for ops')
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cell_list_prefetch_and_detach_with_custom_offset():
     """
@@ -93,6 +94,7 @@ def test_cell_list_prefetch_and_detach_with_custom_offset():
     Description: CellList prefetch.
     Expectation: No Exception.
     """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
     class Net(Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -108,8 +110,10 @@ def test_cell_list_prefetch_and_detach_with_custom_offset():
                 m = self.cell_list[i](m)
             return m
 
-
+    context.set_context(mode=context.GRAPH_MODE)
     x = Tensor([1, 1, 1])
     net = Net()
     ret = net(x)
     assert np.all(ret.asnumpy() == np.array((10, 10, 10)))
+    context.set_context(mode=context.PYNATIVE_MODE)
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'

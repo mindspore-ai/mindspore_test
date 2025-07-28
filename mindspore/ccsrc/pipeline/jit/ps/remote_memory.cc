@@ -98,24 +98,16 @@ std::vector<DetachInfo> CollectDetachInfo(const FuncGraphManagerPtr &mng, const 
 }
 
 AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncGraphPtr &fg,
-                                     const py::object &prefetch_elements) {
+                                     const AnfNodePtrList &prefetch_elements, const AnfNodePtrList &call_inputs) {
   AnfNodePtrList wrapped_inputs{NewValueNode(fg)};
   // No need to prefetch.
-  if (py::isinstance<py::none>(prefetch_elements)) {
-    for (size_t i = 0; i < fg->get_inputs().size(); ++i) {
-      (void)wrapped_inputs.emplace_back(wrapped_fg->add_parameter());
-    }
+  if (prefetch_elements.empty()) {
+    wrapped_inputs.insert(wrapped_inputs.end(), call_inputs.begin(), call_inputs.end());
     return wrapped_fg->NewCNodeInOrder(wrapped_inputs);
   }
-  if (!py::isinstance<py::tuple>(prefetch_elements) && !py::isinstance<py::list>(prefetch_elements)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "prefetch_elements should only be none, tuple or list but got: "
-                               << py::str(prefetch_elements);
-  }
-  auto prefetch_tuple = py::tuple(prefetch_elements);
-  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   AnfNodePtrList prefetch_results_inputs{NewValueNode(prim::kPrimMakeTuple)};
-  for (size_t i = 0; i < py::len(prefetch_tuple); ++i) {
-    auto prefetch_param_node = resolver.ResolveParameterObj(wrapped_fg, prefetch_tuple[i]);
+  for (size_t i = 0; i < prefetch_elements.size(); ++i) {
+    auto prefetch_param_node = prefetch_elements[i];
     // todo: Current no depend list and sync.
     auto empty_depend_list = std::make_shared<ValueTuple>(ValuePtrList());
     AnfNodePtrList cur_prefetch_inputs{NewValueNode(prim::kPrimPrefetch), prefetch_param_node,
@@ -124,31 +116,21 @@ AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncG
     (void)prefetch_results_inputs.emplace_back(prefetch_result);
   }
   auto prefetch_result = wrapped_fg->NewCNodeInOrder(prefetch_results_inputs);
-  for (size_t i = 0; i < fg->get_inputs().size(); ++i) {
-    auto wrapped_fg_param = wrapped_fg->add_parameter();
+  for (size_t i = 0; i < call_inputs.size(); ++i) {
     auto wrapper_depend_input =
-      wrapped_fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), wrapped_fg_param, prefetch_result});
+      wrapped_fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), call_inputs[i], prefetch_result});
     (void)wrapped_inputs.emplace_back(wrapper_depend_input);
   }
   return wrapped_fg->NewCNodeInOrder(wrapped_inputs);
 }
 
-AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPtr &fg, const py::object &detach,
-                                       bool update) {
+AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPtr &fg,
+                                       const AnfNodePtrList &detach_nodes, bool update) {
   // No elements to detach.
-  if (py::isinstance<py::none>(detach)) {
+  if (detach_nodes.empty()) {
     return node;
   }
-  if (!py::isinstance<py::tuple>(detach) && !py::isinstance<py::list>(detach)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "detach_elements should only be none, tuple or list but got: " << py::str(detach);
-  }
-  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
-  auto detach_tuple = py::tuple(detach);
-  AnfNodePtrList detach_nodes;
-  for (size_t i = 0; i < py::len(detach_tuple); ++i) {
-    auto detach_node = resolver.ResolveParameterObj(fg, detach_tuple[i]);
-    (void)detach_nodes.push_back(detach_node);
-  }
+
   AnfNodePtr node_after_update = node;
   if (update) {
     // todo: No need to update all parameters? Only requires grad parameters or non-optimizer parameters need.
@@ -163,8 +145,8 @@ AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPt
   }
   AnfNodePtrList detach_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
   for (auto detach_node : detach_nodes) {
-    auto detach_result = fg->NewCNodeInOrder({NewValueNode(prim::kPrimDetach), detach_node, node_after_update,
-                                              NewValueNode(MakeValue(false))});
+    auto detach_result = fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimDetach), detach_node, node_after_update, NewValueNode(MakeValue(false))});
     (void)detach_result_inputs.emplace_back(detach_result);
   }
   auto detach_result_node = fg->NewCNodeInOrder(detach_result_inputs);
@@ -173,6 +155,44 @@ AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPt
   return wrapper_return_node;
 }
 
+FuncGraphPtr WrapGraphWithRemoteOps(const FuncGraphPtr &fg, const py::object &prefetch_elements,
+                                    const py::object &detach_elements, bool update_detach_elements) {
+  MS_EXCEPTION_IF_NULL(fg);
+  FuncGraphPtr wrapped_fg = std::make_shared<FuncGraph>();
+  if (!py::isinstance<py::tuple>(prefetch_elements) && !py::isinstance<py::list>(prefetch_elements)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "prefetch_elements should only be none, tuple or list but got: "
+                               << py::str(prefetch_elements);
+  }
+  auto prefetch_tuple = py::tuple(prefetch_elements);
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
+  AnfNodePtrList prefetch_list;
+  for (size_t i = 0; i < py::len(prefetch_tuple); ++i) {
+    auto prefetch_param = resolver.ResolveParameterObj(wrapped_fg, prefetch_tuple[i]);
+    (void)prefetch_list.emplace_back(prefetch_param);
+  }
+  AnfNodePtrList func_graph_call_inputs;
+  for (size_t i = 0; i < fg->get_inputs().size(); ++i) {
+    (void)func_graph_call_inputs.emplace_back(wrapped_fg->add_parameter());
+  }
+
+  if (!py::isinstance<py::tuple>(detach_elements) && !py::isinstance<py::list>(detach_elements)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "detach_elements should only be none, tuple or list but got: "
+                               << py::str(detach_elements);
+  }
+  auto detach_tuple = py::tuple(detach_elements);
+  AnfNodePtrList detach_list;
+  for (size_t i = 0; i < py::len(detach_tuple); ++i) {
+    auto detach_param = resolver.ResolveParameterObj(wrapped_fg, detach_tuple[i]);
+    (void)detach_list.emplace_back(detach_param);
+  }
+
+  auto wrapped_call_node = GenerateWrappedCallFgNode(wrapped_fg, fg, prefetch_list, func_graph_call_inputs);
+  auto wrapped_return_node =
+    GenerateWrapperFgReturnNode(wrapped_call_node, wrapped_fg, detach_list, update_detach_elements);
+
+  wrapped_fg->set_output(wrapped_return_node);
+  return wrapped_fg;
+}
 }  // namespace
 
 void AddDetachToGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
@@ -269,14 +289,43 @@ void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &f
   tr.Commit();
 }
 
-FuncGraphPtr WrapGraphWithRemoteOps(const FuncGraphPtr &fg, const py::object &prefetch_elements,
-                                    const py::object &detach_elements, bool update_detach_elements) {
-  MS_EXCEPTION_IF_NULL(fg);
-  FuncGraphPtr wrapped_fg = std::make_shared<FuncGraph>();
-  auto wrapped_call_node = GenerateWrappedCallFgNode(wrapped_fg, fg, prefetch_elements);
-  auto wrapped_return_node =
-    GenerateWrapperFgReturnNode(wrapped_call_node, wrapped_fg, detach_elements, update_detach_elements);
-  wrapped_fg->set_output(wrapped_return_node);
+FuncGraphPtr GenerateMultitypeFGWithRemoteOps(const FuncGraphPtr &func_graph, const TypePtrList &types) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  size_t input_size = func_graph->get_inputs().size();
+  if (input_size + 1 != types.size()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Size not matched, graph input size is: " << std::to_string(input_size)
+                               << ", types size is: " << types.size();
+  }
+  auto wrapped_fg = std::make_shared<FuncGraph>();
+  AnfNodePtrList detach_list;
+  for (size_t i = 0; i < input_size; ++i) {
+    auto cur_input = wrapped_fg->add_parameter();
+    MS_EXCEPTION_IF_NULL(types[i]);
+    if (types[i]->isa<TensorType>()) {
+      (void)detach_list.emplace_back(cur_input);
+    }
+  }
+  auto prefetch_type = types.back();
+  MS_EXCEPTION_IF_NULL(prefetch_type);
+  auto prefetch_tuple_type = prefetch_type->cast<TuplePtr>();
+  MS_EXCEPTION_IF_NULL(prefetch_tuple_type);
+  auto prefetch_size = prefetch_tuple_type->elements().size();
+  auto prefetch_input = wrapped_fg->add_parameter();
+  AnfNodePtrList prefetch_list;
+  for (size_t i = 0; i < prefetch_size; ++i) {
+    auto cur_detach_element =
+      wrapped_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), prefetch_input, NewValueNode(int64_t(i))});
+    (void)prefetch_list.emplace_back(cur_detach_element);
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL((func_graph->get_inputs().size() + 1) == wrapped_fg->get_inputs().size(),
+                             "size not matched");
+  AnfNodePtrList func_graph_call_inputs;
+  for (size_t i = 0; i < wrapped_fg->get_inputs().size() - 1; ++i) {
+    (void)func_graph_call_inputs.emplace_back(wrapped_fg->get_inputs()[i]);
+  }
+  auto call_node = GenerateWrappedCallFgNode(wrapped_fg, func_graph, prefetch_list, func_graph_call_inputs);
+  auto return_node = GenerateWrapperFgReturnNode(call_node, wrapped_fg, detach_list, true);
+  wrapped_fg->set_output(return_node);
   return wrapped_fg;
 }
 

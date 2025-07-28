@@ -1760,15 +1760,13 @@ bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
   return true;
 }
 
+// Add this pass for future used.
 bool RemoteAdjustPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto mng = resource->manager();
   MS_EXCEPTION_IF_NULL(mng);
-
-  // Add Detach for activation value.
-  remote_memory::AddDetachToGraph(mng, func_graph);
   return true;
 }
 

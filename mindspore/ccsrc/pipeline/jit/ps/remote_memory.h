@@ -29,8 +29,8 @@ void AddDetachToGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_g
 
 template <typename T>
 bool NeedActivationToRemote(const T &primal) {
-  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
-  if (!enable_remote) {
+  static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+  if (!enable_remote_memory) {
     return false;
   }
   if constexpr (std::is_same<T, PrimitivePtr>::value) {
@@ -43,9 +43,8 @@ bool NeedActivationToRemote(const T &primal) {
 CNodePtr ActivationToRemote(const FuncGraphManagerPtr &mng, const FuncGraphPtr &fprop, const FuncGraphPtr &bprop,
                             const AnfNodePtr &out, const AnfNodePtr &dout, const AnfNodePtr &out_param);
 void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
-FuncGraphPtr WrapGraphWithRemoteOps(const FuncGraphPtr &fg, const py::object &prefetch_elements,
-                                    const py::object &detach_elements, bool update_detach_elements);
 void AddRemoteOpsToGraphs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
+FuncGraphPtr GenerateMultitypeFGWithRemoteOps(const FuncGraphPtr &func_graph, const TypePtrList &prefetch_type);
 }  // namespace remote_memory
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_REMOTE_MEMORY_H_

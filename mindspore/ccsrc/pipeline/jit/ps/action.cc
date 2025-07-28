@@ -1068,18 +1068,18 @@ bool AutoMonadAction(const ResourcePtr &resource) {
   return true;
 }
 
-bool InsertPrefetchAction(const ResourcePtr &resource) {
+bool InsertRemoteMemoryOps(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   auto mng = resource->manager();
   if (mng == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "InsertPrefetchAction failed, manager is null";
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertRemoteMemoryOps failed, manager is null";
   }
   auto func_graph = resource->func_graph();
   if (func_graph == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "InsertPrefetchAction failed, graph is null";
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertRemoteMemoryOps failed, graph is null";
   }
-  //remote_memory::InsertPrefetchForLoad(mng, func_graph);
   remote_memory::AddRemoteOpsToGraphs(mng, func_graph);
+  remote_memory::InsertPrefetchForLoad(mng, func_graph);
   return true;
 }
 
@@ -2110,10 +2110,10 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
-//  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
-//  if (enable_remote) {
-    (void)actions.emplace_back(std::make_pair("insert_prefetch", InsertPrefetchAction));
-//  }
+  const bool enable_remote_memory = common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1";
+  if (enable_remote_memory) {
+    (void)actions.emplace_back(std::make_pair("insert_remote_memory_ops", InsertRemoteMemoryOps));
+  }
 
   (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
 
@@ -2186,8 +2186,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     }
 #endif
 
-    static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
-    if (enable_remote) {
+    static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+    if (enable_remote_memory) {
       (void)actions.emplace_back(std::make_pair(kRemoteAdjust, RemoteAdjustAction));
     }
 
@@ -2251,6 +2251,10 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     }
     (void)jit_passes.emplace_back(kTypeInference, TypeInferenceAction);
     (void)jit_passes.emplace_back(kAutoMonad, AutoMonadAction);
+    const bool enable_remote_memory = common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1";
+    if (enable_remote_memory) {
+      (void)jit_passes.emplace_back(std::make_pair("insert_remote_memory_ops", InsertRemoteMemoryOps));
+    }
     (void)jit_passes.emplace_back(kGraphReusing, GraphReusingAction);
     (void)jit_passes.emplace_back(kPreAutoParallel, SetTrainingFlagPass);
     (void)jit_passes.emplace_back(kPyInterpretToExecute, PyInterpretToExecutePass);
@@ -2279,6 +2283,9 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
     if (IsEnableSilentCheck()) {
       (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
+    }
+    if (enable_remote_memory) {
+      (void)jit_passes.emplace_back(std::make_pair(kRemoteAdjust, RemoteAdjustAction));
     }
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }

@@ -196,6 +196,8 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
   } else {
     inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
   }
+  AnfNodePtr prev_result = nullptr;
+  PrimitivePtr getitem_prim = (type_id == kObjectTypeList) ? prim::kPrimListGetItem : prim::kPrimTupleGetItem;
   for (size_t i = 0; i < size; i++) {
     MS_LOG(DEBUG) << "FullMakeList or FullMakeTuple for the " << i
                   << "th element of the target, reverse_: " << reverse_;
@@ -204,18 +206,24 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
     if (fn_arg != nullptr) {
       inputs2.push_back(fn_arg);
     }
+    // todo: need to handle reverse.
     size_t pos = (reverse_ ? (size - 1 - i) : i);
     (void)std::transform(arg_map.begin(), arg_map.end(), std::back_inserter(inputs2),
-                         [&func_graph, &pos, &type_id](const std::pair<AnfNodePtr, Any> &item) {
-                           if (type_id == kObjectTypeList) {
-                             return func_graph->NewCNodeInOrder(
-                               {NewValueNode(prim::kPrimListGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                         [&func_graph, &pos, &getitem_prim, &prev_result](const std::pair<AnfNodePtr, Any> &item) {
+                           AnfNodePtr cur_element = func_graph->NewCNodeInOrder(
+                             {NewValueNode(getitem_prim), item.first, NewValueNode(SizeToLong(pos))});
+                           if (prev_result != nullptr) {
+                             AnfNodePtr depend_element =
+                               func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), cur_element, prev_result});
+                             return depend_element;
                            }
-                           return func_graph->NewCNodeInOrder(
-                             {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                           return cur_element;
                          });
 
     auto call_node = func_graph->NewCNodeInOrder(inputs2);
+    if (enforce_order_) {
+      prev_result = call_node;
+    }
     if (reverse_) {
       (void)inputs.insert(inputs.cbegin() + 1, call_node);
     } else {
@@ -448,6 +456,9 @@ FuncGraphPtr HyperMap::GenerateFromTypes(const TypePtrList &args_abs_list) {
   if (fn_leaf_ == nullptr) {
     fn_param = res_fg->add_parameter();
     i = 1;
+    // todo: Handle fn_leaf_ nullptr scene.
+  } else {
+    enforce_order_ = fn_leaf_->enable_remote_memory();
   }
 
   std::size_t size = args_abs_list.size();
@@ -1120,8 +1131,8 @@ FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weigh
   auto bprop = k_child->NewCNodeInOrder({tuple_get_item, k_app, NewValueNode(static_cast<int64_t>(1))});
 
   GradByParameter(k_child, f_app, bprop, weights, position_node, forward_graph, is_weights_none);
-  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
-  if (enable_remote) {
+  static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+  if (enable_remote_memory) {
     // Save gradient result back to remote memory.
     auto origin_output = k_child->output();
     auto bprop_to_remote_node = NewValueNode(std::make_shared<prim::BpropOutToRemote>("bprop_out_to_remote"));

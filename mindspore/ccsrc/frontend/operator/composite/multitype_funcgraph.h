@@ -50,6 +50,8 @@ class MultitypeFuncGraph : public MetaFuncGraph {
 
   void set_doc_url(const std::string &doc_url) { doc_url_ = doc_url; }
   void set_need_raise() { need_raise_ = true; }
+  bool enable_remote_memory() { return enable_remote_memory_; }
+  void set_enable_remote_memory(bool enable_remote_memory) { enable_remote_memory_ = enable_remote_memory; }
   void set_meta_obj(const py::object &obj) { meta_obj_ = obj; }
   FuncGraphPtr GenerateFromTypes(const TypePtrList &types) override;
   size_t GetPyFnCacheSize() const { return fn_cache_py_.size(); }
@@ -65,6 +67,7 @@ class MultitypeFuncGraph : public MetaFuncGraph {
   py::object meta_obj_ = py::none();
   bool need_raise_ = false;
   py::object default_fn_ = py::object();
+  bool enable_remote_memory_ = false;
 };
 using MultitypeFuncGraphPtr = std::shared_ptr<MultitypeFuncGraph>;
 bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, mindspore::TypePtr>> &key_values);

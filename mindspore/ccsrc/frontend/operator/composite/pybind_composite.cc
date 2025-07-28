@@ -144,7 +144,8 @@ void RegCompositeOpsGroup(const py::module *m) {
     .def("register_fn", &MultitypeFuncGraph::PyRegister)
     .def("register_default_fn", &MultitypeFuncGraph::PyRegisterDefault)
     .def("set_doc_url_", &MultitypeFuncGraph::set_doc_url)
-    .def("set_need_raise_", &MultitypeFuncGraph::set_need_raise);
+    .def("set_need_raise_", &MultitypeFuncGraph::set_need_raise)
+    .def("set_enable_remote_memory_", &MultitypeFuncGraph::set_enable_remote_memory);
 
   // Reg UnpackCall
   (void)py::class_<UnpackCall, MetaFuncGraph, std::shared_ptr<UnpackCall>>(*m, "UnpackCall_")

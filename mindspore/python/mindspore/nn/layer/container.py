@@ -507,7 +507,14 @@ class CellList(_CellListBase, Cell):
     def construct(self, *inputs):
         raise NotImplementedError
 
-    def set_weight_prefetch(self, offset=1, update=False):
+
+    def set_weight_prefetch(self, offset=1):
+        """
+        Enable CellList to prefetch weights.
+
+        Args:
+            offset(Int): The step offset to prefetch weights.
+        """
         if offset <= 0 or not isinstance(offset, int):
             raise ValueError(f"offset for weight should positive integer but got '{offset}'.")
         cells = tuple(self._cells.values())

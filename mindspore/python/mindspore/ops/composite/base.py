@@ -836,6 +836,9 @@ class MultitypeFuncGraph(MultitypeFuncGraph_):
     def set_need_raise(self):
         self.set_need_raise_()
 
+    def set_enable_remote_memory(self, enable):
+        self.set_enable_remote_memory_(enable)
+
 
 class HyperMap(HyperMap_):
     """

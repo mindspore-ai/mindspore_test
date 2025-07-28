@@ -124,15 +124,6 @@ Value Range:
 ENABLE_DDE = ''
 
 """
-Name: ENABLE_REMOTE
-Function: Whether to enable remote memory.
-Value Range:
-    1: Enable remote memory.
-    Default: Disable remote memory.
-"""
-ENABLE_REMOTE = ''
-
-"""
 Name: DDE_ONLY_MARK
 Function: Whether to eliminate elements in tuple/list that have been marked and are not used by other nodes.
 Value Range:
@@ -383,7 +374,6 @@ __all__ = [
     "RECURSIVE_EVAL",
     "SINGLE_EVAL",
     "ENABLE_DDE",
-    "ENABLE_REMOTE",
     "DDE_ONLY_MARK",
     "BOOST_PARSE",
     "GREED_PARSE",

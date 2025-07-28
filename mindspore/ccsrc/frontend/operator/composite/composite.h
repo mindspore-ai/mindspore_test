@@ -101,6 +101,7 @@ class HyperMap : public MetaFuncGraph {
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;
   std::set<TypeId> nonleaf_;
+  bool enforce_order_{false};
 };
 using HyperMapPtr = std::shared_ptr<HyperMap>;
 
