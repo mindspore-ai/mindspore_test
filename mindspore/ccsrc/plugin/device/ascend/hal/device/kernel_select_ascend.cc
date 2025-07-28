@@ -504,12 +504,8 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
   } else if (context_ptr->IsEnableInferBoost() && NeedTransDataWhenInferBoost(kernel, kernel_type)) {
-    input_formats.clear();
-    output_formats.clear();
     input_reshape_types.clear();
     output_reshape_types.clear();
-    input_formats.assign(input_num, kOpFormat_DEFAULT);
-    output_formats.assign(output_num, kOpFormat_DEFAULT);
     input_reshape_types.assign(input_num, "");
     output_reshape_types.assign(output_num, "");
 
