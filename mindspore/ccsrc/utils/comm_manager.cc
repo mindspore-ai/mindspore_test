@@ -42,7 +42,10 @@ class DefaultCommManager : public CommManager {
 
   bool DestroyGroup(const string &) const override { return true; }
 
-  uint32_t GetRank() override { return 0; }
+  uint32_t GetRank() override {
+    auto env_rank_id = common::GetEnv("RANK_ID");
+    return env_rank_id.empty() ? 0 : std::stoi(env_rank_id);
+  }
 };
 COMM_MANAGER_REG(kDefaultCommManagerName, std::make_shared<DefaultCommManager>());
 }  // namespace
