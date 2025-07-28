@@ -126,6 +126,7 @@ void GradHook::retain_grad(const TensorPtr &self) {
   }
   std::weak_ptr<Tensor> weak_tensor(self);
   const auto retain_grad_fn = [weak_tensor](const TensorPtr &grad) {
+    MS_LOG(DEBUG) << "Begin execute retain_grad hook";
     if (!weak_tensor.expired() && grad != nullptr) {
       auto tensor = weak_tensor.lock();
       if (tensor->grad() == nullptr) {

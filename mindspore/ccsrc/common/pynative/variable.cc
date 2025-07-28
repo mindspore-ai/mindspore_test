@@ -141,6 +141,30 @@ std::string BackwardNode::ToString() const {
   return buf.str();
 }
 
+void BackwardNode::CustomDeleter(BackwardNode *grad_node) {
+  if (grad_node->next_edges().empty()) {
+    delete grad_node;
+    return;
+  }
+  std::vector<std::shared_ptr<BackwardNode>> local_stack;
+  static auto iteration_deleter = [](BackwardNode *node, std::vector<std::shared_ptr<BackwardNode>> *stack) {
+    for (auto &next_edge : node->mutable_next_edges()) {
+      if (next_edge.is_defined() && next_edge.grad_node.use_count() == kSizeOne) {
+        (void)stack->emplace_back(std::move(next_edge.grad_node));
+      } else {
+        next_edge.grad_node = nullptr;
+      }
+    }
+  };
+  iteration_deleter(grad_node, &local_stack);
+  delete grad_node;
+  while (!local_stack.empty()) {
+    auto child_node = std::move(local_stack.back());
+    local_stack.pop_back();
+    iteration_deleter(child_node.get(), &local_stack);
+  }
+}
+
 AutoDiffGuard::AutoDiffGuard(const AutoDiffInterfacePtr &auto_diff) {
   prev_auto_diff_engine_ = local_auto_diff_engine;
   local_auto_diff_engine = auto_diff;

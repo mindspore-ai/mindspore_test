@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,36 +53,42 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
   }
   ValuePtrList input_tensors;
   if (py::isinstance<py::tuple>(inputs)) {
-    input_tensors = ConvertPyTupleToTensorList(inputs);
-    for (const auto &input_tensor : input_tensors) {
-      auto tensor = input_tensor->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      tensor->retain_grad();
+    auto tuple_inputs = py::cast<py::tuple>(inputs);
+    if (!accumulate_grad && tuple_inputs.empty()) {
+      MS_LOG(EXCEPTION) << "Please set inputs for grad interface, grad requires non-empty inputs.";
+    }
+    input_tensors = ConvertPyTupleToTensorList(tuple_inputs);
+    if (accumulate_grad) {
+      for (const auto &input_tensor : input_tensors) {
+        auto tensor = input_tensor->cast<tensor::TensorPtr>();
+        MS_EXCEPTION_IF_NULL(tensor);
+        tensor->retain_grad();
+      }
     }
   }
   auto engine = std::make_shared<autograd::AutoDiff>(output, keep_graph, high_order, false);
   autograd::AutoDiffGuard auto_diff_guard(engine);
   auto grads = engine->RunBackward(input_tensors, sens_gradients, accumulate_grad);
   engine->Clear();
-  if (grads->isa<None>()) {
+  if (accumulate_grad) {
     return py::none();
-  } else {
-    auto tuple_grads = grads->cast<ValueSequencePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_grads);
-    py::tuple py_grads(tuple_grads->size());
-    for (size_t i = 0; i < tuple_grads->size(); ++i) {
-      if (tuple_grads->value()[i]->isa<None>()) {
-        py_grads[i] = py::none();
-        continue;
-      }
-      auto tensor = tuple_grads->value()[i]->cast<tensor::TensorPtr>();
-      if (tensor == nullptr) {
-        MS_LOG(EXCEPTION) << "Grads of tensors should be a tensor, but got " << tuple_grads->value()[i]->ToString();
-      }
-      py_grads[i] = tensor::PackTensor(tensor);
-    }
-    return std::move(py_grads);
   }
+  auto tuple_grads = grads->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_grads);
+  py::tuple py_grads(tuple_grads->size());
+  for (size_t i = 0; i < tuple_grads->size(); ++i) {
+    if (tuple_grads->value()[i]->isa<None>() && allow_unreachable) {
+      py_grads[i] = py::none();
+      continue;
+    }
+    auto tensor = tuple_grads->value()[i]->cast<tensor::TensorPtr>();
+    if (tensor == nullptr) {
+      MS_LOG(EXCEPTION)
+        << "One of the input Tensor's grad is None. Set allow_unused=True if this behavior meets expectations.";
+    }
+    py_grads[i] = tensor::PackTensor(tensor);
+  }
+  return std::move(py_grads);
 }
 
 void RegBackwardFunction(py::module *m) {

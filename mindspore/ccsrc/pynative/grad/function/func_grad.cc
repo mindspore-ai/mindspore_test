@@ -376,7 +376,7 @@ void BuildCheckVersionFunc(const OpGradInfoPtr &op_grad_info, const BackwardNode
       if (inputs[i].second.current_version() != versions[i]) {
         MS_LOG(EXCEPTION)
           << "The " << inputs[i].first << " 's input of " << func_name
-          << " has being modified by inplace op, which will cause the gradient error, please check your "
+          << " has been modified by an inplace operator, which will cause the gradient error, please check your "
              "inplace operator in code.";
       }
     }
@@ -384,7 +384,7 @@ void BuildCheckVersionFunc(const OpGradInfoPtr &op_grad_info, const BackwardNode
       if (inputs[i].second.current_version() != versions[i]) {
         MS_LOG(EXCEPTION)
           << "The " << inputs[i].first << " 's output of " << func_name
-          << " has being modified by inplace op, which will cause the gradient error, please check your "
+          << " has been modified by an inplace operator, which will cause the gradient error, please check your "
              "inplace operator in code.";
       }
     }
@@ -720,9 +720,9 @@ void CallCustomBprop(const CustomContext &context) {
     if (!context.is_recompute) {
       saved_output = SavedNode::ConstructSavedNode(context.output);
     }
-    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs, saved_output,
-                                                 std::move(input_meta), GenerateFlattenAbs(flatten_outputs),
-                                                 context.is_recompute, flatten_outputs.size());
+    custom_fn = BackwardNode::Create<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs, saved_output,
+                                                     std::move(input_meta), GenerateFlattenAbs(flatten_outputs),
+                                                     context.is_recompute, flatten_outputs.size());
   }
   UpdateNextEdges(custom_fn, flatten_inputs);
   SetVariable(flatten_outputs, custom_fn);
@@ -760,8 +760,8 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   NodePtrList inputs_node{base_node, shape_node, strided_node, offset_node, nullptr, nullptr};
   mindspore::HashMap<std::string, ValuePtr> attrs;
   auto saved_output = ConstructPlaceHolder(tensor);
-  auto fn = std::make_shared<FuncBackwardNode>("AsStrided", handle->func, emitter, attrs, inputs_node, saved_output,
-                                               nullptr, 1);
+  auto fn = BackwardNode::Create<FuncBackwardNode>("AsStrided", handle->func, emitter, attrs, inputs_node, saved_output,
+                                                   nullptr, 1);
   std::vector<ValuePtr> inputs{view_meta->view_info().base(), shape_value, strided_value, offset_value};
   UpdateNextEdges(fn, inputs);
   view_meta->set_grad_node(fn);
@@ -783,7 +783,7 @@ BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param) {
   CommonUtils::FlattenValueSeqArg(grad_param->op_grad_info->out_value, false, true, &flatten_outputs);
   auto saved_output = SavedNode::ConstructSavedNode(grad_param->op_grad_info->out_value);
   size_t flatten_output_size = flatten_outputs.size();
-  auto fn = std::make_shared<GraphBackwardNode>(
+  auto fn = BackwardNode::Create<GraphBackwardNode>(
     bprop_graph->ToString(), bprop_graph, grad_param->args, grad_param->added_args, saved_output, flatten_output_size,
     grad_param->graph_cache_key, grad_param->is_control_flow, grad_param->is_jit_graph, grad_param->jit_out_has_dict);
   (void)AutoGradUtil::SetValueGradInfo(grad_param->op_grad_info->out_value, InputType::kOpOutput);
@@ -802,7 +802,8 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     const auto &base_tensor = view_meta->view_info().base();
     const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
     auto emitter = std::make_shared<FuncBuilder>("CopySlice", device_target, nullptr);
-    auto copy_slice = std::make_shared<CopySliceNode>("CopySlice", func_node, emitter, 1, base_tensor, output_tensor);
+    auto copy_slice =
+      BackwardNode::Create<CopySliceNode>("CopySlice", func_node, emitter, 1, base_tensor, output_tensor);
     UpdateNextEdges(copy_slice, {base_tensor});
     for (size_t i = 1; i < func_node->next_edges().size(); ++i) {
       const auto &edge = func_node->next_edges()[i];
@@ -1398,8 +1399,8 @@ BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::
   auto emitter = std::make_shared<FuncBuilder>(prim->name(), device_target, nullptr);
   auto node_inputs = GenerateNodeInputs(op_grad_info, emitter);
   auto saved_output = SavedNode::ConstructSavedNode(op_grad_info->out_value);
-  auto fn = std::make_shared<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs, saved_output,
-                                               op_grad_info->out_abs, flatten_output_size);
+  auto fn = BackwardNode::Create<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs,
+                                                   saved_output, op_grad_info->out_abs, flatten_output_size);
   UpdateNextEdges(fn, flatten_inputs);
   return fn;
 }
@@ -1435,8 +1436,8 @@ BackwardNodePtr BuildHookBackwardNode(const PrimitivePtr &prim, const ValuePtrLi
   auto bprop_cut = AutoGradUtil::BuildBpropCutPrim(prim, op_grad_info->is_need_recompute);
   VectorRef args = GeneratePythonArgs(op_grad_info, bprop_cut);
   // Out abs used for fill zeros, which need be flatten like output.
-  auto fn = std::make_shared<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), flatten_output_size,
-                                               op_grad_info->out_abs);
+  auto fn = BackwardNode::Create<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), flatten_output_size,
+                                                   op_grad_info->out_abs);
   UpdateNextEdges(fn, flatten_inputs);
   return fn;
 }
@@ -1933,7 +1934,7 @@ void AutoDiff::CheckSensShapeAndType(const ValuePtr &sens_gradient) {
 }
 
 void AutoDiff::BuildGraphRoot(const ValuePtr &sens_gradient, bool has_aux) {
-  graph_root_ = std::make_shared<GraphRoot>("GraphRoot");
+  graph_root_ = BackwardNode::Create<GraphRoot>("GraphRoot");
   if (has_aux) {
     if (!output_->isa<ValueSequence>()) {
       MS_LOG(EXCEPTION)

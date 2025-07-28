@@ -30,7 +30,7 @@
 
 namespace mindspore::pynative::autograd {
 constexpr char kCallBackwradTwiceErr[] =
-  "Try to backward the graph twice, if you want call again, please use retain_graph=True";
+  "Try to backward the graph twice,  Specify retain_graph=True, if you want call again";
 class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
@@ -234,6 +234,10 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   bool IsEmpty() const;
 
   /// \brief The PostProcess function is used to represent this node's inputs, which can
+  /// backpropagation gradients. this interface can be modified.
+  /// \return next edges
+  std::vector<Edge> &mutable_next_edges() { return next_edges_; }
+  /// \brief The PostProcess function is used to represent this node's inputs, which can
   /// backpropagation gradients.
   /// \return next edges
   const std::vector<Edge> &next_edges() const { return next_edges_; }
@@ -306,7 +310,15 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return string
   std::string ToString() const;
 
+  /// \brief Create derived backward node with custom deleter.
+  /// \return backward node
+  template <typename Derived, typename... Args>
+  static std::shared_ptr<Derived> Create(Args &&... args) {
+    return std::shared_ptr<Derived>(new Derived(std::forward<Args>(args)...), CustomDeleter);
+  }
+
  protected:
+  static void CustomDeleter(BackwardNode *grad_node);
   std::vector<Edge> next_edges_;
   std::string name_;
   std::function<void(const std::string &op_name)> check_func_{nullptr};

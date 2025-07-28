@@ -73,6 +73,7 @@ class HookBackwardNode : public BackwardNode {
   HookBackwardNode(const string &name, PrimitivePyPtr prim, VectorRef &&args, size_t output_size,
                    abstract::AbstractBasePtr out_abstract)
       : BackwardNode(name, output_size), prim_(std::move(prim)), args_(args), out_abstract_(std::move(out_abstract)) {}
+  ~HookBackwardNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   void Release() override;
 
@@ -96,6 +97,7 @@ class GraphBackwardNode : public BackwardNode {
         saved_output_(std::move(saved_output)),
         cache_key_(std::move(cache_key)),
         graph_call_condition_(is_control_flow, is_jit_graph, jit_out_has_dict, true) {}
+  ~GraphBackwardNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   // Update nullptr grad.
   ValuePtrList LazeUpdateZeroGradient(const ValuePtrList &dout, FuncBuilder *func_builder, const ValuePtr &output);
