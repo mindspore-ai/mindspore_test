@@ -1117,6 +1117,7 @@ RankList GetRankListByLayout(const std::shared_ptr<TensorLayout> &target_param_l
 std::vector<bool> IsBorderAdaSumSendReceive(const AnfNodePtr &node, const RankList &group_devices) {
   bool is_send = IsPrimitiveCNode(node, prim::kPrimSend);
   PrimitivePtr send_rec_prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(send_rec_prim);
   int64_t origin_dest_rank = GetValue<int64_t>(send_rec_prim->GetAttr(OPPOSITE_RANK));
   int64_t rank = g_device_manager->global_rank();
   if (group_devices.size() - 1 == 0) {

@@ -282,7 +282,8 @@ class AutoParallel(Cell):
         Note:
             - It only works when `parallel_mode=sharding_propagation`.
             - When performing distributed training, users can first save the strategy using dryrun on a single device
-              and then load strategy to perform distributed training.
+              and then load strategy to perform distributed training. Note that only the first device of each node will
+              save the strategy file, so the simulated rank id specified by Dryrun must be divisible by 8.
 
         Args:
             file_path (str): Path to save parallel strategy json, must be an absolute path.

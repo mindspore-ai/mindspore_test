@@ -742,6 +742,7 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
   Attr attr_dtype = std::make_pair(DTYPE, shape_type_pair.second);
   auto send_prim = GetCNodePrimitive(send);
+  MS_EXCEPTION_IF_NULL(send_prim);
   auto rank_list = g_device_manager->GetDeviceListBetweenStage();
   send_prim->set_attr(DST_GLOBAL_RANK, MakeValue(rank_list[dst_stage]));
   send_prim->set_attr(DTYPE, shape_type_pair.second);
@@ -750,6 +751,7 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   std::vector<AnfNodePtr> recv_input = {NewValueNode(recv_op), send};
   auto recv = graph->NewCNode(recv_input);
   auto recv_prim = GetCNodePrimitive(recv);
+  MS_EXCEPTION_IF_NULL(recv_prim);
   recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[src_stage]));
   recv->set_abstract(node->abstract());
   recv->AddPrimalAttr(CHUNK, MakeValue(chunk));
@@ -989,6 +991,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
   Attr attr_dtype = std::make_pair(DTYPE, shape_type_pair.second);
   auto send_prim = GetCNodePrimitive(send);
+  MS_EXCEPTION_IF_NULL(send_prim);
   auto rank_list = g_device_manager->GetDeviceListBetweenStage();
   send_prim->set_attr(DST_GLOBAL_RANK, MakeValue(rank_list[user_stage]));
   send_prim->set_attr(DTYPE, shape_type_pair.second);
@@ -997,6 +1000,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   std::vector<AnfNodePtr> recv_input = {NewValueNode(recv_op), send};
   auto recv = graph->NewCNode(recv_input);
   auto recv_prim = GetCNodePrimitive(recv);
+  MS_EXCEPTION_IF_NULL(recv_prim);
   recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[node_stage]));
   recv->set_abstract(node->abstract());
   recv->set_user_data<NodeStageInfo>(user_node_stage_info);
@@ -1829,6 +1833,7 @@ void PipelinePostProcess::HandleSendParam() {
       auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
       auto slice_shape = shape_ptr->shape();
       auto prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
       auto value = MakeValue(slice_shape);
       prim->set_attr(SHAPE, value);
       param_ptr->set_user_data(kPipelineSendSharedParam, std::make_shared<bool>(true));

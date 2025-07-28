@@ -267,7 +267,7 @@ void StrategyLoader::SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes
   if (strategy_search_mode != kShardingPropagation) {
     MS_LOG(EXCEPTION) << "Current mode: " << strategy_search_mode << " doesn't support save strategy.";
   }
-  if (!StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn()) {
+  if (!StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn() || GetRank() % DEVICE_NUM_PER_SERVER != 0) {
     return;
   }
   StrategyMap stra_map;

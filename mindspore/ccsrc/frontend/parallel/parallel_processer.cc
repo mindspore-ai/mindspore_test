@@ -1343,6 +1343,7 @@ static void StepReplace(const std::vector<AnfNodePtr> &all_nodes) {
           continue;
         }
         auto reshape_redis = reshape_info->ReshapeRedistribution();
+        MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
         if (GetCNodePrimitive(cnode)->HasAttr(RECOMPUTE)) {
           MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
           GetCNodePrimitive(cnode)->AddAttr(RECOMPUTE_COMM_OP, GetCNodePrimitive(cnode)->GetAttr(RECOMPUTE));

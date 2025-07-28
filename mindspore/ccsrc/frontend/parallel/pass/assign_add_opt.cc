@@ -146,6 +146,7 @@ CNodePtr InsertConcat(const std::vector<CNodePtr> &matmul_dw_nodes, const FuncGr
     concat->set_abstract(matmul_dw_node_front_input_node1_abstract->Clone());
     concat->abstract()->set_shape(concat1_shape_value);
     auto concat_prim = GetCNodePrimitive(concat);
+    MS_EXCEPTION_IF_NULL(concat_prim);
     concat_prim->set_attr(AXIS, MakeValue<int64_t>(axis1));
     concat_prim->set_attr(kAttrInputNums, MakeValue<int64_t>(maketuple_abs_inputs.size()));
     concat_prim->set_attr(kAttrConcatN, MakeValue<int64_t>(maketuple_abs_inputs.size()));
@@ -154,6 +155,7 @@ CNodePtr InsertConcat(const std::vector<CNodePtr> &matmul_dw_nodes, const FuncGr
     concat->set_abstract(matmul_dw_node_front_input_node2_abstract->Clone());
     concat->abstract()->set_shape(concat2_shape_value);
     auto concat_prim = GetCNodePrimitive(concat);
+    MS_EXCEPTION_IF_NULL(concat_prim);
     concat_prim->set_attr(AXIS, MakeValue<int64_t>(axis2));
     concat_prim->set_attr(kAttrInputNums, MakeValue<int64_t>(maketuple_abs_inputs.size()));
     concat_prim->set_attr(kAttrConcatN, MakeValue<int64_t>(maketuple_abs_inputs.size()));
@@ -196,7 +198,9 @@ void MergeMultiMatmulAssignAdd(const FuncGraphManagerPtr &manager, const FuncGra
   merged_matmul->input(kIndex3)->set_abstract(matmul_dw_node_front->input(kIndex3)->abstract()->Clone());
   merged_matmul->input(kIndex4)->set_abstract(matmul_dw_node_front->input(kIndex4)->abstract()->Clone());
   auto merged_matmul_prim = GetCNodePrimitive(merged_matmul);
+  MS_EXCEPTION_IF_NULL(merged_matmul_prim);
   auto mat_prim = GetCNodePrimitive(matmul_dw_node_front);
+  MS_EXCEPTION_IF_NULL(mat_prim);
   (void)merged_matmul_prim->SetAttrs(mat_prim->attrs());
   merged_matmul->set_attrs(matmul_dw_node_front->attrs());
   merged_matmul->set_primal_attrs(matmul_dw_node_front->primal_attrs());
