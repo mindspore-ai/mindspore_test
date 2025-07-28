@@ -15,5 +15,4 @@ mindspore.mint.nn.functional.dropout
         - **output** (Tensor) - 归零后的Tensor，shape和数据类型与 `input` 相同。
 
     异常：
-        - **TypeError** - `p` 不是float。
         - **TypeError** - `input` 不是Tensor。

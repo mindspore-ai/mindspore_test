@@ -32,7 +32,6 @@ tensor::TensorPtr FuncDropoutExtAscendCustomize(const std::shared_ptr<OpRunner> 
   auto training_ = training->value();
   auto inplace_ = inplace->value();
   auto p_ = static_cast<double>(p->value());
-
   if (MS_UNLIKELY(p_ < 0 || p_ > 1)) {
     MS_EXCEPTION(ValueError) << "For FuncDropoutExt, 'p' must be in [0, 1], but got " << p_;
   }
