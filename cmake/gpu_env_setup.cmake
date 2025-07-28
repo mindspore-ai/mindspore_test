@@ -187,6 +187,13 @@ if(GPU_BACKEND_CUDA)
     set(CMAKE_CXX_FLAGS ${NVCC_TMP_CMAKE_CXX_FLAGS})
     add_compile_definitions(ENABLE_GPU)
 
+    # speed up cuda build with ccache if ccache is found on the environment
+    find_program(CCACHE_FOUND ccache)
+    if(CCACHE_FOUND)
+        set(CMAKE_CUDA_COMPILER_LAUNCHER ${CCACHE_FOUND} CACHE PATH "CUDA compiler")
+    endif()
+    message(STATUS "CMAKE_CUDA_COMPILER_LAUNCHER:${CMAKE_CUDA_COMPILER_LAUNCHER}")
+
     foreach(arch ${CUDA_ARCH_LIST})
         string(APPEND CUDA_ARCH_LIST_STR "${arch} ")
     endforeach()
