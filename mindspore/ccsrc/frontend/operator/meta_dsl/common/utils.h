@@ -32,87 +32,87 @@
 namespace mindspore::prim {
 #define EXPAND_PARAMS(...) __VA_ARGS__
 
-#define DECLARE_PARAM(param) NodePtr param = NewParam(#param);
+#define DECLARE_PARAM(param, index) NodePtr param = NewParam(#param, index);
 
 #define DECLARE_PARAMS_0()
 
-#define DECLARE_PARAMS_1(p1) DECLARE_PARAM(p1)
+#define DECLARE_PARAMS_1(p1) DECLARE_PARAM(p1, 1)
 
 #define DECLARE_PARAMS_2(p1, p2) \
-  DECLARE_PARAM(p1);             \
-  DECLARE_PARAM(p2)
+  DECLARE_PARAM(p1, 1);          \
+  DECLARE_PARAM(p2, 2)
 
 #define DECLARE_PARAMS_3(p1, p2, p3) \
   DECLARE_PARAMS_2(p1, p2);          \
-  DECLARE_PARAM(p3)
+  DECLARE_PARAM(p3, 3)
 
 #define DECLARE_PARAMS_4(p1, p2, p3, p4) \
   DECLARE_PARAMS_3(p1, p2, p3);          \
-  DECLARE_PARAM(p4)
+  DECLARE_PARAM(p4, 4)
 
 #define DECLARE_PARAMS_5(p1, p2, p3, p4, p5) \
   DECLARE_PARAMS_4(p1, p2, p3, p4);          \
-  DECLARE_PARAM(p5)
+  DECLARE_PARAM(p5, 5)
 
 #define DECLARE_PARAMS_6(p1, p2, p3, p4, p5, p6) \
   DECLARE_PARAMS_5(p1, p2, p3, p4, p5);          \
-  DECLARE_PARAM(p6)
+  DECLARE_PARAM(p6, 6)
 
 #define DECLARE_PARAMS_7(p1, p2, p3, p4, p5, p6, p7) \
   DECLARE_PARAMS_6(p1, p2, p3, p4, p5, p6);          \
-  DECLARE_PARAM(p7)
+  DECLARE_PARAM(p7, 7)
 
 #define DECLARE_PARAMS_8(p1, p2, p3, p4, p5, p6, p7, p8) \
   DECLARE_PARAMS_7(p1, p2, p3, p4, p5, p6, p7);          \
-  DECLARE_PARAM(p8)
+  DECLARE_PARAM(p8, 8)
 
 #define DECLARE_PARAMS_9(p1, p2, p3, p4, p5, p6, p7, p8, p9) \
   DECLARE_PARAMS_8(p1, p2, p3, p4, p5, p6, p7, p8);          \
-  DECLARE_PARAM(p9)
+  DECLARE_PARAM(p9, 9)
 
 #define DECLARE_PARAMS_10(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) \
   DECLARE_PARAMS_9(p1, p2, p3, p4, p5, p6, p7, p8, p9);            \
-  DECLARE_PARAM(p10)
+  DECLARE_PARAM(p10, 10)
 
 #define DECLARE_PARAMS_11(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) \
   DECLARE_PARAMS_10(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);           \
-  DECLARE_PARAM(p11)
+  DECLARE_PARAM(p11, 11)
 
 #define DECLARE_PARAMS_12(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) \
   DECLARE_PARAMS_11(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11);           \
-  DECLARE_PARAM(p12)
+  DECLARE_PARAM(p12, 12)
 
 #define DECLARE_PARAMS_13(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13) \
   DECLARE_PARAMS_12(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);           \
-  DECLARE_PARAM(p13)
+  DECLARE_PARAM(p13, 13)
 
 #define DECLARE_PARAMS_14(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14) \
   DECLARE_PARAMS_13(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13);           \
-  DECLARE_PARAM(p14)
+  DECLARE_PARAM(p14, 14)
 
 #define DECLARE_PARAMS_15(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15) \
   DECLARE_PARAMS_14(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14);           \
-  DECLARE_PARAM(p15)
+  DECLARE_PARAM(p15, 15)
 
 #define DECLARE_PARAMS_16(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16) \
   DECLARE_PARAMS_15(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15);           \
-  DECLARE_PARAM(p16)
+  DECLARE_PARAM(p16, 16)
 
 #define DECLARE_PARAMS_17(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17) \
   DECLARE_PARAMS_16(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16);           \
-  DECLARE_PARAM(p17)
+  DECLARE_PARAM(p17, 17)
 
 #define DECLARE_PARAMS_18(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18) \
   DECLARE_PARAMS_17(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);           \
-  DECLARE_PARAM(p18)
+  DECLARE_PARAM(p18, 18)
 
 #define DECLARE_PARAMS_19(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19) \
   DECLARE_PARAMS_18(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18);           \
-  DECLARE_PARAM(p19)
+  DECLARE_PARAM(p19, 19)
 
 #define DECLARE_PARAMS_20(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20) \
   DECLARE_PARAMS_19(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19);           \
-  DECLARE_PARAM(p20)
+  DECLARE_PARAM(p20, 20)
 
 #define GET_DECLARE_PARAMS_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, \
                                  _20, NAME, ...)                                                                       \
