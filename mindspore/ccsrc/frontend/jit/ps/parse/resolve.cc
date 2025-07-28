@@ -1158,29 +1158,30 @@ TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, c
   if (grad_node == nullptr) {
     return nullptr;
   }
-  const auto &backward_hooks = grad_node->py_tensor_pre_hooks();
 
   TensorHookMapPtr hooks = std::make_shared<TensorHookMap>();
-  for (const auto &[id, hook] : backward_hooks) {
-    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-    py::object wrappered_hook = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_HOOK_WRAPPER, hook->hook_fn_);
-    auto func = parse::ParsePythonCode(wrappered_hook);
-    MS_EXCEPTION_IF_NULL(func);
+  if (const auto &backward_hooks = grad_node->py_tensor_pre_hooks()) {
+    for (const auto &[id, hook] : *backward_hooks) {
+      py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+      py::object wrappered_hook = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_HOOK_WRAPPER, hook->hook_fn_);
+      auto func = parse::ParsePythonCode(wrappered_hook);
+      MS_EXCEPTION_IF_NULL(func);
 
-    // Hook may have side effects.
-    func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
-    func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+      // Hook may have side effects.
+      func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+      func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
 
-    pipeline::ResourceBasePtr res = (resource != nullptr ? resource : std::make_shared<pipeline::Resource>());
-    (void)parse::ResolveFuncGraph(func, res, false);
+      pipeline::ResourceBasePtr res = (resource != nullptr ? resource : std::make_shared<pipeline::Resource>());
+      (void)parse::ResolveFuncGraph(func, res, false);
 
-    func->set_reserved(true);
-    for (auto &fg : func->func_graphs_used_total()) {
-      MS_EXCEPTION_IF_NULL(fg);
-      fg->set_reserved(true);
+      func->set_reserved(true);
+      for (auto &fg : func->func_graphs_used_total()) {
+        MS_EXCEPTION_IF_NULL(fg);
+        fg->set_reserved(true);
+      }
+
+      hooks->emplace(id, func);
     }
-
-    hooks->emplace(id, func);
   }
 
   return hooks;

@@ -65,29 +65,6 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
 }
 }  // namespace
 
-PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
-    : hook_fn_(hook_fn), output_idx_(output_idx) {}
-
-PyTensorBackwardNodePreHook::~PyTensorBackwardNodePreHook() {
-  py::gil_scoped_acquire gil;
-  hook_fn_ = py::object();
-}
-
-CppTensorBackwardNodePreHook::CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx)
-    : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
-
-void CppTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
-  if (output_idx_ >= grad->size()) {
-    MS_LOG(EXCEPTION) << "CppTensor hook output_idx out of range";
-  }
-  const auto grad_in = (*grad)[output_idx_];
-  if (!grad_in->isa<tensor::Tensor>()) {
-    MS_LOG(DEBUG) << "input grad is not a Tensor";
-  } else {
-    (*grad)[output_idx_] = hook_fn_(grad_in->cast<TensorPtr>());
-  }
-}
-
 void PyTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
   if (output_idx_ >= grad->size()) {
     MS_LOG(EXCEPTION) << "PyTensor hook output_idx out of range";
@@ -141,11 +118,12 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   if (const auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor)) {
     const auto output_idx = auto_grad_meta_data->output_index();
     if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
-      const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
-      for (const auto &item : py_tensor_pre_hooks) {
-        const auto &py_hooks = item.second;
-        if (py_hooks->output_idx_ == output_idx) {
-          hooks.append(py_hooks->hook_fn_);
+      if (const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks()) {
+        for (const auto &item : *py_tensor_pre_hooks) {
+          const auto &py_hooks = item.second;
+          if (py_hooks->output_idx_ == output_idx) {
+            hooks.append(py_hooks->hook_fn_);
+          }
         }
       }
     }

@@ -35,7 +35,6 @@ struct RegisterHook {
   /// \brief Remove a backward hook
   ///
   /// \ void
-  PYNATIVE_EXPORT static void RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id);
   PYNATIVE_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
   PYNATIVE_EXPORT static py::list GetHooks(const tensor::TensorPtr &tensor);
   PYNATIVE_EXPORT static unsigned RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook);

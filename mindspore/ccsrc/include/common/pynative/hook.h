@@ -43,7 +43,7 @@ struct COMMON_EXPORT PyTensorBackwardNodePreHook : public BackwardNodePreHook {
 };
 
 using CppHookFn = std::function<tensor::TensorPtr(const tensor::TensorPtr &)>;
-struct CppTensorBackwardNodePreHook : public BackwardNodePreHook {
+struct COMMON_EXPORT CppTensorBackwardNodePreHook : public BackwardNodePreHook {
   CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx);
   void operator()(ValuePtrList *grad) override;
   CppHookFn hook_fn_;

@@ -225,7 +225,8 @@ class _HookUtils:
         """
         is_modify = False
         args_list = list(args)
-        for hook_fn in hook_dict.values():
+        # Note: We create a list from hook_dict.values() to ensure safe iteration.
+        for hook_fn in list(hook_dict.values()):
             res = hook_fn(*args_list)
             if res is not None:
                 _check_hook_results(args_list[0], res, hook_fn)

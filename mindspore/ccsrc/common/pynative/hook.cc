@@ -28,6 +28,21 @@ PyObject *RunHookDict(PyObject *hook_dict, PyObject *hook_args) {
 }
 }  // namespace
 
+CppTensorBackwardNodePreHook::CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx)
+  : hook_fn_(std::move(hook_fn)), output_idx_(output_idx) {}
+
+void CppTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
+  if (output_idx_ >= grad->size()) {
+    MS_LOG(EXCEPTION) << "CppTensor hook output_idx out of range";
+  }
+  const auto grad_in = (*grad)[output_idx_];
+  if (!grad_in->isa<tensor::Tensor>()) {
+    MS_LOG(DEBUG) << "input grad is not a Tensor";
+  } else {
+    (*grad)[output_idx_] = hook_fn_(grad_in->cast<tensor::TensorPtr>());
+  }
+}
+
 PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
     : hook_fn_(hook_fn), output_idx_(output_idx) {}
 
