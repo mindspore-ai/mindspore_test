@@ -67,7 +67,7 @@ class Float8_e4m3fn {
   template <typename T>
   explicit Float8_e4m3fn(const T &v) : value_(FromFloat32(static_cast<float>(v))) {}
 
-  uint16_t int_value() const { return value_; }
+  uint8_t int_value() const { return value_; }
 
   template <typename T>
   explicit operator T() const {
@@ -156,7 +156,7 @@ class Float8_e4m3fn {
       // Attention that FP8 E4M3FN format does not support representation of infinity (INF).
       result = nan_value;
     } else if (f.u < magic) {
-      // (De)normalized number or zero; resulting FP16 is subnormal or zero.
+      // (De)normalized number or zero; resulting float8_e4m3fn is subnormal or zero.
       // Use a magic value to align our 10 mantissa bits at the bottom of
       // the float. as long as FP addition is round-to-nearest-even this
       // just works.
@@ -204,7 +204,7 @@ inline Float8_e4m3fn operator/(const Float8_e4m3fn &a, size_t b) {
 }
 
 inline Float8_e4m3fn operator-(const Float8_e4m3fn &a) {
-  constexpr uint16_t sign_mask = 0x8000;
+  constexpr uint8_t sign_mask = 0x80;
   return Float8_e4m3fn::FromRaw(a.int_value() ^ sign_mask);
 }
 
@@ -238,8 +238,8 @@ using float8_e4m3fn = mindspore::Float8_e4m3fn;
 namespace std {
 template <>
 struct hash<float8_e4m3fn> {
-  std::size_t operator()(const float8_e4m3fn &bf16) const noexcept {
-    return static_cast<std::size_t>(bf16.int_value());
+  std::size_t operator()(const float8_e4m3fn &fp8_e4m3fn) const noexcept {
+    return static_cast<std::size_t>(fp8_e4m3fn.int_value());
   }
 };
 

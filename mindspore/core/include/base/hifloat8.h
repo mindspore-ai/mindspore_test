@@ -65,7 +65,7 @@ class HiFloat8 {
   template <typename T>
   explicit HiFloat8(const T &v) : value_(FromFloat32(static_cast<float>(v))) {}
 
-  uint16_t int_value() const { return value_; }
+  uint8_t int_value() const { return value_; }
 
   template <typename T>
   explicit operator T() const {
@@ -323,7 +323,7 @@ inline HiFloat8 operator/(const HiFloat8 &a, const HiFloat8 &b) {
 }
 
 // Division by an size_t. Do it in full float precision to avoid
-// accuracy issues in converting the denominator to bfloat16.
+// accuracy issues in converting the denominator to hifloat8.
 inline HiFloat8 operator/(const HiFloat8 &a, size_t b) {
   return HiFloat8(static_cast<float>(a) / static_cast<float>(b));
 }
