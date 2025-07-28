@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_TO_REMOTE_H_
-#define MINDSPORE_CORE_OPS_TO_REMOTE_H_
-#include <map>
-#include <memory>
-#include <string>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_PREFETCH_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_PREFETCH_H_
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameToRemote = "ToRemote";
-constexpr auto kDataIndex = 0;
-class OPS_API ToRemote : public BaseOperator {
+class OPS_API PrefetchFuncImpl : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(ToRemote);
-  ToRemote() : BaseOperator(kNameToRemote) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
-  void Init() const {}
+  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_TO_REMOTE_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_PREFETCH_H_

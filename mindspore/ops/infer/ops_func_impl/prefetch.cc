@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "infer/ops_func_impl/prefetch.h"
 
-#ifndef MINDSPORE_CORE_OPS_DETACH_H_
-#define MINDSPORE_CORE_OPS_DETACH_H_
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameDetach = "Detach";
-constexpr auto kDataIndex = 0;
-class OPS_API Detach : public BaseOperator {
- public:
-  MIND_API_BASE_MEMBER(Detach);
-  Detach() : BaseOperator(kNameDetach) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
-  void Init() const {}
-};
+BaseShapePtr PrefetchFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                          const std::vector<AbstractBasePtr> &input_args) const {
+  constexpr size_t data_index = 0;
+  MS_EXCEPTION_IF_NULL(input_args[data_index]);
+  return input_args[data_index]->BuildShape();
+}
+
+TypePtr PrefetchFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+  constexpr size_t data_index = 0;
+  MS_EXCEPTION_IF_NULL(input_args[data_index]);
+  return input_args[data_index]->BuildType();
+}
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_DETACH_H_

@@ -1,0 +1,16 @@
+#operator prefetch
+to_remote:
+  args:
+    x:
+      dtype: tensor
+    depend_nodes:
+      dtype: tuple[tensor]
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+      disable: True

@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "infer/ops_func_impl/grad_load.h"
 
-#ifndef MINDSPORE_CORE_OPS_PREFETCH_H_
-#define MINDSPORE_CORE_OPS_PREFETCH_H_
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNamePrefetch = "Prefetch";
-constexpr auto kDataIndex = 0;
-class OPS_API Prefetch : public BaseOperator {
- public:
-  MIND_API_BASE_MEMBER(Prefetch);
-  Prefetch() : BaseOperator(kNamePrefetch) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
-  void Init() const {}
-};
+BaseShapePtr GradLoadFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                          const std::vector<AbstractBasePtr> &input_args) const {
+  constexpr size_t data_index = 0;
+  MS_EXCEPTION_IF_NULL(input_args[data_index]);
+  return input_args[data_index]->BuildShape();
+}
+
+TypePtr GradLoadFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+  constexpr size_t data_index = 0;
+  MS_EXCEPTION_IF_NULL(input_args[data_index]);
+  return input_args[data_index]->BuildType();
+}
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_PREFETCH_H_

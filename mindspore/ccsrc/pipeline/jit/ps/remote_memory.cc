@@ -23,6 +23,10 @@
 #include "ir/core_ops_primitive.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace remote_memory {

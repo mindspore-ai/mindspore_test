@@ -1,0 +1,15 @@
+#operator prefetch
+grad_load:
+  args:
+    x:
+      dtype: tensor
+    data:
+      dtype: tensor
+    depend_nodes:
+      dtype: tuple[tensor]
+      default: None
+  returns:
+    output:
+      dtype: tensor
+  function:
+      disable: True

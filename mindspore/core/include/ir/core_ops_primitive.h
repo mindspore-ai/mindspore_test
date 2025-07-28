@@ -69,11 +69,6 @@ GVAR_DEF(PrimitivePtr, kPrimImageSummary, std::make_shared<Primitive>("ImageSumm
 GVAR_DEF(PrimitivePtr, kPrimTensorSummary, std::make_shared<Primitive>("TensorSummary"));
 GVAR_DEF(PrimitivePtr, kPrimHistogramSummary, std::make_shared<Primitive>("HistogramSummary"));
 
-GVAR_DEF(PrimitivePtr, kPrimPrefetch, std::make_shared<Primitive>(kPrefetchOpName));
-GVAR_DEF(PrimitivePtr, kPrimToRemote, std::make_shared<Primitive>(kToRemote));
-GVAR_DEF(PrimitivePtr, kPrimDetach, std::make_shared<Primitive>(kDetach));
-GVAR_DEF(PrimitivePtr, kPrimGradLoad, std::make_shared<Primitive>(kGradLoad));
-
 class DoSignaturePrimitive : public Primitive {
  public:
   explicit DoSignaturePrimitive(const std::string &name, const ValuePtr &function)
