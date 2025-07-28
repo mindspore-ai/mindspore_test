@@ -158,6 +158,8 @@ class SuperKernelActor : public DebugAwareActor {
   // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
   // mode.
   void BuildKernelActors();
+  // Generate KernelRunner for each Kernel if need.
+  void GenerateKernelRunners();
   KernelRunnerPtr BuildInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
                                              GraphExecutionStrategy strategy, const std::set<size_t> &ref_input_indexes,
                                              const std::set<size_t> &ref_output_indexes);

@@ -193,7 +193,7 @@ class DataPrepareActor : public DebugAwareActor {
   std::vector<AnfNodePtr> inference_parameters_;
 
   // Record enable trace memory feature(optimize memory manager performance) for inference graph.
-  bool enable_trace_memory_;
+  bool enable_trace_memory_{false};
 };  // namespace runtime
 
 using DataPrepareActorPtr = std::shared_ptr<DataPrepareActor>;
