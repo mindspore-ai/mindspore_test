@@ -56,7 +56,8 @@ from mindspore.common.dynamic_shape.auto_dynamic_shape import get_auto_dynamic_s
     update_auto_dynamic_shape_phase
 from mindspore.common.dynamic_shape.enable_dynamic import generate_dynamic_tensor_args, ENABLE_DYNAMIC
 from mindspore.common._pijit_context import PIJitCaptureContext
-from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
+from mindspore.common.parameter import Parameter
+from mindspore.common.hook_handle import _hook_version
 from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
@@ -75,61 +76,8 @@ ARG_SPECIFIED = "arg_specified_infos"
 TOTAL_ARG_LEN = "total_arg_length"
 
 
-def _cells_hook_hash(fn, obj):
-    """
-    Generate cells hook hash.
-    """
-    fn_set = set({})
-
-    def collect_cell_free_var(fn, cells_set):
-        if not fn or not hasattr(fn, "__closure__") or not fn.__closure__:
-            return
-        if fn in fn_set:
-            return
-
-        def _get_cell_contents(cell):
-            try:
-                return cell.cell_contents
-            except ValueError:
-                return None
-
-        fn_set.add(fn)
-        for free_var in fn.__closure__:
-            obj = _get_cell_contents(free_var)
-            if obj is None:
-                continue
-            if isinstance(obj, (types.FunctionType, types.MethodType)):
-                collect_cell_free_var(obj, cells_set)
-            elif isinstance(obj, ms.nn.Cell):
-                cells_set.add(obj)
-
-    cells_set = set({})
-    if isinstance(obj, ms.nn.Cell):
-        cells_set.add(obj)
-    collect_cell_free_var(fn, cells_set)
-
-    def collect_cells(cell, cells):
-        if cell in cells:
-            return
-
-        cells.add(cell)
-        for sub_cell in cell.cells():
-            collect_cells(sub_cell, cells)
-
-    cells = set({})
-    for cell in cells_set:
-        collect_cells(cell, cells)
-
-    hash_value = 0
-    for cell in cells:
-        hash_value += cell.modify_hook
-    return hash_value
-
-
 def _real_phase(phase, obj):
     real_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
-    if hasattr(obj, "cells_hook_hash") and obj.cells_hook_hash:
-        real_phase += "." + str(obj.cells_hook_hash)
     return real_phase
 
 
@@ -791,25 +739,23 @@ class _JitExecutor:
 
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
         key = self._graph_executor.generate_arguments_key(self.fn, compile_args, kwargs, self.enable_tuple_broaden)
+        key = str(key)
 
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
-            key = str(key) + '.' + parameter_ids
+            key += '.' + parameter_ids
 
-        key = str(key) + "." + _get_hook_key(*args, **kwargs)
+        key += "." + _get_hook_key(*args, **kwargs)
+        key += "." + str(_hook_version())
 
-        phase = generate_name + '.' + str(key)
+        phase = generate_name + '.' + key
 
         if self.input_signature is None:
             update_auto_dynamic_shape_phase(compile_args, key_id, phase)
 
         phase = phase + self._cell_cache_key_extend
 
-        cells_hook_hash = _cells_hook_hash(self.fn, self.obj)
-        if cells_hook_hash:
-            phase += "." + str(cells_hook_hash)
-
-        if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
+        if phase in ms_compile_cache and self._graph_executor.has_compiled(phase):
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
             self._graph_executor.clear_compile_arguments_resource()
@@ -837,7 +783,6 @@ class _JitExecutor:
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
-        set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
         if hasattr(self.obj, "phase"):
             self.obj.phase_cache[self.obj.phase] = phase
@@ -2115,21 +2060,25 @@ class _CellGraphExecutor:
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
 
         key = self._graph_executor.generate_arguments_key(obj, args, kwargs, self.enable_tuple_broaden)
-        obj.arguments_key = str(key)
-
-        obj.arguments_key = obj.arguments_key + "." + _get_hook_key(*args, **kwargs)
+        key = str(key)
 
         # When exist parameter in the top graph inputs, need check if the parameter object has changed.
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
-            obj.arguments_key = obj.arguments_key + '.' + parameter_ids
+            key += '.' + parameter_ids
+
+        key += "." + _get_hook_key(*args, **kwargs)
+        key += "." + str(_hook_version())
+
+        obj.arguments_key = key
+
         raw_phase = phase
-        obj.cells_hook_hash = _cells_hook_hash(None, obj)
+
         phase = _real_phase(phase, obj)
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
-        if phase in obj.compile_cache and self.has_compiled(phase) and not parameter_hook_updated():
+        if phase in obj.compile_cache and self.has_compiled(phase):
             logger.debug("%r graph has existed.", phase)
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
@@ -2155,7 +2104,6 @@ class _CellGraphExecutor:
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")
-        set_parameter_hook_updated(False)
         graph = self._graph_executor.get_func_graph(phase)
 
         if graph is None:

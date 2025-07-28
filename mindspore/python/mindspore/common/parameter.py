@@ -33,6 +33,7 @@ from mindspore import context
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor, _TensorMeta
+from mindspore.common.hook_handle import _update_hook_version
 from mindspore import _checkparam as Validator
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore._c_expression import TensorPy as Tensor_
@@ -70,20 +71,6 @@ def _is_parameter_generated(param_name):
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
-
-# Global variable to mark the hook of parameter is updated
-_PARAMETER_HOOK_UPDATED = True
-
-
-def set_parameter_hook_updated(value):
-    global _PARAMETER_HOOK_UPDATED
-    _PARAMETER_HOOK_UPDATED = value
-
-
-
-def parameter_hook_updated():
-    global _PARAMETER_HOOK_UPDATED
-    return _PARAMETER_HOOK_UPDATED
 
 
 def _is_in_auto_parallel_mode():
@@ -1020,11 +1007,11 @@ class Parameter(Tensor_):
         For details, please refer to :func:`mindspore.Tensor.register_hook`.
         """
         handle = Tensor.register_hook(self, hook_fn)
-        set_parameter_hook_updated(True)
+        _update_hook_version()
         return handle
 
     def _remove_hook(self):
-        set_parameter_hook_updated(True)
+        _update_hook_version()
 
     def _offload(self):
         r"""

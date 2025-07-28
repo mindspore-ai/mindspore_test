@@ -19,6 +19,20 @@ from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
 
+# Global variable to mark the `Parameter` hook and `Cell` hook version
+_HOOK_VERSION = 0
+
+
+def _update_hook_version():
+    global _HOOK_VERSION
+    _HOOK_VERSION += 1
+
+
+def _hook_version():
+    global _HOOK_VERSION
+    return _HOOK_VERSION
+
+
 class _TensorHookHandle:
     r"""
     A handle provides the ability to remote a tensor hook.
@@ -71,7 +85,7 @@ class _TensorHookHandle:
             Tensor_.remove_hook(self.id)
             tensor = self.tensor_weakref()
             if tensor is not None:
-                tensor._remove_hook() # pylint:disable=protected-access
+                tensor._remove_hook()  # pylint:disable=protected-access
 
 
 class HookHandle:
@@ -91,7 +105,7 @@ class HookHandle:
     """
     unique_id = 0
 
-    def __init__(self, hook_dict=None, *, extra_dict=None, cell=None):
+    def __init__(self, hook_dict=None, *, extra_dict=None):
         self.hook_dict_ref = None
         self.extra_dict_ref = None
         if hook_dict is not None:
@@ -100,9 +114,6 @@ class HookHandle:
             HookHandle.unique_id += 1
             if extra_dict is not None:
                 self.extra_dict_ref = weakref.ref(extra_dict)
-        self.cell_ref = None
-        if cell is not None:
-            self.cell_ref = weakref.ref(cell)
 
     @jit_forbidden_register
     def remove(self):
@@ -151,10 +162,7 @@ class HookHandle:
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
-        if self.cell_ref is not None:
-            cell = self.cell_ref()
-            if cell is not None:
-                cell.modify_hook += 1
+        _update_hook_version()  # pylint:disable=protected-access
 
         if self.hook_dict_ref is not None:
             hook_dict = self.hook_dict_ref()

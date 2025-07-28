@@ -298,7 +298,7 @@ class CheckTuple(PrimitiveWithInfer):
         # The op is not used in a cell
         if isinstance(x, tuple):
             return x
-        if context.get_context("mode") == 0:
+        if context.get_context("mode") == context.GRAPH_MODE:
             return x["value"]
         raise TypeError(f"For {name}, input type must be a tuple.")
 
