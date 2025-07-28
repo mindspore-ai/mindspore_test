@@ -78,14 +78,108 @@ std::map<std::string, AnfNodePtr> GetParameterMap(const std::vector<AnfNodePtr> 
   return params_map;
 }
 
+std::pair<bool, std::vector<bool>> RemoveRedundantParams(const FuncGraphPtr &func_graph,
+                                                         std::map<std::string, AnfNodePtr> ref_key_nodes) {
+  const auto &inner_params = func_graph->parameters();
+  AnfNodePtrList new_params;
+  std::vector<bool> need_reserved;
+  for (auto inner_param : inner_params) {
+    auto ref_key_str = GetRefKey(inner_param);
+    if (ref_key_str.empty()) {
+      new_params.push_back(inner_param);
+      need_reserved.push_back(true);
+      continue;
+    }
+    const auto &iter = ref_key_nodes.find(ref_key_str);
+    if (inner_param != iter->second ||
+        std::find(new_params.begin(), new_params.end(), inner_param) != new_params.end()) {
+      // Skip redundant parameter
+      need_reserved.push_back(false);
+      continue;
+    }
+    need_reserved.push_back(true);
+    new_params.push_back(inner_param);
+  }
+  if (inner_params.size() != new_params.size()) {
+    func_graph->set_parameters(new_params);
+    return {true, need_reserved};
+  }
+  return {false, need_reserved};
+}
+
+CNodePtr NewCaller(const CNodePtr &cnode, const std::vector<bool> &need_reserved_flags) {
+  std::vector<AnfNodePtr> new_caller_inputs{cnode->input(0)};
+  for (size_t index = 0; index < need_reserved_flags.size(); ++index) {
+    if (need_reserved_flags[index]) {
+      new_caller_inputs.push_back(cnode->input(index + 1));
+    }
+  }
+  auto cur_func = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(cur_func);
+  auto new_caller = cur_func->NewCNodeInOrder(new_caller_inputs);
+  return new_caller;
+}
+
+void RemoveCallerRedundantArgs(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager,
+                               mindspore::HashMap<FuncGraphPtr, std::vector<bool>> *func_need_reserved_flags) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  const auto &all_nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
+  for (const auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (IsPrimitiveCNode(cnode->input(0), prim::kPrimSwitch)) {
+      auto cnode_caller = cnode->input(0)->cast<CNodePtr>();
+      constexpr size_t true_index = 2;
+      auto true_func = GetValueNode<FuncGraphPtr>(cnode_caller->input(true_index));
+      auto true_iter = func_need_reserved_flags->find(true_func);
+      if (true_iter != func_need_reserved_flags->end()) {
+        auto need_reserved_flags = true_iter->second;
+        if (cnode->inputs().size() - 1 != need_reserved_flags.size()) {
+          MS_LOG(EXCEPTION) << "The call switch node is wrong: " << cnode_caller->DebugString();
+        }
+        auto new_caller = NewCaller(cnode, need_reserved_flags);
+        (void)manager->Replace(node, new_caller);
+        func_need_reserved_flags->erase(true_iter);
+        constexpr size_t false_index = 3;
+        auto false_func = GetValueNode<FuncGraphPtr>(cnode_caller->input(false_index));
+        auto false_iter = func_need_reserved_flags->find(false_func);
+        if (false_iter != func_need_reserved_flags->end()) {
+          func_need_reserved_flags->erase(false_iter);
+        }
+      }
+      continue;
+    }
+    if (!IsValueNode<FuncGraph>(cnode->input(0))) {
+      continue;
+    }
+    auto func = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    auto iter = func_need_reserved_flags->find(func);
+    if (iter != func_need_reserved_flags->end()) {
+      auto need_reserved_flags = iter->second;
+      if (cnode->inputs().size() - 1 != need_reserved_flags.size()) {
+        continue;
+      }
+      auto new_caller = NewCaller(cnode, need_reserved_flags);
+      (void)manager->Replace(node, new_caller);
+    }
+  }
+}
+
 void MergeParameters(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(optimizer);
   auto manager = optimizer->manager();
-  const auto &fg_used_total = func_graph->func_graphs_used_total();
-  for (const auto &fg : fg_used_total) {
+  mindspore::HashMap<FuncGraphPtr, std::vector<bool>> func_need_reserved_flags;
+  const auto fg_used_total = func_graph->func_graphs_used_total();
+  for (const auto fg : fg_used_total) {
     const auto &inner_params = fg->parameters();
     std::map<std::string, AnfNodePtr> ref_key_nodes = GetParameterMap(inner_params);
+    auto [remove, need_reserved] = RemoveRedundantParams(fg, ref_key_nodes);
+    if (remove) {
+      func_need_reserved_flags[fg] = need_reserved;
+    }
     const auto &nodes = TopoSort(fg->get_return());
     for (const auto &node : nodes) {
       if (!node->isa<Parameter>()) {
@@ -101,9 +195,12 @@ void MergeParameters(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &op
       }
       const auto &real_param = iter->second;
       if (real_param != node) {
-        manager->Replace(node, real_param);
+        (void)manager->Replace(node, real_param);
       }
     }
+  }
+  if (!func_need_reserved_flags.empty()) {
+    RemoveCallerRedundantArgs(func_graph, manager, &func_need_reserved_flags);
   }
 }
 }  // namespace
