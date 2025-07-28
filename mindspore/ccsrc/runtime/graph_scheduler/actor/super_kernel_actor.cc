@@ -1852,6 +1852,75 @@ KernelRunnerPtr SuperKernelActor::BuildInnerControlFlowActor(const CNodePtr &ker
 }
 
 void SuperKernelActor::BuildKernelActors() {
+  // 1. Generate KernelRunner for each Kernel in graph_ if need.
+  GenerateKernelRunners();
+
+  // 2. Add somas info.
+  MS_EXCEPTION_IF_NULL(graph_);
+  for (const auto &front_backend_pair : graph_->front_node_to_graph_output_map()) {
+    const auto &output_with_index = front_backend_pair.second;
+    auto output_kernel = output_with_index.first;
+    auto output_index = output_with_index.second;
+    MS_EXCEPTION_IF_NULL(output_kernel);
+    auto origin_output_with_index = front_backend_pair.first;
+    if (origin_output_with_index.first == nullptr) {
+      MS_LOG(WARNING) << "The graph " << graph_->graph_id() << " output node:" << output_kernel->fullname_with_scope()
+                      << " with index: " << output_index << " has no front node.";
+      continue;
+    }
+    if (!AnfUtils::IsRealCNodeKernel(output_kernel)) {
+      auto real_output_pair = common::AnfAlgo::FetchRealNodeSkipMonadControl({output_kernel, 0});
+      if (!AnfUtils::IsRealCNodeKernel(real_output_pair.first)) {
+        continue;
+      }
+      output_kernel = real_output_pair.first;
+      output_index = real_output_pair.second;
+    }
+    auto iter = cnode_to_kernel_actor_.find(output_kernel);
+    if (iter == cnode_to_kernel_actor_.end()) {
+      MS_LOG_WITH_NODE(EXCEPTION, output_kernel)
+        << "Can not find kernel actor for node: " << output_kernel->fullname_with_scope();
+    }
+    const auto &output_actor = iter->second;
+    MS_EXCEPTION_IF_NULL(output_actor);
+    SchedulerHelper::AddSomasInfoForGraphOutputV2(output_actor, output_index, graph_->graph_id());
+  }
+
+  // 3. Set free index for input and output address.
+  // this step must execute before step 4 to get the input and output free index, so that the Init of kernel actor
+  // could get the device address to be free.
+  SetFreePositionForKernelActor();
+
+  const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(graph_->output());
+  for (const auto &output : outputs) {
+    MS_EXCEPTION_IF_NULL(output.first);
+    const auto &iter = cnode_to_kernel_actor_.find(output.first);
+    if (iter == cnode_to_kernel_actor_.end()) {
+      continue;
+    }
+    const auto &actor = iter->second;
+    MS_EXCEPTION_IF_NULL(actor);
+    if (output.second >= actor->is_output_kernel_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid output index:" << output.second << " size:" << actor->is_output_kernel_.size()
+                        << " for actor:" << actor->GetAID();
+    }
+    actor->is_output_kernel_[output.second] = true;
+  }
+
+  // 4. Initialize all kernel actor.
+  // Note: this step must execute before LinkKernelActors, LinkKernelActors will check whether the output ref count is
+  // max or not to optimize free performance for somas case, need not try to free the output which has a max ref
+  // count.
+  size_t kernel_num = kernel_actors_.size();
+  for (size_t i = 0; i < kernel_num; i++) {
+    const auto &kernel_actor = kernel_actors_[i];
+    if (kernel_actor) {
+      kernel_actor->Init();
+    }
+  }
+}
+
+void SuperKernelActor::GenerateKernelRunners() {
   MS_EXCEPTION_IF_NULL(graph_);
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
@@ -1930,69 +1999,6 @@ void SuperKernelActor::BuildKernelActors() {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Stream send/recv pair : " << event_pair_id
                                          << ", send_actor : " << send_actor << ", recv_actor : " << recv_actor << ".";
     recv_actor->set_stream_send_actor(send_actor.get());
-  }
-
-  // 2. Add somas info.
-  // AddSomasOutput
-  for (const auto &front_backend_pair : graph_->front_node_to_graph_output_map()) {
-    const auto &output_with_index = front_backend_pair.second;
-    auto output_kernel = output_with_index.first;
-    auto output_index = output_with_index.second;
-    MS_EXCEPTION_IF_NULL(output_kernel);
-    auto origin_output_with_index = front_backend_pair.first;
-    if (origin_output_with_index.first == nullptr) {
-      MS_LOG(WARNING) << "The graph " << graph_->graph_id() << " output node:" << output_kernel->fullname_with_scope()
-                      << " with index: " << output_index << " has no front node.";
-      continue;
-    }
-    if (!AnfUtils::IsRealCNodeKernel(output_kernel)) {
-      auto real_output_pair = common::AnfAlgo::FetchRealNodeSkipMonadControl({output_kernel, 0});
-      if (!AnfUtils::IsRealCNodeKernel(real_output_pair.first)) {
-        continue;
-      }
-      output_kernel = real_output_pair.first;
-      output_index = real_output_pair.second;
-    }
-    auto iter = cnode_to_kernel_actor_.find(output_kernel);
-    if (iter == cnode_to_kernel_actor_.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, output_kernel)
-        << "Can not find kernel actor for node: " << output_kernel->fullname_with_scope();
-    }
-    const auto &output_actor = iter->second;
-    MS_EXCEPTION_IF_NULL(output_actor);
-    SchedulerHelper::AddSomasInfoForGraphOutputV2(output_actor, output_index, graph_->graph_id());
-  }
-
-  // 3. Set free index for input and output address.
-  // this step must execute before step 4 to get the input and output free index, so that the Init of kernel actor
-  // could get the device address to be free.
-  SetFreePositionForKernelActor();
-
-  const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(graph_->output());
-  for (const auto &output : outputs) {
-    MS_EXCEPTION_IF_NULL(output.first);
-    const auto &iter = cnode_to_kernel_actor_.find(output.first);
-    if (iter == cnode_to_kernel_actor_.end()) {
-      continue;
-    }
-    const auto &actor = iter->second;
-    MS_EXCEPTION_IF_NULL(actor);
-    if (output.second >= actor->is_output_kernel_.size()) {
-      MS_LOG(EXCEPTION) << "Invalid output index:" << output.second << " size:" << actor->is_output_kernel_.size()
-                        << " for actor:" << actor->GetAID();
-    }
-    actor->is_output_kernel_[output.second] = true;
-  }
-
-  // 4. Initialize all kernel actor.
-  // Note: this step must execute before LinkKernelActors, LinkKernelActors will check whether the output ref count is
-  // max or not to optimize free performance for somas case, need not try to free the output which has a max ref
-  // count.
-  for (size_t i = 0; i < kernel_num; i++) {
-    const auto &kernel_actor = kernel_actors_[i];
-    if (kernel_actor) {
-      kernel_actor->Init();
-    }
   }
 }
 
