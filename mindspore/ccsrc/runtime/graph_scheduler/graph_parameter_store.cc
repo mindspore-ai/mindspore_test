@@ -246,6 +246,10 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
 }
 
 void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback) {
+  if (tensor_data_in_callback.empty()) {
+    return;
+  }
+
   device::CallbackFunc callback_func = [tensor_data_in_callback]() {
     // Clear buffer automatically.
   };
