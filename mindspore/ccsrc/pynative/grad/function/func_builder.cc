@@ -1070,7 +1070,10 @@ NodePtr FuncBuilder::Sqrt(const NodePtr &x) { return NativeFunc::Sqrt(x); }
 
 NodePtr FuncBuilder::Square(const NodePtr &input) { return NativeFunc::Square(input); }
 
-NodePtr FuncBuilder::StackExt(const NodePtr &tensors, const NodePtr &dim) { return NativeFunc::StackExt(tensors, dim); }
+NodePtr FuncBuilder::StackExt(const NodePtr &tensors, const NodePtr &dim) {
+  tensors->SetValue(FillZeros(tensors->Value(), tensors->abstract()));
+  return NativeFunc::StackExt(tensors, dim);
+}
 
 NodePtr FuncBuilder::SubExt(const NodePtr &input, const NodePtr &other, const NodePtr &alpha) {
   return NativeFunc::SubExt(input, other, alpha);
