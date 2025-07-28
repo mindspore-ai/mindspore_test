@@ -95,11 +95,12 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   if (const auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor)) {
     const auto output_idx = auto_grad_meta_data->output_index();
     if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
-      const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
-      for (const auto &item : py_tensor_pre_hooks) {
-        const auto &py_hooks = item.second;
-        if (py_hooks->output_idx_ == output_idx) {
-          hooks.append(py_hooks->hook_fn_);
+      if (const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks()) {
+        for (const auto &item : *py_tensor_pre_hooks) {
+          const auto &py_hooks = item.second;
+          if (py_hooks->output_idx_ == output_idx) {
+            hooks.append(py_hooks->hook_fn_);
+          }
         }
       }
     }

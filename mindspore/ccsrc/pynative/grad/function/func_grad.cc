@@ -204,35 +204,39 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   return node_inputs;
 }
 
-void RunPyTensorHook(ValuePtrList *grad_in, const BackwardNodePtr &grad_node) {
-  static const std::string kTensorHook = "TensorHook";
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
-                                     kTensorHook, false);
-  MS_EXCEPTION_IF_NULL(grad_in);
-  MS_EXCEPTION_IF_NULL(grad_node);
-  for (const auto &[hook_id, hook] : grad_node->py_tensor_pre_hooks()) {
-    MS_LOG(DEBUG) << "Run hook id T" << hook_id;
-    MS_EXCEPTION_IF_NULL(hook);
-    (*hook)(grad_in);
+void RunPyTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+  if (const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
+      py_tensor_pre_hooks && !py_tensor_pre_hooks->empty()) {
+    static const std::string kTensorHook = "TensorHook";
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
+                                       kTensorHook, false);
+    for (const auto &[hook_id, hook] : *py_tensor_pre_hooks) {
+      MS_LOG(DEBUG) << "Run hook id T" << hook_id;
+      MS_EXCEPTION_IF_NULL(hook);
+      (*hook)(grad_in);
+    }
+    runtime::Pipeline::Get().WaitFrontend();
+    MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
   }
-  runtime::Pipeline::Get().WaitFrontend();
-  MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
+}
+
+void CallTensorPreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+  RunPyTensorHook(grad_node, grad_in);
+
+  if (const auto &retain_grad_hooks = grad_node->retain_grad_hooks();
+      retain_grad_hooks && !retain_grad_hooks->empty()) {
+    for (const auto &[output_idx, hook] : *retain_grad_hooks) {
+      const auto &grad = (*grad_in)[output_idx];
+      (*hook)(grad);
+    }
+  }
 }
 
 void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
-  MS_EXCEPTION_IF_NULL(grad_in);
-  if (!grad_node->py_tensor_pre_hooks().empty()) {
-    RunPyTensorHook(grad_in, grad_node);
-  }
   if (const auto &py_pre_hook = grad_node->py_pre_hook()) {
-    MS_EXCEPTION_IF_NULL(py_pre_hook);
     (*py_pre_hook)(grad_in);
     // Ensure all operations within python hooks have been dispatched to the backend stage
     runtime::Pipeline::Get().WaitFrontend();
-  }
-  for (const auto &[output_idx, hook] : grad_node->retain_grad_hooks()) {
-    const auto &grad = (*grad_in)[output_idx];
-    (*hook)(grad);
   }
 }
 
@@ -269,31 +273,36 @@ void UpdateCreationType(const ValuePtrList &flatten_outputs) {
   }
 }
 
+void ProcessNoDefaultViewRebase(const ViewAutoGradMetaDataPtr &view_meta, const bool is_direct_inplace) {
+  std::ostringstream ss;
+  const std::string header =
+    is_direct_inplace ? "A view of base is being inplace modified, " : "A view of base is being rebase, ";
+  ss << header;
+  const auto grad_node = view_meta->UnsafeGetGradNodeImpl();
+  if (view_meta->creation_type() == CreationType::kNoGradMode) {
+    ss << "which created in no_grad mode and inplace modified with grad mode enabled.";
+    ss << "This case is forbidden, you can put them both in no_grad mode or both in grad enabled.";
+  } else if (view_meta->creation_type() == CreationType::kMultiOutput && grad_node) {
+    ss << "the " << view_meta->output_index() << "'s  output of " << grad_node->name()
+       << "is a view and inplace modified. ";
+  }
+  if (view_meta->creation_type() == CreationType::kMultiOutput) {
+    ss << "This view is one of output for multi output operator, "
+       << "which is forbidden. you can use out-of-place op to replace";
+  } else if (view_meta->creation_type() == CreationType::kCustomBprop) {
+    ss << "This view tensor is output of custom cell, which has custom bprop, it may not support view+inplace, it "
+          "will influence grad result,"
+       << "you can use out-of-place op to replace";
+  }
+  MS_LOG(EXCEPTION) << ss.str();
+}
+
 void CheckInplace(const OpGradInfoPtr &op_grad_info) {
   auto output_tensor = op_grad_info->out_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(output_tensor);
   auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
   if (view_meta && view_meta->creation_type() != CreationType::kDefault) {
-    std::ostringstream ss;
-    std::string header = "A view of base is being inplace modified, ";
-    ss << header;
-    auto grad_node = view_meta->UnsafeGetGradNodeImpl();
-    if (view_meta->creation_type() == CreationType::kNoGradMode) {
-      ss << "which created in no_grad mode and inplace modified with grad mode enabled.";
-      ss << "This case is forbidden, you can put them both in no_grad mode or both in grad enabled.";
-    } else if (view_meta->creation_type() == CreationType::kMultiOutput && grad_node) {
-      ss << "the " << view_meta->output_index() << "'s  output of " << grad_node->name()
-         << "is a view and inplace modified. ";
-    }
-    if (view_meta->creation_type() == CreationType::kMultiOutput) {
-      ss << "This view is one of output for multi output operator, "
-         << "which is forbidden. you can use out-of-place op to replace";
-    } else if (view_meta->creation_type() == CreationType::kCustomBprop) {
-      ss << "This view tensor is output of custom cell, which has custom bprop, it may not support view+inplace, it "
-            "will influence grad result,"
-         << "you can use out-of-place op to replace";
-    }
-    MS_LOG(EXCEPTION) << ss.str();
+    ProcessNoDefaultViewRebase(view_meta, true);
   }
   if (view_meta != nullptr) {
     const auto &base_tensor = view_meta->view_info().base();
@@ -743,6 +752,9 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   if (tensor->version().current_version() == view_meta->version_attr()) {
     return view_meta->UnsafeGetGradNodeImpl();
   }
+  if (view_meta->creation_type() != CreationType::kDefault) {
+    ProcessNoDefaultViewRebase(view_meta, false);
+  }
   auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder("AsStrided");
   auto device_target = kernel::pyboost::OpRunStatus::Get().device_target();
   auto emitter = std::make_shared<FuncBuilder>("AsStrided", device_target, nullptr);
@@ -762,6 +774,11 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
   auto saved_output = ConstructPlaceHolder(tensor);
   auto fn = BackwardNode::Create<FuncBackwardNode>("AsStrided", handle->func, emitter, attrs, inputs_node, saved_output,
                                                    nullptr, 1);
+  if (view_meta->retains_grad()) {
+    const auto &old_grad_node = view_meta->UnsafeGetGradNodeImpl();
+    MS_EXCEPTION_IF_NULL(old_grad_node);
+    UpdateRetainGradHook(old_grad_node, fn, view_meta->output_index(), kIndex0);
+  }
   std::vector<ValuePtr> inputs{view_meta->view_info().base(), shape_value, strided_value, offset_value};
   UpdateNextEdges(fn, inputs);
   view_meta->set_grad_node(fn);
@@ -811,8 +828,9 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     }
     const auto &auto_grad_meta_data = base_tensor->auto_grad_meta_data();
     MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
-    if (auto_grad_meta_data->requires_grad() && auto_grad_meta_data->retains_grad()) {
-      auto base_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
+    if (auto_grad_meta_data->retains_grad()) {
+      const auto &base_node = auto_grad_meta_data->UnsafeGetGradNodeImpl();
+      MS_EXCEPTION_IF_NULL(base_node);
       UpdateRetainGradHook(base_node, copy_slice, kIndex0, kIndex0);
     }
     auto_grad_meta_data->set_grad_node(copy_slice);
@@ -1824,8 +1842,7 @@ void AutoDiff::BackPropagate() {
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_in, "Begin print gradient in: ");
     // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expect.
     if (!is_run_recompute_ || !isa<LeafNode>(fn)) {
-      // to do
-      CallBackwardNodePreHooks(fn, &gradient_in);
+      CallTensorPreHooks(fn, &gradient_in);
     }
     if (ctx_iter != gradient_contexts_.end() && ctx_iter->second.captured_grad != nullptr) {
       auto tensor_grad = gradient_in[ctx_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
@@ -1833,6 +1850,7 @@ void AutoDiff::BackPropagate() {
       ctx_iter->second.captured_grad->SetGradient(tensor_grad);
       continue;
     }
+    CallBackwardNodePreHooks(fn, &gradient_in);
     auto gradient_out = fn->CallBackward(gradient_in);
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_out, "Begin print gradient out: ");
     if (gradient_out.size() < fn->next_edges().size()) {
@@ -1891,12 +1909,12 @@ void AutoDiff::BackPropagate() {
 
 ValuePtr AutoDiff::LeafNodeNotInGradButHasTensorHook(const std::shared_ptr<LeafNode> &fn) const {
   MS_EXCEPTION_IF_NULL(fn);
-  if (is_run_recompute_ || fn->py_tensor_pre_hooks().empty()) {
+  if (is_run_recompute_ || fn->py_tensor_pre_hooks()) {
     return fn->Zeros(func_impl_);
   }
   ValuePtrList grad_in{};
   (void)grad_in.emplace_back(fn->Zeros(func_impl_));
-  RunPyTensorHook(&grad_in, fn);
+  RunPyTensorHook(fn, &grad_in);
   auto grad_tensor = grad_in.front()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   return grad_tensor;

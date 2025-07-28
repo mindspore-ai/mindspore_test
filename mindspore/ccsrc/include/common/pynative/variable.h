@@ -191,6 +191,9 @@ struct Edge {
   size_t input_index;
 };
 
+using PyTensorHookMap = OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>>;
+using RetainGradHookMap = std::unordered_map<size_t, std::unique_ptr<RetainGradHook>>;
+
 class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardNode> {
  public:
   /// \brief Constructor.
@@ -220,14 +223,45 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
 
   /// \brief Add python tensor hook.
   /// \param id
-  /// \param hook
-  void AddPyTensorHook(uint64_t id, std::unique_ptr<PyTensorBackwardNodePreHook> &&hook) {
-    py_tensor_pre_hooks_[id] = std::move(hook);
+  /// \param hook_fn
+  void AddPyTensorHook(uint64_t id, std::unique_ptr<PyTensorBackwardNodePreHook> &&hook_fn) {
+    if (!py_tensor_pre_hooks_) {
+      py_tensor_pre_hooks_ = std::make_unique<PyTensorHookMap>();
+    }
+    (*py_tensor_pre_hooks_)[id] = std::move(hook_fn);
   }
 
   /// \brief Remove python tensor hook.
   /// \param id
-  void RemovePyTensorHook(uint64_t id) { (void)py_tensor_pre_hooks_.erase(id); }
+  void RemovePyTensorHook(uint64_t id) { (void)py_tensor_pre_hooks_->erase(id); }
+
+  /// \brief Add retain grad hook.
+  /// \param output_idx
+  /// \param hook_fn
+  void AddRetainGradHook(size_t output_idx, std::unique_ptr<RetainGradHook> &&hook_fn) {
+    if (!retain_grad_hooks_) {
+      retain_grad_hooks_ = std::make_unique<RetainGradHookMap>();
+    }
+    (*retain_grad_hooks_)[output_idx] = std::move(hook_fn);
+  }
+
+  /// \brief Pop retain grad hook.
+  /// \param output_idx
+  /// \return Popped retain gradient hook.
+  std::unique_ptr<RetainGradHook> PopRetainGradHook(size_t output_idx) {
+    MS_EXCEPTION_IF_NULL(retain_grad_hooks_);
+    auto hook_fn = std::move((*retain_grad_hooks_)[output_idx]);
+    (void)retain_grad_hooks_->erase(output_idx);
+    return hook_fn;
+  }
+
+  /// \brief Set Python Pre Hook
+  /// \param hook_fn
+  void SetPyPreHook(std::unique_ptr<PyBackwardNodePreHook> &&hook_fn) { py_pre_hook_ = std::move(hook_fn); }
+
+  /// \brief Set Python Post Hook
+  /// \param hook_fn
+  void SetPyPostHook(std::unique_ptr<PyBackwardNodePostHook> &&hook_fn) { py_post_hook_ = std::move(hook_fn); }
 
   /// check next edges is all not defined.
   /// \return true
@@ -266,33 +300,21 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Set check func.
   void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
 
-  /// \brief Backward hook for backward node.
-  /// \return backward_hooks
-  const OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> &py_tensor_pre_hooks() const {
-    return py_tensor_pre_hooks_;
-  }
+  /// \brief Python tensor hook for backward node.
+  /// \return py_tensor_pre_hooks
+  const std::unique_ptr<PyTensorHookMap> &py_tensor_pre_hooks() const noexcept { return py_tensor_pre_hooks_; }
 
-  const std::unique_ptr<PyBackwardNodePreHook> &py_pre_hook() const { return py_pre_hook_; }
+  /// \brief RetainGrad hook for backward node.
+  /// \return retain_grad_hooks
+  const std::unique_ptr<RetainGradHookMap> &retain_grad_hooks() const noexcept { return retain_grad_hooks_; }
 
-  const std::unordered_map<size_t, std::unique_ptr<RetainGradHook>> &retain_grad_hooks() const {
-    return retain_grad_hooks_;
-  }
+  /// \brief Python pre hook for backward node.
+  /// \return py_pre_hook
+  const std::unique_ptr<PyBackwardNodePreHook> &py_pre_hook() const noexcept { return py_pre_hook_; }
 
-  const std::unique_ptr<PyBackwardNodePostHook> &py_post_hook() const { return py_post_hook_; }
-
-  void SetPyPreHook(std::unique_ptr<PyBackwardNodePreHook> &&hook_fn) { py_pre_hook_ = std::move(hook_fn); }
-
-  void AddRetainGradHook(size_t output_idx, std::unique_ptr<RetainGradHook> &&hook_fn) {
-    retain_grad_hooks_[output_idx] = std::move(hook_fn);
-  }
-
-  std::unique_ptr<RetainGradHook> PopRetainGradHook(size_t output_idx) {
-    auto hook_fn = std::move(retain_grad_hooks_[output_idx]);
-    retain_grad_hooks_.erase(output_idx);
-    return hook_fn;
-  }
-
-  void SetPyPostHook(std::unique_ptr<PyBackwardNodePostHook> &&hook_fn) { py_post_hook_ = std::move(hook_fn); }
+  /// \brief Python post hook for backward node.
+  /// \return py_post_hook
+  const std::unique_ptr<PyBackwardNodePostHook> &py_post_hook() const noexcept { return py_post_hook_; }
 
   /// \brief The sequence number of current node.
   /// \return sequence number
@@ -322,13 +344,14 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   std::vector<Edge> next_edges_;
   std::string name_;
   std::function<void(const std::string &op_name)> check_func_{nullptr};
-  // Tensor hooks
-  OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> py_tensor_pre_hooks_;
-  std::unique_ptr<PyBackwardNodePreHook> py_pre_hook_{nullptr};
-  std::unordered_map<size_t, std::unique_ptr<RetainGradHook>> retain_grad_hooks_;
-  std::unique_ptr<PyBackwardNodePostHook> py_post_hook_{nullptr};
   size_t seq_id_;
   size_t output_size_;
+
+  // Tensor Hook -> RetainGrad Hook -> Capture Grad -> BackwardNode Pre Hook -> CallBackward -> BackwardNode Post Hook
+  std::unique_ptr<PyTensorHookMap> py_tensor_pre_hooks_{nullptr};
+  std::unique_ptr<RetainGradHookMap> retain_grad_hooks_{nullptr};
+  std::unique_ptr<PyBackwardNodePreHook> py_pre_hook_{nullptr};
+  std::unique_ptr<PyBackwardNodePostHook> py_post_hook_{nullptr};
 };
 using BackwardNodePtr = std::shared_ptr<BackwardNode>;
 
