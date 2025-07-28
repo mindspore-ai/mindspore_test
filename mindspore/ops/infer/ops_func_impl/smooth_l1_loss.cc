@@ -56,7 +56,9 @@ ShapeArray SmoothL1LossFuncImpl::InferShape(const PrimitivePtr &primitive, const
 
 std::vector<TypeId> SmoothL1LossFuncImpl::InferType(const PrimitivePtr &primitive,
                                                     const InferInfoPtrList &input_infos) const {
-  return {input_infos[kInputIndex0]->GetType()};
+  auto output_type =
+    PromoteType(input_infos[kInputIndex0]->GetType(), input_infos[kInputIndex1]->GetType(), "SmoothL1Loss");
+  return {output_type};
 }
 }  // namespace ops
 }  // namespace mindspore
