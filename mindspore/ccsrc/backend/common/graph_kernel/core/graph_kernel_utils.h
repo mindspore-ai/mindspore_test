@@ -52,7 +52,12 @@ constexpr auto kAttrExpandFrom = "expand_from";
 #define GK_PROF_END(stage) PROF_END_INNER(stage, OSS_STR)
 #define GK_PROF_END_WITH_VAR(stage) PROF_END_INNER(stage, OSS_VAR)
 
-using OpWithLevel = std::tuple<std::string, unsigned int, PrimitivePtr>;
+struct OpWithLevel {
+  std::string device;
+  unsigned int op_level{0};
+  PrimitivePtr prim{nullptr};
+  std::function<bool(const AnfNodePtr &)> check_func{nullptr};
+};
 
 class GkUtils {
  public:

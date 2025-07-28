@@ -115,10 +115,10 @@ std::vector<PrimitivePtr> GkUtils::GetValidOps(const std::vector<OpWithLevel> &o
     return ops;
   }
   auto target = Callback::Instance()->GetTargetFromContext();
-  for (const auto &[op_target, op_level, op] : ops_with_level) {
-    if (op_target == kAllTarget || op_target == target) {
-      if (level >= op_level) {
-        (void)ops.emplace_back(op);
+  for (const auto &item : ops_with_level) {
+    if (item.device == kAllTarget || item.device == target) {
+      if (level >= item.op_level) {
+        (void)ops.emplace_back(item.prim);
       }
     }
   }
@@ -175,7 +175,7 @@ void GkUtils::CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel
     (void)checked_ops.insert(name);
     auto iter =
       std::find_if(ops_with_level.begin(), ops_with_level.end(), [&node, &target_level](const OpWithLevel &item) {
-        return IsPrimitiveCNode(node, std::get<kIndex2>(item)) && std::get<kIndex1>(item) <= target_level;
+        return IsPrimitiveCNode(node, item.prim) && item.op_level <= target_level;
       });
     if (iter == ops_with_level.end()) {
       MS_LOG(WARNING) << "For Graph Kernel fusion, [" << name << "] is an experimental op.";
