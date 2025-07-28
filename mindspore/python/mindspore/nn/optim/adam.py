@@ -818,7 +818,6 @@ class Adam(Optimizer):
 
     @jit
     def construct(self, gradients):
-        gradients = C.bprop_input_prefetch(gradients)
         params = self._parameters
         moment1 = self.moment1
         moment2 = self.moment2

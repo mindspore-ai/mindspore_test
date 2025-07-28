@@ -12,5 +12,3 @@ prefetch:
   returns:
     output:
       dtype: tensor
-  function:
-      disable: True

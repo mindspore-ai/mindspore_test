@@ -123,7 +123,7 @@ from .nn_ops import (LSTM, SGD, Adam, AdamWeightDecay, FusedSparseAdam, FusedSpa
 from .other_ops import (Assign, IOU, BoundingBoxDecode, BoundingBoxEncode,
                         ConfusionMatrix, UpdateState, Load, StopGradient, Reusing,
                         CheckValid, Partial, Depend, MoveTo, Push, Pull, PyExecute, PyFunc, _DynamicLossScale,
-                        SampleDistortedBoundingBoxV2, Prefetch, Detach, ToRemote, GradLoad)
+                        SampleDistortedBoundingBoxV2)
 from .random_ops import (RandomChoiceWithMask, StandardNormal, Gamma, RandomGamma, Poisson, UniformInt, UniformReal,
                          RandomCategorical, StandardLaplace, Multinomial, UniformCandidateSampler,
                          LogUniformCandidateSampler, TruncatedNormal, LogNormalReverse, NonDeterministicInts,
@@ -381,10 +381,6 @@ __all__ = [
     'IOU',
     'Partial',
     'Depend',
-    'Prefetch',
-    'Detach',
-    'ToRemote',
-    'GradLoad',
     'MoveTo',
     'UpdateState',
     'StopGradient',

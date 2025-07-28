@@ -1,4 +1,4 @@
-#operator prefetch
+#operator detach
 detach:
   args:
     x:
@@ -12,5 +12,3 @@ detach:
   returns:
     output:
       dtype: tensor
-  function:
-      disable: True

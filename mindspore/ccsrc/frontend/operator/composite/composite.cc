@@ -2866,8 +2866,9 @@ AnfNodePtr BpropOutToRemote::InsertToRemoteAndDetachRecursively(const FuncGraphP
     }
     return fg->NewCNode(make_sequence_inputs);
   }
-  auto to_remote_node = fg->NewCNode({NewValueNode(prim::kPrimToRemote), node});
-  auto detach_node = fg->NewCNode({NewValueNode(prim::kPrimDetach), node});
+  auto to_remote_node =
+    fg->NewCNode({NewValueNode(prim::kPrimToRemote), node, NewValueNode(kNone), NewValueNode(false)});
+  auto detach_node = fg->NewCNode({NewValueNode(prim::kPrimDetach), node, NewValueNode(kNone), NewValueNode(false)});
   auto detach_depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), detach_node, to_remote_node});
   auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, detach_depend_node});
   return depend_node;
@@ -2907,7 +2908,8 @@ AnfNodePtr BpropInputPrefetch::InsertPrefetchRecursively(const FuncGraphPtr &fg,
     }
     return fg->NewCNode(make_sequence_inputs);
   }
-  auto prefetch_node = fg->NewCNode({NewValueNode(prim::kPrimPrefetch), node});
+  auto prefetch_node =
+    fg->NewCNode({NewValueNode(prim::kPrimPrefetch), node, NewValueNode(kNone), NewValueNode(false)});
   auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, prefetch_node});
   return depend_node;
 }

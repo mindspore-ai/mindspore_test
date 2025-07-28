@@ -1,4 +1,4 @@
-#operator prefetch
+#operator grad_load
 grad_load:
   args:
     x:
@@ -8,8 +8,9 @@ grad_load:
     depend_nodes:
       dtype: tuple[tensor]
       default: None
+    sync:
+      dtype: bool
+      default: False
   returns:
     output:
       dtype: tensor
-  function:
-      disable: True

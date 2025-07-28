@@ -1,4 +1,4 @@
-#operator prefetch
+#operator to_remote
 to_remote:
   args:
     x:
@@ -12,5 +12,3 @@ to_remote:
   returns:
     output:
       dtype: tensor
-  function:
-      disable: True

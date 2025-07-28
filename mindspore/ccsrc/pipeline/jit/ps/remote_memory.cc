@@ -23,6 +23,7 @@
 #include "ir/core_ops_primitive.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
@@ -112,10 +113,10 @@ AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncG
   AnfNodePtrList prefetch_results_inputs{NewValueNode(prim::kPrimMakeTuple)};
   for (size_t i = 0; i < prefetch_elements.size(); ++i) {
     auto prefetch_param_node = prefetch_elements[i];
-    // todo: Current no depend list and sync.
-    auto empty_depend_list = std::make_shared<ValueTuple>(ValuePtrList());
-    AnfNodePtrList cur_prefetch_inputs{NewValueNode(prim::kPrimPrefetch), prefetch_param_node,
-                                       NewValueNode(empty_depend_list), NewValueNode(MakeValue(false))};
+    // todo: Need to add depend node for prefetch.
+    // todo: Need to decide whether the remote ops is run synchronously.
+    AnfNodePtrList cur_prefetch_inputs{NewValueNode(prim::kPrimPrefetch), prefetch_param_node, NewValueNode(kNone),
+                                       NewValueNode(false)};
     auto prefetch_result = wrapped_fg->NewCNodeInOrder(cur_prefetch_inputs);
     (void)prefetch_results_inputs.emplace_back(prefetch_result);
   }
@@ -140,17 +141,19 @@ AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPt
     // todo: No need to update all parameters? Only requires grad parameters or non-optimizer parameters need.
     AnfNodePtrList update_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
     for (auto detach_node : detach_nodes) {
+      auto depend_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), node});
       auto update_result =
-        fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), detach_node, node, NewValueNode(MakeValue(false))});
+        fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), detach_node, depend_node, NewValueNode(false)});
       (void)update_result_inputs.emplace_back(update_result);
     }
     auto update_result_node = fg->NewCNodeInOrder(update_result_inputs);
     node_after_update = fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), node, update_result_node});
   }
   AnfNodePtrList detach_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  auto depend_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), node_after_update});
   for (auto detach_node : detach_nodes) {
-    auto detach_result = fg->NewCNodeInOrder(
-      {NewValueNode(prim::kPrimDetach), detach_node, node_after_update, NewValueNode(MakeValue(false))});
+    auto detach_result =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimDetach), detach_node, depend_node, NewValueNode(MakeValue(false))});
     (void)detach_result_inputs.emplace_back(detach_result);
   }
   auto detach_result_node = fg->NewCNodeInOrder(detach_result_inputs);
@@ -233,7 +236,7 @@ CNodePtr ActivationToRemote(const FuncGraphManagerPtr &mng, const FuncGraphPtr &
   // -->
   // %to_remote = ToRemote(%out)
   // %new_out_value = Depend(%out, %to_remote)
-  AnfNodePtrList out_to_remote_inputs{NewValueNode(prim::kPrimToRemote), out};
+  AnfNodePtrList out_to_remote_inputs{NewValueNode(prim::kPrimToRemote), out, NewValueNode(kNone), NewValueNode(false)};
   auto out_to_remote = fprop->NewCNode(out_to_remote_inputs);
   AnfNodePtrList new_out_value_input{NewValueNode(prim::kPrimDepend), out, out_to_remote};
   CNodePtr new_out = fprop->NewCNode(new_out_value_input);
@@ -243,26 +246,24 @@ CNodePtr ActivationToRemote(const FuncGraphManagerPtr &mng, const FuncGraphPtr &
   // %prefetch = Prefetch(%out)
   // %prefetch_depend = Depend(%prefetch, %dout)
   // %new_out = Depend(%out, %prefetch_depend)
-  AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), new_out};
+  AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), new_out, NewValueNode(kNone), NewValueNode(false)};
   auto prefetch_node = bprop->NewCNodeInFront(prefetch_inputs);
   AnfNodePtrList prefetch_depend_inputs{NewValueNode(prim::kPrimDepend), prefetch_node, dout};
   auto prefetch_depend_node = bprop->NewCNode(prefetch_depend_inputs);
   AnfNodePtrList bprop_out_inputs{NewValueNode(prim::kPrimDepend), new_out, prefetch_depend_node};
   auto bprop_out_node = bprop->NewCNode(bprop_out_inputs);
   const auto &out_value_users = mng->node_users()[new_out];
-  AnfNodePtrList make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
   for (const auto &user : out_value_users) {
     auto user_node = user.first;
     if (user_node->func_graph() != bprop) {
       continue;
     }
     mng->SetEdge(user_node, user.second, bprop_out_node);
-    (void)make_tuple_inputs.emplace_back(user_node);
   }
 
   // Add Detach after activation is used
-  auto make_tuple_node = bprop->NewCNode(make_tuple_inputs);
-  auto detach_node = bprop->NewCNode({NewValueNode(prim::kPrimDetach), bprop_out_node, make_tuple_node});
+  auto detach_node =
+    bprop->NewCNode({NewValueNode(prim::kPrimDetach), bprop_out_node, NewValueNode(kNone), NewValueNode(false)});
   auto new_output = bprop->NewCNode({NewValueNode(prim::kPrimDepend), bprop->output(), detach_node});
   bprop->set_output(new_output);
   return new_out;
@@ -284,7 +285,7 @@ void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &f
     MS_EXCEPTION_IF_NULL(cur_fg);
     auto ref_input = cnode->input(load_ref_index);
     auto monad_input = cnode->input(load_monad_index);
-    AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), ref_input, monad_input};
+    AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), ref_input, monad_input, NewValueNode(false)};
     auto prefetch_node = cur_fg->NewCNode(prefetch_inputs);
     AnfNodePtrList update_input{NewValueNode(prim::kPrimUpdateState), NewValueNode(kUMonad), prefetch_node};
     auto update_node = cur_fg->NewCNode(update_input);

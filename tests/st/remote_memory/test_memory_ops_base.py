@@ -34,7 +34,7 @@ def test_remote_ops_to_remote():
 
     @jit
     def foo(x):
-        x = ops.ToRemote()(x,)
+        x = ops.auto_generate.ToRemote()(x,)
         return x
 
     x = Tensor([1, 2, 3, 4])
@@ -55,8 +55,8 @@ def test_remote_ops_detach():
 
     @jit
     def foo(x):
-        x = ops.ToRemote()(x)
-        x = ops.Detach()(x)
+        x = ops.auto_generate.ToRemote()(x)
+        x = ops.auto_generate.Detach()(x)
         return x
 
     x = Tensor([1, 2, 3, 4])
@@ -77,9 +77,32 @@ def test_remote_ops_prefetch():
 
     @jit
     def foo(x):
-        x = ops.ToRemote()(x)
-        x = ops.Detach()(x)
-        x = ops.Prefetch()(x)
+        x = ops.auto_generate.ToRemote()(x)
+        x = ops.auto_generate.Detach()(x)
+        x = ops.auto_generate.Prefetch()(x)
+        return x
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo(x)
+    assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
+
+
+@pytest.mark.skip(reason='wait for ops')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_functional_remote_memory():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
+
+    @jit
+    def foo(x):
+        x = ops.auto_generate.to_remote(x)
+        x = ops.auto_generate.detach(x)
+        x = ops.auto_generate.prefetch(x)
         return x
 
     x = Tensor([1, 2, 3, 4])
@@ -101,7 +124,7 @@ def test_remote_ops_grad_load_forward():
     @jit
     def foo(x):
         y = ops.relu(x)
-        y = ops.GradLoad()(y, x)
+        y = ops.auto_generate.GradLoad()(y, x)
         return y
 
     x = Tensor([1, 2, 3, 4])
@@ -122,7 +145,32 @@ def test_remote_ops_grad_load_grad():
 
     def foo(x):
         y = ops.relu(x)
-        y = ops.GradLoad()(y, x, (), False)
+        y = ops.auto_generate.GradLoad()(y, x, (), False)
+        return y
+
+    @jit
+    def grad_foo(x):
+        return ops.grad(foo)(x)
+
+    x = Tensor([1, 2, 3, 4])
+    ret = grad_foo(x)
+    assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '0'
+
+
+@pytest.mark.skip(reason='wait for ops')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_functional_grad_load_grad():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+    os.environ['MS_DEV_ENABLE_REMOTE_MEMORY'] = '1'
+
+    def foo(x):
+        y = ops.relu(x)
+        y = ops.auto_generate.grad_load(y, x, (), False)
         return y
 
     @jit
@@ -152,9 +200,9 @@ def test_remote_ops_in_for_loop():
             self.param_b = Parameter(Tensor([1, 1, 1]), name="param_b")
             self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
             self.params = self.trainable_params()
-            self.prefetch = ops.Prefetch()
+            self.prefetch = ops.auto_generate.Prefetch()()
             self.depend = ops.Depend()
-            self.detach = ops.Detach()
+            self.detach = ops.auto_generate.Detach()
 
         @jit
         def construct(self, a, b, c):
@@ -195,9 +243,9 @@ def test_remote_ops_in_for_loop_grad():
             self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
             self.params = self.trainable_params()
             self.prefetch_params = (self.param_b, self.param_c, None)
-            self.prefetch = ops.Prefetch()
+            self.prefetch = ops.auto_generate.Prefetch()()
             self.depend = ops.Depend()
-            self.detach = ops.Detach()
+            self.detach = ops.auto_generate.Detach()
 
         @jit
         def construct(self, a, b, c):
@@ -247,9 +295,9 @@ def test_remote_ops_in_for_variable_loop():
             self.param_b = Parameter(Tensor([1, 1, 1]), name="param_b")
             self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
             self.params = self.trainable_params()
-            self.prefetch = ops.Prefetch()
+            self.prefetch = ops.auto_generate.Prefetch()()
             self.depend = ops.Depend()
-            self.detach = ops.Detach()
+            self.detach = ops.auto_generate.Detach()
 
         @jit
         def construct(self, a, b, c, d):
