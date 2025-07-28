@@ -70,11 +70,10 @@ int CustomConfigManager::UpdateConfig(const std::map<std::string, std::string> &
       if (IsValidDoubleNum(dpico_config.at(param.first))) {
         *param.second = std::stof(dpico_config.at(param.first));
       } else {
-        MS_LOG(WARNING) << param.first
-                        << " param in config is invalid, will use default or last value:" << *param.second;
+        MS_LOG(WARNING) << param.first << " param in config is invalid, will use default or last value.";
       }
     } else {
-      MS_LOG(INFO) << param.first << " param isn't configured, will use default or last value:" << *param.second;
+      MS_LOG(INFO) << param.first << " param isn't configured, will use default or last value.";
     }
   }
 
