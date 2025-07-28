@@ -93,9 +93,8 @@ def register_cell_buffer_registration_hook(hook: Callable[..., None],):
         A handle that can be used to remove the added hook by calling
         `handle.remove()`.
     """
-    from mindspore.utils.hooks import _RemovableHandle
-    handle = _RemovableHandle(_global_buffer_registration_hooks)
-    _global_buffer_registration_hooks[handle.id] = hook
+    handle = HookHandle(_global_buffer_registration_hooks)
+    _global_buffer_registration_hooks[handle.handle_id] = hook
     return handle
 
 
@@ -2977,9 +2976,8 @@ class Cell(Cell_):
             A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        from mindspore.utils.hooks import _RemovableHandle
-        handle = _RemovableHandle(self._state_dict_hooks)
-        self._state_dict_hooks[handle.id] = hook
+        handle = HookHandle(self._state_dict_hooks)
+        self._state_dict_hooks[handle.handle_id] = hook
         return handle
 
     @jit_forbidden_register
@@ -3025,9 +3023,8 @@ class Cell(Cell_):
             >>> print("extra_param" in net_state_dict)
             True
         """
-        from mindspore.utils.hooks import _RemovableHandle
-        handle = _RemovableHandle(self._state_dict_pre_hooks)
-        self._state_dict_pre_hooks[handle.id] = hook
+        handle = HookHandle(self._state_dict_pre_hooks)
+        self._state_dict_pre_hooks[handle.handle_id] = hook
         return handle
 
     def _save_to_state_dict(self, destination, prefix, keep_vars):
@@ -3173,9 +3170,8 @@ class Cell(Cell_):
             A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        from mindspore.utils.hooks import _RemovableHandle
-        handle = _RemovableHandle(self._load_state_dict_pre_hooks)
-        self._load_state_dict_pre_hooks[handle.id] = hook
+        handle = HookHandle(self._load_state_dict_pre_hooks)
+        self._load_state_dict_pre_hooks[handle.handle_id] = hook
         return handle
 
     @jit_forbidden_register
@@ -3207,9 +3203,8 @@ class Cell(Cell_):
             A handle that can be used to remove the added hook by calling
             `handle.remove()`.
         """
-        from mindspore.utils.hooks import _RemovableHandle
-        handle = _RemovableHandle(self._load_state_dict_post_hooks)
-        self._load_state_dict_post_hooks[handle.id] = hook
+        handle = HookHandle(self._load_state_dict_post_hooks)
+        self._load_state_dict_post_hooks[handle.handle_id] = hook
         return handle
 
     def _load_from_state_dict(
