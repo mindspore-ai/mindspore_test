@@ -505,9 +505,10 @@ def test_zero_bubble_v_mix_precision():
     Description: test zbv+mix precision
     Expectation: success
     """
+    from parallel.auto_parallel_interface._utils import find_ir_file_path
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = "0"
-    graph_root_path = "./graph_mix_precision"
-    rank_graph_path = graph_root_path + "/rank_0/"
+    exec_path = os.path.dirname(os.path.realpath(__file__))
+    graph_root_path = os.path.join(exec_path, "graph_mix_precision")
     context.set_context(save_graphs=True, save_graphs_path=graph_root_path)
     context.set_auto_parallel_context(device_num=32, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -533,40 +534,40 @@ def test_zero_bubble_v_mix_precision():
     pp_cell = PipelineCell(loss_cell, 8)
     model = Model(pp_cell, optimizer=opt)
     model.train(2, dataset, dataset_sink_mode=True)
-    pipeline_scheduler = find_graph_file_name(graph_root_path, 'pipeline_parallel_scheduler')
+    pipeline_scheduler = find_ir_file_path(graph_root_path, "pipeline_parallel_scheduler")
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('call_call_1f1b', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('call_call_1f1b', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "call_call_1f1b" in log_cnt
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('1b1f_call_call', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('1b1f_call_call', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "1b1f_call_call" in log_cnt
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('input_recv_1f1b', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('input_recv_1f1b', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "input_recv_1f1b" in log_cnt
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('send_out_1f1b', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('send_out_1f1b', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "send_out_1f1b" in log_cnt
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('inner_overlap', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('inner_overlap', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "inner_overlap" in log_cnt
 
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('zero_bubble_v_control', rank_graph_path + pipeline_scheduler)],
+        ["grep -r '%s' %s " % ('zero_bubble_v_control', pipeline_scheduler)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     assert "zero_bubble_v_control" in log_cnt
