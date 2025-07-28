@@ -21,6 +21,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include "utils/phase.h"
+#include "utils/ms_context.h"
 #include "backend/backend_manager/visible.h"
 
 namespace mindspore {
@@ -37,7 +38,18 @@ struct BackendJitConfig {
     }
     iter = jit_config.find("backend");
     if (iter != jit_config.end()) {
-      backend_jit_config.backend = iter->second;
+      auto jit_backend = iter->second;
+      if (jit_backend.empty()) {
+        auto context = MsContext::GetInstance();
+        if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice &&
+            context->ascend_soc_version() == kAscendVersion910) {
+          backend_jit_config.backend = "GE";
+        } else {
+          backend_jit_config.backend = "ms_backend";
+        }
+      } else {
+        backend_jit_config.backend = jit_backend;
+      }
     }
 
     iter = jit_config.find("options");
