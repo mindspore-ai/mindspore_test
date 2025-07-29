@@ -93,7 +93,6 @@ std::shared_ptr<session::KernelGraph> BackendCommon::GetKernelGraph(const FuncGr
   AnfNodePtrList ins = inferred_graph->parameters();
   AnfNodePtrList outs = {inferred_graph->get_return()->input(1)};
   auto session = session::SessionFactory::Get().Create(kSessionBasic);
-  session->Init(0);
   auto kernel_graph = session->ConstructKernelGraph(applies, outs);
   kernel_graph->SetExecOrderByDefault();
   return kernel_graph;

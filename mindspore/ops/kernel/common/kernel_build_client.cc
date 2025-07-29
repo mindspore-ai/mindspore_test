@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/session/kernel_build_client.h"
+#include "common/kernel_build_client.h"
 #include <memory>
 
 namespace mindspore {

@@ -54,7 +54,6 @@
 #include "include/common/debug/dump_proto.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "include/common/debug/draw.h"
-#include "backend/common/session/executor_manager.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/backend/distributed/init.h"
@@ -856,7 +855,6 @@ void FinalizeHccl() {
     return;
   }
 #endif
-  session::ExecutorManager::Instance().Clear();
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   device::DeviceContextManager::GetInstance().UnloadPlugin();
 }

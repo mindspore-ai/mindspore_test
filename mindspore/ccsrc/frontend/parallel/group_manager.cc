@@ -19,7 +19,6 @@
 #include <vector>
 #include <utility>
 #if (!defined(_WIN32) && !defined(__APPLE__) || defined(ENABLE_TEST))
-#include "backend/common/session/executor_manager.h"
 #else
 #include "frontend/parallel/parallel_stub/executor_manager_stub.h"
 #endif
@@ -93,27 +92,13 @@ GroupManager::GroupManager() { groups_.clear(); }
 bool GroupManager::CreateGroupByExecutor(const std::string &device_name, const std::string &group_name,
                                          const std::vector<uint32_t> ranks, uint32_t device_id) const {
   // The group operation thread must be same with nccl init thread in the GPU device.
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT) ||
-      (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice)) {
-    return CommManager::GetInstance().CreateGroupSync(group_name, ranks);
-  } else {
-    auto executor = session::ExecutorManager::Instance().GetExecutor(device_name, device_id);
-    MS_EXCEPTION_IF_NULL(executor);
-    return executor->CreateCommGroup(group_name, ranks);
-  }
+  return CommManager::GetInstance().CreateGroupSync(group_name, ranks);
 }
 
 bool GroupManager::DestroyGroupByExecutor(const std::string &device_name, const std::string &group_name,
                                           uint32_t device_id) const {
   // The group operation thread must be same with nccl init thread in the GPU device.
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT) ||
-      (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice)) {
-    return CommManager::GetInstance().DestroyGroup(group_name);
-  } else {
-    auto executor = session::ExecutorManager::Instance().GetExecutor(device_name, device_id);
-    MS_EXCEPTION_IF_NULL(executor);
-    return executor->DestroyCommGroup(group_name);
-  }
+  return CommManager::GetInstance().DestroyGroup(group_name);
 }
 
 Status CreateGroups(const std::vector<std::pair<std::string, std::vector<uint32_t>>> &group_info) {
@@ -127,28 +112,12 @@ Status CreateGroups(const std::vector<std::pair<std::string, std::vector<uint32_
       MS_LOG(ERROR) << "Create group failed, group name is " << group.first << ", ranks is " << group.second;
     }
   };
-  bool ret = true;
   // The group operation thread must be same with nccl init thread in the GPU device.
-  if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT) ||
-      (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice)) {
-    for (auto &group : group_info) {
-      ret = CommManager::GetInstance().CreateGroupSync(group.first, group.second);
-      print_func(group, ret);
-      if (!ret) {
-        return FAILED;
-      }
-    }
-  } else {
-    std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto executor = session::ExecutorManager::Instance().GetExecutor(device_name, device_id);
-    MS_EXCEPTION_IF_NULL(executor);
-    for (auto &group : group_info) {
-      ret = executor->CreateCommGroup(group.first, group.second);
-      print_func(group, ret);
-      if (!ret) {
-        return FAILED;
-      }
+  for (auto &group : group_info) {
+    bool ret = CommManager::GetInstance().CreateGroupSync(group.first, group.second);
+    print_func(group, ret);
+    if (!ret) {
+      return FAILED;
     }
   }
   return SUCCESS;

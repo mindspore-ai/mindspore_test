@@ -729,13 +729,6 @@ void GraphCompiler::CreateDeviceAddress(const KernelGraphPtr &graph, const Devic
   MS_LOG(INFO) << "Status record: end create device address. graph id: " << graph->graph_id();
 }
 
-void GraphCompiler::UpdateRefCount(const std::set<KernelWithIndex> &input_kernels_with_index,
-                                   std::map<KernelWithIndex, size_t> *ref_count,
-                                   std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const {
-  MS_EXCEPTION_IF_NULL(session_);
-  session_->HandleOpInputs(input_kernels_with_index, ref_count, op_output_map);
-}
-
 void GraphCompiler::RegisterSummaryCallBackFunc() const {
   MS_EXCEPTION_IF_NULL(session_);
   session_->RegisterSummaryCallBackFunc();

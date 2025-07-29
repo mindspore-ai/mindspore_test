@@ -23,7 +23,7 @@
 #ifdef ENABLE_AKG
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #endif
-#include "backend/common/session/kernel_build_client.h"
+#include "common/kernel_build_client.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

@@ -21,7 +21,7 @@
 #include <string>
 #include "nlohmann/json.hpp"
 #include "common/kernel.h"
-#include "backend/common/session/kernel_build_client.h"
+#include "common/kernel_build_client.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/graph_kernel/graph_kernel_builder.h"
 

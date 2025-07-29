@@ -24,7 +24,7 @@
 #include <mutex>
 
 #include "include/common/duplex_pipe.h"
-#include "include/backend/visible.h"
+#include "common/kernel_visible.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 
@@ -36,10 +36,10 @@ constexpr inline static int kBufferSize = 4096;
 constexpr inline static auto kEnv = "python";
 // The TAG as prefix of real command from remote.
 constexpr inline static auto kTag = "[~]";
-BACKEND_COMMON_EXPORT std::string GetPyExe();
-BACKEND_COMMON_EXPORT std::string GetCmdResult();
+OPS_KERNEL_COMMON_API std::string GetPyExe();
+OPS_KERNEL_COMMON_API std::string GetCmdResult();
 
-class BACKEND_COMMON_EXPORT KernelBuildClient {
+class OPS_KERNEL_COMMON_API KernelBuildClient {
  public:
   // Send Finish request to server
   constexpr inline static auto kFinish = "FINISH";
@@ -86,22 +86,19 @@ class BACKEND_COMMON_EXPORT KernelBuildClient {
   }
   void Request(const std::string &req) {
     if (!init_) {
-      MS_LOG(EXCEPTION) << "Try to send request before Open(). For more details, please refer to this FAQ: "
-                        << "https://mindspore.cn/docs/zh-CN/master/model_train/debug/error_analysis/mindrt_debug.html";
+      MS_LOG(EXCEPTION) << "Send request before Open() error.";
     }
     *dp_ << req;
   }
   std::string Response() {
     if (!init_) {
-      MS_LOG(EXCEPTION) << "Try to get response before Open(). For more details, please refer to this FAQ: "
-                        << "https://mindspore.cn/docs/zh-CN/master/model_train/debug/error_analysis/mindrt_debug.html";
+      MS_LOG(EXCEPTION) << "Get response before Open() error.";
     }
     std::string res;
     *dp_ >> res;
     // Filter out the interference
     if (res.empty()) {
-      MS_LOG(EXCEPTION) << "Response is empty. For more details, please refer to this FAQ: "
-                        << "https://mindspore.cn/docs/zh-CN/master/model_train/debug/error_analysis/mindrt_debug.html";
+      MS_LOG(EXCEPTION) << "Response is empty.";
     }
     auto start = res.find(kTag);
     if (start == std::string::npos) {
@@ -200,7 +197,7 @@ static std::string GetScriptFilePath(const std::string &cmd_env, const std::stri
   return result;
 }
 
-class BACKEND_COMMON_EXPORT AkgKernelBuildClient : public KernelBuildClient {
+class OPS_KERNEL_COMMON_API AkgKernelBuildClient : public KernelBuildClient {
  public:
   // Server configure
   constexpr inline static auto kGetPathScript =
@@ -237,7 +234,7 @@ class BACKEND_COMMON_EXPORT AkgKernelBuildClient : public KernelBuildClient {
   AkgKernelBuildClient() { Open(); }
 };
 
-class BACKEND_COMMON_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
+class OPS_KERNEL_COMMON_API AkgV2KernelBuildClient : public KernelBuildClient {
  public:
   // Server configure
   constexpr inline static auto kGetPathScript =

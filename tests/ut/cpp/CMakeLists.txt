@@ -188,7 +188,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/kernel_build_ascend.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/kernel_select_ascend.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/kernel_select_graph_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/launch_transdata.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/lic_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"

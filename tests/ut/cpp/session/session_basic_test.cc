@@ -74,7 +74,6 @@ TEST_F(SessionBasicTest, ConstructKernelGraph) {
   std::vector<AnfNodePtr> lst = {original_add, original_mul};
   std::vector<AnfNodePtr> outputs = {original_mul};
   auto sess = session::SessionFactory::Get().Create(kSessionBasic);
-  sess->Init(0);
   auto kernel_graph = sess->ConstructKernelGraph(lst, outputs);
   EXPECT_NE(kernel_graph, nullptr);
 

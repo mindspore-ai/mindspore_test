@@ -37,7 +37,6 @@
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
-using GraphOutputInfo = session::GraphOutputInfo;
 using DeviceContext = device::DeviceContext;
 using ActorInfo = runtime::ActorInfo;
 using GraphCompiler = runtime::GraphCompiler;
