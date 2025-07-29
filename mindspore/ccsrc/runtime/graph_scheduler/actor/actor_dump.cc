@@ -190,6 +190,44 @@ void DumpAbstractActor(const AbstractActor *actor, std::ofstream &ofs) {
   }
 }
 
+void DumpAbstractActorV2(const KernelRunner *actor, std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(actor);
+  // Dump device context.
+  if (actor->device_contexts().size() > 0) {
+    ofs << "\t\tdevice_contexts:" << actor->device_contexts().size() << "\n ";
+    for (const auto &device_context : actor->device_contexts()) {
+      if (device_context == nullptr) {
+        ofs << "\t\t\tdevice_context:" << device_context << "\n";
+        continue;
+      }
+      ofs << "\t\t\tdevice_context:" << device_context->device_context_key().ToString() << "\n";
+    }
+  }
+
+  // Dump device tensor store.
+  if (actor->device_tensor_store_keys().size() > 0) {
+    ofs << "\t\tdevice_tensor_store_keys:" << actor->device_tensor_store_keys().size() << "\n ";
+    for (const auto &device_tensor_store_key : actor->device_tensor_store_keys()) {
+      MS_EXCEPTION_IF_NULL(device_tensor_store_key.second);
+      ofs << "\t\t\tto_input_index:" << device_tensor_store_key.first
+          << "\tfrom_node_name:" << device_tensor_store_key.second->fullname_with_scope()
+          << ", debug_name: " << device_tensor_store_key.second->DebugString() << "\n";
+    }
+  }
+
+  // Dump parameter store.
+  if (actor->parameter_indexs().size() > 0) {
+    ofs << "\t\tparameter index:" << actor->parameter_indexs().size() << "\n ";
+    for (const auto &parameter_index : actor->parameter_indexs()) {
+      ofs << "\t\t\tto_input_index:" << parameter_index.first << "\tfrom_node_name:"
+          << (parameter_index.second.first.first == nullptr ? "null"
+                                                            : parameter_index.second.first.first->DebugString())
+          << " outer index:" << parameter_index.second.second << " inner index:" << parameter_index.second.first.second
+          << "\n";
+    }
+  }
+}
+
 void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
   const auto &actor_name = actor->GetAID().Name();
@@ -427,6 +465,8 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
   }
+
+  DumpAbstractActorV2(actor, ofs);
 
   if (actor->modifiable_ref_input_indexes().size() != 0) {
     ofs << "\t\tmodifiable_ref_input_indexes:" << actor->modifiable_ref_input_indexes().size() << "\n";
