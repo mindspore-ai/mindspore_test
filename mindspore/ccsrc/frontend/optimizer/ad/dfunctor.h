@@ -278,6 +278,9 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   if (cnode != nullptr) {  // Set equiv debug info. for Primitive CNode out.
     TraceGuard trace_guard(MakeTraceInfo<TraceEquiv>(cnode->debug_info()));
     out_value = outer->NewCNode(transf_args);
+    if (remote_memory::NeedActivationToRemote(primal)) {
+      out_value = remote_memory::ActivationToRemote(outer, out_value);
+    }
     if constexpr (std::is_same<T, PrimitivePtr>::value) {
       out_value->CloneCNodeInfo(cnode);
     }
@@ -290,13 +293,12 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
     }
   } else {
     out_value = outer->NewCNode(transf_args);
+    if (remote_memory::NeedActivationToRemote(primal)) {
+      out_value = remote_memory::ActivationToRemote(outer, out_value);
+    }
   }
 
-  if (remote_memory::NeedActivationToRemote(primal)) {
-    out_value = remote_memory::ActivationToRemote(mng, outer, cloned_bprop_fg, out_value, dout, out_param);
-  } else {
-    (void)mng->Replace(out_param, out_value);
-  }
+  (void)mng->Replace(out_param, out_value);
 
   TraceGuard guard(MakeTraceInfo<TraceGradSens>(out_param->debug_info()));
   auto new_dout = cloned_bprop_fg->add_parameter();

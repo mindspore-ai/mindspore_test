@@ -118,6 +118,7 @@
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
+#include "frontend/optimizer/irpass/insert_remote_ops_before_grad.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -789,6 +790,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
      {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
+     {"insert_remote_ops_before_grad", opt::OptPassConfig(opt::irpass::InsertRemoteOpsBeforeGrad())},
      {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
      {"specialize_transform", opt::OptPassConfig({irpass.specialize_transform_})},
      {"updatestate_useless_node_eliminater", opt::OptPassConfig({irpass.updatestate_useless_node_eliminater_})},

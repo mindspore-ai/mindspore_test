@@ -20,6 +20,8 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <regex>
+#include "utils/trace_base.h"
 #include "ir/core_ops_primitive.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse.h"
@@ -32,27 +34,19 @@
 namespace mindspore {
 namespace remote_memory {
 namespace {
-struct DetachInfo {
-  DetachInfo(AnfNodePtr user_node, AnfNodePtr depend_detach_node, const AnfNodePtrList &before_detach_nodes)
-      : user_node_(user_node),
-        depend_detach_node_(depend_detach_node),
-        before_detach_nodes_(std::move(before_detach_nodes)) {}
-  AnfNodePtr user_node_;
-  AnfNodePtr depend_detach_node_;
-  AnfNodePtrList before_detach_nodes_;
-};
-
 struct NodeUserCompare {
   bool operator()(const std::pair<size_t, AnfNodePtr> &lhs, const std::pair<size_t, AnfNodePtr> &rhs) const {
     return lhs.first < rhs.first;
   }
 };
 
-using NodeUserCompareList = std::set<std::pair<size_t, AnfNodePtr>, NodeUserCompare>;
+using TopoUserList = std::set<std::pair<size_t, AnfNodePtr>, NodeUserCompare>;
+using DetachInfo = std::pair<AnfNodePtr, TopoUserList>;
+using GradLoadInfo = std::pair<CNodePtr, CNodePtr>;
 
-NodeUserCompareList CollectOrderedNodeUsers(const FuncGraphManagerPtr &mng, const AnfNodePtrList &topo_orders,
-                                            const AnfNodePtr &node) {
-  NodeUserCompareList ret;
+TopoUserList CollectNodeTopoUserList(const FuncGraphManagerPtr &mng, const AnfNodePtrList &topo_orders,
+                                     const AnfNodePtr &node) {
+  TopoUserList ret;
   for (const auto &user_node : mng->node_users()[node]) {
     auto cur_iter = std::find(topo_orders.begin(), topo_orders.end(), user_node.first);
     size_t cur_index = std::distance(topo_orders.begin(), cur_iter);
@@ -61,45 +55,40 @@ NodeUserCompareList CollectOrderedNodeUsers(const FuncGraphManagerPtr &mng, cons
   return ret;
 }
 
-std::vector<DetachInfo> CollectDetachInfo(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph,
-                                          const AnfNodePtrList &all_nodes) {
-  MS_EXCEPTION_IF_NULL(mng);
+std::vector<DetachInfo> CollectDetachInfo(const FuncGraphManagerPtr &mng, const FuncGraphPtr func_graph,
+                                          const CNodePtrList &remote_activation_nodes) {
+  const AnfNodePtrList &topo_nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
   std::vector<DetachInfo> detach_info_list;
-  for (const auto &node : all_nodes) {
-    if (!IsPrimitiveCNode(node, prim::kPrimToRemote)) {
-      continue;
-    }
-    const auto &node_users = mng->node_users()[node];
-    if (node_users.size() != 1) {
-      MS_LOG(EXCEPTION) << "ToRemote node " << node->DebugString() << " should only have one user node.";
-    }
-    AnfNodePtr user_node = node_users.front().first;
-    if (IsPrimitiveCNode(user_node, prim::kPrimDetach)) {
-      MS_LOG(INFO) << "Detach node is already added for node " << node->DebugString();
-      continue;
-    }
-    if (!IsPrimitiveCNode(user_node, prim::kPrimDepend)) {
-      MS_LOG(EXCEPTION) << "Unexpected user node: " << user_node->DebugString();
-    }
-
-    const auto &candidate_nodes_infos = CollectOrderedNodeUsers(mng, all_nodes, user_node);
-    AnfNodePtrList nodes_before_detach{NewValueNode(prim::kPrimMakeTuple)};
-    for (const auto &pair : candidate_nodes_infos) {
-      auto cur_node = pair.second;
-      if (IsPrimitiveCNode(cur_node, prim::kPrimPrefetch)) {
-        break;
-      }
-      (void)nodes_before_detach.emplace_back(cur_node);
-    }
-    if (nodes_before_detach.size() == 1) {
-      MS_LOG(INFO) << "No need to add detach for node " << node->DebugString();
-      continue;
-    }
-    const auto &users_for_nodes_before_detach = CollectOrderedNodeUsers(mng, all_nodes, nodes_before_detach.back());
-    auto node_to_depend_detach = (*users_for_nodes_before_detach.begin()).second;
-    (void)detach_info_list.emplace_back(DetachInfo{user_node, node_to_depend_detach, nodes_before_detach});
+  for (const auto &node : remote_activation_nodes) {
+    const auto &topo_user_list = CollectNodeTopoUserList(mng, topo_nodes, node);
+    (void)detach_info_list.emplace_back(DetachInfo{node, topo_user_list});
   }
   return detach_info_list;
+}
+
+std::vector<GradLoadInfo> CollectGradLoadInfo(const FuncGraphManagerPtr &mng, const FuncGraphPtr func_graph,
+                                              const CNodePtrList &remote_activation_nodes) {
+  // todo: Now, the offset is fixed to 2.
+  const AnfNodePtrList &topo_nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  AnfNodePtrList topo_cnode;
+  for (const auto &node : topo_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    (void)topo_cnode.emplace_back(node);
+  }
+  MS_LOG(ERROR) << "Topo cnodes size: " << topo_cnode.size();
+  std::vector<GradLoadInfo> grad_info_list;
+  for (const auto &node : remote_activation_nodes) {
+    auto iter = std::find(topo_cnode.begin(), topo_cnode.end(), node);
+    if (iter == topo_cnode.end() || std::distance(iter, topo_cnode.end()) < 3) {
+      (void)grad_info_list.emplace_back(GradLoadInfo{node, nullptr});
+      continue;
+    }
+    auto grad_load_position_node = *(iter + 2);
+    (void)grad_info_list.emplace_back(GradLoadInfo{node, grad_load_position_node->cast<CNodePtr>()});
+  }
+  return grad_info_list;
 }
 
 AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncGraphPtr &fg,
@@ -200,73 +189,121 @@ FuncGraphPtr WrapGraphWithRemoteOps(const FuncGraphPtr &fg, const py::object &pr
   wrapped_fg->set_output(wrapped_return_node);
   return wrapped_fg;
 }
-}  // namespace
 
-void AddDetachToGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
-  const auto &all_nodes = TopoSort(func_graph->output(), SuccDeeperSimple);
-  auto tr = mng->Transact();
-  const auto &detach_info_list = CollectDetachInfo(mng, func_graph, all_nodes);
-  // todo: need to handle multi-fg scene.
-  for (const auto &detach_info : detach_info_list) {
-    const auto &cur_before_detach_nodes = detach_info.before_detach_nodes_;
-    auto tuple_node_before_detach = func_graph->NewCNode(cur_before_detach_nodes);
-    abstract::AbstractBasePtrList tuple_elements_abs;
-    for (size_t i = 1; i < cur_before_detach_nodes.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(cur_before_detach_nodes[i]->abstract());
-      (void)tuple_elements_abs.emplace_back(cur_before_detach_nodes[i]->abstract());
+bool GetJitEnableRemoteMemoryFromComment(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->debug_info() == nullptr) {
+    return false;
+  }
+  const auto &debug_info = trace::GetSourceCodeDebugInfo(node->debug_info());
+  const auto &location = debug_info->location();
+  if (location == nullptr) {
+    MS_LOG(DEBUG) << "Location info is null, node: " << node->DebugString();
+    return false;
+  }
+  const auto &comments = location->comments();
+  if (comments.empty()) {
+    return false;
+  }
+  // Only use the last comment.
+  const auto &comment = comments.back();
+  std::regex regex("^#\\s*@jit.enable_remote_memory\\s*");
+  if (std::regex_match(comment, regex)) {
+    return true;
+  }
+  return false;
+}
+
+CNodePtrList CollectRemoteActivactionNodes(const FuncGraphPtr &func_graph) {
+  const AnfNodePtrList &all_nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  CNodePtrList remote_activaction_nodes;
+  for (auto node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
     }
-    auto tuple_abs = std::make_shared<abstract::AbstractTuple>(tuple_elements_abs);
-    tuple_node_before_detach->set_abstract(tuple_abs);
-    auto user_node = detach_info.user_node_;
-    auto detach_node = func_graph->NewCNode({NewValueNode(prim::kPrimDetach), user_node, tuple_node_before_detach});
-    auto detach_node_abs = std::make_shared<abstract::AbstractScalar>(kValueAny, kBool);
-    detach_node->set_abstract(detach_node_abs);
-    auto node_to_depend_detach = detach_info.depend_detach_node_;
-    auto node_after_depend_detach =
-      func_graph->NewCNode({NewValueNode(prim::kPrimDepend), node_to_depend_detach, detach_node});
-    node_after_depend_detach->set_abstract(node_to_depend_detach->abstract());
-    tr.Replace(node_to_depend_detach, node_after_depend_detach);
+    // todo: need a unified way to change a node need remote action including functional operations.
+    // todo: need to get prefetch offset from comment, now prefetch offset is set to 2.
+    if (!GetJitEnableRemoteMemoryFromComment(node)) {
+      continue;
+    }
+    (void)remote_activaction_nodes.emplace_back(node->cast<CNodePtr>());
+  }
+  return remote_activaction_nodes;
+}
+
+void ReplaceCNodePrimitiveWithRemoteMemoryAttr(const FuncGraphManagerPtr &mng, const CNodePtrList &nodes) {
+  // todo: Replaced primitive should be stored and reused.
+  auto tr = mng->Transact();
+  constexpr size_t prim_index = 0;
+  for (auto node : nodes) {
+    auto prim = GetCNodePrimitive(node);
+    auto new_prim = prim->Clone();
+    new_prim->set_attr(kRemoteActivationAttr, MakeValue(true));
+    tr.SetEdge(node, prim_index, NewValueNode(new_prim));
   }
   tr.Commit();
 }
 
-CNodePtr ActivationToRemote(const FuncGraphManagerPtr &mng, const FuncGraphPtr &fprop, const FuncGraphPtr &bprop,
-                            const AnfNodePtr &out, const AnfNodePtr &dout, const AnfNodePtr &out_param) {
-  // %out = forward(xxx)
-  // -->
-  // %to_remote = ToRemote(%out)
-  // %new_out_value = Depend(%out, %to_remote)
-  AnfNodePtrList out_to_remote_inputs{NewValueNode(prim::kPrimToRemote), out, NewValueNode(kNone), NewValueNode(false)};
-  auto out_to_remote = fprop->NewCNode(out_to_remote_inputs);
-  AnfNodePtrList new_out_value_input{NewValueNode(prim::kPrimDepend), out, out_to_remote};
-  CNodePtr new_out = fprop->NewCNode(new_out_value_input);
-  (void)mng->Replace(out_param, new_out);
+void AddDetachAfterLastForwardUsers(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph,
+                                    const CNodePtrList &remote_activation_nodes) {
+  const auto &detach_info_list = CollectDetachInfo(mng, func_graph, remote_activation_nodes);
+  auto tr = mng->Transact();
+  for (const auto &detach_info : detach_info_list) {
+    auto cur_node = detach_info.first;
+    const auto &topo_user_list = detach_info.second;
+    auto last_user_node = (*topo_user_list.rbegin()).second;
+    auto last_user_cnode = last_user_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(last_user_cnode);
+    auto cur_fg = last_user_cnode->func_graph();
+    AnfNodePtrList depend_nodes_input{NewValueNode(prim::kPrimMakeTuple)};
+    for (const auto &user : topo_user_list) {
+      auto user_node = user.second;
+      auto user_cnode = user_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_cnode);
+      if (user_cnode->func_graph() != cur_fg) {
+        MS_LOG(ERROR) << "Unexpected graph not match for user_cnode: " << user_cnode->DebugString();
+        continue;
+      }
+      (void)depend_nodes_input.emplace_back(user_cnode);
+    }
+    auto depend_node = cur_fg->NewCNode(depend_nodes_input);
+    auto detach_node = cur_fg->NewCNode({NewValueNode(prim::kPrimDetach), cur_node, depend_node, NewValueNode(false)});
+    auto new_last_user_node = cur_fg->NewCNode({NewValueNode(prim::kPrimDepend), last_user_node, detach_node});
+    tr.Replace(last_user_node, new_last_user_node);
+  }
+  tr.Commit();
+}
 
-  // Only in bprop graph, change usage of out to new_out_value.
-  // %prefetch = Prefetch(%out)
-  // %prefetch_depend = Depend(%prefetch, %dout)
-  // %new_out = Depend(%out, %prefetch_depend)
-  AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), new_out, NewValueNode(kNone), NewValueNode(false)};
-  auto prefetch_node = bprop->NewCNodeInFront(prefetch_inputs);
-  AnfNodePtrList prefetch_depend_inputs{NewValueNode(prim::kPrimDepend), prefetch_node, dout};
-  auto prefetch_depend_node = bprop->NewCNode(prefetch_depend_inputs);
-  AnfNodePtrList bprop_out_inputs{NewValueNode(prim::kPrimDepend), new_out, prefetch_depend_node};
-  auto bprop_out_node = bprop->NewCNode(bprop_out_inputs);
-  const auto &out_value_users = mng->node_users()[new_out];
-  for (const auto &user : out_value_users) {
-    auto user_node = user.first;
-    if (user_node->func_graph() != bprop) {
+void AddGradLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph, const CNodePtrList &nodes) {
+  const auto &grad_load_info_list = CollectGradLoadInfo(mng, func_graph, nodes);
+  auto tr = mng->Transact();
+  for (const auto &grad_load_info : grad_load_info_list) {
+    auto fetch_node = grad_load_info.first;
+    auto fetch_position_node = grad_load_info.second;
+    if (fetch_position_node == nullptr) {
+      MS_LOG(ERROR) << "Can not find fetch position node for node: " << fetch_node->DebugString();
       continue;
     }
-    mng->SetEdge(user_node, user.second, bprop_out_node);
+    if (fetch_node->func_graph() != fetch_position_node->func_graph()) {
+      // todo: Need to ensure fetch node and fetch position node in the same graph later.
+      MS_LOG(ERROR) << "Should in the same graph for fetch node: " << fetch_node->DebugString()
+                    << " and fetch position node: " << fetch_position_node->DebugString();
+      continue;
+    }
+    auto fg = fetch_position_node->func_graph();
+    AnfNodePtrList grad_load_node_inputs{NewValueNode(prim::kPrimGradLoad), fetch_position_node, fetch_node,
+                                         NewValueNode(kNone), NewValueNode(false)};
+    auto grad_load_node = fg->NewCNode(grad_load_node_inputs);
+    tr.Replace(fetch_position_node, grad_load_node);
   }
+  tr.Commit();
+}
 
-  // Add Detach after activation is used
-  auto detach_node =
-    bprop->NewCNode({NewValueNode(prim::kPrimDetach), bprop_out_node, NewValueNode(kNone), NewValueNode(false)});
-  auto new_output = bprop->NewCNode({NewValueNode(prim::kPrimDepend), bprop->output(), detach_node});
-  bprop->set_output(new_output);
-  return new_out;
+}  // namespace
+
+CNodePtr ActivationToRemote(const FuncGraphPtr &fprop, const AnfNodePtr &activaction) {
+  AnfNodePtrList inputs{NewValueNode(prim::kPrimToRemote), activaction, NewValueNode(kNone), NewValueNode(false)};
+  return fprop->NewCNode(inputs);
 }
 
 void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
@@ -359,6 +396,18 @@ void AddRemoteOpsToGraphs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &fu
     tr.SetEdge(node, prim_index, NewValueNode(new_prim_fg));
   }
   tr.Commit();
+}
+
+bool InsertActivactionRemoteOpsForGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
+  const AnfNodePtrList &all_nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  const auto &remote_activation_nodes = CollectRemoteActivactionNodes(func_graph);
+  if (remote_activation_nodes.empty()) {
+    return false;
+  }
+  ReplaceCNodePrimitiveWithRemoteMemoryAttr(mng, remote_activation_nodes);
+  AddDetachAfterLastForwardUsers(mng, func_graph, remote_activation_nodes);
+  AddGradLoad(mng, func_graph, remote_activation_nodes);
+  return true;
 }
 }  // namespace remote_memory
 }  // namespace mindspore

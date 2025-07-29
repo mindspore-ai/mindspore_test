@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace remote_memory {
-void AddDetachToGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
+constexpr auto kRemoteActivationAttr = "remote_activation";
 
 template <typename T>
 bool NeedActivationToRemote(const T &primal) {
@@ -34,17 +34,17 @@ bool NeedActivationToRemote(const T &primal) {
     return false;
   }
   if constexpr (std::is_same<T, PrimitivePtr>::value) {
-    // todo: do we only convert PrimitiveFunction?
-    return ops::IsPrimitiveFunction(primal->name());
+    PrimitivePtr primitive = primal;
+    return primitive->HasAttr(kRemoteActivationAttr);
   }
   return false;
 }
 
-CNodePtr ActivationToRemote(const FuncGraphManagerPtr &mng, const FuncGraphPtr &fprop, const FuncGraphPtr &bprop,
-                            const AnfNodePtr &out, const AnfNodePtr &dout, const AnfNodePtr &out_param);
+CNodePtr ActivationToRemote(const FuncGraphPtr &fprop, const AnfNodePtr &activaction);
+FuncGraphPtr GenerateMultitypeFGWithRemoteOps(const FuncGraphPtr &func_graph, const TypePtrList &prefetch_type);
 void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
 void AddRemoteOpsToGraphs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
-FuncGraphPtr GenerateMultitypeFGWithRemoteOps(const FuncGraphPtr &func_graph, const TypePtrList &prefetch_type);
+bool InsertActivactionRemoteOpsForGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
 }  // namespace remote_memory
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_REMOTE_MEMORY_H_
