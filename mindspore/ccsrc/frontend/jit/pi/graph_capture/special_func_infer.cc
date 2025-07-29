@@ -604,6 +604,35 @@ bool InferTensorIsContiguous(CallNode *call_node, GraphBuilder *) {
   return true;
 }
 
+// operator.index()
+bool InferOperatorIndex(CallNode *call_node, GraphBuilder *builder) {
+  MS_LOG(DEBUG) << "Infer operator.index(): " << ToString(call_node);
+  MS_EXCEPTION_IF_NULL(call_node);
+  MS_EXCEPTION_IF_NULL(builder);
+  MS_EXCEPTION_IF_CHECK_FAIL(call_node->inputs().size() == 2, "CallNode inputs size should be 2.");
+
+  ValueNode *param = call_node->input(1);
+  MS_EXCEPTION_IF_NULL(param);
+  const AbstractWrapperPtr &wrapper = param->abstract_wrapper();
+  if (wrapper == nullptr || wrapper->abstract() == nullptr) {
+    MS_LOG(INFO) << "operator.index() param has no abstract! " << param->ToString();
+    return false;
+  }
+  if (pijit::IsInt(wrapper)) {
+    // operator.index(int) directly returns the int object itself.
+    MS_LOG(DEBUG) << "operator.index() param is int: " << param->ToString();
+    call_node->set_abstract_wrapper(wrapper);
+    call_node->SetVobj(param->GetVobj());
+    call_node->SetSubGraph(nullptr);
+    call_node->SetInlineReason(InlineReason::kInline);
+    return true;
+  }
+
+  MS_LOG(INFO) << "Currently, operator.index() only supports int argument, but got: " << param->ToString();
+  SetForbiddenFuncInfo(call_node, builder);
+  return false;
+}
+
 enum FuncKey {
   FUNC_KEY_EMPTY = 0,             // ""
   FUNC_KEY_PIJIT_CONSTEXPR,       // "pijit.constexpr"
@@ -632,6 +661,7 @@ enum FuncKey {
   FUNC_KEY_TENSOR_SETITEM,        // Tensor.__setitem__
   FUNC_KEY_TENSOR_ASSIGN_VALUE,   // Tensor.assign_value
   FUNC_KEY_TENSOR_IS_CONTIGUOUS,  // Tensor.is_contiguous
+  FUNC_KEY_OPERATOR_INDEX,        // operator.index
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);
@@ -653,6 +683,7 @@ static const std::unordered_map<FuncKey, InferFunc> infer_func_map = {
   {FUNC_KEY_TENSOR_SETITEM, InferTensorSetItem},
   {FUNC_KEY_TENSOR_ASSIGN_VALUE, InferTensorAssignValue},
   {FUNC_KEY_TENSOR_IS_CONTIGUOUS, InferTensorIsContiguous},
+  {FUNC_KEY_OPERATOR_INDEX, InferOperatorIndex},
 };
 
 InferFunc FindInferFunc(const py::object &callable) {

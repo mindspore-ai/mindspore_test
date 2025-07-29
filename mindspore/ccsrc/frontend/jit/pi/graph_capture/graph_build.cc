@@ -4279,12 +4279,9 @@ std::vector<ValueNode *> GraphBuilder::GetNewArgs(CallNode *call_node, AObject *
     MS_EXCEPTION_IF_NULL(node);
     auto it_vobj = node->GetVobj();
     if (it_vobj != nullptr) {
-      auto pyobj = it_vobj->GetPyObject();
-      if (pyobj.ptr() != nullptr) {
-        if (kUnsupportedParameter.find(AbstractObjectBase::GetPyType(pyobj.ptr())) == kUnsupportedParameter.end()) {
-          new_arg_value_nodes.push_back(node);
-          continue;
-        }
+      if (kUnsupportedParameter.find(it_vobj->GetType()) == kUnsupportedParameter.end()) {
+        new_arg_value_nodes.push_back(node);
+        continue;
       }
     }
     MS_LOG(DEBUG) << "Node data is incomplete or is unsupported type, remove it from arguments:" << node->ToString();

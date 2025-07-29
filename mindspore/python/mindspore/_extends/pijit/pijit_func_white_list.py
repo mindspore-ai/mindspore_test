@@ -19,6 +19,7 @@
 import collections
 import types
 import math
+import operator
 import os
 import numpy
 from mindspore.nn import GraphCell, Cell
@@ -356,6 +357,7 @@ FUNC_KEY_PRIMITIVE_ASSIGN = 23  # mindspore.ops.assign, Primitive("Assign")
 FUNC_KEY_TENSOR_SETITEM = 24  # Tensor.__setitem__
 FUNC_KEY_TENSOR_ASSIGN_VALUE = 25  # Tensor.assign_value
 FUNC_KEY_TENSOR_IS_CONTIGUOUS = 26  # Tensor.is_contiguous
+FUNC_KEY_OPERATOR_INDEX = 27  # operator.index
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -454,6 +456,7 @@ _func_map = {
     function_id(list.reverse): FUNC_KEY_LIST_REVERSE,
     function_id(dict.pop): FUNC_KEY_DICT_POP,
     function_id(dict.items): FUNC_KEY_DICT_ITEMS,
+    function_id(operator.index): FUNC_KEY_OPERATOR_INDEX,
 
     # instancemethod
     function_id(Tensor_._is_test_stub): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
