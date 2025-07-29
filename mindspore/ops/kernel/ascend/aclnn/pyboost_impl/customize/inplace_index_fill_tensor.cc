@@ -25,75 +25,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-
-ScalarPtr ConvertTensorToScalar(const std::string &prim_name, const BaseTensorPtr &value) {
-  bool is_host_tensor = value->device_address() == nullptr && value->isa<Tensor>();
-  if (is_host_tensor) {
-    return CreateValueFromTensor(value->cast<TensorPtr>())->cast<ScalarPtr>();
-  }
-
-  ScalarPtr value_scalar = nullptr;
-  value->data_sync();
-  TypeId value_type_id = static_cast<TypeId>(value->data_type_c());
-  switch (value_type_id) {
-    case kNumberTypeBool: {
-      auto value_num = static_cast<bool *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeBFloat16: {
-      auto value_num = static_cast<bfloat16 *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeFloat16: {
-      auto value_num = static_cast<float16 *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeFloat32: {
-      auto value_num = static_cast<float *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeFloat64: {
-      auto value_num = static_cast<double *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeInt8: {
-      auto value_num = static_cast<int8_t *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeInt16: {
-      auto value_num = static_cast<int16_t *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeInt32: {
-      auto value_num = static_cast<int32_t *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    case kNumberTypeInt64: {
-      auto value_num = static_cast<int64_t *>(value->data_c());
-      MAKE_SCALAR((*value_num), value_type_id, value_scalar);
-      break;
-    }
-    default:
-      MS_LOG(EXCEPTION) << "For [" << prim_name << "], the input 'value'"
-                        << " only supports Bool, BFloat16, Float16, Float32, Float64, Int8, Int16, Int32 and Int64,"
-                        << " but got " << TypeIdToString(value_type_id);
-  }
-  return value_scalar;
-}
-
-tensor::BaseTensorPtr InplaceIndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input,
-                                                            const Int64ImmPtr &dim,
-                                                            const BaseTensorPtr &index,
-                                                            const BaseTensorPtr &value) {
+tensor::TensorPtr InplaceIndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                        const Int64ImmPtr &dim, const TensorPtr &index,
+                                                        const TensorPtr &value) {
   auto index_shape = index->shape();
   auto value_shape = value->shape();
   if (MS_UNLIKELY(index_shape.size() > 1)) {
@@ -104,20 +38,20 @@ tensor::BaseTensorPtr InplaceIndexFillTensorAscendCustomize(const std::shared_pt
     MS_LOG(EXCEPTION) << "For [" << op->primitive()->name() << "], the rank of input 'value'"
                       << " must be equal 0, but got " << value_shape.size() << ".";
   }
-  auto value_scalar = ConvertTensorToScalar(op->primitive()->name(), value);
+  auto value_scalar = CreateValueFromTensor(value)->cast<ScalarPtr>();
   MS_EXCEPTION_IF_NULL(value_scalar);
   auto dim_imm = GetValue<int64_t>(dim);
   std::vector<int64_t> index_vector;
-  index->data_sync();
-  TypeId index_type_id = static_cast<TypeId>(index->data_type_c());
-  size_t elem_num = index->DataSize();
+  auto index_cpu = index->cpu();
+  TypeId index_type_id = static_cast<TypeId>(index_cpu->data_type_c());
+  size_t elem_num = index_cpu->DataSize();
   if (index_type_id == TypeId::kNumberTypeInt64) {
-    int64_t *elem_ptr = static_cast<int64_t *>(index->data_c());
+    int64_t *elem_ptr = static_cast<int64_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (index_type_id == TypeId::kNumberTypeInt32) {
-    int32_t *elem_ptr = static_cast<int32_t *>(index->data_c());
+    int32_t *elem_ptr = static_cast<int32_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }

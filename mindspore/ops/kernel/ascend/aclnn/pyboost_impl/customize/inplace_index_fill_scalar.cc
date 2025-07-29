@@ -26,11 +26,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr InplaceIndexFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input,
-                                                            const Int64ImmPtr &dim,
-                                                            const BaseTensorPtr &index,
-                                                            const ScalarPtr &value) {
+tensor::TensorPtr InplaceIndexFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                        const Int64ImmPtr &dim, const TensorPtr &index,
+                                                        const ScalarPtr &value) {
   auto index_shape = index->shape();
   if (MS_UNLIKELY(index_shape.size() > 1)) {
     MS_LOG(EXCEPTION) << "For [" << op->primitive()->name() << "], the rank of input 'index'"
@@ -38,16 +36,16 @@ tensor::BaseTensorPtr InplaceIndexFillScalarAscendCustomize(const std::shared_pt
   }
   auto dim_imm = GetValue<int64_t>(dim);
   std::vector<int64_t> index_vector;
-  index->data_sync();
-  TypeId index_type_id = static_cast<TypeId>(index->data_type_c());
-  size_t elem_num = index->DataSize();
+  auto index_cpu = index->cpu();
+  TypeId index_type_id = static_cast<TypeId>(index_cpu->data_type_c());
+  size_t elem_num = index_cpu->DataSize();
   if (index_type_id == TypeId::kNumberTypeInt64) {
-    int64_t *elem_ptr = static_cast<int64_t *>(index->data_c());
+    int64_t *elem_ptr = static_cast<int64_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }
   } else if (index_type_id == TypeId::kNumberTypeInt32) {
-    int32_t *elem_ptr = static_cast<int32_t *>(index->data_c());
+    int32_t *elem_ptr = static_cast<int32_t *>(index_cpu->data_c());
     for (size_t i = 0; i < elem_num; i++) {
       index_vector.push_back(elem_ptr[i]);
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class InplaceIndexFillScalarAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  int64_t dim_;
+  int64_t dim_ = 0;
   ScalarPtr value_ = nullptr;
   std::vector<int64_t> index_vector_{};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()

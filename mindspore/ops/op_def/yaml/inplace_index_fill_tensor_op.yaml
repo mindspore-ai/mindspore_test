@@ -20,5 +20,3 @@ inplace_index_fill_tensor:
     dispatch:
         enable: True
         Ascend: InplaceIndexFillTensorAscend
-        CPU: None
-        GPU: None
