@@ -43,7 +43,7 @@ import mindspore.ops as ops
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common.dynamic_shape._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
-from mindspore.common.hook_handle import HookHandle
+from mindspore.common.hook_handle import HookHandle, _update_hook_version
 from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
 from mindspore import _checkparam as Validator
@@ -207,7 +207,6 @@ class Cell(Cell_):
         super().__setattr__("mixed_precision_type", None)
         super().__setattr__("_lazy_construct_sig", None)
         super().__setattr__("_jit_graph_name", '')
-        super().__setattr__("modify_hook", 0)
         super().__setattr__("_compiled", False)
         init_pipeline()
 
@@ -2676,11 +2675,11 @@ class Cell(Cell_):
             value= [ 2.00000000e+00]))
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs, cell=self)
+        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs)
         self._forward_pre_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_pre_hook_with_kwargs[handle.handle_id] = True
-        self.modify_hook += 1
+        _update_hook_version()
         return handle
 
     @jit_forbidden_register
@@ -2809,11 +2808,11 @@ class Cell(Cell_):
         if self.has_bprop:
             return HookHandle()
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs, cell=self)
+        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs)
         self._forward_hook[handle.handle_id] = hook_fn
         if with_kwargs:
             self._forward_hook_with_kwargs[handle.handle_id] = True
-        self.modify_hook += 1
+        _update_hook_version()
         return handle
 
     def _jit_forward_hook(self, inputs, output):
@@ -2914,14 +2913,14 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_pre_hook, extra_dict=None, cell=self)
+        handle = HookHandle(self._backward_pre_hook, extra_dict=None)
         self._backward_pre_hook[handle.handle_id] = hook_fn
         if self._cell_backward_pre_hook is None:  # pylint: disable=E0203
             # Generate a CellBackwardHook prim, and add function for it
             self._cell_backward_pre_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
                                                                   self, self._backward_pre_hook)
             self._cell_backward_pre_hook.register_backward_pre_hook()
-        self.modify_hook += 1
+        _update_hook_version()
         return handle
 
     def get_extra_state(self) -> Any:
@@ -3498,14 +3497,14 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
         """
         check_hook_fn(hook_fn)
-        handle = HookHandle(self._backward_hook, extra_dict=None, cell=self)
+        handle = HookHandle(self._backward_hook, extra_dict=None)
         self._backward_hook[handle.handle_id] = hook_fn
         if self._cell_backward_hook is None:  # pylint: disable=E0203
             # Generate a CellBackwardHook prim, and add function for it
             self._cell_backward_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
                                                               self, self._backward_hook)
             self._cell_backward_hook.register_backward_hook()
-        self.modify_hook += 1
+        _update_hook_version()
         return handle
 
     def set_param_ps(self, recurse=True, init_in_server=False):
