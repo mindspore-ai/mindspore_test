@@ -19,8 +19,8 @@ import mindspore as ms
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def _count_unequal_element(data_expected, data_me, rtol, atol):
@@ -96,7 +96,7 @@ def index_fill__binary_case2(input_binary_data=None, output_binary_data=None):
 
 @arg_mark(
     plat_marks=['platform_ascend', 'platform_ascend910b'],
-    level_mark='level0',
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
@@ -138,9 +138,11 @@ def test_tensor_index_fill__dynamic():
     TEST_OP(
         index_fill__forward_func,
         [[input1, dim1, index1, value1], [input2, dim2, index2, value2]],
-        'inplace_index_fill_tensor',
-        disable_mode=['GRAPH_MODE'],
-        disable_input_check=True,
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={
+            'disable_input_check': True,
+        },
         inplace_update=True
     )
 
@@ -155,8 +157,10 @@ def test_tensor_index_fill__dynamic():
     TEST_OP(
         index_fill__forward_func,
         [[input3, dim3, index3, value3], [input4, dim4, index4, value4]],
-        'inplace_index_fill_scalar',
-        disable_mode=['GRAPH_MODE'],
-        disable_input_check=True,
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={
+            'disable_input_check': True,
+        },
         inplace_update=True
     )

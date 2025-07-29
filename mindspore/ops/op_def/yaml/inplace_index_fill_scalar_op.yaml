@@ -20,5 +20,3 @@ inplace_index_fill_scalar:
     dispatch:
         enable: True
         Ascend: InplaceIndexFillScalarAscend
-        CPU: None
-        GPU: None
