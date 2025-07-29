@@ -1071,6 +1071,38 @@ def test_export_softmax():
         raise RuntimeError(f"Export operator Softmax to ONNX failed!")
 
 
+class SqueezeNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.squeeze = ops.Squeeze(axis=(1, 2))
+
+    def construct(self, x):
+        return self.squeeze(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_squeeze():
+    """
+    Feature: Export ops.Squeeze to onnx
+    Description: Export ops.Squeeze to onnx
+    Expectation: success
+    """
+    np_x = np.random.uniform(low=0, high=1, size=(1, 3, 4, 5)).astype(np.float32)
+    x = Tensor(np_x)
+    net = SqueezeNet()
+    ms_output = net(x)
+    onnx_file = './squeeze_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator Squeeze to ONNX failed!")
+
+
 class MulsNet(nn.Cell):
     def __init__(self):
         super().__init__()

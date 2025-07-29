@@ -4726,23 +4726,40 @@ void OnnxExporter::ExportPrimSqueeze(const FuncGraphPtr &, const CNodePtr &node,
                                      std::map<AnfNodePtr, std::string> *node_map_ptr,
                                      onnx::GraphProto *const graph_proto) {
   auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
-
   auto input_name = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+
+  auto x_input_shape_ = dyn_cast<abstract::Shape>(node->input(kOneNum)->Shape());
+  MS_EXCEPTION_IF_NULL(x_input_shape_);
+  auto x_input_shape = x_input_shape_->shape();
+
+  auto axes = GetOpAttributePtr<ValueSequence>(node, "axis");
+  auto axes_value = GetValue<std::vector<int64_t>>(axes);
+
+  std::vector<int> new_axes;
+  for (auto axis : axes_value) {
+    if (axis < 0) {
+      axis += x_input_shape.size();
+    }
+    if (x_input_shape[axis] == 1) {
+      new_axes.push_back(axis);
+    }
+  }
+  if (new_axes.empty() && !axes_value.empty()) {
+    MS_LOG(WARNING) << "Converter for op Squeeze, axis is invalid value";
+    AddOp("Identity", {input_name}, {node_name}, graph_proto);
+    return;
+  }
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Squeeze");
   node_proto->add_input(input_name);
   node_proto->add_output(node_name);
 
-  auto axes = GetOpAttributePtr<ValueSequence>(node, "axis");
-  auto axes_value = GetValue<std::vector<int64_t>>(axes);
-  if (!axes_value.empty()) {
-    onnx::AttributeProto *axes_proto = node_proto->add_attribute();
-    axes_proto->set_name("axes");
-    axes_proto->set_type(onnx::AttributeProto_AttributeType_INTS);
-    for (auto axis : axes_value) {
-      axes_proto->add_ints(axis);
-    }
+  onnx::AttributeProto *axes_proto = node_proto->add_attribute();
+  axes_proto->set_name("axes");
+  axes_proto->set_type(onnx::AttributeProto_AttributeType_INTS);
+  for (auto new_axis : new_axes) {
+    axes_proto->add_ints(new_axis);
   }
 }
 
