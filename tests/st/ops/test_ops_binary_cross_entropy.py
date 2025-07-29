@@ -179,7 +179,8 @@ def test_ops_binary_cross_entropy_dynamic_shape(context_mode, reduction):
     test_cell = test_utils.to_cell_obj(binary_cross_entropy_forward_func)
     TEST_OP(test_cell, [[x1, target1, weight1, reduction], [x2, target2, weight2, reduction]],
             case_config={'disable_input_check': True,
-                         'all_dim_zero': True})
+                         'all_dim_zero': True,
+                         'deterministic_use_origin_inputs': True})
 
 
 def ops_binary_cross_entropy_binary_compare(input_binary_data, output_binary_data):
