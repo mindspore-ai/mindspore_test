@@ -1009,6 +1009,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
             ops_inc_head_set = set()
             for op_name_inc in op_inc_list[i]:
                 ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
+            op_header += '#include "kernel/cpu/pyboost/pyboost_op_plugin_utils.h"\n'
             cpu_pyboost_op_source = self.PYBOOST_CPU_OP_SOURCE_TEMPLATE.replace(
                 merge_op_header=op_header, merge_op_function=op_function, ops_inc=list(sorted(ops_inc_head_set)))
             save_file(os.path.join(work_path, self.cpu_gen_path), f"pyboost_cpu_ops_{i}.cc",

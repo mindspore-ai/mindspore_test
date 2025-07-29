@@ -1,4 +1,10 @@
 MS_LOG(DEBUG) << op_name() << " call start";
+
+if (IsOpPluginKernel(op_name())) {
+  outputs_ = PyboostLaunchOpPluginKernel(get_op(), ${call_args});
+  return ${return_values};
+}
+
 InferOutput(${call_args});
 
 ${tensor_list_convert}
