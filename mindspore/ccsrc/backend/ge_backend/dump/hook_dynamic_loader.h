@@ -23,6 +23,8 @@
 #include <map>
 #include <mutex>
 
+namespace mindspore {
+namespace datadump {
 constexpr auto kHookBegin = "MS_DbgOnStepBegin";
 constexpr auto kHookEnd = "MS_DbgOnStepEnd";
 
@@ -49,5 +51,7 @@ class HookDynamicLoader {
   std::map<std::string, void *> funcMap_;
   std::mutex mutex_;
 };
+}  // namespace datadump
+}  // namespace mindspore
 
 #endif  // HOOK_DYNAMIC_LOADER_H

@@ -33,9 +33,9 @@ void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num,
     MS_LOG(WARNING) << "Hook library is not loaded, please check.";
     return;
   }
-  auto &loader = HookDynamicLoader::GetInstance();
+  auto &loader = mindspore::datadump::HookDynamicLoader::GetInstance();
 
-  auto func_ptr = loader.GetHooker(kHookBegin);
+  auto func_ptr = loader.GetHooker(mindspore::datadump::kHookBegin);
   if (func_ptr != nullptr) {
     auto hooker = reinterpret_cast<HookBeginPtr>(func_ptr);
     MS_LOG(INFO) << "Hook on step begin start.";
@@ -52,8 +52,8 @@ void AclDataAdapter::AdaptOnStepEnd() {
     MS_LOG(WARNING) << "Hook library is not loaded, please check.";
     return;
   }
-  auto &loader = HookDynamicLoader::GetInstance();
-  auto func_ptr = loader.GetHooker(kHookEnd);
+  auto &loader = mindspore::datadump::HookDynamicLoader::GetInstance();
+  auto func_ptr = loader.GetHooker(mindspore::datadump::kHookEnd);
   if (func_ptr != nullptr) {
     auto hooker = reinterpret_cast<HookEndPtr>(func_ptr);
     std::map<uint32_t, void *> param_list{};
@@ -66,7 +66,7 @@ void AclDataAdapter::Load() {
   if (common::GetEnv(kMSHookEnable) != kEnable || isLoaded_) {
     return;
   }
-  auto &loader = HookDynamicLoader::GetInstance();
+  auto &loader = mindspore::datadump::HookDynamicLoader::GetInstance();
   isLoaded_ = loader.LoadLibrary();
 }
 
