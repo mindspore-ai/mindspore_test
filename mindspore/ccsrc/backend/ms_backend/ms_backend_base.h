@@ -79,7 +79,8 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
   void CompileGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);
 
   // Compile the kernel graph by the segment which is from the function graph partition.
-  void CompileGraphFromSegment(const GraphSegmentPtr &segment, const BackendJitConfig &backend_jit_config);
+  void CompileGraphFromSegment(const FuncGraphPtr &func_graph, const GraphSegmentPtr &segment,
+                               const BackendJitConfig &backend_jit_config);
 
   // Compile the kernel graph which generated directly from front end(PyNative), and no need do graph partition.
   void CompileKernelGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
@@ -149,6 +150,7 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
   // Funcgraph will be cut into multiple kernel graphs, and the map is used to save the correspondence.
   // The kernel graphs which not cut by control flow are placed in the same group.
   std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
+  std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, GraphId>>> func_graph_to_sub_segments_;
 
   // All the backend graphs shared the members and status in the graph building and running. Need clear the object when
   // the graph destroy.

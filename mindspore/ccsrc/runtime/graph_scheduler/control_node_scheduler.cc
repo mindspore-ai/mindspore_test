@@ -718,6 +718,61 @@ void ParseRealIndex(const mindspore::HashMap<size_t, size_t> &dynamic_len_index,
 }
 }  // namespace
 
+void ControlNodeScheduler::LinkControlArrowBySegmentTopoSort(const GraphCompilerInfo &graph_compiler_info) const {
+  MS_LOG(DEBUG) << "Start link control arrow by segment topo sort.";
+  const auto &parser = graph_compiler_info.control_node_parser_;
+  MS_EXCEPTION_IF_NULL(parser);
+  for (const auto &pair : parser->control_node_to_kernel_graphs_) {
+    const auto &control_node = pair.first;
+    if (control_node == nullptr || !parser->IsNeedStackControlNode(control_node)) {
+      MS_LOG(DEBUG) << "Skip add control arrow for no stack control node:"
+                    << (control_node == nullptr ? "null" : control_node->DebugString());
+      continue;
+    }
+    auto stack_actor_name = GetActorName(control_node) + kStackActorNameSuffix;
+    auto to_actor = FetchActor(stack_actor_name);
+    if (to_actor == nullptr) {
+      MS_LOG(DEBUG) << "Skip add control arrow for stack control node:" << control_node->DebugString();
+      continue;
+    }
+    for (const auto &kernel_graph : pair.second) {
+      const auto &group_info_iter = parser->kernel_graphs_to_group_info_.find(kernel_graph);
+      if (kernel_graph == nullptr || group_info_iter == parser->kernel_graphs_to_group_info_.end() ||
+          group_info_iter->second == nullptr) {
+        MS_LOG(DEBUG) << "Skip add control arrow from stack control node:" << control_node->DebugString()
+                      << " to kernel graph:" << (kernel_graph == nullptr ? "null" : kernel_graph->ToString());
+        continue;
+      }
+      const auto &exit_actor_name = group_info_iter->second->group_name_ + kExitActorNameSuffix;
+      const auto &from_actor = FetchActor(exit_actor_name);
+      const auto &super_actor_name = kernel_graph->ToString() + kSuperKernelActorNameSuffix;
+      const auto &super_actor = FetchActor(super_actor_name);
+      if (from_actor == nullptr || super_actor == nullptr) {
+        MS_LOG(DEBUG) << "Skip add control arrow from stack control node:" << control_node->DebugString()
+                      << " to kernel graph:" << kernel_graph->ToString();
+        continue;
+      }
+      if (std::any_of(from_actor->output_control_arrows_.begin(), from_actor->output_control_arrows_.end(),
+                      [&to_actor](const auto &output_control_arrow) {
+                        MS_EXCEPTION_IF_NULL(output_control_arrow);
+                        return output_control_arrow->to_op_id_.Name() == to_actor->GetAID().Name();
+                      }) ||
+          std::any_of(from_actor->output_data_arrows_.begin(), from_actor->output_data_arrows_.end(),
+                      [&to_actor](const auto &output_data_arrow) {
+                        MS_EXCEPTION_IF_NULL(output_data_arrow);
+                        return output_data_arrow->to_op_id_.Name() == to_actor->GetAID().Name();
+                      })) {
+        MS_LOG(DEBUG) << "Skip add control arrow from stack control node:" << control_node->DebugString()
+                      << " to kernel graph:" << kernel_graph->ToString() << " for same arrow.";
+        continue;
+      }
+      SchedulerHelper::AddControlArrow(from_actor, to_actor);
+      MS_LOG(INFO) << "Add control arrow for execute by topo sort from actor:" << from_actor->GetAID()
+                   << " to:" << to_actor->GetAID();
+    }
+  }
+}
+
 void ControlNodeScheduler::CollectDynamicLenIndexForArgment(const GraphCompilerInfo &graph_compiler_info) const {
   const auto &parser = graph_compiler_info.control_node_parser_;
   MS_EXCEPTION_IF_NULL(parser);
@@ -793,6 +848,8 @@ void ControlNodeScheduler::Link(ActorSet *const actor_set, const GraphCompilerIn
   SetTimeSummaryForControlActor(graph_compiler_info);
 
   CollectDynamicLenIndexForArgment(graph_compiler_info);
+
+  LinkControlArrowBySegmentTopoSort(graph_compiler_info);
   MS_LOG(DEBUG) << "Control node scheduler link end.";
 }
 

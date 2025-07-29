@@ -140,7 +140,9 @@ class ControlNodeParser {
   // Parse the control node and put the results of the parsing into member variables.
   void Parse(const std::vector<AnfNodePtr> &control_nodes, const std::vector<KernelGraphPtr> &graphs,
              const std::vector<DeviceContext *> &device_contexts, const FuncGraphPtr &root_graph,
-             const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs);
+             const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs,
+             const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>>
+               &func_graph_to_sub_segments = {});
 
   bool IsInited() const { return is_inited_; }
   // Check whether there is a call node in the front input nodes of the kernel graph.
@@ -276,6 +278,15 @@ class ControlNodeParser {
   void ParseDynamicLenFormalParameterByCallNode(const AnfNodePtr &node);
   void ParseDynamicLenFormalParameterByPartial(const AnfNodePtr &node);
   void ParserSinglePartialFuncgraph(const std::vector<AnfNodePtr> &control_nodes);
+
+  bool IsCommuControlNode(const AnfNodePtr &control_node) const;
+  std::vector<KernelGraphPtr> GetValidKernelGraph(
+    const AnfNodePtr &control_node, std::set<KernelGraphPtr> *checked_kernel_graphs, size_t control_node_level,
+    const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments)
+    const;
+  void ParseParallelCallAndKernelGraph(
+    const std::vector<AnfNodePtr> &control_nodes,
+    const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments);
   // In control flow, funcgraph will be cut into multiple kernel graphs for execution, and this relationship is recorded
   // in this map.
   FuncGraphToKernelGraphGroup func_graph_to_kernel_graph_groups_;
@@ -349,6 +360,7 @@ class ControlNodeParser {
   ControlNodeDynamicLenArgIndex control_node_to_funcgraph_with_dynamic_sequence_index_;
   // The partial and funcgraph one to one.
   std::unordered_map<FuncGraphPtr, AnfNodePtr> func_graph_to_partial_node_;
+  std::map<AnfNodePtr, std::vector<KernelGraphPtr>> control_node_to_kernel_graphs_;
   // Is control flow enable.
   bool is_inited_;
 

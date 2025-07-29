@@ -239,6 +239,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     MS_LOG(INFO) << "Empty tuple sync";
     return;
   }
+  MS_EXCEPTION_IF_NULL(node_index.first);
   if (common::AnfAlgo::HasAbstractRef(node_index.first)) {
     MS_LOG(DEBUG) << "Set device address:" << kernel_tensor->device_address()->ToString()
                   << " to host tensor:" << host_tensor->ToString()
@@ -250,13 +251,20 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
     if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
                                           host_tensor->data_ptr()->data())) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+      std::stringstream ofs;
+      ofs << "AsyncHostToDevice failed for device tensor:" << device_tensor->ToString()
+          << " host ptr:" << host_tensor->data_ptr();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
     }
   } else {
     if (!device_tensor->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node_index.first, node_index.second),
                                          LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
                                          host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+      std::stringstream ofs;
+      ofs << "SyncHostToDevice failed for device tensor:" << device_tensor->ToString()
+          << " host ptr:" << host_tensor->data_ptr() << " type:" << host_tensor->data_type()
+          << " node:" << node_index.first->DebugString();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
     }
   }
 

@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
@@ -1023,9 +1024,11 @@ std::vector<AnfNodePtr> FetchAllMonadNodeByNode(const AnfNodePtr &node) {
   return results;
 }
 
-void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, const std::vector<KernelGraphPtr> &graphs,
-                              const std::vector<DeviceContext *> &device_contexts, const FuncGraphPtr &root_graph,
-                              const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs) {
+void ControlNodeParser::Parse(
+  const std::vector<AnfNodePtr> &control_nodes, const std::vector<KernelGraphPtr> &graphs,
+  const std::vector<DeviceContext *> &device_contexts, const FuncGraphPtr &root_graph,
+  const FuncGraphToKernelGraphGroup &func_graph_to_kernel_graphs,
+  const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments) {
   if (graphs.size() != device_contexts.size()) {
     MS_LOG(EXCEPTION) << "Graph num is not equal to device context, graph:" << graphs.size()
                       << " device context num:" << device_contexts.size();
@@ -1115,6 +1118,8 @@ void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, cons
   ParseDynamicLenFormalParameter(control_nodes);
 
   ParserSinglePartialFuncgraph(control_nodes);
+
+  ParseParallelCallAndKernelGraph(control_nodes, func_graph_to_sub_segments);
   MS_LOG(INFO) << "Control node parse end.";
 }
 
@@ -1178,7 +1183,180 @@ void PrintGraphGroupInfo(const std::set<KernelGraphGroupInfoPtr> &kernel_graph_g
     }
   }
 }
+
+bool IsCommunicationOp(const AnfNodePtr &node) {
+  return common::AnfAlgo::IsCommunicationOp(node) || common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName ||
+         common::AnfAlgo::GetCNodeName(node) == kMatmulReduceScatterOpName ||
+         common::AnfAlgo::GetCNodeName(node) == kAllGatherMatmulOpName;
+}
 }  // namespace
+
+bool ControlNodeParser::IsCommuControlNode(const AnfNodePtr &control_node) const {
+  MS_EXCEPTION_IF_NULL(control_node);
+  if (!common::AnfAlgo::IsCallNode(control_node)) {
+    return false;
+  }
+  const auto &cnode = control_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(cnode->input(0));
+  if (!cnode->input(0)->isa<CNode>() || common::AnfAlgo::CheckPrimitiveType(cnode->input(0), prim::kPrimSwitch)) {
+    MS_LOG(DEBUG) << "Not dst call node:" << cnode->DebugString();
+    return false;
+  }
+  const auto &call_graph_iter = call_node_to_func_graphs_.find(cnode);
+  if (call_graph_iter == call_node_to_func_graphs_.end()) {
+    MS_LOG(DEBUG) << "Failed to get funcgraph by call node:" << cnode->DebugString();
+    return false;
+  }
+  if (call_graph_iter->second.size() != 1 || (*(call_graph_iter->second.begin())) == nullptr) {
+    MS_LOG(DEBUG) << "Multi funcgraph for call node:" << cnode->DebugString();
+    return false;
+  }
+  const auto &called_func_graph = *(call_graph_iter->second.begin());
+  const auto &kernel_graph_iter = func_graph_to_kernel_graph_groups_.find(called_func_graph);
+  if (kernel_graph_iter == func_graph_to_kernel_graph_groups_.end()) {
+    MS_LOG(DEBUG) << "Failed to get kernel graph by funcgraph:" << called_func_graph->ToString()
+                  << " for call node:" << control_node->DebugString();
+    return false;
+  }
+
+  for (const auto group : kernel_graph_iter->second) {
+    for (const auto &kernel_graph : group) {
+      if (kernel_graph == nullptr) {
+        continue;
+      }
+      if (std::any_of(kernel_graph->execution_order().begin(), kernel_graph->execution_order().end(),
+                      [](const auto &kernel) { return IsCommunicationOp(kernel); })) {
+        MS_LOG(DEBUG) << "Kernel graph:" << kernel_graph->ToString()
+                      << " has some communication op for func graph:" << called_func_graph->ToString()
+                      << " for call node:" << control_node->DebugString();
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::vector<KernelGraphPtr> ControlNodeParser::GetValidKernelGraph(
+  const AnfNodePtr &control_node, std::set<KernelGraphPtr> *checked_kernel_graphs, size_t control_node_level,
+  const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments)
+  const {
+  MS_EXCEPTION_IF_NULL(control_node);
+  MS_EXCEPTION_IF_NULL(checked_kernel_graphs);
+  MS_LOG(DEBUG) << "Check calling graph for call node:" << control_node->DebugString();
+  const auto calling_func_graph = control_node->func_graph();
+  if (calling_func_graph == nullptr) {
+    MS_LOG(DEBUG) << "Failed to get funcgraph for node:" << control_node->DebugString();
+    return {};
+  }
+  const auto &segment_iter = func_graph_to_sub_segments.find(calling_func_graph);
+  if (segment_iter == func_graph_to_sub_segments.end()) {
+    MS_LOG(DEBUG) << "Failed to get segment for funcgraph:" << calling_func_graph->ToString();
+    return {};
+  }
+  std::vector<KernelGraphPtr> kernel_graphs;
+  for (const auto &segment : segment_iter->second) {
+    if (std::holds_alternative<KernelGraphPtr>(segment)) {
+      const auto &kernel_graph = std::get<KernelGraphPtr>(segment);
+      MS_EXCEPTION_IF_NULL(kernel_graph);
+      if (checked_kernel_graphs->find(kernel_graph) != checked_kernel_graphs->end()) {
+        MS_LOG(DEBUG) << "Kernel graph:" << kernel_graph->ToString() << " has be reorder.";
+        continue;
+      }
+      if (std::none_of(kernel_graph->execution_order().begin(), kernel_graph->execution_order().end(),
+                       [](const auto &kernel) { return IsCommunicationOp(kernel); })) {
+        MS_LOG(DEBUG) << "No commu op in Kernel graph:" << kernel_graph->ToString();
+        continue;
+      }
+      const auto graph_level_iter = kernel_graphs_to_group_info_.find(kernel_graph);
+      if (graph_level_iter == kernel_graphs_to_group_info_.end() || graph_level_iter->second == nullptr) {
+        MS_LOG(DEBUG) << "No graph group for Kernel graph:" << kernel_graph->ToString();
+        continue;
+      }
+      if (graph_level_iter->second->level_ != control_node_level) {
+        MS_LOG(DEBUG) << "Graph:" << kernel_graph->ToString() << " level:" << graph_level_iter->second->level_
+                      << " is not same with control node:" << control_node->DebugString()
+                      << " level:" << control_node_level;
+        continue;
+      }
+      MS_LOG(DEBUG) << "Add parallel graph:" << kernel_graph->ToString()
+                    << " to control node:" << control_node->DebugString();
+      kernel_graphs.emplace_back(kernel_graph);
+      checked_kernel_graphs->emplace(kernel_graph);
+    }
+    if (std::holds_alternative<AnfNodePtr>(segment)) {
+      const auto seg_node = std::get<AnfNodePtr>(segment);
+      if (seg_node == control_node) {
+        break;
+      }
+    }
+  }
+  return kernel_graphs;
+}
+
+void ControlNodeParser::ParseParallelCallAndKernelGraph(
+  const std::vector<AnfNodePtr> &control_nodes,
+  const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments) {
+  if (common::IsDisableRuntimeConfig("graph_order")) {
+    MS_LOG(INFO) << "Disable graph order.";
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(root_func_graph_);
+  auto graphs = root_func_graph_->func_graphs_used_total();
+  graphs.insert(root_func_graph_);
+  if (std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); })) {
+    MS_LOG(DEBUG) << "Exist while in graph and skip check parallel.";
+    return;
+  }
+  std::map<AnfNodePtr, std::vector<KernelGraphPtr>> control_node_to_kernel_graphs;
+  std::set<KernelGraphPtr> checked_kernel_graphs;
+  for (const auto &control_node : control_nodes) {
+    if (!IsCommuControlNode(control_node)) {
+      continue;
+    }
+    const auto &level_iter = node_to_level_.find(control_node);
+    if (level_iter == node_to_level_.end()) {
+      MS_LOG(DEBUG) << "Failed to get level for control node:" << control_node->DebugString();
+      continue;
+    }
+    const auto &kernel_graphs =
+      GetValidKernelGraph(control_node, &checked_kernel_graphs, level_iter->second, func_graph_to_sub_segments);
+    if (kernel_graphs.empty()) {
+      continue;
+    }
+    control_node_to_kernel_graphs[control_node] = kernel_graphs;
+  }
+  if (control_node_to_kernel_graphs.empty()) {
+    return;
+  }
+  std::map<KernelGraphPtr, FuncGraphPtr> kernel_graph_to_func_graph;
+  for (const auto &pair : func_graph_to_kernel_graph_groups_) {
+    for (const auto group : pair.second) {
+      for (const auto &kernel_graph : group) {
+        kernel_graph_to_func_graph[kernel_graph] = pair.first;
+      }
+    }
+  }
+  for (const auto &pair : control_node_to_kernel_graphs) {
+    const auto &control_node = pair.first;
+    for (const auto &kernel_graph : pair.second) {
+      const auto &graph_iter = kernel_graph_to_func_graph.find(kernel_graph);
+      if (graph_iter == kernel_graph_to_func_graph.end()) {
+        MS_LOG(DEBUG) << "Failed to get funcgraph by kernel graph:" << kernel_graph->ToString();
+        continue;
+      }
+      if (control_node->func_graph() != graph_iter->second) {
+        MS_LOG(DEBUG) << "Invalid funcgraph:" << control_node->func_graph()->ToString()
+                      << " control node:" << control_node->DebugString() << " kernel_graph:" << kernel_graph->ToString()
+                      << " and func graph:" << graph_iter->second->ToString();
+        continue;
+      }
+      MS_LOG(INFO) << "Add parallel graph:" << kernel_graph->ToString()
+                   << " to control node:" << control_node->DebugString();
+      control_node_to_kernel_graphs_[control_node].emplace_back(kernel_graph);
+    }
+  }
+}
 
 void ControlNodeParser::ParseDynamicLenFormalParameterByCallNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
