@@ -55,6 +55,7 @@ bool AllGatherCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 std::vector<KernelAttr> AllGatherCPUKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {
     KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+    KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
     KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32)};
   return support_list;
 }
@@ -70,8 +71,9 @@ bool AllGatherCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllGather(
-    inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float), input_dtype_, kMCCLGlobalGroupName);
+  size_t send_count = data_size / (input_dtype_ == kNumberTypeFloat16 ? 2 : sizeof(float));
+  bool ret = MsCollectiveCommLib::GetInstance().AllGather(inputs[0]->device_ptr(), outputs[0]->device_ptr(), send_count,
+                                                          input_dtype_, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllGatherCPUKernelMod launch failed.";
   }
