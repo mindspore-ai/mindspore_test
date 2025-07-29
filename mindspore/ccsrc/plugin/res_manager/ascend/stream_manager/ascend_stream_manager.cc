@@ -312,7 +312,6 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
 
 bool AscendStreamMng::SyncAllStreams(bool sync_device) const {
   auto RET = ACL_ERROR_NONE;
-  std::string sync_method = sync_device ? "aclrtSynchronizeDeviceWithTimeout" : "aclrtSynchronizeStreamWithTimeout";
   try {
     GilReleaseWithCheck gil_release;
     if (sync_device) {
@@ -339,6 +338,7 @@ bool AscendStreamMng::SyncAllStreams(bool sync_device) const {
       }
     }
   } catch (const std::exception &e) {
+    std::string sync_method = sync_device ? "aclrtSynchronizeDeviceWithTimeout" : "aclrtSynchronizeStreamWithTimeout";
     MS_LOG(ERROR) << sync_method << " failed. " << e.what()
                   << "Please do the following three things to confirm whether it is caused by the "
                   << "execution failure of a certain operator.\n"
@@ -349,6 +349,7 @@ bool AscendStreamMng::SyncAllStreams(bool sync_device) const {
     return false;
   }
   if (RET == ACL_ERROR_RT_AICORE_OVER_FLOW) {
+    std::string sync_method = sync_device ? "aclrtSynchronizeDeviceWithTimeout" : "aclrtSynchronizeStreamWithTimeout";
     MS_LOG(WARNING) << "Call runtime " << sync_method << ", the stream get overflow."
                     << "Please do the following three things to confirm whether it is caused by the "
                     << "execution failure of a certain operator.\n"
