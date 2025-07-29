@@ -722,3 +722,27 @@ def test_view_inplace_triggers_requires_grad_propagation():
     grad_op = GradOfFirstInput(fn, sens_param=False)
     grad = grad_op(input_tensor)
     assert np.allclose(grad.asnumpy(), np.array([4.0, 0.0], dtype=np.float32), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_on_view_base():
+    """
+    Feature: Test view inplace valid.
+    Description:  Verify view + inplace mechanism when base tensor is also a view tensor.
+    Expectation: The calculation result is correct.
+    """
+
+    def fn(input_tensor):
+        input_view = input_tensor[1]
+        with _no_grad():
+            input_tensor += 1.0
+        return input_view
+
+    data = Tensor([[1.0, 2.0], [1.0, 2.0]])
+    input_tensor = ops.stop_gradient(data[1])
+    grad_op = ops.GradOperation(get_all=True)
+    grad = grad_op(fn)(input_tensor)
+    np.allclose(grad[0].asnumpy(), np.array([0.0, 1.0], dtype=np.float32), 0.00001, 0.00001)

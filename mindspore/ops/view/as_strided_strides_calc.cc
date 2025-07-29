@@ -24,7 +24,7 @@ TensorStorageInfoPtrList AsStridedBasicTypeCalc(const PrimitivePtr &prim,
                                                 const mindspore::tensor::TensorPtr &input_tensor,
                                                 const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
                                                 const int64_t &storage_offset) {
-  if (std::any_of(size.begin(), size.end(), [](const int &shape_i) { return shape_i < -1; })) {
+  if (std::any_of(size.begin(), size.end(), [](const int64_t &shape_i) { return shape_i < -1; })) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << size;
   }
