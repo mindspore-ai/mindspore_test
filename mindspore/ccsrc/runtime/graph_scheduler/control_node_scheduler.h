@@ -114,6 +114,7 @@ class ControlNodeScheduler {
   bool IsNoInputActor(const ControlActor *control_actor) const;
   void CollectDynamicLenIndexForArgment(const GraphCompilerInfo &graph_compiler_info) const;
 
+  void LinkControlArrowBySegmentTopoSort(const GraphCompilerInfo &graph_compiler_info) const;
   void OptimizeBranchIdArrow(const ActorSetPtr &actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void OptimizeDynamicRefCountForEntranceActor(const ActorSetPtr &actor_set) const;
   void OptimizeDynamicRefCountForStackActor(const ActorSetPtr &actor_set) const;

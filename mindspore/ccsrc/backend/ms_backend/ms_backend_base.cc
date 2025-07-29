@@ -724,8 +724,9 @@ void MSBackendBase::CacheFuncGraphWithKernelGraphId(const FuncGraphPtr &func_gra
   }
 }
 
-void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
+void MSBackendBase::CompileGraphFromSegment(const FuncGraphPtr &func_graph, const GraphSegmentPtr &segment,
                                             const BackendJitConfig &backend_jit_config) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(segment);
   // Compile the normal nodes, which doesn't contain the cut node.
   if (segment->nodes_.empty()) {
@@ -754,6 +755,7 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
     GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
                                                      backend_jit_config, ms_execution_mode == kPynativeMode);
     auto new_fg = graph_compiler_->Fetch(graph_id);
+    func_graph_to_sub_segments_[func_graph].emplace_back(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
     CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
   } else {
@@ -762,6 +764,7 @@ void MSBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment,
     MS_EXCEPTION_IF_NULL(cut_node);
     MS_LOG(INFO) << "Compile cut segment, the cut node: " << cut_node->DebugString();
     control_nodes_.push_back(cut_node);
+    func_graph_to_sub_segments_[func_graph].emplace_back(cut_node);
     if (common::AnfAlgo::IsCallNode(cut_node) || common::AnfAlgo::CheckPrimitiveType(cut_node, prim::kPrimSwitch) ||
         common::AnfAlgo::CheckPrimitiveType(cut_node, prim::kPrimSwitchLayer)) {
       const auto &func_graph = cut_node->func_graph();
@@ -793,7 +796,7 @@ void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJi
 
   // Foreach the segments to compile graph.
   for (const auto &segment : segments) {
-    CompileGraphFromSegment(segment, backend_jit_config);
+    CompileGraphFromSegment(func_graph, segment, backend_jit_config);
   }
 }
 
@@ -1127,9 +1130,22 @@ void MSBackendBase::ParseControlNodes(const GraphCompilerInfo &graph_compile_inf
     }
   }
 
-  graph_compile_info.control_node_parser_->Parse(graph_compile_info.control_nodes_, graph_compile_info.graphs_,
-                                                 graph_compile_info.device_contexts_,
-                                                 graph_compile_info.root_func_graph_, func_graph_to_kernel_graphs);
+  std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> func_graph_to_parts;
+  for (const auto &func_graph_to_sub_segment : func_graph_to_sub_segments_) {
+    const auto &func_graph = func_graph_to_sub_segment.first;
+    for (const auto &sub_segment : func_graph_to_sub_segment.second) {
+      if (std::holds_alternative<GraphId>(sub_segment)) {
+        const auto &kernel_graph = graph_compiler_->Fetch(std::get<GraphId>(sub_segment));
+        MS_EXCEPTION_IF_NULL(kernel_graph);
+        (void)func_graph_to_parts[func_graph].emplace_back(kernel_graph);
+      } else {
+        (void)func_graph_to_parts[func_graph].emplace_back(std::get<AnfNodePtr>(sub_segment));
+      }
+    }
+  }
+  graph_compile_info.control_node_parser_->Parse(
+    graph_compile_info.control_nodes_, graph_compile_info.graphs_, graph_compile_info.device_contexts_,
+    graph_compile_info.root_func_graph_, func_graph_to_kernel_graphs, func_graph_to_parts);
 }
 
 bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info) {

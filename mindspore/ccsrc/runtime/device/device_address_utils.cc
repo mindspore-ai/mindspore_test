@@ -175,7 +175,9 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   auto data_type_id = kernel_tensor->dtype_id();
   auto format = kernel_tensor->GetStringFormat();
   if (!device_address->SyncHostToDevice(shape, data_size, data_type_id, node_value, format)) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+    MS_LOG(EXCEPTION) << "SyncHostToDevice failed for non tensor data:" << device_address->ToString()
+                      << " host shape:" << shape << " size:" << data_size << " type:" << data_type_id
+                      << " ptr:" << node_value << " format:" << format;
   }
 }
 
@@ -1032,13 +1034,17 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     OpExecutor::DispatchLaunchTask([=]() {
       if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
                                             tensor->data_ptr())) {
-        MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+        MS_LOG(EXCEPTION) << "SyncHostToDevice failed for ascend device tensor:" << device_address->ToString()
+                          << " shape:" << tensor->shape() << " tensor size:" << tensor_size
+                          << " type:" << tensor->data_type() << " ptr:" << tensor->data_ptr();
       }
     });
   } else {
     if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
                                           tensor->data_ptr())) {
-      MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+      MS_LOG(EXCEPTION) << "SyncHostToDevice failed for device tensor:" << device_address->ToString()
+                        << " shape:" << tensor->shape() << " tensor size:" << tensor_size
+                        << " type:" << tensor->data_type() << " ptr:" << tensor->data_ptr();
     }
   }
 }
@@ -1116,7 +1122,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   }
   if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(),
                                         kernel::GetFormatFromEnumToStr(format), tensor->data_ptr())) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+    MS_LOG(EXCEPTION) << "SyncHostToDevice failed for input device address:" << device_address->ToString();
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << shape->ToString()

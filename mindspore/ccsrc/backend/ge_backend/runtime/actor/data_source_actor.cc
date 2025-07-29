@@ -210,14 +210,20 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
                      << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
         if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
                                               host_tensor->data_ptr()->data())) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+          std::stringstream ofs;
+          ofs << "AsyncHostToDevice failed for device tensor:" << device_tensor->ToString()
+              << " host ptr:" << host_tensor->data_ptr()->data();
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
         }
       } else {
         if (!device_tensor->SyncHostToDevice(
               AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
               LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
               host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+          std::stringstream ofs;
+          ofs << "SyncHostToDevice failed for device tensor:" << device_tensor->ToString()
+              << " host ptr:" << host_tensor->data_ptr();
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
         }
       }
 
