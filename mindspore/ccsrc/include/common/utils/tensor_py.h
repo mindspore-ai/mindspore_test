@@ -295,7 +295,7 @@ class COMMON_EXPORT TensorPy {
 
   /// \brief Get the device address.
   /// \return The device address.
-  const DeviceSyncPtr GetDeviceAddress() const;
+  const DeviceAddressPtr GetDeviceAddress() const;
 
   /// \brief Whether the tensor is parameter output.
   /// \return True or False, is parameter output or not.

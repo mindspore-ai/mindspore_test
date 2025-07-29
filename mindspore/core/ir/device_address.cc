@@ -14,19 +14,87 @@
  * limitations under the License.
  */
 
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/device_address.h"
+#include "ir/format_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
+SyncCopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+AsyncCopyFunc g_async_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+SyncPtrFunc g_sync_ptr_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
+                             SyncPtrFunc &&sync_ptr_func) {
+  MS_LOG(INFO) << "Resigter copy function for device type:" << device_type;
+  g_sync_copy_func[static_cast<int>(device_type)] = sync_func;
+  g_async_copy_func[static_cast<int>(device_type)] = async_func;
+  g_sync_ptr_func[static_cast<int>(device_type)] = sync_ptr_func;
+}
+
+bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(g_sync_ptr_func[static_cast<int>(device_type)]);
+  return g_sync_ptr_func[static_cast<int>(device_type)](dst, src, size, stream_id);
+}
+
+bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
+              size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kUnknown ||
+      src_device_address->GetDeviceType() == device::DeviceType::kUnknown) {
+    MS_LOG(EXCEPTION) << "Invalid device type for device address:" << dst_device_address
+                      << " type:" << dst_device_address->GetDeviceType() << " or device address:" << src_device_address
+                      << " type:" << src_device_address->GetDeviceType() << " stream id:" << stream_id;
+  }
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kCPU &&
+      src_device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)]);
+    return g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_address, src_device_address,
+                                                                        stream_id);
+  }
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kAscend ||
+      src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
+    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)]);
+    return g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_address, src_device_address,
+                                                                           stream_id);
+  }
+  MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)]);
+  return g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_address, src_device_address,
+                                                                      stream_id);
+}
+
+bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address, size_t stream_id,
+               bool keep_host) {
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kUnknown ||
+      src_device_address->GetDeviceType() == device::DeviceType::kUnknown) {
+    MS_LOG(EXCEPTION) << "Invalid device type for device address:" << dst_device_address
+                      << " type:" << dst_device_address->GetDeviceType() << " or device address:" << src_device_address
+                      << " type:" << src_device_address->GetDeviceType() << " stream id:" << stream_id;
+  }
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kCPU &&
+      src_device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)]);
+    return g_async_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_address, src_device_address,
+                                                                         stream_id, keep_host);
+  }
+  if (dst_device_address->GetDeviceType() == device::DeviceType::kAscend ||
+      src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
+    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kAscend)]);
+    return g_async_copy_func[static_cast<int>(device::DeviceType::kAscend)](dst_device_address, src_device_address,
+                                                                            stream_id, keep_host);
+  }
+  MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kGPU)]);
+  return g_async_copy_func[static_cast<int>(device::DeviceType::kGPU)](dst_device_address, src_device_address,
+                                                                       stream_id, keep_host);
+}
 namespace device {
 DevicePtrDeleterMakerFunc g_deleter_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMakerFunc &&func) {
   MS_LOG(DEBUG) << "Resigter device ptr deleter function for device type:" << device::GetDeviceNameByType(device_type);
   g_deleter_func[static_cast<int>(device_type)] = func;
 }
-
-using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
 
 DeviceAddress::DeviceAddress() { device_pointer_ = std::make_shared<DevicePointer>(); }
 

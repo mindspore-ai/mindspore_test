@@ -24,7 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "ir/graph_utils.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"

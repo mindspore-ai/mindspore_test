@@ -31,7 +31,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 #include "utils/file_utils.h"

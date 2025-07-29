@@ -921,7 +921,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   MS_EXCEPTION_IF_NULL(node_kernel_tensor);
   auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto host_tensor_address = tensor->device_address();
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
   // Use the device address of host tensor to set device tensor.

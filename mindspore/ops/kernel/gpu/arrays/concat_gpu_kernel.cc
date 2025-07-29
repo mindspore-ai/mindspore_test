@@ -20,6 +20,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "ops_utils/op_utils.h"
 #include "utils/convert_utils_base.h"
+#include "utils/check_convert_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/concat_impl.cuh"
 
 namespace mindspore {

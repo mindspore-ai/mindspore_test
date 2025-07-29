@@ -58,6 +58,7 @@
 #include "utils/log_adapter.h"
 #include "utils/symbolic.h"
 #include "utils/trace_info.h"
+#include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

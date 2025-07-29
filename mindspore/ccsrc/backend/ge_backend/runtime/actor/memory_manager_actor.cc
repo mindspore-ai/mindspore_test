@@ -172,7 +172,6 @@ void MemoryManagerActor::FreeMemoryByRefCount(const KernelTensorPtr &kernel_tens
     size_t ref_count = kernel_tensor->DecreaseRefCount();
     if (ref_count == 0) {
       kernel_tensor->ResetRefCount();
-      device_tensor->ClearUserData();
       if (device_tensor->GetPtr() != nullptr) {
         auto held_by_nodes = device_tensor->held_by_nodes();
         if (held_by_nodes.empty()) {
@@ -185,7 +184,6 @@ void MemoryManagerActor::FreeMemoryByRefCount(const KernelTensorPtr &kernel_tens
   } else if (kernel_tensor->dynamic_ref_count() != INT32_MAX) {
     // The dynamic reference count is decremented to zero to free memory.
     if ((kernel_tensor->DecreaseDynamicRefCount(op_name) == 0) && (device_tensor->GetPtr() != nullptr)) {
-      device_tensor->ClearUserData();
       MS_LOG(DEBUG) << "Free memory by the dynamic reference count, device address" << device_tensor->GetPtr() << ".";
       FreeMemoryByDeviceContext(device_tensor.get());
     }

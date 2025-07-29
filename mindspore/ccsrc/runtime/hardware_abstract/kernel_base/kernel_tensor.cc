@@ -15,7 +15,7 @@
  */
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "ops_utils/op_constants.h"

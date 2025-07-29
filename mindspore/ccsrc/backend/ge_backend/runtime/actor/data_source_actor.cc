@@ -303,12 +303,12 @@ void HostQueueDataSourceActor::ReleaseData() {
       if (ref_kernel_tensors_.find(data_node_with_index) == ref_kernel_tensors_.end()) {
         continue;
       }
-      for (const auto &kernel_tensor : ref_kernel_tensors_[data_node_with_index]) {
-        if (kernel_tensor != nullptr) {
+      for (const auto &ref_kernel_tensor : ref_kernel_tensors_[data_node_with_index]) {
+        if (ref_kernel_tensor != nullptr) {
           MS_LOG(DEBUG) << "Set pointer ref count from kernel tensor:" << new_kernel_tensor->ToString()
-                        << " to:" << kernel_tensor->ToString()
+                        << " to:" << ref_kernel_tensor->ToString()
                         << " for data source node:" << data_node_with_index.first->DebugString();
-          kernel_tensor->set_pointer_ref_count(new_kernel_tensor.get());
+          ref_kernel_tensor->set_pointer_ref_count(new_kernel_tensor.get());
         }
       }
     }

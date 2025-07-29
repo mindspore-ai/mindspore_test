@@ -152,13 +152,14 @@ class MS_CORE_API MapTensor final : public Tensor {
 
   /// \brief Exported MapTensor data from device.
   ///
-  /// \param[in] device_sync [DeviceSyncPtr] The device resource synchronizer(such as DeviceAddress).
+  /// \param[in] device_sync [DeviceAddressPtr] The device resource synchronizer(such as DeviceAddress).
   /// \param[in] incremental [bool] True for incremental export, false for full export.
   /// \param[out] last_slice [bool *] Point a bool variable which indicates whether the slice by export is the last
   /// slice, that is, the export is complete and all slices are exported. nullptr indicates that slice export is
   /// disabled.
   /// \return The exported data.
-  ExportData ExportDataFromDevice(const DeviceSyncPtr &device_sync, bool incremental, bool *last_slice = nullptr) const;
+  ExportData ExportDataFromDevice(const DeviceAddressPtr &device_sync, bool incremental,
+                                  bool *last_slice = nullptr) const;
 
   /// \brief Get three tensor length from device data with tensor shape and type.
   ///

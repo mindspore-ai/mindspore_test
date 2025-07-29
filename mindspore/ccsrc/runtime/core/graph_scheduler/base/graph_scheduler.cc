@@ -46,7 +46,7 @@
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"

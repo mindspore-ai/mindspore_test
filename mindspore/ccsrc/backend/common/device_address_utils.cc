@@ -31,7 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/graph_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/common/utils/anfalgo.h"
@@ -835,7 +835,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   auto device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
+    device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
     old_kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
     device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());

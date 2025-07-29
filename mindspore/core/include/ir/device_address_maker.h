@@ -25,14 +25,15 @@
 #include "mindapi/base/shape_vector.h"
 #include "ir/device_type.h"
 #include "ir/tensor_data.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
-class DeviceSync;
-using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
+using DeviceAddress = device::DeviceAddress;
+using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
 
 using DeviceAddressDeleter = std::function<void(void *, bool)>;
 using DeviceAddressMakerFunc =
-  std::function<DeviceSyncPtr(TypeId, const ShapeVector &, void *data_ptr, DeviceAddressDeleter &&)>;
+  std::function<DeviceAddressPtr(TypeId, const ShapeVector &, void *data_ptr, DeviceAddressDeleter &&)>;
 MS_CORE_API void SetDeviceAddressMaker(device::DeviceType device_type, DeviceAddressMakerFunc &&func);
 MS_CORE_API DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target);
 
@@ -51,7 +52,7 @@ class MS_CORE_API DeviceAddressMaker {
   DeviceAddressMaker(void *data_ptr, TypeId data_type, const ShapeVector &shape)
       : data_ptr_(data_ptr), data_type_(data_type), shape_(shape) {}
 
-  DeviceSyncPtr make_device_address();
+  DeviceAddressPtr make_device_address();
 
   DeviceAddressMaker &set_deleter(std::function<void(void *, bool)> &&deleter);
 
@@ -65,19 +66,19 @@ class MS_CORE_API DeviceAddressMaker {
   DeviceAddressMakerFunc maker_;
 };
 
-MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init = true,
-                                            device::DeviceType device_type = device::DeviceType::kCPU);
-MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
-                                            tensor::TensorDataPtr &&tensor_data,
-                                            device::DeviceType device_type = device::DeviceType::kCPU);
+MS_CORE_API DeviceAddressPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init = true,
+                                               device::DeviceType device_type = device::DeviceType::kCPU);
+MS_CORE_API DeviceAddressPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
+                                               tensor::TensorDataPtr &&tensor_data,
+                                               device::DeviceType device_type = device::DeviceType::kCPU);
 template <typename T>
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, T scalar) {
+DeviceAddressPtr MakeDeviceAddress(TypeId data_type, T scalar) {
   static ShapeVector scalar_shape{};
   return MakeDeviceAddress(data_type, scalar_shape, tensor::MakeTensorData(data_type, scalar_shape, scalar));
 }
 
 template <typename T>
-DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const std::vector<T> &data) {
+DeviceAddressPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const std::vector<T> &data) {
   return MakeDeviceAddress(data_type, shape, tensor::MakeTensorData(data_type, shape, data.data(), data.size()));
 }
 }  // namespace mindspore

@@ -103,7 +103,7 @@ void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
   index_to_front_node_.emplace(index, node);
 }
 
-void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor) {
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceAddressPtr &device_tensor) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   device_tensor_in_callback_.push_back(device_tensor);
 }
@@ -267,7 +267,7 @@ DeviceTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, si
   return released_check_addresses_[outer_index][inner_index];
 }
 
-void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_callback) {
+void AddCopyDataCallBack(const std::vector<DeviceAddressPtr> &device_tensor_in_callback) {
   if (device_tensor_in_callback.empty()) {
     return;
   }

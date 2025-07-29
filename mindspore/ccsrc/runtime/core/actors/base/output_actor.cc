@@ -90,7 +90,7 @@ void UpdateDynamicSequenceType(const AnfNodePtr &output_node, const kernel::Kern
   output_kernel_tensor->SetType(std::make_shared<List>(types));
 }
 
-device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &address,
+device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceAddressPtr &address,
                                                       const TensorStorageInfoPtr &storage) {
   MS_EXCEPTION_IF_NULL(address);
   auto dev_address = std::dynamic_pointer_cast<device::DeviceAddress>(address);
@@ -273,7 +273,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       new_tensor->set_device_address(tensor_device_address);
     }
     if (device_tensor->GetTensorStorageInfo() != nullptr) {
-      new_tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
+      new_tensor->set_contiguous_callback([this](const DeviceAddressPtr &address) -> DeviceAddressPtr {
         return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
       });
     }
@@ -568,7 +568,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
 
   if (output_kernel_tensor->tensor_storage_info()) {
-    tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
+    tensor->set_contiguous_callback([this](const DeviceAddressPtr &address) -> DeviceAddressPtr {
       return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
     });
   }

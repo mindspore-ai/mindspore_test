@@ -429,7 +429,7 @@ bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
   return host_context->device_res_manager_->SyncAllStreams();
 }
 
-bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
+bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceAddressPtr &src_device_tensor,
                           size_t stream_id, bool *has_h2d_copy) {
   // judge copy operation only for capture graph.
   if (has_h2d_copy != nullptr) {

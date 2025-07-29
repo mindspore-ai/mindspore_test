@@ -274,7 +274,7 @@ const size_t TensorPy::GetDataSize() const { return GetTensor()->DataSize(); }
 
 void *TensorPy::GetTensorDataObject() const { return GetTensor()->data_c(); }
 
-const DeviceSyncPtr TensorPy::GetDeviceAddress() const { return GetTensor()->device_address(); }
+const DeviceAddressPtr TensorPy::GetDeviceAddress() const { return GetTensor()->device_address(); }
 
 bool TensorPy::IsMSParameterOutput() const { return ms_parameter_output_; }
 
