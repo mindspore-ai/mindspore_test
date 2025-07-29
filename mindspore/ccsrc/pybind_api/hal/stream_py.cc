@@ -112,6 +112,7 @@ void SetCurStream(const StreamPyPtr &cur_stream) {
 void Synchronize() {
   auto device_ctx = GetDeviceCtx();
   runtime::Pipeline::Get().WaitForward();
+  MsException::Instance().CheckException();
   auto &controller =
     device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
   controller->Refresh();
