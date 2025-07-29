@@ -122,7 +122,9 @@ GroupsVecBuffleSet Config::ParseListConfig(const std::string &list_cfg) {
 
 void Config::InsertStrideGroup(GroupsVecBuffleSet *result, const std::vector<uint32_t> &group,
                                const std::string &value) {
-  if (group.empty()) return;
+  if (group.empty()) {
+    return;
+  }
   std::string val = value;
   if (val.size() > 2 && (val.substr(val.size() - 2) == "MB" || val.substr(val.size() - 2) == "mb")) {
     val = val.substr(0, val.size() - 2);
