@@ -261,7 +261,8 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
-    def _is_invalid_shape(self, shape):
+    @staticmethod
+    def _is_invalid_shape(shape):
         """Check if input shape is valid"""
         return is_shape_unknown(shape) or not shape
 
