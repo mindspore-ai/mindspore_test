@@ -19,7 +19,6 @@
 #include "include/backend/kernel_graph.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "backend/common/session/session_basic.h"
-#include "backend/common/mem_reuse/kernel_refcount.h"
 #include "include/backend/kernel_info.h"
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"
@@ -27,7 +26,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"
 #include "pipeline/jit/ps/resource.h"
-#include "backend/common/mem_reuse/mem_reuse.h"
 
 #include "common/common_test.h"
 #include "common/resource.h"
@@ -212,29 +210,6 @@ static KernelGraphPtr CreateGraphWithExecOrder() {
   EXPECT_EQ(new_outputs.size(), 1);
   EXPECT_EQ(common::AnfAlgo::GetCNodeName(new_outputs[0]), prim::kPrimMul->name());
   return kernel_graph;
-}
-
-TEST_F(TestMemReuseWithPy, KernelRef) {
-  KernelRefCountPtr kernel_ref_count_ptr = std::make_shared<KernelRefCount>();
-  ASSERT_NE(kernel_ref_count_ptr, nullptr);
-  int ref_count = kernel_ref_count_ptr->ref_count_;
-  int offset = kernel_ref_count_ptr->offset_;
-  size_t size = kernel_ref_count_ptr->size_;
-  int index = kernel_ref_count_ptr->index_;
-  ASSERT_EQ(ref_count, 0);
-  ASSERT_EQ(offset, 0);
-  ASSERT_EQ(size, 0);
-  ASSERT_EQ(index, -1);
-  index = 3;
-  size = 512;
-  RefCountType ref_count_type_in = mindspore::memreuse::kDynamicRefCount;
-  kernel_ref_count_ptr->SetKernelRefCountInfo(index, size, ref_count_type_in);
-  ASSERT_EQ(kernel_ref_count_ptr->index_, 3);
-  ASSERT_EQ(kernel_ref_count_ptr->size_, 512);
-  KernelDefPtr kernel_def_ptr = std::make_shared<KernelDef>();
-  ASSERT_NE(kernel_def_ptr, nullptr);
-  MembufPtr membuf_ptr = std::make_shared<Membuf>();
-  ASSERT_NE(membuf_ptr, nullptr);
 }
 
 TEST_F(TestMemReuseWithPy, TestSetInfo) {
