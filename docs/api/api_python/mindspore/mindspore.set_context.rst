@@ -59,4 +59,4 @@ mindspore.set_context
         - **check_bprop** (bool) - 此参数将在后续版本中废弃。
         - **enable_reduce_precision** (bool) - 此参数将在后续版本中废弃。
         - **grad_for_scalar** (bool) - 此参数将在后续版本中废弃。
-        - **support_binary** (bool) - 是否支持在图模式下运行.pyc或.so。
+        - **support_binary** (bool) - 是否支持在图模式下运行.pyc或.so，默认 ``False`` 。此参数将在后续版本中废弃，请使用环境变量 `MS_SUPPORT_BINARY` 代替。
