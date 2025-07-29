@@ -355,8 +355,6 @@ static bool UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input
   auto phase = PhaseManager::GetInstance().phase();
   auto phase_idx = static_cast<size_t>(IsDecodePhase(phase));
   auto op_name = AnfUtils::GetCNodeName(node);
-  auto input_num = common::AnfAlgo::GetInputTensorNum(node);
-  auto output_num = AnfUtils::GetOutputTensorNum(node);
 
   if (soc_version == kAscendVersion310p) {
     UpdateNzFormatOpsList(node);
@@ -367,10 +365,6 @@ static bool UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input
     auto support_nz_format_only = CheckOpSupprtNzFormatOnly(enable_op, op_name);
     auto format_idx_iter = kNzFormatOpsList.find(op_name);
     if (format_idx_iter != kNzFormatOpsList.end()) {
-      input_formats->clear();
-      output_formats->clear();
-      input_formats->assign(input_num, kOpFormat_DEFAULT);
-      output_formats->assign(output_num, kOpFormat_DEFAULT);
       auto input_nz_format_idx = format_idx_iter->second[phase_idx][0];
       auto output_nz_format_idx = format_idx_iter->second[phase_idx][1];
       if (CheckMatMulWeightIsUnAlign(node) || support_nz_format_only) {
@@ -397,10 +391,6 @@ static bool UpdateFormat(const AnfNodePtr &node, std::vector<std::string> *input
 
     auto nz_indices_getter = kNzIndicesGetterMap.find(op_name);
     if (nz_indices_getter != kNzIndicesGetterMap.end()) {
-      input_formats->clear();
-      output_formats->clear();
-      input_formats->assign(input_num, kOpFormat_DEFAULT);
-      output_formats->assign(output_num, kOpFormat_DEFAULT);
       auto input_nz_format_idx = nz_indices_getter->second(node)[phase_idx][0];
       auto output_nz_format_idx = nz_indices_getter->second(node)[phase_idx][1];
       for (const auto &input_idx : input_nz_format_idx) {
@@ -428,16 +418,6 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   MS_EXCEPTION_IF_NULL(output_formats);
 
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
-  size_t output_num = AnfUtils::GetOutputTensorNum(node);
-  input_formats->clear();
-  output_formats->clear();
-  input_formats->assign(input_num, kOpFormat_DEFAULT);
-  output_formats->assign(output_num, kOpFormat_DEFAULT);
-  for (size_t i = 0; i < input_num; ++i) {
-    auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
-    std::string input_format = AnfAlgo::GetOutputFormat(kernel_with_index.first, kernel_with_index.second);
-    (*input_formats)[i] = input_format;
-  }
 
   (void)UpdateFormat(node, input_formats, output_formats);
   std::vector<size_t> special_inputs;
