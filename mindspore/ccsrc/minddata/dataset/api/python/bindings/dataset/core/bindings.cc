@@ -321,6 +321,11 @@ PYBIND_REGISTER(SharedMemoryQueue, 0, ([](const py::module *m) {
                              shm_queue.ToTensorTable(&tensor_table, &batch_info, &concat_batch, shm_id, shm_size));
                            return std::make_tuple(tensor_table, batch_info, concat_batch);
                          })
+                    .def("release",
+                         [](SharedMemoryQueue &shm_queue) {
+                           THROW_IF_ERROR(shm_queue.ReleaseCurrentShm());
+                           return shm_queue;
+                         })
                     .def("set_release_flag", &SharedMemoryQueue::SetReleaseFlag)
                     .def("get_shm_id", &SharedMemoryQueue::GetShmID)
                     .def("get_shm_size", &SharedMemoryQueue::GetShmSize);
@@ -348,6 +353,7 @@ PYBIND_REGISTER(MessageQueue, 0, ([](const py::module *m) {
                            THROW_IF_ERROR(msg_queue.SerializeStatus(status_code, line_of_code, filename, err_desc));
                            return msg_queue;
                          })
+                    .def("release", &MessageQueue::ReleaseQueue)
                     .def("message_queue_state", &MessageQueue::MessageQueueState)
                     .def_readonly("shm_id", &MessageQueue::shm_id_)
                     .def_readonly("shm_size", &MessageQueue::shm_size_)

@@ -62,6 +62,11 @@ PYBIND_REGISTER(SharedMemory, 0, ([](const py::module *m) {
                       return shared_memory.Size();
                     });
                 }));
+
+PYBIND_REGISTER(ReleaseShmAndMsgByWorkerPIDs, 0, ([](py::module *m) {
+                  (void)m->def("release_shm_and_msg_by_worker_pids",
+                               ([](const std::vector<int> &pids) { ReleaseShmAndMsgByWorkerPIDs(pids); }));
+                }));
 #endif
 
 PYBIND_REGISTER(RegisterWorkerHandlers, 0, ([](py::module *m) {

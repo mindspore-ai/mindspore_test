@@ -118,7 +118,7 @@ Status PyFuncOp::ComputeWithWorker(const TensorRow &input, TensorRow *output) {
   }
 
   std::string current_pid = std::to_string(getpid());
-  // register the shm_id & msg_id by MainProcessPID_WorkerPID
+  // register the shm_id & msg_id by MainProcessPID_WorkerPID_"PyFuncOp"
   RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_) + "_PyFuncOp", shm_queue_->GetShmID(),
                         msg_queue_->msg_queue_id_);
 
