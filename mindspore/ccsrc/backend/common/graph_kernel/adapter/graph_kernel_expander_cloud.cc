@@ -46,8 +46,20 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 namespace mindspore::graphkernel {
 namespace {
-bool DvmSupported(const AnfNodePtr &node) {
-  // check format
+bool IsFloat(const TypeId &type_id) {
+  switch (type_id) {
+    case kNumberTypeFloat16:
+    case kNumberTypeBFloat16:
+    case kNumberTypeFloat32:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool IsFloatInt(const TypeId &type_id) { return IsFloat(type_id) || type_id == kNumberTypeInt32; }
+
+bool FormatCheck(const AnfNodePtr &node) {
   if (common::AnfAlgo::IsDynamicShape(node) && !CheckDefaultFormat(node)) {
     // dvm kernel infer shape use inputs device shape, but the output abstract shape inferred from device shape is
     // not unique if some shape value are not a multiple of 16
@@ -55,37 +67,73 @@ bool DvmSupported(const AnfNodePtr &node) {
                   << " because only default format is supported in dynamic shape";
     return false;
   }
-  // check data type
-  static std::set<TypeId> supported_types{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBool, kNumberTypeInt32,
-                                          kNumberTypeBFloat16};
-  if (IsPrimitiveCNode(node, prim::kPrimAddN)) {
-    constexpr auto max_input_num = 10;
-    auto input_num = common::AnfAlgo::GetInputTensorNum(node);
-    if (input_num > max_input_num) {
+  return true;
+}
+
+bool CommonCheck(const AnfNodePtr &node, const std::function<bool(const TypeId &)> &check) {
+  if (!FormatCheck(node)) {
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto cb = Callback::Instance();
+  MS_EXCEPTION_IF_NULL(cb);
+  for (size_t i = 1; i < cnode->size(); i++) {
+    auto input_abstract = cnode->input(i)->abstract();
+    if (input_abstract != nullptr && input_abstract->isa<abstract::AbstractTensor>() &&
+        !check(cb->GetInputType(node, i - 1))) {
       return false;
     }
   }
+  auto node_output_type = cb->GetOutputType(node, 0);
+  return check(node_output_type);
+}
+
+bool OutputCheck(const AnfNodePtr &node, const std::function<bool(const TypeId &)> &check) {
+  if (!FormatCheck(node)) {
+    return false;
+  }
   auto cb = Callback::Instance();
   MS_EXCEPTION_IF_NULL(cb);
-  static std::vector<PrimitivePtr> exclude_ops{
-    prim::kPrimReduceMean, prim::kPrimMeanExt, prim::kPrimLogSoftmaxGrad,
-    prim::kPrimSqueeze,    prim::kPrimTile,    prim::kPrimExpandDims,
-  };
-  if (!std::any_of(exclude_ops.begin(), exclude_ops.end(),
-                   [&node](const PrimitivePtr &prim) { return IsPrimitiveCNode(node, prim); })) {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    size_t input_num = cnode->size() - 1;
-    for (size_t i = 1; i <= input_num; i++) {
-      auto input_abstract = cnode->input(i)->abstract();
-      if (input_abstract->isa<abstract::AbstractTensor>() &&
-          supported_types.find(cb->GetInputType(node, i - 1)) == supported_types.end()) {
-        return false;
-      }
+  auto node_output_type = cb->GetOutputType(node, 0);
+  return check(node_output_type);
+}
+
+bool FloatCheck(const AnfNodePtr &node) { return CommonCheck(node, IsFloat); }
+bool FloatIntCheck(const AnfNodePtr &node) { return CommonCheck(node, IsFloatInt); }
+bool OutputFloatCheck(const AnfNodePtr &node) { return OutputCheck(node, IsFloat); }
+bool OutputFloatIntCheck(const AnfNodePtr &node) { return OutputCheck(node, IsFloatInt); }
+
+bool OptimizerCheck(const AnfNodePtr &node) {
+  if (!FormatCheck(node)) {
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(node);
+  auto cb = Callback::Instance();
+  auto node_output_type = cb->GetOutputType(node, 0);
+  if (!IsFloat(node_output_type)) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  for (size_t i = 1; i < cnode->size(); i++) {
+    auto input_abstract = cnode->input(i)->abstract();
+    if (input_abstract != nullptr && input_abstract->isa<abstract::AbstractTensor>() &&
+        cb->GetInputType(node, i - 1) != node_output_type) {
+      return false;
     }
   }
-  auto node_output_type = cb->GetOutputType(node, 0);
-  return supported_types.find(node_output_type) != supported_types.end();
+  return true;
+}
+
+bool AddNCheck(const AnfNodePtr &node) {
+  constexpr auto max_input_num = 10;
+  auto input_num = common::AnfAlgo::GetInputTensorNum(node);
+  if (input_num > max_input_num) {
+    return false;
+  }
+  return CommonCheck(node, IsFloatInt);
 }
 
 const std::vector<OpWithLevel> expand_ops_with_level = {
@@ -167,71 +215,72 @@ const std::vector<OpWithLevel> expand_ops_with_level_v2 = {
 
 // note: inplace op can not be fused by default, as view + inplace case may have precision error
 const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
-  {kAscendDevice, OpLevel_0, prim::kPrimAdam},
-  {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecayAssign},
-  {kAscendDevice, OpLevel_0, prim::kPrimAddcmul},
-  {kAscendDevice, OpLevel_0, prim::kPrimAddN},
-  {kAscendDevice, OpLevel_0, prim::kPrimBiasAdd},
-  {kAscendDevice, OpLevel_0, prim::kPrimBiasAddGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimFillV2},
-  {kAscendDevice, OpLevel_0, prim::kPrimGeLU},
-  {kAscendDevice, OpLevel_0, prim::kPrimFastGelu},
-  {kAscendDevice, OpLevel_0, prim::kPrimFastGeluGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimFastGeLU},
-  {kAscendDevice, OpLevel_0, prim::kPrimFastGeLUGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimSiLU},
-  {kAscendDevice, OpLevel_0, prim::kPrimSiLUGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimGeLUGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimMuls},
-  {kAscendDevice, OpLevel_0, prim::kPrimRsqrtGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimSqrtGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimSquare},
-  {kAscendDevice, OpLevel_0, prim::kPrimTile},
-  {kAscendDevice, OpLevel_0, prim::kPrimClipByNormNoDivSum},
-  {kAscendDevice, OpLevel_0, prim::kFusedMulAdd},
-  {kAscendDevice, OpLevel_0, prim::kPrimSigmoid},
-  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidCrossEntropyWithLogits},
-  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidCrossEntropyWithLogitsGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimSquaredDifference},
-  {kAscendDevice, OpLevel_0, prim::kPrimTanhGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimOnesLike},
-  {kAscendDevice, OpLevel_0, prim::kPrimZerosLike},
-  {kAscendDevice, OpLevel_0, prim::kPrimReduceMean},
-  {kAscendDevice, OpLevel_2, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
-  {kAscendDevice, OpLevel_0, prim::kPrimReLU},
-  {kAscendDevice, OpLevel_0, prim::kPrimReluGrad},
-  {kAscendDevice, OpLevel_0, prim::kPrimAssignAdd},
-  {kAscendDevice, OpLevel_0, prim::kLambApplyOptimizerAssign},
-  {kAscendDevice, OpLevel_0, prim::kLambApplyWeightAssign},
-  {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay},
-  {kAscendDevice, OpLevel_2, prim::kPrimExpandDims},
-  {kAscendDevice, OpLevel_2, prim::kPrimSqueeze},
-  {kAscendDevice, OpLevel_2, prim::kPrimApplyMomentum},
-  {kAscendDevice, OpLevel_0, prim::kPrimRepeatInterleaveInt},
-  {kAscendDevice, OpLevel_0, prim::kPrimHShrink},
-  {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid},
-  {kAscendDevice, OpLevel_0, prim::kPrimHSwish},
-  {kAscendDevice, OpLevel_2, prim::kPrimBinaryCrossEntropy},  // will split to multiple sub graphs
-  {kAscendDevice, OpLevel_0, prim::kPrimErf},
-  {kAscendDevice, OpLevel_0, prim::kPrimTanh},
-  {kAscendDevice, OpLevel_0, prim::kPrimCosh},
-  {kAscendDevice, OpLevel_0, prim::kPrimSinh},
-  {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
-  {kAscendDevice, OpLevel_2, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
+  {kAscendDevice, OpLevel_0, prim::kPrimAdam, OptimizerCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecayAssign, OptimizerCheck},
+  {kAscendDevice, OpLevel_0, prim::kLambApplyOptimizerAssign, OptimizerCheck},
+  {kAscendDevice, OpLevel_0, prim::kLambApplyWeightAssign, OptimizerCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay, OptimizerCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAddcmul, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAddN, AddNCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimBiasAdd, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimBiasAddGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFillV2, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimGeLU, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFastGelu, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFastGeluGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFastGeLU, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFastGeLUGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSiLU, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSiLUGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimGeLUGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimMuls, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimRsqrtGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSqrtGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSquare, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimTile, OutputFloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimClipByNormNoDivSum, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSigmoid, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidCrossEntropyWithLogits, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSigmoidCrossEntropyWithLogitsGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSquaredDifference, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimTanhGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimOnesLike, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimZerosLike, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimReduceMean, OutputFloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimReLU, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimReluGrad, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAssignAdd, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimRepeatInterleaveInt, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimHShrink, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimHSwish, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimErf, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimTanh, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimCosh, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSinh, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimDivMod, FloatCheck},
   // mint ops
-  {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSumExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimAcoshExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimAsinhExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimZerosLikeExt},
-  {kAscendDevice, OpLevel_2, prim::kSoftmaxGradExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimAddExt, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSubExt, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSumExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt, OutputFloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAcoshExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimAsinhExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimEluExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt, FloatCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimZerosLikeExt, FloatIntCheck},
 };
+
+bool DvmSupported(const AnfNodePtr &node) {
+  auto iter = std::find_if(expand_ops_with_level_dvm.begin(), expand_ops_with_level_dvm.end(),
+                           [&node](const OpWithLevel &item) { return IsPrimitiveCNode(node, item.prim); });
+  if (iter != expand_ops_with_level_dvm.end() && iter->check_func != nullptr) {
+    return iter->check_func(node);
+  }
+  return true;
+}
 }  // namespace
 
 std::vector<PrimitivePtr> GraphKernelExpanderCloud::GetExpanderOps() {

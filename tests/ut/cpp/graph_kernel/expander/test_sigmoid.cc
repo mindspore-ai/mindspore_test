@@ -26,6 +26,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "graph_kernel/expander/base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::graphkernel::test {
 namespace {
@@ -58,7 +59,14 @@ TEST_P(TestSigmoidExpander, Sigmoid) {
   auto nodes = TopoSort(c.GetGraph()->get_return());
   for (const auto &node : nodes) {
     if (node != nullptr && AnfUtils::IsGraphKernel(node)) {
-      CompareShapeAndType(node, 0, param.expect_shape, kFloat32->type_id());
+      auto fg = GetCNodeFuncGraph(node);
+      auto output_node = fg->output();
+      if (IsPrimitiveCNode(output_node, prim::kPrimCast)) {
+        auto cnode = output_node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        output_node = cnode->input(1);
+      }
+      CompareShapeAndType(output_node, 0, param.expect_shape, kFloat32->type_id());
     }
   }
   auto g = c.GetGraph();
@@ -72,7 +80,8 @@ TEST_P(TestSigmoidExpander, Sigmoid) {
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpSigmoid, TestSigmoidExpander,
-                        testing::Values(SigmoidParams{{16, 16}, {16, 16}, kInt32},
+                        testing::Values(SigmoidParams{{16, 16}, {16, 16}, kFloat16},
                                         SigmoidParams{{16, 16}, {16, 16}, kFloat32},
+                                        SigmoidParams{{16, 16}, {16, 16}, kBFloat16},
                                         SigmoidParams{{16, 16}, {16, 16}, kInt64}));
 }  // namespace mindspore::graphkernel::test
