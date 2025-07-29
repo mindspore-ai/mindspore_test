@@ -209,7 +209,7 @@ class KernelRunner {
   const AID *recorder_aid_{nullptr};
 
   // Auto increment id for actor.
-  int64_t actor_id_;
+  int64_t actor_id_{0};
 
   // Whether use input optimize.
   bool enable_input_optimize_;
