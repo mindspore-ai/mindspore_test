@@ -77,7 +77,7 @@ void ProfilerActor::AscendStepEnd() {
     MS_EXCEPTION_IF_NULL(res_manager);
 
     res_manager->BindDeviceToCurrentThread(false);
-    res_manager->SyncAllStreams();
+    res_manager->SyncAllStreams(false);
     MS_LOG(INFO) << "Dot step end timestamp.";
     profiler->StepStop();
     profile_started_ = false;
@@ -120,7 +120,7 @@ void ProfilerActor::ProfilerOnStepEnd(OpContext<KernelTensor> *const op_context,
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
 
-    res_manager->SyncAllStreams();
+    res_manager->SyncAllStreams(false);
     MS_LOG(INFO) << "Profiler_actor ProfilerOnStepEnd.";
     return;
   }

@@ -81,7 +81,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendStreamMng {
   aclrtStream GetStream(size_t stream_id) const;
   bool SyncStream(size_t stream_id) const;
   bool SyncStream(aclrtStream stream) const;
-  bool SyncAllStreams() const;
+  // 'sync_device' means whether calling 'aclrtSynchronizeDeviceWithTimeout' or 'aclrtSynchronizeStreamWithTimeout'.
+  bool SyncAllStreams(bool sync_device = true) const;
   bool SyncNotDefaultStreams() const;
   // Sync all streams except the streams in except_streams.
   bool SyncExceptStreamsInList(const std::set<aclrtStream> &except_streams) const;

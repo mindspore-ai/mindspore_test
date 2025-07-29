@@ -454,7 +454,7 @@ bool GPUResManager::QueryStream(size_t stream_id) const {
 
 bool GPUResManager::SyncStream(size_t stream_id) const { return GPUDeviceManager::GetInstance().SyncStream(stream_id); }
 
-bool GPUResManager::SyncAllStreams() const {
+bool GPUResManager::SyncAllStreams(bool) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Fail to bind device to current thread";
     return false;
