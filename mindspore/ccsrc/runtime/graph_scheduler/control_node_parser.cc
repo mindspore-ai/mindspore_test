@@ -1183,12 +1183,6 @@ void PrintGraphGroupInfo(const std::set<KernelGraphGroupInfoPtr> &kernel_graph_g
     }
   }
 }
-
-bool IsCommunicationOp(const AnfNodePtr &node) {
-  return common::AnfAlgo::IsCommunicationOp(node) || common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName ||
-         common::AnfAlgo::GetCNodeName(node) == kMatmulReduceScatterOpName ||
-         common::AnfAlgo::GetCNodeName(node) == kAllGatherMatmulOpName;
-}
 }  // namespace
 
 bool ControlNodeParser::IsCommuControlNode(const AnfNodePtr &control_node) const {
@@ -1226,7 +1220,7 @@ bool ControlNodeParser::IsCommuControlNode(const AnfNodePtr &control_node) const
         continue;
       }
       if (std::any_of(kernel_graph->execution_order().begin(), kernel_graph->execution_order().end(),
-                      [](const auto &kernel) { return IsCommunicationOp(kernel); })) {
+                      [](const auto &kernel) { return common::AnfAlgo::IsNaiveCommunicationOp(kernel); })) {
         MS_LOG(DEBUG) << "Kernel graph:" << kernel_graph->ToString()
                       << " has some communication op for func graph:" << called_func_graph->ToString()
                       << " for call node:" << control_node->DebugString();
@@ -1264,7 +1258,7 @@ std::vector<KernelGraphPtr> ControlNodeParser::GetValidKernelGraph(
         continue;
       }
       if (std::none_of(kernel_graph->execution_order().begin(), kernel_graph->execution_order().end(),
-                       [](const auto &kernel) { return IsCommunicationOp(kernel); })) {
+                       [](const auto &kernel) { return common::AnfAlgo::IsNaiveCommunicationOp(kernel); })) {
         MS_LOG(DEBUG) << "No commu op in Kernel graph:" << kernel_graph->ToString();
         continue;
       }
