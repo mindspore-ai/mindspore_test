@@ -518,6 +518,8 @@ void TreeAdapter::SubprocessExit(int exit_code) {
   // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
   message_queue.ReleaseQueue();
 
+  MS_LOG(INFO) << "[Independent Dataset Process] The message queue had been released.";
+
   // interrupt all the pipeline thread
   (void)tree_->AllTasks()->interrupt_all();
 
@@ -631,7 +633,7 @@ Status TreeAdapter::LaunchSubprocess() {
     if (message_queue.SerializeStatus(ret) != Status::OK()) {
       MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
     }
-    RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerErrorMsg));
+    RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerSendDataMsg));
 
     // waiting for the main process get the message
     sleep(kMonitorInterval * kSleepDelays);
@@ -643,6 +645,8 @@ Status TreeAdapter::LaunchSubprocess() {
 
   // The the subprocess should be alive
   const int main_thread_log_interval = 10;
+
+  // sleep interval should be same with the ReceiveBridgeOp monitor & interrupt thread
   const int main_thread_sleep_interval = 1;
   time_t start = time(nullptr);
   while (!tree_->isFinished()) {
@@ -666,7 +670,7 @@ Status TreeAdapter::LaunchSubprocess() {
       if (message_queue.SerializeStatus(ret) != Status::OK()) {
         MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
       }
-      RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerErrorMsg));
+      RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerSendDataMsg));
 
       // waiting for the main process get the message
       sleep(kMonitorInterval * kSleepDelays);
@@ -816,13 +820,6 @@ Status TreeAdapter::Launch() {
 #endif
 
   RETURN_IF_NOT_OK(tree_->Launch());
-
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-  if (independent_dataset_) {
-    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
-    signal(SIGCHLD, SIG_IGN);
-  }
-#endif
 
   launched_ = true;
   return Status::OK();

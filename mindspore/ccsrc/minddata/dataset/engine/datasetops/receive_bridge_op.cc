@@ -94,33 +94,12 @@ void ReceiveBridgeOp::Print(std::ostream &out, bool show_all) const {
 Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
   TaskManager::FindMe()->Post();
 
-  while (!tree_->isFinished()) {
-    if (mindspore::dataset::this_thread::is_interrupted()) {
-      // send message to independent process and independent process will exit
-      RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
-
-      // sleep waiting for independent dataset process get the message queue
-      sleep(kMonitorInterval * kSleepDelays);
-
-      MS_LOG(INFO) << "Monitor thread get interrupt signal and will exit.";
-      break;
-    }
-
-    auto st = MonitorSubprocess(subprocess_pid_);
-    if (st != Status::OK() && receive_info_.eof_row_.row_step_ == 0) {
-      MS_LOG(INFO) << "Monitor thread detects that the independent dataset process is abnormal.";
-      err_status_ = st;
-      break;
-    }
-
-    // get error flag from dataset independent process
-    if (msg_queue_.MsgRcv(kWorkerErrorMsg, IPC_NOWAIT) > 0) {
-      MS_LOG(INFO) << "Monitor thread get err status from the independent dataset process.";
-      err_status_ = msg_queue_.DeserializeStatus();
-      break;
-    }
-
-    sleep(kMonitorInterval);  // check the independent dataset process status in every 1s
+  // blocking wait for the independent dataset process
+  auto st = MonitorSubprocess(subprocess_pid_);
+  if (st != Status::OK() && receive_info_.eof_row_.row_step_ == 0 && !tree_->isFinished() &&
+      !mindspore::dataset::this_thread::is_interrupted()) {
+    MS_LOG(INFO) << "Monitor thread detects that the independent dataset process is abnormal.";
+    err_status_ = st;
   }
 
   // release the message queue
@@ -142,6 +121,52 @@ Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
   return Status::OK();
 }
 
+Status ReceiveBridgeOp::InterruptIndependentDatasetProcess() {
+  TaskManager::FindMe()->Post();
+
+  while (!tree_->isFinished() && !mindspore::dataset::this_thread::is_interrupted()) {
+    // sleep waiting for independent dataset process get the message queue
+    sleep(kMonitorInterval);
+  }
+
+  // the independent dataset process is not exit yet
+  if (err_status_ == Status::OK()) {
+    // send message to independent process and independent process will exit
+    MS_LOG(INFO) << "Send finish flag to independent dataset process.";
+    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
+
+    // sleep waiting for independent dataset process get the message queue
+    sleep(kMonitorInterval * kSleepDelays);
+  }
+
+  return Status::OK();
+}
+
+Status ReceiveBridgeOp::CheckStatus(Status status) {
+  // First: check the msg_queues_.err_msg_
+  if (msg_queue_.GetErrorStatus()) {
+    // got err from Independent Dataset Process
+    return msg_queue_.DeserializeStatus();
+  }
+
+  // Second: check the err_status_ which represents that the Independent Dataset Process may have already exited
+  if (err_status_ != Status::OK()) {
+    MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
+    return err_status_;
+  }
+
+  // Third: check the return status by MsgRcv
+  if (status != Status::OK()) {
+    // if the pipeline had been interrupted, ignore the MsgRcv error
+    RETURN_IF_INTERRUPTED();
+    if (tree_->isFinished()) {
+      return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
+    }
+    return status;
+  }
+  return Status::OK();
+}
+
 // This class functor will provide the master loop that drives the logic for performing the work
 Status ReceiveBridgeOp::operator()() {
   RETURN_IF_NOT_OK(RegisterAndLaunchThreads());
@@ -151,12 +176,17 @@ Status ReceiveBridgeOp::operator()() {
     "ReceiveBridge-MonitorIndependentDatasetProcess",
     std::bind(&ReceiveBridgeOp::MonitorIndependentDatasetProcess, this), nullptr, id()));
 
+  // start the thread which used to Send Finish Flag to independent process when main process interrupt
+  RETURN_IF_NOT_OK(tree_->AllTasks()->CreateAsyncTask(
+    "ReceiveBridge-InterruptIndependentDatasetProcess",
+    std::bind(&ReceiveBridgeOp::InterruptIndependentDatasetProcess, this), nullptr, id()));
+
   // Synchronize with TaskManager
   TaskManager::FindMe()->Post();
 
   std::string current_pid = std::to_string(getpid());
   std::string independent_pid = std::to_string(subprocess_pid_);
-  // register the shm_id & msg_id by MainProcessPID_"ReceiveBridgeOp"
+  // register the shm_id & msg_id by MainProcessPID_IndependentDatasetPID_"ReceiveBridgeOp"
   RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
                         msg_queue_.msg_queue_id_);
 
@@ -168,16 +198,7 @@ Status ReceiveBridgeOp::operator()() {
   RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
                         msg_queue_.msg_queue_id_);
 
-  // First: check the err_status_
-  if (err_status_ != Status::OK()) {
-    MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-    return err_status_;
-  }
-
-  // Second: check the return status by MsgRcv
-  if (status != Status::OK()) {
-    return status;
-  }
+  RETURN_IF_NOT_OK(CheckStatus(status));
 
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 
@@ -242,21 +263,7 @@ Status ReceiveBridgeOp::operator()() {
     RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
                           msg_queue_.msg_queue_id_);
 
-    // First: check the err_status_
-    if (err_status_ != Status::OK()) {
-      MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-      return err_status_;
-    }
-
-    // Second: check the return status by MsgRcv
-    if (status != Status::OK()) {
-      // if the pipeline had been interrupted, ignore the MsgRcv error
-      RETURN_IF_INTERRUPTED();
-      if (tree_->isFinished()) {
-        return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
-      }
-      return status;
-    }
+    RETURN_IF_NOT_OK(CheckStatus(status));
 
     if (eoe_row) {
       receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
