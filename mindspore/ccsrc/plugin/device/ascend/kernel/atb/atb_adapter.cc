@@ -78,8 +78,6 @@ void UpdateAddress(mindspore::kernel::KernelTensor *kernel_tensor, atb::Tensor *
 }
 }  // namespace
 
-static atb::Context *atb_context = nullptr;
-
 ParamSetter &ParamSetter::Input(mindspore::kernel::KernelTensor *kernel_tensor) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   atb::Tensor tensor = GetAtbTensor(kernel_tensor);
@@ -182,7 +180,13 @@ void Launch(atb::Operation *op, atb::VariantPack variant_pack, void *workspace_p
   }
 }
 
-atb::Context *GetAtbContext(const aclrtStream &stream) {
+AtbContextManager &AtbContextManager::GetInstance() {
+  static AtbContextManager instance;
+  return instance;
+}
+
+atb::Context *AtbContextManager::GetContext(const aclrtStream &stream) {
+  auto &atb_context = context_map_[stream];
   if (atb_context == nullptr) {
     auto create_status = atb::CreateContext(&atb_context);
     if (create_status != 0) {
@@ -195,4 +199,17 @@ atb::Context *GetAtbContext(const aclrtStream &stream) {
   }
   return atb_context;
 }
+
+AtbContextManager::~AtbContextManager() {
+  for (auto &item : context_map_) {
+    if (item.second != nullptr) {
+      auto destroy_status = atb::DestroyContext(item.second);
+      if (destroy_status != 0) {
+        MS_LOG(EXCEPTION) << "Destroy atb context failed.";
+      }
+    }
+  }
+}
+
+atb::Context *GetAtbContext(const aclrtStream &stream) { return AtbContextManager::GetInstance().GetContext(stream); }
 }  // namespace mindspore::device::ascend
