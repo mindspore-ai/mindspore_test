@@ -1623,7 +1623,6 @@ def dropout_ext(input, p=0.5, training=True, inplace=False):
         - **output** (Tensor) - Zeroed tensor, with the same shape and data type as `input`.
 
     Raises:
-        TypeError: If `p` is not a float.
         TypeError: If `input` is not a Tensor.
 
     Supported Platforms:
