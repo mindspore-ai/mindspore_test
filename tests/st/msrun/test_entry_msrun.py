@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -378,3 +378,18 @@ def test_msrun_msn_dump_cgn_metadata():
     assert "node_id" in json_data[0]["device"][0]
     assert "rank_id" in json_data[0]["device"][0]
     assert "role" in json_data[0]["device"][0]
+
+
+@arg_mark(plat_marks=["platform_ascend310p"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_mccl_310():
+    """
+    Feature: mccl and hccl hybrid in 310P.
+    Description: Launch msrun to run mccl and hccl communication operators.
+    Expectation: Data is not correctly transported.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10969 --join=True "
+        "test_mccl_and_hccl.py"
+    )
+    assert return_code == 0
