@@ -26,6 +26,7 @@
 #include "utils/convert_utils_base.h"
 #include "frontend/parallel/step_parallel.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"

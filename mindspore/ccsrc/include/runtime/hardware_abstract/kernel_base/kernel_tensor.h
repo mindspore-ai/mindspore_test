@@ -41,7 +41,7 @@
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
 #include "runtime/hardware_abstract/visible.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
 namespace kernel {
@@ -499,11 +499,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   bool IsPtrValid() const {
     MS_EXCEPTION_IF_NULL(device_address_);
     return device_address_->IsPtrValid();
-  }
-
-  void ClearUserData() {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->ClearUserData();
   }
 
   // Get pointer and reference count.

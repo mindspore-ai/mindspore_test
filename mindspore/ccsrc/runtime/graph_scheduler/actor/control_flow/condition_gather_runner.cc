@@ -32,7 +32,7 @@ ConditionGatherRunner::ConditionGatherRunner(const std::string &name, const CNod
 
 ConditionGatherRunner::~ConditionGatherRunner() {
   for_each(need_clean_ptr_device_addresses_.begin(), need_clean_ptr_device_addresses_.end(),
-           [](const device::DeviceAddressPtr &device_address) { device_address->set_ptr(nullptr); });
+           [](const DeviceAddressPtr &device_address) { device_address->set_ptr(nullptr); });
 }
 
 void ConditionGatherRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {

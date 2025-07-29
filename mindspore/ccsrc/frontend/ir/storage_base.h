@@ -20,7 +20,8 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 class FRONTEND_EXPORT StorageBase {

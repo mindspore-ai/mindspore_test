@@ -81,7 +81,7 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
   runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
   static bool enable_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (MS_UNLIKELY(enable_tracker)) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    auto device_address = tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
@@ -302,7 +302,7 @@ tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
     return tensor;
   }
-  const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto old_device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(old_device_address);
 
   const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->GetDeviceType());
@@ -922,7 +922,7 @@ ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
 void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor,
                                                   const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &device_address = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+  auto device_address = input_tensor->device_address();
 
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -950,11 +950,11 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input
   op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 
-device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceSyncPtr &device_address,
-                                                                   const TensorStorageInfoPtr &storage_info) {
+DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceAddressPtr &device_address,
+                                                           const TensorStorageInfoPtr &storage_info) {
   MS_EXCEPTION_IF_NULL(device_address);
   // Gil might be release  by ACL, so release here to reduce conflict
-  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device_address);
+  auto device_addr = device_address;
   MS_EXCEPTION_IF_NULL(device_addr);
   if (storage_info == nullptr) {
     return device_addr;
@@ -982,11 +982,11 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
   MS_EXCEPTION_IF_NULL(storage_info);
   auto output_tensor = tensor::from_spec(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  output_tensor->set_contiguous_callback([this](const DeviceSyncPtr &device_address) -> DeviceSyncPtr {
+  output_tensor->set_contiguous_callback([this](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
     return TensorContiguousCallback(device_address, device_address->GetTensorStorageInfo());
   });
 
-  auto input_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+  auto input_device_address = input_tensor->device_address();
   MS_EXCEPTION_IF_NULL(input_device_address);
   if (task_type == runtime::KernelTaskType::kCOPY_TASK) {
     input_device_address->set_tensor_storage_info(storage_info);

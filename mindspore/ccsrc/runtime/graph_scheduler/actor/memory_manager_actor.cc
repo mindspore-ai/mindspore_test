@@ -485,7 +485,6 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Op:" << op_name << " decrease new ref count for:" << kernel_tensor->ToString();
     if ((kernel_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
-      device_tensor->ClearUserData();
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Op:" << op_name << " free memory by the new reference count, kernel tensor:" << kernel_tensor->ToString()
         << ".";

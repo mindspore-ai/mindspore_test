@@ -19,7 +19,6 @@
 #include <utility>
 #include <vector>
 #include <string>
-#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
@@ -398,7 +397,7 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   return device_address;
 }
 
-bool GPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                              size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -411,7 +410,7 @@ bool GPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceS
   return SyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
 }
 
-bool GPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                               size_t stream_id, bool keep_src) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -464,7 +463,7 @@ bool GPUResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, si
                                                              src_size > dst_size ? dst_size : src_size);
 }
 
-bool GPUResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                      size_t stream_id) const {
   if (!AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id)) {
     return false;
@@ -472,7 +471,7 @@ bool GPUResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const
   return SyncStream(stream_id);
 }
 
-bool GPUResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::SyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                      size_t stream_id) const {
   if (!AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id)) {
     return false;
@@ -480,7 +479,7 @@ bool GPUResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const
   return SyncStream(stream_id);
 }
 
-bool GPUResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::SyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                        size_t stream_id) const {
   if (!AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id)) {
     return false;
@@ -488,23 +487,23 @@ bool GPUResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, con
   return SyncStream(stream_id);
 }
 
-bool GPUResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                       size_t stream_id) const {
   return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyDeviceToHost);
 }
 
-bool GPUResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool GPUResManager::AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                       size_t stream_id) const {
   return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyHostToDevice);
 }
 
-bool GPUResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                        size_t stream_id) const {
+bool GPUResManager::AsyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync,
+                                        const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyDeviceToDevice);
 }
 
-bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                         cudaMemcpyKind copy_type) const {
+bool GPUResManager::Copy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
+                         size_t stream_id, cudaMemcpyKind copy_type) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -741,7 +740,8 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
 }
 
 MS_REGISTER_HAL_COPY_FUNC(
-  DeviceType::kGPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+  DeviceType::kGPU,
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -752,7 +752,8 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
+      bool keep_src) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);

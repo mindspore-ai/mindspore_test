@@ -21,7 +21,7 @@
 #include <set>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
 namespace ge_backend {

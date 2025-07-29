@@ -397,12 +397,12 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
     }
   }
   CreateBuildInfoForFrontNode(front_node_with_index, backend_node);
-  device::DeviceAddressPtr address = nullptr;
+  DeviceAddressPtr address = nullptr;
   if (node_value->isa<tensor::Tensor>() && node_value->cast<TensorPtr>()->is_forward_output()) {
     // If is_forward_output, get address from tensor
     auto tensor = node_value->cast<TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    address = std::dynamic_pointer_cast<DeviceAddress>(tensor->device_address());
   } else {
     // Create device tensor.
     std::string output_format = AnfAlgo::GetOutputFormat(backend_node, 0);
@@ -489,7 +489,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   // Fetch mem size by shape, the shape is first obtained from the abstract to deal with the scenario where
   // the value node is a multi-level tuple.
   size_t size = FetchOutputSizeByNode(node, front_node_with_index.second, type_id);
-  device::DeviceAddressPtr address = nullptr;
+  DeviceAddressPtr address = nullptr;
   if (node->isa<ValueNode>()) {
     const auto &node_value = node->cast<ValueNodePtr>()->value();
     MS_EXCEPTION_IF_NULL(node_value);
@@ -497,7 +497,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       // If is_forward_output, get address from tensor
       auto tensor = node_value->cast<TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
-      address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+      address = std::dynamic_pointer_cast<DeviceAddress>(tensor->device_address());
     } else {
       // Create device tensor.
       const auto &sub_abstract = common::AnfAlgo::FetchAbstractByIndex(node->abstract(), front_node_with_index.second);

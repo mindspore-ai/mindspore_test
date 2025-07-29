@@ -718,7 +718,7 @@ void TensorPybind::Load(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
   const auto &device_sync = tensor.device_address();
   if (device_sync == nullptr) {
-    MS_LOG(WARNING) << "Tensor without DeviceSync can not be loaded.";
+    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
     return;
   }
   const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);

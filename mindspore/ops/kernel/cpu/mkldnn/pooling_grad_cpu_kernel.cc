@@ -22,7 +22,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 
 namespace mindspore {
 namespace kernel {

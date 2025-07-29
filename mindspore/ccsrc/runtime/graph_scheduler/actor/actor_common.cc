@@ -429,7 +429,7 @@ bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
   return host_context->device_res_manager_->SyncAllStreams();
 }
 
-bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
+bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceAddressPtr &src_device_tensor,
                           size_t stream_id, bool *has_h2d_copy) {
   // judge copy operation only for capture graph.
   if (has_h2d_copy != nullptr) {
@@ -1149,12 +1149,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
   CheckInputSize(kernel_tensor, tensor, outer_index, inner_index);
-  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto tensor_address = tensor->device_address();
   if (tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
     auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
     tensor->set_device_address(empty_tensor->device_address());
-    tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+    tensor_address = empty_tensor->device_address();
   }
   auto device_tensor = kernel_tensor->device_address();
 

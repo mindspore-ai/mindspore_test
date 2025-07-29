@@ -20,7 +20,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
@@ -64,7 +64,7 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
+  DeviceAddressPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
@@ -98,9 +98,9 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   }
 
   auto src_addr = src_tensor->device_address();
-  device::DeviceAddressPtr src_device_ptr = nullptr;
+  DeviceAddressPtr src_device_ptr = nullptr;
   if (src_addr != nullptr) {
-    src_device_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(src_addr);
+    src_device_ptr = std::dynamic_pointer_cast<DeviceAddress>(src_addr);
     MS_EXCEPTION_IF_NULL(src_device_ptr);
     auto src_type = GetDeviceNameByType(src_device_ptr->GetDeviceType());
     if (to == src_type) {

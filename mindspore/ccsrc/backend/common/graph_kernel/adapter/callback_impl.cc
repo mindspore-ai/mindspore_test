@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
+using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 namespace {
 constexpr auto kPatternOpaque = "Opaque";
 
@@ -88,7 +89,7 @@ TypeId GetTypeIdForValueSequence(const ValueSequencePtr &value_sequence) {
   return data_type->type_id();
 }
 
-void GetTypeAndFormats(const device::KernelWithIndex &kernel_with_index, std::vector<TypeId> *input_types,
+void GetTypeAndFormats(const KernelWithIndex &kernel_with_index, std::vector<TypeId> *input_types,
                        std::vector<std::string> *input_formats) {
   auto value_node = kernel_with_index.first->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(value_node);

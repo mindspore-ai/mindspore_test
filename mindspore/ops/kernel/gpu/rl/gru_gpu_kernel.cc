@@ -17,6 +17,7 @@
 #include "kernel/gpu/rl/gru_gpu_kernel.h"
 
 #include <algorithm>
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace kernel {

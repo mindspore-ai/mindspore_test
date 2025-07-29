@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
@@ -194,7 +194,7 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
     ShapeVector tensor_shape{SizeToLong(tensor_size)};
     auto string_tensor =
       tensor::from_buffer(TypeId::kObjectTypeString, tensor_shape, const_cast<void *>(node_value), tensor_size);
-    const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
+    const auto &host_device_address = string_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
     MS_LOG(DEBUG) << "Sync string to device size:" << tensor_size
@@ -318,13 +318,12 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValu
   if (node_value->isa<tensor::Tensor>()) {
     auto tensor = node_value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
-    auto output_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    auto output_address = tensor->device_address();
     if (output_address != nullptr) {
       if (output_address->GetDeviceType() == device_context->GetDeviceType()) {
         // We need to set tensor->device_address to ValueNode even if the tensor is a forward_output tensor
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
-        AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx,
-                               value_node);
+        AnfAlgo::SetOutputAddr(tensor->device_address(), output_idx, value_node);
         auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, output_idx, false);
         MS_EXCEPTION_IF_NULL(kernel_tensor);
         (void)kernel_tensor_list.emplace_back(kernel_tensor);
@@ -933,7 +932,7 @@ void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &
     }
     MS_LOG(EXCEPTION) << "The tensor " << tensor->ToString() << " device address is null! Need to call Tensor.to first";
   }
-  auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+  auto device_address = addr;
   if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
     MS_LOG(EXCEPTION) << "The tensor device address type is " << device_address->GetDeviceType()
                       << ". Need to call Tensor.to first";
@@ -984,7 +983,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
                       << "For more detail with 'Tensor', Please refer to "
                       << "https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html";
   }
-  auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+  auto tensor_address = addr;
   if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
     MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
     return;
@@ -1022,7 +1021,7 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
     return;
   }
   const auto &device_sync = tensor->device_address();
-  auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+  auto device_address = device_sync;
   MS_EXCEPTION_IF_NULL(device_address);
 
   auto mem_type =
@@ -1095,7 +1094,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
 
   auto addr = tensor->device_address();
   if (addr->GetDeviceType() == device_context->GetDeviceType()) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+    auto device_address = addr;
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetPtr() != nullptr) {
       auto kernel_tensor = std::make_shared<KernelTensor>(shape, type, nullptr);
@@ -1297,7 +1296,7 @@ KernelTensorPtr DeviceAddressUtils::CreateKernelTensor(const DeviceContext *devi
 void DeviceAddressUtils::MallocForOutputs(const DeviceContext *device_context,
                                           const std::vector<tensor::TensorPtr> &outputs) {
   for (const auto &output : outputs) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
+    auto device_address = std::static_pointer_cast<DeviceAddress>(output->device_address());
     if (device_address->GetPtr() != nullptr) {
       // ref output
       continue;
@@ -1363,8 +1362,7 @@ void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::TensorPtr &te
   }
 
   MS_LOG(DEBUG) << "Tensor storage_info is not nullptr, need to contiguous, id:" << tensor->id();
-  const auto &new_device_address = ConvertContiguousDeviceAddress(
-    nullptr, std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), true);
+  const auto &new_device_address = ConvertContiguousDeviceAddress(nullptr, tensor->device_address(), true);
   MS_EXCEPTION_IF_NULL(new_device_address);
   tensor->set_device_address(new_device_address);
 }
@@ -1426,7 +1424,7 @@ void DeviceAddressUtils::GetCrossStreamAddressInfoFromInput(
     return;
   }
 
-  auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   if (op_stream_id != device_address->stream_id()) {
     // Device address is cross stream.

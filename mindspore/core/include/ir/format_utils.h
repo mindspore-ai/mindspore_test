@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_COMMON_FORMAT_UTILS_H_
-#define MINDSPORE_OPS_COMMON_FORMAT_UTILS_H_
+#ifndef MINDSPORE_CORE_IR_FORMAT_UTILS_H_
+#define MINDSPORE_CORE_IR_FORMAT_UTILS_H_
 
 #include <string>
-#include "include/api/format.h"
-#include "runtime/hardware_abstract/visible.h"
-
+#include "mindapi/base/format.h"
+#include "mindapi/base/macros.h"
 namespace mindspore {
 namespace kernel {
-RUNTIME_HARDWARE_EXPORT Format GetFormatFromStrToEnum(const std::string &format_str);
-RUNTIME_HARDWARE_EXPORT std::string GetFormatFromEnumToStr(Format format);
+MS_CORE_API Format GetFormatFromStrToEnum(const std::string &format_str);
+MS_CORE_API std::string GetFormatFromEnumToStr(Format format);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_OPS_COMMON_FORMAT_UTILS_H_
+#endif  // MINDSPORE_CORE_IR_FORMAT_UTILS_H_

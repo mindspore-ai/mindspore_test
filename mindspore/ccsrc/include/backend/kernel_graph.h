@@ -30,7 +30,7 @@
 #include "ir/func_graph.h"
 #include "ir/anf.h"
 #include "ir/device_type.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 

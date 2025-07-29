@@ -15,15 +15,15 @@
  */
 
 #include "ir/device_type.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "ir/device_address_maker.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-DeviceSyncPtr MakeAscendDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
-                                      DeviceAddressDeleter &&deleter) {
+DeviceAddressPtr MakeAscendDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
+                                         DeviceAddressDeleter &&deleter) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);

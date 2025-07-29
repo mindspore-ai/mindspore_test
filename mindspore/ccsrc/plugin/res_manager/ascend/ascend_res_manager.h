@@ -52,6 +52,7 @@ class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
 };
 
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
+using TensorPtr = tensor::TensorPtr;
 class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
  public:
   AscendResManager() = default;
@@ -78,9 +79,9 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
                                        TypeId type_id, const std::string &device_name,
                                        uint32_t stream_id) const override;
 
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                 size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+  bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
                  bool keep_src) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
   bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
@@ -191,17 +192,17 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::shared_ptr<AddressAllocator> pin_mem_allocator() const override { return pin_mem_allocator_; }
 
  private:
-  bool SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const;
-  bool SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const;
-  bool SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                           size_t stream_id) const;
-  bool AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                          size_t stream_id) const;
-  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                         bool keep_src) const;
-  bool AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
+                         size_t stream_id, bool keep_src) const;
+  bool AsyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                            size_t stream_id) const;
   bool CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                      size_t stream_id) const;
@@ -211,17 +212,17 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
                                      size_t stream_id) const;
   bool CopyHostToDeviceForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                    size_t stream_id) const;
-  bool SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                            size_t stream_id) const;
+  bool SyncDeviceToDeviceWithDiffFormatType(const DeviceAddressPtr &dst_device_sync,
+                                            const DeviceAddressPtr &src_device_sync, size_t stream_id) const;
   bool CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                    size_t stream_id) const;
   bool CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                    size_t stream_id) const;
   bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                         const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-                        const DeviceSyncPtr src_device_sync = nullptr) const;
+                        const DeviceAddressPtr src_device_sync = nullptr) const;
   bool BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-                const DeviceSyncPtr src_device_sync = nullptr) const;
+                const DeviceAddressPtr src_device_sync = nullptr) const;
 
  private:
   MemUceInfo mem_uce_info_;

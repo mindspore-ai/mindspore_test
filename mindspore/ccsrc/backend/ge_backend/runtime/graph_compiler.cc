@@ -24,7 +24,7 @@
 #include <regex>
 #include "backend/ge_backend/runtime/graph_scheduler.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
