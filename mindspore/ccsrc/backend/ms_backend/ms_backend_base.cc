@@ -621,6 +621,7 @@ void MSBackendBase::ClearGraphBuildMember() {
   root_graph_ = nullptr;
   graph_id_to_device_context_.clear();
   func_graph_to_kernel_graph_ids_.clear();
+  func_graph_to_sub_segments_.clear();
   control_nodes_.clear();
 }
 
