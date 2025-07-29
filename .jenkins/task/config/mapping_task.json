@@ -940,7 +940,8 @@
       "mindspore/ops/op_def",
       "mindspore/python",
       ".gitignore",
-      "mindspore/lite/java/src/test/java/com/mindspore"
+      "mindspore/lite/java/src/test/java/com/mindspore",
+      "mindspore/lite/providers/dpico/manager"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
@@ -1044,7 +1045,8 @@
       "mindspore/ops/op_def",
       "mindspore/python",
       ".gitignore",
-      "mindspore/lite/java/src/test/java/com/mindspore"
+      "mindspore/lite/java/src/test/java/com/mindspore",
+      "mindspore/lite/providers/dpico/manager"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CLOUD_ASCEND",
