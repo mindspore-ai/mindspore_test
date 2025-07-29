@@ -7877,4 +7877,3 @@ Contributions of any kind are welcome!
 - [MindSpore Official Website](https://www.mindspore.cn/)
 - [MindInsight Visualization Debugging and Optimization](https://gitee.com/mindspore/mindinsight)
 - [MindArmour Model Security Hardening Package](https://gitee.com/mindspore/mindarmour)
-- [GraphEngine Computational Graph Engine](https://gitee.com/mindspore/graphengine)

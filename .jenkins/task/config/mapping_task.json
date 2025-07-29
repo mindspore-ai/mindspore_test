@@ -8,6 +8,7 @@
       "requirements.txt",
       "docker",
       "docs",
+      "OWNERS",
       "include/c_api",
       "mindspore/lite/examples",
       "mindspore/lite/python/api",
