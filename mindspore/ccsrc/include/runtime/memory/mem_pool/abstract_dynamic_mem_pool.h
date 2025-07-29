@@ -173,7 +173,9 @@ struct BACKEND_EXPORT MemStat {
     iter_alloc_peak_size_ = 0;
   }
 
-  inline size_t IdleSize() const { return alloc_size_ + custom_alloc_size_ - used_size_; }
+  size_t IdleSize() const {
+    return alloc_size_ + custom_alloc_size_ - used_size_ - eager_free_size_ - used_by_event_size_;
+  }
 
   inline void UpdatePeakSize(const bool is_enable_vmm, size_t vmm_used_mem_size) {
     peak_size_ = std::max(peak_size_, used_size_);
@@ -223,6 +225,7 @@ struct BACKEND_EXPORT MemStat {
   size_t iter_used_peak_size_;
   size_t iter_alloc_peak_size_;
 };
+using MemStatPtr = std::shared_ptr<MemStat>;
 
 struct AllocatorInfo {
   uint32_t stream_id = 0;
@@ -258,16 +261,18 @@ class BACKEND_EXPORT MemBufAllocator {
                            std::function<bool(MemBlock *)> mem_block_cleaner,
                            std::function<size_t(size_t size, void *addr)> mem_mapper,
                            std::function<size_t(void *addr, size_t size)> mem_eager_freer, bool enable_eager_free,
-                           bool is_persistent, uint32_t stream_id, bool is_small, bool is_customized = false)
-      : mem_block_expander_(mem_block_expander),
-        mem_block_cleaner_(mem_block_cleaner),
-        mem_mapper_(mem_mapper),
-        mem_eager_freer_(mem_eager_freer),
+                           bool is_persistent, uint32_t stream_id, bool is_small, MemStatPtr mem_stat_ptr_,
+                           bool is_customized = false)
+      : mem_block_expander_(std::move(mem_block_expander)),
+        mem_block_cleaner_(std::move(mem_block_cleaner)),
+        mem_mapper_(std::move(mem_mapper)),
+        mem_eager_freer_(std::move(mem_eager_freer)),
         stream_id_(stream_id),
         enable_eager_free_(enable_eager_free),
         is_persistent_(is_persistent),
         is_small_(is_small),
-        is_customized_(is_customized) {
+        is_customized_(is_customized),
+        mem_stat_ptr_(std::move(mem_stat_ptr_)) {
     search_key_ = new MemBuf(0, nullptr, 0, nullptr, MemBufStatus::kMemBufIdle);
   }
 
@@ -310,6 +315,7 @@ class BACKEND_EXPORT MemBufAllocator {
   uint32_t stream_id() const { return stream_id_; }
   bool is_persistent() const { return is_persistent_; }
   bool is_small() const { return is_small_; }
+
 #ifndef ENABLE_TEST
 
  protected:
@@ -327,7 +333,10 @@ class BACKEND_EXPORT MemBufAllocator {
   std::set<MemBuf *, MemBufComparator, MemAllocator> free_mem_bufs_;
   std::set<MemBuf *, MemBufComparator, MemAllocator> eager_free_mem_bufs_;
 
+#ifndef ENABLE_TEST
+
  private:
+#endif
   MemBuf *search_key_;
 
   uint32_t stream_id_;
@@ -335,6 +344,25 @@ class BACKEND_EXPORT MemBufAllocator {
   bool is_persistent_;
   bool is_small_;
   bool is_customized_;
+  MemStatPtr mem_stat_ptr_;
+
+  void EraseEagerFreeBuf(MemBuf *mem_buf) {
+    const auto ret = eager_free_mem_bufs_.erase(mem_buf);
+    if (ret == 0) {
+      MS_LOG(ERROR) << "Erase eager free buf : " << mem_buf->ToJson() << " failed.";
+    }
+    mem_stat_ptr_->eager_free_size_ -= mem_buf->size_;
+  }
+  void InsertEagerFreeBuf(MemBuf *mem_buf) {
+    (void)eager_free_mem_bufs_.emplace(mem_buf);
+    mem_stat_ptr_->eager_free_size_ += mem_buf->size_;
+  }
+
+  /// @brief Merge two mem bufs to one mem buf, merge from src to dst
+  ///
+  /// @param src The mem buf that will be deleted after merge
+  /// @param dst The mem buf that will be kept after merge
+  void MergeMemBuf(MemBuf *src, MemBuf *dst);
 
   friend AbstractDynamicMemPool;
 };
@@ -433,7 +461,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   size_t ReleaseFreeBlocks() override;
   size_t ReleaseCustomFreeBlocks();
 
-  MemStat &mem_stat() { return mem_stat_; }
+  const MemStatPtr &mem_stat_ptr() const { return mem_stat_ptr_; }
 
   Lock &lock() { return lock_; }
 
@@ -473,7 +501,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   std::unordered_map<void *, std::pair<MemBuf *, MemBufAllocator *>> addr_mem_buf_allocators_;
   std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<MemBuf *>, pair_hash> stream_pair_mem_bufs_;
   std::map<uint32_t, MemBufAllocatorPtr> customized_allocators_;
-  MemStat mem_stat_;
+  MemStatPtr mem_stat_ptr_{std::make_shared<MemStat>()};
 
   bool enable_vmm_{false};
   bool enable_custom_allocator_{false};

@@ -172,7 +172,7 @@ struct MemoryBlock {
   static constexpr size_t kEndTimeStampIdx = 1;
   static constexpr size_t kStreamIdIdx = 3;
   static constexpr size_t kSizeIdx = 5;
-  static constexpr size_t kActualPeakMemIdx = 6;
+  static constexpr size_t kActualPeakMemIdx = 7;
   static constexpr size_t kInvalidValue = 0;
 
   explicit MemoryBlock(const std::string &block_string) {

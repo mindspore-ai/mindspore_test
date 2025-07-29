@@ -467,7 +467,7 @@ void AscendResManager::Destroy() {
   initialized_ = false;
 }
 
-bool AscendResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInstance().IsEnabled(); }
+bool AscendResManager::IsEnableVmm() const { return AscendVmmAdapter::IsEnabled(); }
 
 bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
