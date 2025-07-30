@@ -30,21 +30,10 @@
 #include "plugin/device/cpu/hal/device/cpu_common.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
+#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
 
 namespace mindspore {
 namespace kernel {
-CustomOpPluginCpuKernelMod::~CustomOpPluginCpuKernelMod() {
-#if !defined(_WIN32) && !defined(_WIN64)
-  if (handle_ != nullptr) {
-    dlclose(handle_);
-  }
-#else
-  if (handle_ != nullptr) {
-    FreeLibrary(static_cast<HMODULE>(handle_));
-  }
-#endif
-}
-
 void CustomOpPluginCpuKernelMod::SetKernelPath() {
   const char *op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
 
@@ -62,46 +51,8 @@ bool CustomOpPluginCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   kernel_name_ = primitive_->name();
   SetKernelPath();
 
-  if (!handle_) {
-#if !defined(_WIN32) && !defined(_WIN64)
-    handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (!handle_) {
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
-                    << "' should be successful, but error occurs! Error message is: " << dlerror();
-      return false;
-    }
-#else
-    handle_ = LoadLibraryA(file_path_.c_str());
-    if (!handle_) {
-      DWORD error = GetLastError();
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, LoadLibrary file '" << file_path_
-                    << "' should be successful, but error occurs! Error code: " << error;
-      return false;
-    }
-#endif
-  }
-
-  if (!reg_func_) {
-    const std::string reg_func_name = "IsKernelRegistered";
-#if !defined(_WIN32) && !defined(_WIN64)
-    reg_func_ = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(dlsym(handle_, reg_func_name.c_str()));
-    if (auto error_info = dlerror(); error_info != nullptr) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << reg_func_name
-                        << "'. Error info: " << error_info;
-    }
-#else
-    reg_func_ = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(
-      GetProcAddress(static_cast<HMODULE>(handle_), reg_func_name.c_str()));
-    if (!reg_func_) {
-      DWORD error = GetLastError();
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << reg_func_name
-                        << "'. Error code: " << error;
-    }
-#endif
-  }
-
   try {
-    bool ret = reg_func_(primitive_->name().c_str());
+    bool ret = IsOpPluginKernel(primitive_->name());
     if (!ret) {
       MS_LOG(INFO) << "Can't find '" << kernel_name_ << " on CPU in op plugin";
       return false;
@@ -154,55 +105,10 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
     params.push_back(static_cast<void *>(workspace[i]->device_ptr()));
   }
 
-  if (!handle_) {
-#if !defined(_WIN32) && !defined(_WIN64)
-    handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (!handle_) {
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
-                    << "' should be successful, but error occurs! Error message is: " << dlerror();
-      return false;
-    }
-#else
-    handle_ = LoadLibraryA(file_path_.c_str());
-    if (!handle_) {
-      DWORD error = GetLastError();
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, LoadLibrary file '" << file_path_
-                    << "' should be successful, but error occurs! Error code: " << error;
-      return false;
-    }
-#endif
-  }
-
-  if (!aot_func_) {
-#if !defined(_WIN32) && !defined(_WIN64)
-    aot_func_ =
-      reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
-        dlsym(handle_, func_name_.c_str()));
-    if (auto error_info = dlerror(); error_info != nullptr) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << func_name_
-                        << "'. Error info: " << error_info;
-    }
-#else
-    aot_func_ =
-      reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
-        GetProcAddress(static_cast<HMODULE>(handle_), func_name_.c_str()));
-    if (!aot_func_) {
-      DWORD error = GetLastError();
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << func_name_
-                        << "'. Error code: " << error;
-    }
-#endif
-  }
-
-  int nparam = SizeToInt(params.size());
   int ret = 0;
   try {
-    if (nparam == 0) {
-      ret = aot_func_(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-    } else {
-      ret = aot_func_(nparam, &params[0], &ndims_[0], &shapes_[0], &type_pointer_list_[0], nullptr,
-                      reinterpret_cast<void *>(&kernel_info_));
-    }
+    ret = LaunchOpPluginKernel(kernel_name_, params.size(), params.data(), ndims_.data(), shapes_.data(),
+                               type_pointer_list_.data(), reinterpret_cast<void *>(&kernel_info_));
   } catch (const std::exception &e) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
                       << file_path_ << "! "
