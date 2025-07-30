@@ -981,6 +981,9 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   auto send = graph->NewCNode(send_input);
   send->set_user_data<NodeStageInfo>(node_stage_info);
   send->set_abstract(node->abstract());
+  if (!is_vpp_ && node_stage_info->chunk() >= 1) {
+    is_vpp_ = true;
+  }
   send->AddPrimalAttr(CHUNK, MakeValue(node_stage_info->chunk()));
   send->AddPrimalAttr(STAGE, MakeValue(node_stage_info->stage()));
   send->AddPrimalAttr(ORDER, MakeValue(order));
@@ -1004,6 +1007,9 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[node_stage]));
   recv->set_abstract(node->abstract());
   recv->set_user_data<NodeStageInfo>(user_node_stage_info);
+  if (!is_vpp_ && node_stage_info->chunk() >= 1) {
+    is_vpp_ = true;
+  }
   recv->AddPrimalAttr(CHUNK, MakeValue(user_node_stage_info->chunk()));
   recv->AddPrimalAttr(STAGE, MakeValue(user_node_stage_info->stage()));
   recv->AddPrimalAttr(ORDER, MakeValue(order));
@@ -1183,6 +1189,13 @@ void PipelinePostProcess::ModifyParameterList() {
   manager_->SetParameters(root_, parameter_list);
 }
 
+void PipelineInterleave::SetScheduler() {
+  if (!is_vpp_) {
+    const auto parallel_context = parallel::ParallelContext::GetInstance();
+    parallel_context->set_pipeline_scheduler(parallel::kPipelineSeqpipe);
+  }
+}
+
 void PipelineInterleave::CutBorder() {
   CreateSendReceiveGroup();
   MS_EXCEPTION_IF_NULL(shared_cell_);
@@ -1211,6 +1224,7 @@ void PipelineInterleave::CutBorder() {
   }
   HandleSharedParam(&order);
   RemoveMonadNode();
+  SetScheduler();
 }
 
 AnfNodePtr PipelinePostProcess::GetZeroOutputs(const FuncGraphPtr &graph) {

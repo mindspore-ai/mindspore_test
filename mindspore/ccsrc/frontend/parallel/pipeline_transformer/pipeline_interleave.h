@@ -60,6 +60,7 @@ class PipelineInterleave {
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
   void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index,
                          bool is_v_shape = False);
+  void SetScheduler();
   void RemoveMonadNode();
   void BroadCastGraphStage(const FuncGraphPtr &fg);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;
@@ -86,6 +87,7 @@ class PipelineInterleave {
   bool is_v_shape_{false};
   int64_t global_rank_ = 0;
   int64_t per_stage_rank_num_ = 0;
+  bool is_vpp_ = false;
 };
 
 class PipelinePostProcess {
