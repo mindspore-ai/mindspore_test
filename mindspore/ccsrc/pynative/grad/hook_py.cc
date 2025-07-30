@@ -18,11 +18,8 @@
 #include <memory>
 #include <string>
 #include <utility>
-<<<<<<< HEAD
 #include <map>
 #include <unordered_map>
-=======
->>>>>>> 5e0d580bd69 (retain grad, grad node cpython)
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
 #include "include/common/pynative/hook.h"
@@ -49,9 +46,10 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
     }
     MS_LOG(DEBUG) << "Create leaf node for: " << tensor->ToString();
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    auto fn = std::make_shared<autograd::LeafNode>(
-      tensor->param_info() != nullptr ? tensor->param_info()->name() : "register_hook_input_" + tensor->id(), tensor,
-      tensor->shape(), tensor->Dtype(), tensor->is_parameter());
+    auto fn = std::make_shared<autograd::LeafNode>(tensor->param_info() != nullptr
+                                                     ? tensor->param_info()->name()
+                                                     : "register_hook_input_" + std::to_string(tensor->id()),
+                                                   tensor, tensor->shape(), tensor->Dtype(), tensor->is_parameter());
     auto_grad_meta_data->set_requires_grad(true);
     auto_grad_meta_data->set_grad_node(fn);
     tensor->set_auto_grad_meta_data(auto_grad_meta_data);

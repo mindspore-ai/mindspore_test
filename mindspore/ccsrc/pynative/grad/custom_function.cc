@@ -77,7 +77,7 @@ ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients, const std::vector<
       continue;
     }
     if (!input_info.IsBroadcastTo(grad_tensor->shape())) {
-      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to input shape, but got "
+      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to expected shape, but got "
                         << grad_tensor->shape() << " vs " << input_info.shape();
     }
     grad_tensor = input_info.Cast(input_info.ReduceGrad(grad_tensor));
