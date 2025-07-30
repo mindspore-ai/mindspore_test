@@ -216,8 +216,8 @@ InputType SetValueGradInfoForTensor(const ValuePtr &value, InputType grad_type) 
   auto_grad_meta_data->set_input_type(grad_type);
   if (grad_type == InputType::kInput && auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
     MS_LOG(DEBUG) << "Build leaf node for input";
-    auto fn = std::make_shared<autograd::LeafNode>("input_" + tensor_value->id(), tensor_value, tensor_value->shape(),
-                                                   tensor_value->Dtype(), false);
+    auto fn = std::make_shared<autograd::LeafNode>("input_" + std::to_string(tensor_value->id()), tensor_value,
+                                                   tensor_value->shape(), tensor_value->Dtype(), false);
     auto_grad_meta_data->set_requires_grad(true);
     auto_grad_meta_data->set_grad_node(fn);
   }

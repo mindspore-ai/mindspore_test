@@ -20,6 +20,7 @@
 #include "pyboost/functions/auto_grad_guard.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/forward/forward_task.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 
 namespace mindspore::pynative {
 static const char *OP_NAME = "Detach";
@@ -40,9 +41,17 @@ py::object PYNATIVE_EXPORT PyboostDetach(const py::object &input) {
         runtime::OpRunner::GetDeviceContext(kernel::pyboost::OpRunStatus::Get().device_target());
       kernel::pyboost::PyBoostUtils::PrepareOpInputs(
         device_context, device_context->device_res_manager_->GetCurrentStreamId(), input_tensor);
-
       auto output = std::make_shared<tensor::Tensor>(*input_tensor);
       output->set_auto_grad_meta_data(nullptr);
+      // Async
+      kernel::pyboost::PyBoostUtils::DispatchRun(
+        std::make_shared<runtime::PyBoostDeviceTask>([input_tensor, device_context]() {
+          MS_LOG(DEBUG) << "Run detach malloc op inputs start";
+          // Malloc for input tensors
+          kernel::pyboost::PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+          MS_LOG(DEBUG) << "Run device task Baddbmm end";
+        }));
+
       tensor::SetPromise(promises, output);
     },
     [promises]() { tensor::SetException(promises); }));

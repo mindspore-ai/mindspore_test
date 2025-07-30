@@ -220,9 +220,8 @@ void RunPyTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   }
 }
 
-void CallTensorPreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+inline void CallTensorPreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   RunPyTensorHook(grad_node, grad_in);
-
   if (const auto &retain_grad_hooks = grad_node->retain_grad_hooks();
       retain_grad_hooks && !retain_grad_hooks->empty()) {
     for (const auto &[output_idx, hook] : *retain_grad_hooks) {
@@ -232,7 +231,7 @@ void CallTensorPreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in)
   }
 }
 
-void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
+inline void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
   if (const auto &py_pre_hook = grad_node->py_pre_hook()) {
     (*py_pre_hook)(grad_in);
     // Ensure all operations within python hooks have been dispatched to the backend stage
@@ -240,8 +239,8 @@ void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *gr
   }
 }
 
-void CallBackwardNodePostHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_inputs,
-                               const ValuePtrList &grad_outputs) {
+inline void CallBackwardNodePostHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_inputs,
+                                      const ValuePtrList &grad_outputs) {
   MS_EXCEPTION_IF_NULL(grad_inputs);
   if (const auto &py_post_hook = grad_node->py_post_hook()) {
     (*py_post_hook)(grad_inputs, grad_outputs);
@@ -385,7 +384,7 @@ void BuildCheckVersionFunc(const OpGradInfoPtr &op_grad_info, const BackwardNode
       if (inputs[i].second.current_version() != versions[i]) {
         MS_LOG(EXCEPTION)
           << "The " << inputs[i].first << " 's input of " << func_name
-          << " has been modified by an inplace operator, which will cause the gradient error, please check your "
+          << " has been modified by an inplace operation, which will cause the gradient error, please check your "
              "inplace operator in code.";
       }
     }
@@ -393,7 +392,7 @@ void BuildCheckVersionFunc(const OpGradInfoPtr &op_grad_info, const BackwardNode
       if (inputs[i].second.current_version() != versions[i]) {
         MS_LOG(EXCEPTION)
           << "The " << inputs[i].first << " 's output of " << func_name
-          << " has been modified by an inplace operator, which will cause the gradient error, please check your "
+          << " has been modified by an inplace operation, which will cause the gradient error, please check your "
              "inplace operator in code.";
       }
     }
@@ -639,8 +638,15 @@ void UpdateGradientsContexts(const ValuePtr &input, bool accumulate_grad,
   if (accumulate_grad) {
     (*gradient_context)[grad_node.get()] = GradientContext(true);
   } else {
+    auto grad_ctx_iter = (*gradient_context).find(grad_node.get());
+    if (grad_ctx_iter != (*gradient_context).end()) {
+      (void)(*grad_ctx_iter).second.captured_grad->at(auto_grad_meta->output_index()).SetNeedCapture(true);
+      return;
+    }
+    GradientContext::CapturedGradientVec gradient_vec(grad_node->output_size());
+    gradient_vec[auto_grad_meta->output_index()].SetNeedCapture(true);
     (*gradient_context)[grad_node.get()] =
-      GradientContext(false, std::make_unique<GradientContext::CapturedGradient>(auto_grad_meta->output_index()));
+      GradientContext(false, std::make_unique<GradientContext::CapturedGradientVec>(gradient_vec));
   }
 }
 
@@ -1561,11 +1567,12 @@ ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor,
         return nullptr;
       }
     }
+    size_t output_idx = tensor->auto_grad_meta_data()->output_index();
     tensor::TensorPtr grad = nullptr;
     if (get_grad_from_tensor) {
       grad = tensor->grad();
     } else {
-      grad = iter->second.captured_grad->grad;
+      grad = iter->second.captured_grad->at(output_idx).grad;
     }
     if (is_run_grad_func) {
       return AutoGradUtil::BuildSpecialValueGrad(tensor, grad, func_impl_.get(), SpecialType::kZerosLikeType);
@@ -1587,7 +1594,7 @@ ValuePtr AutoDiff::GetLeafNodeGrad(const BackwardNodePtr &grad_node) {
     MS_LOG(DEBUG) << "tensor participate in forward calculation, but requires_grad is false";
     return leaf_node->Zeros(func_impl_);
   }
-  auto tensor_grad = iter->second.captured_grad->grad;
+  auto tensor_grad = iter->second.captured_grad->at(kIndex0).grad;
   if (tensor_grad == nullptr) {
     MS_LOG(DEBUG) << "tensor participate in forward calculation, but not need back propagate!";
     return LeafNodeNotInGradButHasTensorHook(leaf_node);
@@ -1612,6 +1619,17 @@ ValuePtr AutoDiff::GetWeightGrads(bool grad_weights, const std::vector<BackwardN
   return GetLeafNodeGrad(weights[0]);
 }
 
+void AutoDiff::CaptureTensorGrads(const ValuePtrList &gradient_in,
+                                  const std::unordered_map<BackwardNode *, GradientContext>::iterator &ctx_iter) {
+  for (size_t i = 0; i < ctx_iter->second.captured_grad->size(); ++i) {
+    if (ctx_iter->second.captured_grad->at(i).need_capture) {
+      auto tensor_grad = gradient_in[i]->cast<tensor::TensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor_grad);
+      ctx_iter->second.captured_grad->at(i).SetGradient(tensor_grad);
+    }
+  }
+}
+
 ValuePtrList AutoDiff::OnsLike(const ValuePtrList &sens) {
   const auto &v = AutoGradUtil::BuildSpecialValueGrad(std::make_shared<ValueTuple>(sens), nullptr, func_impl_.get(),
                                                       SpecialType::kOnesLikeType);
@@ -1630,7 +1648,8 @@ void AutoDiff::PruningGradGraph(const ValuePtrList &inputs, const std::vector<Ba
         MS_LOG(DEBUG) << "the weight should not back propagate!";
         continue;
       }
-      gradient_contexts_[weight.get()] = GradientContext(false, std::make_unique<GradientContext::CapturedGradient>(0));
+      gradient_contexts_[weight.get()] = GradientContext(
+        false, std::make_unique<GradientContext::CapturedGradientVec>(1, GradientContext::CapturedGradient(true)));
     }
   }
   PruningGradNode();
@@ -1681,7 +1700,7 @@ void AutoDiff::PruningGradNode() {
   }
 }
 
-void AutoDiff::ComputeDependencies() {
+void AutoDiff::ComputeNodeInDegree() {
   std::vector<BackwardNode *> queue{graph_root_.get()};
   while (!queue.empty()) {
     auto node = queue.back();
@@ -1691,7 +1710,7 @@ void AutoDiff::ComputeDependencies() {
         continue;
       }
       const auto &next_node = next_edge.grad_node.get();
-      dependencies_[next_node] += 1;
+      node_in_degree_[next_node] += 1;
       bool inserted = node_used_in_graph_.insert(next_node).second;
       if (inserted) {
         (void)queue.emplace_back(next_node);
@@ -1845,9 +1864,7 @@ void AutoDiff::BackPropagate() {
       CallTensorPreHooks(fn, &gradient_in);
     }
     if (ctx_iter != gradient_contexts_.end() && ctx_iter->second.captured_grad != nullptr) {
-      auto tensor_grad = gradient_in[ctx_iter->second.captured_grad->input_index]->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor_grad);
-      ctx_iter->second.captured_grad->SetGradient(tensor_grad);
+      CaptureTensorGrads(gradient_in, ctx_iter);
       continue;
     }
     CallBackwardNodePreHooks(fn, &gradient_in);
@@ -1870,8 +1887,8 @@ void AutoDiff::BackPropagate() {
         MS_LOG(DEBUG) << "No need grad, grad fn is: " << last_grad_node->ToString();
         continue;
       }
-      auto it = dependencies_.find(last_grad_node.get());
-      if (MS_UNLIKELY(it == dependencies_.end())) {
+      auto it = node_in_degree_.find(last_grad_node.get());
+      if (MS_UNLIKELY(it == node_in_degree_.end())) {
         MS_LOG(EXCEPTION) << "Last grad node should be in dependencies!";
       }
       it->second -= 1;
@@ -1881,7 +1898,7 @@ void AutoDiff::BackPropagate() {
       // Otherwise, some node may not execute!
       if (last_gradient->isa<None>()) {
         if (it->second == 0) {
-          UpdateDependencies(last_grad_node, input_buffer, &queue, &dependencies_);
+          UpdateDependencies(last_grad_node, input_buffer, &queue, &node_in_degree_);
         }
         MS_LOG(DEBUG) << last_grad_node->ToString() << ", its gradient is kNone, no need propagate!";
         // Clear grad node of next edge
@@ -1889,7 +1906,7 @@ void AutoDiff::BackPropagate() {
         continue;
       }
       if (it->second == 0) {
-        dependencies_.erase(it);
+        node_in_degree_.erase(it);
         queue.push(last_grad_node);
       }
       if (input_buffer.find(last_grad_node.get()) != input_buffer.end()) {
@@ -1909,7 +1926,7 @@ void AutoDiff::BackPropagate() {
 
 ValuePtr AutoDiff::LeafNodeNotInGradButHasTensorHook(const std::shared_ptr<LeafNode> &fn) const {
   MS_EXCEPTION_IF_NULL(fn);
-  if (is_run_recompute_ || fn->py_tensor_pre_hooks()) {
+  if (is_run_recompute_ || !fn->py_tensor_pre_hooks()) {
     return fn->Zeros(func_impl_);
   }
   ValuePtrList grad_in{};
@@ -2029,7 +2046,7 @@ ValuePtr AutoDiff::RunGradFunc(const ValuePtrList &inputs, const tensor::TensorP
   if (graph_root_->IsEmpty()) {
     return GetGrads(inputs, weights_node, grad_position, grad_attr);
   }
-  ComputeDependencies();
+  ComputeNodeInDegree();
   PruningGradGraph(inputs, weights_node, grad_attr, grad_position);
   kernel::pyboost::RequireGradGuard requires_grad(high_order_);
   BackPropagate();
@@ -2052,7 +2069,7 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const ValuePtr &sens,
     PruningInput(inputs, accumulate_grad);
     PruningGradNode();
   }
-  ComputeDependencies();
+  ComputeNodeInDegree();
   AutoGradGuard requires_grad(high_order_);
   BackPropagate();
   python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
@@ -2095,7 +2112,7 @@ void AutoDiff::Clear() {
                                      runtime::ProfilerEvent::kPyNativeGradClearAutoGradCell,
                                      runtime::ProfilerRecorder::kNoName, true);
   gradient_contexts_.clear();
-  dependencies_.clear();
+  node_in_degree_.clear();
   node_used_in_graph_.clear();
   flatten_sens_out_.clear();
   root_gradients_.clear();

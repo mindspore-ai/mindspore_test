@@ -237,18 +237,20 @@ void CallCustomCFunction(const ValuePtrList &flatten_outputs, const TensorPtrSet
 
 struct GradientContext {
   struct CapturedGradient {
-    explicit CapturedGradient(size_t input_index) : input_index(input_index) {}
+    CapturedGradient() = default;
+    explicit CapturedGradient(bool need_capture_grad) : need_capture(need_capture_grad) {}
     void SetGradient(const tensor::TensorPtr &tensor_grad) { grad = tensor_grad; }
-    tensor::TensorPtr grad;
-    size_t input_index;
+    void SetNeedCapture(bool need_capture_grad) { need_capture = need_capture_grad; }
+    tensor::TensorPtr grad{nullptr};
+    bool need_capture{false};
   };
+  using CapturedGradientVec = std::vector<CapturedGradient>;
   GradientContext() : requires_backward(false), captured_grad(nullptr) {}
-  explicit GradientContext(bool requires_backward, std::unique_ptr<CapturedGradient> capture_grad = nullptr)
+  explicit GradientContext(bool requires_backward, std::unique_ptr<CapturedGradientVec> capture_grad = nullptr)
       : requires_backward(requires_backward), captured_grad(std::move(capture_grad)) {}
   [[nodiscard]] bool ShouldExecute() const { return requires_backward || captured_grad != nullptr; }
-
   bool requires_backward;
-  std::unique_ptr<CapturedGradient> captured_grad{nullptr};
+  std::unique_ptr<CapturedGradientVec> captured_grad{nullptr};
 };
 
 struct NodeStatus {
@@ -324,7 +326,7 @@ class AutoDiff : public AutoDiffInterface {
 
   /// Compute in degree of grad node from grad graph,
   /// which used for judging node whether can be execute.
-  void ComputeDependencies();
+  void ComputeNodeInDegree();
   /// Update dependencies for grad node which accept None gradient, to keep dependencies correct.
   /// \param root
   /// \param input_buffer
@@ -399,8 +401,10 @@ class AutoDiff : public AutoDiffInterface {
   /// \param weight_param_is_tuple
   /// \return
   ValuePtr GetWeightGrads(bool grad_weights, const std::vector<BackwardNodePtr> &weights, bool weight_param_is_tuple);
+  inline void CaptureTensorGrads(const ValuePtrList &gradient_in,
+                                 const std::unordered_map<BackwardNode *, GradientContext>::iterator &ctx_iter);
   std::unordered_map<BackwardNode *, GradientContext> gradient_contexts_;
-  std::unordered_map<BackwardNode *, int32_t> dependencies_;
+  std::unordered_map<BackwardNode *, int32_t> node_in_degree_;
   std::unordered_set<BackwardNode *> node_used_in_graph_;
   ValuePtrList flatten_sens_out_{};
   ValuePtr output_{nullptr};
