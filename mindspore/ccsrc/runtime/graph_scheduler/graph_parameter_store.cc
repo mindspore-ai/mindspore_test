@@ -173,14 +173,14 @@ void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const Ker
   kernel_tensor_with_info.first = value;
   kernel_tensor_with_info.second.first = cnt;
   if (value->device_address()) {
-    parameter_device_names_[outer_index][inner_index] = value->device_address()->device_name();
+    parameter_device_types_[outer_index][inner_index] = value->device_address()->GetDeviceType();
     MS_LOG(DEBUG) << "Set graph parameter name:" << value->device_address()->device_name()
                   << " outer index:" << outer_index << " inner index:" << inner_index;
   }
 }
 
-std::string GraphParameterStore::GetParameterDeviceName(size_t outer_index, size_t inner_index) const {
-  return parameter_device_names_[outer_index][inner_index];
+device::DeviceType GraphParameterStore::GetParameterDeviceType(size_t outer_index, size_t inner_index) const {
+  return parameter_device_types_[outer_index][inner_index];
 }
 
 bool GraphParameterStore::CheckBufferSize(size_t outer_index) const {
