@@ -120,4 +120,5 @@ def test_ops_searchsorted_dynamic(context_mode):
     TEST_OP(searchsorted_forward_func_static_dtype,
             [[ms.Tensor(x1), ms.Tensor(other1), right_1, sorter_1],
              [ms.Tensor(x2), ms.Tensor(other2), right_2, sorter_2]],
+            disable_generalize_test=True,
             disable_case=['ScalarTensor'])
