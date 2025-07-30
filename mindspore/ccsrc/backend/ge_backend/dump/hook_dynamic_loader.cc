@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hook_dynamic_loader.h"
+#include "backend/ge_backend/dump/hook_dynamic_loader.h"
 #include <sys/stat.h>
 #include <cstdlib>
 #include <cstring>
@@ -49,7 +49,8 @@ bool IsValidPath(const std::string &path) {
 }
 
 }  // namespace
-
+namespace mindspore {
+namespace datadump {
 HookDynamicLoader &HookDynamicLoader::GetInstance() {
   static HookDynamicLoader instance;
   return instance;
@@ -66,14 +67,18 @@ bool HookDynamicLoader::loadFunction(void *handle, const std::string &functionNa
 }
 
 bool HookDynamicLoader::validateLibraryPath(const std::string &libPath) {
-  char *realPath = realpath(libPath.c_str(), nullptr);
-  if (!realPath) {
+  std::string realPath;
+  char *tempPath = realpath(libPath.c_str(), nullptr);
+  if (tempPath != nullptr) {
+    realPath = tempPath;
+    free(tempPath);
+  }
+  if (realPath.empty()) {
     MS_LOG(WARNING) << "Failed to resolve realpath for the library: " << libPath;
     return false;
   }
 
   bool isValid = IsValidPath(realPath);
-  free(realPath);  // Free memory allocated by realpath
   return isValid;
 }
 
@@ -138,3 +143,5 @@ void *HookDynamicLoader::GetHooker(const std::string &funcName) {
   }
   return iter->second;
 }
+}  // namespace datadump
+}  // namespace mindspore
