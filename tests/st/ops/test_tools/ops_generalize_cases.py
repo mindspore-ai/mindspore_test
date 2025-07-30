@@ -331,7 +331,7 @@ def test_discontiguous_input(fn, inputs, mode_name, disable_case, jit_config, ca
         warning_log(f"{mode_name} 'DiscontiguousInput' in 'disable_case', DiscontiguousInput case is skipped.")
         return
 
-    if mode_name == "GRAPH_MODE_GE":
+    if "GRAPH_MODE" in mode_name:
         warning_log(f"{mode_name} 'DiscontiguousInput' in 'disable_case', DiscontiguousInput case is skipped.")
         return
 
@@ -451,7 +451,7 @@ def test_empty_tensor(fn, inputs, mode_name, disable_case, jit_config, case_conf
         warning_log(f"{mode_name} 'EmptyTensor' in 'disable_case', EmptyTensor case is skipped.")
         return
 
-    if mode_name == "GRAPH_MODE_GE":
+    if "GRAPH_MODE" in mode_name:
         warning_log(f"{mode_name} 'EmptyTensor' in 'disable_case', EmptyTensor case is skipped.")
         return
 
