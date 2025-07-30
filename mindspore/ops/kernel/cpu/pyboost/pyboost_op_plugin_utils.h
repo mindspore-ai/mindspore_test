@@ -53,6 +53,26 @@ namespace mindspore::kernel::pyboost {
 template <typename T>
 constexpr bool is_tensor_ptr_v = std::is_same_v<std::decay_t<T>, tensor::TensorPtr>;
 
+struct InplaceInfo {
+  bool all_outputs_inplace{false};
+  std::vector<size_t> non_inplace_outputs;
+};
+
+InplaceInfo GetInplaceInfo(const std::string& op_name) {
+  InplaceInfo info;
+  auto op_def = GetOpDef(op_name);
+  if (op_def == nullptr) {
+    MS_LOG(EXCEPTION) << "OpDef for " << op_name << " is not found.";
+  }
+  for (const auto &output : op_def->returns_) {
+    if (output.inplace_input_index_ == -1) {
+      info.non_inplace_outputs.push_back(&output - &op_def->returns_[0]);
+    }
+  }
+  info.all_outputs_inplace = info.non_inplace_outputs.empty();
+  return info;
+}
+
 // Overload for when any argument is int or vector<int> - returns empty vector
 // Reason to have this overload:
 // Some pyboost functions pass int or vector<int> as arguments, which are not compatible with the InferOutput function.
@@ -70,7 +90,11 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " calls op plugin kernel.";
 
-  op->InferOutput(args...);
+  const auto &inplace_info = GetInplaceInfo(op_name);
+
+  if (!inplace_info.all_outputs_inplace) {
+    op->InferOutput(args...);
+  }
 
   const auto device_context = op->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
@@ -89,12 +113,26 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
 
   // Create device address for output tensors
   const auto &outputs = op->outputs();
-  PyBoostUtils::PrepareOpOutputs(device_context, 0, outputs);
+  std::vector<tensor::TensorPtr> non_inplace_outputs;
+  if (!inplace_info.all_outputs_inplace) {
+    non_inplace_outputs.reserve(inplace_info.non_inplace_outputs.size());
+    for (const auto &idx : inplace_info.non_inplace_outputs) {
+      if (idx >= outputs.size()) {
+        MS_LOG(EXCEPTION) << "Index " << idx << " is out of bounds for outputs of size " << outputs.size();
+      }
+      non_inplace_outputs.push_back(outputs[idx]);
+    }
+  } else {
+    non_inplace_outputs = outputs;
+  }
+
+  // get non-inplace outputs
+  PyBoostUtils::PrepareOpOutputs(device_context, 0, non_inplace_outputs);
 
   op->ProfileTrackerTask();
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args..., outputs]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args..., non_inplace_outputs]() {
     auto device_context = op->device_context();
 
     // Process tensor arguments for MallocOpInputs
@@ -108,12 +146,12 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
       }
     };
     (malloc_tensor_args(args), ...);
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    PyBoostUtils::MallocOpOutputs(device_context, non_inplace_outputs);
 
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), args...);
     const auto &output_address_info =
-      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
+      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, non_inplace_outputs);
     std::vector<kernel::KernelTensor *> workspace_tensors;
     auto op_plugin_param = CreateOpPluginParam(input_address_info.first, output_address_info.first, workspace_tensors);
     auto ret = LaunchOpPluginKernel(op_name, &op_plugin_param);
