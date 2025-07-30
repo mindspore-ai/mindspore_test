@@ -132,9 +132,11 @@ class TftHandle:
         if "ARF:1" in tft_env:
             logger.warning(f"Disable hccl watchdog when using ARF.")
             context.set_context(ascend_config={"hccl_watchdog": False})
-            logger.warning(f"Turn on TTP config when using ARF.")
-            if "TTP:1,UCE:1,ARF:1" not in tft_env:
-                os.environ["MS_ENABLE_TFT"] = "{TTP:1,ARF:1}"
+            if "TTP:1" not in tft_env:
+                logger.warning(f"Turn on TTP config when using ARF.")
+                tft_env = tft_env.replace("{", "").replace("}", "")
+                all_opts = [part.strip() for part in tft_env.split(",")] + ["TTP:1"]
+                os.environ["MS_ENABLE_TFT"] = "{" + ",".join(all_opts) + "}"
             os.environ["MS_ENABLE_RECOVERY"] = "1"
 
         device_target = context.get_context("device_target")
