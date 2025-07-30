@@ -21,6 +21,7 @@
 #include <map>
 
 #include "pybind11/complex.h"
+#include "include/common/utils/convert_utils_py.h"
 
 #include "include/common/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
@@ -725,6 +726,31 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
+TensorPtr TensorPybind::FromDLPack(const py::object &dlpack_capsule) {
+  DLManagedTensor *dlpack = static_cast<DLManagedTensor *>(PyCapsule_GetPointer(dlpack_capsule.ptr(), "dltensor"));
+  if (dlpack == nullptr) {
+    MS_LOG(EXCEPTION) << "from_dlpack received an invalid capsule. Note that DLTensor capsules can be consumed only "
+                         "once, so you might have already constructed a tensor from it once.";
+  }
+  PyCapsule_SetName(dlpack_capsule.ptr(), "used_dltensor");
+  return DLPackUtils::FromDLPack(dlpack);
+}
+
+static void DLPackDestructor(PyObject *data) {
+  if (MS_LIKELY(!PyCapsule_IsValid(data, "dltensor"))) {
+    return;
+  }
+  DLManagedTensor *dlMTensor = reinterpret_cast<DLManagedTensor *>(PyCapsule_GetPointer(data, "dltensor"));
+  dlMTensor->deleter(dlMTensor);
+}
+
+py::object TensorPybind::ToDLPack(const py::object &src) {
+  TensorPtr tensor;
+  tensor = py::cast<TensorPtr>(src);
+  DLManagedTensor *dlpack = DLPackUtils::ToDLPack(*tensor);
+  return py::reinterpret_steal<py::object>(PyCapsule_New(dlpack, "dltensor", DLPackDestructor));
+}
+
 void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
   py::gil_scoped_release gil_release;
   if (release) {
@@ -851,7 +877,7 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitForward();
   const auto device_address = tensor->device_address();
   if (device_address == nullptr) {
-    MS_LOG(ERROR) << "Tensor device address is null";
+    MS_LOG(INFO) << "Tensor device address is null";
     return reinterpret_cast<uintptr_t>(nullptr);
   }
   auto *data_ptr = device_address->GetMutablePtr();
@@ -1056,6 +1082,14 @@ TensorPyPtr TensorPyImpl::ConvertBytesToTensor(const py::bytes &bytes_obj, const
   MS_EXCEPTION_IF_NULL(tensor);
   return std::make_shared<TensorPy>(tensor);
 }
+
+TensorPyPtr TensorPyImpl::FromDLPack(const py::object &dlpack_capsule) {
+  auto tensor = TensorPybind::FromDLPack(dlpack_capsule);
+  MS_EXCEPTION_IF_NULL(tensor);
+  return std::make_shared<TensorPy>(tensor);
+}
+
+py::object TensorPyImpl::ToDLPack(const py::object &tensor) { return TensorPybind::ToDLPack(tensor); }
 
 void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy, bool release) {
   auto tensor = tensorpy->GetTensor();

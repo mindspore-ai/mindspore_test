@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "pybind11/numpy.h"
+#include "frontend/ir/dlpack_utils.h"
 
 #include "ir/tensor.h"
 #include "include/common/utils/tensor_py.h"
@@ -159,6 +160,10 @@ class FRONTEND_EXPORT TensorPybind {
   static py::array SyncAsNumpy(const Tensor &tensor);
 
   static py::array AsNumpy(const Tensor &tensor);
+
+  static TensorPtr FromDLPack(const py::object &dlpack_capsule);
+
+  static py::object ToDLPack(const py::object &tensor);
 
   /// \brief Get slice data as numpy of tensor which use persistent tensor data.
   ///
@@ -338,6 +343,8 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \return The numpy data.
   static py::array SyncAsNumpy(const TensorPyPtr &tensorpy);
   static void FlushFromCache(const TensorPyPtr &tensorpy);
+  static TensorPyPtr FromDLPack(const py::object &dlpack_capsule);
+  static py::object ToDLPack(const py::object &tensor);
   static py::array AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index);
   static TensorPyPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
   static void SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
