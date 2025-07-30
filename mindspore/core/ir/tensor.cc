@@ -78,7 +78,8 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       id_(tensor.data_type_ != data_type ? MakeId() : tensor.id_),
       tensor_name_(tensor.tensor_name_),
       version_(tensor.version_),
-      device_sync_(tensor.device_sync_),
+      device_sync_(MakeDeviceAddress(data_type, tensor.shape_,
+                                     MakeTensorData(data_type, tensor.shape_, tensor.data_c(), tensor.data_type_))),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
       base_shape_ptr_(tensor.base_shape_ptr_),
       cache_tensor_ptr_(tensor.cache_tensor_ptr_),
@@ -92,7 +93,7 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
-  MS_LOG(ERROR) << "Changing tensor data type is not support!";
+  MS_LOG(WARNING) << "Changing tensor data type is unsafe!";
 }
 
 Tensor &Tensor::operator=(const Tensor &tensor) {

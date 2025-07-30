@@ -20,7 +20,7 @@ import re
 
 import numpy as np
 import mindspore as ms
-from mindspore import nn, Tensor, Parameter
+from mindspore import nn, Tensor, Parameter, mint
 from mindspore.common import JitConfig
 from mindspore.common.api import _pynative_executor
 
@@ -57,6 +57,15 @@ DUMP_IR = False
 IR_LEVEL = 2
 IGNORE_OUTPUT_INDEX = None
 LOOP_TIMES = 5
+
+
+def clone_tensor(arg):
+    if arg.device == "CPU":
+        # Only CPU Tensor need to keep origin device type after copy.
+        # And empty_like is not implemented on GPU.
+        new_arg = mint.empty_like(arg, device=arg.device)
+        return new_arg.copy_(arg)
+    return arg.copy()
 
 
 def set_debug_status_info(mode_name, case_name):
@@ -185,7 +194,7 @@ class OpsGeneralizeNetHelper:
         def clone_inputs(args, inplace_update=False):
             def clone_func(arg):
                 if isinstance(arg, (Tensor, Parameter)):
-                    return arg.copy()
+                    return clone_tensor(arg)
                 return copy.deepcopy(arg)
 
             if not inplace_update:
@@ -352,8 +361,8 @@ def test_discontiguous_input(fn, inputs, mode_name, disable_case, jit_config, ca
             dtype = input_arg.dtype
             rank = len(shape)
             if rank < 2:
-                discontiguous_args.append(input_arg.copy())
-                contiguous_args.append(input_arg.copy())
+                discontiguous_args.append(clone_tensor(input_arg))
+                contiguous_args.append(clone_tensor(input_arg))
             else:
                 tmp_tensor = get_discontiguous_tensor(input_arg)
                 info_log(f"generate discontiguous input with shape {tmp_tensor.shape}, "
@@ -362,7 +371,7 @@ def test_discontiguous_input(fn, inputs, mode_name, disable_case, jit_config, ca
                     warning_log(f"{mode_name} create discontiguous tensor failed, "
                                 f"origin shape: {shape}, dtype: {dtype}. testcase will run with contiguous tensor.")
                 discontiguous_args.append(tmp_tensor)
-                contiguous_args.append(tmp_tensor.copy())
+                contiguous_args.append(clone_tensor(tmp_tensor))
         else:
             discontiguous_args.append(copy.deepcopy(input_arg))
             contiguous_args.append(copy.deepcopy(input_arg))
@@ -402,15 +411,15 @@ def test_view_tensor(fn, inputs, mode_name, disable_case, jit_config, case_confi
             dtype = input_arg.dtype
             rank = len(shape)
             if rank < 2:
-                view_args.append(input_arg.copy())
-                no_view_args.append(input_arg.copy())
+                view_args.append(clone_tensor(input_arg))
+                no_view_args.append(clone_tensor(input_arg))
             else:
-                origin_tensor = input_arg.reshape(-1).copy()
+                origin_tensor = clone_tensor(input_arg.reshape(-1))
                 view_tensor = origin_tensor.view(shape)
                 info_log(f"generate view input with shape {shape}, origin input with shape {shape}")
 
                 # check view tensor
-                origin_num = origin_tensor.copy()[-1]
+                origin_num = clone_tensor(origin_tensor)[-1]
                 magic_num = 66
                 origin_tensor[-1] = magic_num
                 if not (get_ndarray(origin_tensor) == get_ndarray(view_tensor).reshape(-1)).all():
@@ -419,7 +428,7 @@ def test_view_tensor(fn, inputs, mode_name, disable_case, jit_config, case_confi
                 origin_tensor[-1] = origin_num
 
                 view_args.append(view_tensor)
-                no_view_args.append(view_tensor.copy())
+                no_view_args.append(clone_tensor(view_tensor))
         else:
             view_args.append(copy.deepcopy(input_arg))
             no_view_args.append(copy.deepcopy(input_arg))
