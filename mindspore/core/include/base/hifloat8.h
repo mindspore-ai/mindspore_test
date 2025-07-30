@@ -252,7 +252,7 @@ class HiFloat8 {
         uint8_t dot_bit = 0x00;
         int32_t mantissa_width = 3;
         int32_t exponent_width = 0;
-        return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | exponent);
+        return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (uint32_t)exponent);
       }
 
       case ExponentRange::DOT_0001: {
@@ -274,7 +274,7 @@ class HiFloat8 {
 
       case ExponentRange::DOT_01: {
         uint8_t dot_bit = 0b01;
-        uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x1) : -exponent);
+        uint8_t exponent_bit = ((exponent > 0) ? ((uint32_t)exponent & 0x1) : (uint32_t)(-exponent));
         int32_t mantissa_width = 3;
         int32_t exponent_width = 2;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
@@ -283,7 +283,7 @@ class HiFloat8 {
 
       case ExponentRange::DOT_10: {
         uint8_t dot_bit = 0b10;
-        uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x3) : -exponent);
+        uint8_t exponent_bit = ((exponent > 0) ? ((uint32_t)exponent & 0x3) : (uint32_t)(-exponent));
         int32_t mantissa_width = 2;
         int32_t exponent_width = 3;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
@@ -292,7 +292,7 @@ class HiFloat8 {
 
       case ExponentRange::DOT_11: {
         uint8_t dot_bit = 0b11;
-        uint8_t exponent_bit = ((exponent > 0) ? (exponent & 0x7) : -exponent);
+        uint8_t exponent_bit = ((exponent > 0) ? ((uint32_t)exponent & 0x7) : (uint32_t)(-exponent));
         int32_t mantissa_width = 1;
         int32_t exponent_width = 4;
         return (sign_bits | (dot_bit << (mantissa_width + exponent_width)) | (exponent_bit << mantissa_width) |
