@@ -1,6 +1,6 @@
   ProfileTrackerTask();
   if (IsOpPluginKernel(op_name())) {
-    outputs_ = PyboostLaunchOpPluginKernel(get_op(), ${call_args});
+    outputs_ = PyboostLaunchOpPluginKernel<${inplace_indices}>(get_op(), ${call_args});
     return ${return_values};
   }
   ${customize_func}(get_op(), ${call_args});
