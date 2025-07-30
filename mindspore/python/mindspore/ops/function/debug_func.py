@@ -151,7 +151,7 @@ def tensordump(file_name, tensor, mode='out'):
         >>> strategy1 = ((1, 2), (2, 1))
         >>> strategy2 = ((1, 2), (2, 1))
         >>> with no_init_parameters():
-        >>>     net = Net(strategy1, strategy2)
+        ...     net = Net(strategy1, strategy2)
         >>> x = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> y = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> b = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)

@@ -398,11 +398,11 @@ Status Conv2DInfo::CheckStrategy(const StrategyPtr &strategy) {
       return FAILED;
     }
   }
-  if (input_strategy[3] != 1) {
+  if (input_strategy[kIndex3] != 1) {
     MS_LOG(WARNING)
       << "For Conv2d input strategy, 'input_strategy[3] > 1' cause heterogeneous execution order, "
       << "It leads to unexpected problems. It is recommend to check illegal execution order "
-      << "by setting environment variable of: 'export MS_DEV_RUNTIME_CONF=\"comm_execution_order_check_iteration:1\"' ";
+      << "by setting environment variable of: 'export MS_DEV_RUNTIME_CONF=\"execution_order_check_iteration:0\"' ";
   }
   return SUCCESS;
 }
