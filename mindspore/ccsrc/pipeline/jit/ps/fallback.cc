@@ -749,9 +749,9 @@ AnfNodePtr ConvertCNodeToPyInterpretForPrim(const CNodePtr &cnode, const string 
   }
   script_buffer << ")";
   const std::string &script = script_buffer.str();
-  auto keys_tuple_node = fg->NewCNodeInOrder(keys_tuple_node_inputs);
-  auto values_tuple_node = fg->NewCNodeInOrder(values_tuple_node_inputs);
-  auto local_dict_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeDict), keys_tuple_node, values_tuple_node});
+  auto keys_tuple_node = fg->NewCNode(keys_tuple_node_inputs);
+  auto values_tuple_node = fg->NewCNode(values_tuple_node_inputs);
+  auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), keys_tuple_node, values_tuple_node});
   auto pyinterpret_node = CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node, cnode->debug_info());
   MS_LOG(DEBUG) << "Convert: " << cnode->DebugString() << " -> " << pyinterpret_node->DebugString();
   return pyinterpret_node;
