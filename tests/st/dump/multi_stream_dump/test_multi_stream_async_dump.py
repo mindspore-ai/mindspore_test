@@ -29,8 +29,8 @@ def generate_dump_json(dump_path, json_file_name, enable_sync):
     with open(json_path, 'r') as file:
         data = json.load(file)
         data["common_dump_settings"]["path"] = dump_path
-        data["common_dump_settings"]["enable"] = enable_sync
-        data["common_dump_settings"]["stat_calc_mode"] = "device"
+        data["e2e_dump_settings"]["enable"] = enable_sync
+        data["e2e_dump_settings"]["stat_calc_mode"] = "device"
     with open(json_file_name, 'w') as f:
         json.dump(data, f)
 
