@@ -57,20 +57,33 @@ constexpr bool is_tensor_ptr_v = std::is_same_v<std::decay_t<T>, tensor::TensorP
 // Reason to have this overload:
 // Some pyboost functions pass int or vector<int> as arguments, which are not compatible with the InferOutput function.
 // These functions are mainly view functions, which do not really have an op plugin kernel.
-template <typename... Args>
+template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
   std::shared_ptr<OpRunner> op, Args &&... args) {
   return {};
 }
 
-template <typename... Args>
+// The InplaceIndex indicates the input tensor the output corresponds to in a inplace operation.
+template <std::size_t... InplaceIndices, typename... Args>
 std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPtr>> PyboostLaunchOpPluginKernel(
   std::shared_ptr<OpRunner> op, Args &&... args) {
   MS_EXCEPTION_IF_NULL(op->primitive());
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << op_name << " calls op plugin kernel.";
 
-  op->InferOutput(args...);
+  constexpr bool is_inplace = sizeof...(InplaceIndices) > 0;
+
+  if (!is_inplace) {
+    op->InferOutput(args...);
+  }
+
+  // Set correct outputs for inplace operations
+  if constexpr (is_inplace) {
+    std::vector<tensor::TensorPtr> effective_outputs;
+    auto input_tensors = std::make_tuple(args...);
+    effective_outputs = {std::get<InplaceIndices>(input_tensors)...};
+    op->set_outputs(effective_outputs);
+  }
 
   const auto device_context = op->device_context();
   MS_EXCEPTION_IF_NULL(device_context);
@@ -87,15 +100,18 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
   };
   (process_tensor_args(args), ...);
 
-  // Create device address for output tensors
   const auto &outputs = op->outputs();
-  PyBoostUtils::PrepareOpOutputs(device_context, 0, outputs);
+  if constexpr (!is_inplace) {
+    PyBoostUtils::PrepareOpOutputs(device_context, 0, outputs);
+  }
 
   op->ProfileTrackerTask();
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args..., outputs]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args...]() {
     auto device_context = op->device_context();
+    const auto &outputs = op->outputs();
+    constexpr bool is_inplace_lambda = sizeof...(InplaceIndices) > 0;
 
     // Process tensor arguments for MallocOpInputs
     auto malloc_tensor_args = [&](auto &&arg) {
@@ -108,7 +124,10 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
       }
     };
     (malloc_tensor_args(args), ...);
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+
+    if constexpr (!is_inplace_lambda) {
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    }
 
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), args...);
