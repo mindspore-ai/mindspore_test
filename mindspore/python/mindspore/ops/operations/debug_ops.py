@@ -503,13 +503,11 @@ class DumpGradient(Primitive):
     def __init__(self):
         pass
 
-    def _dump_hook(self, dout):
-        P.TensorDump()(self.bwd_dump_path, dout)
-        return dout
-
     def __call__(self, path, x, input_output):
-        self.bwd_dump_path = path
-        x = P.InsertGradientOf(self._dump_hook)(x)
+        def _dump_hook(dout):
+            P.TensorDump()(path, dout)
+            return dout
+        x = P.InsertGradientOf(_dump_hook)(x)
         return x
 
 
