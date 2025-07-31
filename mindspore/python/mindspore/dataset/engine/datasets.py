@@ -3260,6 +3260,12 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
         logger.info("The worker process is waiting for the main process to exit.")
         time.sleep(0.1)
 
+    # the main process is not exist yet which maybe killed -9
+    msg_queue.set_release_flag(True)
+    msg_queue.release()
+    shm_queue.set_release_flag(True)
+    shm_queue.release()
+
 
 class WorkerTarget:
     """Mulitprocess mode for dataset map or batch"""
@@ -3677,6 +3683,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             self.workers = None
             self.eof_workers.clear()
             self.eof_workers = []
+
+            # as it can cause the main process to not exit when PyFunc executes very slowly so release
+            # the shm & msg here
+            cde.release_shm_and_msg_by_worker_pids(self.pids)
             self.pids = None
 
 
