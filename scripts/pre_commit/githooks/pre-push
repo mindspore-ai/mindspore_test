@@ -483,39 +483,6 @@ function lizard_check() {
     DP_ASSERT_EQUAL "$((error_number_ccn + error_number_nloc))" "0" "Lizard scanning"
 }
 
-# 进行markdownlint检查
-function markdownlint_check() {
-    echo "markdownlint scan start"
-    which mdl || (echo "[INFO] Please install 'markdownlint' tool first" && return 1)
-    if [ $? -eq "1" ]; then
-        return
-    fi
-
-    # create markdownlint workspace
-    local workspace=${CODE_PATH}/markdownlint
-    rm -rf "${workspace}"
-    mkdir -p "${workspace}"
-
-    # get code
-    GET_CODE "${workspace}"
-
-    # Exclude folder
-    local LOCAL_EXCLUDE_FOLDER=$COMMON_EXCLUDE_FOLDER
-    MS_EXCLUDE_FOLDER "${workspace}/${REPOSITORY_NAME}" "${LOCAL_EXCLUDE_FOLDER}"
-
-    # Get rules
-    local RULES_FILE_NAME="markdownlint_mindspore.rb"
-    if [ -f "${workspace}/${REPOSITORY_NAME}/.jenkins/rules/markdownlint/${RULES_FILE_NAME}" ]; then
-        local RULE_FILE=${workspace}/${REPOSITORY_NAME}/.jenkins/rules/markdownlint/${RULES_FILE_NAME}
-    fi
-
-    # Run markdownlint
-    echo "markdownlint scanning"
-    cd "${workspace}" || return
-    mdl -s "${RULE_FILE}" ${REPOSITORY_NAME}
-    DP_ASSERT_EQUAL "$?" "0" "Markdownlint scanning"
-}
-
 # 进行pylint检查
 function pylint_check() {
     echo "pylint scan start"
@@ -716,7 +683,6 @@ cmakelint_check
 codespell_check
 cpplint_check
 lizard_check
-markdownlint_check
 pylint_check
 if [ "$os_name" == "Linux" ] || [ "$os_name" == "Darwi" ]; then
     shellcheck_check

@@ -18,12 +18,6 @@ uname_s=$(uname -s)
 os_name=${uname_s:0:5}
 
 function install_windows_codecheck_tools() {
-    # markdownlint
-    echo "[INFO] prepare to install markdownlint"
-    which gem || (echo "[WARMING] you must install 'ruby' before install 'markdownlint'" && return 1)
-    if [ $? -eq "1" ]; then
-        return
-    fi
     gem sources --add https://gems.ruby-china.com/
     gem install chef-utils -v 16.6.14 && gem install mdl
 }
@@ -34,11 +28,6 @@ function install_Linux_codecheck_tool() {
         # clang-format
         echo "[INFO] prepare to install clang-format"
         sudo apt-get install clang-format-9
-        # check exist rubygems
-        echo "[INFO] prepare to install markdownlint"
-        gem -v || (sudo apt-get install -y rubygems)
-        gem sources --add https://gems.ruby-china.com/
-        sudo gem install chef-utils -v 16.6.14 && sudo gem install mdl
         # install shellcheck
         echo "[INFO] prepare to install shellcheck"
         sudo apt-get install shellcheck
@@ -59,19 +48,6 @@ function install_Linux_codecheck_tool() {
             sudo chmod 644 /etc/profile
             source /etc/profile
         fi
-        # check rubygems exist and version, install markdownlint
-        echo "[INFO] prepare to install markdownlint"
-        gem -v || (sudo yum install -y rubygems)
-        if [ $? -eq "0" ]; then
-            gem_version_head=$(gem -v | awk -F'.' '{print $1}')
-            gem_version_next=$(gem -v | awk -F'.' '{print $2}')
-            if [ "$gem_version_head" -lt 2 ] || [ "$gem_version_head" -eq 2 ] && [ "$gem_version_next" -lt 3 ]; then
-                echo "[WARMING] gem version is less then 2.3 to install markdownlint, please upgrade gem"
-            else
-                gem sources --add https://gems.ruby-china.com/
-                sudo gem install chef-utils -v 16.6.14 && sudo gem install mdl
-            fi
-        fi
         # install shellcheck
         if [ "$name_release" == '"CentOS Linux"' ]; then
             echo "[INFO] prepare to install shellcheck"
@@ -85,11 +61,6 @@ function install_Mac_codecheck_tools() {
     # clang-format
     echo "[INFO] prepare to install clang-format"
     brew install clang-format
-    # markdownlint
-    echo "[INFO] prepare to install markdownlint"
-    brew install ruby
-    sudo gem sources --add https://gems.ruby-china.com/
-    sudo gem install chef-utils -v 16.6.14 && sudo gem install mdl
     # install shellcheck
     echo "[INFO] prepare to install shellcheck"
     brew install shellcheck
@@ -120,9 +91,6 @@ if [ "$os_name" == "Linux" ]; then
 else
     clang-format --version || echo "[WARMING] clang-format not installed!"
 fi
-# mdl version
-echo "[INFO] check markdownlint version"
-mdl --version || echo "[WARMING] markdownlint not installed!"
 # version of shellcheck
 echo "[INFO] check shellcheck version"
 shellcheck --version
