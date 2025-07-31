@@ -36,7 +36,7 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"

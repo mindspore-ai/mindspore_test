@@ -19,7 +19,7 @@
 #include "ir/tensor_new.h"
 #include "kernel/framework_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 
