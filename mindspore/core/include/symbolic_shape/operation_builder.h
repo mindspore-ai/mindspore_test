@@ -180,7 +180,7 @@ class MS_CORE_API OperationBuilderInfoRegistry {
   OperationBuilderInfo *NewBuilder(const std::string &name) {
     auto ret = builders_.insert({name, {}});
     if (!ret.second) {
-      MS_LOG(WARNING) << "The symbolic operation builder of op [" << name << "] is registered repeatedly.";
+      MS_LOG(INFO) << "The symbolic operation builder of op [" << name << "] is registered repeatedly.";
     }
     return &(ret.first->second);
   }
