@@ -26,11 +26,12 @@
 #include <unordered_set>
 #include "utils/hash_map.h"
 #include "ir/anf.h"
+#include "abstract/abstract_function.h"
 #include "backend/common/session/session_basic.h"
 #include "backend/backend_manager/backend_manager.h"
+#include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "runtime/hardware/device_context.h"
-#include "backend/graph_compiler/segment_runner.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "debug/profiler/profiler.h"
 
@@ -47,6 +48,8 @@ using ControlNodeParserPtr = runtime::ControlNodeParserPtr;
 using KernelWithIndex = session::KernelWithIndex;
 using GraphPartition = compile::GraphPartition;
 using GraphPartitionPtr = compile::GraphPartitionPtr;
+using mindspore::abstract::AbstractFunction;
+using AbstractFunctionPtr = std::shared_ptr<AbstractFunction>;
 
 class BACKEND_EXPORT MSBackendBase : public BackendBase {
  public:
@@ -137,6 +140,8 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
                               const device::DeviceType &new_target) const;
   bool CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context);
   bool CacheCompileGraphs();
+
+  FuncGraphPtr WrapPrimitives(const FuncGraphPtr &graph);
 
   // The temp members for backend graph building and will be reset at the end of graph building, can't be used in the
   // backend graph running. Do not allow adding new temporary members.

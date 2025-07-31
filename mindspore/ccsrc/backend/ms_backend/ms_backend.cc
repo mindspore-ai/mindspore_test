@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "include/common/utils/parallel_context.h"
-#include "backend/graph_compiler/transform.h"
 #include "backend/common/session/session_factory.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"

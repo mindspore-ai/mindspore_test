@@ -295,7 +295,10 @@ namespace {
 std::vector<ActionItem> GetActions(const ResourcePtr &resource, const std::string &phase, bool trace_flag = false,
                                    bool erase_parse = false) {
   MS_EXCEPTION_IF_NULL(resource);
-  compile::SetMindRTEnable();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  MS_LOG(DEBUG) << "Enable mindRT.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
   return VmPipeline(resource, trace_flag, erase_parse);
 }
 }  // namespace
@@ -637,7 +640,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
     MS_LOG(INFO) << "No backend.";
     return py::none();
   }
-  compile::VmEvalFuncPtr run = GetVmEvalFunc(phase);
+  auto run = GetVmEvalFunc(phase);
   if (run == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
   }

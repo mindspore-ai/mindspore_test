@@ -18,7 +18,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "backend/graph_compiler/vmimpl.h"
+#include "pynative/pynative_utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
@@ -168,7 +168,7 @@ void PyBoostOpExecute::RunOpInVm(OpRunnerInfo *op_runner_info, VectorRef *op_out
   std::transform(op_runner_info->inputs.begin(), op_runner_info->inputs.end(), std::back_inserter(args),
                  [](const auto &value) { return value; });
   py::gil_scoped_acquire gil;
-  auto result = compile::RunOperation(op_runner_info->prim, args);
+  auto result = kernel::pyboost::PyBoostUtils::RunOperation(op_runner_info->prim, args);
   if (utils::isa<PyObjectRef>(result)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(result);
     py::object value = py_ref.object_;

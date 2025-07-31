@@ -69,8 +69,8 @@
 #include "utils/ms_utils.h"
 #include "utils/phase.h"
 #include "utils/compile_config.h"
-#include "backend/graph_compiler/transform.h"
 #include "load_mindir/infer_mindir.h"
+#include "backend/ms_backend/graph_partition.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "debug/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -100,6 +100,8 @@ namespace {
 const auto kFirstInput = 1;
 const auto kSecondInput = 2;
 const auto kLazyInlineThershold = 64;
+using VmEvalFunc = std::function<BaseRef(const VectorRef &)>;
+using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 
 bool ExistControlFlow(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -251,7 +253,6 @@ FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::Abstrac
   return infer_graph;
 }
 }  // namespace
-using CompileGraphs = compile::CompileGraphs;
 using abstract::AnalysisResult;
 using mindspore::abstract::AnalysisContextPtr;
 
@@ -1862,18 +1863,17 @@ bool ExecuteAction(const ResourcePtr &resource) {
   auto backend_type = resource->GetResult(kBuildBackendType).cast<backend::BackendType>();
   auto backend_graph_id = resource->GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
   // Construct the graph run function ptr.
-  compile::VmEvalFuncPtr run =
-    std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
-      MS_LOG(DEBUG) << "Execute args size " << args.size();
-      VectorRef outputs;
-      backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
-      MS_LOG(DEBUG) << "out size " << outputs.size();
-      if (outputs.empty()) {
-        return VectorRef();
-      } else {
-        return outputs[0];
-      }
-    });
+  BaseRefPtr run = std::make_shared<VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
+    MS_LOG(DEBUG) << "Execute args size " << args.size();
+    VectorRef outputs;
+    backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
+    MS_LOG(DEBUG) << "out size " << outputs.size();
+    if (outputs.empty()) {
+      return VectorRef();
+    } else {
+      return outputs[0];
+    }
+  });
   resource->SetResult(kOutput, run);
   return true;
 }

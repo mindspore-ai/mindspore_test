@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/graph_compiler/graph_partition.h"
+#include "backend/ms_backend/graph_partition.h"
 #include <algorithm>
 #include <map>
 #include <queue>

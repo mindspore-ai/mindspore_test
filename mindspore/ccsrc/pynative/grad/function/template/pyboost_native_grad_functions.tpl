@@ -18,7 +18,6 @@
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "backend/graph_compiler/vmimpl.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/expander/core/node.h"
@@ -39,7 +38,7 @@ NodePtr NativeFunc::RunOpInVm(const PrimitivePtr &prim, const NodePtrList &input
   std::transform(inputs.begin(), inputs.end(), std::back_inserter(args),
                  [](const auto &node) { return node->Value(); });
   py::gil_scoped_acquire gil;
-  auto result = compile::RunOperation(prim, args);
+  auto result = kernel::pyboost::PyBoostUtils::RunOperation(prim, args);
   if (utils::isa<PyObjectRef>(result)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(result);
     py::object value = py_ref.object_;

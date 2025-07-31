@@ -31,7 +31,7 @@
 #include "runtime/pipeline/async_hqueue.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
-#include "backend/graph_compiler/op_backend.h"
+#include "backend/ms_backend/op_backend.h"
 
 namespace mindspore {
 namespace pynative {

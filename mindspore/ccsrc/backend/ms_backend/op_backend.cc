@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/graph_compiler/op_backend.h"
+#include "backend/ms_backend/op_backend.h"
 
 #include <string>
 #include <vector>

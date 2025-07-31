@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "backend/graph_compiler/transform.h"
+#include "backend/ms_backend/ms_backend_base.h"
 #include "common/device_common_test.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
@@ -32,6 +32,7 @@
 #include "ir/manager.h"
 #include "backend/common/session/session_factory.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
+#include "backend/ms_backend/segment_runner.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
@@ -119,7 +120,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   func_graph->set_manager(new_manager);
 
   const std::string kDefaultDeviceName = "CPU";
-  auto graph_partition = std::make_shared<compile::GraphPartition>(compile::GetMsNonlinearOps(), kMsConvert);
+  auto graph_partition = std::make_shared<compile::GraphPartition>(compile::GetMSNonlinearOps(), kMsConvert);
   bool multi_target = false;
   auto segments = graph_partition->Partition(func_graph, &multi_target);
   if (segments.empty()) {

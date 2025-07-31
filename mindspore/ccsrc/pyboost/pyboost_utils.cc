@@ -311,6 +311,19 @@ void PyBoostUtils::DispatchRun(const std::shared_ptr<runtime::PyBoostDeviceTask>
   }
 }
 
+BaseRef PyBoostUtils::RunOperation(const PrimitivePtr &prim, const VectorRef &args) {
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_LOG(DEBUG) << "Operation start " << prim->name();
+  auto result = prim->RunComputeFunction(args);
+  if (result.is_null()) {
+    result = RunComputeFunctionWithoutPyObj(prim, args);
+  }
+  if (result.is_null()) {
+    return RunComputeFunction(prim, args);
+  }
+  return result;
+}
+
 void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                                    const abstract::AbstractBasePtr &input_abs, size_t index,
                                    std::vector<kernel::KernelTensor *> *kernel_tensor_list,

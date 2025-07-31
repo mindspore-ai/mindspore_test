@@ -27,8 +27,9 @@
 #endif
 
 #include "ir/tensor_new.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "backend/ms_backend/segment_runner.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "backend/graph_compiler/transform.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include "backend/common/pass/switch_not_cut.h"
@@ -79,6 +80,8 @@ namespace ms_backend {
 
 namespace {
 constexpr auto kControlNodeJsonSuffix = "_backinfo.json";
+using PrimTypePair = std::pair<PrimitivePtr, abstract::AbstractFunctionPtr>;
+using TypedPrimitiveAbstractClosurePtr = std::shared_ptr<abstract::TypedPrimitiveAbstractClosure>;
 
 int64_t GetTupleGetItemOutIndex(const CNodePtr &tuple_get_item) {
   MS_EXCEPTION_IF_NULL(tuple_get_item);
@@ -598,6 +601,45 @@ bool IsEmptySequence(const AnfNodePtr &output_node, const std::vector<tensor::Te
   return sequence_shape->size() == 0;
 }
 
+void TraverseGraphMap(
+  const FuncGraphManagerPtr &manager_ptr, FuncGraphTransaction *tr, const FuncGraphSet &fgs,
+  const std::function<std::shared_ptr<FuncGraph>(const PrimitivePtr, const AbstractFunctionPtr)> &get_prim_graph) {
+  MS_EXCEPTION_IF_NULL(manager_ptr);
+  MS_EXCEPTION_IF_NULL(tr);
+  for (const auto &fg : fgs) {
+    MS_EXCEPTION_IF_NULL(fg);
+    for (const auto &ct_any : fg->value_nodes()) {
+      AnfNodePtr const_primitive_node = ct_any.first;
+      if (const_primitive_node != nullptr && IsValueNode<Primitive>(const_primitive_node)) {
+        auto users = manager_ptr->node_users()[const_primitive_node];
+        for (auto &use : users) {
+          CNodePtr node = use.first->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(node);
+          if (node->func_graph() != fg) {
+            continue;
+          }
+          int64_t key = use.second;
+          if (key != 0) {
+            MS_EXCEPTION_IF_NULL(node->input(0));
+            bool key_is_const = node->input(0)->isa<ValueNode>();
+            PrimitivePtr value = GetValueNode<PrimitivePtr>(node->input(0));
+            if (value != nullptr) {
+              bool is_prim_array_map = !(prim::kPrimArrayMap->name().compare(value->name()));
+              bool is_prim_array_reduce = !(prim::kPrimArrayReduce->name().compare(value->name()));
+              if (key == 1 && key_is_const && (is_prim_array_map || is_prim_array_reduce)) {
+                continue;
+              }
+            }
+            FuncGraphPtr g = get_prim_graph(GetValueNode<PrimitivePtr>(const_primitive_node),
+                                            dyn_cast<AbstractFunction>(const_primitive_node->abstract()));
+            tr->SetEdge(node, key, NewValueNode(g));
+          }
+        }
+      }
+    }
+  }
+}
+
 runtime::KernelMapPosition FetchOriginOutputOrder(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   runtime::KernelMapPosition outputs_order;
@@ -788,7 +830,7 @@ void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJi
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto backend_name = ms_context->backend_policy();
-  auto &cut_list = compile::GetMsNonlinearOps();
+  auto &cut_list = compile::GetMSNonlinearOps();
   auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
   MS_EXCEPTION_IF_NULL(graph_partition);
   const auto &segments = graph_partition->Partition(func_graph);
@@ -803,7 +845,7 @@ void MSBackendBase::CompileGraph(const FuncGraphPtr &func_graph, const BackendJi
 }
 
 void MSBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
-  auto root_graph = compile::WrapPrimitives(func_graph);
+  auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
   auto manager = root_graph->manager();
   CompileGraph(root_graph, backend_jit_config);
@@ -1635,6 +1677,48 @@ MSBackendBase::MSBackendBase() {
   runtime::GraphScheduler::GetInstance().Initialize();
 }
 
+FuncGraphPtr MSBackendBase::WrapPrimitives(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  FuncGraphManagerPtr manager_ptr = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager_ptr);
+  std::map<PrimTypePair, FuncGraphPtr> prim_graphs;
+  const auto &get_prim_graph = [&prim_graphs](const PrimitivePtr &prim, const AbstractFunctionPtr &type) {
+    PrimTypePair prim_type = std::make_pair(prim, type);
+    if (prim_graphs.end() == prim_graphs.find(prim_type)) {
+      FuncGraphPtr g = std::make_shared<FuncGraph>();
+      std::vector<AnfNodePtr> args;
+      ValueNodePtr prim_ct = NewValueNode(prim);
+      MS_EXCEPTION_IF_NULL(prim_ct);
+      prim_ct->set_abstract(type);
+      args.push_back(prim_ct);
+      MS_EXCEPTION_IF_NULL(type);
+      TypedPrimitiveAbstractClosurePtr tp = dyn_cast<abstract::TypedPrimitiveAbstractClosure>(type->GetUnique());
+      if (tp == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Not TypedPrimitiveAbstractClosure, but got " << type->GetUnique()->ToString();
+      }
+      MS_EXCEPTION_IF_NULL(g);
+      for (const auto &t : tp->args_abs_list()) {
+        ParameterPtr p = g->add_parameter();
+        p->set_abstract(t);
+        args.push_back(p);
+      }
+      AnfNodePtr out = g->NewCNode(args);
+      out->set_abstract(tp->output());
+      g->set_output(out);
+      prim_graphs[prim_type] = g;
+    }
+
+    return prim_graphs[prim_type];
+  };
+
+  FuncGraphTransaction tr = manager_ptr->Transact();
+  auto &fgs = manager_ptr->func_graphs();
+  TraverseGraphMap(manager_ptr, &tr, fgs, get_prim_graph);
+  tr.Commit();
+
+  return graph;
+}
+
 BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
@@ -1655,7 +1739,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   device_context->Initialize();
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
 
-  auto root_graph = compile::WrapPrimitives(func_graph);
+  auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
 
   PROF_START(WaitAllCommInit);

@@ -21,7 +21,6 @@
 #include <string>
 #include <algorithm>
 
-#include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
@@ -139,7 +138,6 @@ namespace mindspore {
 namespace pipeline {
 using OptPassGroupMap = opt::OptPassGroupMap;
 using Optimizer = opt::Optimizer;
-using CompileGraphs = compile::CompileGraphs;
 using abstract::AnalysisResult;
 using mindspore::abstract::AnalysisContextPtr;
 using mindspore::validator::Validate;
