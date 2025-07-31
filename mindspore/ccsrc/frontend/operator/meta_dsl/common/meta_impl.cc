@@ -87,6 +87,7 @@ ValuePtr GetClassTypeValue(const TypeId &type) {
 }  // namespace
 
 FuncGraphPtr MetaImpl::GenerateFuncGraph(const AbstractBasePtrList &input_args) {
+  input_args_ = input_args;
   CheckInputs(input_args);
   BeginFunc("total");
   GenerateFunction();
@@ -173,7 +174,14 @@ void MetaImpl::DumpIRForMetaDsl(const FuncGraphPtr &graph) const {
 
 void MetaImpl::Return(const NodePtr &output) { func_builder_stack_.top()->SetOutput(output); }
 
-NodePtr MetaImpl::NewParam(const std::string &name) { return func_builder_stack_.top()->AddParameter(name); }
+NodePtr MetaImpl::NewParam(const std::string &name, int index) {
+  auto param = func_builder_stack_.top()->AddParameter(name);
+  // Set abstract for parameters of top graph.
+  if (index > 0) {
+    param->set_abstract(input_args_[index - 1]);
+  }
+  return param;
+}
 
 void MetaImpl::ConvertTypeIdToType(NodePtrList *nodes) {
   constexpr size_t index_prim = 0;

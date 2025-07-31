@@ -562,7 +562,7 @@ class MetaImpl : public MetaFuncGraph {
   NodePtr IsInstance(const NodePtr &x, const std::vector<TypeId> &types);
 
   // Tools for implementing macro definitions, and they are basically not used during development.
-  NodePtr NewParam(const std::string &name);
+  NodePtr NewParam(const std::string &name, int index = -1);
   NodePtr IfCond(const NodePtr &condition, const BlockFunc &true_branch, const BlockFunc &false_branch,
                  const NodePtrList &args);
   NodePtr IfBranchesInner(const std::vector<std::pair<NodePtr, BlockFunc>> &if_branches, const BlockFunc &else_branch,
@@ -584,6 +584,7 @@ class MetaImpl : public MetaFuncGraph {
   FuncGraphPtr bprop_graph_{nullptr};
   FuncGraphManagerPtr manager_{nullptr};
   std::stack<MetaFuncBuilderPtr> func_builder_stack_;
+  AbstractBasePtrList input_args_;
 };
 using MetaImplPtr = std::shared_ptr<MetaImpl>;
 using CreateFunc = std::function<std::shared_ptr<MetaImpl>()>;

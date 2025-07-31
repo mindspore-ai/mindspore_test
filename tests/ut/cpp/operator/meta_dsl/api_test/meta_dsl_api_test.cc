@@ -18,6 +18,7 @@
 #include "ir/graph_utils.h"
 #include "ir/tensor_new.h"
 #include "common/common_test.h"
+#include "common/py_func_graph_fetcher.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
@@ -44,6 +45,10 @@ using AbstractListPtr = abstract::AbstractListPtr;
 class TestMetaDslApi : public UT::Common {
  public:
   TestMetaDslApi() {}
+
+  void SetUp() { UT::InitPythonPath(); }
+
+  void TearDown() {}
 
   size_t GetPrimitiveSize(const FuncGraphPtr &fg, const PrimitivePtr &prim) {
     auto all_nodes = TopoSort(fg->return_node(), SuccDeeperSimple, AlwaysInclude);
