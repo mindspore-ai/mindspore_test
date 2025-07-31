@@ -20,10 +20,12 @@ namespace dataset {
 #if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 Status MonitorSubprocess(int pid) {
   CHECK_FAIL_RETURN_UNEXPECTED(pid != -1, "[Internal ERROR] The subprocess id is -1.");
-  // get the state changes in a child of the calling process
+  // blocking execution and get the state changes in a child of the calling process
+  MS_LOG(INFO) << "[Monitor] Begin monitor the sub-process: " + std::to_string(pid);
   int status = 0;
-  auto ret = waitpid(pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
-  if (ret != 0) {  // the status of subprocess is changed
+  auto ret = waitpid(pid, &status, 0);
+  MS_LOG(INFO) << "[Monitor] sub-process id: " << ret << ", errno: " << errno << ", status: " << status;
+  if (ret == pid) {  // the status of subprocess is changed
     uint32_t uint_status = static_cast<uint32_t>(status);
     if (WIFEXITED(uint_status)) {  // the child is exit normal
       std::string err_msg = "[Monitor] The sub-process: " + std::to_string(pid) +
@@ -48,8 +50,7 @@ Status MonitorSubprocess(int pid) {
                         " has generated a new status: " + std::to_string(uint_status);
     }
   } else {
-    MS_LOG(INFO) << "[Monitor] The sub-process: " << std::to_string(pid)
-                 << " is still running. The state is not changed.";
+    MS_LOG(INFO) << "[Monitor] The sub-process: " + std::to_string(pid) + " is not exists.";
   }
   return Status::OK();
 }

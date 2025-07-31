@@ -46,7 +46,6 @@ const int kMsgQueueClosed = 2;
 const int kMsgQueueInterrupted = 4;
 
 // content is err status which is stored in err_msg_
-const int64_t kWorkerErrorMsg = 111;       // worker -> master, request mtype
 const int32_t kWorkerErrorMsgSize = 4096;  // the max length of err msg which will be sent to main process
 
 // indicate that master consumer(iterator/to_device) is finish
@@ -109,7 +108,6 @@ class DATASET_API MessageQueue {
   // the below is the message content
   // kWorkerSendDataMsg, normal tensor from subprocess to main process
   // kMasterSendDataMsg, response from main process to subprocess
-  // kWorkerErrorMsg, exception from subprocess to main process
   int64_t mtype_;                      // the message type
   int32_t shm_id_;                     // normal Tensor, the shm id
   uint64_t shm_size_;                  // normal Tensor, the shm size

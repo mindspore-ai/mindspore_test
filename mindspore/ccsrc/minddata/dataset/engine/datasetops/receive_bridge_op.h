@@ -101,6 +101,8 @@ class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
 
   Status MonitorIndependentDatasetProcess();
 
+  Status InterruptIndependentDatasetProcess();
+
  private:
   std::unique_ptr<ChildIterator> child_iterator_;  // An iterator for fetching.
 
@@ -111,6 +113,8 @@ class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
   // @param worker_id The id assigned to this thread/worker upon creation.
   // @return Status The status code returned
   Status WorkerEntry(int32_t worker_id) override;  //  In: workerId assigned by tree_
+
+  Status CheckStatus(Status status);
 
  private:
   ReceiveInfo receive_info_;         // receive info, including msgrcv and msgsnd status
