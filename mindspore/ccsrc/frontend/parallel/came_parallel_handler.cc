@@ -35,6 +35,7 @@
 #include "frontend/parallel/graph_util/get_parallel_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/node_check.h"
+#include "ir/tensor_new.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "utils/trace_base.h"
@@ -450,9 +451,9 @@ void CameCommHandler::InsertAllReduceAndRealDivToReduceMeanInput(CNodePtr reduce
   MS_EXCEPTION_IF_NULL(pyop_instance);
 
   size_t group_rank_size = comm_rank_list.size();
-  mindspore::tensor::TensorPtr tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(
-    static_cast<float>(group_rank_size),
-    reduce_mean->abstract()->cast<abstract::AbstractTensorPtr>()->element()->GetType());
+  mindspore::tensor::TensorPtr tensor_ptr =
+    tensor::from_scalar(static_cast<float>(group_rank_size),
+                        reduce_mean->abstract()->cast<abstract::AbstractTensorPtr>()->element()->GetType());
   ValuePtr scale_value = MakeValue(tensor_ptr);
 
   std::vector<AnfNodePtr> real_div_input = {NewValueNode(pyop_instance), all_reduce_node->cast<AnfNodePtr>(),

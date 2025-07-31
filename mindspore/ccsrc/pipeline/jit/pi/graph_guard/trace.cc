@@ -1442,7 +1442,8 @@ bool OpTrace::RetrieveParams(PTraceContext context, bool perf, std::vector<py::o
     if (mindspore::tensor::IsTensorPy(py::cast<py::object>(param))) {
       mindspore::tensor::TensorPtr tensor_ptr = mindspore::tensor::ConvertToTensor(py::cast<py::object>(param));
       if (OptStrategy::MakeCalcStrategyByShape(tensor_ptr->shape()) == OptStrategy::CalcKind::kCalcValue) {
-        tensor_ptr->data_sync(true);
+        auto cpu_tensor_ptr = tensor_ptr->cpu();
+        mindspore::tensor::SetTensorValue(param, cpu_tensor_ptr);
       }
     }
     params.push_back(param);

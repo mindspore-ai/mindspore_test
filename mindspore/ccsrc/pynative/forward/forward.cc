@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -45,6 +46,7 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -68,8 +70,8 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
   MS_EXCEPTION_IF_NULL(new_shape);
   if (value->isa<mindspore::tensor::Tensor>()) {
     auto tensor_value = value->cast<mindspore::tensor::TensorPtr>();
-    return std::make_shared<mindspore::tensor::Tensor>(tensor_value->data_type(), new_shape->shape(),
-                                                       tensor_value->data_c(), tensor_value->Size());
+    return tensor::from_buffer(tensor_value->data_type(), new_shape->shape(), tensor_value->data_c(),
+                               tensor_value->Size());
   }
   if (value->isa<ValueTuple>()) {
     std::vector<ValuePtr> values;
@@ -91,7 +93,7 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
   // Create a device address for tensor
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context, op_run_info->base_op_run_info.stream_id,
                                                          tensor, tensor_size);
   // Allocate a block of device memory
@@ -125,7 +127,8 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     CreateDeviceAddressForTensor(op_run_info, tensor);
 #endif
     // This constructor will make a tensor with the new id
-    auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape(), tensor->data_ptr());
+    auto new_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
+    // todo: check tensor->data need ?
     new_tensor->set_need_pipeline_sync(true);
     new_tensor->set_device_address(tensor->device_address());
     new_tensor->set_contiguous_callback(tensor->contiguous_callback());
@@ -380,8 +383,10 @@ void ForwardExecutor::InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info) {
   // Used for async run
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
   op_run_info->device_target = GetCurrentDeviceTarget(op_run_info->op_prim);
-  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->device_target);
-  op_run_info->stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  // device_res_manager_->GetCurrentStreamId is not correct.
+  // The stream_id is always 0 on CPU.
+  // Heterogeneous scenarios may have accuracy issues.
+  op_run_info->stream_id = CurrentStream::id();
 }
 
 void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
@@ -390,8 +395,7 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
   op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->forward_use_dynamic_shape_process();
   op_run_info->base_op_run_info.device_target = GetCurrentDeviceTarget(op_run_info->op_grad_info->op_prim);
-  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
-  op_run_info->base_op_run_info.stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  op_run_info->base_op_run_info.stream_id = CurrentStream::id();
 }
 
 void ForwardExecutor::ReInit() {
@@ -947,41 +951,32 @@ ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
 void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input_tensor,
                                                   const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  bool is_cpu_address_exist = false;
-  const auto &device_sync = input_tensor->device_address();
-  if (device_sync != nullptr) {
-    auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
-    MS_EXCEPTION_IF_NULL(tensor_address);
-    if (tensor_address->GetDeviceType() != device::DeviceType::kCPU) {
-      // If the address is a cpu address, need to check if the device-ptr is from pool in device thread(flag is not set
-      // yet). If the device-ptr is not from pool, need to recopy.
-      tensor_address->set_is_view(true);
-      return;
-    }
-    is_cpu_address_exist = true;
-  }
+  const auto &device_address = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
 
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
-
-  // If the address exists means address is not from pool, no need to create adderss repeatedly.
-  // Just copy data.
-  if (!is_cpu_address_exist) {
-    MS_LOG(DEBUG) << "Input_tensor address is nullptr, need create address.";
-    auto address_size = GetTypeByte(input_tensor->Dtype()) * static_cast<size_t>(input_tensor->ElementsNum());
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-    kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
-    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
-    kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
-
-    auto device_address = kernel_tensor->device_address();
-    input_tensor->set_device_address(device_address);
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetDeviceType() == device_context->GetDeviceType()) {
+    // todo: copy data if the cpu device address is from python data.
+    MS_LOG(DEBUG) << "Input device address is from memory pool, and device type is " << device_address->GetDeviceType()
+                  << " device_target " << device_context->GetDeviceType();
+    return;
   }
 
-  MS_EXCEPTION_IF_NULL(op_backend_);
-  op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""), is_cpu_address_exist);
+  MS_LOG(DEBUG) << "Input_tensor address is nullptr, need create address.";
+  auto address_size = GetTypeByte(input_tensor->Dtype()) * static_cast<size_t>(input_tensor->ElementsNum());
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(
+    nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
+    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
+  kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
+  kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
+
+  auto new_device_address = kernel_tensor->device_address();
+  input_tensor->set_device_address(new_device_address);
+  input_tensor->set_need_pipeline_sync(true);
+  input_tensor->set_implicit_copy_address(device_address);
+  op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 
 device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceSyncPtr &device_address,
@@ -1014,7 +1009,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
                                              runtime::KernelTaskType task_type, bool is_multi_output) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(storage_info);
-  auto output_tensor = std::make_shared<tensor::Tensor>(input_tensor->data_type(), storage_info->shape);
+  auto output_tensor = tensor::from_spec(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback([this](const DeviceSyncPtr &device_address) -> DeviceSyncPtr {
     return TensorContiguousCallback(device_address, device_address->GetTensorStorageInfo());

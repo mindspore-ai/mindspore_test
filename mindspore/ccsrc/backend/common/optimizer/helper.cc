@@ -24,6 +24,7 @@
 #include <set>
 #include <deque>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -277,14 +278,14 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueTuplePtr &value_tuple_pt
     }
   }
   std::vector<int64_t> tensor_shape = {SizeToLong(values.size())};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_ptr->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::from_spec(type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, type_ptr};
   tensor->set_device_info(device_info);
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = values.size() * data_length;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), values.data(), elem_num);
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->DataNBytes()), values.data(), elem_num);
   if (ret_code != EOK) {
     MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
   }
@@ -293,7 +294,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueTuplePtr &value_tuple_pt
 
 tensor::TensorPtr CreateEmptyTupleTensor(const ValueTuplePtr &value_tuple) {
   std::vector<int64_t> tensor_shape = {0};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(kInt64->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::from_spec(kInt64->type_id(), tensor_shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, kInt64};
   tensor->set_device_info(device_info);
@@ -679,12 +680,12 @@ ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const ShapeVec
     // create Tensor
     int64_t shape_dim = SizeToLong(shape.size());
     std::vector<int64_t> shape_vec_shape = {shape_dim};
-    auto shape_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, shape_vec_shape);
+    auto shape_tensor = tensor::from_spec(kNumberTypeInt64, shape_vec_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(shape_tensor);
     auto data_ptr = shape_tensor->data_c();
     MS_EXCEPTION_IF_NULL(data_ptr);
     auto elem_num = shape.size() * kType64Len;
-    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(shape_tensor->data().nbytes()), &shape[0], elem_num);
+    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(shape_tensor->DataNBytes()), &shape[0], elem_num);
     if (ret_code != EOK) {
       MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
     }
@@ -1477,7 +1478,7 @@ void UseEmptyNodeReplaceNone(const FuncGraphPtr &graph, const std::string &cnode
     // create empty tensor
     auto tensor_type = OpInputDtypeMap.at(cnode_name).at(input_idx);
     std::vector<int64_t> tensor_shape = {0};
-    auto empty_tensor = std::make_shared<tensor::Tensor>(tensor_type, tensor_shape);
+    auto empty_tensor = tensor::from_spec(tensor_type, tensor_shape, device::DeviceType::kCPU);
     // create node
     auto empty_node = opt::CreateValueNodeWithKernelInfo(graph, empty_tensor);
     ValueNodePtr empty_value_node = empty_node->cast<ValueNodePtr>();

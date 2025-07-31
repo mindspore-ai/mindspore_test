@@ -50,7 +50,7 @@ tensor::TensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> 
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
 
   TensorPtr input_tensor_new = input_tensor;
-  auto k = weight_tensor->data().ndim();
+  auto k = weight_tensor->DataNDim();
   auto dim = static_cast<size_t>(k - 2);
   std::vector<int64_t> pad_vector = std::vector<int64_t>(dim, 0);
   if (padding_enum_imm == PadMode::SAME) {

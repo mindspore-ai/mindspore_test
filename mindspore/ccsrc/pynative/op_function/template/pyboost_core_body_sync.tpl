@@ -8,10 +8,6 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
   GilReleaseWithCheck no_gil;
   runtime::Pipeline::Get().frontend_stage()->Wait();
   }
-
-  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
-
   // stub tensor to tensor.
   ${convert_stub}
   
@@ -27,10 +23,6 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
     GilReleaseWithCheck no_gil;
     return kernel::pyboost::${operator_name}(${cast_args});
   }();
-  auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
-  // Data sync in mix mode(Graph and PyNative)
-  PyNativeAlgo::PyBoost::DataSyncForGraph(op);
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
   MS_LOG(DEBUG) << "Run ${func_name} end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(outputs));

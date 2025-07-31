@@ -19,6 +19,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "include/common/utils/utils.h"
 #include "infer/ops_func_impl/upsample_linear1d.h"
 #include "infer/ops_func_impl/upsample_nearest1d.h"
@@ -90,7 +91,7 @@ TEST_P(TestUpsampleForward, dyn_shape) {
                             {std::make_shared<TensorType>(kFloat32)});
 
   // Simple Infer
-  ValuePtrList input_values{std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.image_shape)};
+  ValuePtrList input_values{tensor::from_spec(kNumberTypeFloat32, param.image_shape, device::DeviceType::kCPU)};
   std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
                  [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
   DoFuncImplSimpleInferAndCompare(op_impl, upsample_mode, input_values, {param.out_shape}, {kFloat32});

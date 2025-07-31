@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "debug/checksum/checksum_kernel.h"
 #include "debug/checksum/checksum_mgr.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
@@ -41,14 +42,20 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  TensorPtr out_tensor = std::make_shared<Tensor>(host_type, host_shape);
+  auto out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
+
+  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  if (!res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H)) {
+    MS_LOG(EXCEPTION) << "Copy D2H failed";
+  }
   return out_tensor;
 }
 

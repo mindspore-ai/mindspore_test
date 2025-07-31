@@ -35,6 +35,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/param_info.h"
+#include "ir/tensor_new.h"
 #include "frontend/ir/base_ref_py.h"
 #include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
@@ -130,8 +131,8 @@ py::object CheckAndConvertToScalar(const tensor::TensorPtr &tensor, const Abstra
   if (abs == nullptr || !abs->isa<abstract::AbstractScalar>()) {
     return py::none();
   }
-  tensor->data_sync();
-  auto *data = tensor->data_c();
+  auto cpu_tensor = tensor->cpu();
+  auto *data = cpu_tensor->data_c();
   auto type = abs->BuildType()->type_id();
   switch (type) {
     case kNumberTypeBool:
@@ -891,8 +892,8 @@ ShapeVector ConvertToShapeVector(const VectorRef &value_list, size_t index) {
     if (tensorptr->DataDim() != 0) {
       MS_LOG(EXCEPTION) << "Element must be scalar!";
     }
-    tensorptr->data_sync(false);
-    return *(static_cast<int64_t *>(tensorptr->data_c()));
+    auto cpu_tensor = tensorptr->cpu();
+    return *(static_cast<const int64_t *>(cpu_tensor->data_c()));
   };
 
   if (utils::isa<tensor::Tensor>(ref)) {
@@ -947,7 +948,7 @@ tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj) {
   MS_EXCEPTION_IF_NULL(tensor);
   bool is_parameter = py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj);
   if (JitCompiling() && !is_parameter) {
-    tensor->data_sync();
+    return tensor->cpu();
   }
   return tensor;
 }
@@ -1009,9 +1010,9 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
     output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {
     double input_value = py::cast<py::float_>(input_object);
-    output = std::make_shared<tensor::Tensor>(input_value, kFloat32);
+    output = tensor::from_scalar(input_value, kFloat32);
   } else if (py::isinstance<py::int_>(input_object)) {
-    output = std::make_shared<tensor::Tensor>(py::cast<int64_t>(input_object), kInt64);
+    output = tensor::from_scalar(py::cast<int64_t>(input_object), kInt64);
   } else if (py::isinstance<py::list>(input_object)) {
     ValuePtrList values;
     auto list_inputs = py::cast<py::list>(input_object);

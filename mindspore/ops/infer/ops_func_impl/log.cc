@@ -17,6 +17,7 @@
 #include <complex>
 #include <memory>
 #include <set>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -111,7 +112,8 @@ class OPS_API LogFrontendFuncImpl : public OpFrontendFuncImpl {
     auto data_size = x_tensor->DataSize();
     auto dtype = x_tensor->data_type();
     auto shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-    auto result_tensor = std::make_shared<tensor::Tensor>(GetOutputTypeId(dtype), shape);  // same shape and dtype
+    auto result_tensor =
+      tensor::from_spec(GetOutputTypeId(dtype), shape, device::DeviceType::kCPU);  // same shape and dtype
     auto x_datac = x_tensor->data_c();
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();

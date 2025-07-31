@@ -228,6 +228,11 @@ DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t s
                                                   stream_id, user_data);
 }
 
+bool AscendDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->Copy(dst, src, size, kind, stream_id);
+}
+
 bool AscendDeviceResManager::LoadCollectiveCommLib() {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->LoadCollectiveCommLib();
@@ -239,16 +244,7 @@ CollectiveCommunicationLib *AscendDeviceResManager::collective_comm_lib() const 
 }
 std::shared_ptr<SwapManager> AscendDeviceResManager::swap_manager() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  if (ascend_res_manager_->swap_manager() != nullptr) {
-    return ascend_res_manager_->swap_manager();
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    MS_LOG(EXCEPTION)
-      << "Device resource has been initialized before memory_offload is set to ON, please set it at the very beginning";
-  }
-  return nullptr;
+  return ascend_res_manager_->swap_manager();
 }
 
 bool AscendDeviceResManager::DestroyEvent(const DeviceEventPtr &event) {
@@ -465,6 +461,11 @@ void AscendDeviceResManager::StopDevice(int32_t device_id) {
 void *AscendDeviceResManager::GetCopyDataStream() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->GetCopyDataStream();
+}
+
+std::shared_ptr<AddressAllocator> AscendDeviceResManager::pin_mem_allocator() const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetPinMemAllocator();
 }
 
 }  // namespace ascend

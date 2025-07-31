@@ -25,6 +25,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {
@@ -39,13 +40,13 @@ tensor::TensorPtr CreatePermTensor(const CNodePtr &transposed) {
   std::vector<int64_t> perm_shape = {SizeToLong(perm.size())};
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
-  auto perm_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, perm_shape);
+  auto perm_tensor = tensor::from_spec(kNumberTypeInt32, perm_shape, device::DeviceType::kCPU);
   perm_tensor->set_device_info(device_info);
   auto data_ptr = perm_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = perm.size() * kInt32Len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(perm_tensor->data().nbytes()),
-                           reinterpret_cast<void *>(perm.data()), elem_num);
+  auto ret_code =
+    memcpy_s(data_ptr, static_cast<size_t>(perm_tensor->DataNBytes()), reinterpret_cast<void *>(perm.data()), elem_num);
   if (ret_code != EOK) {
     MS_LOG(ERROR) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
     return nullptr;

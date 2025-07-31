@@ -54,21 +54,10 @@ class RES_EXPORT SwapManager {
   bool WaitAsyncIO(AsyncIOToken sync_token);
   std::string GetSwapFileName(uint32_t device_id) const;
 
-  void AddSwappingTensor(const DeviceAddress *device_address);
-
   PinMemPool *GetPinMemPool() { return pin_mem_pool_; }
 
  private:
-  void *AllocDeviceMemorySimply(const size_t &size, uint32_t stream_id = kDefaultStreamIndex);
-  std::vector<void *> AllocDeviceContinuousMemSimply(const std::vector<size_t> &size_list,
-                                                     uint32_t stream_id = kDefaultStreamIndex);
-  void *AllocHostMemorySimply(const size_t &size, uint32_t /* stream_id */);
-  bool EnoughFileSpace(const size_t &size, uint32_t /* stream_id */);
-
-  template <class Input, class Output>
-  bool TryAllocate(std::queue<const DeviceAddress *> queue, const Input &input, uint32_t stream_id,
-                   Output (SwapManager::*allocate_func)(const Input &, uint32_t),
-                   const std::function<bool(Output)> &success, Output *output);
+  bool EnoughFileSpace(const size_t &size) const;
 
  private:
   size_t stream_id_;
@@ -81,12 +70,6 @@ class RES_EXPORT SwapManager {
     bool operator()(const DeviceAddressPtr &l, const DeviceAddressPtr &r) const { return l->GetSize() < r->GetSize(); }
   };
   const size_t size_level_num_{0};
-  std::mutex swapping_tensors_device_mutex_;
-  std::queue<const DeviceAddress *> swapping_tensors_device_;
-  std::mutex swapping_tensors_host_mutex_;
-  std::queue<const DeviceAddress *> swapping_tensors_host_;
-  std::mutex swapping_tensors_file_mutex_;
-  std::queue<const DeviceAddress *> swapping_tensors_file_;
   IOHandlePtr io_handle_;
 };
 using SwapManagerPtr = std::shared_ptr<SwapManager>;

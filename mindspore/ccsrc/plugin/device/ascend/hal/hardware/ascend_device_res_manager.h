@@ -65,7 +65,7 @@ class AscendDeviceResManager : public DeviceResManager {
   bool BindDeviceToCurrentThread(bool force_bind) const override;
   void *GetStream() const { return ascend_res_manager_->GetStream(); }
   void *GetCopyDataStream() const;
-
+  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
   void *AllocateStaticMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const;
@@ -140,6 +140,7 @@ class AscendDeviceResManager : public DeviceResManager {
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
+  std::shared_ptr<AddressAllocator> pin_mem_allocator() const override;
 
  private:
   bool AllocateForHete(DeviceAddress *const &address, HeterogeneousInfoPtr hete_info) const;

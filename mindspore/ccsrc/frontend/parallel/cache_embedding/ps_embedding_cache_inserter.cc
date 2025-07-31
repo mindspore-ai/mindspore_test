@@ -22,6 +22,7 @@
 #include <utility>
 #include <functional>
 
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
@@ -72,8 +73,8 @@ ValueNodePtr CreateFakeValueNode(const AnfNodePtr &origin_node) {
   abstract::AbstractTensorPtr origin_abstract = origin_node->abstract()->cast<abstract::AbstractTensorPtr>();
 
   MS_EXCEPTION_IF_NULL(origin_abstract);
-  tensor::TensorPtr fake_tensor = std::make_shared<tensor::Tensor>(origin_abstract->element()->BuildType()->type_id(),
-                                                                   origin_abstract->shape()->shape());
+  tensor::TensorPtr fake_tensor = tensor::from_spec(origin_abstract->element()->BuildType()->type_id(),
+                                                    origin_abstract->shape()->shape(), device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(fake_tensor);
   fake_tensor->set_base_shape(origin_abstract->shape()->Clone());
 
@@ -98,8 +99,8 @@ AnfNodePtr CreateOutputNode(const FuncGraphPtr &func_graph, const AnfNodePtr &or
       if (!tensor_abstract) {
         MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "Only support to replace tuple with all tensor elements.";
       }
-      auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
-                                                          tensor_abstract->shape()->shape());
+      auto fake_tensor = tensor::from_spec(tensor_abstract->element()->BuildType()->type_id(),
+                                           tensor_abstract->shape()->shape(), device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(fake_tensor);
       new_elements_abs.push_back(fake_tensor->ToAbstract());
       new_elements_values.push_back(fake_tensor);
@@ -263,7 +264,7 @@ CNodePtr PsEmbeddingCacheInserter::CreateReturnNode(const FuncGraphPtr graph, co
   MS_EXCEPTION_IF_NULL(output_node);
 
   // Create fake output value node to make sure the output abstract is the same for each subgraph.
-  auto fake_output_tensor = std::make_shared<tensor::Tensor>(1.0);
+  auto fake_output_tensor = tensor::from_scalar(1.0);
   auto fake_output_value = NewValueNode(fake_output_tensor);
   MS_EXCEPTION_IF_NULL(fake_output_value);
   fake_output_value->set_abstract(fake_output_tensor->ToAbstract());
@@ -441,7 +442,7 @@ CNodePtr PsEmbeddingCacheInserter::CreateRecvNode() const {
   MS_EXCEPTION_IF_NULL(input_indices);
   input_indices->set_abstract(
     std::make_shared<abstract::AbstractTensor>(kInt32, std::make_shared<abstract::Shape>(kOneDimDynamicShape)));
-  auto fake_input_indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, kOneDimShape);
+  auto fake_input_indices_tensor = tensor::from_spec(kNumberTypeInt32, kOneDimShape, device::DeviceType::kCPU);
   input_indices->set_default_param(fake_input_indices_tensor);
 
   // The update values input.
@@ -449,14 +450,14 @@ CNodePtr PsEmbeddingCacheInserter::CreateRecvNode() const {
   MS_EXCEPTION_IF_NULL(update_values);
   update_values->set_abstract(
     std::make_shared<abstract::AbstractTensor>(kFloat32, std::make_shared<abstract::Shape>(kTwoDimsDynamicShape)));
-  auto fake_update_values_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, kTwoDimsShape);
+  auto fake_update_values_tensor = tensor::from_spec(kNumberTypeFloat32, kTwoDimsShape, device::DeviceType::kCPU);
   update_values->set_default_param(fake_update_values_tensor);
 
   // The service id input, used to choose service to execute.
   ParameterPtr service_id = root_graph_->add_parameter();
   MS_EXCEPTION_IF_NULL(service_id);
   service_id->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt32, kOneDimShape));
-  auto fake_id_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, kOneDimDynamicShape);
+  auto fake_id_tensor = tensor::from_spec(kNumberTypeInt32, kOneDimDynamicShape, device::DeviceType::kCPU);
   service_id->set_default_param(fake_id_tensor);
 
   // 2. Create a RpcRecv node.

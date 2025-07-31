@@ -19,6 +19,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
@@ -69,7 +70,7 @@ std::vector<int64_t> GetTransposePerm(const AnfNodePtr &node) {
 ValueNodePtr CreatePermValueNode(const FuncGraphPtr &graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto perm = GetTransposePerm(node);
-  auto perm_value = std::make_shared<tensor::Tensor>(perm, kInt64);
+  auto perm_value = tensor::from_vector(perm, kInt64);
   auto perm_node = NewValueNode(perm_value);
   MS_EXCEPTION_IF_NULL(perm_node);
   auto value_abstract = perm_value->ToAbstract();

@@ -16,6 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -66,7 +67,7 @@ TEST_P(TestXlogyScalarSelfSimpleInfer, simple_infer) {
   auto prim = std::make_shared<Primitive>("XLogYScalarSelf");
   ASSERT_NE(prim, nullptr);
 
-  auto y = std::make_shared<tensor::Tensor>(param.y_type->type_id(), param.y_shape);
+  auto y = tensor::from_spec(param.y_type->type_id(), param.y_shape, device::DeviceType::kCPU);
   ASSERT_NE(y, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(param.x));

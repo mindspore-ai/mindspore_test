@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <vector>
+#include "ir/tensor_new.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/select_ext_view.h"
@@ -66,7 +67,7 @@ class TestSelectExtSimple : public TestOps, public testing::WithParamInterface<S
 
 TEST_P(TestSelectExtSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.input_dtype->type_id(), param.input_shape);
+  auto x = tensor::from_spec(param.input_dtype->type_id(), param.input_shape, device::DeviceType::kCPU);
   auto dim = param.dim->ToAbstract();
   auto index = param.index->ToAbstract();
 

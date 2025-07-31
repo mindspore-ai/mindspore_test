@@ -17,6 +17,7 @@
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include <algorithm>
 #include <thread>
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
@@ -349,7 +350,7 @@ tensor::TensorPtr generate_key_tensor_ptr(const tensor::TensorPtr &tensor_ptr) {
   for (auto i = 0; i != cel_num; i++) {
     key_vec[i] = i;
   }
-  return std::make_shared<tensor::Tensor>(key_vec);
+  return tensor::from_vector(key_vec);
 }
 
 void EmbeddingCacheTableManager::WarmUpHostCacheItemBatch(const int32_t batch_count, const WarmUpCacheMapEntry &entry) {
@@ -386,8 +387,7 @@ void EmbeddingCacheTableManager::WarmUpHostCacheItemBatch(const int32_t batch_co
   auto &value_shape = value_ptr->shape();
   size_t value_len = 0;
   (void)std::for_each(value_shape.begin() + 1, value_shape.end(), [&](int n) { value_len += n; });
-  MS_EXCEPTION_IF_NULL(value_ptr->data_ptr());
-  value_len *= static_cast<size_t>(value_ptr->data_ptr()->itemsize());
+  value_len *= static_cast<size_t>(value_ptr->DataItemSize());
   size_t value_expected_len = value_len * (value_shape[0] + 1);
   MS_EXCEPTION_IF_CHECK_FAIL(value_expected_len <= host_length, "Size of value tensor is overflow.");
 
@@ -412,7 +412,6 @@ void EmbeddingCacheTableManager::WarmUpHostCacheItem(const std::shared_ptr<Embed
 
   auto key_ptr = std::get<0>(entry.second);
   MS_EXCEPTION_IF_NULL(key_ptr);
-  auto key_data_ptr = key_ptr->data_ptr();
   for (ssize_t i = start; i != end; i++) {
     auto key_data_type = key_ptr->data_type();
     int64_t key = 0;

@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
@@ -53,7 +54,7 @@ ValueNodePtr DeformableOffsetsFusion::CreateHelperNode(const FuncGraphPtr &func_
   int64_t h_index;
   int64_t w_index;
   ShapeVector out_shape = {1, offset_shape[1], offset_shape[2], offset_shape[3]};
-  tensor::TensorPtr helper_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, out_shape);
+  tensor::TensorPtr helper_tensor = tensor::from_spec(kNumberTypeFloat32, out_shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat32);
   tensor::DeviceInfo device_info{kOpFormat_NHWC, tensor_type, kOpFormat_NHWC};
   helper_tensor->set_device_info(device_info);

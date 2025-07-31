@@ -28,6 +28,7 @@
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/tensor_new.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -1153,8 +1154,9 @@ ValueNodePtr KernelGraphMgr::CreateNewValueNode(const AnfNodePtr &anf, KernelGra
     auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (!tensor->is_forward_output() && !tensor->is_parameter()) {
-      tensor->data_sync();
-      MS_LOG(INFO) << "Data sync for Tensor " << tensor->ToString();
+      auto cpu_tensor = tensor->cpu();
+      value_node->set_value(cpu_tensor);
+      MS_LOG(INFO) << "Data sync for Tensor " << cpu_tensor->ToString();
     }
   }
   auto new_value_node = graph->NewValueNode(value_node);
@@ -1440,7 +1442,7 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       AddValueNode(backend_node, graph);
       continue;
     } else if ((is_depend && input_idx > kRealInputIndexInDepend && !enable_ge)) {
-      (void)params.emplace_back(graph->NewValueNode(std::make_shared<tensor::Tensor>(SizeToInt(input_idx))));
+      (void)params.emplace_back(graph->NewValueNode(tensor::from_scalar(SizeToInt(input_idx))));
       continue;
     } else if (other_graph_cnode->find(anf) != other_graph_cnode->end()) {
       (void)params.emplace_back((*other_graph_cnode)[anf]);

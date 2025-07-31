@@ -38,6 +38,18 @@ struct MemUceInfo {
   size_t retSize = 0;
 };
 
+class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
+ public:
+  explicit PinMemoryAllocator(std::shared_ptr<SwapManager> swap_manager) : swap_manager_(swap_manager) {}
+  virtual ~PinMemoryAllocator() = default;
+
+  void *Alloc(size_t size, uint32_t stream_id) override;
+  bool Free(void *address_ptr) override;
+
+ private:
+  std::shared_ptr<SwapManager> swap_manager_{nullptr};
+};
+
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
  public:
@@ -65,6 +77,12 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
+  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool keep_src) const override;
+  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
+  bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
   bool LoadCollectiveCommLib() override;
   bool IsEnableVmm() const override;
 
@@ -168,6 +186,41 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   size_t GetCommunicationStreamIDByGroup(const std::string &group) const;
 
+  std::shared_ptr<AddressAllocator> GetPinMemAllocator() override { return pin_mem_allocator_; }
+
+ private:
+  bool SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const;
+  bool SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const;
+  bool SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                          size_t stream_id) const;
+  bool AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                         size_t stream_id) const;
+  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         bool keep_src) const;
+  bool AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                           size_t stream_id) const;
+  bool CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                     size_t stream_id) const;
+  bool CopyDeviceToHostForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                   size_t stream_id) const;
+  bool CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                     size_t stream_id) const;
+  bool CopyHostToDeviceForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                   size_t stream_id) const;
+  bool SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                            size_t stream_id) const;
+  bool CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                   size_t stream_id) const;
+  bool CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                                   size_t stream_id) const;
+  bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
+                        const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
+                        const DeviceSyncPtr src_device_sync = nullptr) const;
+  bool BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
+                const DeviceSyncPtr src_device_sync = nullptr) const;
+
  private:
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;
@@ -177,6 +230,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   CollectiveCommunicationLib *collective_comm_lib_;
 
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
+  std::shared_ptr<PinMemoryAllocator> pin_mem_allocator_{nullptr};
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   DeviceEventPtrList device_events_{};
   std::mutex device_events_mutex_;

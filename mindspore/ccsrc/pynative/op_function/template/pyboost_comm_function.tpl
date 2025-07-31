@@ -27,8 +27,6 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
       std::make_shared<PyboostPromiseTask>(
         [${op_args}, comm_handle, target, promises](const PyboostOpRunInfoPtr &op_run_info) {
           MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
-          auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-          kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
 
           // stub tensor to tensor.
           ${convert_stub}
@@ -55,7 +53,6 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
           }
           // Data sync in mix mode(Graph and PyNative)
           PyNativeAlgo::PyBoost::DataSyncForGraph(op);
-          kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
           tensor::SetPromise(promises, real_output);
           MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
         },

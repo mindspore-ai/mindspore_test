@@ -17,6 +17,7 @@
 #include <complex>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
@@ -105,7 +106,8 @@ class OPS_API SqrtFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto type_id = x_tensor->data_type();
     auto data_size = x_tensor->DataSize();
-    auto result_tensor = std::make_shared<tensor::Tensor>(GetOutputTypeId(type_id), x_shape);  // same shape and dtype
+    auto result_tensor =
+      tensor::from_spec(GetOutputTypeId(type_id), x_shape, device::DeviceType::kCPU);  // same shape and dtype
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto iter = sqrt_impl_list.find(type_id);
     if (iter == sqrt_impl_list.end()) {

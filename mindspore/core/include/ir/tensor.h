@@ -29,6 +29,7 @@
 #include <iomanip>
 #include "ir/device_sync.h"
 #include "ir/meta_tensor.h"
+#include "ir/device_type.h"
 #include "utils/log_adapter.h"
 #include "base/float16.h"
 #include "base/bfloat16.h"
@@ -40,13 +41,13 @@
 #include "ir/device_event.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
-#include "ir/tensor_data.h"
 #include "utils/ms_utils_secure.h"
 #include "base/complex_storage.h"
 #include "utils/temp_file_manager.h"
 #include "utils/system/env.h"
 #include "ir/quantization_param.h"
 #include "ir/dtype/op_dtype.h"
+#include "ir/dtype/type_id.h"
 
 // brief mindspore namespace.
 //
@@ -99,543 +100,6 @@ namespace tensor {
 class Tensor;
 using TensorPtr = std::shared_ptr<Tensor>;
 using TensorPtrList = std::vector<std::shared_ptr<Tensor>>;
-
-constexpr auto kEllipsis = "...";
-constexpr auto kThreshold = 6;
-constexpr auto kThreshold1D = 1000;
-
-constexpr auto kThreshold1DFloat = kThreshold * 2;
-constexpr auto kThreshold1DInt = kThreshold * 4;
-constexpr auto kThreshold1DBool = kThreshold * 2;
-
-template <typename T>
-inline constexpr bool IsNonTrivialCastType = false;
-
-template <>
-inline constexpr bool IsNonTrivialCastType<float16> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<float8_e4m3fn> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<float8_e5m2> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<hifloat8> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<bfloat16> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<ComplexStorage<float>> = true;
-template <>
-inline constexpr bool IsNonTrivialCastType<ComplexStorage<double>> = true;
-
-template <typename T, typename U>
-std::unique_ptr<T[]> NewData(const U *input, size_t size) {
-  if (input == nullptr || size == 0) {
-    return nullptr;
-  }
-  if (size > INT32_MAX) {
-    MS_LOG(WARNING) << "Try to alloca a large memory, size is:" << size * sizeof(T);
-  }
-
-  auto data = std::make_unique<T[]>(size);
-  if constexpr (!std::is_same_v<T, U> && (IsNonTrivialCastType<T> || IsNonTrivialCastType<U>)) {
-    // Because float16 and bfloat16 do not support implicit cast from/to other types,
-    // We can not use std::copy() on array of float16 and bfloat16, use a loop here.
-    for (size_t i = 0; i < size; ++i) {
-      data[i] = static_cast<T>(input[i]);
-    }
-  } else {
-    // otherwise, use std::copy for better performance.
-    std::copy(input, input + size, data.get());
-  }
-  return data;
-}
-
-template <typename T, typename Scalar>
-std::unique_ptr<T[]> NewData(Scalar scalar) {
-  auto data = std::make_unique<T[]>(1);
-  data[0] = static_cast<T>(scalar);
-  return data;
-}
-
-template <typename T>
-std::unique_ptr<T[]> CopyData(const ShapeVector &shape, void *const data, TypeId data_type) {
-  const size_t size = SizeOf(shape);
-  switch (data_type) {
-    case kNumberTypeBool: {
-      auto buf = static_cast<bool *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeUInt8: {
-      auto buf = static_cast<uint8_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeInt4: {
-      auto buf = static_cast<int8_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeInt8: {
-      auto buf = static_cast<int8_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeInt16: {
-      auto buf = static_cast<int16_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeInt32: {
-      auto buf = static_cast<int32_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeInt64: {
-      auto buf = static_cast<int64_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeUInt16: {
-      auto buf = static_cast<uint16_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeUInt32: {
-      auto buf = static_cast<uint32_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeUInt64: {
-      auto buf = static_cast<uint64_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeFloat16: {
-      auto buf = static_cast<float16 *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeFloat32: {
-      auto buf = static_cast<float *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeFloat64: {
-      auto buf = static_cast<double *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeFloat8E4M3FN: {
-      auto buf = static_cast<float8_e4m3fn *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeFloat8E5M2: {
-      auto buf = static_cast<float8_e5m2 *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeHiFloat8: {
-      auto buf = static_cast<hifloat8 *>(data);
-      return NewData<T>(buf, size);
-    }
-#ifndef KERNEL_EXECUTOR_ANDROID
-    case kNumberTypeBFloat16: {
-      auto buf = static_cast<bfloat16 *>(data);
-      return NewData<T>(buf, size);
-    }
-#endif
-    case kNumberTypeComplex64: {
-      auto buf = static_cast<ComplexStorage<float> *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kNumberTypeComplex128: {
-      auto buf = static_cast<ComplexStorage<double> *>(data);
-      return NewData<T>(buf, size);
-    }
-    case kObjectTypeString: {
-      auto buf = static_cast<uint8_t *>(data);
-      return NewData<T>(buf, size);
-    }
-    default:
-      break;
-  }
-  MS_LOG(EXCEPTION) << "Cannot construct Tensor because of unsupported data type: " << data_type << ".";
-}
-
-template <typename T>
-std::unique_ptr<T[]> CopyData(const ShapeVector &shape, void *const data, size_t data_len) {
-  size_t size = SizeOf(shape);
-  if (size * sizeof(T) != data_len) {
-    MS_LOG(EXCEPTION) << "Incorrect tensor input data length " << data_len << ", expect " << size * sizeof(T)
-                      << " item size " << sizeof(T);
-  }
-  auto buf = static_cast<T *>(data);
-  return NewData<T>(buf, size);
-}
-
-// TensorStringifier provide methods to convert tensor data to its string representation.
-template <typename T>
-class TensorStringifier {
- public:
-  TensorStringifier(const T *data, size_t data_size, size_t ndim) : data_(data), data_size_(data_size), ndim_(ndim) {}
-  ~TensorStringifier() = default;
-
-  std::string ToString(TypeId, const ShapeVector &shape, bool use_comma) const {
-    constexpr auto valid =
-      std::is_same<T, bool>::value || std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value ||
-      std::is_same<T, int16_t>::value || std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-      std::is_same<T, uint16_t>::value || std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value ||
-      std::is_same<T, float16>::value || std::is_same<T, float>::value || std::is_same<T, double>::value ||
-      std::is_same<T, float8_e4m3fn>::value || std::is_same<T, float8_e5m2>::value ||
-      std::is_same<T, hifloat8>::value || std::is_same<T, ComplexStorage<float>>::value ||
-      std::is_same<T, ComplexStorage<double>>::value || std::is_same<T, bfloat16>::value;
-    static_assert(valid, "Type is invalid");
-    if (data_size_ == 0) {
-      return "";
-    }
-    if (data_ == nullptr) {
-      return "<uninitialized>";
-    }
-
-    std::ostringstream ss;
-    if (data_size_ == 1 && ndim_ == 0) {  // Scalar
-      int max = 0;
-      OutputDataString(ss, 0, 0, 1, false, &max);
-      return ss.str();
-    }
-
-    int num_width = 0;
-    ssize_t cursor = 0;
-    SummaryStringRecursive(ss, shape, &cursor, 0, use_comma, &num_width);
-    return ProcessPlaceholder(ss, num_width);
-  }
-
- private:
-  static void OutputFloatDataString(std::ostringstream &ss, bool isScalar, const T &value) {
-    if (isScalar) {
-      ss << value;
-    } else {
-      // The placeholder of float16 is fixed at 11, while float/double is fixed at 15.
-      const int width = std::is_same<T, float16>::value ? 11 : 15;
-      // The printing precision of float16 is fixed at 4, while float/double is fixed at 8.
-      const int precision = std::is_same<T, float16>::value ? 4 : 8;
-      ss << std::setw(width) << std::setprecision(precision) << std::setiosflags(std::ios::scientific | std::ios::right)
-         << value;
-    }
-  }
-
-  static void OutputBoolDataString(std::ostringstream &ss, bool isScalar, const T &value) {
-    if (isScalar) {
-      ss << (value ? "True" : "False");
-    } else {
-      constexpr int bool_max_width = sizeof("False") - 1;
-      ss << std::setw(bool_max_width) << std::setiosflags(std::ios::right) << (value ? "True" : "False");
-    }
-  }
-
-  static void OutputOtherDataString(std::ostringstream &ss, bool isScalar, const T &value, int *max_width) {
-    std::ostringstream value_ss;
-    if constexpr (std::is_same<T, uint8_t>::value) {
-      value_ss << static_cast<uint16_t>(value);
-    } else if constexpr (std::is_same<T, int8_t>::value) {
-      value_ss << static_cast<int16_t>(value);
-    } else {
-      value_ss << value;
-    }
-    auto value_str = value_ss.str();
-    if (!isScalar) {
-      const int width = static_cast<int>(value_str.size());
-      *max_width = std::max(*max_width, width);
-      // Add a padding string before the number, such as "###123", for subsequent replacement.
-      std::string pad(width, '#');
-      ss << pad;
-    }
-    ss << value_str;
-  }
-
-  static std::string ProcessPlaceholder(const std::ostringstream &ss, int max_width) {
-    std::string str = ss.str();
-    if constexpr (std::is_same<T, bool>::value || std::is_same<T, float16>::value || std::is_same<T, float>::value ||
-                  std::is_same<T, double>::value) {
-      return str;
-    }
-    // Replace # with placeholder.
-    size_t index = str.find('#');
-    while (index != std::string::npos) {
-      size_t pos = index;
-      while (str[pos] == '#') {
-        pos++;
-      }
-      size_t len = pos - index;
-      std::string space(max_width - SizeToInt(len), ' ');
-      str = str.replace(index, len, space);
-      index = str.find('#', index);
-    }
-    return str;
-  }
-
-  void OutputDataString(std::ostringstream &ss, ssize_t cursor, ssize_t start, ssize_t end, bool use_comma,
-                        int *max_width) const {
-    const bool isScalar = ndim_ == 0 && end - start == 1;
-    constexpr auto isBool = std::is_same<T, bool>::value;
-    constexpr auto isFloat =
-      std::is_same<T, float16>::value || std::is_same<T, float>::value || std::is_same<T, double>::value;
-    constexpr auto isComplex =
-      std::is_same<T, ComplexStorage<float>>::value || std::is_same<T, ComplexStorage<double>>::value;
-    constexpr int linefeedThreshold = isFloat ? kThreshold1DFloat : (isBool ? kThreshold1DBool : kThreshold1DInt);
-    for (ssize_t i = start; i < end && (cursor + i) < static_cast<ssize_t>(data_size_); i++) {
-      const auto value = data_[cursor + i];
-      if constexpr (isComplex) {
-        ss << value;
-      } else if constexpr (isFloat) {
-        OutputFloatDataString(ss, isScalar, value);
-      } else if (isBool) {
-        OutputBoolDataString(ss, isScalar, value);
-      } else {
-        OutputOtherDataString(ss, isScalar, value, max_width);
-      }
-      if (!isScalar && i != end - 1) {
-        if (use_comma) {
-          ss << ',';
-        }
-        ss << ' ';
-      }
-      if (!isScalar && ndim_ == 1 && end - start > (kThreshold >> 1) && (i + 1) % linefeedThreshold == 0) {
-        // Add a line feed every {threshold of type} for 1D tensor.
-        ss << '\n' << ' ';
-      }
-    }
-  }
-
-  void SummaryStringRecursive(std::ostringstream &ss, const ShapeVector &shape, ssize_t *cursor, ssize_t depth,
-                              bool use_comma, int *max_width) const {
-    if (depth >= static_cast<ssize_t>(ndim_)) {
-      return;
-    }
-    ss << '[';
-    if (depth == static_cast<ssize_t>(ndim_) - 1) {  // Bottom dimension
-      ssize_t num = shape[depth];
-      if ((num > kThreshold && ndim_ > 1) || (num > kThreshold1D && ndim_ == 1)) {
-        OutputDataString(ss, *cursor, 0, kThreshold >> 1, use_comma, max_width);
-        ss << ' ' << kEllipsis << ' ';
-        OutputDataString(ss, *cursor, num - (kThreshold >> 1), num, use_comma, max_width);
-      } else {
-        OutputDataString(ss, *cursor, 0, num, use_comma, max_width);
-      }
-      *cursor += num;
-    } else {  // Middle dimension
-      ssize_t num = shape[depth];
-      // Handle the first half.
-      for (ssize_t i = 0; i < std::min(static_cast<ssize_t>(kThreshold >> 1), num); i++) {
-        if (i > 0) {
-          if (use_comma) {
-            ss << ',';
-          }
-          ss << '\n';
-          ss << std::setw(depth + 1) << ' ';  // Add the indent.
-        }
-        SummaryStringRecursive(ss, shape, cursor, depth + 1, use_comma, max_width);
-      }
-      // Handle the ignored part.
-      if (num > kThreshold) {
-        if (use_comma) {
-          ss << ',';
-        }
-        ss << '\n';
-        ss << std::setw(depth + 1) << ' ';  // Add the indent.
-        ss << kEllipsis;
-        // Ignored at this layer.
-        ssize_t ignored = shape[depth + 1];
-        const size_t offset = 2;
-        for (ssize_t i = depth + offset; i < static_cast<ssize_t>(ndim_); i++) {
-          ignored *= shape[i];
-        }
-        // Multiple with ignored layers number.
-        ignored *= (num - kThreshold);
-        *cursor += ignored;
-      }
-      // Handle the second half.
-      if (num > (kThreshold >> 1)) {
-        ssize_t iter_times =
-          std::min(static_cast<ssize_t>(num - (kThreshold >> 1)), static_cast<ssize_t>(kThreshold >> 1));
-        for (ssize_t i = 0; i < iter_times; i++) {
-          if (use_comma && (i != 0 || num <= kThreshold)) {  // Not just after ignored part || Not handle ignored part
-            ss << ',';
-          }
-          ss << '\n';
-          ss << std::setw(depth + 1) << ' ';  // Add the indent.
-          SummaryStringRecursive(ss, shape, cursor, depth + 1, use_comma, max_width);
-        }
-      }
-    }
-    ss << ']';
-  }
-
-  const T *data_;
-  const size_t data_size_;
-  const size_t ndim_;
-};
-// Tensor data implementation.
-template <typename T>
-class TensorDataImpl : public TensorData {
- public:
-  explicit TensorDataImpl(const ShapeVector &shape) : ndim_(shape.size()), data_size_(SizeOf(shape)) {}
-  ~TensorDataImpl() override {
-    try {
-      RemoveOffloadFile();
-    } catch (const std::exception &e) {
-      MS_LOG(ERROR) << "Exception occurred when cleaning tensor. Error info " << e.what();
-    } catch (...) {
-      MS_LOG(ERROR) << "Exception occurred when cleaning tensor.";
-    }
-  }
-
-  TensorDataImpl(const ShapeVector &shape, void *data, size_t data_len)
-      : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(CopyData<T>(shape, data, data_len)) {}
-
-  TensorDataImpl(const ShapeVector &shape, void *data, TypeId data_type)
-      : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(CopyData<T>(shape, data, data_type)) {}
-
-  template <typename U>
-  TensorDataImpl(const ShapeVector &shape, const U *input, size_t size)
-      : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(NewData<T>(input, size)) {}
-
-  template <typename Scalar>
-  TensorDataImpl(const ShapeVector &shape, Scalar scalar)
-      : ndim_(shape.size()), data_size_(SizeOf(shape)), data_(NewData<T>(scalar)) {}
-
-  ssize_t size() const override { return static_cast<ssize_t>(data_size_); }
-
-  ssize_t itemsize() const override { return static_cast<ssize_t>(sizeof(T)); }
-
-  ssize_t nbytes() const override { return size() * itemsize(); }
-
-  ssize_t ndim() const override { return static_cast<ssize_t>(ndim_); }
-
-  bool is_sub_data() const override { return false; }
-
-  bool has_sub_data() const override { return false; }
-
-  void *data() override {
-    if (data_ != nullptr) {
-      return data_.get();
-    }
-
-    if (data_size_ > INT32_MAX) {
-      MS_LOG(WARNING) << "Try to alloca a large memory, size is:" << data_size_ * sizeof(T);
-    }
-    // Lazy allocation.
-    data_ = std::make_unique<T[]>(data_size_);
-
-    // Load data from file
-    if (!file_path_.empty()) {
-      auto fs = mindspore::system::Env::GetFileSystem();
-      MS_EXCEPTION_IF_NULL(fs);
-      if (fs->FileExist(file_path_)) {
-        auto file = fs->CreateWriteFile(file_path_, "r+");
-        MS_EXCEPTION_IF_NULL(file);
-        bool success = file->PRead(data_.get(), data_size_ * sizeof(T), 0);
-        if (!success) {
-          MS_LOG(WARNING) << "Tensor load data from file: " << file_path_ << " failed!";
-        }
-        if (!file->Close()) {
-          MS_LOG(WARNING) << "Close tensor file: " << file_path_ << " failed!";
-        }
-      } else {
-        MS_LOG(WARNING) << "Invalid tensor file path: " << file_path_;
-      }
-    }
-    return data_.get();
-  }
-
-  void set_file_path(const std::string &file_path) override { file_path_ = file_path; }
-
-  const std::string file_path() const override { return file_path_; }
-
-  const void *const_data() const override {
-    // May return nullptr if data not initialized.
-    return data_.get();
-  }
-
-  virtual bool equals(const TensorDataImpl<T> &other) const {
-    auto ptr = &other;
-    if (ptr == this) {
-      return true;
-    }
-    if (data_ == nullptr || ptr->data_ == nullptr) {
-      return false;
-    }
-    return (ndim_ == ptr->ndim_) && (data_size_ == ptr->data_size_) &&
-           std::equal(data_.get(), data_.get() + data_size_, ptr->data_.get());
-  }
-
-  bool equals(const TensorData &other) const override {
-    // Not same type, compare data byte by byte.
-    return TensorData::equals(other);
-  }
-
-  std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override {
-    TensorStringifier<T> stringifier{data_.get(), data_size_, ndim_};
-    return stringifier.ToString(type, shape, use_comma);
-  }
-
- private:
-  void RemoveOffloadFile() {
-    if (!file_path_.empty()) {
-      TempFileManager::GetInstance().RemoveFile(file_path_);
-      TempFileManager::GetInstance().UnRegister(file_path_);
-      file_path_ = "";
-    }
-  }
-
-  size_t ndim_{0};
-  size_t data_size_{0};
-  std::unique_ptr<T[]> data_;
-  std::string file_path_{""};
-};
-template <template <class> class ImplClass = TensorDataImpl, typename... Args>
-TensorDataPtr MakeTensorData(TypeId data_type, Args &&... args) {
-  switch (data_type) {
-    case kNumberTypeBool:
-      return std::make_shared<ImplClass<bool>>(std::forward<Args>(args)...);
-    case kNumberTypeUInt8:
-      return std::make_shared<ImplClass<uint8_t>>(std::forward<Args>(args)...);
-    case kNumberTypeInt4:
-      return std::make_shared<ImplClass<int8_t>>(std::forward<Args>(args)...);
-    case kNumberTypeInt8:
-      return std::make_shared<ImplClass<int8_t>>(std::forward<Args>(args)...);
-    case kNumberTypeInt16:
-      return std::make_shared<ImplClass<int16_t>>(std::forward<Args>(args)...);
-    case kNumberTypeInt:
-    case kNumberTypeInt32:
-      return std::make_shared<ImplClass<int32_t>>(std::forward<Args>(args)...);
-    case kNumberTypeInt64:
-      return std::make_shared<ImplClass<int64_t>>(std::forward<Args>(args)...);
-    case kNumberTypeUInt16:
-      return std::make_shared<ImplClass<uint16_t>>(std::forward<Args>(args)...);
-    case kNumberTypeUInt32:
-      return std::make_shared<ImplClass<uint32_t>>(std::forward<Args>(args)...);
-    case kNumberTypeUInt64:
-      return std::make_shared<ImplClass<uint64_t>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat16:
-      return std::make_shared<ImplClass<float16>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat:
-      return std::make_shared<ImplClass<float>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat32:
-      return std::make_shared<ImplClass<float>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat64:
-      return std::make_shared<ImplClass<double>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat8E4M3FN:
-      return std::make_shared<ImplClass<float8_e4m3fn>>(std::forward<Args>(args)...);
-    case kNumberTypeFloat8E5M2:
-      return std::make_shared<ImplClass<float8_e5m2>>(std::forward<Args>(args)...);
-    case kNumberTypeHiFloat8:
-      return std::make_shared<ImplClass<hifloat8>>(std::forward<Args>(args)...);
-#ifndef KERNEL_EXECUTOR_ANDROID
-    case kNumberTypeBFloat16:
-      return std::make_shared<ImplClass<bfloat16>>(std::forward<Args>(args)...);
-#endif
-    case kNumberTypeComplex64:
-      return std::make_shared<ImplClass<ComplexStorage<float>>>(std::forward<Args>(args)...);
-    case kNumberTypeComplex128:
-      return std::make_shared<ImplClass<ComplexStorage<double>>>(std::forward<Args>(args)...);
-    case kObjectTypeString:
-      return std::make_shared<ImplClass<uint8_t>>(std::forward<Args>(args)...);
-    case kObjectTypeTensorType:
-    case kObjectTypeMapTensorType:
-      return std::make_shared<ImplClass<int>>(std::forward<Args>(args)...);
-    default:
-      break;
-  }
-  MS_LOG(ERROR) << "Cannot construct Tensor because of unsupported data type: " << TypeIdToString(data_type) << ".";
-  return nullptr;
-}
 
 struct Version {
  public:
@@ -709,160 +173,20 @@ class MS_CORE_API Tensor : public MetaTensor {
   ///
   /// \param[in] tensor [Tensor] The input tensor.
   explicit Tensor(const Tensor &tensor);
+
   /// \brief Create tensor with given data type from another tensor.
   ///
   /// \param[in] tensor [Tensor] The input tensor.
   /// \param[in] data_type [TypeId] The new tensor data type.
   Tensor(const Tensor &tensor, TypeId data_type);
 
-  /// \brief Create tensor with the given shared tensor data.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The shared tensor data.
-  Tensor(TypeId data_type, const ShapeVector &shape, TensorDataPtr data);
+  Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr data);
 
   /// \brief Create a lazy allocated tensor.
   ///
   /// \param[in] data_type [TypeId] Data type of the tensor.
   /// \param[in] shape The shape represented by ShapeVector of the tensor.
   Tensor(TypeId data_type, const ShapeVector &shape);
-
-  /// \brief Create a tensor with input data buffer.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] data_len The length of data in bytes.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len);
-
-  /// \brief Create a tensor with input data buffer and given source data type.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] src_data_type The source data type.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type);
-
-  /// \brief Create 1 dimension tensor from an int vector.
-  ///
-  /// \param[in] input [std::vector<int64_t>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<int64_t> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from an int vector.
-  ///
-  /// \param[in] input [std::vector<int32_t>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<int32_t> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from a float vector.
-  ///
-  /// \param[in] input [std::vector<double>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<double> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from a float vector.
-  ///
-  /// \param[in] input [std::vector<float>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<float> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int64_t scalar.
-  ///
-  /// \param[in] input [int64] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int64_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int32_t scalar.
-  ///
-  /// \param[in] input [int32] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int32_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int16_t scalar.
-  ///
-  /// \param[in] input [int16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int16_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int8_t scalar.
-  ///
-  /// \param[in] input [int8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int8_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a double scalar.
-  ///
-  /// \param[in] input [double] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(double input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float scalar.
-  ///
-  /// \param[in] input [float] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float16 scalar.
-  ///
-  /// \param[in] input [float16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float16 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float8_e5m2 scalar.
-  ///
-  /// \param[in] input [float8_e5m2] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float8_e5m2 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float8_e4m3fn scalar.
-  ///
-  /// \param[in] input [float8_e4m3fn] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float8_e4m3fn input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a hifloat8 scalar.
-  ///
-  /// \param[in] input [hifloat8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(hifloat8 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a bfloat16 scalar.
-  ///
-  /// \param[in] input [bfloat16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(bfloat16 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint64 scalar.
-  ///
-  /// \param[in] input [uint64] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint64_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint32 scalar.
-  ///
-  /// \param[in] input [uint32] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint32_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint16 scalar.
-  ///
-  /// \param[in] input [uint16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint16_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint8 scalar.
-  ///
-  /// \param[in] input [uint8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint8_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a bool scalar.
-  ///
-  /// \param[in] input [bool] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(bool input, const TypePtr &data_type = nullptr);
 
   /// \brief Create a chunk tensor with the given data size.
   ///
@@ -878,6 +202,14 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] TensorCompressionType The tensor compression type.
   Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
          TensorCompressionType compression_type);
+
+  /// \brief Create a tensor with external data buffer.
+  ///
+  /// \param[in] data_type [TypeId] Data type of the tensor.
+  /// \param[in] shape The shape represented by ShapeVector of the tensor.
+  /// \param[in] ref_mem The length of data in bytes.
+  /// \param[in] data The input data to be referenced by tensor.
+  Tensor(TypeId data_type, const ShapeVector &shape, bool ref_mem, void *data);
 
   Tensor &operator=(const Tensor &tensor);
 
@@ -921,12 +253,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Gets tensor's dimension.
   ///
   /// \return The number of dimensions of the tensor data.
-  int DataDim() const { return static_cast<int>(data().ndim()); }
-
-  /// \brief Getting tensor data size.
-  ///
-  /// \return The total number of elements of the tensor data.
-  size_t DataSize() const { return data().size(); }
+  int DataDim() const { return static_cast<int>(shape_.size()); }
 
   /// \brief Get the data type of the tensor for C++
   ///
@@ -936,47 +263,68 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the tensor's shape for C++
   ///
   /// \return [ShapeVector]
-  ShapeVector shape_c(void) const { return shape(); }
+  const ShapeVector &shape_c() const { return shape(); }
 
   /// \brief Get Tensor data pointer for c++ type
   ///
   /// \return The pointer to the object
-  void *data_c() { return data().data(); }
+  void *data_c() const;
 
   /// \brief Get Tensor data byte-size for c++ type
   ///
   /// \return byte size of Tensor data
-  size_t Size() const { return static_cast<size_t>(data().nbytes()); }
+  size_t Size() const { return DataNBytes(); }
 
-  /// \brief The pointer to the object
-  void *data_c() const { return data_->data(); }
-
-  /// \brief To synchronize data with the device, you need to wait for the data to be valid.
+  /// \brief Copy Tensor data from device and return new Tensor.
   ///
-  void data_sync(bool need_wait = true, bool inpalce = true, bool sync_on_demand = false) const;
+  /// \return Tensor on CPU.
+  TensorPtr cpu() const;
 
-  /// \brief Get the internal data object.
+  /// \brief Get total number of Tensor elements.
   ///
-  /// \return The reference to internal data object.
-  TensorData &data() {
-    MS_EXCEPTION_IF_NULL(data_);
-    return *data_;
+  /// \return Total number of Tensor elements.
+  size_t DataSize() const { return SizeOf(shape_); }
+
+  /// \brief Get byte size of a single element.
+  ///
+  /// \return Byte size of a single element.
+  ssize_t DataItemSize() const {
+    if (device_sync_ != nullptr && device_sync_->has_data()) {
+      return device_sync_->data()->itemsize();
+    }
+    return static_cast<ssize_t>(abstract::TypeIdSize(data_type_));
   }
 
-  /// \brief Get the internal data shared pointer.
+  /// \brief Get total number of bytes.
   ///
-  /// return The reference to internal data object.
-  const TensorDataPtr &data_ptr() const { return data_; }
+  /// \return Total number of bytes.
+  size_t DataNBytes() const { return DataSize() * DataItemSize(); }
 
-  /// \brief Get the internal data object.
+  /// \brief Get number of dimensions.
   ///
-  /// \return The reference to internal data object.
-  const TensorData &data() const { return *data_; }
+  /// \return Number of dimensions.
+  ssize_t DataNDim() const { return shape_.size(); }
 
-  void set_data(const TensorDataPtr &data) { data_ = data; }
+  /// \brief Get display information about data of this Tensor.
+  ///
+  /// \param[in] use_comma Whether to use comma.
+  /// \return The display information.
+  std::string DataToString(bool use_comma) const;
 
+  /// \brief Get the internal data ptr. The ptr maybe null if the data is not initialized.
+  ///
+  /// \return The ptr in device_address of Tensor.
+  const void *unsafe_data() const;
+
+  /// \brief Set the data type of this Tensor.
+  ///
+  /// \param[in] data_type Tensor data type.
   TypeId set_data_type(TypeId data_type) override;
 
+  /// \brief Set the shape of this Tensor.
+  ///
+  /// \param[in] shape Tensor shape.
+  /// \return The shape's size.
   size_t set_shape(const ShapeVector &shape) override;
 
   /// \brief Get information about shape and data type.
@@ -1028,7 +376,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the device address.
   ///
   /// \return The device address.
-  DeviceSyncPtr device_address() const;
+  const DeviceSyncPtr &device_address() const;
 
   /// \brief Set the device address.
   ///
@@ -1036,6 +384,16 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] need_update_ref_count If need_update_ref_count is true, the device address cannot be released and
   /// reused, so the feature map should set false when set device address of tensor.
   void set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count = true);
+
+  /// \brief Set origin device address for implicit copy.
+  ///
+  /// \param[in] device_address Origin device address.
+  void set_implicit_copy_address(const DeviceSyncPtr &device_address) { implicit_copy_address_ = device_address; }
+
+  /// \brief Get the device address for implicit copy.
+  ///
+  /// \return The device address.
+  const DeviceSyncPtr &implicit_copy_address() const { return implicit_copy_address_; }
 
   /// \brief Get the id of this Tensor.
   ///
@@ -1079,7 +437,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get tensor storage info.
   ///
   /// \return Tensor storage info, the value is nullptr default.
-  const TensorStorageInfoPtr storage_info() const;
+  TensorStorageInfoPtr storage_info() const;
 
   /// \brief Set tensor storage info.
   ///
@@ -1185,7 +543,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the cast dtype of this Tensor.
   ///
   /// \return The cast dtype of this Tensor.
-  TypePtr cast_dtype() { return cast_dtype_; }
+  const TypePtr &cast_dtype() { return cast_dtype_; }
 
   /// \brief Set the cast dtype of this Tensor.
   ///
@@ -1217,7 +575,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the pointer of cache tensor.
   ///
   /// \return The pointer of cache tensor.
-  std::shared_ptr<Tensor> cache_tensor_ptr() const { return cache_tensor_ptr_; }
+  const std::shared_ptr<Tensor> &cache_tensor_ptr() const { return cache_tensor_ptr_; }
 
   /// \brief Set the pointer of cache tensor.
   ///
@@ -1254,40 +612,6 @@ class MS_CORE_API Tensor : public MetaTensor {
     update_value_callback_ = update_value_callback;
   }
 
-  /// \brief Get the memory chunk pointer and offset if memory chunk for this tensor exists.
-  ///
-  /// \return The memory chunk pointer and offset, nullptr and 0 if no memory chunk exists.
-  std::pair<void *, size_t> GetChunkOffset() const;
-
-  /// \brief Reset tensors data so that they are using contiguous memory chunks grouped by data type.
-  ///
-  /// \param[in] tensors The tensors to be processed.
-  /// \param[in] fusion_size Maximum memory chunk size in bytes, 0 for unlimited.
-  ///
-  /// \return Tensors that data are pointed to each contiguous memory chunks.
-  static TensorPtrList FlattenTensors(const TensorPtrList &tensors, size_t fusion_size = 0);
-
-  /// \brief Check if FlattenTensors called for the input tensors.
-  ///
-  /// \param[in] tensors The tensors to be checked.
-  ///
-  /// \return True if FlattenTensors called for input tensors, false otherwise.
-  static bool IsFlattened(const TensorPtrList &tensors);
-
-  /// \brief Get tensors for each contiguous memory chunks used by the input tensors.
-  ///
-  /// \param[in] tensors The input tensors.
-  ///
-  /// \return Tensors that data are pointed to each contiguous memory chunks, empty if failed.
-  static TensorPtrList GetFlattenedTensors(const TensorPtrList &tensors);
-
-  /// \brief Get tensor for each contiguous memory chunks used.
-  ///
-  /// \param[in] tensor The given tensor.
-  ///
-  /// \return Tensor that data are pointed to each contiguous memory chunks, empty if failed.
-  static const TensorPtr GetFlattenedTensor(const TensorPtr &tensor);
-
   /// \brief Get tensors stub flag.
   ///
   /// \param[in] none.
@@ -1295,22 +619,10 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return If compile with backend, return false, else return true.
   static bool CheckStub();
 
-  /// \brief Get the fusion size for the given flat tensors.
-  ///
-  /// \param[in] flat_tensors The input flat tensors.
-  ///
-  /// \return fusion size for the given flat tensors.
-  static size_t GetFusionSize(const TensorPtrList &flat_tensors);
-
   /// \brief Get the tensor compression type.
   ///
   /// \return tensor compression type.
   TensorCompressionType compression_type() const { return compression_type_; }
-
-  /// \brief If tensor use persistent tensor data.
-  ///
-  /// \return if use persistent tenor data.
-  bool is_persistent_data() const;
 
   /// \brief Set tensor name.
   ///
@@ -1342,7 +654,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get tensor offload file path.
   ///
   /// \return offload file path, or empty string if tensor has not offload.
-  const std::string GetOffloadFilePath() const;
+  const std::string &GetOffloadFilePath() const;
 
   /// \brief pin tensor memory.
   ///
@@ -1395,13 +707,14 @@ class MS_CORE_API Tensor : public MetaTensor {
   // string size 32
   uint64_t id_;
   std::string tensor_name_;
+  std::string offload_file_;
 
   // shared_ptr size 16
   Version version_{};
   mutable DeviceSyncPtr device_sync_{nullptr};
+  mutable DeviceSyncPtr implicit_copy_address_{nullptr};
   AutoGradMetaInterfacePtr auto_grad_meta_data_{nullptr};
   TensorStorageInfoPtr storage_info_;
-  TensorDataPtr data_{nullptr};
   // Tensor base shape which contain dynamic shape info.
   BaseShapePtr base_shape_ptr_{nullptr};
   std::shared_ptr<Tensor> cache_tensor_ptr_{nullptr};
@@ -1612,16 +925,6 @@ class MS_CORE_API RowTensor : public MetaSparseTensor {
 
 // Convert shape vector to string.
 MS_CORE_API std::string ShapeToString(const ShapeVector &shape);
-
-inline static void CopyTensorData(const TensorDataPtr &dest, const TensorDataPtr &src) {
-  auto dest_bytes = dest->nbytes();
-  auto src_bytes = src->nbytes();
-  auto err = common::huge_memcpy(static_cast<uint8_t *>(dest->data()), dest_bytes,
-                                 static_cast<const uint8_t *>(src->const_data()), src_bytes);
-  if (err != EOK) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Copy tensor data failed! bytes: " << dest_bytes << "/" << src_bytes << ".";
-  }
-}
 
 using RowTensorPtr = std::shared_ptr<RowTensor>;
 }  // namespace tensor

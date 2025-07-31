@@ -19,6 +19,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
@@ -309,7 +310,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     ShapeVector shape = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    const auto &tensor = tensor::from_spec(type_id, shape, device::DeviceType::kNone);
     tensor->set_base_shape(output_shape);
     return tensor;
   }
@@ -337,7 +338,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
   const auto &shape = output_kernel_tensor->GetShapeVector();
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::from_spec(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   // Set tensor base shape for restoring the tuple output when output node is dynamic sequence.
   if (common::AnfAlgo::IsDynamicSequence(output_node)) {
@@ -469,7 +470,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
         MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!tensor_device_address->SyncDeviceToDevice(device_tensor.get())) {
+        if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) || !res_manager->SyncAllStreams()) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();
@@ -477,7 +478,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
       } else {
         MS_LOG(DEBUG) << "Async device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-        if (!tensor_device_address->AsyncDeviceToDevice(device_tensor.get())) {
+        if (!AsyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex)) {
           MS_LOG_WITH_NODE(EXCEPTION, output_node)
             << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
             << ", output node: " << output_node->fullname_with_scope();

@@ -20,6 +20,7 @@
 #include <utility>
 #include <functional>
 #include <condition_variable>
+#include "ir/tensor_new.h"
 #include "proto/topology.pb.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/kernel/rpc/rpc_recv_kernel.h"
@@ -244,7 +245,7 @@ void RecvActor::AddArgSpecForInput(AbstractBasePtrList *args_spec_list, const Sh
   if (output_addr->GetNodeIndex().first == nullptr) {
     output_addr->SetNodeIndex(kernel_, input_index);
   }
-  auto out_tensor = std::make_shared<tensor::Tensor>(data_type, shapes);
+  auto out_tensor = tensor::from_spec(data_type, shapes, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(out_tensor);
   out_tensor->set_device_address(output_addr, false);
 

@@ -20,6 +20,7 @@
 #include <limits>
 #include <set>
 #include <cmath>
+#include "ir/tensor_new.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -80,7 +81,7 @@ ValuePtr EpsInferValue(const PrimitivePtr &primitive, const std::vector<Abstract
   auto data_size = x_tensor->DataSize();
   auto dtype = x_tensor->data_type();
   auto shape = EpsInferShape(primitive, input_args)->cast<abstract::ShapePtr>();
-  auto result_tensor = std::make_shared<tensor::Tensor>(dtype, shape->shape());
+  auto result_tensor = tensor::from_spec(dtype, shape->shape(), device::DeviceType::kCPU);
   auto result_datac = result_tensor->data_c();
   switch (dtype) {
     case kNumberTypeFloat16: {

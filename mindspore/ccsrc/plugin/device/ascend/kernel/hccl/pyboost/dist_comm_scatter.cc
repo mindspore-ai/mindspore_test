@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -41,8 +42,8 @@ void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const T
   auto input_shape = other_tensor->shape();
   input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
   TensorPtr input_tensor =
-    std::make_shared<tensor::Tensor>(static_cast<TypeId>(other_tensor->data_type_c()), input_shape);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors, input_tensor);
+    tensor::from_spec(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kAscend);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors);
 
   auto run_func = [op, other_tensor, input_tensor, local_rank, src_rank, group, rank_size_imm, scatter_tensors]() {
     auto device_context = op->device_context();

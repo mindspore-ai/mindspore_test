@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 #include <set>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -105,7 +106,7 @@ ValuePtr CreateNonTensorByAbstract(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   auto type_id = Common::GetTypeFromAbstract(abs);
   if (abs->isa<abstract::AbstractMonad>()) {
-    return std::make_shared<tensor::Tensor>(0);
+    return tensor::from_scalar(0);
   }
   if (type_id == kMetaTypeNone) {
     return kNone;
@@ -539,7 +540,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
   MS_EXCEPTION_IF_NULL(abs);
   auto type_id = GetTypeFromAbstract(abs);
   if (abs->isa<abstract::AbstractMonad>()) {
-    return std::make_shared<tensor::Tensor>(0);
+    return tensor::from_scalar(0);
   }
   if (abs->isa<abstract::AbstractSequence>()) {
     auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
@@ -549,7 +550,9 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
       return CreateNonTensorByAbstract(abs);
     }
     for (size_t i = 0; i < abs_seq->size(); ++i) {
-      (void)out.emplace_back(std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs_seq->elements()[i])));
+      // todo: check.
+      (void)out.emplace_back(
+        tensor::from_spec(type_id, GetShapeFromAbstract(abs_seq->elements()[i]), device::DeviceType::kCPU));
     }
     return std::make_shared<ValueTuple>(out);
   }
@@ -557,7 +560,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
     MS_LOG(DEBUG) << "Get non tensor output";
     return CreateNonTensorByAbstract(abs);
   }
-  return std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs));
+  return tensor::from_spec(type_id, GetShapeFromAbstract(abs), device::DeviceType::kCPU);
 }
 
 void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {
@@ -612,12 +615,9 @@ ValuePtr Common::StubNodeToValue(const ValuePtr &v) {
 
 void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info->op_grad_info);
-  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
     op_run_info->op_grad_info->input_value[i] = StubNodeToValue(op_run_info->op_grad_info->input_value[i]);
     // Contiguous tensor in Backend RunOp.
-    kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   }
 }
 
@@ -1085,17 +1085,17 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
 inline ValuePtr ConvertScalarToTensor(const ValuePtr &value) {
   auto fp32_imm = value->cast<FP32ImmPtr>();
   if (fp32_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(fp32_imm->value());
+    return tensor::from_scalar(fp32_imm->value());
   }
 
   auto bool_imm = value->cast<BoolImmPtr>();
   if (bool_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(bool_imm->value());
+    return tensor::from_scalar(bool_imm->value());
   }
 
   auto int64_imm = value->cast<Int64ImmPtr>();
   if (int64_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(int64_imm->value());
+    return tensor::from_scalar(int64_imm->value());
   }
 
   MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();
@@ -1227,7 +1227,7 @@ bool DataConvert::RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_ru
   const auto &input_name = input_names_vec[input_index];
   if (v->isa<tensor::Tensor>()) {
     auto tensor = v->cast<tensor::TensorPtr>();
-    if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+    if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
       return false;
     }
   }
@@ -1308,23 +1308,6 @@ void PyBoost::UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::Stu
     MS_LOG(DEBUG) << "Update StubNode abstract " << abstract->ToString();
   }
   stub_output->SetValue(real_out);
-}
-
-void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    // If execution mode is Graph Mode in MsContext, the tensor will be the input of graph which will execute in Graph
-    // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
-    for (const auto &output : op->outputs()) {
-      auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
-      if (device_address == nullptr) {
-        continue;
-      }
-      output->data_sync(true);
-    }
-  }
 }
 
 PrimitivePtr PyBoost::ConvertPrimitive(const py::object &obj) {

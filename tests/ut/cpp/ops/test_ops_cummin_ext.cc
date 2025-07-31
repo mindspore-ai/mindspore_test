@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/cummin_ext.h"
@@ -53,7 +54,7 @@ TEST_P(TestCumminExt, dyn_shape) {
 
 TEST_P(TestCumminExtSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   auto expect_shape = ShapeArray{param.x_shape, param.x_shape};
   auto expect_type = TypePtrList{param.x_type, kInt64};
 

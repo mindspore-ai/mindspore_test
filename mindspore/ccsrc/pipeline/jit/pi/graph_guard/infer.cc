@@ -27,6 +27,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/flags.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
@@ -119,7 +120,7 @@ static py::object CreateMetaTensor(const ShapeVector &shape, const mindspore::Ty
    * NOTE: here create a lazy initialized tensor, avoid allocate data
    */
   py::object tensorpyObject =
-    PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(dtype->type_id(), shape));
+    PackTensorToPyObject(tensor::from_spec(dtype->type_id(), shape, device::DeviceType::kCPU));
   return tensorpyObject;
 }
 
@@ -793,7 +794,7 @@ bool IsParameterObject(const py::handle &handle) {
 bool CheckTensorDataInitialized(const py::object &py_tensor) {
   if (tensor::IsTensorPy(py_tensor)) {
     auto tensor = tensor::ConvertToTensor(py_tensor);
-    return tensor->data().const_data() != nullptr;
+    return tensor->unsafe_data() != nullptr;
   }
 
   return false;

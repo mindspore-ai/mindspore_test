@@ -15,6 +15,7 @@
  */
 
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/reshape_strides_calc.h"
 
 namespace mindspore {
@@ -30,7 +31,7 @@ class TestViewReshape : public TestView {
 TEST_F(TestViewReshape, View) {
   auto prim = std::make_shared<Primitive>("Reshape");
   std::vector<int64_t> tensor_data = {1, 2, 3, 4, 5, 6, 7, 8};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({2, 4});
   std::vector<int64_t> input_perm_data = {1, 4, 2};
   auto input_perm = MakeValue(input_perm_data);

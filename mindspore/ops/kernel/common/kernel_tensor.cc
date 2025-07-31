@@ -123,6 +123,7 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   address_common_->pointer_ref_count_->set_ptr(device_ptr);
   auto pointer_ref_count = device_address_->address_common()->pointer_ref_count_;
   address_common_->pointer_ref_count_->set_deleter(pointer_ref_count->deleter());
+  address_common_->pointer_ref_count_->set_allocator(pointer_ref_count->allocator());
   address_common_->size_ = size;
   address_common_->format_ = GetFormatFromStrToEnum(format);
   address_common_->dtype_id_ = dtype_id;
@@ -176,7 +177,6 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
     device_address_ = other.device_address_->CloneDeviceAddress();
     address_common_ = device_address_->address_common();
     device_address_->set_user_data(other.user_data());
-    device_address_->set_heterogeneous_info(other.heterogeneous_info());
     device_address_->set_host_shape(other.host_shape());
   } else {
     address_common_ = std::make_shared<AddressCommon>(*other.address_common_);
@@ -551,18 +551,6 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   }
   host_info_->value_mutex_.lock();
 
-  if (device_address_ != nullptr && device_address_->heterogeneous_info() != nullptr &&
-      device_address_->heterogeneous_info()->host_ptr_ != nullptr) {
-    if (!host_info_->kernel_tensor_value_) {
-      host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(
-        device_address_->heterogeneous_info()->host_ptr_, address_common_->size_, type_);
-    } else {
-      host_info_->kernel_tensor_value_->SetDataPtr(device_address_->heterogeneous_info()->host_ptr_);
-      host_info_->kernel_tensor_value_->Resize(address_common_->size_);
-    }
-    return true;
-  }
-
   void *device_ptr = this->device_ptr();
   if (device_ptr == nullptr) {
     MS_LOG(INFO) << "Not malloc device memory yet, sync data from device to host side failed, size: "
@@ -597,10 +585,9 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   MS_EXCEPTION_IF_NULL(host_ptr);
 
   MS_EXCEPTION_IF_NULL(device_address_);
-  if (!device_address_->SyncDeviceToHost(host_ptr, device_ptr, address_common_->size_, address_common_->device_name_,
-                                         address_common_->device_id_, address_common_->format_,
-                                         address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
-    MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, address_common_->size_,
+                  address_common_->stream_id_)) {
+    MS_LOG(EXCEPTION) << "Sync data from device to host side failed, device type:" << device_address_->GetDeviceType();
   }
   return true;
 }

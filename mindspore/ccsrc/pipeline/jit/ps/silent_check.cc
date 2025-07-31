@@ -41,6 +41,7 @@
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "common/kernel_build_info.h"
 #include "mindapi/base/shape_vector.h"
 #include "op_def/framework_ops.h"
@@ -154,7 +155,7 @@ ParamNameValuePtr GetSfdaParamNameValue(TypeId dtype = kNumberTypeFloat32) {
   float sfda_init[kSfdaLength] = {0.0, 0.0, 0.0};
   return std::make_shared<ParamNameValue>(
     std::pair{std::string(kParamSfdaPrefix) + std::to_string(param_sfda_index++),
-              std::make_shared<tensor::Tensor>(dtype, ShapeVector{kSfdaLength}, sfda_init, sizeof(sfda_init))});
+              tensor::from_buffer(dtype, ShapeVector{kSfdaLength}, sfda_init, sizeof(sfda_init))});
 }
 
 ParamNameValuePtr GetStepParamNameValue() {
@@ -162,9 +163,9 @@ ParamNameValuePtr GetStepParamNameValue() {
   constexpr int kStepLength = 1;
   // set initial step values to 0
   int64_t step_init[kStepLength] = {0};
-  return std::make_shared<ParamNameValue>(std::pair{
-    std::string(kParamStepPrefix) + std::to_string(param_step_index++),
-    std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{kStepLength}, step_init, sizeof(step_init))});
+  return std::make_shared<ParamNameValue>(
+    std::pair{std::string(kParamStepPrefix) + std::to_string(param_step_index++),
+              tensor::from_buffer(kNumberTypeInt64, ShapeVector{kStepLength}, step_init, sizeof(step_init))});
 }
 
 AnfNodePtr CreateNormForGE(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &dout) {

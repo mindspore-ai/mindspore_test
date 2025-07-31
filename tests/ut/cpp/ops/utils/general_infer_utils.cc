@@ -27,6 +27,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "ops/op_def.h"
 #include "utils/anf_utils.h"
 #include "utils/shape_utils.h"
@@ -97,7 +98,7 @@ static ValuePtr MakeValue(const ShapeVector &shape, TypeId type, ValuePtr value,
   if (shape.empty()) {
     throw std::runtime_error("Value should be provided for scalar input '" + arg_name + "'");
   }
-  return std::make_shared<tensor::Tensor>(type, shape);
+  return tensor::from_spec(type, shape, device::DeviceType::kCPU);
 }
 
 InferInfoPtr param_to_value_info(InferInfoParam param, const std::string &op_type, const std::string &arg_name) {

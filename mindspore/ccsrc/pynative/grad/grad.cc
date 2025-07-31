@@ -26,6 +26,7 @@
 #include "ir/named.h"
 #include "ir/primal_attr.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/environ_conversion.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -149,14 +150,14 @@ ValuePtr ConvertOutputValueToTensor(const ValuePtr &v, bool dict_convert_to_tupl
   }
   if (v->isa<FloatImm>()) {
     double input_value = v->cast<FP32ImmPtr>()->value();
-    return std::make_shared<tensor::Tensor>(input_value, kFloat32);
+    return tensor::from_scalar(input_value, kFloat32);
   }
   if (v->isa<BoolImm>()) {
-    return std::make_shared<tensor::Tensor>(v->cast<BoolImmPtr>()->value(), kBool);
+    return tensor::from_scalar(v->cast<BoolImmPtr>()->value(), kBool);
   }
   if (v->isa<IntegerImm>()) {
     int64_t input = v->cast<Int64ImmPtr>()->value();
-    return std::make_shared<tensor::Tensor>(input, kInt64);
+    return tensor::from_scalar(input, kInt64);
   }
   if (v->isa<ValueDictionary>() && dict_convert_to_tuple) {
     MS_LOG(DEBUG) << "Get dict value";

@@ -17,6 +17,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
@@ -68,7 +69,7 @@ class LessEqualFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto type_id = x1_tensor->data_type();
     auto data_size = x1_tensor->DataSize();
-    auto result_tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, x1_shape);
+    auto result_tensor = tensor::from_spec(kNumberTypeBool, x1_shape, device::DeviceType::kCPU);
     auto iter = less_equal_impl_list.find(type_id);
     if (iter == less_equal_impl_list.end()) {
       MS_LOG(DEBUG) << "For '" << primitive->name() << "', 'x1' is " << x1_tensor->ToString()

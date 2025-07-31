@@ -26,6 +26,7 @@
 #include <windows.h>
 #endif
 
+#include "ir/tensor_new.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "backend/graph_compiler/transform.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
@@ -1096,8 +1097,7 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   auto strategy = runtime::GraphExecutionStrategy::kPipeline;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0 ||
-      context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     strategy = runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
@@ -1175,7 +1175,8 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
     MS_EXCEPTION_IF_NULL(graph);
     if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(), [&](const CNodePtr &kernel) {
           MS_EXCEPTION_IF_NULL(kernel);
-          return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
+          return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute" ||
+                 common::AnfAlgo::GetCNodeName(kernel) == "JoinedStr";
         })) {
       MS_LOG(INFO) << "Disable pynative and graph pipeline for graph: " << graph_compiler_info->name_
                    << ", because the graph contains PyExecute op.";
@@ -1374,7 +1375,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
     // Create split tensor.
     auto split_tensor_shape = BaseShapeToShape((*tensor_shape)[i]);
     auto split_tensor_size = SizeOf(split_tensor_shape) * GetTypeByte(TypeIdToType(tensor_type_id));
-    auto split_tensor = std::make_shared<tensor::Tensor>(tensor_type_id, split_tensor_shape);
+    auto split_tensor = tensor::from_spec(tensor_type_id, split_tensor_shape, device::DeviceType::kNone);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
@@ -1402,9 +1403,10 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
                                  << split_tensor_size << ", copy offset size:" << copy_offset_size
                                  << ", total size:" << tensor_device_size;
     }
-    if (!split_device_tensor->SyncDeviceToDevice(split_tensor_shape, split_tensor_size, device_tensor->type_id(),
-                                                 AddressOffset(tensor_device_ptr, copy_offset_size),
-                                                 device_tensor->format())) {
+    if (!device_context->device_res_manager_->SyncAllStreams() ||
+        !device_context->device_res_manager_->Copy(
+          split_device_tensor->GetMutablePtr(), AddressOffset(tensor_device_ptr, copy_offset_size), split_tensor_size,
+          device::CopyType::kD2D, split_device_tensor->stream_id())) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Sync device to device failed, device type:"
                                  << split_device_tensor->GetDeviceType() << ", copy size:" << split_tensor_size
                                  << ", output node: Split tuple outputs.";
@@ -1886,9 +1888,6 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   MS_LOG(INFO) << "Status record: start run actor: " << graph_compiler_info.name_;
   uint64_t start_time_ = profiler::GetClockSyscnt();
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
-  if (graph_compiler_info.exist_flatten_concat_) {
-    input_tensors = GetRunGraphInputs(graph_compiler_info, inputs);
-  }
   // Release python gil.
   mindspore::ScopedLongRunning long_running;
   // Run actor DAG.

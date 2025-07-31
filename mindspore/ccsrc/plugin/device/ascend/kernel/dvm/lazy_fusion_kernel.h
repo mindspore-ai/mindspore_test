@@ -23,6 +23,7 @@
 #include <queue>
 #include <mutex>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
@@ -93,9 +94,9 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   void Output(const TensorPtr &tensor, dvm::NDObject *obj);
 
   TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
-    auto tensor = std::make_shared<tensor::Tensor>(dtype, shape);
+    auto tensor = tensor::from_spec(dtype, shape, device::DeviceType::kNone);
     runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context_, stream_id_, tensor,
-                                                           LongToSize(tensor->data().nbytes()));
+                                                           LongToSize(tensor->DataNBytes()));
     Output(tensor, obj);
     return tensor;
   }

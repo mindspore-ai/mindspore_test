@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <memory>
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "infer/print.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
@@ -213,10 +214,10 @@ std::string PrintGpuKernelMod::GetString(size_t tensor_index, size_t original_in
   TypeId type_id = std::get<1>(input_info_[tensor_index]);
   (void)std::transform(input_shape_[tensor_index].begin(), input_shape_[tensor_index].end(), std::back_inserter(shape),
                        [](const size_t &value) { return static_cast<int64_t>(value); });
-  Tensor current_tensor(type_id, shape, input_host_data, size_in_byte);
+  auto current_tensor = tensor::from_buffer(type_id, shape, input_host_data, size_in_byte);
   if (value_type_.count(original_index) > 0) {
     // not a tensor
-    auto out = current_tensor.data().ToString(type_id, shape, true);
+    auto out = current_tensor->DataToString(true);
     // need check is not list
     if (value_type_[original_index] != 0 && list_pos_[original_index] == 0) {
       // tuple, not scalar
@@ -225,7 +226,7 @@ std::string PrintGpuKernelMod::GetString(size_t tensor_index, size_t original_in
     }
     return out;
   }
-  return current_tensor.ToStringNoLimit();
+  return current_tensor->ToStringNoLimit();
 }
 
 std::vector<KernelAttr> PrintGpuKernelMod::GetOpSupport() {

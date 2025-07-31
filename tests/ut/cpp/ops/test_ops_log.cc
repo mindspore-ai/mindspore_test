@@ -15,6 +15,7 @@
  */
 #include <cmath>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/log.h"
 #include "ops/test_ops.h"
@@ -29,14 +30,14 @@ namespace {
 template <typename T>
 tensor::TensorPtr CreateLogTensor(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+  auto tensor = tensor::from_buffer(type, shape, data_ptr, type);
   return tensor;
 }
 
 tensor::TensorPtr CreateLogBoolTensor() {
   bool value[4] = {true, true, true, true};
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
+  auto tensor = tensor::from_buffer(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
   return tensor;
 }
 }  // namespace

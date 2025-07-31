@@ -352,9 +352,9 @@ TEST_F(TestMindApi, test_tensor_api) {
   ASSERT_EQ(tensor->Size(), 24);
 
   ShapeVector shape2{2, 3};
-  tensor->set_data_type(kNumberTypeInt32);
+  tensor->set_data_type(kNumberTypeFloat16);
   tensor->set_shape(shape2);
-  ASSERT_EQ(tensor->data_type(), kNumberTypeInt32);
+  ASSERT_EQ(tensor->data_type(), kNumberTypeFloat16);
   ASSERT_EQ(tensor->shape(), shape2);
 
   // TensorType.

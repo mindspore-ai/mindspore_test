@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/shape_utils.h"
@@ -1714,7 +1715,7 @@ void AnfRuntimeAlgorithm::InferShape(const CNodePtr &node, std::map<uint32_t, te
         MS_EXCEPTION_IF_NULL(tensor_ptr);
         if (!SkipDataSync(node, *depend_tensors)) {
           // sync data from device to host
-          tensor_ptr->data_sync();
+          tensor_ptr = tensor_ptr->cpu();
         }
         // cppcheck-suppress unreadVariable
         auto lock = AnfUtils::GetAbstractLock(real_input.get());
@@ -2390,12 +2391,12 @@ void SetScalarToTensor(const std::vector<ValuePtr> &values, const tensor::Tensor
   const auto &tensor_type_id = tensor->data_type();
   const auto dst_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(dst_ptr);
-  MS_LOG(DEBUG) << "Set scalar tuple to tensor, dst size:" << tensor->data().nbytes();
+  MS_LOG(DEBUG) << "Set scalar tuple to tensor, dst size:" << tensor->DataNBytes();
   for (size_t i = 0; i < values.size(); ++i) {
     // Check mem size.
-    if (SizeToLong(abstract::TypeIdSize(tensor_type_id) * (i + 1)) > tensor->data().nbytes()) {
+    if (abstract::TypeIdSize(tensor_type_id) * (i + 1) > tensor->DataNBytes()) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Value size:" << values.size()
-                                 << " type:" << tensor_type_id << " out of range:" << tensor->data().nbytes();
+                                 << " type:" << tensor_type_id << " out of range:" << tensor->DataNBytes();
     }
     const auto &value = values[i];
     MS_EXCEPTION_IF_NULL(value);
@@ -2507,19 +2508,20 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
     const auto &single_shape = std::make_shared<abstract::Shape>(single_shape_vector);
     (void)shape_vector.insert(shape_vector.end(), single_shape_vector.begin(), single_shape_vector.end());
     const auto &shape = std::make_shared<abstract::Shape>(shape_vector);
-    auto new_tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+    auto new_tensor = tensor::from_spec(type_id, shape_vector, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(new_tensor);
     const auto dst_ptr = new_tensor->data_c();
     MS_EXCEPTION_IF_NULL(dst_ptr);
-    MS_LOG(DEBUG) << "Copy start, dst size:" << new_tensor->data().nbytes();
+    MS_LOG(DEBUG) << "Copy start, dst size:" << new_tensor->DataNBytes();
     for (size_t i = 0; i < values.size(); ++i) {
       const auto &sub_value = values[i];
       MS_EXCEPTION_IF_NULL(sub_value);
       const auto &src_tensor = sub_value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(src_tensor);
-      MS_EXCEPTION_IF_NULL(src_tensor->data_c());
-      auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size,
-                          static_cast<size_t>(new_tensor->data().nbytes()), src_tensor->data_c(), size);
+      auto src_cpu_tensor = src_tensor->cpu();
+      MS_EXCEPTION_IF_NULL(src_cpu_tensor->data_c());
+      auto ret = memcpy_s((reinterpret_cast<char *>(dst_ptr)) + i * size, static_cast<size_t>(new_tensor->DataNBytes()),
+                          src_cpu_tensor->data_c(), size);
       if (ret != EOK) {
         MS_LOG(INTERNAL_EXCEPTION)
           << "#dmsg#Runtime error info:#dmsg#Failed to copy data into tensor, memcpy_s errorno: " << ret;
@@ -2533,7 +2535,7 @@ tensor::TensorPtr AnfRuntimeAlgorithm::SequenceToTensor(const ValuePtr &value) {
   }
 
   // Create the tensor.
-  auto tensor = std::make_shared<tensor::Tensor>(values[0]->type()->type_id(), shape_vector);
+  auto tensor = tensor::from_spec(values[0]->type()->type_id(), shape_vector, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   SetScalarToTensor(values, tensor);
   // Build the tuple shape and set into tensor.
@@ -2585,7 +2587,7 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     (void)flatten_tensors->emplace_back(ScalarToTensor(utils::cast<ScalarPtr>(arg)));
   } else if (utils::isa<Monad>(arg)) {
     // If value is a monad, replace it with an unused tensor.
-    flatten_tensors->push_back(std::make_shared<tensor::Tensor>(int64_t(0), kBool));
+    flatten_tensors->push_back(tensor::from_scalar(int64_t(0), kBool));
   } else if (utils::isa<ValueSequencePtr>(arg)) {
     auto value_sequence = utils::cast<ValueSequencePtr>(arg);
     MS_EXCEPTION_IF_NULL(value_sequence);
@@ -2884,7 +2886,12 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     delete[] buf;
     buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
   }
-  device_address->SyncDeviceToHost(size, buf);
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->Copy(buf, device_address->GetMutablePtr(), size, device::CopyType::kD2H, device_address->stream_id());
+  }
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
   if (device_address->type_id() == TypeId::kNumberTypeInt32) {

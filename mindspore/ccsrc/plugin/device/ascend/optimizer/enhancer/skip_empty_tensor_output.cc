@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
@@ -39,7 +40,7 @@ size_t GetAllEmptyTensorOutputNum(const AnfNodePtr &node) {
 
 AnfNodePtr CreateEmptyTensorValueNode(const KernelGraphPtr &graph, const TypeId &type_id,
                                       const ShapeVector &output_shape) {
-  auto empty_tensor = std::make_shared<tensor::Tensor>(type_id, output_shape);
+  auto empty_tensor = tensor::from_spec(type_id, output_shape, device::DeviceType::kNone);
   return graph->NewValueNode(empty_tensor);
 }
 

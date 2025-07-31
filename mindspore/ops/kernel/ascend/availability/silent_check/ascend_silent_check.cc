@@ -33,6 +33,7 @@
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/max.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/norm.h"
@@ -423,11 +424,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
 
 DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const TensorPtr &input_grad) {
   auto state = std::make_shared<DynamicCheckState>();
-  state->step = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1});
+  state->step = tensor::from_spec(kNumberTypeInt64, ShapeVector{1}, device::DeviceType::kCPU);
   if (HasApiSilentCheckV3()) {
-    state->avg = std::make_shared<tensor::Tensor>(input_grad->data_type(), ShapeVector{1});
+    state->avg = tensor::from_spec(input_grad->data_type(), ShapeVector{1}, device::DeviceType::kCPU);
   } else {
-    state->sfda = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, ShapeVector{3});
+    state->sfda = tensor::from_spec(kNumberTypeFloat32, ShapeVector{3}, device::DeviceType::kCPU);
   }
   return state;
 }

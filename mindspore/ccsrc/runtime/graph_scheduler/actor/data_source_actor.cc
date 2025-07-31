@@ -215,7 +215,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   MS_EXCEPTION_IF_NULL(host_tensor);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(context);
-  auto device_tensor = kernel_tensor->device_address().get();
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // No used device address need skip.
   if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
@@ -230,12 +230,14 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!Copy(device_tensor, tensor_device_address.get())) {
+    if (!SyncAllStreamForDeviceAddress(
+          device_tensor->GetDeviceType() == device::DeviceType::kCPU ? tensor_device_address : device_tensor) ||
+        !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
     return;
   }
-  if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+  if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
     MS_LOG(INFO) << "Empty tuple sync";
     return;
   }
@@ -249,22 +251,13 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   }
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
-    if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                          host_tensor->data_ptr()->data())) {
-      std::stringstream ofs;
-      ofs << "AsyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-          << " host ptr:" << host_tensor->data_ptr();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+    if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!device_tensor->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node_index.first, node_index.second),
-                                         LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                         host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
-      std::stringstream ofs;
-      ofs << "SyncHostToDevice failed for device tensor:" << device_tensor->ToString()
-          << " host ptr:" << host_tensor->data_ptr() << " type:" << host_tensor->data_type()
-          << " node:" << node_index.first->DebugString();
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+        !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   }
 

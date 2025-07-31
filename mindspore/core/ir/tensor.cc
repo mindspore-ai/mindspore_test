@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@
 #include <exception>
 #include <iomanip>
 #include <functional>
-#include <memory>
 #include <utility>
 #include <algorithm>
 #include <map>
-#include <vector>
 #include "mindapi/base/type_id.h"
 #include "abstract/utils.h"
 #include "abstract/abstract_value.h"
@@ -35,6 +33,9 @@
 #include "utils/system/env.h"
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
+#include "ir/device_address_maker.h"
+#include "ir/tensor_new.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace tensor {
@@ -44,125 +45,8 @@ static uint64_t MakeId() {
   return last_id.fetch_add(1, std::memory_order_relaxed);
 }
 
-static TypeId TypeIdOf(const TypePtr &data_type, TypeId defaultTypeId) {
-  return data_type ? data_type->type_id() : defaultTypeId;
-}
-
 std::unique_ptr<DeviceInfo> CopyDeviceInfo(const std::unique_ptr<DeviceInfo> &device_info) {
   return device_info == nullptr ? nullptr : std::make_unique<DeviceInfo>(device_info);
-}
-
-// Tensor chunk data.
-template <typename T>
-class TensorChunkData : public TensorDataImpl<T> {
- public:
-  explicit TensorChunkData(size_t size) : TensorDataImpl<T>(ShapeVector{static_cast<int64_t>(size)}) {}
-
-  ~TensorChunkData() override = default;
-
-  bool has_sub_data() const override { return true; }
-};
-
-// Tensor compression data.
-template <typename T>
-class CompressionTensorData : public TensorDataImpl<T> {
- public:
-  explicit CompressionTensorData(size_t size) : TensorDataImpl<T>(ShapeVector{static_cast<int64_t>(size)}) {}
-
-  ~CompressionTensorData() override = default;
-};
-
-// TensorSubData is the base class to provide tensor data as a segment from an owner tensor data.
-class TensorSubData : public TensorData {
- public:
-  TensorSubData(const TensorPtr &data_owner, size_t offset, size_t data_size, size_t ndim)
-      : data_owner_(data_owner), data_offset_(offset), data_size_(data_size), ndim_(ndim) {}
-
-  ~TensorSubData() override = default;
-
-  ssize_t size() const override { return static_cast<ssize_t>(data_size_); }
-
-  ssize_t nbytes() const override { return size() * itemsize(); }
-
-  ssize_t ndim() const override { return static_cast<ssize_t>(ndim_); }
-
-  bool is_sub_data() const override { return true; }
-
-  bool has_sub_data() const override { return false; }
-
-  void *data() override {
-    // Set data initialized if data() is called.
-    data_initialized_ = true;
-    auto start = static_cast<uint8_t *>(data_owner_->data().data());
-    return static_cast<void *>(start + data_offset_);
-  }
-
-  const void *const_data() const override {
-    if (!data_initialized_) {
-      // Return nullptr if data not initialized.
-      return nullptr;
-    }
-    auto start = static_cast<uint8_t *>(data_owner_->data().data());
-    return static_cast<void *>(start + data_offset_);
-  }
-
-  // Get the owner Tensor.
-  const TensorPtr &GetOwner() const { return data_owner_; }
-
-  // Data offset in bytes.
-  size_t data_offset() const { return data_offset_; }
-
- protected:
-  const TensorPtr data_owner_;
-  size_t data_offset_{0};
-  size_t data_size_{0};
-  size_t ndim_{0};
-  bool data_initialized_{false};
-};
-
-// TensorSubDataImpl implements methods that rely on T.
-template <typename T>
-class TensorSubDataImpl : public TensorSubData {
- public:
-  TensorSubDataImpl(const TensorPtr &data_owner, size_t offset, size_t data_size, size_t ndim)
-      : TensorSubData(data_owner, offset, data_size, ndim) {}
-
-  ~TensorSubDataImpl() override = default;
-
-  ssize_t itemsize() const override { return static_cast<ssize_t>(sizeof(T)); }
-
-  std::string ToString(TypeId type, const ShapeVector &shape, bool use_comma) const override {
-    TensorStringifier<T> stringifier{static_cast<const T *>(const_data()), data_size_, ndim_};
-    return stringifier.ToString(type, shape, use_comma);
-  }
-};
-
-TensorDataPtr MakeTensorSubData(const TensorPtr &owner, size_t offset, const TensorDataPtr &data) {
-  if (data->nbytes() == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Tensor data size is 0.";
-  }
-  auto sub_data =
-    tensor::MakeTensorData<TensorSubDataImpl>(owner->data_type(), owner, offset, data->size(), data->ndim());
-  // If tensor data is initialized, copy it.
-  if (data->const_data() != nullptr) {
-    CopyTensorData(sub_data, data);
-  }
-  return sub_data;
-}
-
-// TensorChunk holds info for a chunk.
-struct TensorChunk {
-  size_t size{0};                  // chunk size in the number of elements.
-  size_t bytes{0};                 // chunk size in bytes.
-  std::vector<TensorPtr> tensors;  // tensors belong to this chunk.
-};
-
-static TypeId normalize_type(TypeId type_id) {
-  if (type_id == kNumberTypeFloat) {
-    // kNumberTypeFloat is an alias of kNumberTypeFloat32.
-    return kNumberTypeFloat32;
-  }
-  return type_id;
 }
 
 Tensor::Tensor(const Tensor &tensor)
@@ -173,7 +57,6 @@ Tensor::Tensor(const Tensor &tensor)
       version_(tensor.version_),
       device_sync_(tensor.device_sync_),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
-      data_(tensor.data_),
       base_shape_ptr_(tensor.base_shape_ptr_),
       cache_tensor_ptr_(tensor.cache_tensor_ptr_),
       hashmap_tensor_ptr_(tensor.hashmap_tensor_ptr_),
@@ -195,9 +78,9 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       id_(tensor.data_type_ != data_type ? MakeId() : tensor.id_),
       tensor_name_(tensor.tensor_name_),
       version_(tensor.version_),
-      device_sync_(tensor.device_sync_),
+      device_sync_(MakeDeviceAddress(data_type, tensor.shape_,
+                                     MakeTensorData(data_type, tensor.shape_, tensor.data_c(), tensor.data_type_))),
       auto_grad_meta_data_(tensor.auto_grad_meta_data_),
-      data_(MakeTensorData(data_type, tensor.shape_, tensor.data_->data(), tensor.data_type_)),
       base_shape_ptr_(tensor.base_shape_ptr_),
       cache_tensor_ptr_(tensor.cache_tensor_ptr_),
       hashmap_tensor_ptr_(tensor.hashmap_tensor_ptr_),
@@ -210,7 +93,7 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
       copy_done_flag_(tensor.copy_done_flag_) {
-  user_data_ = tensor.user_data_;
+  MS_LOG(WARNING) << "Changing tensor data type is unsafe!";
 }
 
 Tensor &Tensor::operator=(const Tensor &tensor) {
@@ -218,7 +101,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
     return *this;
   }
   is_forward_output_ = tensor.is_forward_output_;
-  data_ = tensor.data_;
   id_ = tensor.id_;
   sync_status_ = tensor.sync_status_;
   version_ = tensor.version_;
@@ -245,128 +127,23 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   return *this;
 }
 
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, TensorDataPtr data)
-    : MetaTensor(data_type, shape), id_(MakeId()), data_(std::move(data)) {}
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_address)
+    : MetaTensor(data_type, shape), id_(MakeId()), device_sync_(std::move(device_address)) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape)) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape, data, data_len)) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type)
-    : Tensor(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type)) {}
-
-Tensor::Tensor(const std::vector<int64_t> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
-
-Tensor::Tensor(const std::vector<int32_t> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
-
-Tensor::Tensor(const std::vector<double> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
-
-Tensor::Tensor(const std::vector<float> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, shape_, input.data(), input.size())) {}
-
-Tensor::Tensor(int64_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(int32_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(int16_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt16), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(int8_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt8), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(double input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(float input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(float16 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat16), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(float8_e5m2 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E5M2), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(float8_e4m3fn input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E4M3FN), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(hifloat8 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeHiFloat8), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-#ifndef KERNEL_EXECUTOR_ANDROID
-Tensor::Tensor(bfloat16 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeBFloat16), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-#endif
-Tensor::Tensor(uint64_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt64), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(uint32_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt32), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(uint16_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt16), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(uint8_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt8), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(bool input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeBool), {}),
-      id_(MakeId()),
-      data_(MakeTensorData(data_type_, ShapeVector{}, input)) {}
-
-Tensor::Tensor(TypeId data_type, size_t data_size)
-    : Tensor(data_type, ShapeVector{static_cast<int64_t>(data_size)},
-             MakeTensorData<TensorChunkData>(data_type, data_size)) {}
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape)) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
-    : Tensor(origin_data_type, shape, MakeTensorData<CompressionTensorData>(kNumberTypeInt8, compression_data_size)) {
+    : Tensor(
+        origin_data_type, shape,
+        MakeDeviceAddress(kNumberTypeInt8, ShapeVector{static_cast<int64_t>(compression_data_size)},
+                          MakeTensorData(kNumberTypeInt8, ShapeVector{static_cast<int64_t>(compression_data_size)}))) {
   compression_type_ = compression_type;
 }
+
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, bool ref_mem, void *data)
+    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, ref_mem, data))) {}
 
 Tensor::~Tensor() {
   try {
@@ -378,10 +155,10 @@ Tensor::~Tensor() {
 }
 
 bool Tensor::operator==(const Tensor &tensor) const {
-  return (&tensor == this || (MetaTensor::operator==(tensor) && data_ == tensor.data_));
+  return (&tensor == this || (MetaTensor::operator==(tensor) && device_sync_ == tensor.device_sync_));
 }
 
-// Assign value to this tensor.
+// assign value to this tensor
 Tensor &Tensor::AssignValue(const Tensor &tensor) {
   if (this != &tensor) {
     ExecuteLazyTask();
@@ -392,18 +169,10 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     is_forward_output_ = tensor.is_forward_output_;
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
-    MS_EXCEPTION_IF_NULL(data_);
     if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {
       MS_LOG(EXCEPTION)
         << "Can not modify tensor id of input tensor from network by assign value, this may caused by slice op, "
            "please check your code to avoid this error!";
-    }
-    if (data_->is_sub_data()) {
-      // If tensor data is sub data, we should keep data
-      // memory address unchange and copy data to it.
-      CopyTensorData(data_, tensor.data_);
-    } else {
-      data_ = tensor.data_;
     }
     if (!is_parameter_) {
       id_ = tensor.id_;
@@ -442,6 +211,21 @@ abstract::AbstractBasePtr Tensor::ToAbstract() {
   return abs_tensor;
 }
 
+bool TensorEqual(const Tensor &self, const Tensor &other) {
+  auto self_cpu = self.cpu();
+  auto other_cpu = other.cpu();
+  auto self_ptr = static_cast<const uint8_t *>(self_cpu->data_c());
+  auto other_ptr = static_cast<const uint8_t *>(other_cpu->data_c());
+  if (self_ptr == nullptr || other_ptr == nullptr) {
+    return false;
+  }
+  if (self_ptr == other_ptr) {
+    return true;
+  }
+  return self.DataNDim() == other.DataNDim() && self.DataNBytes() == other.DataNBytes() &&
+         std::equal(self_ptr, self_ptr + self.DataNBytes(), other_ptr);
+}
+
 bool Tensor::ValueEqual(const Tensor &tensor) const {
   if (is_parameter_ != tensor.is_parameter_) {
     return false;
@@ -449,17 +233,28 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
   if (is_parameter_ && param_info_->name() != tensor.param_info_->name()) {
     return false;
   }
-  return (&tensor == this || (MetaTensor::operator==(tensor) && data_->equals(*tensor.data_)));
+  return (&tensor == this || (MetaTensor::operator==(tensor) && TensorEqual(*this, tensor)));
 }
 
 TypeId Tensor::set_data_type(TypeId data_type) {
   if (data_type != data_type_) {
-    MS_EXCEPTION_IF_NULL(data_);
-    if (device_sync_ != nullptr) {
-      data_sync();
-      device_sync_ = nullptr;
+    if (device_sync_ == nullptr) {
+      // For Parameter with initializer.
+      // The Parameter is not initialized yet.
+      id_ = MakeId();
+      return MetaTensor::set_data_type(data_type);
     }
-    data_ = MakeTensorData(data_type, shape_, data_->data(), data_type_);
+
+    if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+      auto cpu_tensor = cpu();
+      device_sync_ = cpu_tensor->device_address();
+    }
+    auto new_dtype_address = MakeDeviceAddress(data_type, shape_, true);
+    MS_EXCEPTION_IF_NULL(new_dtype_address);
+    if (!SyncCopy(new_dtype_address, device_sync_, device_sync_->stream_id())) {
+      MS_LOG(EXCEPTION) << "Sync copy failed";
+    }
+    device_sync_ = new_dtype_address;
     id_ = MakeId();
     return MetaTensor::set_data_type(data_type);
   }
@@ -467,9 +262,21 @@ TypeId Tensor::set_data_type(TypeId data_type) {
 }
 
 size_t Tensor::set_shape(const ShapeVector &shape) {
-  if (DataSize() != SizeOf(shape)) {
-    data_ = MakeTensorData(data_type_, shape);
+  bool is_shape_unknown = std::any_of(shape_.begin(), shape_.end(), [](int64_t value) { return value < 0; });
+  auto cur_data_size = DataSize();
+  auto incoming_size = SizeOf(shape);
+  if (!is_shape_unknown && cur_data_size < incoming_size) {
+    // For dynamic shape scene.
+    MS_LOG(WARNING) << "It's not recommended to set " << ToString() << " shape to " << shape;
+    if (device_sync_ != nullptr) {
+      auto incoming_bytes = incoming_size * DataItemSize();
+      if (incoming_bytes > device_sync_->GetSize()) {
+        MS_LOG(WARNING) << "Cannot set " << ToString() << " shape to " << shape << ". The data size is "
+                        << device_sync_->GetSize();
+      }
+    }
   }
+  MS_LOG(DEBUG) << "Change shape of Tensor " << ToString() << " to " << shape;
   return MetaTensor::set_shape(shape);
 }
 
@@ -486,7 +293,7 @@ std::string Tensor::ToStringInternal(size_t limit_size) const {
   buf << "Tensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString() << ", value=";
   if (limit_size == 0 || DataSize() < limit_size) {
     // Only print data for small tensor.
-    buf << ((data().ndim() > 1) ? "\n" : "") << data().ToString(data_type_, shape_, false);
+    buf << ((DataDim() > 1) ? "\n" : "") << DataToString(false);
   } else {
     buf << "[...]";
   }
@@ -509,11 +316,11 @@ std::string Tensor::ToStringRepr() const {
   auto dtype = Dtype();
   MS_EXCEPTION_IF_NULL(dtype);
   buf << "Tensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString()
-      << ", value=" << ((data().ndim() > 1) ? '\n' : ' ') << data().ToString(data_type_, shape_, true) << ')';
+      << ", value=" << ((DataNDim() > 1) ? '\n' : ' ') << DataToString(true) << ')';
   return buf.str();
 }
 
-DeviceSyncPtr Tensor::device_address() const { return device_sync_; }
+const DeviceSyncPtr &Tensor::device_address() const { return device_sync_; }
 
 void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
@@ -525,7 +332,7 @@ void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_upda
   }
 }
 
-const TensorStorageInfoPtr Tensor::storage_info() const {
+TensorStorageInfoPtr Tensor::storage_info() const {
   if (device_sync_ != nullptr) {
     return device_sync_->GetTensorStorageInfo();
   }
@@ -586,39 +393,82 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
   return contiguous_device_address;
 }
 
-void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const {
-  if (need_wait) {
-    ExecuteLazyTask();
+void *Tensor::data_c() const {
+  if (device_sync_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot access uninitialized tensor data";
+  }
+  if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(EXCEPTION) << "Can't access data on " << device::GetDeviceNameByType(device_sync_->GetDeviceType());
   }
 
-  if (device_sync_ == nullptr || device_sync_->GetMutablePtr() == nullptr) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(data_);
-  if (data_->is_sub_data()) {
-    return;
-  }
-
-  std::vector<size_t> shape_tmp;
-  (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), LongToSize);
-  auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
-  auto contiguous_address = CallContiguousCallback();
-  auto address = device_sync_;
-  if (contiguous_address != nullptr) {
-    address = contiguous_address;
-    if (inpalce) {
-      device_sync_ = contiguous_address;
+  // Load data from file
+  if (!offload_file_.empty()) {
+    auto fs = mindspore::system::Env::GetFileSystem();
+    MS_EXCEPTION_IF_NULL(fs);
+    if (fs->FileExist(offload_file_)) {
+      auto file = fs->CreateWriteFile(offload_file_, "r+");
+      if (device_sync_->GetMutablePtr() == nullptr) {
+        device_sync_ = MakeDeviceAddress(data_type_, shape_, true);
+      }
+      MS_EXCEPTION_IF_NULL(file);
+      bool success = file->PRead(device_sync_->GetMutablePtr(), DataNBytes(), 0);
+      if (!success) {
+        MS_LOG(WARNING) << "Tensor load data from file: " << offload_file_ << " failed!";
+      }
+      if (!file->Close()) {
+        MS_LOG(WARNING) << "Close tensor file: " << offload_file_ << " failed!";
+      }
+    } else {
+      MS_LOG(WARNING) << "Invalid tensor file path: " << offload_file_;
     }
   }
 
-  if (size != 0 && address->GetMutablePtr() != nullptr &&
-      !address->SyncDeviceToHost(shape(), size, data_type(), data_c(), sync_on_demand)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
+  return device_sync_->GetMutablePtr();
+}
+
+TensorPtr Tensor::cpu() const {
+  ExecuteLazyTask();
+  DeviceSyncPtr device_address;
+  auto contiguous_address = CallContiguousCallback();
+  if (contiguous_address != nullptr) {
+    device_address = contiguous_address;
+  } else {
+    device_address = device_sync_;
   }
-  if (!data_->file_path().empty()) {
-    device_sync_ = nullptr;
+  if (device_address == nullptr) {
+    MS_LOG(WARNING) << "Can't do cpu() for uninitialized tensor " << ToString();
+    return std::make_shared<Tensor>(data_type_, shape_, MakeDeviceAddress(data_type_, shape_, true));
   }
-  sync_status_ = kNeedSyncHostToDevice;
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU && data_type_ == device_address->type_id()) {
+    return std::make_shared<Tensor>(data_type_, shape_, device_address);
+  }
+  auto dst = MakeDeviceAddress(data_type_, shape_, true);
+  MS_EXCEPTION_IF_NULL(dst);
+  if (!SyncCopy(dst, device_address, CurrentStream::id())) {
+    MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
+  }
+  return std::make_shared<Tensor>(data_type_, shape_, dst);
+}
+
+std::string Tensor::DataToString(bool use_comma) const {
+  if (device_sync_ == nullptr) {
+    return "<uninitialized>";
+  }
+  if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
+    return "<" + device::GetDeviceNameByType(device_sync_->GetDeviceType()) + ">";
+  }
+  if (device_sync_->has_data()) {
+    const auto &data = device_sync_->data();
+    return data->ToString(data_type_, shape_, false);
+  }
+  return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
+}
+
+const void *Tensor::unsafe_data() const {
+  if (device_sync_ == nullptr) {
+    return nullptr;
+  }
+  return device_sync_->GetMutablePtr();
 }
 
 void Tensor::ExecuteUpdateValueCallback() const {
@@ -632,34 +482,7 @@ void Tensor::SetDeviceInfo(const std::string &format, const TypePtr &data_type, 
   set_device_info(info);
 }
 
-void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_wait) const {
-  if (need_wait) {
-    ExecuteLazyTask();
-  }
-  if (device_sync == nullptr) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(data_);
-  if (data_->is_sub_data()) {
-    return;
-  }
-
-  std::vector<size_t> shape_tmp;
-  (void)std::transform(shape().begin(), shape().end(), std::back_inserter(shape_tmp), IntToSize);
-  auto size = abstract::ShapeSize(shape_tmp) * abstract::TypeIdSize(data_type());
-  auto contiguous_address = CallContiguousCallback();
-  if (contiguous_address == nullptr) {
-    if (size != 0 && !device_sync->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
-      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
-    }
-  } else {
-    if (size != 0 && !contiguous_address->SyncDeviceToHost(shape(), size, data_type(), data_c())) {
-      MS_LOG(INTERNAL_EXCEPTION) << "SyncDeviceToHost failed.";
-    }
-  }
-
-  sync_status_ = kNeedSyncHostToDevice;
-}
+void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_wait) const {}
 
 bool Tensor::Offload(const std::string &file_path) {
   if (file_path.empty()) {
@@ -668,12 +491,10 @@ bool Tensor::Offload(const std::string &file_path) {
 
   auto fs = mindspore::system::Env::GetFileSystem();
   MS_EXCEPTION_IF_NULL(fs);
-  MS_EXCEPTION_IF_NULL(data_);
-  auto data_ptr = data_->data();
   auto file = fs->CreateWriteFile(file_path);
   MS_EXCEPTION_IF_NULL(file);
   TempFileManager::GetInstance().Register(file_path);
-  bool success = file->PWrite(data_ptr, LongToSize(data_->nbytes()), 0);
+  bool success = file->PWrite(data_c(), DataNBytes(), 0);
   if (!file->Close()) {
     MS_LOG(WARNING) << "Close tensor file: " << file_path << " failed!";
   }
@@ -683,126 +504,16 @@ bool Tensor::Offload(const std::string &file_path) {
   }
 
   if (file_path == GetOffloadFilePath()) {
-    data_->set_file_path("");
+    offload_file_.clear();
   }
 
-  data_ = tensor::MakeTensorData(data_type_, shape_);
-  MS_EXCEPTION_IF_NULL(data_);
-  data_->set_file_path(file_path);
+  // Make CPU device address and not init the data in device address.
+  device_sync_ = MakeDeviceAddress(data_type_, shape_, false);
+  offload_file_ = file_path;
   return true;
 }
 
-const std::string Tensor::GetOffloadFilePath() const {
-  if (data_ == nullptr) {
-    return "";
-  }
-  return data_->file_path();
-}
-
-std::pair<void *, size_t> Tensor::GetChunkOffset() const {
-  // Get sub-data.
-  auto sub_data = std::dynamic_pointer_cast<TensorSubData>(data_ptr());
-  if (sub_data == nullptr) {
-    return {nullptr, 0};
-  }
-  // Get owner tensor from sub-data.
-  auto owner_tensor = sub_data->GetOwner();
-  MS_EXCEPTION_IF_NULL(owner_tensor);
-  return {owner_tensor->data_c(), sub_data->data_offset()};
-}
-
-static std::map<TypeId, std::vector<TensorChunk>> GroupingTensors(const TensorPtrList &tensors, size_t fusion_size) {
-  // Use std::map to keep order by type id.
-  std::map<TypeId, std::vector<TensorChunk>> group_info;
-  for (auto &tensor : tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->data().nbytes());
-    if ((fusion_size != 0) && (tensor_bytes > fusion_size)) {
-      MS_LOG(EXCEPTION) << "Fusion size " << fusion_size << " is too small for a tensor size " << tensor_bytes << ".";
-    }
-    auto &chunks = group_info[normalize_type(tensor->data_type())];
-    if (chunks.empty()) {
-      (void)chunks.emplace_back();
-    }
-    if ((fusion_size != 0) && (chunks.back().bytes + tensor_bytes > fusion_size)) {
-      (void)chunks.emplace_back();
-    }
-    auto &chunk = chunks.back();
-    chunk.size += tensor->DataSize();
-    chunk.bytes += tensor_bytes;
-    (void)chunk.tensors.emplace_back(tensor);
-  }
-  return group_info;
-}
-
-TensorPtrList Tensor::FlattenTensors(const TensorPtrList &tensors, size_t fusion_size) {
-  // Result tensor list.
-  TensorPtrList result_list;
-  // Grouping tensors by data type and fusion size.
-  auto group_info = GroupingTensors(tensors, fusion_size);
-  // Create chunk tensors and copy data to them.
-  for (auto &type_group : group_info) {
-    auto chunk_dtype = normalize_type(type_group.first);
-    for (auto &chunk : type_group.second) {
-      // Create chunk thensor as a lazy initialized tensor, the tensor data
-      // will be allocated when we begin to copy small tensors data into it.
-      auto chunk_tensor = std::make_shared<Tensor>(chunk_dtype, chunk.size);
-      // Reset and copy tensors data.
-      size_t offset = 0;
-      for (auto &tensor : chunk.tensors) {
-        auto sub_data = MakeTensorSubData(chunk_tensor, offset, tensor->data_ptr());
-        offset += static_cast<size_t>(sub_data->nbytes());
-        tensor->set_data(sub_data);
-      }
-      // Save chunk tensor to result list.
-      (void)result_list.emplace_back(std::move(chunk_tensor));
-    }
-  }
-  return result_list;
-}
-
-bool Tensor::IsFlattened(const TensorPtrList &tensors) {
-  // Tensor data is flattened if all tensors data are TensorSubData.
-  return std::all_of(tensors.begin(), tensors.end(), [](const TensorPtr &tensor) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto data_ptr = tensor->data_ptr().get();
-    return dynamic_cast<TensorSubData *>(data_ptr) != nullptr;
-  });
-}
-
-const TensorPtr Tensor::GetFlattenedTensor(const TensorPtr &tensor) {
-  // Get sub-data.
-  auto sub_data = std::dynamic_pointer_cast<TensorSubData>(tensor->data_ptr());
-  if (sub_data == nullptr) {
-    MS_LOG(WARNING) << "Tensors are not flattened.";
-    return nullptr;
-  }
-  // Get owner tensor from sub-data.
-  auto owner_tensor = std::dynamic_pointer_cast<Tensor>(sub_data->GetOwner());
-  MS_EXCEPTION_IF_NULL(owner_tensor);
-  return owner_tensor;
-}
-
-TensorPtrList Tensor::GetFlattenedTensors(const TensorPtrList &tensors) {
-  // Use std::map to keep order by type id.
-  std::map<TypeId, OrderedSet<TensorPtr>> chunk_map;
-  for (auto &tensor : tensors) {
-    auto owner_tensor = GetFlattenedTensor(tensor);
-    if (owner_tensor == nullptr) {
-      return {};
-    }
-    // Add as chunk tensor by its data type.
-    auto chunk_dtype = normalize_type(tensor->data_type());
-    chunk_map[chunk_dtype].add(owner_tensor);
-  }
-  // Generate result tensor list.
-  TensorPtrList result_tensors;
-  for (auto &entry : chunk_map) {
-    auto &chunk_tensors = entry.second;
-    (void)result_tensors.insert(result_tensors.end(), chunk_tensors.begin(), chunk_tensors.end());
-  }
-  return result_tensors;
-}
+const std::string &Tensor::GetOffloadFilePath() const { return offload_file_; }
 
 bool Tensor::CheckStub() {
 #if defined(WITH_BACKEND)
@@ -817,27 +528,6 @@ bool Tensor::CheckStub() {
   return true;
 #endif
 }
-
-size_t Tensor::GetFusionSize(const TensorPtrList &flat_tensors) {
-  size_t fusion_size = 0;
-  std::map<TypeId, size_t> type_groups;
-  for (auto &tensor : flat_tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_bytes = static_cast<size_t>(tensor->data().nbytes());
-    if (tensor_bytes > fusion_size) {
-      fusion_size = tensor_bytes;
-    }
-    ++type_groups[tensor->data_type()];
-  }
-  const bool only_one_chunk_for_each_type =
-    std::all_of(type_groups.begin(), type_groups.end(), [](auto const &e) { return e.second == 1; });
-  if (only_one_chunk_for_each_type) {
-    return 0;
-  }
-  return fusion_size;
-}
-
-bool Tensor::is_persistent_data() const { return this->data().is_persistent_data(); }
 
 void Tensor::PinMemory(PinnedMemRegister *pin_mem_register) {
   if (pin_mem_register == nullptr) {
@@ -863,12 +553,12 @@ std::string CSRTensor::ToString() const {
   MS_EXCEPTION_IF_NULL(indices_);
   MS_EXCEPTION_IF_NULL(indptr_);
   auto dtype = values_->Dtype();
-  values_->data_sync(true);
-  indices_->data_sync(true);
-  indptr_->data_sync(true);
+  auto values_cpu = values_->cpu();
+  auto indices_cpu = indices_->cpu();
+  auto indptr_cpu = indptr_->cpu();
   buf << "CSRTensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString() << ", indptr=";
-  buf << indptr_->ToString() << ", indices=" << indices_->ToString() << ", values=";
-  buf << values_->ToString() << ")";
+  buf << indptr_cpu->ToString() << ", indices=" << indices_cpu->ToString() << ", values=";
+  buf << values_cpu->ToString() << ")";
   return buf.str();
 }
 
@@ -894,13 +584,13 @@ abstract::AbstractBasePtr CSRTensor::ToAbstract() {
 const size_t CSRTensor::GetSizeAt(size_t index) const {
   if (index == kIndptrIdx) {
     MS_EXCEPTION_IF_NULL(indptr_);
-    return indptr_->data().nbytes();
+    return indptr_->DataNBytes();
   } else if (index == kIndicesIdx) {
     MS_EXCEPTION_IF_NULL(indices_);
-    return indices_->data().nbytes();
+    return indices_->DataNBytes();
   } else if (index == kValuesIdx) {
     MS_EXCEPTION_IF_NULL(values_);
-    return values_->data().nbytes();
+    return values_->DataNBytes();
   } else if (index >= kIndicesIdx && index < kShapeIdx + shape().size()) {
     return sizeof(int64_t);
   }
@@ -918,7 +608,7 @@ TensorPtr CSRTensor::GetTensorAt(size_t index) const {
     MS_EXCEPTION_IF_NULL(values_);
     return values_;
   } else if (index >= kShapeIdx && index < kShapeIdx + shape().size()) {
-    return std::make_shared<tensor::Tensor>(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
+    return from_scalar(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
   }
   MS_LOG(EXCEPTION) << "Invalid index: " << index << " for CSRTensor: " << ToString();
 }
@@ -931,7 +621,7 @@ TensorPtr COOTensor::GetTensorAt(size_t index) const {
     MS_EXCEPTION_IF_NULL(values_);
     return values_;
   } else if (index >= kShapeIdx && index < kShapeIdx + shape().size()) {
-    return std::make_shared<tensor::Tensor>(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
+    return tensor::from_scalar(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
   }
   MS_LOG(EXCEPTION) << "Invalid index: " << index << " for COOTensor: " << ToString();
 }
@@ -940,11 +630,11 @@ std::string COOTensor::ToString() const {
   std::ostringstream buf;
   MS_EXCEPTION_IF_NULL(indices_);
   MS_EXCEPTION_IF_NULL(values_);
-  indices_->data_sync(true);
-  values_->data_sync(true);
+  auto indices_cpu = indices_->cpu();
+  auto values_cpu = values_->cpu();
   auto dtype = values_->Dtype();
   buf << "COOTensor(shape=" << ShapeToString(shape_) << ", dtype=" << dtype->ToString()
-      << ", indices=" << indices_->ToString() << ", values=" << values_->ToString() << ")";
+      << ", indices=" << indices_cpu->ToString() << ", values=" << values_cpu->ToString() << ")";
   return buf.str();
 }
 

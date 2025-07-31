@@ -20,6 +20,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "ir/tensor_new.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -101,11 +102,14 @@ device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &addre
 
 void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const DeviceTensorPtr &device_tensor,
                           const AnfNodePtr &output_node) {
+  MS_EXCEPTION_IF_NULL(tensor_device_address);
+  MS_EXCEPTION_IF_NULL(device_tensor);
   if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Sync device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!tensor_device_address->SyncDeviceToDevice(device_tensor.get())) {
+    if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) ||
+        !SyncAllStreamForDeviceAddress(tensor_device_address)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
@@ -114,7 +118,7 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Async device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
-    if (!tensor_device_address->AsyncDeviceToDevice(device_tensor.get())) {
+    if (!AsyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
@@ -231,7 +235,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     auto tensor = graph_parameter_store->FetchTensor(outer_idx, {output_node, front_node_with_idx.second});
     MS_EXCEPTION_IF_NULL(tensor);
 
-    const auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
+    const auto new_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
     auto parameter_kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
@@ -480,7 +484,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     ShapeVector shape_vector = {0};
     TypeId type_id = (output_kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64
                                                                                : output_kernel_tensor->dtype_id());
-    const auto &tensor = std::make_shared<tensor::Tensor>(type_id, shape_vector);
+    const auto &tensor = tensor::from_spec(type_id, shape_vector, device::DeviceType::kNone);
     tensor->set_base_shape(output_shape);
     if (output_position < output_kernel_tensors_.size() && output_kernel_tensors_[output_position] &&
         output_kernel_tensors_[output_position]->user_data() != nullptr && output_position < device_contexts_.size() &&
@@ -520,7 +524,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
   const auto &shape = output_kernel_tensor->GetShapeVector();
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::from_spec(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor);
   // Set tensor base shape for restoring the tuple output when output node is dynamic sequence.
   if (common::AnfAlgo::IsDynamicSequence(output_node)) {

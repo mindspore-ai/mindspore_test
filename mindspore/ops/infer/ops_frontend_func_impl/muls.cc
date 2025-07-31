@@ -17,6 +17,7 @@
 #include <complex>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
@@ -168,7 +169,7 @@ class MulsFrontendFuncImpl : public OpFrontendFuncImpl {
                   << ", typeid: " << input_args[kIndex1]->GetType()->type_id();
     MS_LOG(DEBUG) << "For [" << primitive->name() << "], after promote type: " << common_type;
 
-    auto result_tensor = std::make_shared<tensor::Tensor>(common_type, x1_shape);
+    auto result_tensor = tensor::from_spec(common_type, x1_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto iter = muls_impl_list.find(common_type);
     if (iter == muls_impl_list.end()) {

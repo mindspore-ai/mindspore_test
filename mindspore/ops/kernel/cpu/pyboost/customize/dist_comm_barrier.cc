@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
@@ -36,7 +37,7 @@ void DistCommBarrierCPUCustomize(const std::shared_ptr<OpRunner> &op, const Stri
   MS_LOG(DEBUG) << "Call start";
   const auto &group_str = GetValue<std::string>(group);
   auto ranks = MsCollectiveCommLib::GetInstance().GetGroupRanks(group_str);
-  TensorPtr input_tensor = std::make_shared<tensor::Tensor>(ShapeVector(ranks));
+  TensorPtr input_tensor = tensor::from_vector(ShapeVector(ranks));
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});
 

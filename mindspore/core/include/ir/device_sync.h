@@ -20,12 +20,14 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
 #include "ir/tensor_storage_info.h"
 #include "ir/tensor_data.h"
 #include "mindapi/base/format.h"
+#include "ir/device_type.h"
 
 using std::string;
 
@@ -33,6 +35,49 @@ namespace mindspore {
 // Interface for data synchornize between device and host.
 class DeviceSync {
  public:
+  virtual size_t GetSize() const = 0;
+  virtual TypeId type_id() const = 0;
+  virtual void *GetMutablePtr() const = 0;
+  virtual std::string ToString() const = 0;
+  virtual const uint32_t stream_id() const = 0;
+  virtual void ClearDeviceMemory() = 0;
+  virtual TensorStorageInfoPtr GetTensorStorageInfo() const = 0;
+
+  // The related interface of reference count operation.
+  virtual void set_original_ref_count(size_t original_ref_count) const = 0;
+  virtual size_t original_ref_count() const = 0;
+  virtual void set_ref_count(size_t ref_count) const = 0;
+  virtual size_t ref_count() const = 0;
+  virtual void ResetRefCount() = 0;
+
+  virtual void set_deleter(const std::function<void(uint8_t *)> &deleter) = 0;
+
+  virtual void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) = 0;
+
+  virtual ~DeviceSync() {}
+
+  virtual const UserDataPtr &user_data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
+  virtual void set_user_data(const UserDataPtr &user_data) { MS_LOG(EXCEPTION) << "Not implement exception"; }
+
+  virtual device::DeviceType GetDeviceType() const { return device::DeviceType::kUnknown; }
+  virtual void set_data(tensor::TensorDataPtr &&data) { MS_LOG(DEBUG) << "Skip device address set_data"; }
+  virtual const tensor::TensorDataPtr &data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
+  virtual bool has_data() const { return false; }
+
+ protected:
+  // Copy device memory to host side synchronously.
+  virtual bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
+                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
+    return true;
+  }
+
+  // Copy host memory to device side synchronously.
+  virtual bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
+                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
+    return true;
+  }
   // Used to sync data between different device addresses, only need the data size and data ptr. The CPU device doesn't
   // need use the interfaces, so need the default implementation.
   virtual bool SyncDeviceToHost(size_t, void *) const { return true; }
@@ -52,37 +97,31 @@ class DeviceSync {
     MS_EXCEPTION_IF_NULL(tensor_data);
     return SyncHostToDevice(shape, size, type, tensor_data->data(), format);
   }
-
-  // Copy device memory to host side synchronously.
-  virtual bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
-                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
-                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
-    return true;
-  }
-
-  // Copy host memory to device side synchronously.
-  virtual bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
-                                uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
-                                size_t stream_id, const UserDataPtr &user_data = nullptr) const {
-    return true;
-  }
-
-  virtual void *GetMutablePtr() const = 0;
-  virtual void ClearDeviceMemory() = 0;
-  virtual const TensorStorageInfoPtr GetTensorStorageInfo() const = 0;
-
-  // The related interface of reference count operation.
-  virtual void set_original_ref_count(size_t original_ref_count) const = 0;
-  virtual size_t original_ref_count() const = 0;
-  virtual void set_ref_count(size_t ref_count) const = 0;
-  virtual size_t ref_count() const = 0;
-  virtual void ResetRefCount() = 0;
-
-  virtual ~DeviceSync() {}
-
-  virtual const UserDataPtr &user_data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
-  virtual void set_user_data(const UserDataPtr &user_data) { MS_LOG(EXCEPTION) << "Not implement exception"; }
 };
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
+using SyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t)>;
+using AsyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t, bool)>;
+using SyncPtrFunc = std::function<bool(void *, const void *, uint64_t, size_t)>;
+
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
+                             SyncPtrFunc &&sync_ptr_func);
+
+template <device::DeviceType t>
+struct CopyFuncRegister {
+  explicit CopyFuncRegister(SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func, SyncPtrFunc &&sync_ptr_func) {
+    SetCopyFunc(t, std::move(sync_func), std::move(async_func), std::move(sync_ptr_func));
+  }
+};
+
+#define MS_REGISTER_HAL_COPY_FUNC(device_type, sync_func, async_func, sync_ptr_func)           \
+  namespace {                                                                                  \
+  static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func, sync_ptr_func); \
+  }
+// This interface is only used by kernel tensor to get host value, and the default stream would be sync in it.
+MS_CORE_API bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size,
+                            size_t stream_id);
+MS_CORE_API bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id);
+MS_CORE_API bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                           bool keep_src = true);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_SYNC_H_

@@ -18,6 +18,7 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/dtype.h"
+#include "ir/tensor_new.h"
 #include "include/common/visible.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
@@ -30,19 +31,17 @@ inline mindspore::ValueTuplePtr MakeI64Tuple(const std::vector<int64_t> &v) {
 }  // namespace
 
 Tensor tensor(int64_t value, TypeId dtype) {
-  return Tensor(std::make_shared<mindspore::tensor::Tensor>(value, TypeIdToType(dtype)));
+  return Tensor(mindspore::tensor::from_scalar(value, TypeIdToType(dtype)));
 }
 
 Tensor tensor(const std::vector<int64_t> &value, TypeId dtype) {
-  return Tensor(std::make_shared<mindspore::tensor::Tensor>(value, TypeIdToType(dtype)));
+  return Tensor(mindspore::tensor::from_vector(value, TypeIdToType(dtype)));
 }
 
-Tensor tensor(double value, TypeId dtype) {
-  return Tensor(std::make_shared<mindspore::tensor::Tensor>(value, TypeIdToType(dtype)));
-}
+Tensor tensor(double value, TypeId dtype) { return Tensor(mindspore::tensor::from_scalar(value, TypeIdToType(dtype))); }
 
 Tensor tensor(const std::vector<double> &value, TypeId dtype) {
-  return Tensor(std::make_shared<mindspore::tensor::Tensor>(value, TypeIdToType(dtype)));
+  return Tensor(mindspore::tensor::from_vector(value, TypeIdToType(dtype)));
 }
 
 Tensor ones(const ShapeVector &shape, TypeId dtype) {

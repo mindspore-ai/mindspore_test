@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "common/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -35,16 +36,20 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     auto ret = memcpy_s(dst_tensor->data_c(), size, src_tensor->data_c(), size);
     return ret == EOK;
   }
-  auto shape = src_tensor->shape();
-  auto type_id = src_tensor->data_type();
   auto ret = true;
   std::string status;
   if (blocking) {
     status = "SyncDeviceToHost";
-    ret = src_device_ptr->SyncDeviceToHost(shape, dst_tensor->Size(), type_id, dst_tensor->data_c());
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{src_device_ptr->GetDeviceType(), src_device_ptr->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    (void)res_manager->SyncAllStreams();
+    MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
+    ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   } else {
     status = "AsyncDeviceToHost";
-    ret = src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c());
+    MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
+    ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   }
   if (!ret) {
     MS_LOG(EXCEPTION) << status << " failed.";
@@ -56,21 +61,18 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  auto shape = src_tensor->shape();
-  auto type_id = src_tensor->data_type();
-  auto src_size = src_tensor->Size();
-  if (src_device_ptr != nullptr) {
-    src_size = src_device_ptr->GetSize();
-  }
-  size_t size = std::min(src_size, dst_device_ptr->GetSize());
-  auto src_data = src_device_ptr == nullptr ? src_tensor->data_c() : src_device_ptr->GetPtr();
+  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
-    ret = dst_device_ptr->SyncHostToDevice(shape, size, type_id, src_data);
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+      device::ResKey{dst_device_ptr->GetDeviceType(), dst_device_ptr->device_id()});
+    MS_EXCEPTION_IF_NULL(res_manager);
+    (void)res_manager->SyncAllStreams();
+    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
     status = "SyncHostToDevice";
   } else {
-    ret = dst_device_ptr->AsyncHostToDevice(size, src_data);
+    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
     status = "AsyncHostToDevice";
   }
   if (!ret) {
@@ -103,19 +105,8 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
       return;
     }
   }
-  // D2H copy, src_device_ptr: GPU/ASCEND; dst_device_ptr: CPU.
-  if (to == "CPU") {
-    if (src_device_ptr == nullptr) {
-      MS_LOG(INFO) << "Src tensor device ptr is null, means tensor on: " << to << ", no need move again!";
-      *return_self = true;
-      return;
-    }
-    if (!MoveToD2H(src_tensor, src_device_ptr, dst_tensor, blocking)) {
-      MS_LOG(EXCEPTION) << "Move tensor to " << to << "failed.";
-    }
-    dst_tensor->set_sync_status(kNeedSyncHostToDevice);
-    return;
-  }
+
+  // Need to create cpu device address even if the tensor is on CPU.
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
   auto dst_addr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
   if (dst_addr == nullptr) {
@@ -143,6 +134,21 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     }
     dst_tensor->set_device_address(dst_addr);
   }
+
+  // D2H copy, src_device_ptr: GPU/ASCEND; dst_device_ptr: CPU.
+  if (to == "CPU") {
+    if (src_device_ptr == nullptr) {
+      MS_LOG(INFO) << "Src tensor device ptr is null, means tensor on: " << to << ", no need move again!";
+      *return_self = true;
+      return;
+    }
+    if (!MoveToD2H(src_tensor, src_device_ptr, dst_tensor, blocking)) {
+      MS_LOG(EXCEPTION) << "Move tensor to " << to << "failed.";
+    }
+    dst_tensor->set_sync_status(kNeedSyncHostToDevice);
+    return;
+  }
+
   MoveToH2D(src_tensor, src_device_ptr, dst_addr, blocking);
   dst_tensor->set_sync_status(kNeedSyncDeviceToHost);
 }

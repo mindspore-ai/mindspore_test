@@ -19,6 +19,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
@@ -68,7 +69,7 @@ class NegFrontendFuncImpl : public OpFrontendFuncImpl {
     if (IsDynamic(shape)) {
       return nullptr;
     }
-    auto result_tensor = std::make_shared<tensor::Tensor>(dtype, shape);  // same shape and dtype
+    auto result_tensor = tensor::from_spec(dtype, shape, device::DeviceType::kCPU);  // same shape and dtype
     auto iter = neg_impl_list.find(dtype);
     if (iter == neg_impl_list.end()) {
       MS_LOG(DEBUG)

@@ -262,6 +262,7 @@ void ControlActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
                   << " inner index:" << parameter_index.second.first.second
                   << " kernel tensor:" << kernel_tensor->ToString();
     input_kernel_tensors_[parameter_index.first] = kernel_tensor;
+    input_parameter_store_kernel_tensors_.emplace_back(kernel_tensor);
   }
 }
 
@@ -637,22 +638,10 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
         }
       }
     }
-    bool ret = false;
-    if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
-      ret = tmp_device_tensor->SyncDeviceToDevice(addr_list[i]->device_address().get());
-    } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
-      ret = addr_list[i]->device_address()->SyncDeviceToHost(addr_list[i]->device_address()->GetSize(),
-                                                             tmp_device_tensor->GetMutablePtr());
-    } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
-      ret = tmp_device_tensor->SyncHostToDevice(addr_list[i]->device_address()->GetSize(),
-                                                addr_list[i]->device_address()->GetMutablePtr());
-    } else {
-      MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
-                    << " name:" << addr_list[0]->device_address()->device_name()
-                    << " and addr2:" << addr_list[i]->device_address()
-                    << " name:" << addr_list[i]->device_address()->device_name();
-    }
-    if (!ret) {
+    if (!SyncAllStreamForDeviceAddress(tmp_device_tensor->GetDeviceType() == device::DeviceType::kCPU
+                                         ? addr_list[i]->device_address()
+                                         : tmp_device_tensor) ||
+        !SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
     }
     tmp_device_tensor->set_ptr((reinterpret_cast<char *>(tmp_device_tensor->GetMutablePtr())) +

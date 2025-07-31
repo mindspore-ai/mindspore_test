@@ -186,7 +186,8 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
     uint64_t sum_size = 0;
     while (index < params.size()) {
       auto &tensor = params[index];
-      if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
+      if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr ||
+          tensor->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
         index += 1;
         continue;
       }
@@ -202,7 +203,8 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
 
       if (CALL_ASCEND_API(aclrtMemcpyAsync, dst_addr, tensor->Size(), src_addr, tensor->Size(),
                           ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) != ACL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "Copy data from device to device fail.";
+        MS_LOG(EXCEPTION) << "Async copy data from device to device fail, dst:" << dst_addr
+                          << " size:" << tensor->Size() << " src:" << src_addr << " size:" << tensor->Size();
       }
       sum_size += aligned_size;
       index += 1;
@@ -240,7 +242,8 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
 
   for (size_t index = 0; index < params.size(); ++index) {
     auto &tensor = params[index];
-    if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
+    if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr ||
+        tensor->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
       MS_LOG(INFO) << "Device address is nullptr, skip copying parameter index = " << index << "/" << params.size()
                    << " " << (rank_id_ == src_rank ? " send" : " recv");
       continue;

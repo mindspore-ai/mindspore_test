@@ -138,6 +138,22 @@ class RES_EXPORT HalResBase {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
+  virtual bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+  virtual bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         bool keep_src) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+
+  virtual bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+
   // Create a stream with assigning a stream id, the assigned stream id will be written to the parameter '*stream_id'.
   virtual bool CreateStream(size_t *stream_id) const {
     MS_LOG(WARNING) << "Unimplemented interface: 'CreateStream'.";
@@ -274,6 +290,8 @@ class RES_EXPORT HalResBase {
   virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) { return false; }
 
   virtual bool SyncAllEvents() { return false; }
+
+  virtual std::shared_ptr<AddressAllocator> GetPinMemAllocator() { return nullptr; }
 
  protected:
   ResKey res_key_;

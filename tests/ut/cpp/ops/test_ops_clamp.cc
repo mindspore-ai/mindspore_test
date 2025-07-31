@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
@@ -27,6 +28,7 @@
 #include "infer/ops_func_impl/clamp_tensor.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+
 
 namespace mindspore {
 namespace ops {
@@ -63,9 +65,9 @@ class TestClampTensorSimpleInfer : public TestOps, public testing::WithParamInte
 
 TEST_P(TestClampTensorSimpleInfer, clamp_dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  auto min = std::make_shared<tensor::Tensor>(param.min_type->type_id(), param.min_shape);
-  auto max = std::make_shared<tensor::Tensor>(param.max_type->type_id(), param.max_shape);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto min = tensor::from_spec(param.min_type->type_id(), param.min_shape, device::DeviceType::kCPU);
+  auto max = tensor::from_spec(param.max_type->type_id(), param.max_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(min));
@@ -121,9 +123,9 @@ class TestClampScalarSimpleInfer : public TestOps, public testing::WithParamInte
 
 TEST_P(TestClampScalarSimpleInfer, clamp_dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  auto min = std::make_shared<tensor::Tensor>(param.min_type->type_id(), param.min_shape);
-  auto max = std::make_shared<tensor::Tensor>(param.max_type->type_id(), param.max_shape);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto min = tensor::from_spec(param.min_type->type_id(), param.min_shape, device::DeviceType::kCPU);
+  auto max = tensor::from_spec(param.max_type->type_id(), param.max_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(min));

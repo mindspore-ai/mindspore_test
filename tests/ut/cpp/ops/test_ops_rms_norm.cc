@@ -17,6 +17,7 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/rms_norm.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -61,8 +62,8 @@ TEST_P(TestRmsNorm, rms_norm_dyn_shape) {
   DoFuncImplInferAndCompare<RmsNormFuncImpl>(kNameRmsNorm, input_args, expect_shape, expect_type);
 
   // simple infer
-  auto x_val = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  auto gamma_val = std::make_shared<tensor::Tensor>(param.gamma_type->type_id(), param.gamma_shape);
+  auto x_val = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto gamma_val = tensor::from_spec(param.gamma_type->type_id(), param.gamma_shape, device::DeviceType::kCPU);
   auto expect_shapes = {param.y_shape, param.rstd_shape};
   auto expect_types = {param.y_type, kFloat32};
   DoFuncImplSimpleInferAndCompare<RmsNormFuncImpl>(kNameRmsNorm, {x_val, gamma_val, eps_val}, expect_shapes, expect_types);

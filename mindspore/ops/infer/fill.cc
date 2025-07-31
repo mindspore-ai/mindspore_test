@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops_utils/op_constants.h"
@@ -41,7 +42,7 @@ template <typename T>
 static tensor::TensorPtr CreateValuedTensor(const TypePtr &type, const std::vector<int64_t> &shape, T num) {
   MS_EXCEPTION_IF_NULL(type);
   auto type_id = type->type_id();
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
   const size_t &mem_size = LongToSize(tensor->ElementsNum());
   auto tensor_data = tensor->data_c();
   std::map<TypeId, std::function<void()>> type_dict{
@@ -83,7 +84,7 @@ template <typename T>
 static tensor::TensorPtr CreateComplexTensor(const TypePtr &type, const std::vector<int64_t> &shape, T num) {
   MS_EXCEPTION_IF_NULL(type);
   auto type_id = type->type_id();
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  tensor::TensorPtr tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
   const size_t &mem_size = LongToSize(tensor->ElementsNum());
   auto tensor_data = tensor->data_c();
   std::map<TypeId, std::function<void()>> type_dict{

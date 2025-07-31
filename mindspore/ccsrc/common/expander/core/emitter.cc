@@ -23,6 +23,7 @@
 #include <utility>
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -54,15 +55,15 @@ std::pair<bool, std::vector<int64_t>> GetIntList(const NodePtr &node) {
       auto tensor = value_ptr->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       // In pynative mode, need data sync before get tensor value, otherwise the tensor value may be undefined.
-      tensor->data_sync();
-      return std::make_pair(true, CheckAndConvertUtils::CheckTensorIntValue("value", value_ptr, "GetIntList"));
+      auto cpu_tensor = tensor->cpu();
+      return std::make_pair(true, CheckAndConvertUtils::CheckTensorIntValue("value", cpu_tensor, "GetIntList"));
     }
   }
   return std::make_pair(false, std::vector<int64_t>{});
 }
 
 ValuePtr CreateZeroScalar(const TypePtr &type) {
-  auto tensor = std::make_shared<tensor::Tensor>(0, type);
+  auto tensor = tensor::from_scalar(0, type);
   return CreateValueFromTensor(tensor);
 }
 
@@ -185,7 +186,7 @@ NodePtr Emitter::Reshape(const NodePtr &node, const NodePtr &shape) {
     auto value = node->BuildValue();
     MS_EXCEPTION_IF_NULL(value);
     auto tensor = value->cast<tensor::TensorPtr>();
-    if (tensor != nullptr && tensor->data().const_data() != nullptr) {
+    if (tensor != nullptr && tensor->unsafe_data() != nullptr) {
       const auto &tensor_shape = tensor->shape_c();
       auto update_shape = CalReshapeRealDstShape(tensor_shape, dst_shape);
       if (tensor_shape == update_shape) {

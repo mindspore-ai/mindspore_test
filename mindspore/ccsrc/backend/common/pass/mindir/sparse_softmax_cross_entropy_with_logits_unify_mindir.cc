@@ -19,6 +19,7 @@
 #include <string>
 #include <algorithm>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -128,10 +129,10 @@ CNodePtr CreateOneHot(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax_
   // Reshape multi-dim labels to 1D labels.
   auto reshape_node = CreateReshape(graph, sparse_softmax_node->input(kIndex2), shape, pass);
 
-  auto value_on = std::make_shared<tensor::Tensor>(1.0, kFloat32);
+  auto value_on = tensor::from_scalar(1.0, kFloat32);
   auto value_on_node = CreateValueNode(value_on, kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(value_on_node);
-  auto value_off = std::make_shared<tensor::Tensor>(0.0, kFloat32);
+  auto value_off = tensor::from_scalar(0.0, kFloat32);
   auto value_off_node = CreateValueNode(value_off, kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(value_off_node);
   auto value_axis_node = CreateValueNode(MakeValue<int64_t>(-1), kNumberTypeInt64, true);
@@ -393,7 +394,7 @@ CNodePtr CreateRealDiv(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax
   auto labels_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(sparse_softmax_node, 1UL);
   int64_t batch_size = std::accumulate(labels_shape.begin(), labels_shape.end(), 1, std::multiplies<int64_t>());
   auto y_value = static_cast<float>(batch_size);
-  auto y = std::make_shared<tensor::Tensor>(y_value, kFloat32);
+  auto y = tensor::from_scalar(y_value, kFloat32);
   auto y_node = CreateValueNode(y, kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(y_node);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
@@ -450,7 +451,7 @@ CNodePtr CreateMul(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax_nod
   }
   std::vector<float> tensor_value(softmax_output_shape[0], 1.0 / softmax_output_shape[0]);
   auto buf_size = sizeof(float) * tensor_value.size();
-  auto tensor_y = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, tensor_shape, tensor_value.data(), buf_size);
+  auto tensor_y = tensor::from_buffer(kNumberTypeFloat32, tensor_shape, tensor_value.data(), buf_size);
   auto y_node = CreateValueNode(tensor_y, kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(y_node);
 

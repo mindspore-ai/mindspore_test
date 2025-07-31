@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
 #include <cstdint>
 #include <regex>
+#include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "frontend/ir/primitive_py.h"
 #include "frontend/ir/cell_py.h"
@@ -1490,15 +1491,16 @@ class TensorData : public MetaTensorData {
       return true;
     }
     // Tensor::data_sync need WaitAll pipeline, it's too expensive
-    auto data = tensor_ptr->data_ptr();
-    if (data_ptr_ == nullptr || reinterpret_cast<const uint8_t *>(data->const_data()) == nullptr) {
+    if (data_ptr_ == nullptr || tensor_ptr->device_address()->GetMutablePtr() == nullptr) {
       // If not data_sync, check data size, but shape and dtype is checked, here return true.
       // Got a tensor which is guard to constant value, but actually it's not synchronized and maybe not constant.
       // return false and mutable it as graph parameter if need.
-      return data_len_ == size_t(data->nbytes());
-    } else if (data_len_ == size_t(data->nbytes())) {
+      return data_len_ == tensor_ptr->DataNBytes();
+    } else if (data_len_ == tensor_ptr->DataNBytes()) {
       // if has data_sync, check data
-      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(data->const_data()), data_len_) == 0;
+      auto cpu_tensor = tensor_ptr->cpu();
+      return memcmp(data_ptr_.get(), reinterpret_cast<const uint8_t *>(cpu_tensor->device_address()->GetMutablePtr()),
+                    data_len_) == 0;
     }
     return false;
   }
@@ -1540,16 +1542,16 @@ class TensorData : public MetaTensorData {
       compression_type_ = TensorCompressionType::kNoCompression;
     }
     if (specialized_) {
-      tensor_ptr->data_sync(true);
-      auto data = tensor_ptr->data_ptr();
-      data_len_ = size_t(data->nbytes());
+      auto cpu_tensor = tensor_ptr->cpu();
+      data_len_ = size_t(cpu_tensor->DataNBytes());
       data_ptr_ = std::make_unique<uint8_t[]>(data_len_);
       if (data_ptr_ != nullptr) {
-        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(data->data()), data_len_);
+        memcpy_s(data_ptr_.get(), data_len_, reinterpret_cast<uint8_t *>(cpu_tensor->device_address()->GetMutablePtr()),
+                 data_len_);
       }
     } else {
       data_ptr_.reset(nullptr);
-      data_len_ = size_t(tensor_ptr->data_ptr()->nbytes());
+      data_len_ = size_t(tensor_ptr->DataNBytes());
     }
   }
 
@@ -2870,31 +2872,31 @@ template <typename S>
 ValuePtr CastScalarToTensor(S in, const TypeId &type_id) {
   switch (type_id) {
     case kNumberTypeInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<int>(in), kInt32);
+      return tensor::from_scalar(static_cast<int>(in), kInt32);
     case kNumberTypeFloat16:
-      return std::make_shared<tensor::Tensor>(static_cast<float16>(in), kFloat16);
+      return tensor::from_scalar(static_cast<float16>(in), kFloat16);
     case kNumberTypeFloat32:
-      return std::make_shared<tensor::Tensor>(static_cast<float>(in), kFloat32);
+      return tensor::from_scalar(static_cast<float>(in), kFloat32);
     case kNumberTypeBool:
-      return std::make_shared<tensor::Tensor>(static_cast<bool>(in), kBool);
+      return tensor::from_scalar(static_cast<bool>(in), kBool);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(in), kInt64);
+      return tensor::from_scalar(static_cast<int64_t>(in), kInt64);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::Tensor>(static_cast<double>(in), kFloat64);
+      return tensor::from_scalar(static_cast<double>(in), kFloat64);
     case kNumberTypeInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<int16_t>(in), kInt16);
+      return tensor::from_scalar(static_cast<int16_t>(in), kInt16);
     case kNumberTypeInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<int8_t>(in), kInt8);
+      return tensor::from_scalar(static_cast<int8_t>(in), kInt8);
     case kNumberTypeUInt64:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(in), kUInt64);
+      return tensor::from_scalar(static_cast<uint64_t>(in), kUInt64);
     case kNumberTypeUInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<uint32_t>(in), kUInt32);
+      return tensor::from_scalar(static_cast<uint32_t>(in), kUInt32);
     case kNumberTypeUInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<uint16_t>(in), kUInt16);
+      return tensor::from_scalar(static_cast<uint16_t>(in), kUInt16);
     case kNumberTypeUInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<uint8_t>(in), kUInt8);
+      return tensor::from_scalar(static_cast<uint8_t>(in), kUInt8);
     case kNumberTypeBFloat16:
-      return std::make_shared<tensor::Tensor>(static_cast<bfloat16>(in), kBFloat16);
+      return tensor::from_scalar(static_cast<bfloat16>(in), kBFloat16);
     default:
       MS_LOG(DEBUG) << "Not support cast to dst type: " << TypeIdToType(type_id)->ToString();
       return nullptr;

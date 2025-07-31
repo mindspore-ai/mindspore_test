@@ -91,6 +91,9 @@ class AnyTypeKernelActor : public SuperKernelActor {
   // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
   // Index is the input position, AnfNode is the key of the device tensor store.
   std::vector<std::pair<size_t, AnfNodePtr>> extern_device_tensor_store_keys_;
+  // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
+  // Index is the input position, ParameterInfo is used to fetch args and device tensor.
+  std::vector<std::pair<size_t, ParameterInfo>> extern_parameter_indexs_;
 };
 
 using AnyTypeKernelActorPtr = std::shared_ptr<AnyTypeKernelActor>;

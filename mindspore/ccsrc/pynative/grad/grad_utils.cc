@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "ir/tensor_new.h"
 #include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -577,7 +578,7 @@ bool AutoGradUtil::IsZerosLikeNode(const AnfNodePtr &node) {
 }
 
 ValuePtr AutoGradUtil::GetFakeZeroTensor() {
-  static ValuePtr fake_v = std::make_shared<tensor::Tensor>(0);
+  static ValuePtr fake_v = tensor::from_scalar(0);
   return fake_v;
 }
 
@@ -601,7 +602,7 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
     return std::make_shared<ValueTuple>(v_list);
   }
   if (value->isa<Scalar>()) {
-    auto fake_tensor = std::make_shared<tensor::Tensor>(0, value->type());
+    auto fake_tensor = tensor::from_scalar(0, value->type());
     return BuildSpecialValueGrad(fake_tensor, grad, func_builder, type);
   }
   if (value->isa<tensor::CSRTensor>()) {
@@ -613,7 +614,7 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
     return WrapCOOTensor(coo_tensor, BuildSpecialValueGrad(coo_tensor->GetValues(), grad, func_builder, type));
   }
   MS_LOG(INFO) << "For value " << value->ToString() << ", the type is not tensor or scalar";
-  return std::make_shared<tensor::Tensor>(0);
+  return tensor::from_scalar(0);
 }
 
 AnfNodePtr AutoGradUtil::BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,

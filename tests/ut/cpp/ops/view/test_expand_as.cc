@@ -15,6 +15,7 @@
  */
 
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/expand_as_strides_calc.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
@@ -32,11 +33,11 @@ TEST_F(TestViewExpandAs, func) {
   auto prim = std::make_shared<Primitive>("ExpandAs");
 
   std::vector<int64_t> input_data = {1, 2, 3, 4};
-  auto input_tensor = std::make_shared<tensor::Tensor>(input_data, kInt64);
+  auto input_tensor = tensor::from_vector(input_data, kInt64);
   input_tensor->set_shape({1, 4});
 
   std::vector<int64_t> other_data = {1, 2, 3, 4, 5, 6, 7, 8};
-  auto other_tensor = std::make_shared<tensor::Tensor>(other_data, kInt64);
+  auto other_tensor = tensor::from_vector(other_data, kInt64);
   other_tensor->set_shape({2, 1, 4});
 
   auto storage_list = ExpandAsCalc(prim, std::vector<ValuePtr>({input_tensor, other_tensor}));

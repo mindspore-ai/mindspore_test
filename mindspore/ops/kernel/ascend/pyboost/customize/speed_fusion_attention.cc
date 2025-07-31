@@ -23,6 +23,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace kernel {
@@ -77,9 +78,9 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
 tensor::TensorPtr RecordRandomStateBeforeGenMask(const TensorPtr &tensor, double keep_prob_value) {
   // seed & offset will be inplace update after dropout_gen_mask
   if (keep_prob_value > 0.0 && keep_prob_value < 1.0) {
-    tensor->data_sync();
-    int64_t value = *static_cast<int64_t *>(tensor->data_c());
-    return std::make_shared<tensor::Tensor>(value);
+    auto tensor_cpu = tensor->cpu();
+    int64_t value = *static_cast<int64_t *>(tensor_cpu->data_c());
+    return tensor::from_scalar(value);
   }
   return tensor;
 }
@@ -173,7 +174,7 @@ void SpeedFusionAttentionAscendCustomize(
   // Set host outputs
   device_outputs.emplace_back(ori_seed);
   device_outputs.emplace_back(ori_offset);
-  device_outputs.emplace_back(std::make_shared<tensor::Tensor>(numels));
+  device_outputs.emplace_back(tensor::from_scalar(numels));
   op->set_outputs(device_outputs);
 }
 }  // namespace pyboost

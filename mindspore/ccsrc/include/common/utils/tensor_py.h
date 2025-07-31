@@ -141,6 +141,11 @@ class COMMON_EXPORT TensorPy {
   /// \return The created C++ Tensor.
   TensorPtr GetTensor() const;
 
+  /// \brief Set C++ Tensor.
+  ///
+  /// \param[in] tensor [TensorPtr] The C++ Tensor.
+  void SetTensor(const TensorPtr &tensor);
+
   /// \brief Get parent Tensor.
   /// \return Parent Tensor.
   const py::object GetParentTensor();
@@ -201,10 +206,6 @@ class COMMON_EXPORT TensorPy {
   /// \brief Set the shape of the tensor in this TensorPy.
   /// \param[in] shape [ShapeVector] The shape of the tensor.
   void SetShape(const ShapeVector &shape);
-
-  /// \brief Get whether this tensor data have use persistent storage to save data.
-  /// \return Whether this tensor data have use persistent storage to save data.
-  bool IsPersistentData() const;
 
   /// \brief Gets tensor's dimension.
   /// \return The number of dimensions of the tensor data.
@@ -294,24 +295,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] flag [bool] Is parameter output or not.
   void SetMSParameterOutput(bool flag);
 
-  /// \brief Reset tensors data so that they are using contiguous memory chunks grouped by data type.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be processed.
-  /// \param[in] fusion_size [size_t] Maximum memory chunk size in bytes, 0 for unlimited.
-  /// \return TensorPys that data are pointed to each contiguous memory chunks.
-  static std::vector<std::shared_ptr<TensorPy>> FlattenTensors(const std::vector<std::shared_ptr<TensorPy>> &tensorpys,
-                                                               size_t fusion_size = 0);
-
-  /// \brief Check if FlattenTensors called for the input tensors.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The tensorpys to be checked.
-  /// \return True if FlattenTensors called for input tensorpys, false otherwise.
-  static bool IsFlattened(const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
-
-  /// \brief Get tensorpys for each contiguous memory chunks used by the input tensorpys.
-  /// \param[in] tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input tensorpys.
-  /// \return TensorPys that data are pointed to each contiguous memory chunks, empty if failed.
-  static std::vector<std::shared_ptr<TensorPy>> GetFlattenedTensors(
-    const std::vector<std::shared_ptr<TensorPy>> &tensorpys);
-
   /// \brief Check whether the type of tensor is complex.
   /// \return Boolean indicate whether the type of tensor is complex.
   bool IsComplex() const;
@@ -320,11 +303,6 @@ class COMMON_EXPORT TensorPy {
   /// \return Boolean indicate whether the type of tensor is signed.
   bool IsSigned() const;
 
-  /// \brief Get the fusion size for the given flat tensorpys.
-  /// \param[in] flat_tensorpys [std::vector<std::shared_ptr<TensorPy>>] The input flat tensorpys.
-  /// \return Fusion size for the given flat tensorpys.
-  static size_t GetFusionSize(const std::vector<std::shared_ptr<TensorPy>> &flat_tensorpys);
-
   /// \brief Check whether the tensor is used in auto grad.
   /// \return Boolean indicate whether the tensor is used in auto grad.
   bool HasAutoGrad() const;
@@ -332,8 +310,6 @@ class COMMON_EXPORT TensorPy {
   /// \brief Check whether the memory of tensor is contiguous.
   /// \return True if tensor memory is contiguous, false otherwise.
   bool NeedContiguous() const;
-  py::object GetFlattenTensor();
-  void SetFlattenTensor(py::object tensor);
 
   /// \brief Used for automatic gradient.
   /// \return The automatic gradient information.
@@ -367,22 +343,6 @@ class COMMON_EXPORT TensorPy {
   /// \param[in] retain_grad [py::object] The retain gradient.
   void SetRetainGrad(const py::object &retain_grad);
 
-  /// \brief Get the slice number of tensor persistent data.
-  /// \return The slice number of tensor persistent data.
-  const py::object GetSliceNumOfPersistentData() const;
-
-  /// \brief Set the slice number of persistent data to tensor.
-  /// \param[in] slice_num_of_persistent_data [py::object] The slice number of persistent data.
-  void SetSliceNumOfPersistentData(const py::object &slice_num_of_persistent_data);
-
-  /// \brief Get the slice shape of tensor persistent data.
-  /// \return The slice shape of persistent data.
-  const py::object GetSliceShapeOfPersistentData() const;
-
-  /// \brief Set the slice shape of persistent data to tensor.
-  /// \param[in] slice_shape_of_persistent_data [py::object] The slice shape of persistent data.
-  void SetSliceShapeOfPersistentData(const py::object &slice_shape_of_persistent_data);
-
   void UpdateStub(const TensorPtr &tensor);
 
   /// \brief Get storage of tensor.
@@ -413,8 +373,6 @@ class COMMON_EXPORT TensorPy {
   py::object grad_fn_;
   py::object requires_grad_;
   py::object retain_grad_;
-  py::object slice_num_of_persistent_data_;
-  py::object slice_shape_of_persistent_data_;
   py::object storage_{py::none()};
   std::string device_;
   TensorPtr tensor_{nullptr};
@@ -439,6 +397,13 @@ COMMON_EXPORT const py::handle ConvertToTensorPy(const py::handle &obj);
 /// \param[in] obj [py::handle] The python object.
 /// \return A pointer address of C++ Tensor.
 COMMON_EXPORT TensorPtr ConvertToTensor(const py::handle &obj);
+
+/// \brief Set Tensor value for TensorPy.
+///
+/// \param[in] obj [py::handle] The python object.
+/// \param[in] tensor_value [TensorPtr] C++ Tensor.
+COMMON_EXPORT void SetTensorValue(const py::handle &obj, const TensorPtr &tensor_value);
+
 COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
 template <typename T>
 struct PyType {

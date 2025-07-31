@@ -15,6 +15,7 @@
  */
 
 #include <string>
+#include "utils/stream_guard.h"
 #include "ms_extension.h"
 
 namespace mindspore::pynative {
@@ -182,7 +183,7 @@ class CustomMulPyboost : public Function<CustomMulPyboost> {
 
     auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
     auto op = std::make_shared<kernel::pyboost::OpRunner>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
-    op->set_stream_id(kernel::pyboost::PyBoostUtils::cur_stream_id());
+    op->set_stream_id(CurrentStream::id());
     op->set_outputs({output});
     // No need to convert input
     kernel::pyboost::PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x, y);

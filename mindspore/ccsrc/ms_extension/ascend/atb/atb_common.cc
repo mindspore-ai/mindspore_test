@@ -21,13 +21,6 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace ms::pynative {
-void *GetHostDataPtr(const ms::Tensor &t) {
-  auto tensor_ptr = t.tensor();
-  MS_EXCEPTION_IF_NULL(tensor_ptr);
-  auto &tensor_data = tensor_ptr->data();
-  return tensor_data.const_data() != nullptr ? tensor_data.data() : nullptr;
-}
-
 atb::Tensor AtbTensor(const ms::Tensor &t) {
   static std::map<mindspore::TypeId, aclDataType> dtypeMap = {
     {mindspore::kNumberTypeBool, ACL_BOOL},     {mindspore::kNumberTypeFloat16, ACL_FLOAT16},
@@ -43,8 +36,15 @@ atb::Tensor AtbTensor(const ms::Tensor &t) {
     a.desc.shape.dims[i] = shape[i];
   }
   a.dataSize = atb::Utils::GetTensorSize(a);
-  a.deviceData = t.GetDataPtr();
-  a.hostData = GetHostDataPtr(t);
+  const auto &ms_tensor = t.tensor();
+  MS_EXCEPTION_IF_NULL(ms_tensor);
+  const auto &address = ms_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(address);
+  if (address->GetDeviceType() == mindspore::device::DeviceType::kCPU) {
+    a.hostData = t.GetDataPtr();
+  } else {
+    a.deviceData = t.GetDataPtr();
+  }
   return a;
 }
 

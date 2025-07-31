@@ -19,7 +19,6 @@ from mindspore.parallel import rank_list_for_convert, convert_checkpoint_by_rank
 import mindspore.common.dtype as mstype
 from mindspore import context
 from mindspore.communication.management import init, get_rank
-from mindspore.communication import comm_func
 from mindspore.parallel.shard import Layout
 from .checkpoints_transform import TestNet, compile_net_and_save_ckpt, compare_ckpt_and_network_params, clean_ckpts
 
@@ -44,7 +43,7 @@ def run_convert(src_strategy_file, dst_strategy_file, src_ckpt_path, dst_ckpt_pa
                                      'rank_{}'.format(get_rank())), exist_ok=True)
         convert_checkpoint_by_rank(target_rank, checkpoint_files_map, save_checkpoint_file_name,
                                    src_strategy_file, dst_strategy_file)
-    comm_func.barrier()
+    ms.mint.distributed.barrier()
 
 
 def run_convert_checkpoint_by_layout(src_in_strategy, dst_in_strategy, enable_parallel_optimizer,

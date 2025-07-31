@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/primitive.h"
@@ -43,8 +44,8 @@ TEST_P(TestLogAddExp, logaddexp_dyn_shape) {
   DoFuncImplInferAndCompare<LogAddExpFuncImpl>(kNameLogAddExp, input_args, expect_shape, expect_type);
 
   // simple infer
-  auto input_val = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
-  auto other_val = std::make_shared<tensor::Tensor>(param.y_type->type_id(), param.y_shape);
+  auto input_val = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto other_val = tensor::from_spec(param.y_type->type_id(), param.y_shape, device::DeviceType::kCPU);
   DoFuncImplSimpleInferAndCompare<LogAddExpFuncImpl>(
       kNameLogAddExp, {input_val, other_val}, {param.out_shape}, {param.out_type});
 };

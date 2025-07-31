@@ -25,6 +25,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {
@@ -40,7 +41,7 @@ tensor::TensorPtr TransValueToInt32(const AnfNodePtr &input) {
   auto tensor = ori_value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   // case1: tensor no (data & empty)
-  if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+  if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
     MS_LOG(INFO) << "Const input data ptr is null and no empty tensor.";
     return nullptr;
   }
@@ -51,10 +52,10 @@ tensor::TensorPtr TransValueToInt32(const AnfNodePtr &input) {
     MS_LOG(INFO) << "Tensor type is not int64, it is " << TypeIdLabel(type_id);
     return nullptr;
   }
-  tensor::TensorPtr new_tensor = std::make_shared<tensor::Tensor>(kInt32->type_id(), tensor->shape());
+  tensor::TensorPtr new_tensor = tensor::from_spec(kInt32->type_id(), tensor->shape(), device::DeviceType::kCPU);
   auto *ori_data = static_cast<int64_t *>(tensor->data_c());
   auto *new_data = static_cast<int32_t *>(new_tensor->data_c());
-  for (int i = 0; i < SizeToInt(tensor->data().size()); ++i) {
+  for (int i = 0; i < SizeToInt(tensor->DataSize()); ++i) {
     new_data[i] = static_cast<int32_t>(ori_data[i]);
   }
   // add device info

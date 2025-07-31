@@ -18,11 +18,13 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "runtime/device/res_manager/tensor_array.h"
+#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -91,11 +93,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -111,7 +114,7 @@ tensor::TensorPtr CPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
   ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
+  auto tensor = tensor::from_spec(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
 
@@ -133,7 +136,7 @@ tensor::TensorPtr CPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   auto type_size = UnitSizeInBytes(type_id);
   size_t tensor_size = (end - start) * type_size;
   ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::from_spec(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(first_tensor->device_address());
   auto ptr = first_tensor->device_address()->GetMutablePtr();
   auto offset_size = start * type_size;
@@ -213,6 +216,120 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   return device_address;
 }
 
+bool CPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                             size_t stream_id) const {
+  return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
+}
+bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                              size_t stream_id, bool) const {
+  const auto &dst_device_address = dynamic_cast<const CPUDeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const CPUDeviceAddress *>(src_device_sync.get());
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
+    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address
+                 << " and src device address: " << src_device_address;
+    return true;
+  }
+
+  if (dst_device_address->format() != src_device_address->format()) {
+    MS_LOG(ERROR) << "Format is different, src(format:" << src_device_address->format()
+                  << "), dst(format:" << dst_device_address->format() << ") for device address:" << dst_device_address;
+    return false;
+  }
+  auto dst_ptr = dst_device_address->GetMutablePtr();
+  auto src_ptr = src_device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(src_device_address->GetMutablePtr());
+  MS_EXCEPTION_IF_NULL(dst_device_address->GetMutablePtr());
+  if (dst_ptr == src_ptr) {
+    MS_LOG(DEBUG) << "host_ptr is equal to device ptr, request ignored.";
+    return true;
+  }
+  auto dst_type_id = dst_device_address->type_id();
+  auto src_type_id = src_device_address->type_id();
+
+  if (src_type_id == dst_type_id) {
+    if (src_device_address->GetSize() > dst_device_address->GetSize()) {
+      MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
+                      << ", dst size: " << dst_device_address->GetSize();
+      return true;
+    }
+    auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
+    // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
+    if (ret_code == ERANGE) {
+      MS_LOG(DEBUG) << "Copy for same type and return erange from device address:" << src_device_address->ToString()
+                    << " to:" << dst_device_address->ToString();
+      ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
+                      dst_device_address->GetSize(), src_type_id);
+      return true;
+    } else if (ret_code != EOK) {
+      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address
+                    << " to :" << dst_device_address;
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  if (dst_type_id == kNumberTypeFloat16 && src_type_id == kNumberTypeFloat32) {
+    FloatToHalf(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
+  } else if (dst_type_id == kNumberTypeFloat64 && src_type_id == kNumberTypeFloat32) {
+    FloatToDouble(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(double));
+  } else if (dst_type_id == kNumberTypeFloat32 && src_type_id == kNumberTypeFloat64) {
+    DoubleToFloat(dst_ptr, src_ptr, dst_device_address->GetSize() >> 2);
+  } else if (dst_type_id == kNumberTypeInt16 && src_type_id == kNumberTypeInt32) {
+    IntToShort(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
+  } else if (dst_type_id == kNumberTypeInt64 && src_type_id == kNumberTypeInt32) {
+    IntToLong(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(int64_t));
+  } else {
+    MS_LOG(ERROR) << "Types not match. src type: " << TypeIdLabel(src_type_id)
+                  << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
+    return false;
+  }
+  return true;
+}
+
+bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  auto ret_code = memcpy_s(dst, size, src, size);
+  if (ret_code == ERANGE) {
+    ConvertSameType(dst, src, size, kNumberTypeUInt8);
+  } else if (ret_code != EOK) {
+    MS_LOG(ERROR) << "Failed to copy tensor from ptr:" << src << " to :" << dst << " size:" << size;
+    return false;
+  }
+  return true;
+}
+
+MS_REGISTER_HAL_COPY_FUNC(
+  DeviceType::kCPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kCPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }),
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kCPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+  }),
+  ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kCPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
+  }));
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
 }  // namespace cpu
 }  // namespace device

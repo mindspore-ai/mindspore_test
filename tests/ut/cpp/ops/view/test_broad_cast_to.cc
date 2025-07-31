@@ -15,6 +15,7 @@
  */
 
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/broadcast_to_strides_calc.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
@@ -35,7 +36,7 @@ TEST_F(TestViewBroadcastTo, func) {
   auto input_perm = MakeValue(perm_data);
 
   std::vector<int64_t> tensor_data = {1, 2, 3, 4};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({1, 4});
 
   auto storage_list = BroadcastToCalc(prim, std::vector<ValuePtr>({input_tensor, input_perm}));
@@ -64,7 +65,7 @@ TEST_F(TestViewBroadcastTo, BroadDim) {
     tensor_total_length *= it;
   }
   std::vector<int64_t> tensor_data(tensor_total_length, 0);
-  auto input_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, tensor_shape, (void *)tensor_data.data(),
+  auto input_tensor = tensor::from_buffer(kNumberTypeInt64, tensor_shape, (void *)tensor_data.data(),
                                                        tensor_total_length * sizeof(int64_t));
 
   std::vector<ValuePtr> inputs{input_tensor, input_perm};

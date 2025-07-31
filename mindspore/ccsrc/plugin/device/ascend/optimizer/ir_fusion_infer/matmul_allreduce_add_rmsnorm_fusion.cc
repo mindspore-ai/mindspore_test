@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/core_ops_name.h"
@@ -171,7 +172,7 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   // create empty bias node
   TypeId bias_tensor_type = kNumberTypeFloat16;
   std::vector<int64_t> bias_tensor_shape = {0};
-  auto empty_bias_tensor = std::make_shared<tensor::Tensor>(bias_tensor_type, bias_tensor_shape);
+  auto empty_bias_tensor = tensor::from_spec(bias_tensor_type, bias_tensor_shape, device::DeviceType::kCPU);
   auto bias = CreateValueNodeWithKernelInfo(func_graph, empty_bias_tensor);
 
   auto residual = utils::cast<AnfNodePtr>((*equiv)[residual_]);

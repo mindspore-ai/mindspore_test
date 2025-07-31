@@ -93,12 +93,13 @@ ValuePtr CastOperation::DoAutoCast(const FrontendOpRunInfoPtr &op_run_info, cons
     return dst_value;
   }
   MS_EXCEPTION_IF_NULL(op_run_info);
-  if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN && v->isa<tensor::Tensor>()) {
-    MS_LOG(DEBUG) << "Source value: " << v->ToString();
-    dst_value = CastUtils::TensorToDstDtypeValue(v, dst_type.first);
-    MS_LOG(DEBUG) << "Cast to value: " << dst_value->ToString() << " without dispatching cast op";
-    return dst_value;
-  }
+  // todo: replace with scalar cast.
+  // if (op_run_info->source_type[index] != ops::OP_DTYPE::DT_BEGIN && v->isa<tensor::Tensor>()) {
+  //   MS_LOG(DEBUG) << "Source value: " << v->ToString();
+  //   dst_value = CastUtils::TensorToDstDtypeValue(v, dst_type.first);
+  //   MS_LOG(DEBUG) << "Cast to value: " << dst_value->ToString() << " without dispatching cast op";
+  //   return dst_value;
+  // }
   // When step 1 does not work, creating a cast op to get destination data type value.
   constexpr auto input_size = 2;
   const auto &cast_run_info = std::make_shared<FrontendOpRunInfo>();

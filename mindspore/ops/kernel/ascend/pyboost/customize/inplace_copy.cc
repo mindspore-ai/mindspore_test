@@ -26,6 +26,7 @@
 #include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -33,14 +34,11 @@ namespace pyboost {
 namespace {
 device::DeviceType GetTensorDeviceType(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor,
                                        const std::string &name) {
-  auto device_type = device::DeviceType::kCPU;
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
-    device_type = device_address->GetDeviceType();
-  } else {
-    MS_LOG(DEBUG) << "For InplaceCopy, " << name << " don't have device_address, set it to host tensor.";
+  if (addr == nullptr) {
+    MS_LOG(EXCEPTION) << "For InplaceCopy, " << name << " don't have device_address.";
   }
+  auto device_type = addr->GetDeviceType();
   if (MS_UNLIKELY(device_type != device::DeviceType::kAscend && device_type != device::DeviceType::kCPU)) {
     MS_LOG(EXCEPTION) << "For InplaceCopy, device_type must be Ascend or CPU, but got "
                       << GetDeviceNameByType(device_type);
@@ -167,15 +165,10 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
   }
 
   auto dst_storage_offset = LongToSize(dst->storage_offset());
-  if (dst_storage_offset != 0 || src->Size() != dst->Size() || dst->data_c() == nullptr) {
-    MS_LOG(DEBUG) << "InplaceCopyD2H don't support discontiguous dst yet.";
+  if (dst_storage_offset != 0 || src->Size() != dst->Size()) {
+    MS_LOG(DEBUG) << "InplaceCopyD2H don't support discontiguous dst yet. dst_storage_offset " << dst_storage_offset
+                  << " src size " << src->Size() << " dist size " << dst->Size();
     return InplaceCopyD2D(op, dst, src);
-  }
-
-  auto dst_addr = dst->device_address();
-  if (dst_addr != nullptr) {
-    dst->data_sync();
-    dst->set_device_address(nullptr);
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), src);
@@ -195,6 +188,7 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
                                            runtime::ProfilerEvent::kPyNativeLaunchTask, "InplaceCopyD2H", false);
         device_context->device_res_manager_->BindDeviceToCurrentThread(false);
         void *dst_ptr = dst->data_c();
+        MS_EXCEPTION_IF_NULL(dst_ptr);
 
         if (MS_UNLIKELY(src_ptr == nullptr)) {
           MS_LOG(ERROR) << "src device_ptr: " << src_ptr << ", Maybe you free the device memory before InplaceCopyD2H"
@@ -236,19 +230,10 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
 
 tensor::TensorPtr InplaceCopyH2H(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src) {
   if (dst->shape() == src->shape() && dst->Dtype()->type_id() == src->Dtype()->type_id()) {
+    runtime::Pipeline::Get().backend_stage()->Wait();
     constexpr size_t kGrainSize = 32768;
     auto copy_size = std::max(dst->DataSize(), src->DataSize());
     if (copy_size < kGrainSize) {
-      auto dst_addr = dst->device_address();
-      if (dst_addr != nullptr) {
-        dst->data_sync();
-        dst->set_device_address(nullptr);
-      }
-      auto src_addr = src->device_address();
-      if (src_addr != nullptr) {
-        src->data_sync();
-        src->set_device_address(nullptr);
-      }
       auto size = dst->Size();
       auto ret = EOK;
       if (size > 0 && !common::IsCompileSimulation()) {

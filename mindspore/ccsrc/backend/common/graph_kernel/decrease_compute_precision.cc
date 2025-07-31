@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -107,9 +108,9 @@ CNodePtr InsertCastForGraphKernel(const FuncGraphPtr &func_graph, const CNodePtr
     if (ori_dtype == TypeId::kNumberTypeFloat32) {
       if (cur_input->isa<ValueNode>()) {
         auto valuePtr = cur_input->cast<ValueNodePtr>();
-        auto itensor = std::make_shared<tensor::Tensor>(
-          TypeId::kNumberTypeFloat16, valuePtr->value()->cast<tensor::TensorPtr>()->shape(),
-          valuePtr->value()->cast<tensor::TensorPtr>()->data_c(), TypeId::kNumberTypeFloat32);
+        auto itensor =
+          tensor::from_buffer(TypeId::kNumberTypeFloat16, valuePtr->value()->cast<tensor::TensorPtr>()->shape(),
+                              valuePtr->value()->cast<tensor::TensorPtr>()->data_c(), TypeId::kNumberTypeFloat32);
         auto value_node = std::make_shared<ValueNode>(itensor);
         value_node->set_abstract(itensor->ToAbstract());
         (void)mng->Replace(cur_input, value_node);

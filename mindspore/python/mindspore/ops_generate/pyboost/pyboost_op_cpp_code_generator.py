@@ -710,7 +710,7 @@ class InternalOpCppCodeGenerator:
         self.internal_single_op_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_SOURCE_TEMPLATE
         self.internal_single_op_customize_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_CUSTOMIZE_TEMPLATE
         self.customize_inc_template = Template(
-            '#include "{ms_ops_kernel_path}/ascend/pyboost/internal/customize/${operator_name}.h"\n'
+            '#include "${ms_ops_kernel_path}/ascend/pyboost/internal/customize/${operator_name}.h"\n'
         )
         self.gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/auto_generate/"
 
@@ -819,13 +819,13 @@ class InternalOpCppCodeGenerator:
             return_type=cpp_func_return)
         save_path = os.path.join(work_path, self.gen_path)
         save_file(save_path, f"{op_proto.op_name}.h", internal_op_header_str)
-        self.customize_inc_template.replace(
+        customize_inc_str = self.customize_inc_template.replace(
             ms_ops_kernel_path=K.MS_OPS_KERNEL_PATH,
             operator_name=op_proto.op_name)
         merge_op_header.append(
             self.internal_single_op_header_template.replace(
                 operator_name=op_proto.op_name,
-                customize_inc=self.customize_inc_template))
+                customize_inc=customize_inc_str))
 
         # generate op function
         _, call_func_outputs = op_parser.generate_pyboost_outputs()

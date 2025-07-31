@@ -20,6 +20,7 @@
 #include <cxxabi.h>
 #endif
 
+#include "utils/stream_guard.h"
 #include "ms_extension/common/tensor.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
@@ -87,7 +88,7 @@ void PyboostRunner::_Run() {
 }
 
 void PyboostRunner::_PrepareStream() {
-  _stream_id_ = static_cast<size_t>(PyBoostUtils::cur_stream_id());
+  _stream_id_ = static_cast<size_t>(mindspore::CurrentStream::id());
   _stream_ = _device_context_->device_res_manager_->GetStream(_stream_id_);
 }
 

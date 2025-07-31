@@ -677,10 +677,10 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
   for (const auto &output_index_to_copy_kt : kernel_actor->copy_output_kernel_tensors_) {
     const auto &output_index = output_index_to_copy_kt.first;
     const auto &dest_kernel_tensor = output_index_to_copy_kt.second.first;
-    const auto &dest_device_address = dest_kernel_tensor->device_address().get();
+    const auto &dest_device_address = dest_kernel_tensor->device_address();
     const auto &dest_device_context = output_index_to_copy_kt.second.second.first;
     const auto &src_kernel_tensor = kernel_actor->output_kernel_tensors_.at(output_index);
-    const auto &src_device_address = src_kernel_tensor->device_address().get();
+    const auto &src_device_address = src_kernel_tensor->device_address();
     const auto &ref_output_kernel_tensors = output_index_to_copy_kt.second.second.second;
 
     if (kernel_actor->is_dynamic_shape_) {
@@ -699,7 +699,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       }
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Free heter output address:" << dest_kernel_tensor->ToString() << " for actor:" << kernel_actor->GetAID();
-      dest_device_context->device_res_manager_->FreeMemory(dest_device_address);
+      dest_device_context->device_res_manager_->FreeMemory(dest_device_address.get());
     }
     std::vector<KernelTensorPtr> mem_alloc_list = {dest_kernel_tensor};
     MemoryManagerActor::GetInstance()->AllocateMemory(&mem_alloc_list, dest_device_context, context,
@@ -708,9 +708,10 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       // Maybe allocate memory failed, early stop to run graph.
       return false;
     }
-
-    auto ret = Copy(dest_device_address, src_device_address);
-    if (!ret) {
+    if (!SyncAllStreamForDeviceAddress(dest_device_address->GetDeviceType() == device::DeviceType::kCPU
+                                         ? src_device_address
+                                         : dest_device_address) ||
+        !SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
                     << ", output index: " << output_index << ", dest device address: " << dest_device_address
                     << ", src device address: " << src_device_address;
@@ -792,14 +793,6 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      if (device_tensor->GetDeviceType() != device_contexts_[0]->GetDeviceType()) {
-        MS_LOG(DEBUG) << "Skip free ref count for no used parameter:" << iter.second.first.first->DebugString()
-                      << " inner index:" << iter.second.first.second << " out index:" << iter.second.second
-                      << " kernel tensor:" << kernel_tensor->ToString()
-                      << " device context:" << device_contexts_[0]->device_context_key().ToString()
-                      << " for actor:" << GetAID();
-        continue;
-      }
       if (device_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -1367,7 +1360,7 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
       MS_EXCEPTION_IF_NULL(item.second);
       MS_LOG(INFO) << "The input ref node copy back from address: " << item.first->GetPtr()
                    << " to address: " << item.second->GetPtr() << ".";
-      if (!Copy(item.second, item.first)) {
+      if (!SyncCopy(item.second, item.first, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
       }
     }
@@ -1487,7 +1480,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
       continue;
     }
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-    auto input_device_tensor = input_kernel_tensors_[i]->device_address().get();
+    auto input_device_tensor = input_kernel_tensors_[i]->device_address();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     UpdateShape(input_nodes[i], node_device_kernel_tensor, input_kernel_tensor, type_);
     node_device_tensor->set_user_data(input_device_tensor->user_data());
@@ -1522,13 +1515,13 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                  << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
                  << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    if (!Copy(copy_device_tensor.get(), input_device_tensor)) {
+    if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }
 
     if (is_parameters_need_copy_[i]) {
-      ref_node_addr_map_[copy_device_tensor.get()] = input_device_tensor;
+      ref_node_addr_map_[copy_device_tensor] = input_device_tensor;
     }
   }
   return true;

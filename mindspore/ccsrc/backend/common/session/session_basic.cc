@@ -29,6 +29,7 @@
 #include "utils/hash_map.h"
 #include "ops/primitive_c.h"
 #include "ir/manager.h"
+#include "ir/tensor_new.h"
 #include "abstract/utils.h"
 #include "common/common_utils.h"
 #include "base/base_ref_utils.h"
@@ -88,7 +89,7 @@ BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_outpu
   auto &node = node_output_pair.first;
   MS_EXCEPTION_IF_NULL(node);
   if (HasAbstractMonad(node)) {
-    return std::make_shared<tensor::Tensor>(int64_t(0), kBool);
+    return tensor::from_scalar(int64_t(0), kBool);
   }
   // if node is a value node, no need sync addr from device to host
   if (node->isa<ValueNode>()) {
@@ -144,11 +145,11 @@ BaseRef CreateNodeOutputTensor(const session::KernelWithIndex &node_output_pair,
   if (is_internal_output) {
     tensor = graph->GetInternalOutputTensor(node, output_index);
     if (tensor == nullptr) {
-      tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+      tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
       graph->AddInternalOutputTensor(node, output_index, tensor);
     }
   } else {
-    tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
   }
   MS_EXCEPTION_IF_NULL(tensor);
   if (is_internal_output) {
@@ -668,8 +669,7 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   } else if (value->isa<StringImm>()) {
     auto value_string = GetValue<std::string>(value);
     const ShapeVector shape = {1, SizeToLong(value_string.size())};
-    tensor::TensorPtr tensor =
-      std::make_shared<tensor::Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
+    tensor::TensorPtr tensor = tensor::from_buffer(kObjectTypeString, shape, value_string.data(), value_string.size());
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->set_sync_status(kNeedSyncHostToDevice);
     return tensor;
@@ -919,47 +919,6 @@ tensor::TensorPtr SessionBasic::GetOpInputTensorByIndex(const CNodePtr &cnode,
   }
 }
 
-void SessionBasic::UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_graph, VectorRef *const outputs,
-                                 const std::vector<tensor::TensorPtr> &input_tensors,
-                                 std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node) const {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_EXCEPTION_IF_NULL(outputs);
-  MS_EXCEPTION_IF_NULL(tensor_to_node);
-  KernelMapTensor node_to_tensor;
-  auto anf_outputs = kernel_graph->outputs();
-  for (auto &item : anf_outputs) {
-    MS_EXCEPTION_IF_NULL(item);
-    MS_LOG(DEBUG) << "Update output[" << item->DebugString() << "]";
-    (void)outputs->emplace_back(
-      CreateNodeOutputTensors(item, kernel_graph, input_tensors, tensor_to_node, &node_to_tensor));
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  for (auto &item : *tensor_to_node) {
-    auto &tensor = item.first;
-    auto &node = item.second.first;
-    auto &output_index = item.second.second;
-    DeviceAddressPtr address = nullptr;
-    MS_LOG(EXCEPTION) << "SessionBasic::UpdateOutputs is deprecated.";
-    if (ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
-      address = AnfAlgo::GetMutableOutputAddr(node, output_index, false);
-    } else {
-      address = AnfAlgo::GetMutableOutputAddr(node, output_index);
-    }
-    MS_EXCEPTION_IF_NULL(tensor);
-    tensor->set_device_address(address);
-    MS_LOG(DEBUG) << "Debug address: Output tensor obj " << tensor.get() << ", tensor id " << tensor->id()
-                  << ", device address " << tensor->device_address().get();
-    if (common::AnfAlgo::IsDynamicShape(node)) {
-      const auto &updated_shape = common::AnfAlgo::GetOutputInferShape(node, output_index);
-      (void)tensor->set_shape(updated_shape);
-    }
-    tensor->data_sync(false);
-    tensor->set_sync_status(kNeedSyncHostToDevice);
-  }
-}
-
 void SessionBasic::CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors,
                                        VectorRef *outputs,
                                        std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node,
@@ -982,9 +941,6 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
                                        std::map<DeviceAddressPtr, DeviceAddressPtr> *) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (AnfUtils::UseMemScheduler()) {
-    return;
-  }
   MS_EXCEPTION_IF_NULL(outputs);
   for (const auto &item : *outputs) {
     if (utils::isa<VectorRefPtr>(item)) {
@@ -1010,9 +966,8 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
         }
       }
       if (tensor->NeedSyncDeviceToHostImmediately()) {
-        tensor->data_sync(false);
-        tensor->set_device_address(nullptr);
-        tensor->set_sync_status(kNeedSyncHostToDevice);
+        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+        std::abort();
       }
     }
   }
@@ -1037,7 +992,7 @@ void SessionBasic::GetModelInputsInfo(uint32_t graph_id, std::vector<tensor::Ten
       auto input_shape = AnfAlgo::GetOutputDeviceShape(parameter, 0);
       auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(parameter);
       auto data_type = kernel_build_info->GetOutputDeviceType(0);
-      auto ms_tensor = std::make_shared<tensor::Tensor>(data_type, input_shape);
+      auto ms_tensor = tensor::from_spec(data_type, input_shape, device::DeviceType::kCPU);
       (void)inputs->emplace_back(ms_tensor);
       (void)inputs_name->emplace_back(parameter->name());
     }
@@ -1222,20 +1177,6 @@ void SessionBasic::RunGraphImpl(const GraphId &graph_id, const std::vector<tenso
   ExecuteGraph(kernel_graph);
   PostExecuteGraph(kernel_graph, inputs, outputs);
   MS_LOG(INFO) << "Status record: end run graph. graph id: " << graph_id;
-}
-
-void SessionBasic::ProcessInputTensorsForHeterogeneous(const std::string &cur_target,
-                                                       const std::vector<tensor::TensorPtr> &input_tensors) const {
-  for (auto &tensor : input_tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-    if (device_address != nullptr) {
-      if (device_address->GetDeviceType() != device::GetDeviceTypeByName(cur_target)) {
-        tensor->data_sync();
-        tensor->set_device_address(nullptr);
-      }
-    }
-  }
 }
 
 void SessionBasic::EraseValueNodeTensor(const std::vector<InputType> &input_types,

@@ -519,13 +519,12 @@ inline bool EnableRuntimeNewPipeline() {
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish = true);
 
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor);
 size_t GetDefragMemoryStepFreq();
 
-// Copy data from src_device_tensor to dst_device_tensor.
-bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor);
-
-bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
-               size_t stream_id = SIZE_MAX);
+// Use async copy should use callback to avoid src device tenor released.
+bool AsyncCopyForParameter(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
+                           size_t stream_id = SIZE_MAX);
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context);
 // The memory free for the pynative bprop graph which is managed by the value node.

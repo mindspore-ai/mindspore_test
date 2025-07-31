@@ -23,6 +23,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor, context, nn, ops, Parameter
 from mindspore.common import mutable, JitConfig
+from mindspore import mint
 
 RUNNING_MODES = [
     "PYNATIVE_MODE",
@@ -688,6 +689,11 @@ def get_name_by_op(prim):
 def clone_inputs(args, inplace_update=False):
     def clone_func(arg):
         if isinstance(arg, (Tensor, Parameter)):
+            if arg.device == "CPU":
+                # Only CPU Tensor need to keep origin device type after copy.
+                # And empty_like is not implemented on GPU.
+                new_arg = mint.empty_like(arg, device=arg.device)
+                return new_arg.copy_(arg)
             return arg.copy()
         return copy.deepcopy(arg)
 

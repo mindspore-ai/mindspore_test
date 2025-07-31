@@ -544,9 +544,8 @@ std::optional<std::vector<int64_t>> ConvertTensorToIntVector(const py::object &o
     return std::nullopt;
   }
   auto size = tensor->DataSize();
-  if (tensor->device_address() != nullptr) {
-    tensor->data_sync();
-  }
+  MS_EXCEPTION_IF_NULL(tensor->device_address());
+  tensor = tensor->device_address()->GetDeviceType() == device::DeviceType::kCPU ? tensor : tensor->cpu();
   if (data_type == kNumberTypeInt64) {
     auto data = static_cast<int64_t *>(tensor->data_c());
     return std::vector<int64_t>(data, data + size);
@@ -605,15 +604,15 @@ std::optional<int64_t> ConvertTensorToInt64(const py::object &obj) {
     return std::nullopt;
   }
   if (tensor->data_type() == kNumberTypeInt64) {
-    return static_cast<int64_t>(static_cast<int64_t *>(parse::GetTensorDataPtr(tensor))[0]);
+    return parse::GetTensorDataValue<int64_t>(tensor);
   } else if (tensor->data_type() == kNumberTypeInt32) {
-    return static_cast<int64_t>(static_cast<int32_t *>(parse::GetTensorDataPtr(tensor))[0]);
+    return static_cast<int64_t>(parse::GetTensorDataValue<int32_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt16) {
-    return static_cast<int64_t>(static_cast<int16_t *>(parse::GetTensorDataPtr(tensor))[0]);
+    return static_cast<int64_t>(parse::GetTensorDataValue<int16_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt8) {
-    return static_cast<int64_t>(static_cast<int8_t *>(parse::GetTensorDataPtr(tensor))[0]);
+    return static_cast<int64_t>(parse::GetTensorDataValue<int8_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeUInt8) {
-    return static_cast<int64_t>(static_cast<uint8_t *>(parse::GetTensorDataPtr(tensor))[0]);
+    return static_cast<int64_t>(parse::GetTensorDataValue<uint8_t>(tensor));
   } else {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int.";
     return std::nullopt;

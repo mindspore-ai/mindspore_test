@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/unstack_strides_calc.h"
 
 namespace mindspore {
@@ -29,7 +30,7 @@ class TestViewUnstack : public TestView {
 TEST_F(TestViewUnstack, View) {
   auto prim = std::make_shared<Primitive>("Unstack");
   std::vector<int64_t> tensor_data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({2, 1, 5});
 
   int64_t axis_data = 0;

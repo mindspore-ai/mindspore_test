@@ -19,6 +19,7 @@
 #include <utility>
 #include <memory>
 #include <complex>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -114,7 +115,7 @@ class SelectFrontendFuncImpl : public OpFrontendFuncImpl {
     auto conds = cond_tensor->data_c();
     MS_EXCEPTION_IF_NULL(conds);
     auto type_id = x_tensor->data_type();
-    auto result_tensor = std::make_shared<tensor::Tensor>(type_id, x_shape);
+    auto result_tensor = tensor::from_spec(type_id, x_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     SelectInnerInferValue(primitive, cond_tensor, x_tensor, y_tensor, result_tensor);
     return result_tensor;

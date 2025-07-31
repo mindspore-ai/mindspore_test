@@ -19,8 +19,10 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 #include "plugin/res_manager/cpu/visible.h"
 #include "common/device_address.h"
+#include "ir/tensor_data.h"
 
 namespace mindspore {
 namespace device {
@@ -55,7 +57,29 @@ class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
 
   ~CPUDeviceAddress() override = default;
   DeviceAddressPtr CloneDeviceAddress() override;
+  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
 
+  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
+                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
+                        const UserDataPtr &user_data = nullptr) const override;
+  void ClearDeviceMemory() override;
+  void ClearUserData() override;
+
+  // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
+  // automatically when DeviceAddress destructed.
+  void SetDevicePtrDeleter();
+
+  DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+
+  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+
+  const tensor::TensorDataPtr &data() const override { return data_; }
+
+  bool has_data() const override { return data_ != nullptr; }
+
+ protected:
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
                         bool sync_on_demand = false) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
@@ -67,22 +91,10 @@ class CPU_RES_MANAGER_EXPORT CPUDeviceAddress : public DeviceAddress {
                          size_t) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
-  bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
-                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
-                        const UserDataPtr &user_data = nullptr) const override;
 
-  bool SyncHostToDevice(void *device_ptr, const void *host_ptr, size_t size, const std::string &device_name,
-                        uint32_t device_id, mindspore::Format format, const ShapeVector &shape, size_t stream_id,
-                        const UserDataPtr &user_data = nullptr) const override;
-
-  void ClearDeviceMemory() override;
-  void ClearUserData() override;
-
-  // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
-  // automatically when DeviceAddress destructed.
-  void SetDevicePtrDeleter();
-
-  DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+ private:
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
 };
 }  // namespace cpu
 }  // namespace device

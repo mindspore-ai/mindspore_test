@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
@@ -65,7 +66,7 @@ INSTANTIATE_TEST_CASE_P(
 class TestTrilExtSimpleInfer : public TestOps, public testing::WithParamInterface<TrilExtShapeParams> {};
 TEST_P(TestTrilExtSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   TrilExtFuncImpl tril_ext_func_impl;
   auto prim = std::make_shared<Primitive>("TrilExt");
   ASSERT_NE(prim, nullptr);

@@ -17,6 +17,7 @@
 #include <complex>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
@@ -76,8 +77,8 @@ class SubFrontendFuncImpl : public OpFrontendFuncImpl {
 
     auto data_size = x1_tensor->DataSize();
     auto dtype = x1_tensor->data_type();
-    auto result_tensor = x1_shape.size() != 0 ? std::make_shared<tensor::Tensor>(dtype, x1_shape)
-                                              : std::make_shared<tensor::Tensor>(dtype, x2_shape);
+    auto result_tensor = x1_shape.size() != 0 ? tensor::from_spec(dtype, x1_shape, device::DeviceType::kCPU)
+                                              : tensor::from_spec(dtype, x2_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto iter = sub_impl_list.find(dtype);
     if (iter == sub_impl_list.end()) {

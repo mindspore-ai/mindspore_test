@@ -42,6 +42,7 @@
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "utils/tensor_construct_utils.h"
 #include "utils/ms_utils_secure.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace opt {
@@ -312,7 +313,8 @@ AnfNodePtr ZeroLikeFillZero::operator()(const OptimizerPtr &, const AnfNodePtr &
     return node;
   }
 
-  tensor::TensorPtr new_tensor_ptr = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
+  tensor::TensorPtr new_tensor_ptr =
+    tensor::from_spec(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
   size_t mem_size = GetTypeByte(tensor_type_ptr) * LongToSize(new_tensor_ptr->ElementsNum());
   uint8_t *data = reinterpret_cast<uint8_t *>(new_tensor_ptr->data_c());
   if (common::huge_memset(data, mem_size, 0x0, mem_size) != EOK) {
@@ -411,7 +413,7 @@ ValuePtr PynativeEliminater::FillZero(const ValuePtr &value, const AnfNodePtr &n
     auto out_t = TensorConstructUtils::CreateZerosTensor(tensor->Dtype(), tensor->shape());
     MS_EXCEPTION_IF_NULL(out_t);
     char *data = reinterpret_cast<char *>(out_t->data_c());
-    std::fill(data, data + out_t->data().nbytes(), 0);
+    std::fill(data, data + out_t->DataNBytes(), 0);
     out = out_t;
   }
 
@@ -473,7 +475,7 @@ void PynativeEliminater::OperatorHandle3(const std::vector<PatternNode<AnfNodePt
       if (value->isa<tensor::Tensor>() && value_node->used_graph_count() == 1) {
         auto tensor = value->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
-        auto new_tensor = std::make_shared<tensor::Tensor>(tensor->Dtype()->type_id(), tensor->shape());
+        auto new_tensor = tensor::from_spec(tensor->Dtype()->type_id(), tensor->shape(), device::DeviceType::kCPU);
         value_node->set_value(new_tensor);
       }
     }
@@ -599,8 +601,7 @@ AnfNodePtr AllReduceConstElim::operator()(const OptimizerPtr &, const AnfNodePtr
       }
       auto constant_tensor = constant_value_node->value()->cast<tensor::TensorPtr>();
       auto tensor_dtype = constant_tensor->Dtype();
-      auto num_of_device_node =
-        NewValueNode(std::make_shared<tensor::Tensor>(static_cast<int64_t>(num_of_devices), tensor_dtype));
+      auto num_of_device_node = NewValueNode(tensor::from_scalar(static_cast<int64_t>(num_of_devices), tensor_dtype));
       // Multiply nodes
       auto mul_prim = prim::GetPythonOps("tensor_mul", "mindspore.ops.functional");
       MS_EXCEPTION_IF_NULL(mul_prim);

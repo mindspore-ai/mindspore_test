@@ -20,6 +20,7 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "base/bfloat16.h"
 #include "infer/ops_func_impl/tile.h"
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
@@ -488,7 +489,7 @@ tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list
   }
   MS_LOG(INFO) << op_name() << " call start";
   // create output tensor
-  auto output_tensor = std::make_shared<tensor::Tensor>(output_type, output_shape);
+  auto output_tensor = tensor::from_spec(output_type, output_shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   outputs_.push_back(output_tensor);
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, tensors_tensor_list_vector);
@@ -510,8 +511,8 @@ tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list
     size_t offset = 0;
     for (size_t i = 0; i < tensors_tensor_list_vector.size(); ++i) {
       auto output_tensor_i =
-        std::make_shared<tensor::Tensor>(outputs[0]->data_type(), tensors_tensor_list_vector[i]->shape());
-      auto sz = LongToSize(output_tensor_i->data().nbytes());
+        tensor::from_spec(outputs[0]->data_type(), tensors_tensor_list_vector[i]->shape(), device::DeviceType::kNone);
+      auto sz = LongToSize(output_tensor_i->DataNBytes());
       device_address->set_ptr(device_ptr + offset);
       device_address->SetSize(sz);
       output_tensor_i->set_device_address(device_address);

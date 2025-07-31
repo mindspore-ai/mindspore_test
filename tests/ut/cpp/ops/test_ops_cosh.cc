@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
@@ -57,7 +58,7 @@ TEST_P(TestCosh, cosh_dyn_shape) {
   ASSERT_TRUE(*out_dtype == *expect_dtype);
 
   // simple infer
-  auto x_value = std::make_shared<tensor::Tensor>(dtype_param.x_type->type_id(), shape_param.x_shape);
+  auto x_value = tensor::from_spec(dtype_param.x_type->type_id(), shape_param.x_shape, device::DeviceType::kCPU);
   auto expect_shape_simple_infer = {shape_param.out_shape};
   auto expect_dtype_simple_infer = {dtype_param.out_type};
   DoFuncImplSimpleInferAndCompare<CoshFuncImpl>(kNameCosh, {x_value}, {expect_shape_simple_infer},

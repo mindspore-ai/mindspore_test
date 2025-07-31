@@ -312,7 +312,7 @@ class TransposeHandle : public TransformOp {
       return nullptr;
     }
     auto op = inner::OpRegistry::Instance().NewOp(op_);
-    auto perm_tensor = std::make_shared<tensor::Tensor>(perm, kInt64);
+    auto perm_tensor = tensor::from_vector(perm, kInt64);
     node_to_input_tensor_map_[op] = perm_tensor;
     op->SetAttr(kAttrDstFormat, MakeValue(dst_format));
     return op;
@@ -371,7 +371,7 @@ class ReshapeHandle : public TransformOp {
     auto op = inner::OpRegistry::Instance().NewOp(op_);
     auto out_format = trans_type == TransOpType::kTransAB ? format_b_ : format_a_;
     auto out_shape = DecodeShape(out_format);
-    auto shape_tensor = std::make_shared<tensor::Tensor>(out_shape, kInt64);
+    auto shape_tensor = tensor::from_vector(out_shape, kInt64);
     node_to_input_tensor_map_[op] = shape_tensor;
     return op;
   }
