@@ -15,7 +15,8 @@
 """test bytecode CALL_FUNCTION*"""
 import pytest
 from mindspore import numpy as np
-from mindspore import Tensor, jit, context, ops
+from mindspore import Tensor, jit, context, ops, nn
+from mindspore._c_expression import get_code_extra
 from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
@@ -213,3 +214,41 @@ def test_subgraph_return_a_freevar():
 
     match_array(o1, o2)
     assert_executed_by_graph_mode(compiled_fn)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_support_create_user_defined_class():
+    """
+    Feature: call function.
+    Description: support creating user defined class.
+    Expectation: no graph break.
+    """
+    var = 1
+
+    class myclass():
+        def __init__(self):
+            self.var = var
+
+        def __enter__(self):
+            return None
+
+        def __exit__(self):
+            return False
+
+        def clone(self):
+            return self.__class__()
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+
+        @jit(capture_mode='bytecode')
+        def construct(self):
+            a = myclass()
+            b = a.clone()
+            return b.var
+
+    net = Net()
+    res = net()
+    jcr = get_code_extra(net.construct.__wrapped__)
+    assert(res == var)
+    assert(jcr["break_count_"] == 0)

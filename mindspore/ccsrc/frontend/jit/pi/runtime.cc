@@ -51,6 +51,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/grad_state.h"
 #include "tools/profiler/profiler.h"
+#include "frontend/jit/pi/utils/py_obj_registry.h"
 
 namespace mindspore {
 namespace pijit {
@@ -484,6 +485,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
   ParameterManager::ScopedCleaner param_auto_cleaner;
+  PyObjRegistry py_obj_registry;
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
   AddConfigToGuard(*c->conf(), c->code()->GetGuard());
