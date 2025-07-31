@@ -29,6 +29,10 @@ namespace mindspore {
 namespace kernel {
 namespace sample_distorted_bounding_box_v2_cpu {
 class Region {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/image/sample_distorted_bounding_box_op.cc
+   */
  public:
   Region() { SetPiont(0, 0, 0, 0); }
   Region(int xmin, int ymin, int xmax, int ymax) { SetPiont(xmin, ymin, xmax, ymax); }

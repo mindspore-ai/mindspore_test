@@ -41,6 +41,10 @@ int64_t kBatchNum = 0;
 
 template <typename InternalType>
 class ColumnInterface {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   virtual int64_t FeatureCount(int64_t batch) const = 0;
 
@@ -51,6 +55,10 @@ class ColumnInterface {
 
 template <typename InternalType>
 class SparseTensorColumn : public ColumnInterface<InternalType> {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   SparseTensorColumn(const std::vector<int64_t> &values, std::vector<int64_t> feature_counts,
                      std::vector<int64_t> feature_start_indices)
@@ -81,6 +89,10 @@ int64_t SparseTensorColumn<int64_t>::Feature(int64_t batch, int64_t n) const {
 
 template <typename T>
 class DenseTensorColumn : public ColumnInterface<T> {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   explicit DenseTensorColumn(const std::vector<T> &tensor) : tensor_(tensor) {}
   int64_t FeatureCount(int64_t batch) const override { return static_cast<int64_t>(tensor_.size()) / kBatchNum; }
@@ -99,6 +111,10 @@ int64_t DenseTensorColumn<int64_t>::Feature(int64_t batch, int64_t n) const {
 
 template <typename OutType>
 class OutputUpdater {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   OutputUpdater(const std::vector<int64_t> &output_start_indices, std::vector<std::vector<int64_t>> *indices_out,
                 std::vector<int64_t> *values_out)
@@ -119,6 +135,10 @@ class OutputUpdater {
 };
 
 class HashCrosser {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   explicit HashCrosser(const std::vector<std::unique_ptr<ColumnInterface<int64_t>>> &columns, const int64_t num_buckets,
                        const uint64_t hash_key)
@@ -156,6 +176,10 @@ class HashCrosser {
 
 template <typename InternalType>
 class ProductIterator {
+  /**
+   * Note: The implementation of this class is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/sparse_cross_op.cc
+   */
  public:
   explicit ProductIterator(const std::vector<std::unique_ptr<ColumnInterface<InternalType>>> &columns,
                            int64_t batch_index)
