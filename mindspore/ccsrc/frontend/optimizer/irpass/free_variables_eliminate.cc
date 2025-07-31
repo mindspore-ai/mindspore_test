@@ -29,6 +29,54 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 namespace {
+// %0 = partial(func, arg1, arg2, ...)
+// %1 = J(%0)
+// %2 = %1(arg_a, arg_b, ...)
+// -->
+// %0 = func
+// %1 = J(%0)
+// %2 = %1(arg1, arg2, ...arg_a, arg_b, ...)
+void PartialJCallOptPass(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  for (const auto &node : nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsPrimitiveCNode(cnode->input(0), prim::kPrimJ)) {
+      continue;
+    }
+    auto j_node = cnode->input(0)->cast<CNodePtr>();
+    auto j_partial_input = j_node->input(1);
+    std::vector<AnfNodePtr> args;
+    AnfNodePtr func_node = nullptr;
+    if (IsPrimitiveCNode(j_partial_input, prim::kPrimPartial)) {
+      auto partail_inputs = j_partial_input->cast<CNodePtr>()->inputs();
+      func_node = partail_inputs[1];
+      // partial(func, arg1, arg2, ...)
+      for (size_t index = 2; index < partail_inputs.size(); ++index) {
+        args.push_back(partail_inputs[index]);
+      }
+    }
+    const auto &j_caller_inputs = cnode->inputs();
+    for (size_t index = 1; index < j_caller_inputs.size(); ++index) {
+      args.push_back(j_caller_inputs[index]);
+    }
+    if (func_node == nullptr) {
+      continue;
+    }
+    j_node->set_input(1, func_node);
+    std::vector<AnfNodePtr> new_j_caller_inputs{j_node};
+    (void)new_j_caller_inputs.insert(new_j_caller_inputs.end(), args.begin(), args.end());
+    auto new_j_caller = func_graph->NewCNode(new_j_caller_inputs);
+    new_j_caller->set_abstract(cnode->abstract());
+    MS_LOG(DEBUG) << "new_j_caller:" << new_j_caller->DebugString();
+    manager->Replace(cnode, new_j_caller);
+  }
+}
 
 FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -43,6 +91,7 @@ FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, cons
   FuncGraphPtr opt_fg = nullptr;
   ProfileExecute(MsProfile::GetProfile()->Step("partial_eliminate_before_grad"),
                  [&after_lift_opt, func_graph, &opt_fg]() { opt_fg = after_lift_opt->step(func_graph, true); });
+  PartialJCallOptPass(opt_fg);
   return opt_fg;
 }
 
@@ -79,7 +128,7 @@ std::map<std::string, AnfNodePtr> GetParameterMap(const std::vector<AnfNodePtr> 
 }
 
 std::pair<bool, std::vector<bool>> RemoveRedundantParams(const FuncGraphPtr &func_graph,
-                                                         std::map<std::string, AnfNodePtr> ref_key_nodes) {
+                                                         const std::map<std::string, AnfNodePtr> &ref_key_nodes) {
   const auto &inner_params = func_graph->parameters();
   AnfNodePtrList new_params;
   std::vector<bool> need_reserved;
@@ -117,6 +166,7 @@ CNodePtr NewCaller(const CNodePtr &cnode, const std::vector<bool> &need_reserved
   auto cur_func = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(cur_func);
   auto new_caller = cur_func->NewCNodeInOrder(new_caller_inputs);
+  new_caller->set_abstract(cnode->abstract());
   return new_caller;
 }
 
@@ -266,17 +316,35 @@ FuncGraphPtr FreeVariablesEliminate(const FuncGraphPtr &func_graph, const opt::O
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = optimizer->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
   parse::ClearCNodeAbstract(func_graph);
+  pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
+  FuncGraphPtr need_renormalize_func = func_graph;
+  const auto &resources = optimizer->resource();
+  if (func_graph->parent() != nullptr) {
+    res = std::dynamic_pointer_cast<pipeline::Resource>(resources);
+    need_renormalize_func = res->func_graph();
+    func_graph->set_flag("J_INNER_FUNC", true);
+  }
   abstract::AbstractBasePtrList new_args_spec;
-  (void)std::transform(func_graph->parameters().begin(), func_graph->parameters().end(),
+  (void)std::transform(need_renormalize_func->parameters().begin(), need_renormalize_func->parameters().end(),
                        std::back_inserter(new_args_spec),
                        [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
-  auto res = std::make_shared<pipeline::Resource>();
-  MS_LOG(DEBUG) << "LiftingClone for func_graph: " << func_graph->ToString();
-  auto new_func_graph = pipeline::Renormalize(res, func_graph, new_args_spec);
-  const auto &resources = optimizer->resource();
+  FuncGraphPtr new_func_graph = pipeline::Renormalize(res, need_renormalize_func, new_args_spec);
+  MS_LOG(DEBUG) << "LiftingClone for func_graph: " << need_renormalize_func->ToString();
   new_func_graph = LiftFv(resources, new_func_graph);
+  if (func_graph->parent() != nullptr) {
+    res->set_func_graph(new_func_graph);
+    res->set_args_abs(new_args_spec);
+    new_func_graph->set_manager(manager);
+    for (auto sub_func : new_func_graph->func_graphs_used_total()) {
+      if (sub_func->has_flag("J_INNER_FUNC")) {
+        new_func_graph = sub_func;
+        new_func_graph->set_manager(manager);
+        sub_func->erase_flag("J_INNER_FUNC");
+        break;
+      }
+    }
+  }
   MergeParameters(new_func_graph, optimizer);
 
 #ifdef ENABLE_DUMP_IR

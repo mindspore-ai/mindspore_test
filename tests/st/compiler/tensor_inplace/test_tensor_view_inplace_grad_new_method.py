@@ -17,9 +17,13 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import ops, Tensor
+from mindspore.nn import ReLU
+from mindspore.common.parameter import Parameter
+from mindspore import dtype as mstype
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_view_op, inplace_copy_op
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
+from tests.st.pynative.utils import GradOfAllInputs
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -77,6 +81,7 @@ def test_tensor_view_grad():
     Description: Support tensor inplace view gradient.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def construct(self, x):
             y = ops.abs(x)
@@ -180,6 +185,7 @@ def test_view_and_inplace_grad_change_same_area2():
     Description: view inplace operation in grad.
     Expectation: no exception
     """
+
     class Net(nn.Cell):
         def construct(self, x, input_tensor):
             input_tensor1 = ops.abs(input_tensor)
@@ -205,6 +211,7 @@ def test_view_and_inplace_grad_change_same_area3():
     Description: view inplace operation in grad.
     Expectation: no exception
     """
+
     class Net(nn.Cell):
         def construct(self, x, input_tensor):
             input_tensor1 = ops.abs(input_tensor)
@@ -426,11 +433,12 @@ def test_setitem_simple_case1():
     Description: Support tensor inplace view gradient.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         @ms.jit(jit_level="O0", backend="ms_backend")
         def construct(self, x, a):
             x[0] = a
-            y = x[1][1] # pylint: disable=unused-variable
+            y = x[1][1]  # pylint: disable=unused-variable
             return x
 
     try:
@@ -456,6 +464,7 @@ def test_setitem_simple_case2():
     Description: Support tensor inplace view gradient.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         @ms.jit(jit_level="O0", backend="ms_backend")
         def construct(self, x, a):
@@ -486,12 +495,14 @@ def test_setitem_simple_case3():
     Description: Support tensor inplace view gradient.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         @ms.jit(jit_level="O0", backend="ms_backend")
         def construct(self, x, a):
             y = x[1]
             y[0] = a
             return y
+
     try:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
         net = Net()
@@ -534,3 +545,47 @@ def test_view_inplace_gradient():
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_jit = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@ms.jit(capture_mode='ast', jit_level="O0", backend="ms_backend")
+def net_forward(net, *args, **kwargs):
+    return net(*args, **kwargs)
+
+
+@ms.jit(capture_mode='ast', jit_level="O0", backend="ms_backend")
+def net_backward(net, *args, **kwargs):
+    grad_net = GradOfAllInputs(net)
+    return grad_net(*args, **kwargs)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_index_grad():
+    """
+    Feature: Support tensor index gradient.
+    Description: Support tensor index gradient.
+    Expectation: no exception.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.input_x = Parameter(Tensor([[2.0, 3.0, 4.0, 5.0], [2.0, 3.0, 4.0, 5.0]], mstype.float32))
+            self.relu = ReLU()
+
+        def construct(self, input_y):
+            self.input_x[0] //= input_y
+            out = self.relu(self.input_x)
+            return out
+
+    try:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+        ms.set_context(jit_config={"jit_level": "O0"})
+        input_me_1 = Tensor([2.0], mstype.float32)
+        net = Net()
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        net.set_grad()
+        out_me_1 = net_forward(net, input_me_1)
+        net_backward(net, input_me_1, out_me_1)
+        assert (out_me_1.asnumpy() == [[1, 1, 2, 2], [2, 3, 4, 5]]).all()
+    finally:
+        del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]

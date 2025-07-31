@@ -450,6 +450,23 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   } else {
     lift_fv_before_grad = false;
   }
+  if (is_view_inplace && mindspore::opt::irpass::CheckExistFv(func_graph)) {
+    auto res = std::dynamic_pointer_cast<pipeline::Resource>(resources);
+    auto res_func = res->func_graph();
+    func_graph->set_flag("J_INNER_FUNC", true);
+    grad_fg = mindspore::opt::irpass::LiftFv(resources, res_func);
+    auto manager = optimizer->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    grad_fg->set_manager(manager);
+    for (auto sub_func : grad_fg->func_graphs_used_total()) {
+      bool has_flag = sub_func->has_flag("J_INNER_FUNC");
+      if (has_flag) {
+        grad_fg = sub_func;
+        sub_func->erase_flag("J_INNER_FUNC");
+        break;
+      }
+    }
+  }
   return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
 }
 
@@ -483,7 +500,8 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
   }
   for (size_t i = 0; i < before_grad_fgs.size(); ++i) {
     auto func_graph = before_grad_fgs[i];
-    auto grad_fg = GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i], is_grad_by_j);
+    auto grad_fg =
+      GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i], is_grad_by_j);
     grad_fgs.push_back(grad_fg);
   }
   return grad_fgs;
