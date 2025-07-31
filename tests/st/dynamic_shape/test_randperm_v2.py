@@ -46,7 +46,7 @@ def test_randperm_v2_forward(mode):
     context.set_context(mode=mode)
     if mode == ms.GRAPH_MODE:
         context.set_context(jit_config={"jit_level": "O0"})
-    output = randperm_v2_forward_func(Tensor([4], mstype.int64))
+    output = randperm_v2_forward_func(Tensor(4, mstype.int64))
     np.testing.assert_equal(output.shape, (4,))
     np.testing.assert_equal(output.dtype, mstype.float16)
 
@@ -78,12 +78,12 @@ def test_randperm_v2_dynamic(mode):
     ms.context.set_context(mode=mode)
     if mode == ms.GRAPH_MODE:
         context.set_context(jit_config={"jit_level": "O0"})
-    dyn_n = Tensor(shape=[None], dtype=mstype.int64)
+    dyn_n = Tensor(shape=None, dtype=mstype.int64)
     test_cell = test_utils.to_cell_obj(randperm_v2_forward_func)
     test_cell.set_inputs(dyn_n)
-    output1 = test_cell(Tensor([6], mstype.int64))
+    output1 = test_cell(Tensor(6, mstype.int64))
     np.testing.assert_equal(output1.shape, (6,))
     np.testing.assert_equal(output1.dtype, mstype.float16)
-    output2 = test_cell(Tensor([8], mstype.int64))
+    output2 = test_cell(Tensor(8, mstype.int64))
     np.testing.assert_equal(output2.shape, (8,))
     np.testing.assert_equal(output2.dtype, mstype.float16)

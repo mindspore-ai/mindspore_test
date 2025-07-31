@@ -622,7 +622,8 @@ namespace {
 
 inline int64_t OpDtypeToInt(ops::OP_DTYPE dtype) { return static_cast<int64_t>(dtype); }
 
-AnfNodePtr GetNodeAfterTypeConversion(const AnfNodePtr &node, const ops::OpInputArg &op_arg, const FuncGraphPtr &fg) {
+AnfNodePtr GetNodeAfterTypeConversion(const AnfNodePtr &node, const ops::OpInputArg &op_arg, const FuncGraphPtr &fg,
+                                      const std::string &op_name) {
   MS_EXCEPTION_IF_NULL(fg);
   // If src_cast_dtype is empty, do no need to do type conversion.
   if (op_arg.cast_dtype_.empty()) {
@@ -633,7 +634,8 @@ AnfNodePtr GetNodeAfterTypeConversion(const AnfNodePtr &node, const ops::OpInput
   auto convert_fg = dyn_cast<FuncGraph>(convert_func);
   MS_EXCEPTION_IF_NULL(convert_fg);
   convert_fg->set_manager(fg->manager());
-  auto res = fg->NewCNodeInOrder({NewValueNode(convert_fg), node, NewValueNode(OpDtypeToInt(op_arg.arg_dtype_))});
+  auto res = fg->NewCNodeInOrder(
+    {NewValueNode(convert_fg), node, NewValueNode(OpDtypeToInt(op_arg.arg_dtype_)), NewValueNode(op_name)});
   res->set_debug_info(node->debug_info());
   return res;
 }
@@ -655,7 +657,7 @@ bool ValidateAndConvertArgsType(const std::string &op_name, const std::vector<op
     auto cast_dtypes = op_arg.cast_dtype_;
     for (size_t j = 0; j < cast_dtypes.size(); ++j) {
       if (ops::ValidateArgsType(abs_arg, cast_dtypes[j])) {
-        (*nodes)[i] = GetNodeAfterTypeConversion((*nodes)[i], op_arg, fg);
+        (*nodes)[i] = GetNodeAfterTypeConversion((*nodes)[i], op_arg, fg, op_name);
         match = true;
         break;
       }

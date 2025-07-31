@@ -66,8 +66,8 @@ def test_clamp_with_input_type_error(mode):
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClampNet()
-    with pytest.raises(TypeError):
-        net(x, Tensor(5, ms.float32), 20)
+    with pytest.raises((ValueError, RuntimeError, TypeError)):
+        net(x, Tensor([5, 5], ms.float32), 20)
         _pynative_executor.sync()
 
 

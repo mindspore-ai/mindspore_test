@@ -19,6 +19,7 @@
 import mindspore as ms
 from mindspore import ops
 from mindspore.common.tensor import Tensor
+from mindspore.common import dtype as mstype
 from mindspore.ops.operations._sequence_ops import TensorToScalar, TensorToTuple
 from mindspore._c_expression import OpDtype
 from mindspore._c_expression import typing
@@ -249,6 +250,16 @@ def is_list(type_id):
                        DT_LIST_STR_VAL, DT_LIST_ANY_VAL)
 
 
+def is_integral_mstype(type):
+    integral_mstype = (mstype.int8, mstype.int16, mstype.int32, mstype.int64,
+                       mstype.uint8, mstype.uint16, mstype.uint32, mstype.uint64)
+    return type in integral_mstype
+
+
+def is_floating_point_mstype(type):
+    fp_mstype = (mstype.float16, mstype.float32, mstype.float64, mstype)
+    return type in fp_mstype
+
 def is_number(type_id):
     """
     Check type id is number.
@@ -303,7 +314,7 @@ def get_support_dtype_list(src_type, dst_type):
     return support_list
 
 
-def tensor_to_number(data, dst_type):
+def tensor_to_number(data, dst_type, op_name):
     """Convert tensor to python number"""
     if dst_type == DT_INT_VAL:
         data = ops.cast(data, ms.int64)
@@ -319,7 +330,35 @@ def tensor_to_number(data, dst_type):
     return tensor_to_scalar_(data)
 
 
-def do_type_cast(data, dst_type):
+def is_int_tensor_mixed(data_sequence):
+    """Check if the sequence contains both int and tensor."""
+    contain_int = False
+    contain_tensor = False
+    for data in data_sequence:
+        if isinstance(data, Tensor):
+            contain_tensor = True
+        elif isinstance(data, int):
+            contain_int = True
+    return contain_int and contain_tensor
+
+
+_tensor_to_scalar = TensorToScalar()
+def normalize_int_tensor(data):
+    """Normalize int tensor."""
+    data = ops.cast(data, ms.int64)
+    return _tensor_to_scalar(data)
+
+def normalize_int_sequence(data, to_tuple=True):
+    """Normalize mixed int sequence."""
+    res = []
+    for x in data:
+        if isinstance(x, int):
+            res.append(x)
+        else:
+            res.append(normalize_int_tensor(x))
+    return tuple(res) if to_tuple else res
+
+def do_type_cast(data, dst_type, op_name):
     """Type conversion."""
     if is_instance_of(data, dst_type):
         return data
@@ -329,6 +368,8 @@ def do_type_cast(data, dst_type):
     elif is_tuple(dst_type):
         if isinstance(data, (int, float, bool)):
             return scalar_to_tuple(data)
+        if isinstance(data, tuple) and is_int_tensor_mixed(data):
+            return normalize_int_sequence(data)
         if isinstance(data, list):
             return list_to_tuple(data)
         if isinstance(data, Tensor):
@@ -336,6 +377,8 @@ def do_type_cast(data, dst_type):
     elif is_list(dst_type):
         if isinstance(data, (int, float, bool)):
             return tuple_to_list(scalar_to_tuple(data))
+        if isinstance(data, list) and is_int_tensor_mixed(data):
+            return normalize_int_sequence(data, to_tuple=False)
         if isinstance(data, tuple):
             return tuple_to_list(data)
         if isinstance(data, Tensor):
@@ -349,8 +392,8 @@ def do_type_cast(data, dst_type):
             return list_to_tensor(data)
     elif is_number(dst_type):
         if isinstance(data, Tensor):
-            return tensor_to_number(data, dst_type)
-    raise TypeError("Type conversion failed.")
+            return tensor_to_number(data, dst_type, op_name)
+    raise TypeError("Type conversion failed: {}".format(op_name))
 
 
 def type_it(op_name, arg_name, data, src_type, dst_type):
@@ -368,4 +411,4 @@ def type_it(op_name, arg_name, data, src_type, dst_type):
         support_list = get_support_dtype_list(src_type, dst_type)
         raise TypeError(f"For '{op_name}', the type of '{arg_name}' should be one of '[{support_list}]', "
                         f"but got {type(data)}.")
-    return do_type_cast(data, dst_type)
+    return do_type_cast(data, dst_type, op_name)

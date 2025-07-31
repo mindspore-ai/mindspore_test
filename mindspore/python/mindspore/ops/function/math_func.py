@@ -11246,7 +11246,6 @@ def count_nonzero(x, axis=(), keep_dims=False, dtype=mstype.int32):
     """
 
     const_utils.check_type_valid(dtype_(x), mstype.number_type, 'input x')
-    axis = _check_validate_axis(axis, "count_nonzero")
     keep_dims = _check_validate_keepdims(keep_dims, "count_nonzero")
     const_utils.check_type_valid(dtype, mstype.number_type + (mstype.bool_,), 'dtype')
 

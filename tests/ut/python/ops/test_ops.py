@@ -4349,7 +4349,7 @@ test_case_other_ops = [
         'skip': ['backward']}),
     ('Randperm', {
         'block': RandpermFunc(),
-        'desc_inputs': [Tensor(np.random.randint(1, 20, (1)).astype(np.int64), mstype.int64),
+        'desc_inputs': [Tensor(np.random.randint(1, 20, ()).astype(np.int64), mstype.int64),
                         0, 0, mstype.int64],
         'skip': ['backward']}),
     ('MultinomialWithReplacement', {

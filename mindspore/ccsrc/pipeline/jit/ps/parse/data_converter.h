@@ -100,10 +100,11 @@ FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);
 FRONTEND_EXPORT ValuePtr ConvertTensor(const py::object &obj);
 template <typename TS, typename TD, OpDefConvertFunc func>
 ValuePtr ConvertSequence(const py::object &obj) {
-  if (!py::isinstance<TS>(obj)) {
+  bool convert_list_to_tuple = py::isinstance<py::list>(obj) && std::is_same_v<TS, py::tuple>;
+  if (!convert_list_to_tuple && !py::isinstance<TS>(obj)) {
     return nullptr;
   }
-  auto seq = obj.cast<TS>();
+  auto seq = convert_list_to_tuple ? py::tuple(obj).cast<TS>() : obj.cast<TS>();
   std::vector<ValuePtr> value_list;
   for (size_t it = 0; it < seq.size(); ++it) {
     auto out = func(seq[it]);
