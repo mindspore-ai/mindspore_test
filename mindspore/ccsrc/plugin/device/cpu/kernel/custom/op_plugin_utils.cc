@@ -163,7 +163,7 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
 
 int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param) {
   return LaunchOpPluginKernel(op_name, param->params.size(), param->params.data(), param->ndims.data(),
-                              param->shapes.data(), param->dtypes.data(), reinterpret_cast<void *>(&param->kernel_info),
-                              param->stream);
+                              param->shapes.data(), param->dtypes.data(), param->stream,
+                              reinterpret_cast<void *>(&param->kernel_info));
 }
 }  // namespace mindspore::kernel
