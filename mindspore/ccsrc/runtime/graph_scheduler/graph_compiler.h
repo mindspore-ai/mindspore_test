@@ -37,8 +37,6 @@
 namespace mindspore {
 using device::DeviceContext;
 using session::BackendOpRunInfo;
-using session::GraphOutputInfo;
-using session::InputInfo;
 using session::KernelGraph;
 using session::KernelWithIndex;
 using tensor::TensorPtr;
@@ -160,11 +158,6 @@ class GraphCompiler {
     MS_EXCEPTION_IF_NULL(session_);
     session_->ClearGraphBuildMember();
   }
-
-  // Update ref count of PyNative back propagation operators.
-  void UpdateRefCount(const std::set<KernelWithIndex> &input_kernels_with_index,
-                      std::map<KernelWithIndex, size_t> *ref_count,
-                      std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const;
 
   // Register a summary callback function, which is called in the final stages of summary.
   void RegisterSummaryCallBackFunc() const;

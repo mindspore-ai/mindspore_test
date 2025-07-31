@@ -43,7 +43,6 @@
 #include "include/common/debug/dump_proto.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/debug/trace.h"
-#include "backend/common/session/executor_manager.h"
 #include "backend/common/session/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -64,6 +63,9 @@
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "abstract/abstract_value.h"
+#ifdef ENABLE_DEBUGGER
+#include "include/backend/debug/debugger/debugger.h"
+#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/distributed/ps/util.h"
@@ -92,7 +94,6 @@ void MemoryRecycle() {
   mindspore::RDR::ResetRecorder();
 #endif
   pipeline::ReclaimOptimizer();
-  session::ExecutorManager::Instance().ClearDoneTasks();
   ad::g_k_prims.clear();
   ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
   abstract::AnalysisResultCacheMgr::GetInstance().Clear();
@@ -160,7 +161,6 @@ void ClearResPart2() {
   ConfigManager::GetInstance().ResetIterNum();
   MS_LOG(INFO) << "End clear ConfigManager.";
 
-  session::ExecutorManager::Instance().Clear();
   device::HalResManager::GetInstance().Clear();
 
   MS_LOG(INFO) << "Start clear BackendManager...";

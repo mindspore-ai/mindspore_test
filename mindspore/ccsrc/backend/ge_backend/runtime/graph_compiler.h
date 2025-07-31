@@ -37,8 +37,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using session::GraphOutputInfo;
-using session::InputInfo;
 using session::KernelGraph;
 using session::KernelWithIndex;
 using tensor::TensorPtr;
