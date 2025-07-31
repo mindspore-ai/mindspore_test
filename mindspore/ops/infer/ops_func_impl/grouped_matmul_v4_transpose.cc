@@ -72,5 +72,32 @@ bool GroupedMatmulV4TransposeFuncImpl::GetTransposeValue(const InferInfoPtrList 
   return transpose_opt.value();
 }
 
+TypeIdList GroupedMatmulV4TransposeFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
+  const auto &scale_infos = input_infos[scale_idx_];
+  TypeIdList output_types;
+  if (scale_infos->IsNone()) {
+    std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                   [](const InferInfoPtr &info) { return info->GetType(); });
+  } else {
+    const auto &scale_tensors = scale_infos->GetSequenceElements();
+    TypeId scale_type = scale_tensors[0]->GetType();
+    if (scale_type == kNumberTypeUInt64) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeInt8; });
+    } else if (scale_type == kNumberTypeBFloat16) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeBFloat16; });
+    } else if (scale_type == kNumberTypeFloat32) {
+      std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                     [](const InferInfoPtr &info) { return kNumberTypeFloat16; });
+    } else {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', the scale only support Uint16, BFloat16 and Float32, but got " << scale_type;
+    }
+  }
+  return output_types;
+}
 }  // namespace ops
 }  // namespace mindspore
