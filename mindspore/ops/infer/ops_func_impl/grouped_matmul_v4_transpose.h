@@ -34,6 +34,8 @@ class OPS_API GroupedMatmulV4TransposeFuncImpl final : public GroupedMatmulV4Fun
   }
   ~GroupedMatmulV4TransposeFuncImpl() = default;
 
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
  protected:
   bool GetTransposeValue(const InferInfoPtrList &input_infos, int64_t transpose_index) const override;
 
@@ -42,6 +44,7 @@ class OPS_API GroupedMatmulV4TransposeFuncImpl final : public GroupedMatmulV4Fun
 
  private:
   int64_t group_list_idx_ = 8;
+  int64_t scale_idx_ = 3;
 };
 }  // namespace ops
 }  // namespace mindspore
