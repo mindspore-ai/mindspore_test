@@ -40,6 +40,25 @@ def check_no_basic_int_type(op_args):
     return True
 
 
+def get_inplace_indices(op_proto):
+    """
+    Extracts the indices of inplace arguments from the operation prototype.
+
+    Args:
+        op_proto (OpProto): The operator prototype containing argument information.
+
+    Returns:
+        list: A list of indices for inplace arguments.
+    """
+    inplace_args = []
+    for arg in op_proto.op_returns:
+        if arg.inplace != '':
+            inplace_args.append(arg.inplace)
+    input_args = [arg.arg_name for arg in op_proto.op_args]
+    inplace_indices = [input_args.index(arg) for arg in inplace_args]
+    return inplace_indices
+
+
 class PyboostCommonOpHeaderGenerator(BaseGenerator):
     """
     Generates common C++ headers for PyBoost operations.
@@ -296,9 +315,12 @@ class PyboostOpCppGenerator:
                 if arg.inplace != '':
                     check_inplace_func = f'ThrowExpectionWhenInternalOverlap({arg.inplace}_tensor);'
                     break
+            inplace_indices = get_inplace_indices(op_proto)
+            inplace_indices_str = ', '.join(str(i) for i in inplace_indices)
             call_impl = self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE.replace(
                 call_args=call_args,
                 return_values=call_func_outputs,
+                inplace_indices=inplace_indices_str,
                 customize_func=getattr(
                     op_proto.op_dispatch, self.device) + "Customize",
                 check_expression=check_inplace_func,
@@ -581,6 +603,8 @@ class AclnnOpCppCodeGenerator:
             else:
                 call_args_with_type = op_parser.parse_call_args_with_types()
             inplace_process = _generate_inplace_process_cpp_code(op_proto)
+            inplace_indices = get_inplace_indices(op_proto)
+            inplace_indices_str = ', '.join(str(i) for i in inplace_indices)
             call_impl = self.PYBOOST_CALL_TEMPLATE.replace(aclnn_name=aclnn_name,
                                                            call_args=call_args,
                                                            call_tensors=call_args_tensor,
@@ -597,6 +621,7 @@ class AclnnOpCppCodeGenerator:
                                                            return_values=call_func_outputs,
                                                            outputs=real_output,
                                                            inplace_process=inplace_process,
+                                                           inplace_indices=inplace_indices_str,
                                                            cast_input_code=cast_input_code,
                                                            real_call_args_tensor=real_call_args_tensor,
                                                            class_name=op_proto.op_class.name,
