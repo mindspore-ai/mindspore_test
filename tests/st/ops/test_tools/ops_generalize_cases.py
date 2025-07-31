@@ -129,7 +129,7 @@ def get_name_by_op(prim):
     try:
         name = prim.__name__
         return "ir_" + name
-    except Exception:
+    except Exception: # pylint: disable=broad-except
         def strict_sanitize(path):
             return re.sub(r'[^\w]', '', path)
 
@@ -155,7 +155,7 @@ class OpsGradNet(nn.Cell):
     def __init__(self, net, grad_position=None):
         super().__init__()
         if grad_position:
-            self.grad_func = ms.ops.grad(net, grad_position)
+            self.grad_func = ms.grad(net, grad_position)
         else:
             self.grad_func = ms.ops.GradOperation(get_all=True)(net)
 
@@ -341,7 +341,8 @@ def test_discontiguous_input(fn, inputs, mode_name, disable_case, jit_config, ca
         return
 
     if "GRAPH_MODE" in mode_name:
-        warning_log(f"{mode_name} 'DiscontiguousInput' in 'disable_case', DiscontiguousInput case is skipped.")
+        warning_log(f"{mode_name} 'DiscontiguousInput' is skipped temporarily with 'GRAPH_MODE_O0' and 'GRAPH_MODE_GE',"
+                    f" it's will cause accuracy issue after 'Tensor storage refactor'.")
         return
 
     def get_discontiguous_tensor(origin_tensor):
@@ -665,7 +666,8 @@ def test_deterministic(fn, inputs, mode_name, disable_case, jit_config, case_con
         return
 
     use_origin_inputs = False
-    if case_config and "deterministic_use_origin_inputs" in case_config and case_config["deterministic_use_origin_inputs"]:
+    if case_config and "deterministic_use_origin_inputs" in case_config \
+    and case_config["deterministic_use_origin_inputs"]:
         use_origin_inputs = case_config["deterministic_use_origin_inputs"]
         warning_log(f"'deterministic_use_origin_inputs' is {use_origin_inputs}, "
                     f"'Deterministic' testcase will use origin inputs.")

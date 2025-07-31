@@ -54,7 +54,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
                                          masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d,
-                                         func_max_pool2d_op)
+                                         func_max_pool2d_op, dropout2d_ext_op)
 # 2
 from mindspore.ops.auto_generate.pyboost_inner_prim import grid_sampler_2d_impl, grid_sampler_3d_impl
 # 3
@@ -1769,6 +1769,58 @@ def dropout2d(input, p=0.5, training=True):
     dropout_2d_op = NN_OPS.Dropout2D(1.0 - p)
     out, _ = dropout_2d_op(input)
     return out
+
+
+def dropout2d_ext(input, p=0.5, training=True, inplace=False):
+    r"""
+    During training, randomly zeroes some channels of the input tensor with probability `p`
+    from a Bernoulli distribution (For a 4-dimensional tensor with a shape of :math:`(N, C, H, W)`,
+    the channel feature map refers to a 2-dimensional feature map with the shape of :math:`(H, W)`).
+
+    For example, the :math:`j\_th` channel of the :math:`i\_th` sample in the batched input is a to-be-processed
+    `2D` tensor input[i,j].
+    Each channel will be zeroed out independently on every forward call which based on Bernoulli distribution
+    probability `p`.
+    The parper `Dropout: A Simple Way to Prevent Neural Networks from Overfitting
+    <http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf>`_ mentioned this technology, and it is proved that
+    it can effectively reduce over fitting and prevent neuronal coadaptation.
+    For more details, refer to `Improving neural networks by preventing co-adaptation of feature detectors
+    <https://arxiv.org/pdf/1207.0580.pdf>`_ .
+
+    `dropout2d` can improve the independence between channel feature maps.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): A `4D` tensor with shape :math:`(N, C, H, W)`, where `N` is the batch size, `C` is the number
+            of channels, `H` is the feature height, and `W` is the feature width.
+        p (float, optional): The dropping probability of a channel, between 0 and 1, e.g. `p` = 0.8,
+            which means dropping out 80% of channels. Default: ``0.5`` .
+        training(bool, optional): If `training` is True, applying dropout, otherwise, not applying. Default: ``True`` .
+        inplace (bool, optional): If set to ``True`` , will do this operation in-place. Default: ``False`` .
+
+    Returns:
+        Tensor, output, with the same shape and data type as `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        ValueError: If `p` is out of the range `[0.0, 1.0]`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.ones([2, 1, 2, 3]), mindspore.float32)
+        >>> output = mint.nn.functional.dropout2d(input, 0.5)
+        >>> print(output.shape)
+        (2, 1, 2, 3)
+    """
+    seed, offset = default_generator._step(generator_step_)  # pylint: disable=protected-access
+    return dropout2d_ext_op(input, p, training, inplace, seed, offset)
 
 
 def dropout3d(input, p=0.5, training=True):

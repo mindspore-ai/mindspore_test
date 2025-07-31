@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.dropout2d
 ======================================
 
-.. py:function:: mindspore.mint.nn.functional.dropout2d(input, p=0.5, training=True)
+.. py:function:: mindspore.mint.nn.functional.dropout2d(input, p=0.5, training=True, inplace=False)
 
     在训练期间，根据伯努利分布，以概率 `p` 随机将输入Tensor的某些通道置零（对于shape为 :math:`(N, C, H, W)` 的四维Tensor，其通道特征图指的是后两维shape为 :math:`(H, W)` 的二维特征图）。
 
@@ -18,11 +18,11 @@ mindspore.mint.nn.functional.dropout2d
         - **input** (Tensor) - 一个shape为 :math:`(N, C, H, W)` 的四维Tensor，其中 `N` 是批处理大小， `C` 是通道数， `H` 是特征高度， `W` 是特征宽度。
         - **p** (float，可选) - 通道的丢弃概率，介于 0 和 1 之间。例如 `p` = 0.8，意味着80%的清零概率。默认值： ``0.5`` 。
         - **training** (bool，可选) - 如果training为True, 则执行对 `input` 的某些通道概率清零的操作。否则，不执行此操作。默认值： ``True`` 。
+        - **inplace** (bool，可选) - 若为 ``True`` 则启用原地更新功能。默认值： ``False`` 。
 
     返回：
         Tensor，输出，具有与输入 `input` 相同的shape和数据类型。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `p` 的数据类型不是float。
         - **ValueError** - `p` 值不在 `[0.0，1.0]` 之间。
