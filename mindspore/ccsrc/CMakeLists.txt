@@ -139,7 +139,6 @@ set(BACKEND_COMMON_SUB_COMP
         backend/operator
         runtime/collective
         runtime/hardware
-        backend/common/mem_reuse
         backend/common/optimizer
         backend/common/pass
         backend/common/session
