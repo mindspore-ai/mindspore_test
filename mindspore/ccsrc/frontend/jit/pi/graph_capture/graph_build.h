@@ -44,7 +44,6 @@ struct TryBlock {
 const std::vector<std::string> kAstFunctionList = {
   "mindspore.ops.function.array_func", "mindspore.ops.function.nn_func", "mindspore.ops.function.math_func"};
 
-bool CheckSupportCreateInstance(CallNode *call_node);
 class GraphBuilder {
  public:
   static const char *ID___self__;
@@ -323,6 +322,7 @@ class GraphBuilder {
                                                      const std::vector<ValueNode *> &inputs, PyObject *kw_names,
                                                      ValueNode *self_node = nullptr, bool eliminate_sens = false);
   GraphBuilderPtr get_prev_call_builder() const { return prev_call_builder_; }
+  static const std::unordered_map<ValueNode *, ValueNode *> &GetExpandInputMap() { return expand_input_map_; }
 
  private:
   GraphBuilderPtr prev_call_builder_ = nullptr;
@@ -340,6 +340,7 @@ class GraphBuilder {
   int last_traced_line_ = -1;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
+  static std::unordered_map<ValueNode *, ValueNode *> expand_input_map_;
 
   bool IsTopGraph() const { return this == root_; }
   LocationPtr GetLocation(const Instr &instr) const;
@@ -348,6 +349,7 @@ class GraphBuilder {
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
   bool ResolveNoGrad(CallNode *call_node);
+  bool ResolveEnableGrad(CallNode *call_node, AObject *callable, py::object callable_info);
 
   void FGAddTopInputsWithExpander();
   void FGAddTopInputs();

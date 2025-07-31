@@ -51,6 +51,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "utils/convert_utils_base.h"
+#include "frontend/jit/pi/utils/py_obj_registry.h"
 
 namespace mindspore {
 namespace pijit {
@@ -212,6 +213,8 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {SEND, &GraphBuilder::DoSend},
   {PUSH_EXC_INFO, &GraphBuilder::DoPushExcInfo},
 };
+
+std::unordered_map<ValueNode *, ValueNode *> GraphBuilder::expand_input_map_;
 
 bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is_referenced) {
   static const std::set<int> ref_op = {
@@ -2399,10 +2402,23 @@ bool ApplyInlinePolicy(CallNode *call_node) {
   return true;
 }
 
-bool CheckSupportCreateInstance(CallNode *call_node) {
+bool CheckSupportCreateInstance(CallNode *call_node, const AbstractType *abstract_type, const AObject::Type type_type,
+                                const std::vector<ValueNode *> &params) {
   /**
    * only support exactly type, sub-class not create
    */
+  if (std::all_of(params.begin() + 1, params.end(), [](const auto &param) {
+        return param->abstract_wrapper() && param->abstract_wrapper()->IsConstant();
+      })) {
+    MS_LOG(DEBUG) << "const input";
+    return true;
+  }
+  if (type_type == AObject::kTypePrimitive || type_type == AObject::kTypeTensor ||
+      IsMsClass(abstract_type->GetPyObject().ptr())) {
+    MS_LOG(DEBUG) << "const type";
+    return true;
+  }
+
   static const std::set<PyTypeObject *> support_create_instance_type = {
     &PyComplex_Type, &PyMap_Type,   &PyBaseObject_Type, &PyRange_Type, &PyZip_Type,    &PySlice_Type,
     &PyBool_Type,    &PyFloat_Type, &PyLong_Type,       &PyType_Type,  &PyMethod_Type,
@@ -2529,11 +2545,8 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
 
   const auto &params = call_node->inputs();
   AObject *instance = nullptr;
-  bool support_create_instance = CheckSupportCreateInstance(call_node);
-  bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor || IsMsClass(t->GetPyObject().ptr());
-  // create instance
-  if (support_create_instance || constant) {
-    MS_LOG(INFO) << "Build instance, support_create_instance=" << support_create_instance << ", constant=" << constant;
+  if (CheckSupportCreateInstance(call_node, t, type, params)) {
+    MS_LOG(INFO) << "Build instance:" << call_node->ToString();
     std::vector<py::object> args;
     std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [vobj](ValueNode *n) {
       AObject *i = n->GetVobj();
@@ -3073,6 +3086,37 @@ bool GraphBuilder::ResolveNoGrad(CallNode *call_node) {
   return false;
 }
 
+bool GraphBuilder::ResolveEnableGrad(CallNode *call_node, AObject *callable, py::object callable_info) {
+  bool is_enable_grad = callable_info.equal(PyObjRegistry::Data::GetInstance().enable_grad());
+  bool is_set_enable_grad = callable_info.equal(PyObjRegistry::Data::GetInstance().set_enable_grad());
+
+  if (is_enable_grad) {
+    MS_LOG(INFO) << "Resolve enable grad";
+    call_node->SetVobj(AObject::Convert(py::bool_(false)));
+    auto abs_wrapper = FGBuilder()->AddLocalVariable(py::bool_(false));
+    call_node->set_abstract_wrapper(abs_wrapper);
+    return true;
+  }
+  if (is_set_enable_grad) {
+    const auto &params = call_node->inputs();
+    if (params.size() != 2) {
+      MS_LOG(ERROR) << "Unexpected argument of set_enable_grad";
+    }
+    std::vector<py::object> args;
+    std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [callable](ValueNode *n) {
+      AObject *i = n->GetVobj();
+      return i ? FilterCTensorInZip(callable, i->GetPyObject()) : py::object();
+    });
+    bool arg = args[0].equal(py::bool_(true));
+    MS_LOG(INFO) << "Resolve set enable grad: " << arg;
+    call_node->SetVobj(AObject::Convert(py::none()));
+    auto abs_wrapper = FGBuilder()->AddLocalVariable(py::none());
+    call_node->set_abstract_wrapper(abs_wrapper);
+    return true;
+  }
+  return false;
+}
+
 // todo: this function should merge with resolve callable and delete useless part.
 py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason) {
   AObject *callable = call_node->input(0)->GetVobj();
@@ -3095,6 +3139,9 @@ py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTr
   }
 
   if (ResolveNoGrad(call_node)) {
+    return py::object();
+  }
+  if (ResolveEnableGrad(call_node, callable, callable_info)) {
     return py::object();
   }
 
@@ -4119,6 +4166,9 @@ void GraphBuilder::FGAddTopInputsWithExpander() {
       ExpandContainerParameters(locals[index]);
       auto node = pop();
       locals[index]->set_abstract_wrapper(node->abstract_wrapper());
+      expand_input_map_[node] = locals[index];
+      MS_LOG(DEBUG) << "expand_input_map_ origin node: " << locals[index]->ToString() << std::endl
+                    << "new node: " << node->ToString();
       graph_->GetSideEffect()->data()->RecordModifiedAndReplacedNode(locals[index], node);
       frame_.SetLocal(index, node);
     }

@@ -25,6 +25,7 @@
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
 #include "frontend/jit/pi/runtime.h"
 #include "frontend/jit/pi/utils/utils.h"
+#include "frontend/jit/pi/graph_capture/graph_build.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_guard/cache.h"
 #include "utils/convert_utils_base.h"
@@ -161,8 +162,11 @@ bool Graph::NeedSymbolic(ValueNode *node) {
 }
 
 bool Graph::PrepareParameter(ValueNode *node) {
-  using PrepareHelper = bool (*)(ValueNode *, std::vector<ValueNode *> *);
-  static PrepareHelper prepare_oper = [](ValueNode *node, std::vector<ValueNode *> *oper) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_LOG(DEBUG) << "node: " << node->ToString();
+  bool isExpandOn = conf_.GetBoolConfig(GraphJitConfig::kExpandGraphInput);
+  using PrepareHelper = std::function<bool(ValueNode *, std::vector<ValueNode *> *)>;
+  static PrepareHelper prepare_oper = [isExpandOn](ValueNode *node, std::vector<ValueNode *> *oper) {
     int opcode = node->GetOpcode();
     if (opcode == LOAD_CONST || opcode == LOAD_GLOBAL || opcode == LOAD_DEREF || node->GetType() == ValueNode::Param ||
         oper->end() != std::find(oper->begin(), oper->end(), node)) {
@@ -175,7 +179,9 @@ bool Graph::PrepareParameter(ValueNode *node) {
       }
       node = g->GetRetVal();
     }
-    if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR) {
+    bool isExpandInput =
+      (isExpandOn && (GraphBuilder::GetExpandInputMap().find(node) != GraphBuilder::GetExpandInputMap().end()));
+    if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR && !isExpandInput) {
       return false;
     }
     for (const auto &in : node->inputs()) {
@@ -194,6 +200,7 @@ bool Graph::PrepareParameter(ValueNode *node) {
   }
   prepare_.operations_.resize(backup);
   prepare_.inputs_.pop_back();
+  MS_LOG(INFO) << "PrepareParameter failed. Node: " << node->ToString();
   return false;
 }
 

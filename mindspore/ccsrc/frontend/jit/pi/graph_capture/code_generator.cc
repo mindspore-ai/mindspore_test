@@ -901,6 +901,8 @@ void CodeGenerator::AddCallInstr(size_t load_args_offset, int oparg) {
 }
 
 void CodeGenerator::LoadValue(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_LOG(DEBUG) << "node: " << node->ToString();
   auto iter = locals_map_.find(node);
   if (iter != locals_map_.end()) {
     NewInstr(LOAD_FAST, iter->second);
@@ -968,6 +970,8 @@ void CodeGenerator::LoadConst(const py::object &cnst) {
 }
 
 void CodeGenerator::BuildOper(ValueNode *node, int index) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_LOG(DEBUG) << "index: " << index << " node: " << node->ToString();
   static const std::set<int> not_value_oper = {
     STORE_DEREF,  DELETE_DEREF,  STORE_GLOBAL, DELETE_GLOBAL, STORE_ATTR, DELETE_ATTR,
     STORE_SUBSCR, DELETE_SUBSCR, IMPORT_STAR,  RAISE_VARARGS, RERAISE,
