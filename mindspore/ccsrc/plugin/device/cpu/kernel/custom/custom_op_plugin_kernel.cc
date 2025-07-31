@@ -108,7 +108,7 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
   int ret = 0;
   try {
     ret = LaunchOpPluginKernel(kernel_name_, params.size(), params.data(), ndims_.data(), shapes_.data(),
-                               type_pointer_list_.data(), reinterpret_cast<void *>(&kernel_info_));
+                               type_pointer_list_.data(), nullptr, reinterpret_cast<void *>(&kernel_info_));
   } catch (const std::exception &e) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
                       << file_path_ << "! "
