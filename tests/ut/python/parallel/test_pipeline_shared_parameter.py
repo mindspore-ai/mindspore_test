@@ -266,6 +266,48 @@ def test_vpp_with_shared_parameter_stage0():
     context.set_context(save_graphs=False)
 
 
+def test_vpp_with_shared_parameter_opt_shard_stage0():
+    """
+    Feature: parallel subgraph inline
+    Description: parallel subgraph inline in pipeline parallel mode
+    Expectation: success
+    """
+    context.set_auto_parallel_context(
+        device_num=32, global_rank=0, pipeline_stages=2)
+    context.set_context(save_graphs=True, save_graphs_path="./vpp_with_shared_parameter")
+    context.set_auto_parallel_context(pipeline_config={'pipeline_scheduler': '1f1b', 'pipeline_interleave': True},
+                                      enable_parallel_optimizer=True,
+                                      parallel_optimizer_config={'optimizer_weight_shard_size': 2,
+                                                                 'parallel_optimizer_threshold': 0},
+                                      strategy_ckpt_save_file="./vpp_with_shared_parameter/ckpt_strategy.ckpt")
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    stra1 = ((16, 1), (1, 1))
+    stra2 = ((8, 1), (1, 1))
+    net = PipelineCell(LazyInlineVppNet(stra1, stra2), 4)
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
+    model.train(2, dataset, dataset_sink_mode=False)
+    file = "./vpp_with_shared_parameter/*validate*.ir"
+    para = "pipeline_param"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "2"
+    stra = ms.build_searched_strategy("./vpp_with_shared_parameter/ckpt_strategy.ckpt")
+    stra_keys = list(stra.keys())
+    assert len(stra_keys) == 16
+    if os.path.exists("./vpp_with_shared_parameter"):
+        shutil.rmtree("./vpp_with_shared_parameter")
+    context.set_context(save_graphs=False)
+
 def test_vpp_with_shared_parameter_stage1():
     """
     Feature: parallel subgraph inline
