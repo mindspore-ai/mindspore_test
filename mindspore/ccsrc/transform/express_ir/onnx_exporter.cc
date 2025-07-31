@@ -4738,7 +4738,7 @@ void OnnxExporter::ExportPrimSqueeze(const FuncGraphPtr &, const CNodePtr &node,
   std::vector<int> new_axes;
   for (auto axis : axes_value) {
     if (axis < 0) {
-      axis += x_input_shape.size();
+      axis += static_cast<int>(x_input_shape.size());
     }
     if (x_input_shape[axis] == 1) {
       new_axes.push_back(axis);
