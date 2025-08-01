@@ -59,7 +59,9 @@ bool TriuCpuKernelMod::TriuCompute(const std::vector<KernelTensor *> &inputs,
   MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kTriuInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kTriuOutputsNum, kernel_name_);
-
+  if (IsShapeNone(input_shape_)) {
+    return true;
+  }
   auto input_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(input_addr);
   auto output_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
