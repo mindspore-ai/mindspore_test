@@ -684,16 +684,40 @@ class MS_CORE_API Tensor : public MetaTensor {
   void set_copy_done_flag(bool flag) { copy_done_flag_ = flag; }
   bool get_copy_done_flag() const { return copy_done_flag_; }
   // Grad interface for PyNative
+
+  /// \brief If tensor requires grad.
+  /// \return bool
   bool requires_grad();
+
+  /// \brief Set tensor requires grad.
   void set_requires_grad(bool requires_grad);
+
+  /// \brief If tensor need retains grad.
+  /// \return whether the tensor retains grad.
   bool retains_grad();
+
+  /// \brief Set tensor need retains grad.
   void retain_grad();
+
+  /// \brief Get grad of tensor.
+  /// \return grad of tensor.
   TensorPtr grad();
+
+  /// \brief Set grad of tensor.
   void set_grad(const TensorPtr &grad);
+
+  /// \brief Set tensor is a leaf node.
+  /// \return
   bool is_leaf();
+  /// \brief output index of operator.
+  /// \return output index of the operator.
   size_t output_index();
+  /// \brief grad node of operator.
+  /// \return grad node.
   BackwardNodePtr grad_node();
-  static void InitilizeGradImpl(GradHookInterfacePtr grad_impl);
+  /// \brief Initialize grad interface so we can call grad impl.
+  static void InitializeGradImpl(GradHookInterfacePtr grad_impl);
+  /// \brief Grad interface of PyNative.
   static const GradHookInterfacePtr &grad_impl();
 
  private:

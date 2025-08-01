@@ -149,7 +149,7 @@ void BackwardNode::CustomDeleter(BackwardNode *grad_node) {
   std::vector<std::shared_ptr<BackwardNode>> local_stack;
   static auto iteration_deleter = [](BackwardNode *node, std::vector<std::shared_ptr<BackwardNode>> *stack) {
     for (auto &next_edge : node->mutable_next_edges()) {
-      if (next_edge.is_defined() && next_edge.grad_node.use_count() == kSizeOne) {
+      if (next_edge.is_defined() && next_edge.grad_node.use_count() == 1) {
         (void)stack->emplace_back(std::move(next_edge.grad_node));
       } else {
         next_edge.grad_node = nullptr;

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 #include "pybind11/pybind11.h"
-#include "pybind11/detail/init.h"
-#include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/pynative/grad/function/func_grad.h"
