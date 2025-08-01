@@ -57,6 +57,8 @@ class SwitchCallMonadParameterEliminater : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 };
+
+AnfNodePtr EliminateUpdateStateMakeTupleWithUselessLoadNode(const CNodePtr &update_state_node);
 }  // namespace mindspore::opt::irpass
 
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_UPDATESTATE_ELIMINATE_H_

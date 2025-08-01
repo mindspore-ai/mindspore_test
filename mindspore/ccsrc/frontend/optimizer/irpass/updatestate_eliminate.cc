@@ -1057,4 +1057,17 @@ AnfNodePtr SwitchCallMonadParameterEliminater::operator()(const OptimizerPtr &, 
   new_switch_call->set_abstract(switch_call->abstract());
   return new_switch_call;
 }
+
+AnfNodePtr EliminateUpdateStateMakeTupleWithUselessLoadNode(const CNodePtr &update_state_node) {
+  if (update_state_node == nullptr || update_state_node->size() != kUpdateStateSize) {
+    return nullptr;
+  }
+
+  auto &attach = update_state_node->input(kAttachIndex);
+  if (!IsPrimitiveCNode(attach, prim::kPrimMakeTuple)) {
+    return nullptr;
+  }
+
+  return EliminateUpdateStateMakeTupleWithUselessLoadNode(update_state_node, attach->cast<CNodePtr>());
+}
 }  // namespace mindspore::opt::irpass
