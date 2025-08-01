@@ -49,6 +49,7 @@ internal::DataType TransInternalDataType(TypeId ms_type) {
     {kNumberTypeUInt32, internal::DataType::kTypeUint32},
     {kNumberTypeInt16, internal::DataType::kTypeInt16},
     {kNumberTypeUInt16, internal::DataType::kTypeUint16},
+    {kNumberTypeInt4, internal::DataType::kTypeInt4},
     {kNumberTypeInt8, internal::DataType::kTypeInt8},
     {kNumberTypeUInt8, internal::DataType::kTypeUint8},
     {kNumberTypeInt64, internal::DataType::kTypeInt64},

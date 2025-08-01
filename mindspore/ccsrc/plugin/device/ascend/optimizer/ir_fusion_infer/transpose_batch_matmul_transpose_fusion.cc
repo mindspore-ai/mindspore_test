@@ -85,7 +85,9 @@ const AnfNodePtr TransposeBatchMatmulTranspose::Process(const FuncGraphPtr &func
     return nullptr;
   }
   auto const &soc_version = ms_context->ascend_soc_version();
-  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
+  const std::vector<std::string> valid_soc_version{"ascend910b", "ascend910_93", "ascend310p"};
+  if (!soc_version.empty() &&
+      (std::find(valid_soc_version.begin(), valid_soc_version.end(), soc_version) == valid_soc_version.end())) {
     MS_LOG(INFO) << "TransposeBatchMatmulTranspose failed because soc is not support: " << soc_version;
     return nullptr;
   }

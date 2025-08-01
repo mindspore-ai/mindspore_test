@@ -14,39 +14,38 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_TRANSPOSE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_TRANSPOSE_H_
 
 #include <set>
-#include "infer/ops_func_impl/grouped_matmul_base.h"
+#include "infer/ops_func_impl/grouped_matmul_v4.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API GroupedMatmulV4FuncImpl : public GroupedMatmulBaseFuncImpl {
+class OPS_API GroupedMatmulV4TransposeFuncImpl final : public GroupedMatmulV4FuncImpl {
  public:
-  GroupedMatmulV4FuncImpl() {
+  GroupedMatmulV4TransposeFuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.split_item_offset = -5;
-    idxes_.group_type_offset = -4;
+    idxes_.split_item_offset = -6;
+    idxes_.group_type_offset = -5;
+    idxes_.transpose_a_offset = -2;
+    idxes_.transpose_b_offset = -1;
   }
-  ~GroupedMatmulV4FuncImpl() = default;
+  ~GroupedMatmulV4TransposeFuncImpl() = default;
 
   TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
  protected:
-  void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GetTransposeValue(const InferInfoPtrList &input_infos, int64_t transpose_index) const override;
 
-  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-
-  int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                 int64_t group_type) const override;
 
  private:
   int64_t group_list_idx_ = 8;
-  int64_t group_list_type_idx_ = 14;
-  int64_t per_token_scale_idx_ = 7;
   int64_t scale_idx_ = 3;
 };
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_TRANSPOSE_H_

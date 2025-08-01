@@ -51,6 +51,19 @@ class QbmmAllReduceConvertBias : public PatternProcessPass {
   mutable AnfNodePtr bias_node_ = nullptr;
 };
 
+class SparseQuantAllReduceConvertBias : public QbmmAllReduceConvertBias {
+ public:
+  explicit SparseQuantAllReduceConvertBias(const std::string &name = "sparse_quant_allreduce_convert_bias",
+                                           bool multigraph = true)
+      : QbmmAllReduceConvertBias(name, multigraph) {}
+  ~SparseQuantAllReduceConvertBias() override = default;
+  const BaseRef DefinePattern() const override;
+
+ protected:
+  bool Init() const;
+  mutable VarPtr compress_idx_ = nullptr;
+};
+
 }  // namespace opt
 }  // namespace mindspore
 
