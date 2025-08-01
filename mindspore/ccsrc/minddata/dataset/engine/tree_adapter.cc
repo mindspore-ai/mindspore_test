@@ -562,32 +562,6 @@ void TreeAdapter::SubprocessExit(int exit_code) {
 
   MS_LOG(INFO) << "[Independent Dataset Process] The shared memory had been released.";
 
-  // need acquire gil before destroy device
-  GilAcquireWithCheck gil_acquire_with_check;
-
-#if defined(ENABLE_D)
-  // If the main process has exited, the independent dataset process does not need to release the device.
-  auto ms_context = MsContext::GetInstance();
-  if (ms_context != nullptr) {
-    device::DeviceContextKey device_context_key = {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET),
-                                                   ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)};
-    auto device_context = device::DeviceContextManager::GetInstance().GetDeviceContext(device_context_key.device_name_);
-
-    // destroy the device context when independent dataset exit
-    if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && device_context &&
-        device_context->initialized()) {
-      // Destroy the device context
-      device_context->Destroy();
-    }
-    MS_LOG(INFO) << "Destroy device context successful.";
-  } else {
-    MS_LOG(ERROR) << "Get ms context failed by MsContext::GetInstance()";
-  }
-#endif
-
-  // release the gil
-  py::gil_scoped_release release;
-
   // release the shm queue & message queue for map/batch process
   ReleaseShmAndMsg();
 
