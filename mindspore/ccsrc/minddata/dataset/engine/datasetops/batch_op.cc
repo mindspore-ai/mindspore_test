@@ -91,6 +91,7 @@ BatchOp::BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size,
   msg_queues_.resize(num_workers);
   shm_queues_.resize(num_workers);
   worker_pids_.resize(num_workers);
+  UpdateMonitorResource(num_workers);
 #endif
 }
 
@@ -623,6 +624,17 @@ Status BatchOp::InvokeBatchSizeFunc(int32_t *batch_size, CBatchInfo info) {
 }
 
 #if !defined(_WIN32) && !defined(_WIN64)
+void BatchOp::UpdateMonitorResource(int32_t num_workers) {
+  monitor_mtx_.clear();
+  monitor_cv_.clear();
+  monitor_exit_flag_.clear();
+  for (int i = 0; i < num_workers; i++) {
+    monitor_mtx_.push_back(std::make_unique<std::mutex>());
+    monitor_cv_.push_back(std::make_unique<std::condition_variable>());
+    monitor_exit_flag_.push_back(std::make_unique<bool>(false));
+  }
+}
+
 Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch,
                                   int32_t worker_id) {
   RETURN_UNEXPECTED_IF_NULL(input);
@@ -639,7 +651,7 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
   }
 
   std::string current_pid = std::to_string(getpid());
-  // register the shm_id & msg_id by MainProcessPID_WorkerPID
+  // register the shm_id & msg_id by MainProcessPID_WorkerPID_"BatchOp"
   RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]) + "_BatchOp",
                         shm_queues_[worker_id]->GetShmID(), msg_queues_[worker_id]->msg_queue_id_);
 
@@ -659,12 +671,37 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
                << " through shm_id: " << std::to_string(shm_queues_[worker_id]->GetShmID())
                << " with shm_size: " << std::to_string(shm_queues_[worker_id]->GetShmSize());
 
+  // monitor thread
+  // If no data is obtained from the worker process within the time
+  // specified by get_multiprocessing_timeout_interval, a warning log is generated.
+  *(monitor_exit_flag_[worker_id]) = false;
+  auto monitor_thread = std::thread([this, &worker_id]() {
+    MonitorLoop(&(*(monitor_mtx_[worker_id])), &(*(monitor_cv_[worker_id])), &(*(monitor_exit_flag_[worker_id])),
+                worker_pids_[worker_id], "Batch");
+  });
+
   // >> receive procedure >>
   // 1. get message queue which contains shared memory from Python Process Worker
-  RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgRcv(kWorkerSendDataMsg));
+  ret = msg_queues_[worker_id]->MsgRcv(kWorkerSendDataMsg);
 
   RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]) + "_BatchOp",
                         shm_queues_[worker_id]->GetShmID(), msg_queues_[worker_id]->msg_queue_id_);
+
+  // got the data from worker process, end the monitor thread
+  {
+    std::lock_guard<std::mutex> lock(*(monitor_mtx_[worker_id]));
+    *(monitor_exit_flag_[worker_id]) = true;
+  }
+  (*(monitor_cv_[worker_id])).notify_all();
+  monitor_thread.join();
+
+  RETURN_IF_NOT_OK(ret);
+
+  if (msg_queues_[worker_id]->MessageQueueState() == MessageState::kReleased) {
+    RETURN_STATUS_UNEXPECTED(
+      "The msg queue had been released by worker process, batch thread: " + std::to_string(worker_id) +
+      ", process worker: " + std::to_string(worker_pids_[worker_id]));
+  }
 
   if (msg_queues_[worker_id]->GetErrorStatus()) {
     // got err from Python Process Worker
@@ -1120,6 +1157,8 @@ Status BatchOp::AddNewWorkers(int32_t num_new_workers) {
     python_multiprocessing_runtime_->add_new_workers(num_new_workers, kBatchOp, ftok_keys_);
 
     worker_pids_ = GetMPWorkerPIDs();
+
+    UpdateMonitorResource(num_workers_);
   }
 
   return Status::OK();
@@ -1139,6 +1178,8 @@ Status BatchOp::RemoveWorkers(int32_t num_workers) {
     python_multiprocessing_runtime_->remove_workers(num_workers, kBatchOp, ftok_keys_);
 
     worker_pids_ = GetMPWorkerPIDs();
+
+    UpdateMonitorResource(num_workers_);
   }
 
   return Status::OK();
@@ -1186,6 +1227,8 @@ Status BatchOp::Launch() {
     }
 
     worker_pids_ = GetMPWorkerPIDs();
+
+    UpdateMonitorResource(num_workers_);
   }
 
   return DatasetOp::Launch();
