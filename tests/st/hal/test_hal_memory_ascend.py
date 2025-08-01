@@ -22,6 +22,7 @@ import shutil
 import os
 import numpy as np
 import acl
+from test_hal_util import run_cmd
 
 GB_TO_BYTE = 1024 << 20
 FLOAT32_SIZE = 4
@@ -148,3 +149,27 @@ def test_huge_page_reserve_vmm():
     assert ret == 0
     huge_page_free_gb = huge_page_free / GB_TO_BYTE
     assert huge_page_free_gb >= huge_page_reserve_gb
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_small_allocator():
+    """
+    Feature: small allocator.
+    Description: Test whether the fragment size of enabling the small pool is
+                 less than that of disabling the small pool/
+    Expectation: the fragment size of enabling the small pool is smaller.
+    """
+    os.environ["MS_DEV_HOST_BLOCKING_RUN"] = "1"
+    os.environ["MS_DEV_LAUNCH_BLOCKING"] = "1"
+
+    cwd = os.path.dirname(os.path.realpath(__file__))
+    test_script_relpath = "test_small_allocator/test_small_allocator_script.py"
+    test_script_abspath = os.path.join(cwd, test_script_relpath)
+    _, stdout, _ = run_cmd(f"python {test_script_abspath}")
+    fragment_without_small_pool = int(stdout.split()[-1])
+
+    os.environ['MS_ALLOC_CONF'] = "enable_small_pool:true"
+    _, stdout, _ = run_cmd(f"python {test_script_abspath}")
+    fragment_with_small_pool = int(stdout.split()[-1])
+
+    assert fragment_with_small_pool < fragment_without_small_pool

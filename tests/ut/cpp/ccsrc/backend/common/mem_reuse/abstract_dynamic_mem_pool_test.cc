@@ -46,7 +46,7 @@ MemBufAllocatorPtr GenerateMemBufAllocatorPtr(size_t block_size = (1 << 30)) {
     return size;
   };
   return std::make_shared<MemBufAllocator>(mem_block_expander, mem_block_cleaner, mem_mapper, mem_eager_freer, true,
-                                           is_persistent, stream_id);
+                                           is_persistent, stream_id, false);
 }
 
 class TestMemBufAllocator : public UT::Common {
@@ -61,7 +61,7 @@ class TestMemBufAllocator : public UT::Common {
 TEST_F(TestMemBufAllocator, test_brief_info) {
   auto allocator = GenerateMemBufAllocatorPtr();
   const auto &brief_info = allocator->BriefInfo();
-  EXPECT_EQ("Mem buf allocator, is persistent : 1, stream id : 0.", brief_info);
+  EXPECT_EQ("Mem buf allocator, is persistent : 1, stream id : 0, is small: 0.", brief_info);
 }
 
 /// Feature: test actual peak size for MemBufAllocator.
@@ -508,10 +508,10 @@ TEST_F(TestAbstractDynamicMemPool, test_persistent_block_limit) {
   }
   const auto &allocators_map = mem_pool->stream_id_allocators_;
   EXPECT_EQ(allocators_map.size(), 2);
-  auto persistent_allocators_it = allocators_map.find(std::make_pair(true, 0));
+  auto persistent_allocators_it = allocators_map.find(AllocatorInfo{0, true, false});
   EXPECT_TRUE(persistent_allocators_it != allocators_map.end());
   EXPECT_TRUE(persistent_allocators_it->second->mem_blocks_.size() == 1);
-  auto common_allocators_it = allocators_map.find(std::make_pair(false, 0));
+  auto common_allocators_it = allocators_map.find(AllocatorInfo{0, false, false});
   EXPECT_TRUE(common_allocators_it != allocators_map.end());
   EXPECT_TRUE(common_allocators_it->second->mem_blocks_.size() == 9);
 }

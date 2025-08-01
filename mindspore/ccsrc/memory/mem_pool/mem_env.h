@@ -37,6 +37,7 @@ const char kAllocSimpleTracker[] = "simple_tracker";
 const char kAllocMemoryTrackerPath[] = "memory_tracker_path";
 const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
 const char kAllocMemoryPool[] = "older_pool";
+const char kAllocEnableSmallPool[] = "enable_small_pool";
 
 BACKEND_EXPORT std::string GetAllocConfigValue(const std::string &alloc_config);
 BACKEND_EXPORT bool IsEnableAllocConfig(const std::string &alloc_config);

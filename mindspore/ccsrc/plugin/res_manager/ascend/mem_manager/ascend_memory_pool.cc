@@ -196,8 +196,7 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
                                                              uint32_t stream_id) {
   size_t align_size = AlignMemorySize(size);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Allocate tensor mem, size : " << size << ", align_size : " << align_size
-                                       << ", from_persistent_mem : " << from_persistent_mem
-                                       << ", need_recycle : " << need_recycle << ", stream_id : " << stream_id << ".";
+                                       << ", need_recycle : " << need_recycle << ".";
   LockGuard lock(instance_->lock());
   const auto [mem_buf, allocator] = instance_->AllocMemBuf(align_size, from_persistent_mem, stream_id);
   if (mem_buf == nullptr) {
@@ -226,7 +225,8 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
 
   if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     tracker::CALL_MEMORY_TRACKER(AllocMemBlock, device_addr, mem_buf->size_, GetMemoryPoolType(),
-                                 ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id);
+                                 ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id,
+                                 from_persistent_mem, UseSmallPool(mem_buf->size_, from_persistent_mem));
   }
 
   // Time line process.
@@ -259,8 +259,12 @@ std::vector<DeviceMemPtr> DefaultEnhancedAscendMemoryPool::AllocContinuousTensor
 
   for (size_t i = 0; i < continuous_addrs.size(); i++) {
     if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      // AllocContinuousTensorMem allocates a large continuous MemBuf first and then split them into small MemBufs
+      // so the total size of MemBuf determines small/large allocator it uses.
+      const size_t total_size = std::accumulate(size_list.begin(), size_list.end(), static_cast<size_t>(0));
       tracker::CALL_MEMORY_TRACKER(AllocMemBlock, continuous_addrs[i], size_list[i], GetMemoryPoolType(),
-                                   ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id);
+                                   ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id,
+                                   false, UseSmallPool(total_size, false));
     }
 
     if (instance_->IsEnableTimeEvent()) {
@@ -339,9 +343,20 @@ void DefaultEnhancedAscendMemoryPool::FreePartTensorMems(const std::vector<Devic
   const auto keep_mem_bufs = instance_->DoFreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
   if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     for (const auto &mem_buf : keep_mem_bufs) {
-      tracker::CALL_MEMORY_TRACKER(AllocMemBlock, mem_buf->addr_, mem_buf->size_, GetMemoryPoolType(),
-                                   ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(),
-                                   mem_buf->stream_id_);
+      if (const auto &&it = addr_mem_buf_allocators_.find(mem_buf->addr_); it != addr_mem_buf_allocators_.end()) {
+        const auto mem_buf_allocator = it->second.second;
+        MS_EXCEPTION_IF_NULL(mem_buf_allocator);
+        // DoFreePartTensorMems splits a large MemBuf, keeps a part of it and free the rest, so whether the allocator
+        // is small or persistent depends on the size of the large MemBuf not the one that is kept. Here, we just use
+        // the info stored in the allocator.
+        const bool is_small = mem_buf_allocator->is_small();
+        const bool is_persistent = mem_buf_allocator->is_persistent();
+        tracker::CALL_MEMORY_TRACKER(AllocMemBlock, mem_buf->addr_, mem_buf->size_, GetMemoryPoolType(),
+                                     ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(),
+                                     mem_buf->stream_id_, is_persistent, is_small);
+      } else {
+        MS_LOG(DEBUG) << "Find mem buf address: " << mem_buf->addr_ << " failed.";
+      }
     }
   }
   if (instance_->IsEnableTimeEvent()) {

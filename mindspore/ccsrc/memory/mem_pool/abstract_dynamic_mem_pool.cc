@@ -632,11 +632,13 @@ bool AbstractDynamicMemPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
 }
 
 MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id) {
-  auto key = std::make_pair(from_persistent_mem, stream_id);
+  const AllocatorInfo key{stream_id, from_persistent_mem, UseSmallPool(size, from_persistent_mem)};
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Get allocator, " << key.ToString() << ".";
+
   MemBufAllocatorPtr allocator = nullptr;
   auto &&it = stream_id_allocators_.find(key);
   if (it == stream_id_allocators_.end()) {
-    allocator = GenerateAllocator(from_persistent_mem, stream_id);
+    allocator = GenerateAllocator(key);
     (void)stream_id_allocators_.emplace(key, allocator);
   } else {
     allocator = it->second;
@@ -739,8 +741,12 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
   return mem_bufs;
 }
 
-MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent, uint32_t stream_id) {
-  MS_LOG(INFO) << "Generate allocator, is persistent : " << is_persistent << ", stream id : " << stream_id << ".";
+MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(const AllocatorInfo &allocator_key) {
+  const auto is_persistent = allocator_key.from_persistent_mem;
+  const auto stream_id = allocator_key.stream_id;
+  const auto is_small = allocator_key.use_small_pool;
+
+  MS_LOG(INFO) << "Generate allocator, " << allocator_key.ToString() << ".";
   std::function<MemBlock *(size_t)> mem_block_expander = [&, is_persistent = is_persistent,
                                                           stream_id = stream_id](size_t size) {
     size_t block_size = CalMemBlockAllocSize(size, is_persistent);
@@ -791,7 +797,7 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
   };
 
   return std::make_shared<MemBufAllocator>(mem_block_expander, mem_block_cleaner, mem_mapper, mem_eager_freer,
-                                           IsEnableVmm() || IsEnableEagerFree(), is_persistent, stream_id);
+                                           IsEnableVmm() || IsEnableEagerFree(), is_persistent, stream_id, is_small);
 }
 
 // Element in vector : <memory_stream_id, addr>
@@ -1015,10 +1021,8 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
     ss << "\tIn used mem buf info for " << allocator->BriefInfo() << ", mem_bufs size : " << mem_bufs.size() << "\n";
   }
 
-  for (const auto &stream_id_allocator : stream_id_allocators_) {
-    ss << "stream id : " << stream_id_allocator.first.second << ", is persistent : " << stream_id_allocator.first.first
-       << "\n";
-    ss << stream_id_allocator.second->DumpStateInfo();
+  for (const auto &[key, buf_allocator_ptr] : stream_id_allocators_) {
+    ss << key.ToString() << "\n" << buf_allocator_ptr->DumpStateInfo();
   }
 
   size_t other_used_size = 0;
@@ -1061,10 +1065,8 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
     }
   }
 
-  for (const auto &stream_id_allocator : stream_id_allocators_) {
-    ss << "stream id : " << stream_id_allocator.first.second << ", is persistent : " << stream_id_allocator.first.first
-       << "\n";
-    ss << stream_id_allocator.second->DumpDebugInfo();
+  for (const auto &[key, buf_allocator_ptr] : stream_id_allocators_) {
+    ss << key.ToString() << "\n" << buf_allocator_ptr->DumpDebugInfo();
   }
 
   // Write info file.
@@ -1155,11 +1157,11 @@ std::unordered_map<std::string, std::size_t> AbstractDynamicMemPool::BlockCounts
   LockGuard lock(lock_);
   size_t persistent_block_count = 0;
   size_t common_block_count = 0;
-  for (const auto &iter : stream_id_allocators_) {
-    if (iter.first.first) {
-      persistent_block_count += iter.second->mem_blocks_.size();
+  for (const auto &[allocator_info, allocator_ptr] : stream_id_allocators_) {
+    if (allocator_info.from_persistent_mem) {
+      persistent_block_count += allocator_ptr->mem_blocks_.size();
     } else {
-      common_block_count += iter.second->mem_blocks_.size();
+      common_block_count += allocator_ptr->mem_blocks_.size();
     }
   }
   std::unordered_map<std::string, size_t> block_counts;
@@ -1180,9 +1182,9 @@ std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>
 AbstractDynamicMemPool::CommonMemBlocksInfoStatistics() const {
   LockGuard lock(lock_);
   std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> block_infos;
-  for (const auto &iter : stream_id_allocators_) {
-    if (!iter.first.first) {
-      const auto &mem_blocks = iter.second->mem_blocks_;
+  for (const auto &[allocator_info, allocator_ptr] : stream_id_allocators_) {
+    if (!allocator_info.from_persistent_mem) {
+      const auto &mem_blocks = allocator_ptr->mem_blocks_;
       for (const auto mem_block : mem_blocks) {
         std::unordered_map<std::string, size_t> block_info;
         block_info[kBlockMemorySize] = mem_block->size_;
@@ -1198,9 +1200,9 @@ std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>
 AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
   LockGuard lock(lock_);
   std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> block_infos;
-  for (const auto &iter : stream_id_allocators_) {
-    if (iter.first.first) {
-      const auto &mem_blocks = iter.second->mem_blocks_;
+  for (const auto &[allocator_info, allocator_ptr] : stream_id_allocators_) {
+    if (allocator_info.from_persistent_mem) {
+      const auto &mem_blocks = allocator_ptr->mem_blocks_;
       for (const auto mem_block : mem_blocks) {
         std::unordered_map<std::string, size_t> block_info;
         block_info[kBlockMemorySize] = mem_block->size_;
