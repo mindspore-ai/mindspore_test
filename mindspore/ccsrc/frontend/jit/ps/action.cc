@@ -2249,6 +2249,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     if (IsEnableSilentCheck()) {
       (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
     }
+    (void)jit_passes.emplace_back(kSymbolEngineOpt, SymbolEngineOptGroup);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }
 

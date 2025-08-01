@@ -85,6 +85,7 @@ bool SetTrainingFlagPass(const ResourcePtr &resource);
 bool BackendPass(const ResourcePtr &resource);
 void ViewInplaceBeforeGradProcessPass(const ResourceBasePtr &resource, const FuncGraphPtr &func_graph,
                                       opt::irpass::ViewInplacePassType type);
+bool SymbolEngineOptGroup(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 
