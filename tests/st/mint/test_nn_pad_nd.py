@@ -312,8 +312,8 @@ def test_nn_PadNd_dynamic():
                           'ScalarTensor'],
             case_config={'disable_input_check': True})
 
-    input_reflection_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input_reflection_2d_2 = generate_random_input((2, 3, 4), np.float32)
+    input_reflection_2d_1 = generate_random_input((2, 3, 4, 5), np.float64)
+    input_reflection_2d_2 = generate_random_input((2, 3, 4), np.float64)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_reflection_2d_1), "reflection_2d"], \
                                      [ms.Tensor(input_reflection_2d_2), "reflection_2d"]],
             disable_mode=['GRAPH_MODE_GE'],
@@ -339,8 +339,8 @@ def test_nn_PadNd_dynamic():
                           'ScalarTensor'],
             case_config={'disable_input_check': True})
 
-    input_replication_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input_replication_2d_2 = generate_random_input((2, 3, 4), np.float32)
+    input_replication_2d_1 = generate_random_input((2, 3, 4, 5), np.float64)
+    input_replication_2d_2 = generate_random_input((2, 3, 4), np.float64)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_replication_2d_1), "replication_2d"], \
                                      [ms.Tensor(input_replication_2d_2), "replication_2d"]],
             disable_mode=['GRAPH_MODE_GE'],
