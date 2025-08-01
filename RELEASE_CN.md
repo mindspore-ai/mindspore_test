@@ -37,14 +37,12 @@
   | mindspore.Tensor.zero_          |
   | mindspore.Tensor.copy_          |
 
-- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.ops.html) API新增[mindspore.ops.ring_attention_update](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.ring_attention_update.html)接口，当前仅支持Ascend后端。
+- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.ops.html) API新增[mindspore.ops.ring_attention_update](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.ring_attention_update.html)接口，当前仅支持 Atlas A2 训练系列产品。
 - [STABLE] 新增[mindspore.enable_dynamic](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.enable_dynamic.html)接口，用于指定参数的shape是动态shape或者动态rank。
 
 ### 贡献者
 
 Bellatan,caifubi,ccsszz,chaijinwei,chengbin,chenweifeng,chujinjin,DavidFFFan,DeshiChen,dingjinshan,fary86,fuchao,gaoyong10,GuoZhibin,guozhijian,haozhang,hedongdong,Henry Shi,hhz886,huangbingjian,huangziling,huda,Huilan Li,jiangchao_j,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jizewei,leida,lichen,limingqi107,LiNuohang,linux,liubuyu,liuluobin,looop5,luochao60,luoyang,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,NaCN,One_East,panzhihui,Qiao_Fu,qiuleilei,qiuyufeng,r1chardf1d0,SaiYao,shaoshengqi,shen_haochen,shenwei41,shuqian0,St.Universe,suteng,TAJh,tanghuikang,tianxiaodong,wang_ziqi,wangyibo,wujueying,wusimin,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,XinDu,xuzhen,yanghaoran,yangyingchun,yide12,yonibaehr,yuanqi,yuchaojie,YuJianfeng,YukioZzz,yuliangbin,zhangbuxue,zhangdanyang,zhanghanLeo,zhangyinxia,ZhangZGC,zhaochenjie,Zhi Feng Wu,zhuguodong,ZPaC,zyli2020,程超,胡犇,胡彬,宦晓玲,黄勇,李良灿,李林杰,刘飞扬,刘勇琪,刘子涵,王振邦,熊攀,杨卉,俞涵,云骑士,张栩浩,周一航
-
-## MindSpore Lite 2.7.0 Release Notes
 
 ## MindSpore 2.7.0-rc1 Release Notes
 
