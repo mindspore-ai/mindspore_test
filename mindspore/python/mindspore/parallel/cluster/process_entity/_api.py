@@ -21,6 +21,7 @@ import subprocess
 import socket
 import psutil
 import mindspore.log as logger
+from mindspore.utils import RSCPluginHandle
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url, \
     _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip, _generate_auto_bind_core_strategy, \
     _generate_bind_core_strategy
@@ -221,23 +222,28 @@ class _ProcessManager:
 
         self.proc_rank_map = {}
         self.enable_mindx = False
+        self.handler = None
         self._check_taskd()
 
     def _check_taskd(self):
         """check if enable taskd."""
-        tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if any(v in tft_env for v in ('TTP:1', 'UCE:1', 'ARF:1', 'TSP:1', 'RSC:1', 'HCCE:1')):
-            try:
-                from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
-                self.msmgr = MSRunPlugin()
-                self.msmgr.register_callbacks("KILL_WORKER", self.kill_workers)
-                self.msmgr.register_callbacks("START_ALL_WORKER", self.start_all_workers)
-                self.msmgr.register_callbacks("START_WORKER_LIST", self.start_worker_list)
-                self.msmgr.register_callbacks("MONITOR", self.monitor_rank_status)
-                self.enable_mindx = True
-                os.environ["MS_ENABLE_RECOVERY"] = str(1)
-            except Exception as e:  # pylint: disable=broad-except
-                logger.warning(f"mindx is not installed, using original mindspore recovery strategy.: {str(e)}")
+        self.handler = RSCPluginHandle()
+        self.enable_mindx = self.handler.check_enable()
+        if self.enable_mindx is False:
+            self.handler = None
+            return
+        ret = self.handler.register_callback({"KILL_WORKER": self.kill_workers,
+                                              "START_ALL_WORKER": self.start_all_workers,
+                                              "START_WORKER_LIST": self.start_worker_list,
+                                              "MONITOR": self.monitor_rank_status
+                                              })
+        if not ret:
+            logger.warning(f"Register callback to mindx failed, process controlled by msrun.")
+            self.enable_mindx = False
+            self.handler = None
+            return
+        logger.warning(f"Mindx enabled, process controlled by mindx.")
+        os.environ["MS_ENABLE_RECOVERY"] = str(1)
 
     def run(self):
         """
@@ -260,7 +266,7 @@ class _ProcessManager:
             if self.is_master and not self.is_simulation:
                 self.start_scheduler()
         if self.enable_mindx:
-            self.msmgr.start()
+            self.handler.start()
         else:
             self.start_workers()
             if self.join:

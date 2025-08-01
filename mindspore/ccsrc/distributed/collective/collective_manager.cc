@@ -1146,10 +1146,10 @@ void CollectiveManager::SetDistributedMeta() {
 }
 
 void CollectiveManager::CacheInitedGroups(const std::string &name) {
-  MS_LOG(WARNING) << "Cache inited group: " << name;
+  MS_LOG(INFO) << "Cache inited group: " << name;
   std::unique_lock<std::mutex> result_lock(cache_mutes_);
   (void)inited_groups_.emplace_back(name);
-  MS_LOG(WARNING) << "Cache inited group: " << name << " end.";
+  MS_LOG(INFO) << "Cache inited group: " << name << " end.";
 }
 
 void CollectiveManager::ClearCacheInitedGroups() { inited_groups_.clear(); }

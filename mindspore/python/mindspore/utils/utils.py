@@ -64,6 +64,56 @@ class ExitByRequest:
         return grad
 
 
+class TFTCommValue:
+    """Config values"""
+    ENABLE_MINDX = ['TTP:1', 'UCE:1', 'ARF:1', 'TSP:1', 'HCCE:1', 'RSC:1']  # support mindx to schedule
+    NEED_MINDIO = ["TTP:1", "UCE:1", "ARF:1", "TSP:1", "HCCE:1"]  # need mindio-ttp pkg
+    DISABLE_WATCHDOG = ['ARF:1', 'TSP:1', 'HCCE:1']  # close watchdog
+
+
+class RSCPluginHandle:
+    """Third party controller handler"""
+
+    def __init__(self):
+        self.enable = False
+        self._check_env()
+        self.msmgr = None
+
+    def _check_env(self):
+        """Check env"""
+        tft_env = os.getenv("MS_ENABLE_TFT", "")
+        self.enable = any(v in tft_env for v in TFTCommValue.ENABLE_MINDX)
+
+    def check_enable(self):
+        """Check env"""
+        return self.enable
+
+    def register_callback(self, func_map: dict):
+        """Register function"""
+        if not isinstance(func_map, dict):
+            raise ValueError(f"The value of 'func_map' should be a dict, bug got:{func_map}.")
+        if self.msmgr is None:
+            try:
+                from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
+                self.msmgr = MSRunPlugin()
+            except Exception as e:  # pylint: disable=broad-except
+                logger.warning(f"Import mindx failed: {str(e)}, process controlled by msrun.")
+                return False
+        try:
+            for name, func in func_map.items():
+                self.msmgr.register_callbacks(name, func)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(f"Register callback func failed: {str(e)}, process controlled by msrun")
+            return False
+        return True
+
+    def start(self):
+        """Start execute taskd agent"""
+        if self.msmgr is None:
+            raise RuntimeError(f"Mindx unavailable, can not start training.")
+        self.msmgr.start()
+
+
 class TftHandle:
     """TftHandle class"""
 
@@ -125,10 +175,9 @@ class TftHandle:
             **kwargs: Reserved parameters.
         """
         tft_env = os.getenv("MS_ENABLE_TFT", "")
-        tft_opts = ["TTP:1", "UCE:1", "HCCE:1", "ARF:1", "TSP:1"]
-        tft_enabled = any([opt in tft_env for opt in tft_opts])
+        tft_enabled = any([opt in tft_env for opt in TFTCommValue.NEED_MINDIO])
         if not tft_enabled:
-            raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{%s}']!" % ",".join(tft_opts))
+            raise ValueError(F"MindIO TFT register need custom switch on one of:{TFTCommValue.NEED_MINDIO}")
         if "ARF:1" in tft_env:
             logger.warning(f"Disable hccl watchdog when using ARF.")
             context.set_context(ascend_config={"hccl_watchdog": False})

@@ -730,3 +730,75 @@ def test_tft_adapter_interface():
     assert reboot_flag is True
     arf_flag = check_is_arf()
     assert arf_flag is True
+
+
+def test_taskd_plugin():
+    """
+    Feature: callback.
+    Description: Test taskd register callback.
+    Expectation: run success.
+    """
+    import sys
+    from unittest.mock import MagicMock
+    from mindspore.utils import RSCPluginHandle
+
+    mock_plugin = MagicMock()
+    sys.modules['taskd'] = MagicMock()
+    sys.modules['taskd.python'] = MagicMock()
+    sys.modules['taskd.python.framework'] = MagicMock()
+    sys.modules['taskd.python.framework.agent'] = MagicMock()
+    sys.modules['taskd.python.framework.agent.ms_mgr'] = MagicMock()
+    sys.modules['taskd.python.framework.agent.ms_mgr.msrun_plugin'] = mock_plugin
+
+    handle = RSCPluginHandle()
+    enable = handle.check_enable()
+    assert enable is False
+    os.environ["MS_ENABLE_TFT"] = "{RSC:1}"
+    handle._check_env()  # pylint: disable=W0212
+    enable = handle.check_enable()
+    assert enable is True
+
+    def case1():
+        """exception :No module named MSRunPlugin"""
+        mock_plugin.MSRunPlugin.side_effect = Exception("No module named MSRunPlugin")
+        assert handle.register_callback({"Start": None, "Stop": None}) is False
+
+    def case2():
+        """Module exist"""
+        mock_plugin.MSRunPlugin.side_effect = None
+        assert handle.register_callback({"Start": None, "Stop": None}) is True
+
+    def case3():
+        """No method: register_callbacks"""
+        mock_plugin.MSRunPlugin.return_value.register_callbacks.side_effect = Exception("register_callbacks not exist")
+        assert handle.register_callback({"Start": None, "Stop": None}) is False
+
+    def case4():
+        """register_callbacks exist"""
+        mock_plugin.MSRunPlugin.return_value.register_callbacks.side_effect = None
+        assert handle.register_callback({"Start": None, "Stop": None}) is True
+
+    def case5():
+        """handle is None"""
+        with pytest.raises(RuntimeError):
+            handle.register_callback({"Start": None, "Stop": None})
+            handle.msmgr = None
+            handle.start()
+
+    def case6():
+        """Normal"""
+        _ = handle.register_callback({"Start": None, "Stop": None})
+        try:
+            handle.start()
+        except Exception as e:  # pylint: disable=broad-except
+            print(f"exception:{str(e)}")
+            return False
+        return True
+
+    case1()
+    case2()
+    case3()
+    case4()
+    case5()
+    ret = case6()
+    assert ret is True
