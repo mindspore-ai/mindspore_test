@@ -22,6 +22,7 @@
 #include "kernel/framework_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
+#include "include/backend/kernel_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::graphkernel {

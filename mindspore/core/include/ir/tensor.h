@@ -38,7 +38,6 @@
 #include "base/hifloat8.h"
 #include "utils/shape_utils.h"
 #include "utils/ms_exception.h"
-#include "ir/device_event.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
 #include "utils/ms_utils_secure.h"

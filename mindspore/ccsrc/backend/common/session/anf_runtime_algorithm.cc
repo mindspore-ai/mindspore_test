@@ -2352,11 +2352,6 @@ bool AnfRuntimeAlgorithm::IsSequenceOutputOfScalar(const AnfNodePtr &node) {
   });
 }
 
-bool AnfRuntimeAlgorithm::IsSummaryNode(const AnfNodePtr &node) {
-  return (IsPrimitiveCNode(node, prim::kPrimScalarSummary) || IsPrimitiveCNode(node, prim::kPrimTensorSummary) ||
-          IsPrimitiveCNode(node, prim::kPrimImageSummary) || IsPrimitiveCNode(node, prim::kPrimHistogramSummary));
-}
-
 namespace {
 bool CheckValidTensorTuple(const std::vector<ValuePtr> &values) {
   if (values.empty() || values[0] == nullptr || (!values[0]->isa<tensor::Tensor>())) {
@@ -3116,5 +3111,19 @@ kernel::KernelAttr AnfRuntimeAlgorithm::GetKernelAttrFromNode(const AnfNodePtr &
   MS_EXCEPTION_IF_NULL(kernel_node);
   auto build_info = GetSelectKernelBuildInfo(kernel_node);
   return GetKernelAttrFromBuildInfo(build_info);
+}
+
+bool AnfRuntimeAlgorithm::IsBackendGe() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendGE;
+}
+
+bool AnfRuntimeAlgorithm::IsBackendMs() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendMSBackend;
 }
 }  // namespace mindspore::session

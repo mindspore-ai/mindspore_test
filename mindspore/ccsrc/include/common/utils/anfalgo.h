@@ -214,6 +214,9 @@ class COMMON_EXPORT AnfAlgo {
   static std::vector<int64_t> GetOutputMaxShape(const AnfNodePtr &anf_node, size_t index);
   static bool IsHostKernel(const CNodePtr &kernel_node);
   static void AddArgList(AbstractBasePtrList *args_spec_list, const AnfNodePtr &real_input, size_t real_input_index);
+  // Used to check whether an AnfNode is a Summary Node.
+  static bool IsSummaryNode(const AnfNodePtr &node);
+  static bool IsAKGSparseOP(const AnfNodePtr &cnode);
   // Find real input nodes.
   static void GetAllFatherRealNode(const AnfNodePtr &anf_node, std::vector<AnfNodePtr> *result,
                                    std::set<AnfNodePtr> *visited);
@@ -350,10 +353,6 @@ class COMMON_EXPORT AnfAlgo {
                                  std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter);
   static bool IsNeededShape(const CNodePtr &cnode);
   static bool IsMonadType(const TypeId &type_id);
-  // check if is GE backend
-  static bool IsBackendGe();
-  // check if is ms_backend backend
-  static bool IsBackendMs();
 };
 }  // namespace common
 }  // namespace mindspore

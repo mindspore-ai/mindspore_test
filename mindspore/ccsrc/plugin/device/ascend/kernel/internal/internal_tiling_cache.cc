@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
 #include <utility>
+
+#include "utils/anf_utils.h"
+#include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
 namespace mindspore {
 namespace kernel {
 constexpr size_t kSizeFive = 5;

@@ -19,7 +19,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
-#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 
@@ -30,7 +30,7 @@ std::once_flag alarm_flag;
 }
 
 void CheckDeprecatedDumpEnv() {
-  if (!common::AnfAlgo::IsBackendGe()) {
+  if (!AnfAlgo::IsBackendGe()) {
     return;
   }
   const bool is_legacy_dump_set = !common::GetEnv("MINDSPORE_DUMP_CONFIG").empty();

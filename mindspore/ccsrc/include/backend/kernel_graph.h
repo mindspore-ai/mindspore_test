@@ -29,15 +29,14 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "include/common/utils/contract.h"
 #include "common/device_type.h"
-#include "include/backend/kernel_info.h"
 #include "common/device_address.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace session {
+const uint32_t kInvalidDistincLabel = UINT32_MAX;
 using AnfWithOutIndex = std::pair<AnfNodePtr, size_t>;
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 struct KernelWithIndexCmp {

@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include "mindspore/ops/op_def/math_ops.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -74,9 +75,8 @@ bool ReduceAxisUpdate::IsReduce(const BaseRef &ref) {
     }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    if (common::AnfAlgo::IsBackendGe() &&
-        (IsPrimitive(node, prim::kPrimMeanExt) || IsPrimitive(node, prim::kPrimSumExt) ||
-         IsPrimitive(node, prim::kPrimProdExt))) {
+    if (AnfAlgo::IsBackendGe() && (IsPrimitive(node, prim::kPrimMeanExt) || IsPrimitive(node, prim::kPrimSumExt) ||
+                                   IsPrimitive(node, prim::kPrimProdExt))) {
       return true;
     }
   }

@@ -84,8 +84,6 @@ COMMON_EXPORT void TensorValueToTensor(const ValuePtr &value, std::vector<tensor
 
 COMMON_EXPORT size_t CountValueNum(const ValueSequencePtr &value_sequence);
 
-COMMON_EXPORT bool IsAKGSparseOP(const AnfNodePtr &cnode);
-
 COMMON_EXPORT KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value);
 
 COMMON_EXPORT tensor::MetaSparseTensorPtr TensorListToSparseTensor(const abstract::AbstractBasePtr &abs_sparse,

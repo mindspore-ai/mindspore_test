@@ -30,6 +30,7 @@
 #include "utils/hash_map.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/kernel_graph.h"
+#include "include/backend/kernel_info.h"
 
 namespace mindspore {
 namespace runtime {

@@ -725,7 +725,7 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
     // Select for dynamic kernel(both the number and data type are undetermined).
     UpdateDynamicKernelBuildInfo(kernel_node);
     return {};
-  } else if (IsAKGSparseOP(kernel_node)) {
+  } else if (common::AnfAlgo::IsAKGSparseOP(kernel_node)) {
     UpdateCustomKernelBuildInfo(kernel_node, true);
     return {};
   }

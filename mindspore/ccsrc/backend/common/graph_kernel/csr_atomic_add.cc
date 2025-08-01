@@ -41,7 +41,7 @@ class ReduceSumCsrChecker : public AtomicAddChecker {
     auto func_graph = common::AnfAlgo::GetCNodeFuncGraphPtr(cnode);
     MS_EXCEPTION_IF_NULL(func_graph);
     for (auto n : func_graph->nodes()) {
-      if (n->isa<CNode>() && IsAKGSparseOP(n)) {
+      if (n->isa<CNode>() && common::AnfAlgo::IsAKGSparseOP(n)) {
         has_csr = true;
         break;
       } else if (IsPrimitiveCNode(n, prim::kPrimReduceSum)) {

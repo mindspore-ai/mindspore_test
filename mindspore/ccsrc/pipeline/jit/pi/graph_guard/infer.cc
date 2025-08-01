@@ -39,6 +39,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
 

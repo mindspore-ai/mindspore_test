@@ -18,6 +18,7 @@
 #include "kernel/gpu/arrays/contiguous_gpu_kernel.h"
 #include "kernel/gpu/arrays/copy_with_slice_gpu_kernel.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "runtime/device/res_manager/utils/utils.h"
 
 namespace {
 // dim will be 9, when op is pixel shuffle

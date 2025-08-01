@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
@@ -679,6 +680,18 @@ size_t AnfAlgo::GetInputNum(const CNodePtr &cnode) {
 size_t AnfAlgo::GetInputTensorNum(const AnfNodePtr &node) {
   // this function was moved to AnfUtils.
   return AnfUtils::GetInputTensorNum(node);
+}
+
+bool AnfAlgo::IsSummaryNode(const AnfNodePtr &node) {
+  return (IsPrimitiveCNode(node, prim::kPrimScalarSummary) || IsPrimitiveCNode(node, prim::kPrimTensorSummary) ||
+          IsPrimitiveCNode(node, prim::kPrimImageSummary) || IsPrimitiveCNode(node, prim::kPrimHistogramSummary));
+}
+
+bool AnfAlgo::IsAKGSparseOP(const AnfNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  const PrimitiveSet prims{prim::kPrimCSRReduceSum, prim::kPrimCSRMul,  prim::kPrimCSRMV,  prim::kPrimCSRGather,
+                           prim::kPrimCSR2COO,      prim::kPrimCOO2CSR, prim::kPrimCSRDiv, prim::kPrimCSRMM};
+  return IsOneOfPrimitiveCNode(cnode, prims);
 }
 
 bool AnfAlgo::IsPrevNodeHasTupleGetItem(const AnfNodePtr &anf_node, size_t input_idx, bool skip_nop_node) {
@@ -3041,20 +3054,6 @@ bool AnfAlgo::IsMonadType(const TypeId &type_id) {
     return true;
   }
   return false;
-}
-
-bool AnfAlgo::IsBackendGe() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  std::string backend = context->GetBackend();
-  return backend == kBackendGE;
-}
-
-bool AnfAlgo::IsBackendMs() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  std::string backend = context->GetBackend();
-  return backend == kBackendMSBackend;
 }
 }  // namespace common
 }  // namespace mindspore
