@@ -515,6 +515,45 @@ void BuildStreamForCompileCache(const KernelGraphPtr &kernel_graph, const Device
 
 void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) { session_->CacheKernelGraph(graphs); }
 
+namespace {
+void UpdateAbstractForAkgParameter(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  std::for_each(graph->execution_order().begin(), graph->execution_order().end(), [](const CNodePtr &kernel) {
+    if (kernel == nullptr || kernel->kernel_info() == nullptr) {
+      MS_LOG(DEBUG) << "Invalid kernel";
+      return;
+    }
+    if (AnfAlgo::GetKernelType(kernel) == KernelType::AKG_KERNEL) {
+      MS_LOG(DEBUG) << "Check kernel:" << kernel->DebugString() << " fulllname:" << kernel->fullname_with_scope();
+      auto func_graph = common::AnfAlgo::GetNodeAttr<FuncGraphPtr>(kernel, kAttrFuncGraph);
+      if (func_graph == nullptr || kernel->size() != func_graph->parameters().size() + 1) {
+        MS_LOG(DEBUG) << "Invalid funcgraph";
+        return;
+      }
+      for (size_t i = 0; i < func_graph->parameters().size(); ++i) {
+        if (kernel->input(i + 1) == nullptr || !kernel->input(i + 1)->isa<ValueNode>() ||
+            func_graph->parameters()[i] == nullptr || func_graph->parameters()[i]->abstract() == nullptr ||
+            (func_graph->parameters()[i]->abstract()->GetValue() != nullptr &&
+             !func_graph->parameters()[i]->abstract()->GetValue()->isa<ValueAny>())) {
+          MS_LOG(DEBUG) << "Invalid funcgraph input index:" << i;
+          continue;
+        }
+        const auto &valuenode = kernel->input(i + 1)->cast<ValueNodePtr>();
+        if (valuenode == nullptr || valuenode->value() == nullptr || !valuenode->value()->isa<BoolImm>()) {
+          MS_LOG(DEBUG) << "Invalid value node index:" << i;
+          continue;
+        }
+        func_graph->parameters()[i]->abstract()->set_value(valuenode->value());
+        MS_LOG(INFO) << "Set value:" << valuenode->DebugString()
+                     << " to abstract:" << func_graph->parameters()[i]->abstract()->ToString()
+                     << " parameter:" << func_graph->parameters()[i]->DebugString()
+                     << " graph:" << func_graph->ToString();
+      }
+    }
+  });
+}
+}  // namespace
+
 bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
                                                          const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(session_);
@@ -533,6 +572,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
     // Create event before create kernelmod
     device_context->GetKernelExecutor()->CreateEventForCache(graph);
     PROF_START(CreateKernel);
+    UpdateAbstractForAkgParameter(graph);
     device_context->GetKernelExecutor()->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
 #ifdef WITH_BACKEND
@@ -559,7 +599,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
 #ifdef ENABLE_DUMP_IR
     // Dump .pb graph after graph optimization.
     if (context->CanDump(kIntroductory)) {
-      DumpIRProto(graph, "after_opt_" + std::to_string(graph->graph_id()));
+      DumpIR("complile_cache_after_opt_" + std::to_string(graph->graph_id()), graph, true);
     }
 #endif
     graph->EnableRuntimeCache();
