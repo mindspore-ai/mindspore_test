@@ -577,7 +577,7 @@ size_t Tensor::output_index() { return grad_impl()->output_index(shared_from_bas
 
 BackwardNodePtr Tensor::grad_node() { return grad_impl()->grad_node(shared_from_base<Tensor>()); }
 
-void Tensor::InitilizeGradImpl(GradHookInterfacePtr grad_impl) {
+void Tensor::InitializeGradImpl(GradHookInterfacePtr grad_impl) {
   if (grad_impl_ != nullptr) {
     MS_LOG(EXCEPTION) << "Grad hook can only initialize once!";
   }
