@@ -10,14 +10,13 @@ endif()
 
 file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./mindir/*.cc"
-        "./ge/*.cc"
         "./heterogeneous/*.cc"
-        "./ge_backend_optimization.cc"
-        "./ge_optimization.cc"
+        "./ascend_pass_optimization.cc"
         "./optimizer_utils.cc"
         "./get_value_helper.cc"
         "./backend_common_unify_mindir.cc"
         "./format_type/insert_cast.cc"
+        "./format_type/insert_identity.cc"
         "./format_type/set_fracz_group_attr.cc"
         "./format_type/utils.cc"
         "./format_type/deal_ref_output.cc"

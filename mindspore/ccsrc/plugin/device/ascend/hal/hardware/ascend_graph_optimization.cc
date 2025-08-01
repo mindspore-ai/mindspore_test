@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
+#include "plugin/device/ascend/hal/hardware/ascend_graph_optimization.h"
 #include <string>
 #include <memory>
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -22,7 +22,7 @@
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
-#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "plugin/device/ascend/optimizer/ascend_pass_optimization.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -72,7 +72,7 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
-void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
+void AscendGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
   PROF_START(OptimizeACLGraph);
@@ -90,7 +90,7 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   }
   MarkRefGraph(graph);
   opt::AscendUnfoldInputsForSpecialNodes(graph);
-  opt::GEBackendOptimizeACL(graph);
+  opt::AscendGraphOptimizeACL(graph);
   for (auto &child_graph : graph->child_graph_order()) {
     OptimizeACLGraph(child_graph.lock(), memo);
   }
@@ -98,8 +98,8 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
 }
 
-void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr &graph,
-                                                            std::set<KernelGraphPtr> *const memo) {
+void AscendGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr &graph,
+                                                                std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
   PROF_START(OptimizeACLGraphAfterKernelSelect);
@@ -118,13 +118,13 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
     graphkernel::GraphKernelOptimize(graph);
   }
-  opt::GEBackendOptimizeACLAfterKernelSelect(graph);
+  opt::AscendGraphOptimizeACLAfterKernelSelect(graph);
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableKernelPacket() &&
       common::AnfAlgo::IsDynamicGraph(graph)) {
     graphkernel::KernelPacketOptimize(graph);
   }
   // after kernel packet
-  opt::GEBackendOptimizeACLAfterKernelPacket(graph);
+  opt::AscendGraphOptimizeACLAfterKernelPacket(graph);
   for (auto &child_graph : graph->child_graph_order()) {
     OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
@@ -132,9 +132,9 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();
 }
 
-void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
+void AscendGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
   PROF_START(OptimizeACLGraphAfterCreateKernel);
-  // pynaitve process the pass in GEBackendOptimizeACLAfterKernelSelect
+  // pynaitve process the pass in AscendGraphOptimizeACLAfterKernelSelect
   if (!IsJit()) {
     return;
   }
@@ -152,7 +152,7 @@ void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after create kernel. graph id: " << graph->graph_id();
 }
 
-void GEGraphOptimization::OptimizeACLGraphAfterInline(const KernelGraphPtr &graph) {
+void AscendGraphOptimization::OptimizeACLGraphAfterInline(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(DEBUG) << "Status record: start optimize acl graph after inline. graph id: " << graph->graph_id();
   // empty graph dont entry to backend
@@ -162,24 +162,24 @@ void GEGraphOptimization::OptimizeACLGraphAfterInline(const KernelGraphPtr &grap
     graph->set_executable(false);
     MS_LOG(DEBUG) << "Status record: end optimize acl graph after inline. graph id: " << graph->graph_id();
   }
-  opt::GEAfterInlineOptimize(graph);
+  opt::AscendAfterInlineOptimize(graph);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after inline. graph id: " << graph->graph_id();
 }
 
-void GEGraphOptimization::UnifyMindIR(const KernelGraphPtr &graph) {
+void AscendGraphOptimization::UnifyMindIR(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Status record: start unify mindir. graph id: " << graph->graph_id();
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(UnifyMindIR);
   opt::CommonUnifyMindIR(graph);
-  opt::GEUnifyMindIR(graph);
+  opt::AscendUnifyMindIR(graph);
   PROF_END(UnifyMindIR);
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "UnifyMindIR", start_time, profiler::GetClockSyscnt(),
                                   0);
   MS_LOG(INFO) << "Status record: end unify mindir. graph id: " << graph->graph_id();
 }
 
-void GEGraphOptimization::GEMindIRPass(const KernelGraphPtr &graph) const { opt::GEUnifyMindIR(graph); }
+void AscendGraphOptimization::AscendUnifyMindIR(const KernelGraphPtr &graph) const { opt::AscendUnifyMindIR(graph); }
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

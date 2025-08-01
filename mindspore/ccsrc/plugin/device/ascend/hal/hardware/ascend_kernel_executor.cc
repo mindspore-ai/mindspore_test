@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/hardware/ge_kernel_executor.h"
+#include "plugin/device/ascend/hal/hardware/ascend_kernel_executor.h"
 #include <string>
 #include <utility>
 #include <algorithm>
@@ -30,7 +30,7 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
+#include "plugin/device/ascend/hal/hardware/ascend_graph_optimization.h"
 #include "plugin/device/ascend/hal/hardware/acl_somas.h"
 #include "plugin/device/ascend/hal/hardware/acl_stream_assign.h"
 #include "plugin/device/ascend/hal/hardware/gpto.h"
@@ -433,7 +433,7 @@ void InlineCallGraph(const KernelGraphPtr &graph) {
       InlineSubGraph(graph, inline_subgraph, kernel_cnode, &last_call, &pre_last_call, false);
     }
   }
-  GEGraphOptimization::GetInstance().OptimizeACLGraphAfterInline(graph);
+  AscendGraphOptimization::GetInstance().OptimizeACLGraphAfterInline(graph);
   PROF_END(InlineCallGraph);
 #ifdef ENABLE_DUMP_IR
   if (save_graphs) {
@@ -1027,7 +1027,7 @@ void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stre
 }
 }  // namespace
 
-void GeKernelExecutor::Initialize() {
+void AscendKernelExecutor::Initialize() {
   if (initialized_) {
     return;
   }
@@ -1038,7 +1038,7 @@ void GeKernelExecutor::Initialize() {
   initialized_ = true;
 }
 
-void GeKernelExecutor::Destroy() {
+void AscendKernelExecutor::Destroy() {
   if (!initialized_) {
     return;
   }
@@ -1046,18 +1046,18 @@ void GeKernelExecutor::Destroy() {
   initialized_ = false;
 }
 
-void GeKernelExecutor::AddMindIRPass(const KernelGraphPtr &graph) const {
-  GEGraphOptimization::GetInstance().GEMindIRPass(graph);
+void AscendKernelExecutor::AddMindIRPass(const KernelGraphPtr &graph) const {
+  AscendGraphOptimization::GetInstance().AscendUnifyMindIR(graph);
 }
 
-void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
+void AscendKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   // will be cached by OpCompileInfo
   MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   uint64_t start_time = profiler::GetClockSyscnt();
   std::set<KernelGraphPtr> memo;
-  GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
+  AscendGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
   memo.clear();
   std::vector<size_t> op_selected_num(device::ascend::SelectedKernelType::NUM_KERNLE_TYPE, 0);
   bool has_aclop = false;
@@ -1072,7 +1072,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   }
   PrintOpSelectedNum(op_selected_num);
   memo.clear();
-  GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
+  AscendGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
   memo.clear();
   InlineCallGraph(kernel_graph);
   memo.clear();
@@ -1081,7 +1081,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
                                   profiler::GetClockSyscnt(), 0);
 }
 
-void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
+void AscendKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   if (nodes.empty()) {
     return;
   }
@@ -1099,7 +1099,7 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   }
 
   if (!kernel_graph->is_from_cache()) {
-    GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
+    AscendGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
     OptimizeExecutionOrder(NOT_NULL(func_graph));
   } else {
     MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
@@ -1109,7 +1109,7 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   MS_LOG(DEBUG) << "Status record: end create kernel.";
 }
 
-kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_name) const {
+kernel::KernelModPtr AscendKernelExecutor::CreateKernelMod(const std::string &op_name) const {
   // Note: Only support generate aclnn kernel mod current.
   auto kernel_ptr = kernel::Factory<kernel::AclnnKernelMod>::Instance().Create(op_name);
   if (kernel_ptr == nullptr) {
@@ -1120,7 +1120,7 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
   return kernel_ptr;
 }
 
-void GeKernelExecutor::DoStreamAssign(
+void AscendKernelExecutor::DoStreamAssign(
   const KernelGraphPtr &kernel_graph,
   const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
@@ -1150,7 +1150,7 @@ void GeKernelExecutor::DoStreamAssign(
   MS_LOG(INFO) << "Status record: end stream assign, " << kernel_graph->ToString();
 }
 
-void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
+void AscendKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(graph);
@@ -1173,7 +1173,7 @@ void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
   MS_LOG(DEBUG) << "Status record: end do somas.";
 }
 
-void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
+void AscendKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   PROF_START(OptimizeExecutionOrder);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
@@ -1233,7 +1233,7 @@ void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
   }
 }
 
-void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
+void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
   auto kernel_graph = graph->cast<KernelGraphPtr>();
@@ -1278,12 +1278,12 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
                                   profiler::GetClockSyscnt(), 1);
 }
 
-void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) const {
+void AscendKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) const {
   AclStreamAssign::GetInstance().CreateEvent(NOT_NULL(kernel_graph));
 }
 
-bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
-                                       const std::vector<KernelTensor *> &outputs, void *stream) const {
+bool AscendKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
+                                           const std::vector<KernelTensor *> &outputs, void *stream) const {
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << "Launch MemoryCopyAsync instead for kernel " << node->fullname_with_scope();
   if (inputs.size() != 1 || outputs.size() != 1) {
@@ -1305,7 +1305,7 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vector<K
   return true;
 }
 
-void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
+void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
   if (MS_LIKELY(disable_ckpt_d2h_async)) {
     return;
@@ -1337,10 +1337,10 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   }
 }
 
-bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
-                                    const std::vector<KernelTensor *> &workspace,
-                                    const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
-                                    void *stream) const {
+bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &workspace,
+                                        const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
+                                        void *stream) const {
   // launch kernel
   uint64_t start_time = 0;
   PROFILER_START(start_time);
@@ -1393,10 +1393,10 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<Ke
   return true;
 }
 
-bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
-                                      const std::vector<KernelTensor *> &workspace,
-                                      const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
-                                      void *stream) const {
+bool AscendKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
+                                          const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
+                                          void *stream) const {
   if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
     if (!MemoryCopyAsync(kernel, inputs, outputs, stream)) {
       MS_LOG(ERROR) << "Memory copy failed for kernel " << kernel->fullname_with_scope();
@@ -1421,7 +1421,7 @@ bool GeKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vector<
   return true;
 }
 
-void GeKernelExecutor::SetUceError() const {
+void AscendKernelExecutor::SetUceError() const {
   if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
     auto error_code = aclrt_get_last_error(thread_level);
     auto error_type = GetErrorType(error_code);
@@ -1438,7 +1438,7 @@ void GeKernelExecutor::SetUceError() const {
   }
 }
 
-void GeKernelExecutor::SetArfError() const {
+void AscendKernelExecutor::SetArfError() const {
   if (UCEException::GetInstance().enable_arf()) {
     auto rts_code = aclrt_get_last_error(thread_level);
     MS_LOG(ERROR) << "Launch kernel failed, get last error is " << rts_code;
@@ -1454,7 +1454,7 @@ void AclrtLaunchCallback(void *user_data) {
   delete callback_func;
 }
 
-bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const {
+bool AscendKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const {
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   if (stream == nullptr) {
     stream_id = kDefaultStreamIndex;
@@ -1534,10 +1534,10 @@ void CustomizeCopyAscend(device::DeviceContext *device_context, const device::De
   MS_LOG(DEBUG) << "Launch end";
 }
 
-bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                         const device::DeviceAddressPtrList &input_addr_list,
-                                         const device::DeviceAddressPtrList &output_addr_list,
-                                         const size_t &stream_id) const {
+bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                             const device::DeviceAddressPtrList &input_addr_list,
+                                             const device::DeviceAddressPtrList &output_addr_list,
+                                             const size_t &stream_id) const {
   MS_LOG(DEBUG) << "task_type:" << task_type;
   if (runtime::KernelTaskType::kCOPY_TASK == task_type) {
     constexpr size_t kCopyTaskInputsNum = 2;
@@ -1573,10 +1573,10 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
 }
 
 // Task for graph mode, which receive pointers as input, it is used for convert input contiguous by aclnnInplaceCopy.
-bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
-                                         const std::vector<device::DeviceAddress *> &input_addr_list,
-                                         const std::vector<device::DeviceAddress *> &output_addr_list,
-                                         const size_t &stream_id) const {
+bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                             const std::vector<device::DeviceAddress *> &input_addr_list,
+                                             const std::vector<device::DeviceAddress *> &output_addr_list,
+                                             const size_t &stream_id) const {
   MS_LOG(DEBUG) << "task_type:" << task_type;
   MS_LOG(DEBUG) << "Graph call contiguous start";
   auto input_addr = input_addr_list[0];

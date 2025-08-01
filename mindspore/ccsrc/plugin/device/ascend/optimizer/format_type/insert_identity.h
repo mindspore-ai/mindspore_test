@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_INSERT_IDENTITY_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_INSERT_IDENTITY_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_FORMAT_TYPE_INSERT_IDENTITY_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_FORMAT_TYPE_INSERT_IDENTITY_H_
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pattern_engine.h"
@@ -31,4 +31,4 @@ class InsertIdentity : public PatternProcessPass {
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_INSERT_IDENTITY_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_FORMAT_TYPE_INSERT_IDENTITY_H_

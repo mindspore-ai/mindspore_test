@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_BACKEND_OPTIMIZATION_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_BACKEND_OPTIMIZATION_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_ASCEND_PASS_OPTIMIZATION_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_ASCEND_PASS_OPTIMIZATION_H_
 #include <memory>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/pass_manager.h"
 namespace mindspore {
 namespace opt {
-void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph);
-void GEUnifyMindIR(const KernelGraphPtr &kernel_graph);
-void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph);
-void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph);
-void GEBackendOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph);
+void AscendGraphOptimizeACL(const KernelGraphPtr &kernel_graph);
+void AscendUnifyMindIR(const KernelGraphPtr &kernel_graph);
+void AscendAfterInlineOptimize(const KernelGraphPtr &kernel_graph);
+void AscendGraphOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph);
+void AscendGraphOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph);
 void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph);
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_BACKEND_OPTIMIZATION_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_ASCEND_PASS_OPTIMIZATION_H_

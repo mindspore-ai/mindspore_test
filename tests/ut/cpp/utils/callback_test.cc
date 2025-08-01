@@ -24,7 +24,7 @@
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "include/common/debug/draw.h"
 #ifdef ENABLE_D
-#include "include/common/utils/callbacks_ge.h"
+#include "mindspore/ccsrc/backend/ge_backend/graph_ir/callbacks_ge.h"
 #endif
 
 namespace mindspore {

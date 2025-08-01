@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_DEVICE_RES_MANAGER_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_DEVICE_RES_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_ASCEND_RES_MANAGER_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_ASCEND_RES_MANAGER_H_
 
 #include <vector>
 #include <memory>
@@ -240,4 +240,4 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_DEVICE_RES_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_ASCEND_RES_MANAGER_H_
