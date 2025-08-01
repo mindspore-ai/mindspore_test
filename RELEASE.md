@@ -26,6 +26,14 @@
 
 - [STABLE] MindSpore supports reserving huge page memory. Users can enable this feature by passing the `huge_page_reserve_size` parameter in the [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.set_memory.html) API.
 
+### Lite
+
+MindSpore Lite​​ delivers lightweight AI inference acceleration capabilities for diverse hardware devices, empowering smart applications. It provides developers with an ​​end-to-end solution​​ and offers algorithm engineers and data scientists a ​​user-friendly development experience​​ characterized by efficient execution and flexible deployment.
+
+To better foster the thriving development of the AI software and hardware application ecosystem, ​​MindSpore Lite has established an independent code repository to drive ecosystem growth​​. In the future, MindSpore Lite will work together with the ​​MindSpore AI community​​ enrich the AI software and hardware application ecosystem.
+
+For further details, please visit the [MindSpore Lite Code Repository](https://gitee.com/mindspore/mindspore-lite).
+
 ### API Change
 
 - [STABLE] As part of the task of [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API integration task, the interface definitions and functionalities of several Tensor APIs have been aligned and optimized.
