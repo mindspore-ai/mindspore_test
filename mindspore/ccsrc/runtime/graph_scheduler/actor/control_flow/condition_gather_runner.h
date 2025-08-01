@@ -38,9 +38,10 @@ class ConditionGatherRunner : public KernelRunner {
                         const std::set<size_t> &modifiable_ref_output_indexes,
                         const KernelTransformType &type = KernelTransformType::kConditionGatherActor);
   ~ConditionGatherRunner() override;
-  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context) override;
-  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) override;
+  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf) override;
   void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const context) override;
   void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count) override;
   size_t branch_output_num() const { return branch_output_num_; }
   const std::vector<std::string> &branch_names() const { return branch_names_; }

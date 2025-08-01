@@ -46,9 +46,10 @@ void KernelAsyncResizeActor::ResizeKernelMod(OpContext<KernelTensor> *const cont
   }
 }
 
-void KernelAsyncResizeActor::ResizeKernelModV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner) {
+void KernelAsyncResizeActor::ResizeKernelModV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner,
+                                               bool high_perf) {
   try {
-    kernel_runner->ExecuteResizeKernelModTask(context);
+    kernel_runner->ExecuteResizeKernelModTask(context, high_perf);
   } catch (const std::exception &e) {
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();

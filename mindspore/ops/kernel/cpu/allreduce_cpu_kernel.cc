@@ -46,9 +46,8 @@ bool AllReduceCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(EXCEPTION) << kernel_name_ << " does not support this kernel data type: " << kernel_attr;
   }
   auto group = GetValue<std::string>(primitive_->GetAttr(GROUP));
-  if (group != kMCCLGlobalGroupName) {
-    MS_LOG(EXCEPTION) << kernel_name_ << " only support " << kMCCLGlobalGroupName << " on CPU, but got " << group;
-  }
+  group_ = group;
+  input_dtype_ = inputs[0]->dtype_id();
   auto reduce_op = GetValue<std::string>(primitive_->GetAttr(OP));
   if (reduce_op != kSupportedReduceOp) {
     MS_LOG(EXCEPTION) << kernel_name_ << " only support reduce sum on CPU, but got " << reduce_op;
@@ -61,7 +60,8 @@ bool AllReduceCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 
 std::vector<KernelAttr> AllReduceCPUKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {
-    KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32)};
+    KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+    KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16)};
   return support_list;
 }
 
@@ -76,9 +76,9 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
-                                                          data_size / sizeof(float), kNumberTypeFloat32, Reduce_Sum,
-                                                          kMCCLGlobalGroupName);
+  data_size = data_size / (input_dtype_ == kNumberTypeFloat16 ? 2 : 4);
+  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size,
+                                                          input_dtype_, Reduce_Sum, group_);
   if (!ret) {
     MS_LOG(ERROR) << "AllReduceCPUKernelMod launch failed.";
   }

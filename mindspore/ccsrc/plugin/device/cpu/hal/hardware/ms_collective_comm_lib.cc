@@ -60,7 +60,8 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
   // Do not initialize AllReduceLauncher if this is a large-scale cluster.
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode ||
       (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice &&
-       global_rank_size <= kClusterScaleBound)) {
+       global_rank_size <= kClusterScaleBound) ||
+      MsContext::GetInstance()->ascend_soc_version() == kAscendVersion310p) {
     launcher_ = std::make_unique<AllReduceLauncher>();
     CHECK_IF_NULL(launcher_);
     if (!launcher_->Initialize()) {

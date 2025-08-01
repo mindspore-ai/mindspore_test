@@ -265,7 +265,6 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
 
   enable_uce_ = UCEException::IsEnableUCE();
   enable_arf_ = UCEException::GetInstance().enable_arf();
-  is_high_perf_mode_ = IsRunHighPerfMode();
 }
 
 void KernelRunner::Init() {
@@ -1145,7 +1144,7 @@ void KernelRunner::FetchOutputDeviceTensor(OpContext<KernelTensor> *const contex
   }
 }
 
-void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelInfer, GetAID().Name());
   if (IsRunningFailed(context)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop infer shape for kernel: "
@@ -1160,10 +1159,10 @@ void KernelRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context)
     InferShape();
   }
 
-  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this);
+  Async(kernel_async_resize_aid_, &KernelAsyncResizeActor::ResizeKernelModV2, context, this, high_perf);
 }
 
-void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context, bool high_perf) {
   ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResize, GetAID().Name());
   if (IsRunningFailed(context)) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop resize for kernel: "
@@ -1189,39 +1188,14 @@ void KernelRunner::ExecuteResizeKernelModTask(OpContext<KernelTensor> *const con
     FetchOutputDeviceTensor(context);
   }
 
-  Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
-}
-
-bool KernelRunner::IsRunHighPerfMode() {
-  // These high performance checking flag should be confirmed in compilation phase.
-  // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
-  // judgement.
-  std::vector<bool> conditions = {
-    common::IsEnableRuntimeConfig(common::kRuntimeDisableHPMode),
-    debug_aid_ != nullptr,
-    recorder_aid_ != nullptr,
-    EnableExecuteOrderDump(),
-    device::tracker::MemTrackerManager::GetInstance().IsEnabled(),
-    device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info(),
-    UCEException::IsEnableUCE(),
-    mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
-    common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
-    IsNeedProfilieMemoryLog(),
-  };
-  // When this function returns false, it means performance is not cirtical in this context.
-  // Otherwise runtime will launch kernels with high performance.
-  return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
-}
-
-void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
-  if (is_high_perf_mode_) {
-    ExecuteLaunchKernelTaskHP(context);
+  if (high_perf) {
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2HP, context, this);
   } else {
-    ExecuteLaunchKernelTaskDebug(context);
+    Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernelV2, context, this);
   }
 }
 
-void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const context) {
+void KernelRunner::ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) {
   if (MS_UNLIKELY(IsRunningFailed(context))) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Run failed and early stop launch kernel: "
                                          << kernel_->fullname_with_scope();
@@ -1250,9 +1224,6 @@ void KernelRunner::ExecuteLaunchKernelTaskDebug(OpContext<KernelTensor> *const c
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (MS_UNLIKELY(debug_aid_ != nullptr)) {
     ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPreLaunch, kernel_, input_kernel_tensors_,
@@ -1321,9 +1292,6 @@ void KernelRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *const cont
   if (MS_UNLIKELY(ActorDispatcher::has_kernel_need_user_data())) {
     PreLaunchKernel(context);
   }
-
-  // 2. Launch kernel if need.
-  device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
 
   if (!LaunchKernelHP(context, IsSkippedLaunch(kernel_, nullptr))) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
@@ -1597,8 +1565,7 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
   bool ret = true;
   if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
     if (!is_skip_launch) {
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
     }
   } else {
     auto &multi_stream_controller =
@@ -1606,16 +1573,19 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
     if (!ActorDispatcher::enable_async_launch_kernel()) {
       std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
       ProcessMultiStreamBeforeKernelLaunch(context);
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      if (!is_skip_launch) {
+        ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
+      }
       ProcessMultiStreamAfterKernelLaunch(context);
     } else {
       ProcessMultiStreamBeforeKernelLaunch(context);
-      ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernelHP(
-        kernel_, input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, kernel_mod_, stream_);
+      if (!is_skip_launch) {
+        ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
+      }
       ProcessMultiStreamAfterKernelLaunch(context);
     }
   }
+
   MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch kernel: " << kernel_->fullname_with_scope();
   RecoverInputs();
   return ret;
