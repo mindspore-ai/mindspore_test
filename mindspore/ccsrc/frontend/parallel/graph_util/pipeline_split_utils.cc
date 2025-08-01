@@ -1498,5 +1498,21 @@ int64_t InferStage() {
   auto per_stage_rank_num = device_num / stage_num;
   return global_rank / per_stage_rank_num;
 }
+
+bool IsFreezedGradGraph(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (IsValueNode<FuncGraph>(cnode->input(0))) {
+    auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
+    if (graph->has_flag(FREEZE)) {
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace parallel
 }  // namespace mindspore

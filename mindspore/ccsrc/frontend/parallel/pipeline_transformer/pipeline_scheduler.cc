@@ -148,6 +148,12 @@ void PipelineScheduler::GetBorderNode() {
     Border border_cell = {nullptr, chunk, micro, seq_chunk};
 
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       GetBackwardBorderNode(cnode);
       continue;
     }
