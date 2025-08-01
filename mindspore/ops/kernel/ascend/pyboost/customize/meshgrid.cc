@@ -30,14 +30,14 @@ namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                        const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
-  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, kAscendDevice);
+  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kAscend);
   return outputs_list;
 }
 
 std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                        const ValueTuplePtr &tensors_list, const int64_t &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
-  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, kAscendDevice);
+  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kAscend);
   return outputs_list;
 }
 }  // namespace pyboost

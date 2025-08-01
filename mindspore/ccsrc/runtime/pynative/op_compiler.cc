@@ -133,8 +133,8 @@ inline std::string GetShapeString(const tensor::TensorPtr &input_tensor) {
 void UpdateRefInfoBeforeCreateKernel(const session::BackendOpRunInfoPtr &op_run_info, const KernelGraphPtr &graph) {
   // Building Graph and Create Kernel is async, under pynative mode.Ref info is bind with kernel.
   // So need to get ref info to generate output addr, before create kernel.
-  if (op_run_info->base_op_run_info.device_target != kCPUDevice &&
-      op_run_info->base_op_run_info.device_target != kGPUDevice) {
+  if (op_run_info->base_op_run_info.device_target != device::DeviceType::kCPU &&
+      op_run_info->base_op_run_info.device_target != device::DeviceType::kGPU) {
     // just ascend ref mode is diff with cpu and gpu
     return;
   }
@@ -343,7 +343,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
     MS_LOG(EXCEPTION) << "Input tensors size " << op_info.expanded_input_values.size()
                       << " should be equal to tensors mask size " << op_info.input_types.size();
   }
-  std::string graph_info = op_info.device_target;
+  std::string graph_info = std::to_string(static_cast<int>(op_info.device_target));
 
   if (op_info.use_dynamic_shape_process) {
     graph_info += "_1_";

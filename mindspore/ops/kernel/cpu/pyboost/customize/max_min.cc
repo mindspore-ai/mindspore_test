@@ -31,19 +31,20 @@ void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input
   OpRunner::InferOpOutput(op, input_tensor);
 
   if (input_tensor->data_type() == kNumberTypeFloat16) {
-    const auto &device_name = op->device_context()->device_context_key_.device_name_;
     // Increase the precision to float32 for calculation
-    const auto &cast_input_tensor = PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device_name);
+    const auto &cast_input_tensor =
+      PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
     tensor::TensorPtr cast_output_tensor;
     if (reduce_op == prim::kPrimReduceMin->name()) {
-      const auto &min_op = CREATE_PYBOOST_OP(Min, device_name);
+      const auto &min_op = CREATE_PYBOOST_OP(Min, device::DeviceType::kCPU);
       cast_output_tensor = min_op->Call(cast_input_tensor);
     } else {
-      const auto &max_op = CREATE_PYBOOST_OP(Max, device_name);
+      const auto &max_op = CREATE_PYBOOST_OP(Max, device::DeviceType::kCPU);
       cast_output_tensor = max_op->Call(cast_input_tensor);
     }
     // After calculation, reduce the precision to float16
-    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    const auto &output_tensor =
+      PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device::DeviceType::kCPU);
     op->set_outputs({output_tensor});
   } else {
     auto axis = MakeValue<std::vector<int64_t>>({});

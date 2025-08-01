@@ -29,9 +29,9 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::TensorPtr PYBOOST_API ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                               const ValueTuplePtr &shape, const std::string &device_target);
+                                               const ValueTuplePtr &shape, device::DeviceType device_target);
 tensor::TensorPtr PYBOOST_API ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                               const std::vector<int64_t> &shape, const std::string &device_target);
+                                               const std::vector<int64_t> &shape, device::DeviceType device_target);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

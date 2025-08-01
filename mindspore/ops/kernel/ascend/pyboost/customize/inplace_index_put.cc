@@ -31,8 +31,6 @@ namespace pyboost {
 namespace {
 std::vector<TensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                                 const std::vector<TensorPtr> &tensors) {
-  auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
   std::vector<TensorPtr> result{};
   auto input_shape = input_tensor->shape();
   if (input_shape.size() == 0) {
@@ -67,10 +65,10 @@ std::vector<TensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> 
       }
       // For aclnnIndexPutImpl op, the indices element dtype supports bool.
       if (type_id == kNumberTypeUInt8) {
-        auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
+        auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device::DeviceType::kAscend);
         auto nonzero_tensor = nonzero_op->Call(tensor);
         for (int64_t j = 0; j < rank; j++) {
-          auto select_op = CREATE_PYBOOST_OP(SelectExtView, device_name);
+          auto select_op = CREATE_PYBOOST_OP(SelectExtView, device::DeviceType::kAscend);
           auto select_tensor = select_op->Call(nonzero_tensor, kIndex0, j);
           result.emplace_back(select_tensor);
         }
@@ -87,7 +85,7 @@ std::vector<TensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> 
   if (needCast) {
     for (size_t i = 0; i < result.size(); i++) {
       if (result[i]->data_type() == kNumberTypeInt32) {
-        result[i] = PyBoostUtils::CastTensor(result[i], kNumberTypeInt64, device_name);
+        result[i] = PyBoostUtils::CastTensor(result[i], kNumberTypeInt64, device::DeviceType::kAscend);
       }
     }
   }
@@ -114,9 +112,7 @@ tensor::TensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner>
 
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 
-  auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
-  auto inner_inp_index_put_op = CREATE_PYBOOST_OP(InnerInplaceIndexPut, device_name);
+  auto inner_inp_index_put_op = CREATE_PYBOOST_OP(InnerInplaceIndexPut, device::DeviceType::kAscend);
   auto index_out = inner_inp_index_put_op->Call(input_tensor, new_indices_tensor_list, values_tensor, accumulate);
   op->set_outputs(inner_inp_index_put_op->outputs());
   MS_LOG(DEBUG) << "InplaceIndexPut Ascend end";

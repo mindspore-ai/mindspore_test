@@ -58,11 +58,7 @@ MemBlock::MemBlock(const mindspore::device::DeviceContext *device_context, size_
 
 MemBlock::~MemBlock() { device_context_->device_res_manager_->FreeMemory(ptr_); }
 
-std::string GetDeviceTarget() {
-  auto msctx = mindspore::MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(msctx);
-  return msctx->get_param<std::string>(mindspore::MsCtxParam::MS_CTX_DEVICE_TARGET);
-}
+mindspore::device::DeviceType GetDeviceTarget() { return mindspore::DeviceManagerConf::GetInstance()->device_type(); }
 }  // namespace inner
 
 namespace pynative {

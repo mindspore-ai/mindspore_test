@@ -76,7 +76,7 @@ class BACKEND_COMMON_EXPORT OpAdaptationInfoRegister {
   static OpAdaptationInfoRegister &GetInstance();
   static void RegOpAdaptationInfo(OpAdaptationInfo *reg_info);
   [[nodiscard]] static OpAdaptationInfo *GetOpAdaptationInfo(const std::string &me_op_name,
-                                                             const std::string &device_name, bool flag);
+                                                             device::DeviceType device_type, bool flag);
   static CNodePtr CreateTargetOp(const CNodePtr &origin_op, const OpAdaptationInfo &op_adaptation_info);
   static bool ConvertInputToAttr(const CNodePtr &origin_op, size_t i, const std::shared_ptr<AnfNode> &input_node,
                                  const std::string &attr_data_type, const std::shared_ptr<Primitive> &target_primitive);
@@ -88,7 +88,7 @@ class BACKEND_COMMON_EXPORT OpAdaptationInfoRegister {
   ~OpAdaptationInfoRegister() = default;
   DISABLE_COPY_AND_ASSIGN(OpAdaptationInfoRegister)
 
-  static std::string GenerateKey(const std::string &me_op_name, const std::string &device_name, bool flag);
+  static std::string GenerateKey(const std::string &me_op_name, device::DeviceType device_type, bool flag);
   // key: (op_name + device_name + flag), value: <OpAdaptationInfo *>
   static std::map<std::string, OpAdaptationInfo *> &GetOpInfoMap();
   // For improving performance, no need generate key for every op

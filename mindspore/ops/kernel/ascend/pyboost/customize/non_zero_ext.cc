@@ -34,13 +34,13 @@ std::vector<tensor::TensorPtr> NonZeroExtAscendCustomize(const std::shared_ptr<O
                                                          const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "NonZeroExt call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto nonzero_op = CREATE_PYBOOST_OP(NonZero, kAscendDevice);
-  auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, kAscendDevice);
+  auto nonzero_op = CREATE_PYBOOST_OP(NonZero, device::DeviceType::kAscend);
+  auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, device::DeviceType::kAscend);
   TensorPtr output_tensor = nullptr;
   if (input_tensor->shape().size() == kDim0) {
     std::vector<int64_t> unsqueeze_shape;
     unsqueeze_shape.emplace_back(kIndex1);
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, kAscendDevice);
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     auto expanded_input = reshape_op->Call(input_tensor, unsqueeze_shape);
     output_tensor = nonzero_op->Call(expanded_input);
   } else {

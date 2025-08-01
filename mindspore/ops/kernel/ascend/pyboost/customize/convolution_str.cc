@@ -99,9 +99,7 @@ tensor::TensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> 
         }
       }
       auto zero = std::make_shared<Int64Imm>(0);
-      auto device_context = op->device_context();
-      const auto &device_name = device_context->device_context_key_.device_name_;
-      auto constant_pad_nd_op = CREATE_PYBOOST_OP(ConstantPadND, device_name);
+      auto constant_pad_nd_op = CREATE_PYBOOST_OP(ConstantPadND, device::DeviceType::kAscend);
       MS_LOG(INFO) << "ConvolutionStr: pad_nd is " << pad_nd;
       input_tensor_new =
         constant_pad_nd_op->Call(input_tensor, std::make_shared<ValueTuple>(pad_nd), zero);  // 注意是否可用

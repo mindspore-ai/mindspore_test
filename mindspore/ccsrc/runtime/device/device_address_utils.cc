@@ -984,7 +984,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
                 << " but current device context is " << device_context->GetDeviceType();
   // Avoid multithread
-  runtime::Pipeline::Get().WaitForward();
+  // runtime::Pipeline::Get().WaitForward();
 
   auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
@@ -1358,11 +1358,9 @@ void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::TensorPtr &te
 device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address, bool is_sync) {
   MS_EXCEPTION_IF_NULL(old_device_address);
-
-  const DeviceContext *device_context =
-    input_device_context == nullptr
-      ? runtime::OpRunner::GetDeviceContext(device::GetDeviceNameByType(old_device_address->GetDeviceType()))
-      : input_device_context;
+  const DeviceContext *device_context = input_device_context == nullptr
+                                          ? runtime::OpRunner::GetDeviceContext(old_device_address->GetDeviceType())
+                                          : input_device_context;
   MS_EXCEPTION_IF_NULL(device_context);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 

@@ -68,13 +68,14 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> MultiScaleDe
     MS_LOG(EXCEPTION) << "For MSDA, the embed_dim must be a multiple of 8";
   }
 
-  const auto &device_name = op->device_context()->device_context_key_.device_name_;
-  auto value_tensor_cp = PyBoostUtils::CastTensor(value_tensor, kNumberTypeFloat32, device_name);
-  auto shape_tensor_cp = PyBoostUtils::CastTensor(shape_tensor, kNumberTypeInt32, device_name);
-  auto offset_tensor_cp = PyBoostUtils::CastTensor(offset_tensor, kNumberTypeInt32, device_name);
-  auto locations_trans_tensor_cp = PyBoostUtils::CastTensor(locations_trans_tensor, kNumberTypeFloat32, device_name);
-  auto weight_tensor_cp = PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device_name);
-  auto grad_output_tensor_cp = PyBoostUtils::CastTensor(grad_output_tensor, kNumberTypeFloat32, device_name);
+  auto value_tensor_cp = PyBoostUtils::CastTensor(value_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
+  auto shape_tensor_cp = PyBoostUtils::CastTensor(shape_tensor, kNumberTypeInt32, device::DeviceType::kAscend);
+  auto offset_tensor_cp = PyBoostUtils::CastTensor(offset_tensor, kNumberTypeInt32, device::DeviceType::kAscend);
+  auto locations_trans_tensor_cp =
+    PyBoostUtils::CastTensor(locations_trans_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
+  auto weight_tensor_cp = PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
+  auto grad_output_tensor_cp =
+    PyBoostUtils::CastTensor(grad_output_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
 
   OpRunner::InferOpOutput(op, value_tensor_cp, shape_tensor_cp, offset_tensor_cp, locations_trans_tensor_cp,
                           weight_tensor_cp, grad_output_tensor_cp);
@@ -116,9 +117,9 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> MultiScaleDe
   auto res_type2 = (ori_type2 == kFloat32) ? kNumberTypeFloat32 : kNumberTypeFloat16;
   auto res_type3 = (ori_type3 == kFloat32) ? kNumberTypeFloat32 : kNumberTypeFloat16;
 
-  auto output_tensor1 = PyBoostUtils::CastTensor(op->output(0), res_type1, device_name);
-  auto output_tensor2 = PyBoostUtils::CastTensor(op->output(1), res_type2, device_name);
-  auto output_tensor3 = PyBoostUtils::CastTensor(op->output(2), res_type3, device_name);
+  auto output_tensor1 = PyBoostUtils::CastTensor(op->output(0), res_type1, device::DeviceType::kAscend);
+  auto output_tensor2 = PyBoostUtils::CastTensor(op->output(1), res_type2, device::DeviceType::kAscend);
+  auto output_tensor3 = PyBoostUtils::CastTensor(op->output(2), res_type3, device::DeviceType::kAscend);
 
   return std::make_tuple(output_tensor1, output_tensor2, output_tensor3);
 }

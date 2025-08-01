@@ -54,13 +54,13 @@ void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &inp
   TensorPtr act_tensor = input;
 
   if (act_tensor->data_type() == kNumberTypeFloat16) {
-    const auto &device_name = op->device_context()->device_context_key_.device_name_;
     // Increase the precision to float32 for calculation
-    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device_name);
-    const auto &round_op = CREATE_PYBOOST_OP(Round, device_name);
+    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
+    const auto &round_op = CREATE_PYBOOST_OP(Round, device::DeviceType::kCPU);
     const auto &cast_output_tensor = round_op->Call(cast_input_tensor, decimals);
     // After calculation, reduce the precision to float16
-    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    const auto &output_tensor =
+      PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device::DeviceType::kCPU);
     op->set_outputs({output_tensor});
   } else {
     std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), decimals->ToAbstract()};

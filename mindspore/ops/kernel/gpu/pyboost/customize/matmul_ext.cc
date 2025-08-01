@@ -34,7 +34,7 @@ namespace {
 size_t Rank(const TensorPtr &x) { return x->shape_c().size(); }
 
 TensorPtr Expand(TensorPtr tensor, size_t ndim, const DeviceContext *device_context) {
-  auto reshape = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
+  auto reshape = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kGPU);
   ShapeVector shape = tensor->shape();
   while (shape.size() < ndim) {
     shape.insert(shape.begin(), 1);
@@ -68,20 +68,20 @@ void MatMulExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
   auto input_rank = input->shape().size();
   auto other_rank = other->shape().size();
 
-  auto matmul = CREATE_PYBOOST_OP(MatMul, device_context->device_context_key_.device_name_);
-  auto batch_matmul = CREATE_PYBOOST_OP(BatchMatMul, device_context->device_context_key_.device_name_);
+  auto matmul = CREATE_PYBOOST_OP(MatMul, device::DeviceType::kGPU);
+  auto batch_matmul = CREATE_PYBOOST_OP(BatchMatMul, device::DeviceType::kGPU);
 
-  auto reshape_1 = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
-  auto reshape_2 = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
-  auto reshape_3 = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
-  auto reshape_4 = CREATE_PYBOOST_OP(Reshape, device_context->device_context_key_.device_name_);
+  auto reshape_1 = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kGPU);
+  auto reshape_2 = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kGPU);
+  auto reshape_3 = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kGPU);
+  auto reshape_4 = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kGPU);
 
-  auto contiguous_1 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
-  auto contiguous_2 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
-  auto contiguous_3 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
-  auto contiguous_4 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
-  auto contiguous_5 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
-  auto contiguous_6 = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key_.device_name_);
+  auto contiguous_1 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
+  auto contiguous_2 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
+  auto contiguous_3 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
+  auto contiguous_4 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
+  auto contiguous_5 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
+  auto contiguous_6 = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kGPU);
 
   if (input_rank == kDim2 && other_rank == kDim2) {
     matmul->Call(input, other, std::make_shared<BoolImm>(false), std::make_shared<BoolImm>(false));
@@ -124,13 +124,13 @@ void MatMulExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     ShapeVector shape_cur2(shape2_aligned.begin(), shape2_aligned.end() - kDim2);
 
     if (shape_cur1 != shape_backbone) {
-      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
+      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device::DeviceType::kGPU);
       input =
         contiguous_5->Call(broadcast_to->Call(input, ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig)));
     }
 
     if (shape_cur2 != shape_backbone) {
-      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device_context->device_context_key_.device_name_);
+      auto broadcast_to = CREATE_PYBOOST_OP(BroadcastTo, device::DeviceType::kGPU);
       other =
         contiguous_6->Call(broadcast_to->Call(other, ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig)));
     }

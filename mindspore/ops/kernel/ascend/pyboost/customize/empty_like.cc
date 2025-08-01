@@ -39,20 +39,20 @@ TypeId GetDataType(const TensorPtr &input_tensor, const std::optional<Int64ImmPt
   return data_type;
 }
 
-std::string GetEmptyLikeDeviceName(const std::optional<Int64ImmPtr> &device) {
-  std::string device_name = "Ascend";
+device::DeviceType GetEmptyLikeDeviceName(const std::optional<Int64ImmPtr> &device) {
+  device::DeviceType device_type = device::DeviceType::kAscend;
   if (device.has_value()) {
     auto device_name_enum = GetValue<int64_t>(device.value());
     if (device_name_enum == DEVICE_ASCEND || device_name_enum == DEVICE_NPU_LOWER) {
-      device_name = "Ascend";
+      device_type = device::DeviceType::kAscend;
     } else if (device_name_enum == DEVICE_CPU || device_name_enum == DEVICE_CPU_LOWER) {
-      device_name = "CPU";
+      device_type = device::DeviceType::kCPU;
     } else {
       MS_LOG(EXCEPTION) << "Only support ['CPU', 'Ascend', 'cpu', 'npu'] for device";
     }
   }
-  MS_LOG(DEBUG) << "Using '" << device_name << "' as the device";
-  return device_name;
+  MS_LOG(DEBUG) << "Using '" << device::GetDeviceNameByType(device_type) << "' as the device";
+  return device_type;
 }
 }  // namespace
 
@@ -61,9 +61,9 @@ tensor::TensorPtr EmptyLikeAscendCustomize(const std::shared_ptr<OpRunner> &op, 
                                            const std::optional<Int64ImmPtr> &device) {
   MS_LOG(DEBUG) << "Call EmptyLike start";
   TypeId data_type = GetDataType(input_tensor, dtype);
-  std::string device_name = GetEmptyLikeDeviceName(device);
+  auto device_type = GetEmptyLikeDeviceName(device);
 
-  auto device_ctx = runtime::OpRunner::GetDeviceContext(device_name);
+  auto device_ctx = runtime::OpRunner::GetDeviceContext(device_type);
   MS_EXCEPTION_IF_NULL(device_ctx);
 
   auto output_shape = input_tensor->shape();

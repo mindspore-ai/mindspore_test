@@ -73,13 +73,13 @@ namespace {
 // Need to discard input tensor properties in heterogeneous scenarios.
 // For example, the format of device_address in input_tensor is 5D format,
 // and it's invalid for CPU graph parameter.
-bool NeedDiscardTensorProperties(const std::string &op_device_target,
+bool NeedDiscardTensorProperties(device::DeviceType op_device_target,
                                  const device::DeviceAddressPtr &tensor_device_address) {
   if (tensor_device_address == nullptr) {
     return true;
   }
 
-  if (op_device_target == device::GetDeviceNameByType(tensor_device_address->GetDeviceType())) {
+  if (op_device_target == tensor_device_address->GetDeviceType()) {
     return false;
   }
   return true;

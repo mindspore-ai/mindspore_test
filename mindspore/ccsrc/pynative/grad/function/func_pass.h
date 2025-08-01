@@ -35,8 +35,8 @@ using NodePtr = expander::NodePtr;
 using NodePtrList = expander::NodePtrList;
 
 struct FuncPassForward {
-  explicit FuncPassForward(autograd::FuncBuilder *func_builder, std::string &&device_target)
-      : func_builder_(func_builder), device_target_(std::move(device_target)) {}
+  explicit FuncPassForward(autograd::FuncBuilder *func_builder, device::DeviceType device_target)
+      : func_builder_(func_builder), device_target_(device_target) {}
 
   // Pass for expander outputs
   NodePtrList PassForOpInput(const PrimitivePtr &prim, const NodePtrList &inputs);
@@ -50,7 +50,7 @@ struct FuncPassForward {
   NodePtrList ConvertMakeTupleInputToDynamicInput(const PrimitivePtr &prim, const NodePtrList &inputs);
 
   autograd::FuncBuilder *func_builder_{nullptr};
-  std::string device_target_;
+  device::DeviceType device_target_;
 };
 using FuncPassForwardPtr = std::shared_ptr<FuncPassForward>;
 }  // namespace bprop_pass

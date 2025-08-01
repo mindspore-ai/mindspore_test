@@ -77,11 +77,9 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     MS_EXCEPTION(ValueError) << "For Dense, the dim of weight should be equal to 1 or 2"
                              << ", but got dim of weight is " << w_rank << ".";
   }
-  auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
 
   auto perm = pyboost_dense::GetTransposePerm(weight_tensor);
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
   auto weight_transposed = transpose_op->Call(weight_tensor, perm);
 
   auto input_tensor_shape = input_tensor->shape();
@@ -89,7 +87,7 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
 
   if (input_tensor_rank == kDim2 && bias_tensor.has_value()) {
     auto bias_tensor_ = bias_tensor.value();
-    auto addmm_op = CREATE_PYBOOST_OP(Addmm, device_name);
+    auto addmm_op = CREATE_PYBOOST_OP(Addmm, device::DeviceType::kAscend);
     const auto beta = std::make_shared<Int64Imm>(1);
     const auto alpha = std::make_shared<Int64Imm>(1);
     auto addmm_out = addmm_op->Call(bias_tensor_, input_tensor, weight_transposed, beta, alpha);
@@ -106,11 +104,11 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     std::vector<int64_t> flattened_vector(flattened_vector_size);
     flattened_vector[kIndex0] = static_cast<int64_t>(flattened_dim);
     flattened_vector[kIndex1] = static_cast<int64_t>(input_tensor_shape[input_tensor_rank - 1]);
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device_name);
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     auto inp_reshape = reshape_op->Call(input_tensor, flattened_vector);
     // addmm
     auto bias_tensor_ = bias_tensor.value();
-    auto addmm_op = CREATE_PYBOOST_OP(Addmm, device_name);
+    auto addmm_op = CREATE_PYBOOST_OP(Addmm, device::DeviceType::kAscend);
     const auto beta = std::make_shared<Int64Imm>(1);
     const auto alpha = std::make_shared<Int64Imm>(1);
     auto addmm_out = addmm_op->Call(bias_tensor_, inp_reshape, weight_transposed, beta, alpha);
@@ -121,17 +119,17 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     auto addmm_out_shape = addmm_out->shape();
     out_shape[input_tensor_rank - 1] = static_cast<int64_t>(addmm_out_shape[kIndex1]);
 
-    auto view_op = CREATE_PYBOOST_OP(View, device_name);
+    auto view_op = CREATE_PYBOOST_OP(View, device::DeviceType::kAscend);
     view_op->Call(addmm_out, out_shape);
     op->set_outputs(view_op->outputs());
     MS_LOG(DEBUG) << "Dense Launch end";
     return;
   } else {
-    auto matmul_op = CREATE_PYBOOST_OP(MatMulExt, device_name);
+    auto matmul_op = CREATE_PYBOOST_OP(MatMulExt, device::DeviceType::kAscend);
     auto matmul_out = matmul_op->Call(input_tensor, weight_transposed);
     if (bias_tensor.has_value()) {
       auto bias_tensor_ = bias_tensor.value();
-      auto add_op = CREATE_PYBOOST_OP(Add, device_name);
+      auto add_op = CREATE_PYBOOST_OP(Add, device::DeviceType::kAscend);
       auto add_out = add_op->Call(matmul_out, bias_tensor_);
       op->set_outputs({add_out});
       MS_LOG(DEBUG) << "Dense Launch end";

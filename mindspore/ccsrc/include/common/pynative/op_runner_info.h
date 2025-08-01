@@ -27,7 +27,7 @@
 namespace mindspore::runtime {
 struct OpRunnerInfo {
   const PrimitivePtr &prim;
-  const std::string &device_target;
+  device::DeviceType device_target;
   const std::vector<ValuePtr> &inputs;
   const abstract::AbstractBasePtrList &inputs_abs;
   const std::vector<InputType> &inputs_mask;

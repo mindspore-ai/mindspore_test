@@ -17,26 +17,24 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "utils/ms_context.h"
 #include "runtime/pipeline/pipeline.h"
+#include "utils/device_manager_conf.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-OpStatus::OpStatus() { device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET); }
+OpStatus::OpStatus() { device_target = DeviceManagerConf::GetInstance()->device_type(); }
 
 OpRunStatus &OpRunStatus::Get() {
   static OpRunStatus instance;
   return instance;
 }
 
-OpRunStatus::OpRunStatus() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  cur_device_ = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-}
+OpRunStatus::OpRunStatus() { cur_device_ = DeviceManagerConf::GetInstance()->device_type(); }
 
-void OpRunStatus::HeterBarrier(const std::string &device) {
+void OpRunStatus::HeterBarrier(device::DeviceType device) {
   if (cur_device_ != device) {
-    MS_LOG(DEBUG) << "Current device " << cur_device_ << " incoming device " << device;
+    MS_LOG(DEBUG) << "Current device " << device::GetDeviceNameByType(cur_device_) << " incoming device "
+                  << device::GetDeviceNameByType(device);
     cur_device_ = device;
     runtime::Pipeline::Get().WaitAll();
   }

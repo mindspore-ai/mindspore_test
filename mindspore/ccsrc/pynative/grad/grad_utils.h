@@ -119,7 +119,7 @@ struct AutoGradUtil {
   static void CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info);
   static void CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs);
   static void CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
-                                        const std::string &device_target, ValuePtrList &&inputs);
+                                        device::DeviceType device_target, ValuePtrList &&inputs);
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
   static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
 };

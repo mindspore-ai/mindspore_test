@@ -24,7 +24,7 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr ClampScalarCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                           const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max) {
-  return ClampScalarCustomizeCall(op, x_tensor, min, max, "CPU");
+  return ClampScalarCustomizeCall(op, x_tensor, min, max, device::DeviceType::kCPU);
 }
 }  // namespace pyboost
 }  // namespace kernel

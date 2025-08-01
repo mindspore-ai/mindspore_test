@@ -52,13 +52,11 @@ tensor::TensorPtr MaskedScatterAscendCustomize(const std::shared_ptr<OpRunner> &
   TensorPtr mask_tensor_bd = mask_tensor;
 
   if (input_shape != expand_shape) {
-    const auto &broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastToView, op->device_context()->device_context_key_.device_name_);
+    const auto &broadcast_to_op = CREATE_PYBOOST_OP(BroadcastToView, device::DeviceType::kAscend);
     x_tensor_bd = broadcast_to_op->Call(x_tensor, expand_shape);
   }
   if (target_shape != expand_shape) {
-    const auto &broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastToView, op->device_context()->device_context_key_.device_name_);
+    const auto &broadcast_to_op = CREATE_PYBOOST_OP(BroadcastToView, device::DeviceType::kAscend);
     mask_tensor_bd = broadcast_to_op->Call(mask_tensor, expand_shape);
   }
 

@@ -89,17 +89,14 @@ tensor::TensorPtr WeightQuantBatchMatmulV2AscendCustomize(
                                 quant_offset_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  auto device_context = op->device_context();
   TensorPtr x_tensor_trans = x_tensor;
   if (transpose_x_imm) {
-    const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
     x_tensor_trans = transpose_op->Call(x_tensor_trans, GetWeightQuantBatchMatmulPerm(x_tensor_trans));
   }
   TensorPtr weight_tensor_trans = new_weight_tensor;
   if (transpose_weight_imm) {
-    const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
     weight_tensor_trans = transpose_op->Call(weight_tensor_trans, GetWeightQuantBatchMatmulPerm(weight_tensor_trans));
   }
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(

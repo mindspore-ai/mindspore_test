@@ -30,7 +30,7 @@ void ViewAsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr 
                            const TensorPtr &other_tensor) {
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
   const ShapeVector &other_shape = other_tensor->shape();
-  auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+  auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
   reshape_op->Call(input_tensor, other_shape);
   op->set_outputs(reshape_op->outputs());
   MS_LOG(DEBUG) << op->primitive()->name() << " Call end";

@@ -40,7 +40,7 @@ enum IRFormat {
   kAir = 0,
 };
 
-using IsPyBoostRegisteredFunc = std::function<bool(const std::string &device_target, const std::string &op_name)>;
+using IsPyBoostRegisteredFunc = std::function<bool(device::DeviceType device_target, const std::string &op_name)>;
 using RunPyBoostCallFunc = std::function<void(runtime::OpRunnerInfo *, VectorRef *)>;
 
 // The base class of all supported backend.

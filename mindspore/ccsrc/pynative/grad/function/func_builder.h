@@ -32,7 +32,8 @@ using BpropBuilder = expander::bprop::BpropBuilder;
 
 class FuncBuilder : public BpropBuilder {
  public:
-  FuncBuilder(const std::string &name, std::string device_target, const expander::ExpanderInferPtr &infer = nullptr);
+  FuncBuilder(const std::string &name, device::DeviceType device_target,
+              const expander::ExpanderInferPtr &infer = nullptr);
   ~FuncBuilder() override = default;
   NodePtr EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) override;
   NodePtr EmitValue(const ValuePtr &value) override;
@@ -373,7 +374,7 @@ class FuncBuilder : public BpropBuilder {
 
  private:
   NodePtrList FlattenNode(const NodePtr &input);
-  std::string device_target_;
+  device::DeviceType device_target_;
   bprop_pass::FuncPassForwardPtr pass_forward_;
 };
 using FuncBuilderPtr = std::shared_ptr<FuncBuilder>;

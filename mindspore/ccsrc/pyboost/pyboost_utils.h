@@ -203,8 +203,8 @@ class PYBOOST_API PyBoostUtils {
     const std::vector<kernel::KernelTensorPtr> &input_kernel_tensor);
 
   // Check kernel mod is reg
-  static bool IsKernelModRegistered(const std::string &device_name, const std::string &op_name);
-  static bool IsPyBoostCustomRegistered(const std::string &device_name, const std::string &op_name);
+  static bool IsKernelModRegistered(device::DeviceType device_name, const std::string &op_name);
+  static bool IsPyBoostCustomRegistered(device::DeviceType device_name, const std::string &op_name);
 
   // Check if enable internal kernel
   static bool IsEnableInternalKernel(const std::string &name) {
@@ -245,15 +245,15 @@ class PYBOOST_API PyBoostUtils {
                                                   const AbstractBasePtr &outputs_abs,
                                                   const DeviceContext *device_context, const std::string &op_name);
   static std::optional<tensor::TensorPtr> CastTensor(const std::optional<tensor::TensorPtr> &tensor,
-                                                     const TypeId &type_id, const std::string &device_target);
+                                                     const TypeId &type_id, device::DeviceType device_type);
   static tensor::TensorPtr CastTensor(const tensor::TensorPtr &tensor, const TypeId &type_id,
-                                      const std::string &device_target);
+                                      device::DeviceType device_type);
   static std::vector<tensor::TensorPtr> CastTensor(const std::vector<tensor::TensorPtr> &tensors,
                                                    const std::vector<TypeId> &type_id_list,
-                                                   const std::string &device_target);
+                                                   device::DeviceType device_type);
   // ValueTuple input
   static std::vector<tensor::TensorPtr> CastTensor(const std::vector<tensor::TensorPtr> &tensors, TypeId type_id,
-                                                   const std::string &device_target);
+                                                   device::DeviceType device_type);
   template <typename... T>
   static std::pair<bool, KernelAttr> SelectKernel(AbstractConverter *converter, const DeviceContext *device_context,
                                                   const std::string &op_name,
@@ -304,7 +304,7 @@ class PYBOOST_API PyBoostUtils {
            input_tensor->data_type() <= TypeId::kNumberTypeComplex128;
   }
   static void GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
-                                  const std::string &device_target, bool is_dynamic_shape,
+                                  device::DeviceType device_type, bool is_dynamic_shape,
                                   mindspore::HashSet<size_t> *input_to_attr_index);
 };
 
@@ -334,11 +334,11 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
   static PyboostKernelExtraFuncFactory &GetInstance();
   PyboostKernelExtraFuncFactory() = default;
   ~PyboostKernelExtraFuncFactory() = default;
-  void AddPyboostKernelExtraFunc(const std::string &op_name, const PyboostKernelExtraFuncPtr &func) {
-    kernel_func_map_[op_name] = func;
+  void AddPyboostKernelExtraFunc(device::DeviceType device, const PyboostKernelExtraFuncPtr &func) {
+    kernel_func_map_[device] = func;
   }
 
-  void SetThreadPool(const std::string &device_name, const kernel::KernelModPtr &kernel) {
+  void SetThreadPool(device::DeviceType device_name, const kernel::KernelModPtr &kernel) {
     auto iter = kernel_func_map_.find(device_name);
     if (iter == kernel_func_map_.end()) {
       return;
@@ -346,7 +346,7 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
     iter->second->SetThreadPool(kernel);
   }
 
-  bool IsKernelModRegistered(const std::string &device_name, const std::string &op_name) {
+  bool IsKernelModRegistered(device::DeviceType device_name, const std::string &op_name) {
     auto iter = kernel_func_map_.find(device_name);
     if (iter == kernel_func_map_.end()) {
       return true;
@@ -354,7 +354,7 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
     return iter->second->IsKernelModRegistered(op_name);
   }
 
-  bool IsPyBoostCustomRegistered(const std::string &device_name, const std::string &op_name) {
+  bool IsPyBoostCustomRegistered(device::DeviceType device_name, const std::string &op_name) {
     auto iter = kernel_func_map_.find(device_name);
     if (iter == kernel_func_map_.end()) {
       return true;
@@ -362,7 +362,7 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
     return iter->second->IsPyBoostCustomRegistered(op_name);
   }
 
-  bool IsEnableProfiler(const std::string &device_name) {
+  bool IsEnableProfiler(device::DeviceType device_name) {
     auto iter = kernel_func_map_.find(device_name);
     if (iter == kernel_func_map_.end()) {
       return false;
@@ -370,7 +370,7 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
     return iter->second->IsEnableProfiler();
   }
 
-  void LaunchKernelWithProfiler(const std::string &device_name, const device::DeviceContext *device_context,
+  void LaunchKernelWithProfiler(device::DeviceType device_name, const device::DeviceContext *device_context,
                                 const std::string &op_name, const std::vector<BaseShapePtr> &base_shape,
                                 const std::function<void()> &func) {
     auto iter = kernel_func_map_.find(device_name);
@@ -381,20 +381,21 @@ class PYBOOST_API PyboostKernelExtraFuncFactory {
   }
 
  private:
-  mindspore::HashMap<std::string, PyboostKernelExtraFuncPtr> kernel_func_map_;
+  mindspore::HashMap<device::DeviceType, PyboostKernelExtraFuncPtr> kernel_func_map_;
 };
 
 class PyboostKernelExtraFuncRegistrar {
  public:
-  PyboostKernelExtraFuncRegistrar(const std::string &op_name, const PyboostKernelExtraFuncPtr &func) {
-    PyboostKernelExtraFuncFactory::GetInstance().AddPyboostKernelExtraFunc(op_name, func);
+  PyboostKernelExtraFuncRegistrar(device::DeviceType device_type, const PyboostKernelExtraFuncPtr &func) {
+    PyboostKernelExtraFuncFactory::GetInstance().AddPyboostKernelExtraFunc(device_type, func);
   }
 
   ~PyboostKernelExtraFuncRegistrar() = default;
 };
 
-#define REG_PYBOOST_KERNEL_EXTRA_FUN(op_name, func) \
-  static PyboostKernelExtraFuncRegistrar g_##op_name##PyboostKernelExtraFunc(#op_name, std::make_shared<func>());
+#define REG_PYBOOST_KERNEL_EXTRA_FUN(DEVICE, func)                                                          \
+  static PyboostKernelExtraFuncRegistrar g_##op_name##PyboostKernelExtraFunc(device::DeviceType::k##DEVICE, \
+                                                                             std::make_shared<func>());
 
 }  // namespace pyboost
 }  // namespace kernel

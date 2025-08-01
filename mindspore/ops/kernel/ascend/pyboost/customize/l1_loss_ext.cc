@@ -53,13 +53,11 @@ tensor::TensorPtr L1LossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   auto expand_target_tensor = target_tensor;
 
   if (input_shape != expand_shape) {
-    const auto broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key().device_name_);
+    const auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastTo, device::DeviceType::kAscend);
     expand_input_tensor = broadcast_to_op->Call(input_tensor, expand_shape_ptr);
   }
   if (target_shape != expand_shape) {
-    const auto broadcast_to_op =
-      CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key().device_name_);
+    const auto broadcast_to_op = CREATE_PYBOOST_OP(BroadcastTo, device::DeviceType::kAscend);
     expand_target_tensor = broadcast_to_op->Call(target_tensor, expand_shape_ptr);
   }
 

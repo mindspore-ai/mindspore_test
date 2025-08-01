@@ -1,4 +1,4 @@
-${return_type} ${op_name}_inner(${input_args_with_type}, CommHandlePtr comm_handle, const std::string& target) {
+${return_type} ${op_name}_inner(${input_args_with_type}, CommHandlePtr comm_handle, device::DeviceType target) {
   MS_LOG(DEBUG) << "In ${op_name} inner function";
 
   auto op = CREATE_PYBOOST_OP(${class_name}, target);
@@ -15,10 +15,10 @@ ${return_type} ${op_name}_inner(${input_args_with_type}, CommHandlePtr comm_hand
 ${return_type_with_handle} ${op_name}(${input_args_with_type}) {
   MS_LOG(DEBUG) << "In ${op_name} function";
 
-  std::string device_target;
+  device::DeviceType device_target;
   const auto &group_str = GetValue<std::string>(group);
   if (group_str.compare(0, 4, "mccl") == 0) {
-    device_target = "CPU";
+    device_target = device::DeviceType::kCPU;
   } else {
     device_target = GetDeviceTarget();
   }

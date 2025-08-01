@@ -24,18 +24,14 @@ void PowScalarTensorCPUCustomize(const std::shared_ptr<OpRunner> &op, const Scal
                                  const TensorPtr &exponent_tensor) {
   MS_LOG(DEBUG) << "PowScalarTensor Call start";
   OpRunner::InferOpOutput(op, input, exponent_tensor);
-
-  const auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
-
   // the PowScalarTensor primitive does not support CPU, so use Pow instead.
-  const auto pow_op = CREATE_PYBOOST_OP(Pow, device_name);
+  const auto pow_op = CREATE_PYBOOST_OP(Pow, device::DeviceType::kCPU);
 
   // handle type promotion manually since the CPU kernelmod Pow does not support it
   const auto out_dtype = op->output(0)->Dtype();
   auto exp_tensor_cast = exponent_tensor;
   if (exponent_tensor->Dtype()->type_id() != out_dtype->type_id()) {
-    exp_tensor_cast = PyBoostUtils::CastTensor(exponent_tensor, out_dtype->type_id(), device_name);
+    exp_tensor_cast = PyBoostUtils::CastTensor(exponent_tensor, out_dtype->type_id(), device::DeviceType::kCPU);
   }
   const auto input_tensor = PyBoostUtils::ScalarToTensor(input, out_dtype);
 

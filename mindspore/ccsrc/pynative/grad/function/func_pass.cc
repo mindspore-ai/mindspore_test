@@ -234,7 +234,7 @@ NodePtrList FuncPassForward::ConvertMakeTupleInputToDynamicInput(const Primitive
 }
 
 NodePtr FuncPassForward::BatchNormGradToBNInferGrad(const NodePtrList &inputs, bool is_scale_or_bias_grad) {
-  if (device_target_ != kAscendDevice || is_scale_or_bias_grad) {
+  if (device_target_ != device::DeviceType::kAscend || is_scale_or_bias_grad) {
     return func_builder_->Emit(kBatchNormGradOpName, inputs);
   }
   constexpr size_t kIdxIsTraining = 6;
@@ -273,7 +273,7 @@ NodePtr FuncPassForward::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR(cons
                                                                             const expander::DAttr &attrs,
                                                                             const NodePtr &out, const NodePtr &dout,
                                                                             bool is_graph_mode) {
-  if (device_target_ != kAscendDevice) {
+  if (device_target_ != device::DeviceType::kAscend) {
     auto grad = func_builder_->Emit(kSparseSoftmaxCrossEntropyWithLogitsOpName, inputs, attrs);
     if (is_graph_mode) {
       grad = func_builder_->Depend(grad, out);

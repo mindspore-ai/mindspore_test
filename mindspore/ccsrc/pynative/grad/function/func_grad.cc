@@ -677,8 +677,8 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
     return view_meta->UnsafeGetGradNodeImpl();
   }
   auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder("AsStrided");
-  std::string device_target = kernel::pyboost::OpRunStatus::Get().device_target();
-  auto emitter = std::make_shared<FuncBuilder>("AsStrided", std::move(device_target), nullptr);
+  auto device_target = kernel::pyboost::OpRunStatus::Get().device_target();
+  auto emitter = std::make_shared<FuncBuilder>("AsStrided", device_target, nullptr);
   MS_EXCEPTION_IF_NULL(tensor->storage_info());
   auto shape_value = MakeValue(tensor->storage_info()->shape);
   auto strided_value = MakeValue(tensor->storage_info()->strides);
@@ -733,7 +733,7 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     MS_LOG(DEBUG) << "Inplace op: " << op_grad_info->op_prim->name()
                   << "'s input is a view tensor, try build copyslice node";
     const auto &base_tensor = view_meta->view_info().base();
-    const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
     auto emitter = std::make_shared<FuncBuilder>("CopySlice", device_target, nullptr);
     auto copy_slice = std::make_shared<CopySliceNode>("CopySlice", func_node, emitter, 1, base_tensor, output_tensor);
     UpdateNextEdges(copy_slice, {base_tensor});
@@ -876,7 +876,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin HookBackwardNode CallBackward ";
   auto gradient = ValueListToValue(grads, out_abstract_);
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
   // Python grad func can not process None, we need to convert None to zero tensor.
   if (name_ != ops::kNameCellBackwardHook) {
@@ -916,7 +916,7 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes);
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   ValuePtrList flatten_outputs;
   auto op_output = saved_output_->Unwrap(shared_from_this(), true);
   CommonUtils::FlattenValueSeqArg(op_output, false, true, &flatten_outputs);
@@ -1075,7 +1075,7 @@ BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::
                                       const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
                                       size_t flatten_output_size) {
   AutoGradUtil::CheckAndSetAbstract(op_grad_info);
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   auto emitter = std::make_shared<FuncBuilder>(prim->name(), device_target, nullptr);
   auto node_inputs = GenerateNodeInputs(op_grad_info, emitter);
   auto saved_output = SavedNode::ConstructSavedNode(op_grad_info->out_value);
@@ -1661,7 +1661,7 @@ void AutoDiff::PruningWeights(const std::vector<BackwardNodePtr> &weights, const
 }
 
 AutoDiff::AutoDiff(const ValuePtr &output, bool high_order, bool is_run_recompute) {
-  device_target_ = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device_target_ = DeviceManagerConf::GetInstance()->device_type();
   func_impl_ = std::make_shared<FuncBuilder>("func_emitter", device_target_);
   output_ = output;
   is_run_recompute_ = is_run_recompute;

@@ -58,8 +58,7 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
     auto p = std::make_shared<FP32Imm>(static_cast<float>(1 - keep_prob_value));
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue<int64_t>(*numels)});
     auto dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(query->Dtype()->type_id()));
-    auto dropout_gen_mask_ext_op =
-      CREATE_PYBOOST_OP(DropoutGenMaskExt, op->device_context()->device_context_key_.device_name_);
+    auto dropout_gen_mask_ext_op = CREATE_PYBOOST_OP(DropoutGenMaskExt, device::DeviceType::kAscend);
     dropout_mask.emplace(dropout_gen_mask_ext_op->Call(shape, p, seed, offset, dtype));
   } else if (keep_prob_value == 0) {
     constexpr int64_t kAlignBitNum = 128;
@@ -68,7 +67,7 @@ std::optional<TensorPtr> SpeedFusionAttentionDropoutGenMaskCall(
     int64_t align_length = (*numels + kAlignBitNum - 1) / kAlignBitNum * kAlignBitNum / kBitOfByte;
     align_length += kAppendLen;
     auto shape = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue(align_length)});
-    auto zeros_op = CREATE_PYBOOST_OP(Zeros, op->device_context()->device_context_key_.device_name_);
+    auto zeros_op = CREATE_PYBOOST_OP(Zeros, device::DeviceType::kAscend);
     dropout_mask.emplace(zeros_op->Call(shape, std::make_shared<Int64Imm>(static_cast<int64_t>(kNumberTypeUInt8))));
   }
 

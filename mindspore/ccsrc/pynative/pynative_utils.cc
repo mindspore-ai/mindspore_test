@@ -217,7 +217,7 @@ const mindspore::HashSet<std::string> kNotRealOP{
   kPyExecuteOpName,
 };
 
-tensor::TensorPtr GetContiguousTensor(const tensor::TensorPtr &input_tensor, const std::string &device_target,
+tensor::TensorPtr GetContiguousTensor(const tensor::TensorPtr &input_tensor, device::DeviceType device_target,
                                       bool requires_grad) {
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_target);
   auto contiguous_tensor = contiguous_op->Call(input_tensor);
@@ -675,7 +675,7 @@ tensor::TensorPtr Common::ConvertToContiguousTensor(const tensor::TensorPtr &ten
   // Tensor with storage info, need convert to contiguous in no-view op.
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
-  const auto &device_target = device::GetDeviceNameByType(device_address->GetDeviceType());
+  const auto &device_target = device_address->GetDeviceType();
 
   return GetContiguousTensor(tensor, device_target, requires_grad);
 }
@@ -689,8 +689,8 @@ tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_c
 
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
-  const auto &device_target = device::GetDeviceNameByType(device_address->GetDeviceType());
-  if (device_target == kAscendDevice) {
+  const auto &device_target = device_address->GetDeviceType();
+  if (device_target == device::DeviceType::kAscend) {
     return tensor;
   }
 
@@ -1723,8 +1723,7 @@ tensor::TensorPtr Common::CaculateGradNorm(const tensor::TensorPtr &grad) {
     return grad;
   }
   static constexpr const float norm_val = 2;
-  kernel::pyboost::OpStatus status{false, false, 0,
-                                   MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET)};
+  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   return kernel::pyboost::norm(grad, std::make_shared<FP32Imm>(norm_val), std::nullopt,
                                std::make_shared<BoolImm>(false), std::nullopt);

@@ -65,8 +65,7 @@ tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRun
   auto reduce_op_imm = iter->second;
   TensorPtr input_ = input;
   TensorPtr x2_ = x2;
-  const auto &device_name = op->device_context()->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
   if (trans_input_imm) {
     input_ = transpose_op->Call(input, matmul_reduce_scatter_in::GetTransposePerm(input));
   }

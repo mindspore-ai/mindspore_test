@@ -289,15 +289,6 @@ void EmplaceSliceInputs(const FrontendOpRunInfoPtr &op_run_info, const std::vect
   op_run_info->op_grad_info->input_value_grad_type.resize(op_run_info->input_size);
 }
 
-size_t GetCurStreamId(const std::string &device_target) {
-  size_t stream_id = kDefaultStreamIndex;
-#ifndef ENABLE_TEST
-  auto device_ctx = runtime::OpRunner::GetDeviceContext(device_target);
-  stream_id = device_ctx->device_res_manager_->GetCurrentStreamId();
-#endif
-  return stream_id;
-}
-
 bool GetMixprecisionTypeFromStrategy(const PyboostOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   auto cur_amp_Strategy = amp::GetCurrentAmpStrategy();
@@ -340,11 +331,10 @@ tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor) {
   const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(old_device_address);
 
-  const DeviceContext *device_context =
-    runtime::OpRunner::GetDeviceContext(device::GetDeviceNameByType(old_device_address->GetDeviceType()));
+  const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->GetDeviceType());
   MS_EXCEPTION_IF_NULL(device_context);
   GilReleaseWithCheck release_gil;
-  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
+  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->GetDeviceType());
   const auto &contiguous_tensor = contiguous_op->Call(tensor);
   // Need to wait contiguous finish in heterogeneous scenarios.
   runtime::Pipeline::Get().WaitForward();
@@ -374,8 +364,6 @@ void ForwardExecutor::WaitForwardTask() {
   runtime::Pipeline::Get().frontend_stage()->Wait();
 }
 
-size_t ForwardExecutor::GetStreamId() const { return GetCurStreamId(device_target_); }
-
 GradExecutorPtr ForwardExecutor::grad() const {
   auto grad_executor = grad_executor_.lock();
   MS_EXCEPTION_IF_NULL(grad_executor);
@@ -403,7 +391,7 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
 }
 
 void ForwardExecutor::ReInit() {
-  device_target_ = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device_target_ = device::GetDeviceTypeByName(MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
   enable_async_ = !sync_stream;
 }
@@ -721,7 +709,7 @@ FrontendOpRunInfoPtr ForwardExecutor::GenerateSliceOpRunInfo(const std::string &
   const auto &op_run_info = std::make_shared<FrontendOpRunInfo>();
   op_run_info->base_op_run_info.op_name = op_name;
   op_run_info->requires_grad = requires_grad;
-  op_run_info->base_op_run_info.device_target = device_target_;
+  op_run_info->base_op_run_info.device_target = DeviceManagerConf::GetInstance()->device_type();
 
   op_run_info->base_op_run_info.stream_id = stream_id;
 
@@ -766,7 +754,7 @@ FrontendOpRunInfoPtr ForwardExecutor::GenerateOpRunInfo(const py::args &args, bo
   }
 #ifndef ENABLE_TEST
   // Obtaining device context may fail in UT
-  op_run_info->base_op_run_info.stream_id = GetCurStreamId(op_run_info->base_op_run_info.device_target);
+  op_run_info->base_op_run_info.stream_id = CurrentStream::id();
 #endif
   return op_run_info;
 }
@@ -919,15 +907,15 @@ void ForwardExecutor::ExecuteLazyTask() const {
   MsException::Instance().CheckException();
 }
 
-std::string ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const {
+device::DeviceType ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const {
   MS_EXCEPTION_IF_NULL(op_prim);
   PrimitiveReadLock read_lock(op_prim->shared_mutex());
   const auto &attr_map = op_prim->attrs();
   auto iter = attr_map.find("primitive_target");
   if (iter != attr_map.end()) {
-    return GetValue<std::string>(iter->second);
+    return device::GetDeviceTypeByName(GetValue<std::string>(iter->second));
   }
-  return device_target_;
+  return DeviceManagerConf::GetInstance()->device_type();
 }
 
 void ForwardExecutor::Sync(const bool &) {

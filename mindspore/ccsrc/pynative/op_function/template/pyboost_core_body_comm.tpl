@@ -1,10 +1,10 @@
 py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE>& source_type, ${input_args}) {
     MS_LOG(DEBUG) << "Run ${func_name} start";
     auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
-    std::string target;
+    device::DeviceType target;
     const auto &group_str = GetValue<std::string>(group);
     if (group_str.compare(0, 4, "mccl") == 0) {
-        target = "CPU";
+        target = device::DeviceType::kCPU;
     } else {
         target = op_run_info->device_target;
     }

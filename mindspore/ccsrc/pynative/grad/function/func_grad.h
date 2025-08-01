@@ -391,7 +391,7 @@ class AutoDiff : public AutoDiffInterface {
   ValuePtrList root_gradients_{};
   BackwardNodePtr graph_root_{nullptr};
   std::shared_ptr<FuncBuilder> func_impl_;
-  std::string device_target_;
+  device::DeviceType device_target_;
   bool high_order_{false};
   bool is_run_recompute_{false};
 };

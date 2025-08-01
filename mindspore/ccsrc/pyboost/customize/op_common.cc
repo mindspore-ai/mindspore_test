@@ -40,9 +40,9 @@ tensor::TensorPtr CopyCustomizeCall(const std::shared_ptr<OpRunner> &op, const T
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   runtime::Pipeline::Get().WaitForward();
-  auto device_context = op->device_context();
   const auto &op_outputs = op->outputs();
 
+  auto device_context = op->device_context();
   // Malloc for input tensors
   PyBoostUtils::MallocOpInputs(device_context, input_tensor);
   // Malloc for output tensors
@@ -97,23 +97,21 @@ tensor::TensorPtr ContiguousTensorOpProcess(const std::shared_ptr<OpRunner> &op,
 
 tensor::TensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                            const std::optional<TensorPtr> &min, const std::optional<TensorPtr> &max,
-                                           const std::string &device_target) {
+                                           device::DeviceType device_target) {
   MS_LOG(DEBUG) << "Call ClampTensor start";
   if (!min.has_value() && !max.has_value()) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
-  auto device_context = op->device_context();
-  OpPtr final_node = nullptr;
 
   TensorPtr output = x_tensor;
   if (min.has_value()) {
     auto min_tensor = PyBoostUtils::CastTensor(min.value(), x_tensor->Dtype()->type_id(), device_target);
-    const auto &maximum = CREATE_PYBOOST_OP(Maximum, device_context->device_context_key_.device_name_);
+    const auto &maximum = CREATE_PYBOOST_OP(Maximum, device_target);
     output = maximum->Call(output, min_tensor);
   }
   if (max.has_value()) {
     auto max_tensor = PyBoostUtils::CastTensor(max.value(), x_tensor->Dtype()->type_id(), device_target);
-    const auto &minimum = CREATE_PYBOOST_OP(Minimum, device_context->device_context_key_.device_name_);
+    const auto &minimum = CREATE_PYBOOST_OP(Minimum, device_target);
     output = minimum->Call(output, max_tensor);
   }
   op->set_outputs({output});
@@ -123,24 +121,23 @@ tensor::TensorPtr ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &op, 
 
 tensor::TensorPtr ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                            const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max,
-                                           const std::string &device_target) {
+                                           device::DeviceType device_target) {
   MS_LOG(DEBUG) << "Call ClampScalar start";
   if (!min.has_value() && !max.has_value()) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
-  auto device_context = op->device_context();
 
   TensorPtr output = x_tensor;
   if (min.has_value()) {
     auto min_tensor = PyBoostUtils::ScalarToTensor(min.value());
     min_tensor = PyBoostUtils::CastTensor(min_tensor, x_tensor->Dtype()->type_id(), device_target);
-    const auto &maximum = CREATE_PYBOOST_OP(Maximum, device_context->device_context_key_.device_name_);
+    const auto &maximum = CREATE_PYBOOST_OP(Maximum, device_target);
     output = maximum->Call(output, min_tensor);
   }
   if (max.has_value()) {
     auto max_tensor = PyBoostUtils::ScalarToTensor(max.value());
     max_tensor = PyBoostUtils::CastTensor(max_tensor, x_tensor->Dtype()->type_id(), device_target);
-    const auto &minimum = CREATE_PYBOOST_OP(Minimum, device_context->device_context_key_.device_name_);
+    const auto &minimum = CREATE_PYBOOST_OP(Minimum, device_target);
     output = minimum->Call(output, max_tensor);
   }
   op->set_outputs({output});

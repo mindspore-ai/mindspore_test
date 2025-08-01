@@ -101,7 +101,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
     expand_input_shape.insert(expand_input_shape.begin(), 1);
     std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(expand_input_shape),
                    [](int64_t e) { return e; });
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     expand_input_x_imm = reshape_op->Call(input_tensor, expand_input_shape);
     input_tensor_new = expand_input_x_imm;
   }
@@ -134,9 +134,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
         }
       }
       auto zero = std::make_shared<Int64Imm>(0);
-      auto device_context = op->device_context();
-      const auto &device_name = device_context->device_context_key_.device_name_;
-      auto constant_pad_nd_op = CREATE_PYBOOST_OP(ConstantPadND, device_name);
+      auto constant_pad_nd_op = CREATE_PYBOOST_OP(ConstantPadND, device::DeviceType::kAscend);
       if (is_batchify) {
         input_tensor_new = constant_pad_nd_op->Call(input_tensor, std::make_shared<ValueTuple>(pad_nd), zero);
       } else {
@@ -162,7 +160,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
   }
   ValueTuplePtr pad_ptr = std::make_shared<ValueTuple>(pad_value_ptr);
 
-  auto convolution_op = CREATE_PYBOOST_OP(Convolution, op->device_context()->device_context_key_.device_name_);
+  auto convolution_op = CREATE_PYBOOST_OP(Convolution, device::DeviceType::kAscend);
   if (is_batchify) {
     auto output_imm = convolution_op->Call(input_tensor_new, weight_tensor, bias_tensor, stride, pad_ptr, dilation,
                                            transposed_imm_ptr, output_padding_vector_1d_imm_ptr, group);
@@ -176,7 +174,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
     for (int64_t i = 1; i < SizeToLong(output_imm_shape.size()); i++) {
       squeeze_output_shape.emplace_back(output_imm_shape[i]);
     }
-    auto reshape_op2 = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+    auto reshape_op2 = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     auto squeeze_output_tensor = reshape_op2->Call(output_imm, squeeze_output_shape);
     op->set_outputs(reshape_op2->outputs());
     return squeeze_output_tensor;

@@ -61,10 +61,11 @@ void WaitTasksFinish() {
 
 }  // namespace
 
-void OpBackend::Run(const BackendOpRunInfoPtr &op_run_info, const std::string &device_name, uint32_t device_id,
+void OpBackend::Run(const BackendOpRunInfoPtr &op_run_info, device::DeviceType device_type, uint32_t device_id,
                     VectorRef *outputs) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   ViewBackend::ContiguousInputByRunInfo(op_run_info);
+  auto device_name = device::GetDeviceNameByType(device_type);
   if (op_run_info->base_op_run_info.use_dynamic_shape_process) {
     RunInnerDynamic(op_run_info, device_name, device_id, outputs);
   } else {
@@ -499,7 +500,8 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   device::DeviceAddressPtrList output_addr_list;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {base_op_run_info.device_target, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {device::GetDeviceNameByType(base_op_run_info.device_target),
+     MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
 
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {

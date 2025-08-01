@@ -30,11 +30,9 @@ namespace pyboost {
 void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "TExt Launch start";
   OpRunner::InferOpOutput(op, input_tensor);
-  auto device_context = op->device_context();
   auto input_rank = input_tensor->shape().size();
 
-  const auto &device_name = device_context->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
   std::vector<int64_t> perm(input_rank);
   for (size_t i = 0; i < input_rank; ++i) {
     perm[i] = static_cast<int64_t>(input_rank - i - 1);

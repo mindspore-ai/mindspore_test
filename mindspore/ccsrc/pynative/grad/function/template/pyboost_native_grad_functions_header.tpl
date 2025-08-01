@@ -14,14 +14,14 @@ using NodePtr = expander::NodePtr;
 using NodePtrList = std::vector<expander::NodePtr>;
 class NativeFunc {
   public:
-    static const std::string &device_target() { return device_target_;}
-    static void set_device_target(const std::string &device_target) { device_target_ = device_target; }
+    static device::DeviceType device_target() { return device_target_;}
+    static void set_device_target(device::DeviceType device_target) { device_target_ = device_target; }
     static NodePtr RunOpInVm(const PrimitivePtr &prim, const NodePtrList &inputs);
     static NodePtr RunOpDeprecated(const PrimitivePtr &prim, const NodePtrList &inputs);
     static ValuePtr ConvertNode2Value(const NodePtr &node);
     ${native_grad_func_def};
   private:
-    static std::string device_target_;
+    static device::DeviceType device_target_;
 };
 }
 }

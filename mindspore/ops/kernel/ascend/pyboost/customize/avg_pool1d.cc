@@ -49,7 +49,7 @@ tensor::TensorPtr AvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   }
   unsqueeze_shape.emplace_back(1);
   unsqueeze_shape.emplace_back(input_shape[input_dim - 1]);
-  const auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key().device_name_);
+  const auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
   auto expanded_input = reshape_op->Call(input, unsqueeze_shape);
 
   auto kernel_size_val = ConvertValueTupleToVector<int64_t>(kernel_size);
@@ -76,7 +76,7 @@ tensor::TensorPtr AvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, 
     std::vector<ValuePtr>{std::make_shared<Int64Imm>(0), std::make_shared<Int64Imm>(padding_val[0])});
   std::optional<Int64ImmPtr> divisor_override_opt = std::nullopt;
 
-  const auto avg_pool2d_op = CREATE_PYBOOST_OP(AvgPool2D, op->device_context()->device_context_key().device_name_);
+  const auto avg_pool2d_op = CREATE_PYBOOST_OP(AvgPool2D, device::DeviceType::kAscend);
   auto avg_pool2d_output = avg_pool2d_op->Call(expanded_input, kernel_2d, stride_2d, padding_2d, ceil_mode,
                                                count_include_pad, divisor_override_opt);
 

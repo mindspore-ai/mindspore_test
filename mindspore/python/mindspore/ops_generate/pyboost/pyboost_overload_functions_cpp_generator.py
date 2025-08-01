@@ -56,11 +56,11 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '  break;\n'
         )
         self.device_dispatcher_template = Template(
-            'if (backend == kAscendDevice || backend == kDavinciDevice) {\n'
+            'if (backend == device::DeviceType::kAscend) {\n'
             '  ${ascend_dispatcher}\n'
-            '} else if (backend == kCPUDevice) {\n'
+            '} else if (backend == device::DeviceType::kCPU) {\n'
             '  ${cpu_dispatcher}\n'
-            '} else if (backend == kGPUDevice) {\n'
+            '} else if (backend == device::DeviceType::kGPU) {\n'
             '  ${gpu_dispatcher}\n'
             '} else {\n'
             '  MS_LOG(ERROR) << "Device target is not supported!";\n'

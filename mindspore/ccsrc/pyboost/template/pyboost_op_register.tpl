@@ -27,7 +27,7 @@ OpFactory<T> &OpFactory<T>::Get() {
 }
 
 template <typename T>
-std::shared_ptr<T> OpFactory<T>::Create(const string &device, uint32_t stream_id) {
+std::shared_ptr<T> OpFactory<T>::Create(device::DeviceType device, uint32_t stream_id) {
   auto iter = op_creator_.find(device);
   if (iter == op_creator_.end()) {
     MS_LOG(EXCEPTION) << "Not found op " << typeid(T).name() << " on device " << device;
@@ -45,7 +45,7 @@ InternalOpFactory<T> &InternalOpFactory<T>::Get() {
 }
 
 template <typename T>
-std::shared_ptr<T> InternalOpFactory<T>::Create(const string &device, uint32_t stream_id) {
+std::shared_ptr<T> InternalOpFactory<T>::Create(device::DeviceType device, uint32_t stream_id) {
   auto iter = op_creator_.find(device);
   if (iter == op_creator_.end()) {
     MS_LOG(EXCEPTION) << "Not found internal op " << typeid(T).name() << " on device " << device;

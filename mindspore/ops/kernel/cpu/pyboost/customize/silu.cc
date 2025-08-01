@@ -26,8 +26,8 @@ namespace pyboost {
 namespace {
 OpPtr SiLUCPUCall(const device::DeviceContext *device_context, const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Call start";
-  const auto &sigmoid = CREATE_PYBOOST_OP(Sigmoid, device_context->device_context_key_.device_name_);
-  const auto &mul = CREATE_PYBOOST_OP(Mul, device_context->device_context_key_.device_name_);
+  const auto &sigmoid = CREATE_PYBOOST_OP(Sigmoid, device::DeviceType::kCPU);
+  const auto &mul = CREATE_PYBOOST_OP(Mul, device::DeviceType::kCPU);
   const auto &sigmoid_tensor = sigmoid->Call(x_tensor);
   mul->Call(x_tensor, sigmoid_tensor);
   MS_LOG(DEBUG) << "Launch end";

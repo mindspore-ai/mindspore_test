@@ -84,7 +84,7 @@ class BACKEND_EXPORT OpBackend {
   OpBackend() = default;
   ~OpBackend() = default;
   // Run op on device.
-  void Run(const BackendOpRunInfoPtr &op_run_info, const std::string &device_name, uint32_t device_id,
+  void Run(const BackendOpRunInfoPtr &op_run_info, device::DeviceType device_type, uint32_t device_id,
            VectorRef *outputs);
 
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
