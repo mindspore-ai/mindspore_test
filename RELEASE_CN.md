@@ -26,6 +26,14 @@
 
 - [STABLE] MindSpore支持预留大页内存。用户可以通过在 [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.set_memory.html) 接口中传入 `huge_page_reserve_size` 参数使能该功能。
 
+### Lite
+
+MindSpore Lite面向不同硬件设备提供轻量化AI推理加速能力，使能智能应用，为开发者提供端到端的解决方案，为算法工程师和数据科学家提供开发友好、运行高效、部署灵活的体验。
+
+为了更好地促进人工智能软硬件应用生态繁荣发展，MindSpore Lite独立建仓促进生态发展。未来MindSpore Lite将与MindSpore AI社区一起，致力于丰富AI软硬件应用生态。
+
+更多详情请参阅[MindSpore Lite代码仓](https://gitee.com/mindspore/mindspore-lite)。
+
 ### API 变更
 
 - [STABLE] 作为[mindspore.mint](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.mint.html) API接入任务的一部分，一些Tensor API的接口定义和功能进行了对齐和优化。
@@ -43,8 +51,6 @@
 ### 贡献者
 
 Bellatan,caifubi,ccsszz,chaijinwei,chengbin,chenweifeng,chujinjin,DavidFFFan,DeshiChen,dingjinshan,fary86,fuchao,gaoyong10,GuoZhibin,guozhijian,haozhang,hedongdong,Henry Shi,hhz886,huangbingjian,huangziling,huda,Huilan Li,jiangchao_j,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jizewei,leida,lichen,limingqi107,LiNuohang,linux,liubuyu,liuluobin,looop5,luochao60,luoyang,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,NaCN,One_East,panzhihui,Qiao_Fu,qiuleilei,qiuyufeng,r1chardf1d0,SaiYao,shaoshengqi,shen_haochen,shenwei41,shuqian0,St.Universe,suteng,TAJh,tanghuikang,tianxiaodong,wang_ziqi,wangyibo,wujueying,wusimin,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,XinDu,xuzhen,yanghaoran,yangyingchun,yide12,yonibaehr,yuanqi,yuchaojie,YuJianfeng,YukioZzz,yuliangbin,zhangbuxue,zhangdanyang,zhanghanLeo,zhangyinxia,ZhangZGC,zhaochenjie,Zhi Feng Wu,zhuguodong,ZPaC,zyli2020,程超,胡犇,胡彬,宦晓玲,黄勇,李良灿,李林杰,刘飞扬,刘勇琪,刘子涵,王振邦,熊攀,杨卉,俞涵,云骑士,张栩浩,周一航
-
-## MindSpore Lite 2.7.0 Release Notes
 
 ## MindSpore 2.7.0-rc1 Release Notes
 

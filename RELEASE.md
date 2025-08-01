@@ -26,6 +26,14 @@
 
 - [STABLE] MindSpore supports reserving huge page memory. Users can enable this feature by passing the `huge_page_reserve_size` parameter in the [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.set_memory.html) API.
 
+### Lite
+
+MindSpore Lite​​ delivers lightweight AI inference acceleration capabilities for diverse hardware devices, empowering smart applications. It provides developers with an ​​end-to-end solution​​ and offers algorithm engineers and data scientists a ​​user-friendly development experience​​ characterized by efficient execution and flexible deployment.
+
+To better foster the thriving development of the AI software and hardware application ecosystem, ​​MindSpore Lite has established an independent code repository to drive ecosystem growth​​. In the future, MindSpore Lite will work together with the ​​MindSpore AI community​​ enrich the AI software and hardware application ecosystem.
+
+For further details, please visit the [MindSpore Lite Code Repository](https://gitee.com/mindspore/mindspore-lite).
+
 ### API Change
 
 - [STABLE] As part of the task of [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API integration task, the interface definitions and functionalities of several Tensor APIs have been aligned and optimized.
@@ -43,8 +51,6 @@
 ### Contributors
 
 Bellatan,caifubi,ccsszz,chaijinwei,chengbin,chenweifeng,chujinjin,DavidFFFan,DeshiChen,dingjinshan,fary86,fuchao,gaoyong10,GuoZhibin,guozhijian,haozhang,hedongdong,Henry Shi,hhz886,huangbingjian,huangziling,huda,Huilan Li,jiangchao_j,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jizewei,leida,lichen,limingqi107,LiNuohang,linux,liubuyu,liuluobin,looop5,luochao60,luoyang,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,NaCN,One_East,panzhihui,Qiao_Fu,qiuleilei,qiuyufeng,r1chardf1d0,SaiYao,shaoshengqi,shen_haochen,shenwei41,shuqian0,St.Universe,suteng,TAJh,tanghuikang,tianxiaodong,wang_ziqi,wangyibo,wujueying,wusimin,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,XinDu,xuzhen,yanghaoran,yangyingchun,yide12,yonibaehr,yuanqi,yuchaojie,YuJianfeng,YukioZzz,yuliangbin,zhangbuxue,zhangdanyang,zhanghanLeo,zhangyinxia,ZhangZGC,zhaochenjie,Zhi Feng Wu,zhuguodong,ZPaC,zyli2020,程超,胡犇,胡彬,宦晓玲,黄勇,李良灿,李林杰,刘飞扬,刘勇琪,刘子涵,王振邦,熊攀,杨卉,俞涵,云骑士,张栩浩,周一航
-
-## MindSpore Lite 2.7.0 Release Notes
 
 ## MindSpore 2.7.0-rc1 Release Notes
 
