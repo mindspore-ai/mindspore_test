@@ -170,6 +170,12 @@ class PYBOOST_API PyBoostUtils {
                               std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
                               const std::vector<tensor::TensorPtr> &tensors);
 
+  static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                              const abstract::AbstractBasePtr &input_abs, size_t index,
+                              std::vector<kernel::KernelTensor *> *kernel_tensor_list,
+                              std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                              const ValueTuplePtr &value_tuple);
+
   template <typename T>
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
                               const abstract::AbstractBasePtr &input_abs, size_t index,

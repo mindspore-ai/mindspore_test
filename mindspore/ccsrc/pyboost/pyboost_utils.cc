@@ -369,6 +369,32 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   }
 }
 
+void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                   const abstract::AbstractBasePtr &input_abs, size_t index,
+                                   std::vector<kernel::KernelTensor *> *kernel_tensor_list,
+                                   std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                                   const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto values = value_tuple->value();
+  size_t tensor_num = std::count_if(values.cbegin(), values.cend(), [](const ValuePtr &value) {
+    return value != nullptr && value->isa<tensor::Tensor>();
+  });
+  if (tensor_num == values.size() && tensor_num != 0) {
+    for (const auto &value : values) {
+      const auto &tensor = value->cast<tensor::TensorPtr>();
+      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+    }
+  } else {
+    auto kernel_tensor =
+      runtime::DeviceAddressUtils::CreateInputKernelTensor(device_context, stream_id, input_abs, index, value_tuple);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_list);
+    (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
+    (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
+  }
+}
+
 std::vector<kernel::KernelTensorPtr> PyBoostUtils::CreateWorkSpaceKernelTensors(
   const KernelModPtr &kernel_mod, const device::DeviceContext *device_context, const std::string &op_name) {
   MS_EXCEPTION_IF_NULL(device_context);

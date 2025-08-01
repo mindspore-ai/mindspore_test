@@ -78,8 +78,11 @@ class BACKEND_EXPORT DeviceAddressUtils {
                              bool is_view);
   static void MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
                              bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view);
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                        const std::optional<tensor::TensorPtr> &val);
+  static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
+                                       const ValueTuplePtr &value_tuple);
   template <typename T>
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                        const std::vector<T> &inputs) {
