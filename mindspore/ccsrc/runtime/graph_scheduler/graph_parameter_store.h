@@ -57,7 +57,7 @@ class BACKEND_EXPORT GraphParameterStore {
     is_weights_.resize(front_parameter_size, false);
     is_tensors_.resize(front_parameter_size, false);
     parameter_used_times_.resize(front_parameter_size);
-    parameter_device_names_.resize(front_parameter_size);
+    parameter_device_types_.resize(front_parameter_size);
     is_offload_parameter_.resize(front_parameter_size);
   }
 
@@ -69,7 +69,7 @@ class BACKEND_EXPORT GraphParameterStore {
     async_copy_funcs_[outer_index].resize(tuple_unfold_length, nullptr);
     is_dynamic_[outer_index].resize(tuple_unfold_length, false);
     parameter_used_times_[outer_index].resize(tuple_unfold_length, 0);
-    parameter_device_names_[outer_index].resize(tuple_unfold_length);
+    parameter_device_types_[outer_index].resize(tuple_unfold_length);
     is_offload_parameter_[outer_index].resize(tuple_unfold_length, false);
     buffer_size_ += tuple_unfold_length;
   }
@@ -181,7 +181,7 @@ class BACKEND_EXPORT GraphParameterStore {
   const std::function<void(size_t)> &GetAsyncMemcpyFun(size_t outer_index, size_t inner_index) const;
   void SetAsyncMemcpyFun(size_t outer_index, size_t inner_index, std::function<void(size_t)> &&func);
 
-  std::string GetParameterDeviceName(size_t outer_index, size_t inner_index) const;
+  device::DeviceType GetParameterDeviceType(size_t outer_index, size_t inner_index) const;
 
   // Fetch Tensor with index from input_args_.
   Tensor *FetchTensor(size_t args_index, const KernelWithIndex &node);
@@ -231,7 +231,7 @@ class BACKEND_EXPORT GraphParameterStore {
   // Besides, record the user cnt and data prepared flag for each kernel tensor.
   std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> parameter_kernel_tensors_;
   std::vector<bool> is_tensors_;
-  std::vector<std::vector<std::string>> parameter_device_names_;
+  std::vector<std::vector<device::DeviceType>> parameter_device_types_;
   std::vector<std::vector<bool>> is_offload_parameter_;
   // Record the parameter may be concurrently used, if equal to 1, fetch parameter can not use lock.
   std::vector<std::vector<size_t>> parameter_used_times_;

@@ -1048,9 +1048,9 @@ void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parame
     auto old_addr_info = old_addr_info_ret.second;
     TypePtr type = old_addr_info.first;
     MS_EXCEPTION_IF_NULL(type);
-    auto device_name = graph_parameter_store->GetParameterDeviceName(outer_index, inner_index);
+    auto device_type = graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      {device::GetDeviceNameByType(device_type), MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
     auto new_kernel_tensor =
       std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr, ShapeVector{});
@@ -1177,9 +1177,10 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
     PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
     MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
   }
-  if (tensor_address->device_name() != graph_parameter_store->GetParameterDeviceName(outer_index, inner_index)) {
+  if (tensor_address->GetDeviceType() != graph_parameter_store->GetParameterDeviceType(outer_index, inner_index)) {
     MS_LOG(DEBUG) << "tensor address:" << tensor_address->ToString() << " parameter store device type:"
-                  << graph_parameter_store->GetParameterDeviceName(outer_index, inner_index)
+                  << device::GetDeviceNameByType(
+                       graph_parameter_store->GetParameterDeviceType(outer_index, inner_index))
                   << " outer index:" << outer_index << " inner index:" << inner_index;
     PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
