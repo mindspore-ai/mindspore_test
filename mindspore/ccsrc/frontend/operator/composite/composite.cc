@@ -43,6 +43,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
 #include "pipeline/jit/ps/parse/resolve.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
@@ -1131,15 +1132,6 @@ FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weigh
   auto bprop = k_child->NewCNodeInOrder({tuple_get_item, k_app, NewValueNode(static_cast<int64_t>(1))});
 
   GradByParameter(k_child, f_app, bprop, weights, position_node, forward_graph, is_weights_none);
-  static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
-  if (enable_remote_memory) {
-    // Save gradient result back to remote memory.
-    auto origin_output = k_child->output();
-    auto bprop_to_remote_node = NewValueNode(std::make_shared<prim::BpropOutToRemote>("bprop_out_to_remote"));
-    AnfNodePtrList to_remote_node_inputs{bprop_to_remote_node, origin_output};
-    auto to_remote_node = k_child->NewCNode(to_remote_node_inputs);
-    k_child->set_output(to_remote_node);
-  }
   return k_child;
 }
 
@@ -1169,6 +1161,53 @@ CNodePtr GradOperation::SetNodeByParameter(const CNodePtr &grad, const FuncGraph
         auto grad_value =
           fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), grad, NewValueNode(static_cast<int64_t>(i))});
         fv_bprop = fg->NewCNodeInOrder({NewValueNode(kPrimMakeTuple), NewValueNode(param_name), grad_value});
+        params.push_back(fv_bprop);
+      } else {
+        MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
+                                   << weight_value_->ToString();
+      }
+    }
+    fv_bprop = fg->NewCNodeInOrder(params);
+  }
+  return fv_bprop;
+}
+
+CNodePtr GradOperation::FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr &fg) const {
+  CNodePtr fv_bprop;
+  if (!weight_value_->isa<AbstractTuple>()) {
+    auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(weight_value_);
+    if (weight_ref == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
+                                 << weight_value_->ToString();
+    }
+    if (!remote_memory::IsEnableGradOffloadAbstract(weight_ref)) {
+      return grad;
+    }
+    auto fv_bprop_to_remote =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), grad, NewValueNode(kNone), NewValueNode(false)});
+    fv_bprop = fg->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimDetach), fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false)});
+  } else {
+    std::vector<AnfNodePtr> params;
+    AbstractTuplePtr weight_tuple = weight_value_->cast<AbstractTuplePtr>();
+    const AbstractBasePtrList &elements = weight_tuple->elements();
+    params.push_back(NewValueNode(prim::kPrimMakeTuple));
+    for (size_t i = 0; i < weight_tuple->size(); i++) {
+      auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(elements[i]);
+      if (weight_ref != nullptr) {
+        auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+        MS_EXCEPTION_IF_NULL(weight_key);
+        auto param_name = weight_key->value();
+        auto grad_value =
+          fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), grad, NewValueNode(static_cast<int64_t>(i))});
+        if (!remote_memory::IsEnableGradOffloadAbstract(weight_ref)) {
+          params.push_back(grad_value);
+          continue;
+        }
+        auto fv_bprop_to_remote = fg->NewCNodeInOrder(
+          {NewValueNode(prim::kPrimToRemote), grad_value, NewValueNode(kNone), NewValueNode(false)});
+        fv_bprop = fg->NewCNodeInOrder(
+          {NewValueNode(prim::kPrimDetach), fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false)});
         params.push_back(fv_bprop);
       } else {
         MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
@@ -1211,6 +1250,10 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
         k_child->NewCNodeInOrder({NewValueNode(prim::kPrimPartial), NewValueNode(prim::GetPythonOps("env_get")), env});
       MetaFuncGraphPtr hyper_map = std::make_shared<HyperMap>();
       fv_bprop = k_child->NewCNodeInOrder({NewValueNode(hyper_map), partial_env_get, weights});
+      static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+      if (enable_remote_memory) {
+        fv_bprop = FvBpropToRemote(fv_bprop, k_child);
+      }
       if (return_ids_) {
         fv_bprop = SetNodeByParameter(fv_bprop, k_child);
       }
@@ -2830,48 +2873,6 @@ FuncGraphPtr GetDependDoutTuple::GenerateFuncGraph(const AbstractBasePtrList &ar
   }
   fg->set_output(fg_dout_tuple);
   return fg;
-}
-
-FuncGraphPtr BpropOutToRemote::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
-  FuncGraphPtr fg = std::make_shared<FuncGraph>();
-  constexpr size_t required_size = 1;
-  if (args_abs_list.size() != required_size) {
-    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
-                               << args_abs_list.size();
-  }
-  auto input_abstract = args_abs_list[0];
-  MS_EXCEPTION_IF_NULL(input_abstract);
-  auto input_parameter = fg->add_parameter();
-  auto output = InsertToRemoteAndDetachRecursively(fg, input_parameter, input_abstract);
-  fg->set_output(output);
-  return fg;
-}
-
-AnfNodePtr BpropOutToRemote::InsertToRemoteAndDetachRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
-                                                                const AbstractBasePtr &node_abstract) const {
-  MS_EXCEPTION_IF_NULL(node_abstract);
-  if (node_abstract->isa<abstract::AbstractSequence>()) {
-    auto getitem_prim =
-      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
-    auto make_sequence_prim =
-      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimMakeTuple : prim::kPrimMakeList;
-    auto node_seq_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
-    const auto &elements_abs = node_seq_abstract->elements();
-    size_t len = node_seq_abstract->size();
-    AnfNodePtrList make_sequence_inputs{NewValueNode(make_sequence_prim)};
-    for (size_t i = 0; i < len; ++i) {
-      auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(MakeValue<int64_t>(i))});
-      auto new_node = InsertToRemoteAndDetachRecursively(fg, cur_node, elements_abs[i]);
-      (void)make_sequence_inputs.emplace_back(new_node);
-    }
-    return fg->NewCNode(make_sequence_inputs);
-  }
-  auto to_remote_node =
-    fg->NewCNode({NewValueNode(prim::kPrimToRemote), node, NewValueNode(kNone), NewValueNode(false)});
-  auto detach_node = fg->NewCNode({NewValueNode(prim::kPrimDetach), node, NewValueNode(kNone), NewValueNode(false)});
-  auto detach_depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), detach_node, to_remote_node});
-  auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, detach_depend_node});
-  return depend_node;
 }
 
 FuncGraphPtr BpropInputPrefetch::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {

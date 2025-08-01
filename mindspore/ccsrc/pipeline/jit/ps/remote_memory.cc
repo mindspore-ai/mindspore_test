@@ -77,7 +77,6 @@ std::vector<GradLoadInfo> CollectGradLoadInfo(const FuncGraphManagerPtr &mng, co
     }
     (void)topo_cnode.emplace_back(node);
   }
-  MS_LOG(ERROR) << "Topo cnodes size: " << topo_cnode.size();
   std::vector<GradLoadInfo> grad_info_list;
   for (const auto &node : remote_activation_nodes) {
     auto iter = std::find(topo_cnode.begin(), topo_cnode.end(), node);
@@ -300,6 +299,24 @@ void AddGradLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph,
 }
 
 }  // namespace
+
+bool IsEnableGradOffload(const py::object &obj) {
+  if (!py::hasattr(obj, kEnableGradOffloadAttr)) {
+    return false;
+  }
+  return py::getattr(obj, kEnableGradOffloadAttr).cast<bool>();
+}
+
+void SetEnableGradOffloadToAbstract(const AbstractBasePtr &abs) {
+  abs->set_user_data<bool>(kEnableGradOffloadAttr, std::make_shared<bool>(true));
+}
+
+bool IsEnableGradOffloadAbstract(const AbstractBasePtr &abs) {
+  if (!abs->has_user_data(kEnableGradOffloadAttr)) {
+    return false;
+  }
+  return *(abs->user_data<bool>(kEnableGradOffloadAttr));
+}
 
 CNodePtr ActivationToRemote(const FuncGraphPtr &fprop, const AnfNodePtr &activaction) {
   AnfNodePtrList inputs{NewValueNode(prim::kPrimToRemote), activaction, NewValueNode(kNone), NewValueNode(false)};

@@ -1008,6 +1008,20 @@ class Parameter(Tensor_):
         """
         return Tensor_._load(self)
 
+    def enable_grad_offload(self):
+        r"""
+       Enable the grad of the parameter offload to remote
+
+       Supported Platforms:
+           ``Ascend``
+
+       Examples:
+           >>> from mindspore import Parameter, Tensor
+           >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+           >>> x.enable_grad_offload()
+       """
+        self._enable_grad_offload = True
+
 
 # Metaclass to combine _TensorMeta and the instance check override for Buffer.
 class _BufferMeta(_TensorMeta):

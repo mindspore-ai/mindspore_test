@@ -222,6 +222,7 @@ class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
                        const AnfNodePtr &weights, const AnfNodePtr &position, const FuncGraphPtr &forward_graph,
                        bool is_weights_none) const;
   CNodePtr SetNodeByParameter(const CNodePtr &grad, const FuncGraphPtr &fg) const;
+  CNodePtr FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr &fg) const;
 
   AbstractBasePtr weight_value_;
 };
@@ -525,19 +526,6 @@ class GetDependDoutTuple : public MetaFuncGraph {
   friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
     return lhs.name_ == rhs.name_;
   }
-};
-
-class BpropOutToRemote : public MetaFuncGraph {
- public:
-  explicit BpropOutToRemote(const std::string &name) : MetaFuncGraph(name) {}
-  ~BpropOutToRemote() override = default;
-  MS_DECLARE_PARENT(BpropOutToRemote, MetaFuncGraph)
-  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
-  friend bool operator==(const BpropOutToRemote &lhs, const BpropOutToRemote &rhs) { return lhs.name_ == rhs.name_; }
-
- private:
-  AnfNodePtr InsertToRemoteAndDetachRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
-                                                const AbstractBasePtr &node_abstract) const;
 };
 
 class BpropInputPrefetch : public MetaFuncGraph {

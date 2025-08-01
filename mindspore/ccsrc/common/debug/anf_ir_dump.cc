@@ -108,7 +108,7 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::MetaImpl>() || meta_func_graph->isa<prim::AccumulateDout>() ||
          meta_func_graph->isa<prim::GenerateMask>() || meta_func_graph->isa<prim::GetRealBpropOut>() ||
          meta_func_graph->isa<prim::GenerateBpropOutTuple>() || meta_func_graph->isa<prim::GetDependDoutTuple>() ||
-         meta_func_graph->isa<prim::BpropOutToRemote>() || meta_func_graph->isa<prim::BpropInputPrefetch>();
+         meta_func_graph->isa<prim::BpropInputPrefetch>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {

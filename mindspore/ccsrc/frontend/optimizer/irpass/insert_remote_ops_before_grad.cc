@@ -25,11 +25,11 @@ namespace {
 std::vector<FuncGraphPtr> CollectForwardGraphs(const FuncGraphPtr &func_graph) {
   const AnfNodePtrList &nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
   std::vector<FuncGraphPtr> ret;
-  for (auto node : nodes) {
+  for (auto &node : nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimJ)) {
       continue;
     }
-    auto cnode = node->cast<CNodePtr>();
+    auto cnode = node->cast_ptr<CNode>();
     constexpr size_t forward_index = 1;
     auto forward_fg = GetValueNode<FuncGraphPtr>(cnode->input(forward_index));
     MS_EXCEPTION_IF_NULL(forward_fg);
@@ -42,16 +42,16 @@ std::vector<FuncGraphPtr> CollectForwardGraphs(const FuncGraphPtr &func_graph) {
 bool InsertRemoteOpsBeforeGrad::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
   const auto &forward_graphs = CollectForwardGraphs(func_graph);
   if (forward_graphs.empty()) {
-    MS_LOG(ERROR) << "No forward graph for grad, no need to insert remote ops.";
+    MS_LOG(INFO) << "No forward graph for grad, no need to insert remote ops.";
     return false;
   }
-  MS_LOG(ERROR) << "Start to insert remote ops for forward graph";
+  MS_LOG(INFO) << "Start to insert remote ops for forward graph";
   auto mng = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
 
   bool change = false;
-  for (auto forward_graph : forward_graphs) {
-    auto cur_change = remote_memory::InsertActivactionRemoteOpsForGraph(mng, func_graph);
+  for (auto &forward_graph : forward_graphs) {
+    auto cur_change = remote_memory::InsertActivactionRemoteOpsForGraph(mng, forward_graph);
     change = change || cur_change;
   }
   return change;

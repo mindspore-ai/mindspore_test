@@ -1070,7 +1070,6 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   bool is_remote = (tensor->param_info() != nullptr) && (tensor->param_info()->is_remote_memory());
   device_address->set_remote(is_remote);
-  MS_LOG(ERROR) << "is_remote: " << is_remote;
 
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_host_shape(tensor->shape());

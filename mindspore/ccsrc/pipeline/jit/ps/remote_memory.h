@@ -26,6 +26,11 @@
 namespace mindspore {
 namespace remote_memory {
 constexpr auto kRemoteActivationAttr = "remote_activation";
+constexpr auto kEnableGradOffloadAttr = "_enable_grad_offload";
+
+bool IsEnableGradOffload(const py::object &obj);
+void SetEnableGradOffloadToAbstract(const AbstractBasePtr &abs);
+bool IsEnableGradOffloadAbstract(const AbstractBasePtr &abs);
 
 template <typename T>
 bool NeedActivationToRemote(const T &primal) {
