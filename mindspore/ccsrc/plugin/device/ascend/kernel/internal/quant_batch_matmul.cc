@@ -28,9 +28,8 @@ internal::InternalOpPtr InternalQuantBatchMatmul::CreateKernel(const internal::I
   internal::MatmulParam param;
   param.transpose_a = ms_inputs[kIndex6]->GetValueWithCheck<bool>();
   param.transpose_b = ms_inputs[kIndex7]->GetValueWithCheck<bool>();
-  param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
   param.with_pertoken_scale = !(ms_inputs[kIndex5]->GetType()->isa<TypeNone>());
-  param.enable_shuffle = false;  // the real definition is in internal
+  param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
   param.enable_dequant = true;
   bool has_element_type = primitive_->HasAttr("ElemwiseType");
   auto value_str = primitive_->GetAttr("ElemwiseType");
