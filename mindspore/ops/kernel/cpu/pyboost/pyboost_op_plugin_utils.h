@@ -52,6 +52,8 @@ constexpr bool has_int_or_vector_int_v = (is_int_or_vector_int_v<Args> || ...);
 namespace mindspore::kernel::pyboost {
 template <typename T>
 constexpr bool is_tensor_ptr_v = std::is_same_v<std::decay_t<T>, tensor::TensorPtr>;
+template <typename T>
+constexpr bool is_value_tuple_ptr_v = std::is_same_v<std::decay_t<T>, ValueTuplePtr>;
 
 // Overload for when any argument is int or vector<int> - returns empty vector
 // Reason to have this overload:
@@ -94,7 +96,7 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
       if constexpr (is_tensor_ptr_v<decltype(arg.value())>) {
         PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), arg);
       }
-    } else if constexpr (is_tensor_ptr_v<decltype(arg)>) {
+    } else if constexpr (is_tensor_ptr_v<decltype(arg)> || is_value_tuple_ptr_v<decltype(arg)>) {
       PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), arg);
     }
   };
@@ -119,7 +121,7 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
         if constexpr (is_tensor_ptr_v<decltype(arg.value())>) {
           PyBoostUtils::MallocOpInputs(device_context, arg);
         }
-      } else if constexpr (is_tensor_ptr_v<decltype(arg)>) {
+      } else if constexpr (is_tensor_ptr_v<decltype(arg)> || is_value_tuple_ptr_v<decltype(arg)>) {
         PyBoostUtils::MallocOpInputs(device_context, arg);
       }
     };
