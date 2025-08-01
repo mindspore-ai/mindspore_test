@@ -839,6 +839,7 @@ class _JitExecutor:
         else:
             _pynative_executor.set_dynamic_input(self.fn, *compile_args)
         logger.info(f"dynamic shape compile_args: {compile_args}")
+        Validator.check_symbolic_shape(compile_args, args_list)
         return compile_args
 
     def _generate_compile_args_by_set_inputs(self, args_list):
