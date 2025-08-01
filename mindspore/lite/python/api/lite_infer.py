@@ -44,12 +44,18 @@ class LiteInfer(BaseModel):
                 config_path ('configPath', str) and config_item (str, dict). When config_item is set,
                 its priority is higher than config_path. Set rank table file for inference. The content
                 of the configuration file is as follows:
+
                 .. code-block::
+
                     [ascend_context]
                     rank_table_file=[path_a](storage initial path of the rank table file)
+
                 When set
+
                 .. code-block::
+
                     config = {"ascend_context" : {"rank_table_file" : "path_b"}}
+
                 The path_b from the config will be used to compile the model. Default: ``None``.
 
     Raises:
@@ -124,7 +130,7 @@ class LiteInfer(BaseModel):
         """
         Obtains all input Tensors of the model.
 
-        See `mindspore_lite.model.get_inputs` for more details.
+        See `mindspore_lite.Model.get_inputs` for more details.
         """
         # pylint: disable=useless-super-delegation
         return super(LiteInfer, self).get_inputs()
@@ -133,7 +139,7 @@ class LiteInfer(BaseModel):
         """
         Inference model.
 
-        See `mindspore_lite.model.predict` for more details.
+        See `mindspore_lite.Model.predict` for more details.
         """
         # pylint: disable=useless-super-delegation
         return super(LiteInfer, self).predict(inputs)
@@ -142,7 +148,7 @@ class LiteInfer(BaseModel):
         """
         Resizes the shapes of inputs.
 
-        See `mindspore_lite.model.resize` for more details.
+        See `mindspore_lite.Model.resize` for more details.
         """
         # pylint: disable=useless-super-delegation
         super(LiteInfer, self).resize(inputs, dims)
