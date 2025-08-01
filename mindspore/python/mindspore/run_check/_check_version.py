@@ -359,11 +359,6 @@ class AscendEnvChecker(EnvChecker):
         """
             opp kernel install check
         """
-        from mindspore._c_expression import MSContext
-        soc_version = MSContext.get_instance().get_ascend_soc_version()
-        if soc_version == "ascend310":
-            return
-
         opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
         if not os.path.exists(opp_kernel_path):
             logger.critical("MindSpore relies on \"Ascend opp_kernel\" folder of the Ascend AI software package ("

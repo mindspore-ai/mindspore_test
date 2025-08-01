@@ -223,6 +223,7 @@ void SetContextSocVersion(MsContext *ctx) {
   }
   std::string version(soc_name_c);
   MS_LOG(INFO) << "The soc version :" << version;
+  MS_EXCEPTION_IF_NULL(ctx);
   ctx->set_ascend_soc_name(version);
   auto iter = kAscendSocVersions.find(version);
   if (iter == kAscendSocVersions.end()) {
@@ -247,7 +248,7 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
   }
 
   device::ascend::LoadAscendApiSymbols();
-  SetContextSocVersion(ctx);
+  ctx->set_ascend_soc_func(SetContextSocVersion);
 });
 #endif
 

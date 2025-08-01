@@ -46,6 +46,7 @@ constexpr auto kAttrJitLevelO1 = "O1";
 constexpr auto kAttrJitLevelO2 = "O2";
 constexpr auto kBackendMSBackend = "ms_backend";
 constexpr auto kBackendGE = "GE";
+std::once_flag ascend_soc_flag;
 }  // namespace
 std::atomic<bool> thread_1_must_end(false);
 
@@ -150,14 +151,35 @@ std::string MsContext::backend_policy() const {
 
 void MsContext::set_ascend_soc_name(const std::string &soc_name) { ascend_soc_name_ = soc_name; }
 
-std::string MsContext::ascend_soc_name() const { return ascend_soc_name_; }
-
-bool MsContext::set_ascend_soc_version(const std::string &soc_version) {
-  ascend_soc_version_ = soc_version;
-  return true;
+std::string MsContext::ascend_soc_name() const {
+  std::call_once(ascend_soc_flag, []() {
+    auto context = GetInstance();
+    auto ascend_soc_func = context->ascend_soc_func();
+    if (ascend_soc_func == nullptr) {
+      return;
+    }
+    ascend_soc_func(context.get());
+  });
+  return ascend_soc_name_;
 }
 
-std::string MsContext::ascend_soc_version() const { return ascend_soc_version_; }
+void MsContext::set_ascend_soc_version(const std::string &soc_version) { ascend_soc_version_ = soc_version; }
+
+std::string MsContext::ascend_soc_version() const {
+  std::call_once(ascend_soc_flag, []() {
+    auto context = GetInstance();
+    auto ascend_soc_func = context->ascend_soc_func();
+    if (ascend_soc_func == nullptr) {
+      return;
+    }
+    ascend_soc_func(context.get());
+  });
+  return ascend_soc_version_;
+}
+
+void MsContext::set_ascend_soc_func(const std::function<void(MsContext *)> &ascend_soc_func) {
+  ascend_soc_func_ = ascend_soc_func;
+}
 
 bool MsContext::enable_dump_ir() const {
 #ifdef ENABLE_DUMP_IR
