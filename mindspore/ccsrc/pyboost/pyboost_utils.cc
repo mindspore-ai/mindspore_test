@@ -204,7 +204,7 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
     MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
   }
   cache_helper.SetCache(key, kernel_mod);
-  PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
+  PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
 
   return kernel_mod;
 }
