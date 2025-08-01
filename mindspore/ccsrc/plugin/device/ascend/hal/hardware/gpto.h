@@ -30,8 +30,8 @@
 #include <tuple>
 
 #include "ir/anf.h"
+#include "runtime/hardware/device_context.h"
 #include "mindspore/ccsrc/backend/common/somas/somas_solver_pre.h"
-#include "mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore {
 namespace gpto {  // Graph Parallel Topology Optimizer

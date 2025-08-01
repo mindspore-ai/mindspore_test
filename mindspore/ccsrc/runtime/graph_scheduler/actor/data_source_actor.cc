@@ -26,7 +26,6 @@
 #include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {

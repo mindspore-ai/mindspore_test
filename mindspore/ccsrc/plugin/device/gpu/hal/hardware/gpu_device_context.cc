@@ -146,112 +146,11 @@ void GPUDeviceContext::Initialize() {
   initialized_ = true;
 }
 
-void GPUDeviceResManager::Initialize() { gpu_res_manager_->Initialize(); }
-
-bool GPUDeviceResManager::InitDevice() { return gpu_res_manager_->InitDevice(); }
-
-void GPUDeviceResManager::Destroy() { gpu_res_manager_->Destroy(); }
-
 void GPUDeviceContext::Destroy() {
   MS_EXCEPTION_IF_NULL(GetKernelExecutor());
   GetKernelExecutor()->Destroy();
   device_res_manager_->Destroy();
   initialized_ = false;
-}
-
-void *GPUDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  return gpu_res_manager_->AllocateMemory(size, stream_id);
-}
-
-void GPUDeviceResManager::FreeMemory(void *ptr) const { gpu_res_manager_->FreeMemory(ptr); }
-
-void GPUDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                                          const std::vector<size_t> &keep_addr_sizes) const {
-  gpu_res_manager_->FreePartMemorys(free_addrs, keep_addrs, keep_addr_sizes);
-}
-
-bool GPUDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
-  return gpu_res_manager_->AllocateMemory(address, stream_id);
-}
-
-std::vector<void *> GPUDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
-                                                                  uint32_t stream_id) const {
-  return gpu_res_manager_->AllocateContinuousMemory(size_list, stream_id);
-}
-
-std::pair<std::vector<size_t>, std::vector<size_t>> GPUDeviceResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  return gpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
-}
-
-tensor::TensorPtr GPUDeviceResManager::GetSliceByTensorListIndexHandle(
-  const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
-  const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
-  return gpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
-                                                           end);
-}
-
-tensor::TensorPtr GPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                                    size_t end) {
-  return gpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
-}
-
-// Relevant function to manage memory statistics
-size_t GPUDeviceResManager::GetTotalMemStatistics() const { return gpu_res_manager_->GetTotalMemStatistics(); }
-size_t GPUDeviceResManager::GetTotalUsedMemStatistics() const { return gpu_res_manager_->GetTotalUsedMemStatistics(); }
-size_t GPUDeviceResManager::GetTotalIdleMemStatistics() const { return gpu_res_manager_->GetTotalIdleMemStatistics(); }
-size_t GPUDeviceResManager::GetTotalEagerFreeMemStatistics() const {
-  return gpu_res_manager_->GetTotalEagerFreeMemStatistics();
-}
-size_t GPUDeviceResManager::GetUsedMemPeakStatistics() const { return gpu_res_manager_->GetUsedMemPeakStatistics(); }
-size_t GPUDeviceResManager::GetReservedMemPeakStatistics() const {
-  return gpu_res_manager_->GetReservedMemPeakStatistics();
-}
-std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockCountsStatistics() const {
-  return gpu_res_manager_->GetBlockCountsStatistics();
-}
-std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockUnitSizeStatistics() const {
-  return gpu_res_manager_->GetBlockUnitSizeStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
-  return gpu_res_manager_->GetCommonMemBlocksInfoStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GPUDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
-  return gpu_res_manager_->GetPersistentMemBlocksInfoStatistics();
-}
-void GPUDeviceResManager::ResetMaxMemoryReserved() { gpu_res_manager_->ResetMaxMemoryReserved(); }
-void GPUDeviceResManager::ResetMaxMemoryAllocated() { gpu_res_manager_->ResetMaxMemoryAllocated(); }
-
-DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress() const { return gpu_res_manager_->CreateDeviceAddress(); }
-
-DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                                          const Format &format, TypeId type_id,
-                                                          const std::string &device_name, uint32_t device_id,
-                                                          uint32_t stream_id, const UserDataPtr &user_data) const {
-  return gpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                               stream_id, user_data);
-}
-
-bool GPUDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                   size_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
-  return gpu_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-}
-bool GPUDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                    size_t stream_id, bool keep_src) const {
-  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
-  return gpu_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
-}
-bool GPUDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
-  return gpu_res_manager_->Copy(dst, src, size, kind, stream_id);
-}
-bool GPUDeviceResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size,
-                                       CopyType kind) const {
-  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
-  return gpu_res_manager_->CopyDirectly(dst, dst_size, src, src_size, kind);
 }
 
 void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
@@ -572,7 +471,7 @@ void GPUKernelExecutor::Initialize() {
   if (initialized_) {
     return;
   }
-  res_manager_ = dynamic_cast<GPUDeviceResManager *>(device_context_->device_res_manager_.get());
+  res_manager_ = dynamic_cast<GPUResManager *>(device_context_->device_res_manager_.get());
   MS_EXCEPTION_IF_NULL(res_manager_);
   initialized_ = true;
 }
@@ -800,55 +699,6 @@ bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector
   return ret;
 }
 
-bool GPUDeviceResManager::CreateStream(size_t *stream_id) const { return gpu_res_manager_->CreateStream(stream_id); }
-
-bool GPUDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t priority) const {
-  return gpu_res_manager_->CreateStreamWithPriority(stream_id, priority);
-}
-
-size_t GPUDeviceResManager::QueryStreamSize() const { return gpu_res_manager_->QueryStreamSize(); }
-
-std::vector<uint32_t> GPUDeviceResManager::GetStreamIds() const { return gpu_res_manager_->GetStreamIds(); }
-
-bool GPUDeviceResManager::single_op_multi_stream_enable() const {
-  return gpu_res_manager_->single_op_multi_stream_enable();
-}
-
-void GPUDeviceResManager::set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) {
-  return gpu_res_manager_->set_single_op_multi_stream_enable(single_op_multi_stream_enable);
-}
-
-void *GPUDeviceResManager::GetStream(size_t stream_id) const { return gpu_res_manager_->GetStream(stream_id); }
-
-size_t GPUDeviceResManager::GetCommunicationStreamID() const { return gpu_res_manager_->GetCommunicationStreamID(); }
-
-bool GPUDeviceResManager::DestroyStream(size_t stream_id) const { return gpu_res_manager_->DestroyStream(stream_id); }
-
-void GPUDeviceResManager::SetCurrentStreamId(size_t stream_id) { gpu_res_manager_->SetCurrentStreamId(stream_id); }
-
-size_t GPUDeviceResManager::GetCurrentStreamId() const { return gpu_res_manager_->GetCurrentStreamId(); }
-
-bool GPUDeviceResManager::QueryStream(size_t stream_id) const { return gpu_res_manager_->QueryStream(stream_id); }
-
-bool GPUDeviceResManager::SyncStream(size_t stream_id) const { return gpu_res_manager_->SyncStream(stream_id); }
-
-bool GPUDeviceResManager::SyncAllStreams(bool sync_device) const { return gpu_res_manager_->SyncAllStreams(); }
-bool GPUDeviceResManager::SyncNotDefaultStreams() const { return gpu_res_manager_->SyncNotDefaultStreams(); }
-
-size_t GPUDeviceResManager::DefaultStream() const { return gpu_res_manager_->DefaultStream(); }
-
-// cudaEventRecordDefault 0x0 | cudaEventRecordExternal 0x1 | cudaEventWaitExternal 0x1, no need to set again.
-DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) {
-  return gpu_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);
-}
-
-DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
-  return gpu_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
-}
-
-bool GPUDeviceResManager::DestroyEvent(const DeviceEventPtr &event) { return gpu_res_manager_->DestroyEvent(event); }
-bool GPUDeviceResManager::DestroyAllEvents() { return gpu_res_manager_->DestroyAllEvents(); }
-
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                           const device::DeviceAddressPtrList &input_addr_list,
                                           const device::DeviceAddressPtrList &output_addr_list,
@@ -883,11 +733,6 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
                false);
 
   return true;
-}
-
-bool GPUDeviceResManager::LoadCollectiveCommLib() { return gpu_res_manager_->LoadCollectiveCommLib(); }
-mindspore::device::CollectiveCommunicationLib *GPUDeviceResManager::collective_comm_lib() const {
-  return gpu_res_manager_->collective_comm_lib();
 }
 
 namespace {
@@ -995,10 +840,6 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   return true;
 }
 
-bool GPUDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
-  return gpu_res_manager_->BindDeviceToCurrentThread(force_bind);
-}
-
 uint32_t GPUDeviceContext::GetDeviceCount() { return IntToUint(CudaDriver::device_count()); }
 
 std::string GPUDeviceContext::GetDeviceName(uint32_t device_id) {
@@ -1016,10 +857,6 @@ cudaDeviceProp GPUDeviceContext::GetDeviceProperties(uint32_t device_id) {
 }
 
 std::string GPUDeviceContext::GetArchList() { return STRING_COMPILE_OPT(CUDA_ARCH_LIST); }
-
-std::shared_ptr<void> GPUDeviceResManager::AllocateHostMemory(size_t size) const {
-  return gpu_res_manager_->AllocateHostMemory(size);
-}
 
 MS_REGISTER_DEVICE(kGPUDevice, GPUDeviceContext);
 #ifdef WITH_BACKEND

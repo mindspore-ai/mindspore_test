@@ -96,11 +96,14 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
   return api_ret;
 }
 
-int StressDetectKernel(const device::DeviceContext *device_context) {
+int StressDetectKernel() {
   auto ascend_path = mindspore::device::ascend::GetAscendPath();
   auto lib_path = ascend_path + GetLibAscendMLName();
   int ret;
-
+  auto device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  MS_EXCEPTION_IF_NULL(device_context);
   void *lib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
   if (lib_handle) {
     // Try to find the function

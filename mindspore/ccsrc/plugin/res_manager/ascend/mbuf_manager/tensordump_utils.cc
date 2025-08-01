@@ -21,7 +21,6 @@
 
 #include "debug/dump/npy_header.h"
 #include "debug/dump/tensordump_control.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "utils/file_utils.h"

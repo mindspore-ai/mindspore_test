@@ -29,7 +29,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "common/device_address.h"
@@ -93,10 +92,10 @@ class TestKernelMod : public kernel::KernelMod {
   std::vector<kernel::KernelAttr> GetOpSupport() override { return {}; }
 };
 
-class TestDeviceResManager : public device::DeviceResManager {
+class TestResManager : public device::DeviceResManager {
  public:
-  TestDeviceResManager() = default;
-  ~TestDeviceResManager() override = default;
+  TestResManager() = default;
+  ~TestResManager() override = default;
 
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
     static size_t total_size_{1024};
@@ -268,7 +267,7 @@ class TestGraphExecutor {
   }
 };
 
-class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, TestDeviceResManager> {
+class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, TestResManager> {
  public:
   explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {
     graph_executor_ = std::make_shared<TestGraphExecutor>();
@@ -281,28 +280,6 @@ class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, Tes
 
  private:
   std::shared_ptr<TestGraphExecutor> graph_executor_;
-};
-
-class TestResManager : public device::HalResBase {
- public:
-  explicit TestResManager(const device::ResKey &res_key) : device::HalResBase(res_key) {}
-
-  ~TestResManager() override = default;
-
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override {
-    return std::make_shared<TestDeviceAddress>(ptr, size, "NCHW", type_id, "CPU", 0);
-  }
-  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override { return nullptr; }
-  void FreeMemory(void *ptr) const override {}
-  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                       const std::vector<size_t> &keep_addr_sizes) const override {}
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                size_t stream_id) const override;
-
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                 bool) const override;
 };
 }  // namespace test
 }  // namespace runtime

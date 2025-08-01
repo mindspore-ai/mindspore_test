@@ -17,10 +17,11 @@
 #include "plugin/device/ascend/llm_boost/ascend_native_boost_builder.h"
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 #include "common/ms_factory.h"
+#include "utils/dlopen_macro.h"
 #include "utils/ms_utils.h"
 #include "mindspore/ccsrc/backend/operator/boost_base_model.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 
 namespace mindspore::kernel {
 AscendNativeBoostBuilder::AscendNativeBoostBuilder() : BoostBaseBuilder("AscendNative") { Initialize(); }

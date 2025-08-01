@@ -24,14 +24,13 @@
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_kernel_executor.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class GeGraphExecutor;
 class AscendKernelExecutor;
-class AscendDeviceResManager;
+class AscendResManager;
 // The Ascend device properties defined by MindSpore because ACL does not have interface to get this info.
 struct AscendDeviceProperties {
   std::string name;
@@ -39,7 +38,7 @@ struct AscendDeviceProperties {
   size_t free_memory;
 };
 
-class AscendDeviceContext : public DeviceInterface<AscendKernelExecutor, AscendDeviceResManager> {
+class AscendDeviceContext : public DeviceInterface<AscendKernelExecutor, AscendResManager> {
  public:
   explicit AscendDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~AscendDeviceContext() override = default;

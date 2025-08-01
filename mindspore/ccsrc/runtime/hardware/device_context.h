@@ -121,9 +121,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // Initialize the device resource manager.
   virtual void Initialize() {}
 
-  // Set the deterministic mode.
-  virtual void SetDeterministic() {}
-
   virtual void SetAclDeterministic() {}
 
   // Destroy device resource manager and release device resource.
@@ -133,7 +130,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // If force_bind is true, bind context to current thread every time;
   // Otherwise, only bind context to current thread for the first time.
   virtual bool BindDeviceToCurrentThread(bool force_bind) const { return true; }
-  virtual void ResetStreamAndCtx() {}
+  virtual void ResetStreamAndCtx() const {}
 
   // Relevant function to allocate and free device memory of raw ptr.
   virtual void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const = 0;
@@ -180,8 +177,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) { return false; }
 
   virtual bool SyncAllEvents() { return false; }
-
-  virtual std::shared_ptr<AddressAllocator> GetPinMemAllocator() { return nullptr; }
 
   // Relevant function to allocate and free device memory of DeviceAddress.
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
@@ -283,6 +278,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // "SyncAllStreams" interfaces are implemented by subclasses.
   virtual bool SyncStream(size_t stream_id) const { return true; }
 
+  // 'sync_device' is used for Ascend backend.
   virtual bool SyncAllStreams(bool sync_device = true) const { return true; }
 
   virtual bool SyncNotDefaultStreams() const { return true; }
@@ -307,21 +303,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // Destroy all device events.
   virtual bool DestroyAllEvents() { return true; }
 
-  // Detect stress.
-  virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
-
-  // Send and receive parameters.
-  virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
-    MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
-  }
-
   // Reset parameters.
   virtual int ResetParams(const std::vector<tensor::TensorPtr> &params) const {
     MS_LOG(EXCEPTION) << "Reset parameters is not supported.";
   }
-
-  // Clean tdt channel
-  virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
 
   // Dynamically load collective communication library.
   // Currently, four types are supported: OpenMPI and self developed framework for CPU. NCCL for GPU. HCCL for Ascend.
@@ -415,6 +400,14 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
+  // Send and receive parameters.
+  virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
+    MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
+  }
+  // Clean tdt channel
+  virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
+  // Detect stress.
+  virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
 
   virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                  const device::DeviceAddressPtrList &input_addr_list,

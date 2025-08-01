@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <deque>
 #include "ir/tensor_new.h"
+#include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/common/utils/parallel_context.h"
 #include "debug/profiler/profiler.h"
 #include "common/kernel.h"
@@ -34,6 +35,8 @@
 #include "plugin/device/ascend/hal/hardware/acl_somas.h"
 #include "plugin/device/ascend/hal/hardware/acl_stream_assign.h"
 #include "plugin/device/ascend/hal/hardware/gpto.h"
+#include "plugin/device/ascend/hal/special/parameter_replication.h"
+#include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
@@ -78,9 +81,8 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/runtime_env.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "kernel/ascend/acl/acl_kernel_mod.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -1234,6 +1236,27 @@ void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
   }
 }
 
+int AscendKernelExecutor::StressDetect() const { return kernel::pyboost::StressDetectKernel(); }
+
+int AscendKernelExecutor::CleanTdtChannel() const {
+  if (!res_manager_->BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return 1;
+  }
+  MbufDataHandlerManager::GetInstance().CleanChannels();
+  (void)device::DataQueueMgr::GetInstance().CleanTdtHandle();
+  return 0;
+}
+
+// return 0 when success, otherwise return 1
+int AscendKernelExecutor::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
+  auto ascend_res_manager = static_cast<device::ascend::AscendResManager *>(res_manager_);
+  MS_EXCEPTION_IF_NULL(ascend_res_manager);
+  ParamReplication replicator(ascend_res_manager);
+  replicator.Init();
+  return replicator.SendRecv(params, src_rank, dst_rank);
+}
+
 void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1325,7 +1348,7 @@ void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
                 << ", last_triggered_step:" << last_triggered_step;
   if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
-    AscendDeviceResManager *ascend_res_manager = dynamic_cast<AscendDeviceResManager *>(res_manager_);
+    AscendResManager *ascend_res_manager = dynamic_cast<AscendResManager *>(res_manager_);
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
       SavePrevStepWeight(kg->GetRootWeights(), ascend_res_manager->GetCopyDataStream());

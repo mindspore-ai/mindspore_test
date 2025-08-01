@@ -21,9 +21,9 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include "runtime/device/res_manager/hal_res_base.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "runtime/device/res_manager/swap_manager.h"
+#include "plugin/res_manager/gpu/gpu_res_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -32,9 +32,9 @@ namespace gpu {
 #define RECOMMEND_SM 7
 #define BASE 10.0
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-class GPUResManager : public HalResBase {
+class GPUResManager : public DeviceResManager {
  public:
-  explicit GPUResManager(const ResKey &res_key) : HalResBase(res_key) {}
+  GPUResManager() = default;
   ~GPUResManager() override = default;
 
   // Set device id and initialize device resource, such as stream, cudnn and cublas handle.

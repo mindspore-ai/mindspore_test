@@ -20,7 +20,7 @@
 #include <limits>
 #include <vector>
 #include "hccl/hccl_types.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
+#include "plugin/res_manager/ascend/ascend_res_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -68,7 +68,7 @@ class DataExchangeInfo {
 
 class ParamReplication {
  public:
-  explicit ParamReplication(const AscendDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
+  explicit ParamReplication(const AscendResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ParamReplication() = default;
 
   void Init();
@@ -82,7 +82,7 @@ class ParamReplication {
   int CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank);
 
  private:
-  const AscendDeviceResManager *res_mgr_;
+  const AscendResManager *res_mgr_;
   size_t stream_id_ = 0;
   aclrtStream stream_ = nullptr;
   HcclComm comm_ = nullptr;

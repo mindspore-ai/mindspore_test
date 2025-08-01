@@ -66,7 +66,6 @@ KernelGraphPtr BuildKernelGraph(const FuncGraphPtr &func_graph, const AnfNodePtr
 /// Description: Test the parse interface.
 /// Expectation: As expected.
 TEST_F(KernelRunnerTest, ResetState) {
-  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   DeviceContextKey device_context_key{"CPU", 0};
   AID aid;
 

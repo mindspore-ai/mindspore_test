@@ -28,8 +28,11 @@
 
 #include "ir/tensor_new.h"
 #include "hccl/hccl.h"
+#include "utils/dlopen_macro.h"
+#include "runtime/collective/collective_comm_lib_loader.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -54,8 +57,9 @@
 #endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
+#include "runtime/device/res_manager/swap_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
@@ -96,6 +100,37 @@ std::string GetAscendPath() {
          "and environment variables are set by source ${LOCAL_ASCEND}/ascend-toolkit/set_env.sh.";
   }
   return path_tmp.substr(0, pos) + kLatest + "/";
+}
+
+std::string GetCurrentDir() {
+#ifndef _WIN32
+  Dl_info dl_info;
+  if (dladdr(reinterpret_cast<void *>(GetCurrentDir), &dl_info) == 0) {
+    MS_LOG(WARNING) << "Get dladdr error";
+    return "";
+  }
+  std::string curr_so_path = dl_info.dli_fname;
+  return dirname(curr_so_path.data());
+#else
+  HMODULE hModule = nullptr;
+  if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                        (LPCSTR)GetCurrentDir, &hModule) == 0) {
+    MS_LOG(WARNING) << "Get GetModuleHandleEx failed.";
+    return "";
+  }
+  char szPath[MAX_PATH];
+  if (GetModuleFileName(hModule, szPath, sizeof(szPath)) == 0) {
+    MS_LOG(WARNING) << "Get GetModuleFileName failed.";
+    return "";
+  }
+  std::string cur_so_path = std::string(szPath);
+  auto pos = cur_so_path.find_last_of("\\");
+  if (cur_so_path.empty() || pos == std::string::npos) {
+    MS_LOG(ERROR) << "Current so path empty or the path [" << cur_so_path << "] is invalid.";
+    return "";
+  }
+  return cur_so_path.substr(0, pos);
+#endif
 }
 
 void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
@@ -393,6 +428,8 @@ void AscendResManager::Destroy() {
     AscendHalManager::GetInstance().SetContextForce(device_id_);
     return;
   }
+  // To avoid call aclrtProcessReport after process exit, we should to clear all callback threads first.
+  AscendStreamMng::GetInstance().Clear();
 
   (void)DestroyAllEvents();
 
@@ -1340,7 +1377,7 @@ bool AscendResManager::LoadCollectiveCommLib() {
   return true;
 }
 
-void AscendResManager::SetAclDeterministic() const {
+void AscendResManager::SetAclDeterministic() {
   std::lock_guard<std::mutex> lock(set_opt_mutex);
   if (UseSimulationApi()) {
     return;
@@ -1814,6 +1851,14 @@ void AscendResManager::UceMemRepair(int32_t device_id) {
   mem_uce_info_.retSize = 0;
 }
 
+std::vector<uint64_t> AscendResManager::GetOptimizerTimestamps() {
+  OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(false);
+  auto hbm_error_time = UCEException::GetInstance().get_uce_occur_time();
+  auto opt_start_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_start_timestamp();
+  auto opt_end_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_end_timestamp();
+  return std::vector<uint64_t>{hbm_error_time, opt_start_timestamp, opt_end_timestamp};
+}
+
 void AscendResManager::StopDevice(int32_t device_id) {
   UCEException::GetInstance().set_force_stop_flag(true);
   // Wait 1 s to avoid stop device and suspension occur at the same time.
@@ -1978,7 +2023,6 @@ MS_REGISTER_HAL_COPY_FUNC(
     }
     return host_context->device_res_manager_->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
-MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 
 REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kAscend, ([](void *ptr, bool from_mem_pool) {
                                     if (ptr != nullptr && from_mem_pool) {

@@ -18,9 +18,9 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "pybind_api/hal/utils_py.h"
 #include "utils/stream_guard.h"
 

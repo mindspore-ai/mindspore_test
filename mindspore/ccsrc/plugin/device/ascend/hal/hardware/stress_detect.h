@@ -83,7 +83,7 @@ class AmlAicoreDetectTask : public runtime::AsyncTask {
   std::promise<int> p_;
 };
 
-int StressDetectKernel(const device::DeviceContext *device_context);
+int StressDetectKernel();
 inline std::string GetLibAscendMLName() { return "/lib64/libascend_ml.so"; }
 constexpr const char *kNameAmlAicoreDetectOnline = "AmlAicoreDetectOnline";
 }  // namespace pyboost

@@ -37,7 +37,6 @@ class GraphCompilerTest : public UT::Common {
 TEST_F(GraphCompilerTest, CompileGraph) {
   std::vector<int64_t> shp{2, 2};
   abstract::AbstractTensorPtr abs;
-  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   // Func graph.
   auto func_graph = std::make_shared<FuncGraph>();
 

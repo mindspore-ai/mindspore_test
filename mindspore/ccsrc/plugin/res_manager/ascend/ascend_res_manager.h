@@ -25,9 +25,9 @@
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ir/tensor.h"
+#include "ir/device_event.h"
 #include "utils/ms_context.h"
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "runtime/device/res_manager/hal_res_base.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace device {
@@ -37,6 +37,7 @@ struct MemUceInfo {
   std::vector<aclrtMemUceInfo> info;
   size_t retSize = 0;
 };
+std::string GetCurrentDir();
 
 class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
  public:
@@ -51,9 +52,9 @@ class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
 };
 
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
+class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
  public:
-  explicit AscendResManager(const ResKey &res_key) : HalResBase(res_key) { Initialize(); }
+  AscendResManager() = default;
   ~AscendResManager() override = default;
 
   void Initialize() override;
@@ -63,11 +64,11 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   void SetDeterministic() const;
   void SetDebugKernel() const;
 
-  void SetAclDeterministic() const;
+  void SetAclDeterministic() override;
 
-  CollectiveCommunicationLib *collective_comm_lib() const { return collective_comm_lib_; }
-  std::shared_ptr<MemoryManager> mem_manager() { return mem_manager_; }
-  std::shared_ptr<SwapManager> swap_manager() const { return swap_manager_; }
+  CollectiveCommunicationLib *collective_comm_lib() const override { return collective_comm_lib_; }
+  std::shared_ptr<MemoryManager> mem_manager() const override { return mem_manager_; }
+  std::shared_ptr<SwapManager> swap_manager() const override { return swap_manager_; }
 
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
@@ -143,10 +144,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
                                                     const std::vector<size_t> &after_padding_size, size_t start,
                                                     size_t end) override;
   TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start, size_t end) override;
-  int ResetParams(const std::vector<tensor::TensorPtr> &params) const;
+  int ResetParams(const std::vector<tensor::TensorPtr> &params) const override;
 
-  DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
-  CaptureGraphPtr CreateCaptureGraph();
+  DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) override;
+  CaptureGraphPtr CreateCaptureGraph() override;
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
   bool DestroyEvent(const DeviceEventPtr &event) override;
   bool DestroyAllEvents() override;
@@ -158,6 +159,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   bool GetMemUceInfo(int32_t device_id) override;
   void UceMemRepair(int32_t device_id) override;
+  std::vector<uint64_t> GetOptimizerTimestamps() override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
   bool AllocateForHete(DeviceAddress *const &address, mindspore::HeterogeneousInfoPtr hete_info) const;
@@ -180,13 +182,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   void DestroyHccl();
 
-  void ResetStreamAndCtx() const;
+  void ResetStreamAndCtx() const override;
 
-  size_t GetCommunicationStreamID() const;
+  size_t GetCommunicationStreamID() const override;
 
-  size_t GetCommunicationStreamIDByGroup(const std::string &group) const;
+  size_t GetCommunicationStreamIDByGroup(const std::string &group) const override;
 
-  std::shared_ptr<AddressAllocator> GetPinMemAllocator() override { return pin_mem_allocator_; }
+  std::shared_ptr<AddressAllocator> pin_mem_allocator() const override { return pin_mem_allocator_; }
 
  private:
   bool SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,

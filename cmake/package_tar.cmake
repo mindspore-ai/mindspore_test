@@ -62,12 +62,6 @@ if(ENABLE_GPU)
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
     )
-    install(
-        TARGETS mindspore_gpu_res_manager LIBRARY
-        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
-        COMPONENT mindspore
-        NAMELINK_SKIP
-    )
 endif()
 
 if(USE_GLOG)
@@ -149,15 +143,6 @@ if(ENABLE_MINDDATA)
                 COMPONENT mindspore
         )
     endif()
-endif()
-
-# CPU mode
-if(ENABLE_CPU AND NOT WIN32)
-    install(
-            TARGETS mindspore_cpu_res_manager
-            DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
-            COMPONENT mindspore
-)
 endif()
 
 if(ENABLE_CPU)

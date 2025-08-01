@@ -19,7 +19,7 @@
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/task/device_task.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

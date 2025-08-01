@@ -51,6 +51,9 @@ class AscendKernelExecutor : public KernelExecutor {
   // Note: Only support generate aclnn kernel mod current.
   kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const override;
 
+  int StressDetect() const override;
+  int CleanTdtChannel() const override;
+  int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
   // Adjust kernel graph before run graph, used in Graph Mode.
   void PreprocessBeforeRun(const FuncGraphPtr &graph) const override;
 
@@ -106,7 +109,6 @@ class AscendKernelExecutor : public KernelExecutor {
   bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;
-  // Maybe AscendDeviceResManager and GEDeviceResManager now
   DeviceResManager *res_manager_{nullptr};
   bool initialized_ = false;
 };

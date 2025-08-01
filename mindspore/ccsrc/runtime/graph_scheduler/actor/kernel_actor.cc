@@ -21,7 +21,6 @@
 #include <unordered_map>
 #include <limits>
 
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"

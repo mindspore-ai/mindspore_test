@@ -155,65 +155,6 @@ void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_
 }
 }  // namespace
 
-bool TestDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                              size_t stream_id) const {
-  return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
-}
-
-bool TestDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                               size_t stream_id, bool) const {
-  const auto &dst_device_address = dynamic_cast<const TestDeviceAddress *>(dst_device_sync.get());
-  const auto &src_device_address = dynamic_cast<const TestDeviceAddress *>(src_device_sync.get());
-  MS_EXCEPTION_IF_NULL(dst_device_address);
-  MS_EXCEPTION_IF_NULL(src_device_address);
-  if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
-    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address->ToString()
-                 << " and src device address: " << src_device_address->ToString();
-    return true;
-  }
-
-  if (dst_device_address->format() != src_device_address->format()) {
-    MS_LOG(ERROR) << "Format is different, src(format:" << src_device_address->format()
-                  << "), dst(format:" << dst_device_address->format() << ") for device address:" << dst_device_address;
-    return false;
-  }
-  auto dst_ptr = dst_device_address->GetMutablePtr();
-  auto src_ptr = src_device_address->GetMutablePtr();
-  MS_EXCEPTION_IF_NULL(src_device_address->GetMutablePtr());
-  MS_EXCEPTION_IF_NULL(dst_device_address->GetMutablePtr());
-  if (dst_ptr == src_ptr) {
-    MS_LOG(DEBUG) << "host_ptr is equal to device ptr, request ignored.";
-    return true;
-  }
-  auto dst_type_id = dst_device_address->type_id();
-  auto src_type_id = src_device_address->type_id();
-
-  if (src_type_id == dst_type_id) {
-    if (src_device_address->GetSize() > dst_device_address->GetSize()) {
-      MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
-                      << ", dst size: " << dst_device_address->GetSize();
-      return true;
-    }
-    auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
-    // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
-    if (ret_code == ERANGE) {
-      device::ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
-                              dst_device_address->GetSize(), src_type_id);
-    } else if (ret_code != EOK) {
-      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address->ToString()
-                    << " to :" << dst_device_address->ToString();
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  MS_LOG(INFO) << "Types not match. src type: " << TypeIdLabel(src_type_id)
-               << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
-  CopyData(src_device_address, dst_device_address);
-  return true;
-}
-
 bool TestResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                               size_t stream_id) const {
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
@@ -297,8 +238,6 @@ MS_REGISTER_HAL_COPY_FUNC(
     return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) { return true; }));
-
-MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
 }  // namespace test
 }  // namespace runtime
 }  // namespace mindspore

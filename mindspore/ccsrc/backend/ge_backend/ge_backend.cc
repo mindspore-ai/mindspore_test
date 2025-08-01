@@ -58,7 +58,6 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

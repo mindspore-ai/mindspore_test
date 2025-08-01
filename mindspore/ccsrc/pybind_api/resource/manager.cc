@@ -46,7 +46,6 @@
 #include "backend/common/session/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
@@ -152,8 +151,6 @@ void ClearResPart2() {
   MS_LOG(INFO) << "Start clear ConfigManager...";
   ConfigManager::GetInstance().ResetIterNum();
   MS_LOG(INFO) << "End clear ConfigManager.";
-
-  device::HalResManager::GetInstance().Clear();
 
   MS_LOG(INFO) << "Start clear BackendManager...";
   backend::BackendManager::GetInstance().Clear();

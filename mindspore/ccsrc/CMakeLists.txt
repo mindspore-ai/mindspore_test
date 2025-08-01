@@ -177,6 +177,7 @@ set(MS_BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/optimizer
         plugin/device/cpu/kernel
+        plugin/res_manager/cpu
         )
 
 foreach(_comp ${MS_BACKEND_SUB_COMP})
@@ -215,8 +216,7 @@ else()
 endif()
 
 if(ENABLE_CPU)
-    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl
-            mindspore_cpu_res_manager)
+    target_link_libraries(mindspore_ms_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
 endif()
 
 if(NOT WIN32)

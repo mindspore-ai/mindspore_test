@@ -31,56 +31,6 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
-class CPUDeviceResManager : public DeviceResManager {
- public:
-  CPUDeviceResManager() {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    ResKey res_key = {DeviceType::kCPU, device_id};
-    cpu_res_manager_ = static_cast<CPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
-  }
-  ~CPUDeviceResManager() override = default;
-
-  void Initialize() override;
-
-  void Destroy() override;
-
-  std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
-                                               uint32_t stream_id = kDefaultStreamIndex) const override;
-
-  DeviceAddressPtr CreateDeviceAddress() const override;
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                 bool keep_src) const override;
-  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
-
-  std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
-    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
-  tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                    const std::vector<size_t> &before_padding_size,
-                                                    const std::vector<size_t> &after_padding_size, size_t start,
-                                                    size_t end) override;
-  tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                 size_t end) override;
-
-  bool LoadCollectiveCommLib() override;
-  CollectiveCommunicationLib *collective_comm_lib() const override;
-
-  // Relevant function to allocate and free device memory of raw ptr.
-  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
-  void FreeMemory(void *ptr) const override;
-  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                       const std::vector<size_t> &keep_addr_sizes) const override;
-
- private:
-  CPUResManager *cpu_res_manager_{nullptr};
-};
-
 class CPUKernelExecutor : public KernelExecutor {
  public:
   CPUKernelExecutor() = default;
@@ -138,7 +88,7 @@ class CPUKernelExecutor : public KernelExecutor {
   mutable std::mutex launch_mutex_;
 };
 
-class CPUDeviceContext : public DeviceInterface<CPUKernelExecutor, CPUDeviceResManager> {
+class CPUDeviceContext : public DeviceInterface<CPUKernelExecutor, CPUResManager> {
  public:
   explicit CPUDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~CPUDeviceContext() override = default;

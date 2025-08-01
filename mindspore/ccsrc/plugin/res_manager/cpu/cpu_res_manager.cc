@@ -26,6 +26,11 @@
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/collective/collective_comm_lib_loader.h"
+#if defined(__linux__) && defined(WITH_BACKEND)
+#include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
+#endif
 
 namespace mindspore {
 namespace device {
@@ -172,8 +177,12 @@ void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
 
 DeviceAddressPtr CPUResManager::CreateDeviceAddress() const {
   auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kCPUDevice);
-  device_address->SetDeviceType(res_key_.device_name_);
-  device_address->set_device_id(res_key_.device_id_);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_name = device::DeviceType::kCPU;
+  device_address->SetDeviceType(device_name);
+  device_address->set_device_id(device_id);
   return device_address;
 }
 
@@ -183,7 +192,10 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
                                                     uint32_t stream_id, const UserDataPtr &user_data) const {
   auto real_device_id = device_id;
   if (device_name.empty()) {
-    real_device_id = res_key_.device_id_;
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    real_device_id = id;
     MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
   }
   auto device_address =
@@ -282,6 +294,33 @@ bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kin
   return true;
 }
 
+bool CPUResManager::LoadCollectiveCommLib() {
+  bool using_mpi = common::UseMPI();
+  if (using_mpi) {
+    std::string mpi_comm_lib_name = "libmpi_collective.so";
+    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
+    MS_EXCEPTION_IF_NULL(loader);
+    if (!loader->Initialize()) {
+      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
+    }
+
+    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
+
+    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
+    collective_comm_lib_ = instance_func();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+  } else {
+#if defined(__linux__) && defined(WITH_BACKEND)
+    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+#endif
+  }
+  return true;
+}
+
+CollectiveCommunicationLib *CPUResManager::collective_comm_lib() const { return collective_comm_lib_; }
+
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kCPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
     auto context = MsContext::GetInstance();
@@ -316,7 +355,6 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     return host_context->device_res_manager_->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
-MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
 
 REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kCPU, ([](void *ptr, bool from_mem_pool) {
                                     if (ptr != nullptr && from_mem_pool) {
