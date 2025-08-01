@@ -16,7 +16,6 @@
 
 #include "common/device_address.h"
 #include "common/format_utils.h"
-#include "runtime/device/res_manager/hal_res_base.h"
 
 namespace mindspore {
 namespace device {
