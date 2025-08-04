@@ -14,10 +14,38 @@
  * limitations under the License.
  */
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
+#include <string>
+#include <unordered_set>
+#include <cstdlib>
 #include <windows.h>
-#else
+
+#define DL_OPEN(path) [](const std::string &p) -> void * { \
+    SetLastError(0); \
+    return (void*)LoadLibraryExA( \
+        p.c_str(), \
+        NULL, \
+        LOAD_WITH_ALTERED_SEARCH_PATH \
+    ); }(path)
+
+#define DL_SYM(handle, name) [](void *h, const char *n) -> void * { \
+    SetLastError(0); \
+    return (void*)GetProcAddress((HMODULE)h, n); }(handle, name)
+
+#define DL_CLOSE(handle) FreeLibrary((HMODULE)handle)
+
+#define DL_ERROR() []() -> const char * { \
+    static std::string errMsg; \
+    DWORD errCode = GetLastError(); \
+    if(errCode == 0) return nullptr; \
+    errMsg = "WinError " + std::to_string(errCode); \
+    return errMsg.c_str(); }()
+#elif !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
+#define DL_OPEN(path) dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL)
+#define DL_SYM(handle, name) dlsym(handle, name)
+#define DL_CLOSE(handle) dlclose(handle)
+#define DL_ERROR() dlerror()
 #endif
 #include <string>
 #include <algorithm>
@@ -47,18 +75,11 @@ void *GetOpPluginHandle() {
     MS_LOG(ERROR) << "Failed to resolve the real path for MS_OP_PLUGIN_PATH: " << op_plugin_path;
     return nullptr;
   }
-#if defined(_WIN32) || defined(_WIN64)
-  handle = LoadLibraryA(real_path.c_str());
+  handle = DL_OPEN(real_path);
   if (handle == nullptr) {
     DWORD error = GetLastError();
-    MS_LOG(WARNING) << "Failed to open op plugin file: " << real_path << " Error code: " << error;
+    MS_LOG(WARNING) << "Failed to open op plugin file: " << real_path << " Error code: " << DL_ERROR();
   }
-#else
-  handle = dlopen(real_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
-  if (handle == nullptr) {
-    MS_LOG(WARNING) << "Failed to open op plugin file: " << dlerror();
-  }
-#endif
 
   return handle;
 }
@@ -73,23 +94,14 @@ bool IsOpPluginKernel(const std::string &op_name) {
       return false;
     }
     const std::string reg_func_name = "IsKernelRegistered";
-#if defined(_WIN32) || defined(_WIN64)
     reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(
-      GetProcAddress(static_cast<HMODULE>(handle), reg_func_name.c_str()));
+      DL_SYM(handle, reg_func_name.c_str()));
     if (reg_func == nullptr) {
-      DWORD error = GetLastError();
       MS_LOG(WARNING) << "Error occurs when fetching function '" << reg_func_name
-                      << "' from op plugin library. Error code: " << error;
+                      << "' from op plugin library. Error code: " << DL_ERROR();
       return false;
     }
-#else
-    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(dlsym(handle, reg_func_name.c_str()));
-    if (auto error_info = dlerror(); error_info != nullptr) {
-      MS_LOG(WARNING) << "Error occurs when fetching function '" << reg_func_name
-                      << "' from libmindspore_op_plugin.so. Error info: " << error_info;
-      return false;
-    }
-#endif
+
   }
   return reg_func != nullptr && reg_func(op_name.c_str());
 }
@@ -137,26 +149,17 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
     MS_LOG(ERROR) << "Op plugin handle is not initialized. Please ensure MS_OP_PLUGIN_PATH is set correctly.";
     return -1;
   }
-#if defined(_WIN32) || defined(_WIN64)
-  op_plugin_func =
-    reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
-      GetProcAddress(static_cast<HMODULE>(handle), op_name.c_str()));
-  if (op_plugin_func == nullptr) {
-    DWORD error = GetLastError();
-    MS_LOG(ERROR) << "Failed to load op plugin kernel function for '" << op_name << "'. Error code: " << error;
-    return -1;
-  }
-#else
+
   // Clear previous errors before dlsym
-  dlerror();
+  DL_ERROR();
   op_plugin_func =
     reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
-      dlsym(handle, op_name.c_str()));
-  if (auto error_info = dlerror(); error_info != nullptr) {
+      DL_SYM(handle, op_name.c_str()));
+  if (auto error_info = DL_ERROR(); error_info != nullptr) {
     MS_LOG(ERROR) << "Failed to load op plugin kernel function for '" << op_name << "'. Error info: " << error_info;
     return -1;
   }
-#endif
+
 
   return op_plugin_func(nparam, params, ndims, shapes, dtypes, kernel_info, stream);
 }
