@@ -1539,15 +1539,36 @@ class CustomOpBuilder:
             return CustomOpBuilder._loaded_ops[self.name]
 
         module_path = self.build()
-        mod = self._import_module(module_path)
-        mod = ModuleWrapper(self.name, mod)
+        if self.yaml is not None:
+            module_path = os.path.join(self.build_dir, "auto_generate/gen_ops_def.py")
+            sys.path.append(os.path.join(self.build_dir, "auto_generate"))
+            sys.path.append(os.path.join(self.build_dir))
+        mod = self._import_module(module_path, is_yaml_build=(self.yaml is not None))
         CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
 
-    def _import_module(self, module_path):
+    def _import_module(self, module_path, is_yaml_build=False):
         """Import module from library."""
-        spec = importlib.util.spec_from_file_location(self.name, module_path)
+        module_path = os.path.abspath(module_path)
+        module_dir = os.path.dirname(module_path)
+        module_name = os.path.splitext(os.path.basename(module_path))[0]
+
+        if is_yaml_build:
+            package_name = os.path.basename(module_dir)
+            if module_dir not in sys.path:
+                sys.path.insert(0, module_dir)
+
+            if package_name not in sys.modules:
+                pkg_spec = importlib.machinery.ModuleSpec(package_name, None, is_package=True)
+                pkg = importlib.util.module_from_spec(pkg_spec)
+                pkg.__path__ = [module_dir]
+                sys.modules[package_name] = pkg
+
+            module_name = f"{package_name}.{module_name}"
+
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
         module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
 

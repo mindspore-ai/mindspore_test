@@ -19,7 +19,12 @@
 #include "ms_extension/api.h"
 #include "module.h"
 
-namespace mindspore::ops {
+namespace my_custom_ops {
+using namespace mindspore;
+using namespace mindspore::kernel;
+using namespace mindspore::device::ascend;
+using namespace mindspore::ops;
+
 static inline bool IsIntegralBinaryType(TypeId t) {
   return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
          t == kNumberTypeUInt8 || t == kNumberTypeUInt16 || t == kNumberTypeUInt32 || t == kNumberTypeUInt64;
@@ -70,11 +75,6 @@ class OPS_API Add4OpFuncImpl : public OpFuncImpl {
   bool GeneralInferRegistered() const override { return true; }
 };
 
-}  // namespace mindspore::ops
-
-namespace mindspore {
-namespace kernel {
-
 class Add4Ascend : public AclnnKernelMod {
  public:
   Add4Ascend() : AclnnKernelMod(std::move("aclnnAdd")) {}
@@ -123,9 +123,6 @@ class Add4Ascend : public AclnnKernelMod {
 
   ScalarPtr alpha_ = nullptr;
 };
-}  // namespace kernel
-}  // namespace mindspore
+}  // namespace my_custom_ops
 
-MS_CUSTOM_OP_REGISTER(add4, Add4OpFuncImpl, Add4Ascend)
-
-REG_GRAPH_MODE_OP(add4);
+REG_GRAPH_MODE_OP(add4, my_custom_ops::Add4OpFuncImpl, my_custom_ops::Add4Ascend);
