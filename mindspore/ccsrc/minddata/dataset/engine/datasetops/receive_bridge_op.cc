@@ -130,7 +130,7 @@ Status ReceiveBridgeOp::InterruptIndependentDatasetProcess() {
   }
 
   // the independent dataset process is not exit yet
-  if (err_status_ == Status::OK()) {
+  if (err_status_ == Status::OK() && msg_queue_.GetErrorStatus() == false) {
     // send message to independent process and independent process will exit
     MS_LOG(INFO) << "Send finish flag to independent dataset process.";
     RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
@@ -241,9 +241,11 @@ Status ReceiveBridgeOp::operator()() {
 
     RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
                           msg_queue_.msg_queue_id_);
-    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
+    status = msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_);
     RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
                           msg_queue_.msg_queue_id_);
+
+    RETURN_IF_NOT_OK(CheckStatus(status));
 
     if (eoe_row) {
       receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
