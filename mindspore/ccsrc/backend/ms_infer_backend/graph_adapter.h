@@ -27,6 +27,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "mindspore/core/include/base/base.h"
 #include "mindspore/core/include/base/base_ref.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 

@@ -24,7 +24,7 @@
 
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
+#include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"

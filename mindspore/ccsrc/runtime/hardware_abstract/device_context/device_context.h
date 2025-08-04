@@ -131,8 +131,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual bool BindDeviceToCurrentThread(bool force_bind) const { return true; }
   virtual void ResetStreamAndCtx() const {}
 
-  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const { return true; }
-
   // Relevant function to allocate and free device memory of raw ptr.
   virtual void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const = 0;
   virtual void FreeMemory(void *ptr) const = 0;

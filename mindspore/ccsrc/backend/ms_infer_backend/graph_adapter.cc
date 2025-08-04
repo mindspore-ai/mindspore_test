@@ -21,6 +21,8 @@
 #include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/core_ops_name.h"
+#include "ir/tensor_new.h"
+#include "ir/device_address_maker.h"
 #include "utils/shape_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/llm_manager.h"
@@ -148,36 +150,36 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_context_);
 
-  MS_LOG(INFO) << "start prepare tensor value: " << tensor->ToString();
+  MS_LOG(INFO) << "start prepare tensor data to device, tensor: " << tensor->ToString();
 
-  // tensor already prepared
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  if (device_address != nullptr && device_address->IsPtrValid()) {
-    MS_LOG(WARNING) << "tensor already has device address: " << tensor->ToString();
-    return device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetDeviceType() != device_context_->GetDeviceType()) {
+    MS_LOG(INFO) << "need sync data to device, device type: "
+                 << device::GetDeviceNameByType(device_context_->GetDeviceType());
+    // malloc device memory
+    device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
+    auto device_ptr = device_context_->device_res_manager_->AllocateMemory(tensor->Size(), kDefaultStreamIndex);
+    MS_EXCEPTION_IF_NULL(device_ptr);
+    // copy tensor data to device
+    if (!device_context_->device_res_manager_->Copy(device_ptr, tensor->data_c(), static_cast<uint64_t>(tensor->Size()),
+                                                    device::CopyType::kH2D, kDefaultStreamIndex)) {
+      MS_LOG(EXCEPTION) << "Copy tensor data failed for tensor: " << tensor->ToString();
+    }
+    // create new device address for tensor
+    auto new_device_address = GetDeviceAddressMaker(device_context_->GetDeviceType())(
+      tensor->data_type(), tensor->shape(), device_ptr, nullptr);
+    MS_EXCEPTION_IF_NULL(new_device_address);
+    tensor->set_device_address(new_device_address);
+    return device_ptr;
   }
 
-  // reuse tensor data from other graphs
-  if (DeviceTensorStore::GetInstance().HasValue(tensor)) {
-    return DeviceTensorStore::GetInstance().Get(tensor);
+  if (device_address->GetMutablePtr() == nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid device ptr, tensor: " << tensor->ToString()
+                      << ", device address: " << device_address->ToString();
   }
 
-  // malloc device memory for tensor
-  device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
-  auto device_ptr = device_context_->device_res_manager_->AllocateMemory(tensor->Size(), kDefaultStreamIndex);
-  MS_EXCEPTION_IF_NULL(device_ptr);
-
-  // copy tensor data from host to device
-  if (!device_context_->device_res_manager_->Copy(device_ptr, tensor->data_c(), static_cast<uint64_t>(tensor->Size()),
-                                                  device::CopyType::kH2D, kDefaultStreamIndex)) {
-    MS_LOG(EXCEPTION) << "Copy tensor data failed for tensor: " << tensor->ToString();
-  }
-  // cache tensor data for other graphs
-  DeviceTensorStore::GetInstance().Insert(tensor, device_ptr);
-
-  MS_LOG(INFO) << "end prepare tensor value: " << tensor->ToString();
-
-  return device_ptr;
+  return device_address->GetMutablePtr();
 }
 
 da::tensor::DATensor *GraphAdapter::GetNodeDATensor(const AnfNodePtr &node) {
@@ -244,8 +246,9 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
     device_context_->device_res_manager_->FreeMemory(data);
   });
   MS_LOG(INFO) << "Begin run DAGraph, is_dynamic_shape: " << is_dynamic_shape_;
-  graph_executor_.RunGraph(func_graph_->is_dynamic_shape() && is_dynamic_shape_);
+  graph_executor_.RunGraph(is_dynamic_shape_);
   ConvertOutputs(outputs);
+  graph_executor_.FreeGraphOutputs();
 
   auto &llm_manger = LLMManager::GetInstance();
   llm_manger.reset_graph_inputs();
@@ -326,9 +329,9 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
       auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
       graph_input_tensors[i].emplace_back(std::make_pair(input_tensor, is_weight));
       if (!is_weight) {
-        llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor->data_ptr());
-        MS_LOG(INFO) << "Record input tensor: " << input_tensor->ToString()
-                     << "for parameter: " << backend_param->fullname_with_scope();
+        llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor);
+        MS_LOG(DEBUG) << "Record input tensor: " << input_tensor->ToString()
+                      << "for parameter: " << backend_param->fullname_with_scope();
       }
     }
   }
@@ -342,17 +345,17 @@ void GraphAdapter::RecordInputTensorShapes(
   is_dynamic_shape_ = false;
   for (size_t i = 0; i < input_tensors.size(); ++i) {
     if (input_tensors[i].size() != 1) {
-      MS_LOG(INFO) << "Skip record list tensor input";
+      MS_LOG(DEBUG) << "Skip record list tensor input";
       continue;
     }
     auto input_tensor = input_tensors[i][0].first;
     auto is_weight = input_tensors[i][0].second;
     if (is_weight) {
-      MS_LOG(INFO) << "Skip record weight's shape";
+      MS_LOG(DEBUG) << "Skip record weight's shape";
       continue;
     }
     if (input_tensor == nullptr) {
-      MS_LOG(INFO) << "Input tensor is nullptr, outer index: " << i;
+      MS_LOG(DEBUG) << "Input tensor is nullptr, outer index: " << i;
       continue;
     }
     if (!is_dynamic_shape_) {
@@ -401,7 +404,7 @@ void GraphAdapter::ConvertOutputs(VectorRef *outputs) {
                                                     device::CopyType::kD2H, kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "Copy da_tensor data failed, tensor_size: " << tensor_size;
     }
-    auto output = std::make_shared<tensor::Tensor>(dtype, shape, buffer, dtype);
+    auto output = tensor::from_buffer(dtype, shape, buffer, tensor_size);
     MS_EXCEPTION_IF_NULL(output);
     MS_LOG(INFO) << "converted output tensor: " << output->ToString();
     delete[] buffer;
