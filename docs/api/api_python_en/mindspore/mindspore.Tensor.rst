@@ -245,6 +245,7 @@ mindspore.Tensor
     mindspore.Tensor.imag
     mindspore.Tensor.index_add
     mindspore.Tensor.index_add_
+    mindspore.Tensor.index_copy_
     mindspore.Tensor.index_fill
     mindspore.Tensor.index_put
     mindspore.Tensor.index_put_

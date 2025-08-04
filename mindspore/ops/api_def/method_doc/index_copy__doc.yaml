@@ -1,0 +1,35 @@
+index_copy_:
+    description: |
+        index_copy_(dim, index, tensor) -> Tensor
+
+        Copies the elements of `tensor` into the `self` by selecting the indices in the order given in `index` .
+
+        .. note::
+            The value of `index` must be in the range `[0, self.shape[dim])` , if it is out of range, the result is undefined.
+
+            If value of `index` contains duplicate entries, the result is nondeterministic since it depends on the last copy operation that occurred.
+
+        Args:
+            dim (int): The dimension along which to `index` .
+            index (Tensor): A 1-D Tensor with the indices to access in `self` along the specified `dim` .
+            tensor (Tensor): The tensor containing values to copy.
+
+        Returns:
+            Return `self` Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, mint
+            >>> x = mint.ones((5, 3), dtype=mindspore.int64)
+            >>> index = Tensor([4, 0, 2])
+            >>> tensor = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=mindspore.int64)
+            >>> x.index_copy_(0, index, tensor)
+            Tensor(shape=[5, 3], dtype=Int64, value=
+            [[4 5 6]
+             [1 1 1]
+             [7 8 9]
+             [1 1 1]
+             [1 2 3]])
