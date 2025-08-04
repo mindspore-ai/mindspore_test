@@ -30,6 +30,7 @@
 #include "utils/dlopen_macro.h"
 #include "utils/os.h"
 #include "include/common/utils/anfalgo.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace {
@@ -398,6 +399,7 @@ void DeviceContextManager::UnloadPlugin() {
 }
 
 void DeviceContextManager::ClearDeviceContexts() {
+  multi_stream_controllers_.clear();
   for (auto &iter : device_contexts_) {
     MS_LOG(INFO) << "Release device " << iter.first;
     MS_EXCEPTION_IF_NULL(iter.second);
@@ -452,8 +454,11 @@ DeviceContext *DeviceContextManager::GetOrCreateDeviceContext(const DeviceContex
   if (creator_iter != device_context_creators_.end()) {
     device_context = (creator_iter->second)(device_context_key);
     MS_EXCEPTION_IF_NULL(device_context);
+    MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     device_contexts_[device_context_key_str] = device_context;
     backend_to_device_context_[name] = device_context;
+    multi_stream_controllers_[name] =
+      std::make_shared<MultiStreamController>(device_context->device_res_manager_.get());
   } else {
     MS_LOG(EXCEPTION) << "Create device context failed, please make sure target device:" << name
                       << " is available, error message of loading plugins: " << std::endl
@@ -468,6 +473,24 @@ DeviceContextPtr DeviceContextManager::GetDeviceContext(const std::string &devic
     return nullptr;
   }
   return backend_to_device_context_[device_target];
+}
+
+MultiStreamControllerPtr &DeviceContextManager::GetMultiStreamController(const std::string &device_name) {
+  auto &&iter = multi_stream_controllers_.find(device_name);
+  if (iter != multi_stream_controllers_.end()) {
+    return iter->second;
+  }
+  MS_LOG(WARNING) << "Found multi stream controller failed, and try to initialize, device_name : " << device_name
+                  << ".";
+  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  DeviceContextKey host_key = {device_name, device_id};
+  const auto &real_device_context = GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(real_device_context);
+  auto &&iter_again = multi_stream_controllers_.find(device_name);
+  if (iter_again == multi_stream_controllers_.end()) {
+    MS_LOG(EXCEPTION) << "Get multi stream controller failed, device_name : " << device_name << ".";
+  }
+  return iter_again->second;
 }
 
 void DeviceContextManager::UpdateDeviceContextKey(const DeviceContextKey &old_key, const DeviceContextKey &new_key) {

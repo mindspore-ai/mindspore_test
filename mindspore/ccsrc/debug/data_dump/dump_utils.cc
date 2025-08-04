@@ -37,8 +37,10 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "common/device_tensor_store.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/file_utils.h"
+#include "runtime/device/res_manager/utils/utils.h"
 
 using mindspore::runtime::DeviceTensorStore;
 
@@ -223,10 +225,11 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << filepath << ", skip it.";
     return true;
   }
-  device::ResKey res_key{addr.GetDeviceType(), addr.device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->SyncAllStreams();
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->SyncAllStreams();
   if (trans_flag) {
     std::string path = filepath + '.' + host_fmt;
     MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
@@ -238,7 +241,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(out_tensor);
     size_t host_size = LongToSize(out_tensor->DataNBytes());
-    auto clone_device_address = res_manager->CreateDeviceAddress(
+    auto clone_device_address = host_context->device_res_manager_->CreateDeviceAddress(
       addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
       addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id(), addr.stream_id());
     MS_EXCEPTION_IF_NULL(out_tensor->device_address());
@@ -250,7 +253,8 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
   } else {
     auto host_tmp = std::vector<uint8_t>(addr.GetSize());
-    res_manager->Copy(host_tmp.data(), addr.GetMutablePtr(), addr.GetSize(), device::CopyType::kD2H, addr.stream_id());
+    host_context->device_res_manager_->Copy(host_tmp.data(), addr.GetMutablePtr(), addr.GetSize(),
+                                            device::CopyType::kD2H, addr.stream_id());
     std::string path = filepath + '.' + addr.format();
     MS_VLOG(VL_DUMP) << "E2E Dump path is " << path;
     ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), addr.GetSize(), host_shape, addr.type_id());
@@ -303,10 +307,11 @@ void DumpToFile(const std::string &file_name, const std::string &dump_str) {
 mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress &addr, const std::string &tensor_name,
                                                      const ShapeVector &host_shape, TypeId host_type, bool trans_flag,
                                                      bool async_copy) {
-  device::ResKey res_key{addr.GetDeviceType(), addr.device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->SyncAllStreams();
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->SyncAllStreams();
   ShapeVector corrected_host_shape = host_shape;
   if (host_type == kNumberTypeInt4 && !corrected_host_shape.empty()) {
     constexpr int64_t kNumber2 = 2;
@@ -335,7 +340,7 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
       clone_dst_device_address->set_ptr(host_device_address->GetMutablePtr());
       clone_dst_device_address->SetSize(host_size);
       clone_dst_device_address->SetShapeVector(corrected_host_shape);
-      auto clone_src_device_address = res_manager->CreateDeviceAddress(
+      auto clone_src_device_address = host_context->device_res_manager_->CreateDeviceAddress(
         addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
         addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id(), addr.stream_id());
       MS_EXCEPTION_IF_NULL(clone_src_device_address);
@@ -344,13 +349,13 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
                     << " type:" << host_type << " clone:" << clone_dst_device_address->ToString();
       ret_sync = SyncCopy(clone_dst_device_address, clone_src_device_address, addr.stream_id());
     } else {
-      ret_sync = res_manager->Copy(out_tensor->data_c(), addr.GetMutablePtr(), host_size, device::CopyType::kD2H,
-                                   addr.stream_id());
+      ret_sync = host_context->device_res_manager_->Copy(out_tensor->data_c(), addr.GetMutablePtr(), host_size,
+                                                         device::CopyType::kD2H, addr.stream_id());
     }
   } else {
     // copy device to host using sync mode
-    auto ret = res_manager->CopyDirectly(out_tensor->data_c(), host_size, addr.GetMutablePtr(), addr.GetSize(),
-                                         device::CopyType::kD2H);
+    auto ret = host_context->device_res_manager_->CopyDirectly(out_tensor->data_c(), host_size, addr.GetMutablePtr(),
+                                                               addr.GetSize(), device::CopyType::kD2H);
     if (!ret) {
       MS_LOG(ERROR) << "SyncDeviceToHost fail, dst addr:" << out_tensor->data_c()
                     << " src addr:" << addr.GetMutablePtr() << " size:" << host_size;

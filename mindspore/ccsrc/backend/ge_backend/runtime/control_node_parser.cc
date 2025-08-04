@@ -31,7 +31,6 @@
 #include "abstract/abstract_function.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -338,9 +337,6 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
     MS_EXCEPTION_IF_NULL(ms_context);
     std::string device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(), device_name, device_id);
@@ -425,9 +421,6 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   MS_EXCEPTION_IF_NULL(ms_context);
   std::string device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
 
   // Fetch mem size by shape, the shape is first obtained from the abstract to deal with the scenario where
   // the value node is a multi-level tuple.

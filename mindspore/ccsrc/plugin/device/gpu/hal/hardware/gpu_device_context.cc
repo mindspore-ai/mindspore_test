@@ -234,9 +234,24 @@ DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size
                                                stream_id, user_data);
 }
 
+bool GPUDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                   size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
+  return gpu_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+}
+bool GPUDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                    size_t stream_id, bool keep_src) const {
+  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
+  return gpu_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+}
 bool GPUDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(gpu_res_manager_);
   return gpu_res_manager_->Copy(dst, src, size, kind, stream_id);
+}
+bool GPUDeviceResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size,
+                                       CopyType kind) const {
+  MS_EXCEPTION_IF_NULL(gpu_res_manager_);
+  return gpu_res_manager_->CopyDirectly(dst, dst_size, src, src_size, kind);
 }
 
 void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
@@ -758,7 +773,7 @@ bool GPUKernelExecutor::LaunchKernelWithProfiling(const CNodePtr &kernel, const 
                 << (op_launch_start_end_time.second - op_launch_start_end_time.first) / kBasicTimeTransferUnit;
 
   if (profiler_inst->GetSyncEnableFlag()) {
-    CHECK_RET_WITH_RETURN_ERROR(res_manager_->SyncAllStreams(), "Profiler SyncStream failed.");
+    CHECK_RET_WITH_RETURN_ERROR(res_manager_->SyncAllStreams(true), "Profiler SyncStream failed.");
   }
   return ret;
 }
@@ -776,7 +791,7 @@ bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector
   auto ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
   // Sync running.
   bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
-  if (sync_stream && !res_manager_->SyncAllStreams()) {
+  if (sync_stream && !res_manager_->SyncAllStreams(true)) {
     return false;
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
@@ -817,7 +832,7 @@ bool GPUDeviceResManager::QueryStream(size_t stream_id) const { return gpu_res_m
 
 bool GPUDeviceResManager::SyncStream(size_t stream_id) const { return gpu_res_manager_->SyncStream(stream_id); }
 
-bool GPUDeviceResManager::SyncAllStreams() const { return gpu_res_manager_->SyncAllStreams(); }
+bool GPUDeviceResManager::SyncAllStreams(bool sync_device) const { return gpu_res_manager_->SyncAllStreams(); }
 bool GPUDeviceResManager::SyncNotDefaultStreams() const { return gpu_res_manager_->SyncNotDefaultStreams(); }
 
 size_t GPUDeviceResManager::DefaultStream() const { return gpu_res_manager_->DefaultStream(); }
@@ -858,7 +873,7 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   // Sync running.
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
+  if (runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams(true)) {
     return false;
   }
 
@@ -912,10 +927,11 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
   tensor_device_address->set_ptr(vec.data());
   tensor_device_address->SetSize(device_address->GetSize());
   tensor_device_address->set_format(kOpFormat_DEFAULT);
-  device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  if (!res_manager->SyncAllStreams() ||
+  DeviceContextKey host_key = {GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()};
+  DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  if (!host_context->device_res_manager_->SyncAllStreams(true) ||
       !SyncCopy(device_address, tensor->device_address(), device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed, vec:" << vec;
   }

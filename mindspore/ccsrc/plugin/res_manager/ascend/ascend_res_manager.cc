@@ -59,6 +59,8 @@
 #include "common/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -1551,15 +1553,16 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
                     << ", data_type:" << TypeIdToString(tensor->data_type());
       MS_EXCEPTION_IF_NULL(device_address);
       MS_EXCEPTION_IF_NULL(tensor->device_address());
-      device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
-      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-      MS_EXCEPTION_IF_NULL(res_manager);
-      res_manager->SyncAllStreams();
+      device::DeviceContextKey host_key = {device_name, device_address->device_id()};
+      device::DeviceContext *host_context =
+        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+      MS_EXCEPTION_IF_NULL(host_context);
+      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+      host_context->device_res_manager_->SyncAllStreams();
       SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
       tensor->set_device_address(device_address);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()), device_ptr,
-        tensor->data_type(), tensor->shape(), tensor->storage_info());
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_name, device_ptr,
+                                                     tensor->data_type(), tensor->shape(), tensor->storage_info());
       ptr += before_padding_sizes[i];
     }
     std::vector<size_t> after_padding_sizes(before_padding_sizes.size());
@@ -1600,10 +1603,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    res_manager->SyncAllStreams();
+    device::DeviceContextKey host_key = {device_name, device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    host_context->device_res_manager_->SyncAllStreams();
     SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", before_padding_sizes[i], ptr,
@@ -1938,34 +1943,40 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kAscend, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kAscend), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
   ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kAscend, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kAscend), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kAscend, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kAscend), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     if (stream_id != kDefaultStreamIndex) {
       if (!AscendStreamMng::GetInstance().SyncStream(kDefaultStreamIndex)) {
         MS_LOG(ERROR) << "Sync stream failed, stream id: " << kDefaultStreamIndex;
         return false;
       }
     }
-    return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
+    return host_context->device_res_manager_->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 

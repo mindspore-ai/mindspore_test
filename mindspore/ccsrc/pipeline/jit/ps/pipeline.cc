@@ -54,7 +54,9 @@
 #include "include/common/debug/draw.h"
 #include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_manager.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/init.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
@@ -1135,21 +1137,24 @@ void SwapCache(const py::object &host_, const py::object &device_, const py::obj
   MS_EXCEPTION_IF_NULL(device_ptr);
 
   auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
-  device::ResKey res_key{device_addr->GetDeviceType(), device_addr->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->SyncAllStreams();
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_addr->GetDeviceType()),
+                                       device_addr->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+  host_context->device_res_manager_->SyncAllStreams();
   for (size_t i = 0; i < LongToSize(block_mapping_shape[0]); i++) {
     int64_t src_block_num = block_mapping_data[num_two * i];
     int64_t dst_block_num = block_mapping_data[num_two * i + kIndex1];
     size_t src_block_offset = LongToSize(src_block_num) * block_size_in_bytes;
     size_t dst_block_offset = LongToSize(dst_block_num) * block_size_in_bytes;
     if (is_device_to_host) {
-      res_manager->Copy(host_ptr + dst_block_offset, device_ptr + src_block_offset, block_size_in_bytes,
-                        device::CopyType::kD2H, device_addr->stream_id());
+      host_context->device_res_manager_->Copy(host_ptr + dst_block_offset, device_ptr + src_block_offset,
+                                              block_size_in_bytes, device::CopyType::kD2H, device_addr->stream_id());
     } else {
-      res_manager->Copy(device_ptr + dst_block_offset, host_ptr + src_block_offset, block_size_in_bytes,
-                        device::CopyType::kH2D, device_addr->stream_id());
+      host_context->device_res_manager_->Copy(device_ptr + dst_block_offset, host_ptr + src_block_offset,
+                                              block_size_in_bytes, device::CopyType::kH2D, device_addr->stream_id());
     }
   }
 }

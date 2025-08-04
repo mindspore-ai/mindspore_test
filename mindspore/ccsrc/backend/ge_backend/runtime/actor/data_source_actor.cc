@@ -25,7 +25,8 @@
 #include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -142,10 +143,11 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(bool enable_async_copy,
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, kernel_tensors[0]->stream_id());
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, kernel_tensors[0]->stream_id());
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
   }
@@ -184,10 +186,14 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
       auto &device_tensor = kernel_tensors[i]->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_EXCEPTION_IF_NULL(host_tensor);
-      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-        device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
-      MS_EXCEPTION_IF_NULL(res_manager);
-      res_manager->BindDeviceToCurrentThread(false);
+      auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+      device::DeviceContextKey host_key = {device_name, device_id};
+      device::DeviceContext *host_context =
+        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+      MS_EXCEPTION_IF_NULL(host_context);
+      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+      host_context->device_res_manager_->BindDeviceToCurrentThread(false);
       // No used device address need skip.
       if (TEST_FLAG(kernel_tensors[i]->flag(), device::kDeviceAddressFlagNotUsed)) {
         MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
@@ -199,7 +205,8 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         if (tensor_device_address == device_tensor) {
           continue;
         }
-        if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
+        if (!host_context->device_res_manager_->SyncAllStreams() ||
+            !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
         }
         continue;
@@ -216,7 +223,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       } else {
-        if (!res_manager->SyncAllStreams() ||
+        if (!host_context->device_res_manager_->SyncAllStreams() ||
             !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
@@ -276,10 +283,6 @@ void HostQueueDataSourceActor::ReleaseData() {
     }
     // If the address from input tensor and the address is not used by runtime.
     if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
-      device::ResKey res_key{old_address->GetDeviceType(), old_address->device_id()};
-      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-      MS_EXCEPTION_IF_NULL(res_manager);
-
       auto kernel_tensor =
         AnfAlgo::GetOutputKernelTensor(data_node_with_index.first, data_node_with_index.second, false);
       MS_EXCEPTION_IF_NULL(kernel_tensor);

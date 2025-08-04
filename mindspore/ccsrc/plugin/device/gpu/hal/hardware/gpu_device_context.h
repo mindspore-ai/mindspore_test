@@ -60,7 +60,12 @@ class GPUDeviceResManager : public DeviceResManager {
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
+  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool keep_src) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
+  bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
   tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
@@ -81,7 +86,7 @@ class GPUDeviceResManager : public DeviceResManager {
   size_t GetCurrentStreamId() const override;
   bool QueryStream(size_t stream_id) const override;
   bool SyncStream(size_t stream_id) const override;
-  bool SyncAllStreams() const override;
+  bool SyncAllStreams(bool sync_device) const override;
   bool SyncNotDefaultStreams() const override;
   size_t DefaultStream() const override;
 

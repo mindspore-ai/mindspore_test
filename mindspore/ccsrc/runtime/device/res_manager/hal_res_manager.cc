@@ -22,6 +22,8 @@
 #include <libgen.h>
 #endif
 #include "utils/dlopen_macro.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -171,7 +173,12 @@ HalResBase *HalResManager::GetOrCreateResManager(const ResKey &res_key) {
     res_manager = (creator_iter->second)(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     res_managers_[res_key.ToString()] = res_manager;
-    multi_stream_controllers_[res_key.DeviceName()] = std::make_shared<MultiStreamController>(res_manager.get());
+    DeviceContextKey host_key = {res_key.DeviceName(), res_key.device_id_};
+    DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    multi_stream_controllers_[res_key.DeviceName()] =
+      std::make_shared<MultiStreamController>(host_context->device_res_manager_.get());
   } else {
     MS_LOG(EXCEPTION) << "Create resource manager failed, please make sure target device:" << res_key.ToString()
                       << " is valid.";

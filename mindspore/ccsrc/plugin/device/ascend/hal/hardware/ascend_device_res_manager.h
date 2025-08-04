@@ -55,6 +55,7 @@ class AscendDeviceResManager : public DeviceResManager {
 
   bool LoadCollectiveCommLib() override;
   CollectiveCommunicationLib *collective_comm_lib() const override;
+  std::shared_ptr<MemoryManager> mem_manager() const override { return ascend_res_manager_->mem_manager(); }
   std::shared_ptr<SwapManager> swap_manager() const override;
   bool DestroyEvent(const DeviceEventPtr &event) override;
   bool DestroyAllEvents() override;
@@ -65,7 +66,26 @@ class AscendDeviceResManager : public DeviceResManager {
   bool BindDeviceToCurrentThread(bool force_bind) const override;
   void *GetStream() const { return ascend_res_manager_->GetStream(); }
   void *GetCopyDataStream() const;
+  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                size_t stream_id) const override;
+  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                 bool keep_src) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
+  bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
+
+  // Override interface for multi stream event control.
+  bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                   const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                   const DeviceEventPtr &input_event) override;
+
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override;
+
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) override;
+
+  bool SyncAllEvents() override;
+
+  bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const override;
+
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
   void *AllocateStaticMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const;
@@ -111,7 +131,7 @@ class AscendDeviceResManager : public DeviceResManager {
   size_t GetCurrentStreamId() const override;
   bool QueryStream(size_t stream_id) const override;
   bool SyncStream(size_t stream_id = 0) const override;
-  bool SyncAllStreams() const override;
+  bool SyncAllStreams(bool sync_device = true) const override;
   bool SyncNotDefaultStreams() const override;
   size_t DefaultStream() const override;
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(

@@ -17,7 +17,7 @@
 #include <utility>
 #include <string>
 #include "runtime/device/res_manager/utils/utils.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
@@ -58,14 +58,17 @@ void StorageBase::InplaceReSize(int64_t size) {
       return;
     }
 
-    device::ResKey res_key{device_data_->GetDeviceType(), device_data_->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_data_->GetDeviceType()),
+                                         device_data_->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     void *device_ptr = nullptr;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ResizeStorage", "ResizeStorage", "");
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ResizeStorage", memory::mem_pool::MemType::kOther, size,
                                                    device_data_.get());
-    device_ptr = res_manager->AllocateMemory(size, device_data_->stream_id());
+    device_ptr = host_context->device_res_manager_->AllocateMemory(size, device_data_->stream_id());
     if (!device_ptr) {
       return;
     }
@@ -109,8 +112,8 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
       MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type: " << runtime::KernelTaskType::kCOPY_TASK;
     }
     runtime::Pipeline::Get().WaitForward();
-    auto &controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+    auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+      device_context->device_context_key().device_name_);
     controller->Refresh();
     (void)controller->SyncStream(device_data_->stream_id());
     return;

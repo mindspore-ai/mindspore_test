@@ -31,7 +31,7 @@ void Synchronize() {
   auto device_ctx = GetDeviceCtx();
   runtime::Pipeline::Get().WaitAll();
   auto &controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
+    device::DeviceContextManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
   controller->Refresh();
   (void)controller->SyncAllStreams();
 }

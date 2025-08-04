@@ -17,10 +17,11 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "common/device_address.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
@@ -40,10 +41,13 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
   std::string status;
   if (blocking) {
     status = "SyncDeviceToHost";
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-      device::ResKey{src_device_ptr->GetDeviceType(), src_device_ptr->device_id()});
-    MS_EXCEPTION_IF_NULL(res_manager);
-    (void)res_manager->SyncAllStreams();
+    device::DeviceContextKey host_key = {GetDeviceNameByType(src_device_ptr->GetDeviceType()),
+                                         src_device_ptr->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    (void)host_context->device_res_manager_->SyncAllStreams();
     MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
     ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
   } else {
@@ -65,10 +69,11 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
   auto ret = true;
   std::string status;
   if (blocking) {
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-      device::ResKey{dst_device_ptr->GetDeviceType(), dst_device_ptr->device_id()});
-    MS_EXCEPTION_IF_NULL(res_manager);
-    (void)res_manager->SyncAllStreams();
+    DeviceContextKey host_key = {GetDeviceNameByType(dst_device_ptr->GetDeviceType()), dst_device_ptr->device_id()};
+    DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    (void)host_context->device_res_manager_->SyncAllStreams();
     ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
     status = "SyncHostToDevice";
   } else {

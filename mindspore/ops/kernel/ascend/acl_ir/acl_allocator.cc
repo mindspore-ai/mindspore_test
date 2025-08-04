@@ -18,8 +18,9 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore::device::ascend {
@@ -32,9 +33,11 @@ void *AclAllocator::AllocFunc(void *obj, size_t size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kAscend, device_id});
-  MS_EXCEPTION_IF_NULL(ascend_res_manager);
-  auto block = ascend_res_manager->AllocateMemory(size, stream_id);
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(DeviceType::kAscend), device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto block = host_context->device_res_manager_->AllocateMemory(size, stream_id);
   if (block == nullptr) {
     MS_LOG(EXCEPTION) << "Malloc Mem From Mem Pool failed, size:" << size;
   }
@@ -56,9 +59,11 @@ void AclAllocator::FreeFunc(void *obj, void *block) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto ascend_res_manager = HalResManager::GetInstance().GetOrCreateResManager({DeviceType::kAscend, device_id});
-  MS_EXCEPTION_IF_NULL(ascend_res_manager);
-  ascend_res_manager->FreeMemory(block);
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(DeviceType::kAscend), device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->FreeMemory(block);
 }
 
 void *AclAllocator::GetAddrFromBlock(void *block) {

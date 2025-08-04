@@ -28,7 +28,8 @@
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -298,9 +299,11 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
   try {
     const std::vector<tensor::TensorPtr> inputs;
     std::vector<tensor::TensorPtr> outputs;
@@ -317,7 +320,8 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
     } else if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto memory_size = graph_executor_->GetGraphFeatureMemory(graph_);
       MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_->ToString() << ", feature memory: " << memory_size;
-      MS_LOG(WARNING) << "Need Profile Memory, max used static memory: " << res_manager->GetMaxUsedMemorySize();
+      MS_LOG(WARNING) << "Need Profile Memory, max used static memory: "
+                      << host_context->device_res_manager_->GetMaxUsedMemorySize();
     }
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
@@ -332,7 +336,8 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
       MS_EXCEPTION_IF_NULL(item.second);
       MS_LOG(INFO) << "The input ref node copy back from address: " << item.first->GetPtr()
                    << " to address: " << item.second->GetPtr() << ".";
-      if (!SyncCopy(item.second, item.first, kDefaultStreamIndex) || !res_manager->SyncAllStreams()) {
+      if (!SyncCopy(item.second, item.first, kDefaultStreamIndex) ||
+          !host_context->device_res_manager_->SyncAllStreams()) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
       }
     }
@@ -380,9 +385,10 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   if (device::GetDeviceTypeByName(device_name) != node_device_tensor->GetDeviceType()) {
     MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got "
@@ -394,7 +400,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
     auto node_device_address = node_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(node_device_address);
     // create device address with correct context.
-    auto new_device_address = res_manager->CreateDeviceAddress(
+    auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
       node_device_address->pointer_ref_count()->ptr(), node_device_address->size(),
       node_device_address->GetShapeVector(), node_kernel_tensor->format(), node_device_address->type_id(), device_name,
       device_id, node_device_address->stream_id(), node_kernel_tensor->user_data());
@@ -416,7 +422,8 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
   MS_EXCEPTION_IF_NULL(copy_device_tensor);
   copy_device_tensor->set_user_data(node_device_tensor->user_data());
   copy_device_tensor->set_need_sync_user_data(node_device_tensor->need_sync_user_data());
-  if ((copy_device_tensor->GetPtr() == nullptr) && (!res_manager->AllocateMemory(copy_device_tensor.get()))) {
+  if ((copy_device_tensor->GetPtr() == nullptr) &&
+      (!host_context->device_res_manager_->AllocateMemory(copy_device_tensor.get()))) {
     MS_LOG(ERROR) << "Device(id:" << std::to_string(node_device_tensor->device_id())
                   << ") memory isn't enough and alloc failed, kernel name: " << GetAID()
                   << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
@@ -491,10 +498,15 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                  << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
                  << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-      device::ResKey{copy_device_tensor->GetDeviceType(), copy_device_tensor->device_id()});
-    MS_EXCEPTION_IF_NULL(res_manager);
-    if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex) || res_manager->SyncAllStreams()) {
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(copy_device_tensor->GetDeviceType()),
+                                         copy_device_tensor->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+    if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex) ||
+        host_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }
@@ -533,15 +545,16 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context)
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   // Free the address that is the temp store for kernel input copy.
   for (auto &copy_input_kernel_tensor : copy_input_kernel_tensors_) {
     if ((copy_input_kernel_tensor != nullptr) && (copy_input_kernel_tensor->device_address() != nullptr) &&
         (copy_input_kernel_tensor->device_address()->GetPtr() != nullptr)) {
-      res_manager->FreeMemory(copy_input_kernel_tensor->device_address().get());
+      host_context->device_res_manager_->FreeMemory(copy_input_kernel_tensor->device_address().get());
     }
   }
 }

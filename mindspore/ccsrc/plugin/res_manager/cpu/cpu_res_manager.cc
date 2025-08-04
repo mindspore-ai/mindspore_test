@@ -24,6 +24,8 @@
 
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -93,10 +95,13 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    res_manager->SyncAllStreams();
+    device::DeviceContextKey host_key = {GetDeviceNameByType(device_address->GetDeviceType()),
+                                         device_address->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    host_context->device_res_manager_->SyncAllStreams();
     SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
   }
@@ -196,7 +201,7 @@ bool CPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceS
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
 }
 bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                              size_t stream_id, bool) const {
+                              size_t stream_id, bool keep_src) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -282,28 +287,34 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kCPU, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
   ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kCPU, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
   }),
   ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{DeviceType::kCPU, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
 

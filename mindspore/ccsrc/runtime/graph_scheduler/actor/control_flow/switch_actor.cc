@@ -97,12 +97,14 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
     }
   }
 
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->SyncAllStreams();
-  if (!res_manager->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
-                         device_tensor->stream_id())) {
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                       device_tensor->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->SyncAllStreams();
+  if (!host_context->device_res_manager_->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
+                                               device_tensor->stream_id())) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
   }

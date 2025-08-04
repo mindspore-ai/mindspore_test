@@ -228,9 +228,52 @@ DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t s
                                                   stream_id, user_data);
 }
 
+bool AscendDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                      size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+}
+bool AscendDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                       size_t stream_id, bool keep_src) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+}
 bool AscendDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->Copy(dst, src, size, kind, stream_id);
+}
+bool AscendDeviceResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size,
+                                          CopyType kind) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->CopyDirectly(dst, dst_size, src, src_size, kind);
+}
+
+bool AscendDeviceResManager::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                                         const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                                         const DeviceEventPtr &input_event) {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, input_event);
+}
+
+bool AscendDeviceResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
+}
+
+bool AscendDeviceResManager::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->WaitEvent(task_id_on_stream, user_stream_id);
+}
+
+bool AscendDeviceResManager::SyncAllEvents() {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->SyncAllEvents();
+}
+
+bool AscendDeviceResManager::LaunchCallback(std::function<void(void)> callback_func, size_t stream_id,
+                                            bool is_block) const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->LaunchCallback(callback_func, stream_id, is_block);
 }
 
 bool AscendDeviceResManager::LoadCollectiveCommLib() {
@@ -337,7 +380,7 @@ bool AscendDeviceResManager::SyncStream(size_t stream_id) const {
   return ascend_res_manager_->SyncStream(stream_id);
 }
 
-bool AscendDeviceResManager::SyncAllStreams() const {
+bool AscendDeviceResManager::SyncAllStreams(bool sync_device) const {
   // AscendDeviceResManager is not be initialized and ascend_res_manager_ is nullptr when dryrun or export graph.
   if (ascend_res_manager_ == nullptr) {
     MS_LOG(WARNING) << "The ascend_res_manager_ is nullptr in scenarios where it is not actually executed";

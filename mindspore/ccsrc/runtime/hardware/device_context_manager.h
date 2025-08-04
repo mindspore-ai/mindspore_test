@@ -27,8 +27,8 @@
 #include <mutex>
 #include <vector>
 #include "runtime/hardware/device_context.h"
-#include "runtime/hardware/visible.h"
 #include "include/common/pybind_api/api_register.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace plugin_loader {
@@ -45,8 +45,9 @@ class RUNTIME_HARDWARE_EXPORT PluginLoader {
 }  // namespace plugin_loader
 
 namespace device {
+class MultiStreamController;
 using DeviceContextCreator = std::function<std::shared_ptr<DeviceContext>(const DeviceContextKey &)>;
-
+using MultiStreamControllerPtr = std::shared_ptr<MultiStreamController>;
 // This callback registers stateless functions to _c_expression. It is set by different device contexts.
 using RegisterStatelessFuncCb = std::function<void(py::module *m)>;
 
@@ -63,6 +64,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
   // The difference between this method and 'GetOrCreateDeviceContext' is this method only query device context by
   // device target(without device id) since MindSpore only supports 'single process, single device'.
   DeviceContextPtr GetDeviceContext(const std::string &device_target);
+  MultiStreamControllerPtr &GetMultiStreamController(const std::string &device_name);
   void UpdateDeviceContextKey(const DeviceContextKey &old_key, const DeviceContextKey &new_key);
   void ClearDeviceContexts();
   void ChildAfterFork();
@@ -97,6 +99,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
 
   // Backend name->register stateless functions callback.
   std::map<std::string, RegisterStatelessFuncCb> register_func_cbs_;
+
+  // Since multi device is not supported currently, here use device target type to improve performance.
+  // Device target type : 0, 1, 2, 3, and real device support : 'GPU' 'Ascend' 'CPU'.
+  std::map<std::string, MultiStreamControllerPtr> multi_stream_controllers_;
 };
 
 class RUNTIME_HARDWARE_EXPORT DeviceContextRegister {

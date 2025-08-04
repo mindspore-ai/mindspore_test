@@ -268,11 +268,12 @@ void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_call
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->BindDeviceToCurrentThread(false);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, kDefaultStreamIndex);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->BindDeviceToCurrentThread(false);
+  auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, kDefaultStreamIndex);
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
   }

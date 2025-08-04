@@ -41,6 +41,9 @@
 #include "common/kernel.h"
 #include "proto/debug_graph.pb.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 
 constexpr int kFailure = 1;
 constexpr int kQint4ShapeModify = 2;
@@ -552,11 +555,14 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
       auto device_tensor = tensor_info.kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
-      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-      MS_EXCEPTION_IF_NULL(res_manager);
-      auto ret = res_manager->CopyDirectly(out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size,
-                                           device::CopyType::kD2H);
+      device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                           device_tensor->device_id()};
+      device::DeviceContext *host_context =
+        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+      MS_EXCEPTION_IF_NULL(host_context);
+      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+      auto ret = host_context->device_res_manager_->CopyDirectly(
+        out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size, device::CopyType::kD2H);
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret << file_path;
 
       // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
@@ -580,10 +586,11 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id, true);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, stream_id, true);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async dump callback launch fail.";
   }
@@ -683,10 +690,13 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H);
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                       device_tensor->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->CopyDirectly(out_tensor->data_c(), host_size, src, host_size,
+                                                  device::CopyType::kD2H);
   return out_tensor;
 }
 
@@ -771,8 +781,8 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   const std::vector<std::string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
   std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
   auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
-  auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+  auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+    device_context->device_context_key().device_name_);
   if (enable_stream_control && stream_id != kDefaultStreamIndex) {
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -803,10 +813,11 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id, true);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, stream_id, true);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
   }

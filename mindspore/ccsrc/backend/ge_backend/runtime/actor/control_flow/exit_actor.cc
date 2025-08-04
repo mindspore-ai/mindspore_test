@@ -18,7 +18,8 @@
 #include "backend/ge_backend/runtime/actor/control_flow/exit_actor.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -176,22 +177,23 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
-  device::ResKey res_key{device_type, device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   // The input device tensor may not have users and needs to free the memory.
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
-        (device_type != input_kernel_tensors_[i]->GetDeviceType())) {
+        (device::GetDeviceTypeByName(device_name) != input_kernel_tensors_[i]->GetDeviceType())) {
       MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get "
                         << device::GetDeviceNameByType(input_kernel_tensors_[i]->GetDeviceType());
     }
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
         (input_kernel_tensors_[i]->device_address()->dynamic_ref_count() == 0)) {
       MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
-      res_manager->FreeMemory(input_kernel_tensors_[i]->device_address().get());
+      host_context->device_res_manager_->FreeMemory(input_kernel_tensors_[i]->device_address().get());
     }
   }
 }
@@ -354,13 +356,12 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto device_type = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
-    if (device_type != input_device_tensor->GetDeviceType()) {
-      device_type = input_device_tensor->GetDeviceType();
-    }
-    device::ResKey res_key{device_type, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
+    auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::DeviceContextKey host_key{device_name, device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
     const KernelWithIndex &node_with_index = input_device_tensor->GetNodeIndex();
     MS_EXCEPTION_IF_NULL(node_with_index.first);
@@ -391,14 +392,14 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "CopyDeviceAddress", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      new_device_tensor->GetSize(), new_device_tensor.get());
-      if (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
+      if (!host_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
         SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                     new_device_tensor->GetSize());
       }
       if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
-      (void)res_manager->SyncAllStreams();
+      (void)host_context->device_res_manager_->SyncAllStreams();
     } else {
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
