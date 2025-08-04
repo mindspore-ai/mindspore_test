@@ -223,22 +223,6 @@ CNodePtr CreatePyInterpretCNode(const FuncGraphPtr &fg, const std::string &scrip
   return node;
 }
 
-CNodePtr CreatePyInterpretCNodeInOrder(const FuncGraphPtr &fg, const std::string &script_text,
-                                       const py::object &global_dict_obj, const AnfNodePtr &local_dict_node,
-                                       const NodeDebugInfoPtr &debug_info) {
-  auto script = std::make_shared<parse::Script>(script_text);
-  auto script_node = NewValueNode(script);
-  parse::PyObjectWrapperPtr global_dict_wrapper = std::make_shared<parse::InterpretedObject>(global_dict_obj);
-  auto global_dict_node = NewValueNode(global_dict_wrapper);
-  auto node =
-    fg->NewCNodeInOrder({NewValueNode(prim::kPrimPyInterpret), script_node, global_dict_node, local_dict_node});
-  if (debug_info != nullptr) {
-    node->set_debug_info(debug_info);
-  }
-  InterpretNodeRecorder::GetInstance().PushPyInterpretNode(node);
-  return node;
-}
-
 void SetPyObjectToLocalVariable(const std::string &key, const py::object &value) {
   py::module mod = python_adapter::GetPyModule("mindspore.common._jit_fallback_utils");
   constexpr auto set_local_variable = "set_local_variable";
@@ -437,11 +421,10 @@ bool ContainsSequenceAnyType(const AbstractBasePtr &abs) {
       }
     } else {
       const auto &elements = seq_abs->elements();
-      for (size_t item_index = 0; item_index < elements.size(); ++item_index) {
-        const auto &item_abs = elements[item_index];
-        if (ContainsSequenceAnyType(item_abs)) {
-          return true;
-        }
+      bool has_any = std::any_of(elements.cbegin(), elements.cend(),
+                                 [](const AbstractBasePtr &abs) { return ContainsSequenceAnyType(abs); });
+      if (has_any) {
+        return true;
       }
     }
   }

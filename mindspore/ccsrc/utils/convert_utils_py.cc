@@ -398,12 +398,6 @@ static ValueNameToConverterVector value_name_to_converter = {
      auto tensor_ptr = value->cast<tensor::TensorPtr>();
      return TensorToPyData(tensor_ptr, abs);
    }},
-  // Tensor
-  {tensor::Tensor::kTypeId,
-   [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {
-     auto tensor_ptr = value->cast<tensor::TensorPtr>();
-     return TensorToPyData(std::make_shared<tensor::Tensor>(*tensor_ptr), abs);
-   }},
   // MetaTenser
   {tensor::MetaTensor::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &abs) -> py::object {

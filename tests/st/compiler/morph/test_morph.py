@@ -36,9 +36,9 @@ default_d = Tensor(4.0, ms.float32)
 def mul_by(*args):
     def inner(a, b=default_b, c=default_c, d=default_d):
         x = args[0] * a
-        x = x * default_b
-        x = x * default_c
-        x = x * default_d
+        x = x * b
+        x = x * c
+        x = x * d
         return x
     return inner
 

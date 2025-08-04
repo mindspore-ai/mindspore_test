@@ -295,7 +295,7 @@ def test_print_format_np():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_print_format_tensor():
     """
     Feature: JIT Fallback
@@ -576,7 +576,7 @@ def test_print_in_lambda_func_graph_with_isolate_node():
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dict_all_print():
     """
     Feature: graph print dict.
@@ -598,4 +598,29 @@ def test_dict_all_print():
         assert output == 0
 
     patterns = {"x:  {'one': 1, 'two': 2}"}
+    check_output(cap.output, patterns)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_kwargs_net():
+    """
+    Feature: graph print kwargs.
+    Description: Test print kwargs.
+    Expectation: No exception.
+    """
+    class KwargsNet(nn.Cell):
+        def construct(self, x, **kwargs):
+            for k, v in kwargs.items():
+                print(k, v)
+            return x
+
+    data = ms.Tensor([1, 2, 3])
+    cap = Capture()
+    with capture(cap):
+        net = KwargsNet()
+        output = net(data, y=data)
+        time.sleep(2.0)
+        assert (output == data).all()
+
+    patterns = {"y\nTensor(shape=[3], dtype=Int64, value=[1 2 3])"}
     check_output(cap.output, patterns)

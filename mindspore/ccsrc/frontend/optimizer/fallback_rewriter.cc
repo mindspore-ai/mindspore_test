@@ -196,7 +196,7 @@ class BaseRewriter : protected SimpleRewriter {
     return nullptr;
   }
 
-  virtual void UpdateAbstracts() {
+  void UpdateAbstracts() {
     const auto &nodes = manager_->all_nodes();
     for (const auto &node : nodes) {
       const auto &abs = node->abstract();
@@ -224,7 +224,7 @@ class BaseRewriter : protected SimpleRewriter {
       }
       // Call abstract converter.
       auto new_abs = ConvertAbstract(abs, node);
-      if (new_abs != nullptr) {
+      if (new_abs != nullptr && abs != new_abs) {
         node->set_abstract(new_abs);
       }
     }
@@ -704,13 +704,20 @@ class BeforeOptARewriter : public BaseRewriter {
     return std::make_shared<AbstractTuple>(std::move(elements));
   }
 
-  // AbstractDictionary --> AbstractSequence.
-  AbstractSequencePtr ConvertToAbstractSequence(const AbstractBasePtr &abs, const AnfNodePtr &node, size_t depth) {
+  AbstractBasePtr ConvertAbstractInner(const AbstractBasePtr &abs, const AnfNodePtr &node, size_t depth) {
     if (depth > kMaxSeqRecursiveDepth) {
       MS_LOG(ERROR) << "abs:" << abs->ToString();
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
         << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth << " levels.";
     }
+
+    auto abs_keyword_arg = abs->cast<abstract::AbstractKeywordArgPtr>();
+    if (abs_keyword_arg != nullptr) {
+      auto arg_abs = abs_keyword_arg->get_arg();
+      MS_EXCEPTION_IF_NULL(arg_abs);
+      return ConvertAbstractInner(arg_abs, node, depth + 1);
+    }
+
     auto abs_seq = abs->cast<AbstractSequencePtr>();
     if (abs_seq != nullptr) {
       const auto &seq_elements = abs_seq->elements();
@@ -718,14 +725,14 @@ class BeforeOptARewriter : public BaseRewriter {
       // changed_elements maps old element to new element.
       mindspore::HashMap<AbstractBasePtr, AbstractBasePtr> changed_elements;
       for (const auto &element : seq_elements) {
-        auto new_sequence_element = ConvertToAbstractSequence(element, node, depth + 1);
+        auto new_sequence_element = ConvertAbstractInner(element, node, depth + 1);
         if (new_sequence_element != nullptr) {
           (void)changed_elements.emplace(element, new_sequence_element);
         }
       }
       if (changed_elements.empty()) {
         // Here the AbstractList don't need to convert to AbstractTuple.
-        return nullptr;
+        return abs;
       }
       // Always make new AbstractSequence when elements changed.
       std::vector<AbstractBasePtr> elements;
@@ -754,7 +761,7 @@ class BeforeOptARewriter : public BaseRewriter {
       std::vector<AbstractBasePtr> elements;
       elements.reserve(dict_elements.size());
       for (const auto &element : dict_elements) {
-        auto new_element = ConvertToAbstractSequence(element.second, node, depth + 1);
+        auto new_element = ConvertAbstractInner(element.second, node, depth + 1);
         if (new_element != nullptr) {
           (void)elements.emplace_back(new_element);
         } else {
@@ -763,12 +770,11 @@ class BeforeOptARewriter : public BaseRewriter {
       }
       return std::make_shared<AbstractTuple>(elements);
     }
-    return nullptr;
+    return abs;
   }
 
   AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs, const AnfNodePtr &node) override {
-    // AbstractDictionary --> AbstractSequence.
-    return ConvertToAbstractSequence(abs, node, 0);
+    return ConvertAbstractInner(abs, node, 0);
   }
 
   bool ConvertDictToTuple(const AnfNodePtr &node, const FuncGraphPtr &fg) const {
@@ -2493,9 +2499,7 @@ class AfterOptARewriter : public BaseRewriter {
       return fallback::ConvertMsClassObjectToPyExecute(fg, value, value_node);
     }
     if (value->isa<parse::InterpretedObject>()) {
-      const auto interpreted_value = dyn_cast<parse::InterpretedObject>(value);
-      const std::string &key = interpreted_value->name();
-      return fallback::ConvertPyObjectToPyExecute(fg, key, interpreted_value->obj(), value_node, true);
+      return ConvertInterpretedObjectValue(fg, value_node, value->cast<parse::InterpretedObjectPtr>());
     }
     if (value->isa<ValueTuple>()) {
       return GetPyExecuteFromValueSequence(fg, value_node, value->cast<ValueSequencePtr>(), prim::kPrimMakeTuple,
@@ -2778,12 +2782,13 @@ class AfterOptARewriter : public BaseRewriter {
     return res;
   }
 
-  AnfNodePtr ConvertInterpretedObjectValue(const ValueNodePtr &node, const parse::InterpretedObjectPtr &value) const {
+  AnfNodePtr ConvertInterpretedObjectValue(const FuncGraphPtr &fg, const ValueNodePtr &node,
+                                           const parse::InterpretedObjectPtr &value) const {
     // Convert InterpretedObject value node to PyExecute CNode.
     const auto interpreted_value = dyn_cast<parse::InterpretedObject>(value);
     MS_EXCEPTION_IF_NULL(interpreted_value);
     const std::string &key = interpreted_value->name();
-    return fallback::ConvertPyObjectToPyExecute(root_graph_, key, interpreted_value->obj(), node, true);
+    return fallback::ConvertPyObjectToPyExecute(fg, key, interpreted_value->obj(), node, true);
   }
 
   AnfNodePtr ConvertValueNode(const ValueNodePtr &value_node, const ValuePtr &value) override {
@@ -2795,7 +2800,7 @@ class AfterOptARewriter : public BaseRewriter {
       if (value->isa<ValueDictionary>()) {
         return RebuildValueDict(root_graph_, value_node, value->cast<ValueDictionaryPtr>());
       } else if (value->isa<parse::InterpretedObject>()) {
-        return ConvertInterpretedObjectValue(value_node, value->cast<parse::InterpretedObjectPtr>());
+        return ConvertInterpretedObjectValue(root_graph_, value_node, value->cast<parse::InterpretedObjectPtr>());
       } else if (value->isa<parse::MsClassObject>()) {
         return fallback::ConvertMsClassObjectToPyExecute(root_graph_, value, value_node);
       }
