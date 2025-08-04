@@ -20,6 +20,7 @@
 #include <atomic>
 #include <string>
 
+#include "memory/mem_pool/mem_env.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -64,6 +65,9 @@ class BACKEND_EXPORT LockGuard {
 };
 
 BACKEND_EXPORT std::string MemTypeToStr(MemType mem_type);
+BACKEND_EXPORT bool IsEnableMemTrack();
+BACKEND_EXPORT bool IsNeedProfilieMemoryLog();
+BACKEND_EXPORT bool IsMemoryPoolRecycle();
 
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix);
 

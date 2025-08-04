@@ -24,6 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "debug/profiler/profiling.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "backend/ge_backend/pass/scalar_ops_output_unify_mindir.h"
@@ -372,7 +373,7 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ProcessCallInline>());
   opt_acl_pm->AddPass(std::make_shared<mindspore::opt::SeedAdapter>());
 
-  if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<mindspore::opt::InsertTensorMoveForHcclOpGe>());
   } else {
     opt_acl_pm->AddPass(std::make_shared<mindspore::opt::InsertTensorMoveForCommunication>());

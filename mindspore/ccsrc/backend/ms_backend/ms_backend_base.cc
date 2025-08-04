@@ -36,6 +36,7 @@
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -100,7 +101,7 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
     MS_LOG(INFO) << "Disable backend compile cache by front config.";
     return false;
   }
-  if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeCache)) {
     MS_LOG(INFO) << "Disable backend compile cache by backend config.";
     return false;
   }
@@ -129,7 +130,7 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
     MS_LOG(INFO) << "Compile cache: disable by front compile cache config.";
     return false;
   }
-  if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeCache)) {
     MS_LOG(INFO) << "Compile cache: disable by backend compile cache config.";
     return false;
   }
@@ -410,7 +411,7 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
     context->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
 
-  static const auto is_disable_switch_inline = common::IsDisableRuntimeConfig(common::kRuntimeSwitchInline);
+  static const auto is_disable_switch_inline = runtime::IsDisableRuntimeConfig(runtime::kRuntimeSwitchInline);
   if (is_disable_switch_inline) {
     MS_LOG(INFO) << "Disable switch inline by runtime config.";
     return false;
@@ -1152,8 +1153,13 @@ void MSBackendBase::ParseControlNodes(const GraphCompilerInfo &graph_compile_inf
 bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info) {
   MS_EXCEPTION_IF_NULL(graph_compiler_info);
 
-  bool enable_graph_pipeline = IsEnableGraphPipeline();
-  if (!enable_graph_pipeline) {
+#ifndef WITH_BACKEND
+  // Disabled graph pipeline in UT scenario, because the scenario does not use the MS backend, but instead uses the VM
+  // backend.
+  return false;
+#endif
+
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeGraphPipeline)) {
     return false;
   }
 
@@ -1781,7 +1787,7 @@ void CheckMemoryLeakV2(const runtime::KernelRunnerPtr &actor, const KernelTensor
 }
 
 void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeNewRefCount)) {
+  if (!runtime::IsEnableRuntimeConfig(runtime::kRuntimeNewRefCount)) {
     return;
   }
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -1893,7 +1899,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   // Run actor DAG.
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
   MS_EXCEPTION_IF_NULL(actor_set);
-  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  static auto disable_pre_build_comm = runtime::IsDisableRuntimeConfig(runtime::kRuntimePreBuildCommKernel);
   if (!disable_pre_build_comm) {
     PROF_START(PreLaunchCommKernel);
     runtime::PreLaunchComm::GetInstance().CachePreLaunchOrder(graph_id);

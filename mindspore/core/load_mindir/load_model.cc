@@ -2150,14 +2150,16 @@ bool MSANFModelParser::BuildFuncGraph(const FuncGraphPtr &output_graph, const mi
     MS_LOG(ERROR) << "Import nodes for graph failed! " << import_proto.has_name();
     return false;
   }
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  const bool force_no_inline = common::IsDisableRuntimeConfig(common::kRuntimeInline);
+
   if (output_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
     auto cell_reuse_level = CellReuseLevel::kLazyInline;
-    if (force_no_inline) {
+    const auto &value = common::GetConfigValue("MS_DEV_RUNTIME_CONF", "inline");
+    if ((value == "False") || (value == "false")) {
       cell_reuse_level = CellReuseLevel::kNoInline;
     }
+
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
     context->SetCellReuseLevel(cell_reuse_level);
   }
   return true;

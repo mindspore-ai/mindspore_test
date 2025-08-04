@@ -320,11 +320,7 @@ void GraphKernelFlags::Refresh() {
   if (IsEnableGraphKernel()) {
     MS_LOG(INFO) << "graph_kernel_flags = \"" << flags_cache_ << "\", all flags: " << DumpAllFlags();
   }
-  // if set MS_DEV_RUNTIME_CONF, will print jit_level, reuse this env to print graph kernel flag
-  static std::string is_enable_runtime_cfg = common::GetEnv(common::kRuntimeConf);
-  if (!is_enable_runtime_cfg.empty()) {
-    std::cout << "graph_kernel_flags = \"" << flags_cache_ << "\"" << std::endl;
-  }
+
   GraphKernelPassChecker::GetInstance().Init();
 }
 

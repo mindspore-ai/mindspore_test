@@ -394,7 +394,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
       input_kernel_tensors_[index] = input_data->data_;
       MS_EXCEPTION_IF_NULL(input_kernel_tensors_[index]);
 
-      if (IsNeedProfilieMemoryLog()) {
+      if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
         auto output_address = input_kernel_tensors_[index]->device_address().get();
         MS_EXCEPTION_IF_NULL(output_address);
         MS_LOG(WARNING) << "Need Profile Memory, Memory use, actor name: " << GetAID().Name()
@@ -445,7 +445,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
   }
   MS_LOG(INFO) << "Super kernel actor(" << GetAID().Name()
                << ") launches graph: " << std::to_string(graph_->graph_id());
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, launch actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
@@ -469,7 +469,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
       if (device_tensor->IsNotNeedAlloc()) {
         continue;
       }
-      if (IsNeedProfilieMemoryLog()) {
+      if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
         auto &info = device_address_to_node_[device_tensor];
         auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need allocated, actor name: " << GetAID().Name()
@@ -486,7 +486,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
   } else {
     OnMemoryAllocFinish(context);
   }
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, end launch, actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
@@ -1538,7 +1538,7 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context)
   }
 
   if (memory_free_lists_.size() > 0 && memory_free_lists_.back().size() > 0) {
-    if (IsNeedProfilieMemoryLog()) {
+    if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       for (auto data : memory_free_lists_.back()) {
         auto output_address = data->device_address().get();
         MS_EXCEPTION_IF_NULL(output_address);
@@ -1706,7 +1706,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
   }
 
   // Get serial launch kernels.
-  static bool enable_multi_comm_group = common::IsEnableRuntimeConfig(common::kRuntimeCommunicationLaunchGroup);
+  static bool enable_multi_comm_group = runtime::IsEnableRuntimeConfig(runtime::kRuntimeCommunicationLaunchGroup);
   for (auto &kernel_actor : kernel_actors_) {
     if (!kernel_actor) {
       continue;
@@ -2029,7 +2029,7 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
   // They should not be changed in runtime phase so that we could reach optimal performance by avoiding condition
   // judgement.
   std::vector<bool> conditions = {
-    common::IsDisableRuntimeConfig(common::kRuntimeHPMode),
+    runtime::IsDisableRuntimeConfig(runtime::kRuntimeHPMode),
     debug_aid_ != nullptr,
     recorder_aid_ != nullptr,
     EnableExecuteOrderDump(),
@@ -2037,7 +2037,7 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     UCEException::IsEnableUCE(),
     mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking(),
     common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") == "1",
-    IsNeedProfilieMemoryLog(),
+    memory::mem_pool::IsNeedProfilieMemoryLog(),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex1),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),

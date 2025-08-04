@@ -1292,7 +1292,7 @@ std::vector<KernelGraphPtr> ControlNodeParser::GetValidKernelGraph(
 void ControlNodeParser::ParseParallelCallAndKernelGraph(
   const std::vector<AnfNodePtr> &control_nodes,
   const std::map<FuncGraphPtr, std::vector<std::variant<AnfNodePtr, KernelGraphPtr>>> &func_graph_to_sub_segments) {
-  if (common::IsDisableRuntimeConfig("graph_order")) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeGraphOrder)) {
     MS_LOG(INFO) << "Disable graph order.";
     return;
   }

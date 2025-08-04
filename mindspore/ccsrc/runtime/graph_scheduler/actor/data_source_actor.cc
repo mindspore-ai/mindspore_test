@@ -290,8 +290,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
                                       "The length of host tensors is not equal to the length of kernel tensors.");
   }
 
-  static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
   // Copy data from host tensor to device tensor.
   uint64_t start_time = 0;
   PROFILER_START(start_time);

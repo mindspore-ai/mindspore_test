@@ -25,6 +25,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -180,7 +181,7 @@ void AclStreamAssign::AssignStream(
     }
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
-    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+    if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMultiStream)) {
       // multi_stream:true, all communication op use the same communication stream.
       MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {

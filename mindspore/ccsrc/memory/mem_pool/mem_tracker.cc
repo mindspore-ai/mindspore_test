@@ -446,7 +446,7 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
    }},
   {"user_tasks",
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
-     static bool is_simple_tracker = common::IsEnableAllocConfig(common::kAllocSimpleTracker);
+     static bool is_simple_tracker = memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocSimpleTracker);
      if (is_simple_tracker) {
        return;
      }
@@ -517,7 +517,8 @@ void MemoryTrackerEnabled::Dump(size_t rank_id) {
       user_task_num += static_cast<int64_t>(mem_info->user_tasks.size());
     }
   }
-  if (user_task_num >= kUserTaskNumThreshold && !common::IsEnableAllocConfig(common::kAllocSimpleTracker)) {
+  if (user_task_num >= kUserTaskNumThreshold &&
+      !memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocSimpleTracker)) {
     MS_LOG(WARNING)
       << "The number of user tasks is too large: " << user_task_num
       << ", the speed of dump will be slow, please set MS_ALLOC_CONF=\"simple_tracker:True\" to speed up the dump";

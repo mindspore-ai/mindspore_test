@@ -27,6 +27,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
 #include "availability/silent_check/silent_check.h"
 
@@ -95,12 +96,11 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &
   // Need to bind context if the comm_op is the first op launched in this thread.
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
 
-  size_t comm_stream_id;
-  auto value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream);
-  if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+  size_t comm_stream_id = 0;
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     // multi_stream:true, all communication op use the same communication stream
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
-  } else if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
+  } else if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     // multi_stream:false, all communication op use the same op stream
     comm_stream_id = op->stream_id();
   } else {

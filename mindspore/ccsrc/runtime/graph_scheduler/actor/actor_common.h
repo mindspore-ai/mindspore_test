@@ -34,6 +34,7 @@
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -510,7 +511,7 @@ bool EnableRuntimePipeline();
 bool EnableParallelDispatchKernel();
 
 inline bool EnableRuntimeNewPipeline() {
-  static bool disable_new_pipeline = common::IsDisableRuntimeConfig("new_pipeline");
+  static bool disable_new_pipeline = runtime::IsDisableRuntimeConfig(runtime::kRuntimeNewPipeline);
   return !disable_new_pipeline;
 }
 

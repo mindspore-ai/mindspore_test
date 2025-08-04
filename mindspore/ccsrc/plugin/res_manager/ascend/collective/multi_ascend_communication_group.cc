@@ -17,6 +17,7 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/device/ascend/kernel/dvm/dvm_comm_info.h"
+#include "include/common/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace device {
@@ -38,7 +39,7 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
     }
     MS_LOG(INFO) << "Successfully initialize LCCL group " << name_;
 
-    const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCommInitLcclOnly);
+    const auto &value = runtime::GetRuntimeConfigValue(runtime::kRuntimeCommInitLcclOnly);
     if (value == "1" || value == "true" || value == "True") {
       // Only use LCCL if runtiem dev config 'comm_init_lccl_only' is set to true.
       MS_LOG(INFO) << "This is infer boost, only initialize group for LCCL.";
@@ -86,7 +87,7 @@ bool MultiAscendCommunicationGroup::Finalize() {
 
 void *MultiAscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
   CommunicationGroupPtr group_to_generate_root_info = nullptr;
-  const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCommInitLcclOnly);
+  const auto &value = runtime::GetRuntimeConfigValue(runtime::kRuntimeCommInitLcclOnly);
   if (value == "1" || value == "true" || value == "True") {
     // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
     group_to_generate_root_info = lccl_group_;
@@ -101,7 +102,7 @@ void *MultiAscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
 bool MultiAscendCommunicationGroup::SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port,
                                                       uint32_t total_rank_size, uint32_t node_rank,
                                                       uint32_t local_rank_size) {
-  const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCommInitLcclOnly);
+  const auto &value = runtime::GetRuntimeConfigValue(runtime::kRuntimeCommInitLcclOnly);
   if (value == "1" || value == "true" || value == "True") {
     // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
     return true;

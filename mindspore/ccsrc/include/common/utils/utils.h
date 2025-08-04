@@ -362,11 +362,7 @@ COMMON_EXPORT bool IsOneOfUnsignedType(const TypeId &type_id);
 COMMON_EXPORT size_t GetSystemMemorySize(const std::string &key);
 COMMON_EXPORT size_t GetSystemFreeDiskSize(const std::string &path);
 
-COMMON_EXPORT bool IsEnableRefMode();
 COMMON_EXPORT bool IsDisableGeKernel();
-COMMON_EXPORT bool IsNeedProfilieMemoryLog();
-COMMON_EXPORT bool IsMemoryPoolRecycle();
-COMMON_EXPORT bool IsEnableGraphPipeline();
 
 COMMON_EXPORT AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node);
 
@@ -412,7 +408,8 @@ static inline double GetCurrentUSec() {
     std::ostringstream oss;                                                                                    \
     oss << "[PROF]" << #stage << " costs " << (end_usec_##stage - start_usec_##stage) / kBasicTimeTransferUnit \
         << " msec.";                                                                                           \
-    if (common::IsEnableRuntimeConfig(common::kRuntimeCompileStat)) {                                          \
+    const auto &value = common::GetConfigValue("MS_DEV_RUNTIME_CONF", "compile_statistics");                   \
+    if ((value == "True") || (value == "true")) {                                                              \
       std::cout << oss.str() << std::endl;                                                                     \
     }                                                                                                          \
     MS_LOG(INFO) << oss.str();                                                                                 \

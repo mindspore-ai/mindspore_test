@@ -45,6 +45,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
@@ -3103,9 +3104,9 @@ void SetGPTOMode() {
       MS_LOG(WARNING) << "Wrong mode input, exiting GPTO...";
       return;
     }
-  } else if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
+  } else if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     gpto_mode = kComp;
-  } else if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+  } else if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     gpto_mode = kCompComm;
   } else {
     gpto_mode = kCompCommGroup;

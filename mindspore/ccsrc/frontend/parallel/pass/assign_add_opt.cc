@@ -371,19 +371,6 @@ bool SkipConcatEliminate(const std::vector<CNodePtr> &matmul_dw_nodes, const Anf
   return bg_concat_input_index->size() != matmul_dw_nodes.size();
 }
 
-bool IsNeedOptimizeAssignAdd(bool is_kbyk_mode) {
-  if (parallel::g_device_manager == nullptr) {
-    MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
-    return false;
-  }
-
-  if (is_kbyk_mode && common::IsDisableRuntimeConfig(common::kRuntimeParalletAssignAddOpt)) {
-    MS_LOG(INFO) << "KBK mode disable the assginadd opt.";
-    return false;
-  }
-  return true;
-}
-
 void ReplaeAddNAssignAddToTwoAssignAdd(const FuncGraphManagerPtr &manager) {
   for (const auto &each_graph : manager->func_graphs()) {
     std::list<CNodePtr> graph_orders = each_graph->GetOrderedCnodes();
@@ -477,7 +464,8 @@ void EraseTmpMakeTuple(const FuncGraphManagerPtr &manager) {
 void AssignAddOpt(const FuncGraphPtr &graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!IsNeedOptimizeAssignAdd(ms_context->IsKByKExecutorMode())) {
+  if (parallel::g_device_manager == nullptr) {
+    MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
     return;
   }
   auto manager = graph->manager();

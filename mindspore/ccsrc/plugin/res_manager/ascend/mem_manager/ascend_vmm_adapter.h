@@ -48,7 +48,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
   }
 
   AscendVmmAdapter() {
-    auto align_size = common::GetAllocConfigValue(common::kAllocVmmAlignSize);
+    auto align_size = memory::mem_pool::GetAllocConfigValue(memory::mem_pool::kAllocVmmAlignSize);
     if (align_size.empty()) {
       vmm_align_size_ = kDefaultAlignSize;
     } else {
@@ -92,12 +92,12 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
       return false;
     }
 
-    if (common::IsEnableAllocConfig(common::kAllocEnableVmm)) {
+    if (memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocEnableVmm)) {
       MS_LOG(INFO) << "VMM is explicitly enabled.";
       return true;
     }
 
-    if (common::IsDisableAllocConfig(common::kAllocEnableVmm)) {
+    if (memory::mem_pool::IsDisableAllocConfig(memory::mem_pool::kAllocEnableVmm)) {
       MS_LOG(INFO) << "VMM is explicitly disabled.";
       return false;
     }

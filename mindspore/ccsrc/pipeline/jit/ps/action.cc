@@ -43,6 +43,7 @@
 #include "include/common/utils/tensor_py_wrapper.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/fallback.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"
@@ -940,7 +941,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  const bool force_no_inline = common::IsDisableRuntimeConfig(common::kRuntimeInline);
+  const bool force_no_inline = runtime::IsDisableRuntimeConfig(runtime::kRuntimeInline);
   context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
 
   MS_LOG(INFO) << "Cell reuse(@lazy_inline) actually takes effect.";
@@ -1644,7 +1645,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
     MS_LOG(INFO) << "Set no inline because cell reuse graph has switch or nested cell reuse.";
     context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeInline)) {
+  if (!runtime::IsEnableRuntimeConfig(runtime::kRuntimeInline)) {
     const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple, AlwaysInclude);
     size_t micro_num = 0;
     for (auto &node : all_nodes) {

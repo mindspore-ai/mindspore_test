@@ -35,6 +35,7 @@
 #include "utils/ms_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "utils/distributed_meta.h"
 
 namespace mindspore {
@@ -215,7 +216,7 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
   instance_->ReportMemoryPoolMallocInfoToMstx(device_addr, align_size);
 
   // Adapt for dry run.
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -289,7 +290,7 @@ bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device
     instance_->ReportMemoryPoolFreeInfoToMstx(device_addr);
 
     // Adapt for dry run.
-    if (IsNeedProfilieMemoryLog()) {
+    if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
                       << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                       << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -374,7 +375,7 @@ void DefaultEnhancedAscendMemoryPool::DefragMemory() {
 
 void DefaultEnhancedAscendMemoryPool::DumpDynamicMemPoolStateInfo() {
   const auto &state_info = instance_->DynamicMemPoolStateInfo();
-  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat);
+  static bool is_enable_memory_statistics = runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat);
   if (is_enable_memory_statistics) {
     std::cout << "[MS_RUNTIME_PROF]" << state_info << std::endl;
   }
@@ -383,7 +384,7 @@ void DefaultEnhancedAscendMemoryPool::DumpDynamicMemPoolStateInfo() {
 
 const std::pair<size_t, size_t> DefaultEnhancedAscendMemoryPool::FreeIdleMemsByEagerFree() {
   const auto [eager_free_size, real_free_size] = instance_->FreeIdleMemsByEagerFree();
-  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat);
+  static bool is_enable_memory_statistics = runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat);
   if (is_enable_memory_statistics) {
     std::cout << "Total eager free memory : " << eager_free_size << ", real free : " << real_free_size << "."
               << std::endl;
@@ -604,10 +605,10 @@ void AscendMemoryPool::SetEnhancedMemoryPool(bool enable) {
 }
 
 bool AscendMemoryPool::UseOldMemoryPool() {
-  if (common::IsDisableAllocConfig(common::kAllocMemoryPool)) {
+  if (memory::mem_pool::IsDisableAllocConfig(memory::mem_pool::kAllocMemoryPool)) {
     return false;
   }
-  return IsDisableGeKernel() || common::IsEnableAllocConfig(common::kAllocMemoryPool);
+  return IsDisableGeKernel() || memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocMemoryPool);
 }
 
 // Use enhanced memory pool when enable debug, enable log, enable prof, dry run and so on.
@@ -621,10 +622,8 @@ bool AscendMemoryPool::UseEnhancedMemoryPool() {
 #endif
   bool enable_debug_log = common::GetEnv("GLOG_v") == "0";
   bool enable_memory_vlog = IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY);
-  return enable_debugger || enable_debug_log || enable_memory_vlog ||
-         common::IsEnableAllocConfig(common::kAllocMemoryTracker) || common::IsCompileSimulation() ||
-         profiler::MstxImpl::GetInstance().IsMsleaksEnable() ||
-         !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
+  return enable_debugger || enable_debug_log || enable_memory_vlog || common::IsCompileSimulation() ||
+         profiler::MstxImpl::GetInstance().IsMsleaksEnable() || memory::mem_pool::IsEnableMemTrack();
 }
 
 std::string AscendMemoryPool::ParseDebugConfig(std::string input, std::string config) {

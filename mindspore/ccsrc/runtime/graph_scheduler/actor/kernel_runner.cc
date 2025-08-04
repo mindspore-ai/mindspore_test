@@ -339,14 +339,13 @@ void KernelRunner::InitMultiStreamInfo() {
   if (cnode == nullptr) {
     return;
   }
-  constexpr char kRuntimeMc2Event[] = "mc2_event";
   bool match_mc2_pattern = std::string::npos != kernel_->fullname_with_scope().find("_all_gather_matmul") ||
                            std::string::npos != kernel_->fullname_with_scope().find("_matmul_reduce_scatter") ||
                            std::string::npos != kernel_->fullname_with_scope().find("MatmulReduceScatter-") ||
                            std::string::npos != kernel_->fullname_with_scope().find("AllGatherMatmul-") ||
                            std::string::npos != kernel_->fullname_with_scope().find("MatMulAllReduce-");
-  is_mc2_kernel_ = (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) &&
-                   !common::IsDisableRuntimeConfig(kRuntimeMc2Event) && match_mc2_pattern;
+  is_mc2_kernel_ = (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMultiStream)) &&
+                   !runtime::IsDisableRuntimeConfig(runtime::kRuntimeMc2Event) && match_mc2_pattern;
 
   auto input0 = cnode->input(kAnfPrimitiveIndex);
   if (IsValueNode<FuncGraph>(input0)) {

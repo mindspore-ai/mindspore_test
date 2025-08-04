@@ -70,7 +70,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
       return;
     }
 
-    if (IsNeedProfilieMemoryLog()) {
+    if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: MemoryManagerActor, device address class ptr: "
                       << output_address << ", device address size: " << device_tensor->GetSize()

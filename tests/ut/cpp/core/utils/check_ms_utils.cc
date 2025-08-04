@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "common/common_test.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
@@ -27,43 +28,41 @@ class TestCheckMsUtils : public UT::Common {
 // Description: Check function of IsEnableRuntimeConfig and IsDisableRuntimeConfig in ms_utils.cc
 // Expectation: Get right runtime config.
 TEST_F(TestCheckMsUtils, test_read_runtime_config) {
-  const char* test_configs1[] = {
+  const char *test_configs1[] = {
     "inline:true,compile_statistic:True,memoty_statistic:false",
     "'inline:true,compile_statistic:True,memoty_statistic:false'",
     "\"inline:true,compile_statistic:True,memoty_statistic:false\"",
   };
 
-  const char* test_configs2[] = {
-    "all_finite:true, memoty_statistic:True, inline:false",
-    "all_finite:true; memoty_statistic:True; inline:false",
-    "all_finite:true;memoty_statistic:True;inline:false"
-  };
+  const char *test_configs2[] = {"all_finite:true, memoty_statistic:True, inline:false",
+                                 "all_finite:true; memoty_statistic:True; inline:false",
+                                 "all_finite:true;memoty_statistic:True;inline:false"};
 
-  for(const auto &config : test_configs1) {
+  for (const auto &config : test_configs1) {
     int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", config);
     ASSERT_EQ(ret, 0);
 
-    ASSERT_TRUE(common::IsEnableRuntimeConfig("inline"));
-    ASSERT_TRUE(common::IsEnableRuntimeConfig("compile_statistic"));
-    ASSERT_FALSE(common::IsEnableRuntimeConfig("memoty_statistic"));
-    ASSERT_TRUE(common::IsDisableRuntimeConfig("memoty_statistic"));
-    ASSERT_FALSE(common::IsEnableRuntimeConfig("switch_inline"));
-    ASSERT_FALSE(common::IsDisableRuntimeConfig("switch_inline"));
+    ASSERT_TRUE(runtime::IsEnableRuntimeConfig("inline"));
+    ASSERT_TRUE(runtime::IsEnableRuntimeConfig("compile_statistic"));
+    ASSERT_FALSE(runtime::IsEnableRuntimeConfig("memoty_statistic"));
+    ASSERT_TRUE(runtime::IsDisableRuntimeConfig("memoty_statistic"));
+    ASSERT_FALSE(runtime::IsEnableRuntimeConfig("switch_inline"));
+    ASSERT_FALSE(runtime::IsDisableRuntimeConfig("switch_inline"));
 
     (void)common::ResetConfig("MS_DEV_RUNTIME_CONF");
   }
 
-   // Second group of tests
-  for(const auto &config : test_configs2) {
-     int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", config);
-     ASSERT_EQ(ret, 0);
+  // Second group of tests
+  for (const auto &config : test_configs2) {
+    int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", config);
+    ASSERT_EQ(ret, 0);
 
-    ASSERT_TRUE(common::IsEnableRuntimeConfig("all_finite"));
-    ASSERT_TRUE(common::IsEnableRuntimeConfig("memoty_statistic"));
-    ASSERT_FALSE(common::IsEnableRuntimeConfig("inline"));
-    ASSERT_TRUE(common::IsDisableRuntimeConfig("inline"));
-    ASSERT_FALSE(common::IsEnableRuntimeConfig("pipeline"));
-    ASSERT_FALSE(common::IsDisableRuntimeConfig("pipeline"));
+    ASSERT_TRUE(runtime::IsEnableRuntimeConfig("all_finite"));
+    ASSERT_TRUE(runtime::IsEnableRuntimeConfig("memoty_statistic"));
+    ASSERT_FALSE(runtime::IsEnableRuntimeConfig("inline"));
+    ASSERT_TRUE(runtime::IsDisableRuntimeConfig("inline"));
+    ASSERT_FALSE(runtime::IsEnableRuntimeConfig("pipeline"));
+    ASSERT_FALSE(runtime::IsDisableRuntimeConfig("pipeline"));
     (void)common::ResetConfig("MS_DEV_RUNTIME_CONF");
   }
 }

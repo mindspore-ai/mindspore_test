@@ -19,6 +19,7 @@
 #include "abstract/abstract_value.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "runtime/device/res_manager/hal_res_base.h"
@@ -102,7 +103,7 @@ std::string Process::GetRankID() {
 
 void Process::CheckCommOrderIteration(size_t total_running_count) {
   auto &cache = KernelCache::GetInstance();
-  std::string check_iteration_from_user = common::GetRuntimeConfigValue(common::kRuntimeExecutionOrderCheckIteration);
+  std::string check_iteration_from_user = GetRuntimeConfigValue(kRuntimeExecutionOrderCheckIteration);
   if (check_iteration_from_user.empty()) {
     return;
   }

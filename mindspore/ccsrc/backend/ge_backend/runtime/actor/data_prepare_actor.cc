@@ -70,7 +70,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, "SyncTensorData", device_tensor->device_name(), device_tensor->GetPtr(),
       device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
-    if (IsNeedProfilieMemoryLog()) {
+    if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor.get());
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: SyncTensorData, device address class ptr: " << output_address
                       << ", node: " << node->fullname_with_scope() << ", graph: " << graph_str
@@ -689,7 +689,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForControlValueNode", device_tensor->device_name(), device_tensor->GetPtr(),
     device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForControlValueNode, device address class ptr: "
                     << output_address << ", node: " << node->fullname_with_scope() << ", graph: " << graph_str
@@ -763,7 +763,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForStringValue", device_tensor->device_name(), device_tensor->GetPtr(),
     device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "
                     << output_address << ", device address size: " << device_tensor->GetSize()
@@ -834,7 +834,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue", device_tensor->device_name(), device_tensor->GetPtr(),
     device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "
                     << output_address << ", device address size: " << device_tensor->GetSize()

@@ -35,6 +35,7 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "distributed/persistent/storage/json_utils.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
@@ -721,9 +722,9 @@ std::string VectorToString(const std::vector<int> &vec) {
 }
 
 void ParseEnvCpuAffinity(const uint32_t &global_rank_id, const uint32_t &local_rank_id) {
-  const auto &cpu_affinity_list = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityList);
-  const auto &cpu_affinity_module = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityMoudule);
-  const auto &actor_thread_fix_bind = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeActorThreadFixBind);
+  const auto &cpu_affinity_list = runtime::GetRuntimeConfigValue(runtime::kRuntimeCpuAffinityList);
+  const auto &cpu_affinity_module = runtime::GetRuntimeConfigValue(runtime::kRuntimeCpuAffinityMoudule);
+  const auto &actor_thread_fix_bind = runtime::GetRuntimeConfigValue(runtime::kRuntimeActorThreadFixBind);
   std::vector<int> rank_core_reserved;
   if (cpu_affinity_list.empty()) {
     return;
@@ -1048,7 +1049,7 @@ bool CollectiveManager::IsAsyncInitGlobalComm() {
   // 5.This NOT using mpirun. OpenMPI has hanging issues when invoking its interfaces in multiple threads.
   // 6.This is Ascend platform. For early version, we only support to create global comm group for Ascend by default.
   // Otherwise user should control whether using async manner.
-  const auto &is_async_str = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeAsyncInitComm);
+  const auto &is_async_str = runtime::GetRuntimeConfigValue(runtime::kRuntimeAsyncInitComm);
   bool async_conf = (is_async_str != "false" && is_async_str != "False");
   bool is_graph = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
   bool use_rank_table = !common::GetEnv("RANK_TABLE_FILE").empty();

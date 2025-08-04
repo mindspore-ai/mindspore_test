@@ -17,6 +17,7 @@
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include <algorithm>
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/common/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace backend {
@@ -36,7 +37,7 @@ void GEMemoryManager::InitGEMemory(const backend::ge_backend::RunOptions &run_op
   MS_LOG(INFO) << "GE graph name: " << graph_name << ", workspace memory size: " << workspace_memory_size
                << ", fixed memory size: " << fixed_memory_size << ", const memory size: " << const_memory_size
                << ", stream id: " << stream_id;
-  if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat)) {
     std::cout << "[MS_RUNTIME_PROF] GE graph name: " << graph_name
               << ", workspace memory size: " << workspace_memory_size << ", fixed memory size: " << fixed_memory_size
               << ", const memory size: " << const_memory_size << ", stream id: " << stream_id << std::endl;

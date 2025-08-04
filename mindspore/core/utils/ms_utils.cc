@@ -77,7 +77,7 @@ std::string Config::GetValue(const std::string &config, const std::string &confi
     }
 
     std::ostringstream oss_buf;
-    oss_buf << "[" << config << "]Runtime config:";
+    oss_buf << "[" << config << "] config:";
     // Replace semicolon with commas to standardize delimiter
     std::replace(env_value.begin(), env_value.end(), kSemicolon, kComma);
     std::stringstream ss(env_value);
@@ -122,57 +122,6 @@ MS_CORE_API void ResetConfig(const std::string &config) { Config::Reset(config);
 
 std::string GetConfigValue(const std::string &config, const std::string &config_key) {
   return Config::GetValue(config, config_key);
-}
-
-bool IsEnableRuntimeConfig(const std::string &runtime_config) {
-  const auto &value = GetConfigValue(kRuntimeConf, runtime_config);
-  return ((value == "True") || (value == "true"));
-}
-
-bool IsDisableRuntimeConfig(const std::string &runtime_config) {
-  const auto &value = GetConfigValue(kRuntimeConf, runtime_config);
-  return ((value == "False") || (value == "false"));
-}
-
-std::string GetRuntimeConfigValue(const std::string &runtime_config) {
-  const auto &value = GetConfigValue(kRuntimeConf, runtime_config);
-  return value;
-}
-
-std::string GetAllocConfigValue(const std::string &alloc_config) {
-  const auto &value = GetConfigValue(kAllocConf, alloc_config);
-  return value;
-}
-
-bool IsEnableAllocConfig(const std::string &alloc_config) {
-  const auto &value = GetAllocConfigValue(alloc_config);
-  return ((value == "True") || (value == "true"));
-}
-
-bool IsDisableAllocConfig(const std::string &alloc_config) {
-  const auto &value = GetAllocConfigValue(alloc_config);
-  return ((value == "False") || (value == "false"));
-}
-static std::set<std::string> view_ops_set;
-bool IsEnableAclnnViewOp(const std::string &op) {
-  std::string env_value = GetEnv(kAclnnViewOp);
-  if (env_value.empty()) {
-    return true;
-  }
-  auto existed = view_ops_set.count(op);
-  if (existed) {
-    return true;
-  }
-  std::stringstream ss(env_value);
-  std::string item;
-  while (std::getline(ss, item, ',')) {
-    view_ops_set.insert(item);
-  }
-  existed = view_ops_set.count(op);
-  if (existed) {
-    return true;
-  }
-  return false;
 }
 
 EnvHelperPtr &EnvHelper::GetInstance() {

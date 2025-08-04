@@ -286,8 +286,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
 class BACKEND_EXPORT MemTrackerManager {
  public:
   static MemTracker &GetInstance() {
-    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-                                   !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
+    static bool enable_trace_mem = memory::mem_pool::IsEnableMemTrack();
     if (enable_trace_mem) {
       return MemoryTrackerEnabled::getInstance();
     } else {
