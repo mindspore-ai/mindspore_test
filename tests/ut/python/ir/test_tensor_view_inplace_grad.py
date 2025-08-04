@@ -40,7 +40,8 @@ def setup_function():
 def teardown_function():
     os.unsetenv('MS_DEV_SAVE_GRAPHS')
     os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
-    shutil.rmtree(graph_save_path)
+    if os.path.exists(graph_save_path):
+        shutil.rmtree(graph_save_path)
 
 
 def check_prim_number_valid(prim_name, ir_pattern, size):
