@@ -736,7 +736,8 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   send->AddPrimalAttr(CHUNK, MakeValue(chunk));
   send->AddPrimalAttr(STAGE, MakeValue(src_stage));
   send->AddPrimalAttr(ORDER, MakeValue(order));
-
+  auto is_freeze = IsFreezedGradGraph(param);
+  send->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
   attr_rank = std::make_pair(SRC_RANK, MakeValue(src_stage));
   auto shape_type_pair = GetShapeType(param, {1}, 0);
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
@@ -989,6 +990,9 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   send->AddPrimalAttr(ORDER, MakeValue(order));
   send->AddPrimalAttr(V_SHAPE, MakeValue(is_v_shape));
 
+  auto is_freeze = IsFreezedGradGraph(node);
+  send->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
+
   attr_rank = std::make_pair(SRC_RANK, MakeValue(node_stage));
   auto shape_type_pair = GetShapeType(node, {1}, 0);
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
@@ -1014,6 +1018,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   recv->AddPrimalAttr(STAGE, MakeValue(user_node_stage_info->stage()));
   recv->AddPrimalAttr(ORDER, MakeValue(order));
   recv->AddPrimalAttr(V_SHAPE, MakeValue(is_v_shape));
+  recv->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
   auto micro = user_node->cast<CNodePtr>()->GetPrimalAttr(MICRO);
   if (micro != nullptr) {
     recv->AddPrimalAttr(MICRO, micro);
@@ -1378,6 +1383,9 @@ AnfNodePtr PipelinePostProcess::GenNewNodeFromOld(const AnfNodePtr &node, const 
   }
   new_node->set_primal_attrs(old->primal_attrs());
   new_node->AddPrimalAttr(ORDER, MakeValue(sr_tag));
+  if (old->HasPrimalAttr(FREEZE)) {
+    new_node->AddPrimalAttr(FREEZE, old->GetPrimalAttr(FREEZE));
+  }
   return new_node;
 }
 

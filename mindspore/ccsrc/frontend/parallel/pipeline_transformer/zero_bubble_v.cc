@@ -35,6 +35,21 @@ bool CompareBorderPair(const BorderPair &bp1, const BorderPair &bp2) {
   return compare_border(bp1.first, bp2.first) && compare_border(bp1.second, bp2.second);
 }
 
+bool CheckChunkAndMicro(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+    return false;
+  }
+  return true;
+}
+
+bool IsSendOrReceive(const AnfNodePtr &node) {
+  if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
+    return false;
+  }
+  return true;
+}
+
 void ZeroBubbleV::InsertCallControlOrder(const std::vector<BorderPair> &borders, const std::string &tags) {
   size_t size = borders.size();
   if (size < kIndexThree) {
@@ -357,15 +372,21 @@ void ZeroBubbleV::GetBorderNode() {
     MS_LOG(EXCEPTION) << "Zero Bubble V scheduler only support chunk_num is 2, but got:" << chunk_num_;
   }
   for (const auto &node : all_nodes) {
-    if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
+    if (!IsSendOrReceive(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+    if (!CheckChunkAndMicro(cnode)) {
       continue;
     }
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       GetBackwardBorder(cnode);
       continue;
     }
