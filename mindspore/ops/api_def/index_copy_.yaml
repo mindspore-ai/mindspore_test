@@ -1,0 +1,7 @@
+index_copy_:
+  - op_yaml: inplace_index_copy_op.yaml
+    py_method: tensor_index_copy_
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: py_method
+    interface: tensor

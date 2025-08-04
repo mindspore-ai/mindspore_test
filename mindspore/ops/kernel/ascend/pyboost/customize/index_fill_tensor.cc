@@ -79,12 +79,15 @@ tensor::TensorPtr IndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner>
       PyBoostUtils::MallocOpInputs(device_context, input);
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
-      MS_LOG(DEBUG) << "Run device task "
-                    << " start";
-      LAUNCH_ACLNN(aclnnIndexFillTensor, device_context, op->stream_id(), input, dim_imm, index_vector, value_scalar,
-                   outputs[0]);
-      MS_LOG(DEBUG) << "Run device task "
-                    << " end";
+      if (index_vector.empty() && input->DataSize() == 0) {
+        MS_LOG(DEBUG) << "aclnnIndexFillTensor throws 'CopyNpuToNpuOp' error when 'self' and 'index' are empty tensors,"
+                      << "because we allocated NPU memory for empty 'self' tensor. So we skip launching in this case.";
+      } else {
+        MS_LOG(DEBUG) << "Run IndexFillScalar device task start";
+        LAUNCH_ACLNN(aclnnIndexFillTensor, device_context, op->stream_id(), input, dim_imm, index_vector, value_scalar,
+                     outputs[0]);
+        MS_LOG(DEBUG) << "Run IndexFillScalardevice task end";
+      }
     }));
   return op->output(0);
 }
