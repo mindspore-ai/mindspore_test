@@ -584,8 +584,7 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
     }
     const auto old_storage_info = input_device_tensor->GetTensorStorageInfo();
     if (old_storage_info) {
-      // input addr is contiguous and shape size is equal to origin.
-      if ((SizeOf(old_storage_info->shape) == SizeOf(old_storage_info->ori_shape)) && old_storage_info->is_contiguous) {
+      if (IsContiguousStorage(old_storage_info)) {
         continue;
       }
       if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
@@ -969,6 +968,12 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
     std::string error_info = GetAID().Name() + " inputs must be continuous memory and can't be copied for index " +
                              std::to_string(input_index);
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
+  }
+  if (!IsContiguousStorage(device_tensor->GetTensorStorageInfo())) {
+    std::stringstream error_info;
+    error_info << "Not support non-contiguous heter input:" << kernel_tensor->ToString() << " for actor:" << GetAID()
+               << " input index:" << input_index;
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   if (input_index >= copy_input_kernel_tensors_.size()) {
     std::stringstream ofs;

@@ -91,7 +91,12 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   if (IsRunningFailed(context)) {
     return;
   }
-
+  if (!IsContiguousStorage(input_kernel_tensors_[0]->device_address()->GetTensorStorageInfo())) {
+    std::stringstream error_info;
+    error_info << "Not support non-contiguous input: " << input_kernel_tensors_[0]->ToString()
+               << " for actor:" << GetAID();
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
+  }
   if (input_kernel_tensors_[0]->device_address()->GetSize() != output_kernel_tensors_[0]->device_address()->GetSize()) {
     MS_LOG(WARNING) << GetAID().Name()
                     << " copy size is not equal, input device tensor:" << input_kernel_tensors_[0]->device_address()

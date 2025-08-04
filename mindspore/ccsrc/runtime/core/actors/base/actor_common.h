@@ -502,6 +502,13 @@ bool EnableRuntimePipeline();
 
 bool EnableParallelDispatchKernel();
 
+inline bool IsContiguousStorage(const TensorStorageInfoPtr &info) {
+  if (info == nullptr) {
+    return true;
+  }
+  return SizeOf(info->shape) == SizeOf(info->ori_shape) && info->is_contiguous;
+}
+
 inline bool EnableRuntimeNewPipeline() {
   static bool disable_new_pipeline = runtime::IsDisableRuntimeConfig(runtime::kRuntimeNewPipeline);
   return !disable_new_pipeline;

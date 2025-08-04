@@ -685,9 +685,15 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
     const auto &dest_device_address = dest_kernel_tensor->device_address();
     const auto &dest_device_context = output_index_to_copy_kt.second.second.first;
     const auto &src_kernel_tensor = kernel_actor->output_kernel_tensors_.at(output_index);
+    MS_EXCEPTION_IF_NULL(src_kernel_tensor);
     const auto &src_device_address = src_kernel_tensor->device_address();
     const auto &ref_output_kernel_tensors = output_index_to_copy_kt.second.second.second;
 
+    if (src_device_address != nullptr && !IsContiguousStorage(src_device_address->GetTensorStorageInfo())) {
+      MS_LOG(ERROR) << "Not support non-contiguous heter output:" << src_kernel_tensor->ToString()
+                    << " for actor:" << GetAID();
+      return false;
+    }
     if (kernel_actor->is_dynamic_shape_) {
       // For dynamic shape case.
       dest_kernel_tensor->SetType(src_kernel_tensor->GetType()->Clone());
