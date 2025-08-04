@@ -36,7 +36,7 @@
 #include "common/kernel_utils.h"
 #include "common/common_utils.h"
 #include "kernel/framework_utils.h"
-#include "runtime/device/res_manager/test_device_address.h"
+#include "common/test_device_address.h"
 #define private public
 #define protected public
 

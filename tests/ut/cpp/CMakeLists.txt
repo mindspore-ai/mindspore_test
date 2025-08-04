@@ -133,6 +133,14 @@ endif()
 set(REPEATED_DEFINED_FILE stub/ps/ps_core_stub.cc)
 list(REMOVE_ITEM UT_SRCS ${REPEATED_DEFINED_FILE})
 
+set(TEST_DEVICE_ADDRESS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/common/test_device_address.cc)
+add_library(_test_device_address_static STATIC ${TEST_DEVICE_ADDRESS_SRC})
+list(REMOVE_ITEM UT_SRCS ${TEST_DEVICE_ADDRESS_SRC})
+target_link_libraries(mindspore_res_manager PRIVATE
+        -Wl,--whole-archive
+        _test_device_address_static
+        -Wl,--no-whole-archive)
+
 find_package(Python3 COMPONENTS Interpreter Development)
 if(Python3_FOUND)
     find_package(Python3 COMPONENTS NumPy Development)
