@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """GumbelCDF Bijector"""
-from mindspore.ops import operations as P
+import mindspore.ops as ops
 from ..distribution._utils.utils import check_greater_zero
 from ..distribution._utils.custom_ops import exp_generic, log_generic
 from .bijector import Bijector
@@ -86,7 +86,7 @@ class GumbelCDF(Bijector):
         self._scale = self._add_parameter(scale, 'scale')
         check_greater_zero(self._scale, "scale")
 
-        self.cast = P.Cast()
+        self.cast = ops.Cast()
         self.exp = exp_generic
         self.log = log_generic
 

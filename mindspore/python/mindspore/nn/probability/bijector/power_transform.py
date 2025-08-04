@@ -13,8 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """PowerTransform Bijector"""
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
+import mindspore.ops as ops
 from ..distribution._utils.utils import check_greater_equal_zero
 from ..distribution._utils.custom_ops import exp_generic, log_generic
 from .bijector import Bijector
@@ -76,16 +75,16 @@ class PowerTransform(Bijector):
         self._power = self._add_parameter(power, 'power')
         check_greater_equal_zero(self._power, 'Power')
 
-        self.pow = P.Pow()
-        self.dtypeop = P.DType()
-        self.cast = P.Cast()
-        self.equal_base = P.Equal()
+        self.pow = ops.Pow()
+        self.dtypeop = ops.DType()
+        self.cast = ops.Cast()
+        self.equal_base = ops.Equal()
         self.exp = exp_generic
-        self.expm1 = P.Expm1()
+        self.expm1 = ops.Expm1()
         self.log = log_generic
-        self.log1p = P.Log1p()
-        self.select_base = P.Select()
-        self.shape = P.Shape()
+        self.log1p = ops.Log1p()
+        self.select_base = ops.Select()
+        self.shape = ops.Shape()
 
     @property
     def power(self):
@@ -113,17 +112,17 @@ class PowerTransform(Bijector):
         power_local = self.cast_param_by_value(x, self.power)
 
         # broad cast the value of x and power
-        ones = F.fill(self.dtypeop(power_local), self.shape(x + power_local),
-                      1.)
+        ones = ops.fill(self.dtypeop(power_local), self.shape(x + power_local),
+                        1.)
         power_local = power_local * ones
         x = x * ones
         safe_power = self.select_base(
             self.equal_base(power_local,
-                            P.ZerosLike()(power_local)), ones, power_local)
+                            ops.ZerosLike()(power_local)), ones, power_local)
 
         forward_v = self.select_base(
             self.equal_base(power_local,
-                            P.ZerosLike()(power_local)), self.exp(x),
+                            ops.ZerosLike()(power_local)), self.exp(x),
             self.exp(self.log1p(x * safe_power) / safe_power))
         return forward_v
 
@@ -135,17 +134,17 @@ class PowerTransform(Bijector):
         power_local = self.cast_param_by_value(y, self.power)
 
         # broad cast the value of x and power
-        ones = F.fill(self.dtypeop(power_local), self.shape(y + power_local),
-                      1.)
+        ones = ops.fill(self.dtypeop(power_local), self.shape(y + power_local),
+                        1.)
         power_local = power_local * ones
         y = y * ones
         safe_power = self.select_base(
             self.equal_base(power_local,
-                            P.ZerosLike()(power_local)), ones, power_local)
+                            ops.ZerosLike()(power_local)), ones, power_local)
 
         inverse_v = self.select_base(
             self.equal_base(power_local,
-                            P.ZerosLike()(power_local)), self.log(y),
+                            ops.ZerosLike()(power_local)), self.log(y),
             self.expm1(self.log(y) * safe_power) / safe_power)
 
         return inverse_v
@@ -166,14 +165,14 @@ class PowerTransform(Bijector):
         power_local = self.cast_param_by_value(x, self.power)
 
         # broad cast the value of x and power
-        ones = F.fill(self.dtypeop(power_local), self.shape(x + power_local),
-                      1.)
+        ones = ops.fill(self.dtypeop(power_local), self.shape(x + power_local),
+                        1.)
         power_local = power_local * ones
         x = x * ones
 
         forward_log_j = self.select_base(
             self.equal_base(power_local,
-                            P.ZerosLike()(power_local)), x,
+                            ops.ZerosLike()(power_local)), x,
             (1. / power_local - 1) * self.log1p(x * power_local))
 
         return forward_log_j
