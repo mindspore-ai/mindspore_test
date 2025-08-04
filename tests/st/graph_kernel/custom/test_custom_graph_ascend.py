@@ -16,7 +16,7 @@
 
 import numpy as np
 import mindspore as ms
-from mindspore.ops import CustomOpBuilder, ModuleWrapper
+from mindspore.ops import CustomOpBuilder
 
 
 def test_graphmode_add():
@@ -147,7 +147,8 @@ def test_graphmode_add_op_def():
     x = np.array([1, 2, 3], dtype=np.float16)
     y = np.array([4, 5, 6], dtype=np.float16)
     output = MyNet()(ms.Tensor(x), ms.Tensor(y))
-    print(output)
+    expect = x + y
+    assert np.allclose(output.asnumpy(), expect)
 
 
 def test_graphmode_add_offline():
@@ -168,11 +169,101 @@ def test_graphmode_add_offline():
     x = np.array([1, 2, 3], dtype=np.float16)
     y = np.array([4, 5, 6], dtype=np.float16)
     output = add_net(ms.Tensor(x), ms.Tensor(y))
-    print(output)
+    expect = x + y
+    assert np.allclose(output.asnumpy(), expect)
 
 
-# test_graphmode_add()
-# test_graphmode_add_import()
-# test_graphmode_add_import_func()
-test_graphmode_add_op_def()
-# test_graphmode_add_offline()
+def test_CustomOpBuilder_exception_1():
+    """
+    Feature: CustomOpBuilder.
+    Description: Test custom op in PyNative mode.
+    Expectation: Raise 'not support PyNative mode'.
+    """
+
+    ms.set_device("Ascend")
+    ms.set_context(mode=ms.PYNATIVE_MODE, save_graphs=True, save_graphs_path="./graphs")
+
+    class MyNet(ms.nn.Cell):
+        def __init__(self):
+            super(MyNet, self).__init__()
+            self.my_ops = CustomOpBuilder("graphmode_add",
+                                          ["jit_test_files/graphmode_add4.cpp", 'jit_test_files/pyboost_aclnn_sum.cpp',
+                                           "jit_test_files/module.cpp"],
+                                          backend="Ascend", op_def=["jit_test_files/add4.yaml"],
+                                          op_doc=["jit_test_files/add4_doc.yaml"]).load()
+
+        def construct(self, x, y):
+            return self.my_ops.add4(x, y, 1)
+
+    x = np.array([1, 2, 3], dtype=np.float16)
+    y = np.array([4, 5, 6], dtype=np.float16)
+    try:
+        MyNet()(ms.Tensor(x), ms.Tensor(y))
+    except RuntimeError as e:
+        assert f"not support PyNative mode" in str(e)
+
+
+def test_CustomOpBuilder_exception_2():
+    """
+    Feature: CustomOpBuilder.
+    Description: Test custom op in Graph mode.
+    Expectation: Raise 'does not support GRAPH mode'.
+    """
+
+    ms.set_device("Ascend")
+    ms.set_context(mode=ms.GRAPH_MODE, save_graphs=True, save_graphs_path="./graphs")
+
+    class MyNet(ms.nn.Cell):
+        def __init__(self):
+            super(MyNet, self).__init__()
+            self.my_ops = CustomOpBuilder("graphmode_add",
+                                          ["jit_test_files/graphmode_add4.cpp", 'jit_test_files/pyboost_aclnn_sum.cpp',
+                                           "jit_test_files/module.cpp"],
+                                          backend="Ascend", op_def=["jit_test_files/add4.yaml"],
+                                          op_doc=["jit_test_files/add4_doc.yaml"]).load()
+
+        def construct(self, x, y, z):
+            return self.my_ops.npu_abs_reduce_sum(x, y, z)
+
+    x = np.random.rand(4, 5, 6).astype(np.float32)
+    try:
+        MyNet()(ms.Tensor(x), (1,), True)
+    except AttributeError as e:
+        assert f"does not support GRAPH mode" in str(e)
+
+
+def test_CustomOpBuilder_exception_3():
+    """
+    Feature: CustomOpBuilder.
+    Description: Test custom op in PyNative mode.
+    Expectation: Raise 'neither in func_module nor in so_module'.
+    """
+
+    ms.set_device("Ascend")
+    ms.set_context(mode=ms.PYNATIVE_MODE, save_graphs=True, save_graphs_path="./graphs")
+
+    class MyNet(ms.nn.Cell):
+        def __init__(self):
+            super(MyNet, self).__init__()
+            self.my_ops = CustomOpBuilder("graphmode_add",
+                                          ["jit_test_files/graphmode_add4.cpp", 'jit_test_files/pyboost_aclnn_sum.cpp',
+                                           "jit_test_files/module.cpp"],
+                                          backend="Ascend", op_def=["jit_test_files/add4.yaml"],
+                                          op_doc=["jit_test_files/add4_doc.yaml"]).load()
+
+        def construct(self, x, y, z):
+            return self.my_ops.add3(x, y, z)
+
+    x = np.random.rand(4, 5, 6).astype(np.float32)
+    try:
+        MyNet()(ms.Tensor(x), (1,), True)
+    except AttributeError as e:
+        assert f"neither in func_module nor in so_module" in str(e)
+
+
+if __name__ == "__main__":
+    # test_graphmode_add()
+    # test_graphmode_add_import()
+    # test_graphmode_add_import_func()
+    test_graphmode_add_op_def()
+    # test_graphmode_add_offline()

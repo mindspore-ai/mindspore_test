@@ -65,17 +65,21 @@ class ModuleRegistry {
   std::vector<ModuleRegisterFunction> graph_reg_functions_;
 };
 
-#define REG_GRAPH_MODE_OP(op, OpFuncImplClass, KernelClass)                         \
-  MS_CUSTOM_ACLNN_OPS_REGISTER(op, OpFuncImplClass, KernelClass);                   \
-  static void op##_func() {}                                                        \
-  static void op##_register(pybind11::module_ &m) {                                 \
-    if (!pybind11::hasattr(m, #op)) {                                               \
-      m.def(#op, &op##_func);                                                       \
-    }                                                                               \
-  }                                                                                 \
-  struct op##_registrar {                                                           \
-    op##_registrar() { ModuleRegistry::Instance().Register(op##_register, false); } \
-  };                                                                                \
+#define REG_GRAPH_MODE_OP(op, OpFuncImplClass, KernelClass)                                            \
+  MS_CUSTOM_ACLNN_OPS_REGISTER(op, OpFuncImplClass, KernelClass);                                      \
+  static void op##_func(pybind11::args args, pybind11::kwargs kwargs) {                                \
+    MS_LOG(EXCEPTION) << "Custom [" << #op                                                             \
+                      << "] does not support PyNative mode. Please implement PyboostRunner to enable " \
+                         "PyNative mode execution, or switch to Graph mode.";                          \
+  }                                                                                                    \
+  static void op##_register(pybind11::module_ &m) {                                                    \
+    if (!pybind11::hasattr(m, #op)) {                                                                  \
+      m.def(#op, &op##_func);                                                                          \
+    }                                                                                                  \
+  }                                                                                                    \
+  struct op##_registrar {                                                                              \
+    op##_registrar() { ModuleRegistry::Instance().Register(op##_register, false); }                    \
+  };                                                                                                   \
   static op##_registrar registrar_instance
 
 #define CONCATENATE_DETAIL(x, y) x##y

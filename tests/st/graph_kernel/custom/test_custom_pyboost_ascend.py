@@ -118,7 +118,8 @@ def test_pyboost_aclnn():
     """
 
     ms.set_device("Ascend")
-    my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp'], backend="Ascend").load()
+    my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp', "jit_test_files/module.cpp"],
+                             backend="Ascend").load()
     x = np.random.rand(4, 5, 6).astype(np.float32)
     expect = np.sum(np.abs(x), 1, keepdims=True)
     output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True, None)
