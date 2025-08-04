@@ -32,6 +32,7 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_utils.h"
@@ -75,32 +76,40 @@ void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
 }
 
+void AssignStreamForCopyOut(const AnfNodePtr &node) {
+  auto copy_out_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
+  size_t copy_out_stream_id;
+  if (copy_out_stream == nullptr) {
+    AscendStreamMng::GetInstance().CreateStream(&copy_out_stream_id);
+    MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << copy_out_stream_id;
+    copy_out_stream = AscendStreamMng::GetInstance().GetStream(copy_out_stream_id);
+    AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_stream);
+  }
+  copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
+  AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
+  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+}
+
+void AssignStreamForCopyIn(const AnfNodePtr &node) {
+  auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
+  size_t copy_in_stream_id;
+  if (copy_in_stream == nullptr) {
+    AscendStreamMng::GetInstance().CreateStream(&copy_in_stream_id);
+    MS_LOG(INFO) << "Create ascend copy in stream, stream id: " << copy_in_stream_id;
+    copy_in_stream = AscendStreamMng::GetInstance().GetStream(copy_in_stream_id);
+    AscendStreamMng::GetInstance().SetCopyInStream(copy_in_stream);
+  }
+  copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
+  AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
+  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+}
+
 void AssignStreamForMoveTo(const AnfNodePtr &node) {
   const auto &dst_str = common::AnfAlgo::GetMoveToDstStr(node);
   if (dst_str == kToCpu) {
-    auto copy_out_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
-    size_t copy_out_stream_id;
-    if (copy_out_stream == nullptr) {
-      AscendStreamMng::GetInstance().CreateStream(&copy_out_stream_id);
-      MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << copy_out_stream_id;
-      copy_out_stream = AscendStreamMng::GetInstance().GetStream(copy_out_stream_id);
-      AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_stream);
-    }
-    copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
-    AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+    AssignStreamForCopyOut(node);
   } else if (dst_str == kToNpu) {
-    auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
-    size_t copy_in_stream_id;
-    if (copy_in_stream == nullptr) {
-      AscendStreamMng::GetInstance().CreateStream(&copy_in_stream_id);
-      MS_LOG(INFO) << "Create ascend copy in stream, stream id: " << copy_in_stream_id;
-      copy_in_stream = AscendStreamMng::GetInstance().GetStream(copy_in_stream_id);
-      AscendStreamMng::GetInstance().SetCopyInStream(copy_in_stream);
-    }
-    copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
-    AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+    AssignStreamForCopyIn(node);
   } else {
     MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
   }
@@ -142,8 +151,10 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
     MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
   }
   auto cnode = node->cast<CNodePtr>();
-  if (!common::AnfAlgo::IsCommunicationOp(cnode)) {
-    if (IsPrimitiveCNode(node, prim::kPrimMoveTo) || IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
+  if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+    if (IsPrimitiveCNode(node, prim::kPrimCopyToHost) || IsPrimitiveCNode(node, prim::kPrimCopyToDevice)) {
+      AssignStreamForCopyOut(node);
+    } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo) || IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
       AssignStreamForMoveTo(node);
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
@@ -211,6 +222,8 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, 
         AddStreamIdForCommunicationOp(node);
       } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
         AssignStreamForMoveTo(node);
+      } else if (IsPrimitiveCNode(node, prim::kPrimCopyToHost) || IsPrimitiveCNode(node, prim::kPrimCopyToDevice)) {
+        AssignStreamForCopyOut(node);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
         common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
