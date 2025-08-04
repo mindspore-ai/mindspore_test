@@ -60,7 +60,7 @@ void AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(size_t available_devic
 
   // set by default configuration
   static bool disable_ge_kernel = IsDisableGeKernel();
-  auto is_ge = common::AnfAlgo::IsBackendGe();
+  auto is_ge = AnfAlgo::IsBackendGe();
   if (disable_ge_kernel && is_ge) {
     SetMemAllocUintSize(ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE,
                         ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE);

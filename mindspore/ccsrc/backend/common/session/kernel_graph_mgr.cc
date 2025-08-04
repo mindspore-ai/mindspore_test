@@ -85,7 +85,7 @@ bool RecursiveCheck(const FuncGraphManagerPtr &manager, const std::pair<AnfNodeP
                                     common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimLoad))) {
     return false;
   }
-  if ((AnfUtils::IsRealKernel(node) || IsGeReturnNode(node) || AnfAlgo::IsSummaryNode(node)) &&
+  if ((AnfUtils::IsRealKernel(node) || IsGeReturnNode(node) || common::AnfAlgo::IsSummaryNode(node)) &&
       !common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial)) {
     return true;
   }
@@ -1130,7 +1130,7 @@ ParamInfoPtr GetParamDefaultValue(const AnfNodePtr &node) {
 bool ExistSummaryNode(const KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   for (auto &n : TopoSort(graph->get_return())) {
-    if (AnfAlgo::IsSummaryNode(n)) {
+    if (common::AnfAlgo::IsSummaryNode(n)) {
       return true;
     }
   }

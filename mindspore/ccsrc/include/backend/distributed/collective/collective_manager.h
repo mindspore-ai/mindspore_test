@@ -34,6 +34,8 @@
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
+#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/collective/communication_group.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/visible.h"
 

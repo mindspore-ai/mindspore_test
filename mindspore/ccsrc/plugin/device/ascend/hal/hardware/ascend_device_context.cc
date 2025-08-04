@@ -173,7 +173,7 @@ void AscendDeviceContext::Destroy() {
 }
 
 void AscendDeviceContext::InitDump() const {
-  if (common::AnfAlgo::IsBackendGe()) {
+  if (AnfAlgo::IsBackendGe()) {
     MS_LOG(INFO) << "In the ge backend, dump is initialized at the same time as the backend.";
     return;
   }

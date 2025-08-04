@@ -26,25 +26,25 @@
 #include <utility>
 #include "common/device_type.h"
 #include "common/device_address.h"
-#include "runtime/device/res_manager/swap_manager.h"
-#include "runtime/device/res_manager/capture_graph.h"
-#include "runtime/collective/collective_communication_lib.h"
-#include "runtime/collective/collective_comm_lib_loader.h"
-#include "include/backend/kernel_graph.h"
-#include "utils/anf_utils.h"
-#include "runtime/device/res_manager/memory_manager.h"
-#include "runtime/device/res_manager/auto_mem_offload.h"
-#include "runtime/device/res_manager/utils/utils.h"
-#include "runtime/pipeline/task/task.h"
-#include "ir/device_event.h"
-#include "utils/ms_context.h"
+#include "common/kernel.h"
+#include "common/kernel_tensor.h"
 #include "ir/tensor.h"
+#include "include/backend/kernel_graph.h"
+#include "utils/ms_context.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
 
 namespace mindspore {
+class DeviceEvent;
+using DeviceEventPtr = std::shared_ptr<DeviceEvent>;
+class CaptureGraph;
+using CaptureGraphPtr = std::shared_ptr<CaptureGraph>;
+namespace runtime {
+enum class KernelTaskType;
+}
 namespace device {
+constexpr size_t kSizeZero = 0;
 using mindspore::kernel::KernelMod;
 using mindspore::kernel::KernelTensor;
 
@@ -111,12 +111,15 @@ class BACKEND_COMMON_EXPORT DeviceContext {
   std::shared_ptr<KernelExecutor> kernel_executor_;
 };
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
+class SwapManager;
+class CollectiveCommunicationLib;
+class OffloadedMemPool;
+using DeviceMemPtr = void *;
+enum class CopyType;
 
 class BACKEND_COMMON_EXPORT DeviceResManager {
  public:
-  DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {
-    offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
-  }
+  DeviceResManager();
 
   virtual ~DeviceResManager() = default;
 
@@ -401,22 +404,9 @@ class BACKEND_COMMON_EXPORT KernelExecutor {
     return false;
   };
 
-  virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
-    MS_EXCEPTION_IF_NULL(node);
-    auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-    MS_EXCEPTION_IF_NULL(kernel_info);
-    auto kernel_mod = kernel_info->MutableKernelMod();
-    MS_EXCEPTION_IF_NULL(kernel_mod);
-    return kernel_mod->GetLaunchIgnoredInputAddressIdx();
-  }
+  virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const;
 
-  virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
-    auto ignored_input_list = GetLaunchIgnoredInputAddressIdx(node);
-    if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
-      return true;
-    }
-    return false;
-  }
+  virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const;
 
  protected:
   DeviceContext *device_context_{nullptr};

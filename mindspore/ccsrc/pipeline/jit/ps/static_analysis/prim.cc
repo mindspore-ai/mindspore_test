@@ -36,7 +36,7 @@
 #include "frontend/operator/ops_front_infer_function.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/primfunc_utils.h"
 #include "ir/anf.h"
@@ -923,7 +923,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const Abs
     if (close_view_op) {
       prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
     } else {
-      auto ge_mode = common::AnfAlgo::IsBackendGe();
+      auto ge_mode = AnfAlgo::IsBackendGe();
       if (ge_mode) {
         prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
         MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
@@ -1964,7 +1964,7 @@ bool CheckHasOverriddenMethod(AnfNodePtr node, ValuePtr item_value) {
 
 bool CheckFunctionalMethod(const TypeId &type_id, const ValuePtr &method_value) {
   // ge does not support tensor method overloading.
-  auto ge_mode = common::AnfAlgo::IsBackendGe();
+  auto ge_mode = AnfAlgo::IsBackendGe();
   if (ge_mode) {
     return false;
   }

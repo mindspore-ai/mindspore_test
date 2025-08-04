@@ -590,13 +590,6 @@ size_t CountValueNum(const ValueSequencePtr &value_sequence) {
   return cnt;
 }
 
-bool IsAKGSparseOP(const AnfNodePtr &cnode) {
-  MS_EXCEPTION_IF_NULL(cnode);
-  const PrimitiveSet prims{prim::kPrimCSRReduceSum, prim::kPrimCSRMul,  prim::kPrimCSRMV,  prim::kPrimCSRGather,
-                           prim::kPrimCSR2COO,      prim::kPrimCOO2CSR, prim::kPrimCSRDiv, prim::kPrimCSRMM};
-  return IsOneOfPrimitiveCNode(cnode, prims);
-}
-
 namespace {
 ShapeVector ConvertTensorListToShapeVector(const tensor::TensorPtrList &tensor_list, size_t index) {
   ShapeVector shape;

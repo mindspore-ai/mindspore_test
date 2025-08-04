@@ -1545,7 +1545,7 @@ bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<Anf
   (void)graphs.insert(func_graph);
   bool exist_control_flow = ExistControlFlow(func_graph);
   bool exist_func = exist_control_flow && HasIncorporateCall(all_nodes);
-  bool is_ge = common::AnfAlgo::IsBackendGe();
+  bool is_ge = AnfAlgo::IsBackendGe();
   if (exist_func) {
     if (is_ge) {
       MS_LOG(INFO) << "Run graph mode with sub graph sink because graph exist control flow and incorporate call.";
@@ -1664,7 +1664,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
       return;
     }
     MS_LOG(INFO) << "Cell reuse micro num: " << micro_num;
-    auto not_ge = !common::AnfAlgo::IsBackendGe();
+    auto not_ge = !AnfAlgo::IsBackendGe();
     if (micro_num > kLazyInlineThershold && not_ge) {
       MS_LOG(INFO) << "Set no inline because cell reuse micro num is greater than " << kLazyInlineThershold
                    << ", micro num: " << micro_num;

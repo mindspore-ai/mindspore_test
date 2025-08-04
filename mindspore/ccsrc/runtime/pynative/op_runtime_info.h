@@ -22,6 +22,7 @@
 #include <string>
 #include "common/device_address.h"
 #include "include/backend/kernel_graph.h"
+#include "include/backend/kernel_info.h"
 
 namespace mindspore::runtime {
 using KernelTensorPtr = kernel::KernelTensorPtr;

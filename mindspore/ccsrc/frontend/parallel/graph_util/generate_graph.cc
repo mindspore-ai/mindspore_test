@@ -27,7 +27,6 @@
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/parallel_context.h"
-#include "include/common/utils/anfalgo.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "ir/tensor_new.h"
 #include "ir/anf.h"
@@ -83,7 +82,9 @@ std::vector<AnfNodePtr> RectifyInputsForNewCNode(const std::vector<AnfNodePtr> &
   auto op_inputs_num = op_def->indexes_.size();
   auto graph_view_prim = op_def->is_graph_view_;
   static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-  auto ge_mode = common::AnfAlgo::IsBackendGe();
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto ge_mode = context->GetBackend() == "GE";
   if (graph_view_prim == true && !close_view_op && !ge_mode) {
     op_inputs_num = op_inputs_num + 1;  // for umonad input
     auto monad_input = NewValueNode(kUMonad);

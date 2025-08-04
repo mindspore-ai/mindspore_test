@@ -20,7 +20,6 @@
 #include <list>
 #include <algorithm>
 #include <string>
-#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -92,7 +91,7 @@ bool is_first_receive(const AnfNodePtr &node) {
 void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  static const bool is_enable_ge = common::AnfAlgo::IsBackendGe();
+  static const bool is_enable_ge = context->GetBackend() == "GE";
   if (is_enable_ge) {
     return;
   }

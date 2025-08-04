@@ -30,6 +30,7 @@
 #include <future>
 #include <memory>
 #include <cstdint>
+#include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"

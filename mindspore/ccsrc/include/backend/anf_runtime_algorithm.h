@@ -318,8 +318,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static void FlattenInputArg(const BaseRef &arg, const AnfNodePtr &node,
                               std::vector<tensor::TensorPtr> *flatten_tensors);
 
-  // Used to check whether an AnfNode is a Summary Node.
-  static bool IsSummaryNode(const AnfNodePtr &node);
   static void UpdateValueNodeShape(const AnfNodePtr &node);
   static bool HasSelectKernelBuildInfo(const AnfNodePtr &node);
   static bool NeedEraseCache(const PrimitivePtr &prim);
@@ -357,6 +355,10 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                             const ShapeVector &host_shape, const string &device_name,
                                             uint32_t device_id, const UserDataPtr &user_data = nullptr);
+  // check if is GE backend
+  static bool IsBackendGe();
+  // check if is ms_backend backend
+  static bool IsBackendMs();
 };
 }  // namespace session
 

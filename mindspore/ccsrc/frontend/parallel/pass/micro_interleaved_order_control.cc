@@ -35,7 +35,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
@@ -207,7 +206,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   auto node_users = manager->node_users();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  const bool not_ge = !common::AnfAlgo::IsBackendGe();
+  const bool not_ge = context->GetBackend() != "GE";
   AnfNodePtr comm_node_a_user = nullptr;
   if (not_ge) {
     for (const auto &pair : manager->node_users()[comm_node_a]) {
