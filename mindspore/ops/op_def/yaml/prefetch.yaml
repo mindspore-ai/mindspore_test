@@ -12,3 +12,4 @@ prefetch:
   returns:
     output:
       dtype: tensor
+      inplace: x

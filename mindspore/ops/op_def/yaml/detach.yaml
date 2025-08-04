@@ -12,3 +12,4 @@ detach:
   returns:
     output:
       dtype: tensor
+      inplace: x

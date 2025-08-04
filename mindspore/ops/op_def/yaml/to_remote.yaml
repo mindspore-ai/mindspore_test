@@ -12,3 +12,4 @@ to_remote:
   returns:
     output:
       dtype: tensor
+      inplace: x

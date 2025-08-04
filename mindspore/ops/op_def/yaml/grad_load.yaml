@@ -14,3 +14,4 @@ grad_load:
   returns:
     output:
       dtype: tensor
+      inplace: x
