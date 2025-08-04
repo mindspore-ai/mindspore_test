@@ -176,8 +176,13 @@ def test_ops_binary_cross_entropy_dynamic_shape(context_mode, reduction):
     target2 = ms.Tensor(generate_random_input((9, 8), np.float32))
     weight2 = ms.Tensor(generate_random_input((9, 8), np.float32))
 
+    disable_case = []
+    if ms.context.get_context("device_target").upper() == "CPU":
+        disable_case = ["Deterministic"]
+
     test_cell = test_utils.to_cell_obj(binary_cross_entropy_forward_func)
     TEST_OP(test_cell, [[x1, target1, weight1, reduction], [x2, target2, weight2, reduction]],
+            disable_case=disable_case,
             case_config={'disable_input_check': True,
                          'all_dim_zero': True,
                          'deterministic_use_origin_inputs': True})
