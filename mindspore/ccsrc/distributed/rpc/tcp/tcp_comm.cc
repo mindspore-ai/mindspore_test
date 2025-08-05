@@ -76,8 +76,8 @@ void ConnectedEventHandler(int fd, uint32_t events, void *context) {
   }
 
   if (!conn->enable_ssl) {
-    MS_LOG(WARNING) << "Connection from " << conn->source << " to " << conn->destination
-                    << " is successfully created. System errno: " << strerror(errno);
+    MS_LOG(INFO) << "Connection from " << conn->source << " to " << conn->destination
+                 << " is successfully created. System errno: " << strerror(errno);
     conn->socket_operation->ConnEstablishedEventHandler(fd, events, context);
   }
   return;
@@ -482,8 +482,7 @@ bool TCPComm::Connect(const std::string &dst_url, const MemFreeCallback &free_cb
     conn->source = SocketOperation::GetIP(sock_fd) + ":" + std::to_string(SocketOperation::GetPort(sock_fd));
     conn->destination = dst_url;
     dst_url_to_src_ip_[dst_url] = SocketOperation::GetIP(sock_fd);
-    MS_LOG(WARNING) << "Connection " << sock_fd << " source: " << conn->source
-                    << ", destination: " << conn->destination;
+    MS_LOG(INFO) << "Connection " << sock_fd << " source: " << conn->source << ", destination: " << conn->destination;
 
     // Check the state of this new created connection.
     uint32_t interval = 1;
@@ -491,8 +490,8 @@ bool TCPComm::Connect(const std::string &dst_url, const MemFreeCallback &free_cb
     // Record total retry number to avoid duplicated log.
     static size_t total_retry_count = 0;
     while (conn->state < ConnectionState::kConnected && retry-- > 0) {
-      MS_LOG(WARNING) << "Waiting for the state of the connection to " << dst_url
-                      << " to be connected...Retry number: " << ++total_retry_count;
+      MS_LOG(INFO) << "Waiting for the state of the connection to " << dst_url
+                   << " to be connected...Retry number: " << ++total_retry_count;
       SleepBasedOnScale(interval);
     }
     if (conn->state != ConnectionState::kConnected) {

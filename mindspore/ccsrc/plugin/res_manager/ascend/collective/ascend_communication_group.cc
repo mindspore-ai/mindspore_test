@@ -234,12 +234,13 @@ bool AscendCommunicationGroup::InitByRankTable(std::string rank_table, uint32_t 
 }
 
 bool AscendCommunicationGroup::InitByHcclComm() {
-  MS_LOG(INFO) << "Start to initialize communicator by Hcom from hccl config for " << name_;
+  MS_LOG(WARNING) << "Start to initialize communicator by Hcom from hccl config for " << name_;
   if (!std::holds_alternative<int64_t>(hccl_config_["hccl_comm"])) {
     MS_LOG(EXCEPTION) << "Failed to get hcom. Type of hccl_comm in GroupOptions should be int64.";
   }
   comm_ = reinterpret_cast<HcclComm>(static_cast<intptr_t>(std::get<int64_t>(hccl_config_["hccl_comm"])));
-  MS_LOG(INFO) << "End to initialize communicator by Hcom from hccl config for " << name_;
+  MS_LOG(WARNING) << "End to initialize communicator by Hcom from hccl config for " << name_
+                  << " comm handle: " << comm_;
   return true;
 }
 

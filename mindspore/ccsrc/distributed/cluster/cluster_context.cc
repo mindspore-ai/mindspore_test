@@ -151,7 +151,7 @@ bool ClusterContext::Finalize(uint32_t timeout) {
   bool force = (timeout == 0);
   uint32_t interval = 5;
   while (!node_base_->Finalize(force)) {
-    MS_LOG(WARNING)
+    MS_LOG(INFO)
       << "This log means the cluster is successfully created. Retry to finalize the node and exit cluster...";
     (void)sleep(interval);
   }
