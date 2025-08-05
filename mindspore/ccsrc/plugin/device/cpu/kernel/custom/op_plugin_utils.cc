@@ -77,7 +77,6 @@ void *GetOpPluginHandle() {
   }
   handle = DL_OPEN(real_path);
   if (handle == nullptr) {
-    DWORD error = GetLastError();
     MS_LOG(WARNING) << "Failed to open op plugin file: " << real_path << " Error code: " << DL_ERROR();
   }
 
