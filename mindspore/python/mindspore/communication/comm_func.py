@@ -890,7 +890,8 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
     if not isinstance(group, str):
         raise TypeError(f"group must be type of string, but got {type(group)}")
     _op = _get_cache_prim(P.Barrier)(group)
-    return _op()
+    _op()
+    ms.runtime.synchronize()
 
 
 def _deal_comm_outputs(output, async_op, exec_sync=False):
