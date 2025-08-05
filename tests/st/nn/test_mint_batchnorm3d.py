@@ -24,25 +24,43 @@ from tests.mark_utils import arg_mark
 from tests.st.ops.test_tools.test_op import TEST_OP
 
 
+class BatchNorm3dTraining(nn.Cell):
+    def __init__(self,
+                 num_features: int,
+                 eps: float = 1e-5,
+                 momentum: float = 0.1,
+                 affine: bool = True,
+                 track_running_stats: bool = True,
+                 dtype=None
+                 ) -> None:
+        super(BatchNorm3dTraining, self).__init__()
+        self.net = nn.BatchNorm3d(num_features, eps=eps, momentum=momentum, affine=affine,
+                                  track_running_stats=track_running_stats, dtype=dtype)
+        self.net.set_train()
+
+    def construct(self, input_x):
+        return self.net(input_x)
+
+
 @test_utils.run_with_cell
 def forward_batch_norm_3d_net(input_x, num_features, eps=1e-5, momentum=0.1, affine=True,
                               track_running_stats=True, dtype=None):
-    net = nn.BatchNorm3d(num_features, eps=eps, momentum=momentum, affine=affine,
-                         track_running_stats=track_running_stats, dtype=dtype)
+    net = BatchNorm3dTraining(num_features, eps=eps, momentum=momentum, affine=affine,
+                              track_running_stats=track_running_stats, dtype=dtype)
     return net(input_x)
 
 
 @test_utils.run_with_cell
 def forward_batch_norm_3d_for_dyn(input_x):
-    net = nn.BatchNorm3d(4)
+    net = BatchNorm3dTraining(4)
     return net(input_x)
 
 
 @test_utils.run_with_cell
 def grad_batch_norm_3d_net(input_x, num_features, eps=1e-5, momentum=0.1, affine=True,
                            track_running_stats=True, dtype=None):
-    net = nn.BatchNorm3d(num_features, eps=eps, momentum=momentum, affine=affine,
-                         track_running_stats=track_running_stats, dtype=dtype)
+    net = BatchNorm3dTraining(num_features, eps=eps, momentum=momentum, affine=affine,
+                              track_running_stats=track_running_stats, dtype=dtype)
     return ms.grad(net)(input_x)
 
 
