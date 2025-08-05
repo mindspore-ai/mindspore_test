@@ -216,7 +216,7 @@ void ExitActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
       // Update the real used device context by the input data.
       if (device_contexts_[i]->GetDeviceType() != input_device_tensor->GetDeviceType()) {
         device_contexts_[i] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-          {input_device_tensor->device_name(), input_device_tensor->device_id()});
+          {device::GetDeviceNameByType(input_device_tensor->GetDeviceType()), input_device_tensor->device_id()});
         MS_LOG(INFO) << "Update device context type to:" << device_contexts_[i]->GetDeviceType();
       }
       device_contexts_[i]->device_res_manager_->FreeMemory(input_device_tensor);
@@ -369,7 +369,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     if (device_context->GetDeviceType() != input_device_tensor->GetDeviceType()) {
       device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {input_device_tensor->device_name(), input_device_tensor->device_id()});
+        {device::GetDeviceNameByType(input_device_tensor->GetDeviceType()), input_device_tensor->device_id()});
       MS_LOG(INFO) << "Update device context type to:" << device_context->GetDeviceType();
     }
 

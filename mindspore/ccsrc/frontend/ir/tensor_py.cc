@@ -701,7 +701,7 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
                  << ", the tensor's size is : " << device_address->GetSize();
 
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_address->device_name(), device_address->device_id()});
+      {device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->device_res_manager_->SyncAllStreams();
     auto cpu_tensor = tensor->cpu();
@@ -800,8 +800,9 @@ std::shared_ptr<StorageBase> TensorPybind::GetStorage(const TensorPtr &tensor) {
   } else {
     return nullptr;
   }
-  if (device_address->device_name() != "Ascend") {
-    MS_LOG(EXCEPTION) << "The current Storage does not yet support " << device_address->device_name();
+  if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
+    MS_LOG(EXCEPTION) << "The current Storage does not yet support "
+                      << device::GetDeviceNameByType(device_address->GetDeviceType());
   }
   auto storage_base = std::make_shared<StorageBase>(device_address);
   return storage_base;
@@ -825,10 +826,11 @@ std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
   if (device_address == nullptr) {
     return "CPU";
   }
-  if (device_address->device_name() == "CPU") {
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     return "CPU";
   }
-  return device_address->device_name() + ":" + std::to_string(device_address->device_id());
+  return device::GetDeviceNameByType(device_address->GetDeviceType()) + ":" +
+         std::to_string(device_address->device_id());
 }
 
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {

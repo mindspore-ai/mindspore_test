@@ -26,7 +26,7 @@
 #include <functional>
 #include <utility>
 #include "common/kernel_utils.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "common/ms_factory.h"
 #include "kernel/philox_random.h"

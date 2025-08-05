@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <memory>
 #include "mindspore/ops/infer/ops_func_impl/isclose.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

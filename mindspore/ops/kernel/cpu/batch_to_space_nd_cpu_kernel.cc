@@ -18,7 +18,6 @@
 
 #include "mindspore/ops/infer/batch_to_space_nd.h"
 #include "kernel/cpu/batch_to_space_nd_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

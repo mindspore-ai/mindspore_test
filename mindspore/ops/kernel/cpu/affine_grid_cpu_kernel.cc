@@ -18,7 +18,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "utils/ms_utils.h"
 #include "common/common_utils.h"
 

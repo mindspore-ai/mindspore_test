@@ -23,7 +23,6 @@
 #include <random>
 #include "common/common_utils.h"
 #include "mindspore/ops/infer/histogram.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "mindspore/ops/infer/median.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

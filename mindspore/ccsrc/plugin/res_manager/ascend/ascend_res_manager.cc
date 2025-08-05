@@ -30,7 +30,6 @@
 #include "hccl/hccl.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -121,9 +120,8 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
     const auto temp_device_address = tensor->device_address();
     auto const device_address = std::dynamic_pointer_cast<const DeviceAddress>(temp_device_address);
     MS_EXCEPTION_IF_NULL(device_address);
-    if (device_address->device_name() != "CPU") {
-      auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
-      MS_EXCEPTION_IF_NULL(src_device_address);
+    if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+      auto const src_device_address = device_address;
       format = FromStrToEnum(src_device_address->format());
     } else {
       auto cpu_tensor = tensor->cpu();
@@ -650,8 +648,8 @@ std::vector<void *> AscendResManager::AllocateContinuousMemory(const std::vector
 DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_address = std::make_shared<AscendDeviceAddress>();
-  device_address->set_device_name(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kAscendDevice);
+  device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
   device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
@@ -660,19 +658,18 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
                                                        uint32_t stream_id, const UserDataPtr &user_data) const {
-  auto real_device_name = device_name;
   auto real_device_id = device_id;
   if (device_name.empty()) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     real_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    real_device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
-                  << ", real device id: " << real_device_id;
+    MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
   }
-  auto device_address = std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id,
-                                                              real_device_name, real_device_id, stream_id);
-  device_address->set_user_data(user_data);
+  auto device_address =
+    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kAscendDevice, real_device_id, stream_id);
+  if (user_data) {
+    device_address->set_user_data(user_data);
+  }
   return device_address;
 }
 
@@ -1115,10 +1112,6 @@ bool AscendResManager::CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_de
     (void)host_shape.emplace_back(1);
   }
   auto node_index = dst_device_address->GetNodeIndex();
-  if (node_index.first != nullptr) {
-    const auto &dst_ascend_device_address = dynamic_cast<const AscendDeviceAddress *>(dst_device_address);
-    (void)dst_ascend_device_address->GetGroupsWithCache();
-  }
   std::vector<int64_t> device_shape;
   if (dst_format != kOpFormat_FRAC_NZ) {
     host_shape = trans::PaddingShape(host_shape, dst_format);
@@ -1564,9 +1557,9 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
       res_manager->SyncAllStreams();
       SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
       tensor->set_device_address(device_address);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(),
-                                                     device_ptr, tensor->data_type(), tensor->shape(),
-                                                     tensor->storage_info());
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+        MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()), device_ptr,
+        tensor->data_type(), tensor->shape(), tensor->storage_info());
       ptr += before_padding_sizes[i];
     }
     std::vector<size_t> after_padding_sizes(before_padding_sizes.size());
@@ -1615,7 +1608,8 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     tensor->set_device_address(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", before_padding_sizes[i], ptr,
                                                    memory::mem_pool::MemType::kContinuousMemory);
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(), ptr,
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative",
+                                                   device::GetDeviceNameByType(device_address->GetDeviceType()), ptr,
                                                    tensor->data_type(), tensor->shape(), tensor->storage_info());
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -1974,6 +1968,12 @@ MS_REGISTER_HAL_COPY_FUNC(
     return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
+
+REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kAscend, ([](void *ptr, bool from_mem_pool) {
+                                    if (ptr != nullptr && from_mem_pool) {
+                                      AscendMemoryPool::GetInstance().FreeTensorMem(ptr);
+                                    }
+                                  }));
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

@@ -145,8 +145,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context, size_t stream_id,
                                                      const size_t &workspace_size);
 
-  static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
-                                                size_t output_idx);
   static device::DeviceAddressPtr CreateDeviceAddress(const DeviceContext *device_context,
                                                       const tensor::TensorPtr &tensor, const ShapeVector &real_shape,
                                                       const size_t &stream_id);

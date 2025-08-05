@@ -23,7 +23,6 @@
 #include "kernel/cpu/utils/cpu_utils.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/base/broadcast_to.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

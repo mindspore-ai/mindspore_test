@@ -280,7 +280,7 @@ inline aclTensor *ConvertType(device::DeviceAddress *device_address) {
   }
 
   aclTensor *acl_tensor = nullptr;
-  const auto &storage_info = device_address->address_common()->tensor_storage_info_;
+  const auto &storage_info = device_address->GetTensorStorageInfo();
   if (storage_info == nullptr) {
     // Create strides.
     auto strides = shape;

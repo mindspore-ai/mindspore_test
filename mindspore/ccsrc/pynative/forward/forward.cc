@@ -110,8 +110,9 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      MarkTensorAsInput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
-      device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+      MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
+      device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
+      device_address->GetTensorStorageInfo());
   }
 }
 #endif
@@ -339,7 +340,8 @@ tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor) {
   const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(old_device_address);
 
-  const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->device_name());
+  const DeviceContext *device_context =
+    runtime::OpRunner::GetDeviceContext(device::GetDeviceNameByType(old_device_address->GetDeviceType()));
   MS_EXCEPTION_IF_NULL(device_context);
   GilReleaseWithCheck release_gil;
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
@@ -1023,9 +1025,10 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
 
   // Create view output address
 
-  auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-    nullptr, input_device_address->GetSize(), Format::DEFAULT_FORMAT, output_tensor->data_type(),
-    output_tensor->shape(), input_device_address->device_name(), input_device_address->device_id());
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, input_device_address->GetSize(), Format::DEFAULT_FORMAT,
+                                                   output_tensor->data_type(), output_tensor->shape(),
+                                                   device::GetDeviceNameByType(input_device_address->GetDeviceType()),
+                                                   input_device_address->device_id());
   if (input_device_address->GetDeviceType() != device::DeviceType::kAscend) {
     // Not transmitting host shape information under Ascend for better performance.
     kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(output_tensor->data_type())));

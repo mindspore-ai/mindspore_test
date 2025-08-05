@@ -22,7 +22,7 @@
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
@@ -188,8 +188,8 @@ void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
 }  // namespace
 
 DeviceAddressPtr CPUResManager::CreateDeviceAddress() const {
-  auto device_address = std::make_shared<CPUDeviceAddress>();
-  device_address->set_device_name(GetDeviceNameByType(res_key_.device_name_));
+  auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kCPUDevice);
+  device_address->SetDeviceType(res_key_.device_name_);
   device_address->set_device_id(res_key_.device_id_);
   return device_address;
 }
@@ -198,16 +198,13 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
                                                     const Format &format, TypeId type_id,
                                                     const std::string &device_name, uint32_t device_id,
                                                     uint32_t stream_id, const UserDataPtr &user_data) const {
-  auto real_device_name = device_name;
   auto real_device_id = device_id;
   if (device_name.empty()) {
-    real_device_name = GetDeviceNameByType(res_key_.device_name_);
     real_device_id = res_key_.device_id_;
-    MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
-                  << ", real device id: " << real_device_id;
+    MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
   }
-  auto device_address = std::make_shared<CPUDeviceAddress>(ptr, size, shape_vector, format, type_id, real_device_name,
-                                                           real_device_id, stream_id);
+  auto device_address =
+    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kCPUDevice, real_device_id, stream_id);
 
   if (user_data != nullptr) {
     FillUserData(user_data, device_address.get());
@@ -222,8 +219,8 @@ bool CPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceS
 }
 bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                               size_t stream_id, bool) const {
-  const auto &dst_device_address = dynamic_cast<const CPUDeviceAddress *>(dst_device_sync.get());
-  const auto &src_device_address = dynamic_cast<const CPUDeviceAddress *>(src_device_sync.get());
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
@@ -331,6 +328,12 @@ MS_REGISTER_HAL_COPY_FUNC(
     return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, CPUResManager);
+
+REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kCPU, ([](void *ptr, bool from_mem_pool) {
+                                    if (ptr != nullptr && from_mem_pool) {
+                                      CPUMemoryPool::GetInstance().FreeTensorMem(ptr);
+                                    }
+                                  }));
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore

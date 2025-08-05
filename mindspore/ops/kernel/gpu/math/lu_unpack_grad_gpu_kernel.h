@@ -25,7 +25,6 @@
 #include "mindspore/ops/infer/grad/lu_unpack_grad.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
-#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lu_unpack_grad_impl.cuh"
 
 namespace mindspore {

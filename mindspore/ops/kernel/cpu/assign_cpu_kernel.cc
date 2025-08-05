@@ -17,8 +17,6 @@
 #include "kernel/cpu/assign_cpu_kernel.h"
 
 #include <complex>
-
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {

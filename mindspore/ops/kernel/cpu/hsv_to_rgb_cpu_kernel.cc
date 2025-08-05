@@ -15,7 +15,6 @@
  */
 #include "kernel/cpu/hsv_to_rgb_cpu_kernel.h"
 #include <vector>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

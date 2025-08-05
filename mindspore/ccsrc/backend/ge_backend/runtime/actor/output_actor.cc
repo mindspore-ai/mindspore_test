@@ -362,7 +362,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
   if (device::GetDeviceTypeByName(device_name) != device_tensor->GetDeviceType()) {
-    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << device_tensor->device_name();
+    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got "
+                      << device::GetDeviceNameByType(device_tensor->GetDeviceType());
   }
 
   // Create the device address and put it into host tensor.
@@ -494,8 +495,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
-      device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+      MarkTensorAsOutput, GetAID().Name(), device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetTensorStorageInfo());
   }
 
   // output types used for construct outputs.

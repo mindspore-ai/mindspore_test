@@ -15,7 +15,6 @@
  */
 
 #include "kernel/cpu/sequence/seq_to_seq_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

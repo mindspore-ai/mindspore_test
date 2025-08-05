@@ -19,7 +19,7 @@
 #include <functional>
 #include <numeric>
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/grad/pad_v3_grad.h"
 

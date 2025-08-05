@@ -16,7 +16,6 @@
 
 #include "plugin/device/ascend/llm_boost/atb/boost_model_atb.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "mindapi/base/type_id.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/llm_boost/atb/workspace.h"

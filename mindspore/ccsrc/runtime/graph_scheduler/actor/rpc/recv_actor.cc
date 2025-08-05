@@ -216,7 +216,7 @@ void *RecvActor::AllocateMemByDeviceRes(size_t size) {
   // Only need to create recv_data_ once.
   // The real data is allocated and freed multiple times as recv_data_->ptr_.
   if (recv_data_ == nullptr) {
-    recv_data_ = std::make_shared<CPUDeviceAddress>(nullptr, size);
+    recv_data_ = std::make_shared<device::DeviceAddress>(nullptr, size, kCPUDevice);
     MS_ERROR_IF_NULL_W_RET_VAL(recv_data_, nullptr);
   } else {
     recv_data_->SetSize(size);

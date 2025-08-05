@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "runtime/device/move_to.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context_manager.h"

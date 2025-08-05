@@ -22,7 +22,7 @@
 #include <memory>
 #include <utility>
 #include "common/kernel.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {
@@ -42,9 +42,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void CreateDeviceAddressByMapTensorNode(const AnfNodePtr &node, size_t index);
 
   static KernelTensorPtr CloneEmptyKernelTensor(const KernelTensorPtr &old_kernel_tensor);
-
-  static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
-                                                size_t output_idx);
 
   static bool IsContiguousTensor(const tensor::TensorPtr &tensor);
 

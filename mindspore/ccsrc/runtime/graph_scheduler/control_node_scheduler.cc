@@ -2454,7 +2454,7 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
         parser->FetchBackendParameterWithContextByFrontParameter(formal_parameter);
       const auto &node_with_index = node_with_index_with_context.first;
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {cur_device_tensor->device_name(), cur_device_tensor->device_id()});
+        {device::GetDeviceNameByType(cur_device_tensor->GetDeviceType()), cur_device_tensor->device_id()});
       if (to_actor->device_contexts_.size() > i) {
         to_actor->device_contexts_[i] = device_context;
       }

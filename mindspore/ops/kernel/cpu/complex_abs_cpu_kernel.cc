@@ -15,7 +15,6 @@
  */
 #include "kernel/cpu/complex_abs_cpu_kernel.h"
 #include <complex>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -23,7 +23,6 @@
 #include <string>
 
 #include "utils/digamma_helper.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

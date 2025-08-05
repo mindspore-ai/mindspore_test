@@ -19,7 +19,7 @@
 
 #include "common/common_test.h"
 #include "distributed/embedding_cache/embedding_storage/sparse_embedding_storage.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 
 namespace mindspore {
@@ -35,7 +35,6 @@ class TestSparseEmbeddingStorage : public UT::Common {
 };
 
 using device::DeviceAddressPtr;
-using device::cpu::CPUDeviceAddress;
 using device::cpu::CPUHashTable;
 using ExportData = std::vector<std::shared_ptr<std::vector<char>>>;
 /// Feature: test sparse embedding storage all api.
@@ -49,7 +48,7 @@ TEST_F(TestSparseEmbeddingStorage, DISABLED_test_sparse_embedding_storage) {
   std::unique_ptr<float[]> embedding_table = std::make_unique<float[]>(capacity * embedding_dim);
 
   DeviceAddressPtr device_address =
-    std::make_shared<CPUDeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float));
+    std::make_shared<DeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float), kCPUDevice);
   EXPECT_NE(device_address, nullptr);
   UserDataPtr user_data = std::make_shared<UserData>();
   user_data->set<CPUHashTable<int, float>>(kUserDataData,
@@ -123,7 +122,7 @@ TEST_F(TestSparseEmbeddingStorage, DISABLED_test_sparse_embedding_storage_export
   std::unique_ptr<float[]> embedding_table = std::make_unique<float[]>(capacity * embedding_dim);
 
   DeviceAddressPtr device_address =
-    std::make_shared<CPUDeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float));
+    std::make_shared<DeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float), kCPUDevice);
   EXPECT_NE(device_address, nullptr);
   UserDataPtr user_data = std::make_shared<UserData>();
   user_data->set<CPUHashTable<int, float>>(kUserDataData,

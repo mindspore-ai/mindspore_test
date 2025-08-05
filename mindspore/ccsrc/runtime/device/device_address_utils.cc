@@ -44,7 +44,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -350,11 +350,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   }
 }
 
-void DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
-                                                           size_t output_idx) {
-  MS_EXCEPTION_IF_NULL(addr);
-}
-
 device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorValue(const DeviceContext *device_context,
                                                                                    const ValuePtr &node_value,
                                                                                    size_t output_idx,
@@ -374,7 +369,6 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
       if (output_address->GetDeviceType() == device_context->GetDeviceType()) {
         // We need to set tensor->device_address to ValueNode even if the tensor is a forward_output tensor
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
-        UpdateDeviceAddressHostInfoByNode(output_address, value_node, output_idx);
         AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx++,
                                value_node);
         (void)address_list.emplace_back(output_address);
@@ -1414,9 +1408,10 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address, bool is_sync) {
   MS_EXCEPTION_IF_NULL(old_device_address);
 
-  const DeviceContext *device_context = input_device_context == nullptr
-                                          ? runtime::OpRunner::GetDeviceContext(old_device_address->device_name())
-                                          : input_device_context;
+  const DeviceContext *device_context =
+    input_device_context == nullptr
+      ? runtime::OpRunner::GetDeviceContext(device::GetDeviceNameByType(old_device_address->GetDeviceType()))
+      : input_device_context;
   MS_EXCEPTION_IF_NULL(device_context);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 
@@ -1435,7 +1430,6 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   kernel_tensor->set_stream_id(stream_id);
 
   auto new_device_address = kernel_tensor->device_address();
-  new_device_address->set_device_shape(old_storage_info->shape);
   new_device_address->set_new_ref_count(SIZE_MAX);
   MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
   if (is_sync) {

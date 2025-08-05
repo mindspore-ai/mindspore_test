@@ -209,7 +209,7 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   GilReleaseWithCheck gil_release;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {old_device_address->device_name(), old_device_address->device_id()});
+    {device::GetDeviceNameByType(old_device_address->GetDeviceType()), old_device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
@@ -217,7 +217,6 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
-  new_device_address->set_device_shape(storage_info->shape);
   new_device_address->set_new_ref_count(SIZE_MAX);
 
   if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,

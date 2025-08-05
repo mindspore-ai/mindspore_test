@@ -662,7 +662,7 @@ void CheckDeviceAddressConsist(OpContext<KernelTensor> *const context, const std
   const auto &shape = addr_list[0]->device_address()->host_shape();
   const auto &size = addr_list[0]->device_address()->GetSize();
   const auto &type = addr_list[0]->device_address()->type_id();
-  const auto &device_name = addr_list[0]->device_name();
+  const auto &device_name = device::GetDeviceNameByType(addr_list[0]->GetDeviceType());
   for (size_t i = 1; i < addr_list.size(); ++i) {
     MS_EXCEPTION_IF_NULL(addr_list[i]);
     MS_EXCEPTION_IF_NULL(addr_list[i]->device_address());
@@ -672,7 +672,7 @@ void CheckDeviceAddressConsist(OpContext<KernelTensor> *const context, const std
                     << " addr2:" << addr_list[i]->device_address()
                     << " size:" << addr_list[i]->device_address()->GetSize()
                     << " shape:" << addr_list[i]->device_address()->host_shape()
-                    << " device name:" << addr_list[i]->device_name() << " type"
+                    << " device name:" << device::GetDeviceNameByType(addr_list[i]->GetDeviceType()) << " type"
                     << addr_list[i]->device_address()->type_id() << " for actor:" << actor_name;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Failed to merge two device address");
     }
@@ -701,7 +701,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &shape = addr_list[0]->device_address()->host_shape();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
 
-  device::ResKey res_key{device::GetDeviceTypeByName(addr_list[0]->device_name()), addr_list[0]->device_id()};
+  device::ResKey res_key{addr_list[0]->GetDeviceType(), addr_list[0]->device_id()};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
 
@@ -713,7 +713,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
                 << " in device address:" << addr_list[0]->device_address();
   const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
     tuple_shape, tuple_type, nullptr, nullptr, total_size, addr_list[0]->device_address()->format(),
-    addr_list[0]->device_address()->type_id(), total_shape, addr_list[0]->device_address()->device_name(),
+    addr_list[0]->device_address()->type_id(), total_shape,
+    device::GetDeviceNameByType(addr_list[0]->device_address()->GetDeviceType()),
     addr_list[0]->device_address()->device_id());
   new_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &new_device_tensor = new_kernel_tensor->device_address();
@@ -742,7 +743,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   auto tmp_kernel_tensor = AnfAlgo::CreateKernelTensor(
     new_device_tensor->GetMutablePtr(), addr_list[0]->device_address()->GetSize(),
     kernel::GetFormatFromStrToEnum(addr_list[0]->device_address()->format()), addr_list[0]->device_address()->type_id(),
-    shape, addr_list[0]->device_address()->device_name(), addr_list[0]->device_address()->device_id());
+    shape, device::GetDeviceNameByType(addr_list[0]->device_address()->GetDeviceType()),
+    addr_list[0]->device_address()->device_id());
   tmp_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &tmp_device_tensor = tmp_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tmp_device_tensor);
@@ -760,17 +762,17 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
       }
     }
     bool ret = false;
-    if (addr_list[i]->device_address()->device_name() == addr_list[0]->device_address()->device_name()) {
+    if (addr_list[i]->device_address()->GetDeviceType() == addr_list[0]->device_address()->GetDeviceType()) {
       ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
-    } else if (addr_list[0]->device_address()->device_name() == kCPUDevice) {
+    } else if (addr_list[0]->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
       ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
-    } else if (addr_list[i]->device_address()->device_name() == kCPUDevice) {
+    } else if (addr_list[i]->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
       ret = SyncCopy(tmp_device_tensor, addr_list[i]->device_address(), kDefaultStreamIndex);
     } else {
       MS_LOG(ERROR) << "Invalid device name for addr1:" << addr_list[0]->device_address()
-                    << " name:" << addr_list[0]->device_address()->device_name()
+                    << " name:" << addr_list[0]->device_address()->GetDeviceType()
                     << " and addr2:" << addr_list[i]->device_address()
-                    << " name:" << addr_list[i]->device_address()->device_name();
+                    << " name:" << addr_list[i]->device_address()->GetDeviceType();
     }
     if (!ret) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");

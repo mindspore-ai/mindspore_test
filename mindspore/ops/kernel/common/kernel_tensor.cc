@@ -83,11 +83,11 @@ KernelHostInfo::KernelHostInfo(const KernelHostInfo &other) {
   kernel_tensor_value_ = other.kernel_tensor_value_;
 }
 
-KernelTensor::KernelTensor() { address_common_ = std::make_shared<AddressCommon>(); }
+KernelTensor::KernelTensor() { device_address_ = std::make_shared<DeviceAddress>(); }
 
 KernelTensor::KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value) {
   host_info_ = std::make_unique<KernelHostInfo>();
-  address_common_ = std::make_shared<AddressCommon>();
+  device_address_ = std::make_shared<DeviceAddress>();
 
   if (type) {
     SetType(type);
@@ -104,7 +104,6 @@ KernelTensor::KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &t
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_id, const ShapeVector &host_shape) {
   MS_EXCEPTION_IF_NULL(device_address);
   device_address_ = device_address;
-  address_common_ = device_address_->address_common();
   device_address_->set_host_shape(host_shape);
   if (dtype_id == kTypeUnknown) {
     SetType(TypeIdToType(dtype_id));
@@ -119,31 +118,28 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
                            const string &device_name, uint32_t device_id)
     : KernelTensor(shape, type, value) {
   MS_EXCEPTION_IF_NULL(device_address);
+  auto shape_vector = device_address_->GetShapeVector();
   device_address_ = device_address;
-  address_common_->pointer_ref_count_->set_ptr(device_ptr);
-  auto pointer_ref_count = device_address_->address_common()->pointer_ref_count_;
-  address_common_->pointer_ref_count_->set_deleter(pointer_ref_count->deleter());
-  address_common_->pointer_ref_count_->set_allocator(pointer_ref_count->allocator());
-  address_common_->size_ = size;
-  address_common_->format_ = GetFormatFromStrToEnum(format);
-  address_common_->dtype_id_ = dtype_id;
-  address_common_->device_name_ = device_name;
-  address_common_->device_id_ = device_id;
-  device_address_->set_address_common(address_common_);
+  device_address_->pointer_ref_count()->set_ptr(device_ptr);
+  auto pointer_ref_count = device_address_->pointer_ref_count();
+  device_address_->pointer_ref_count()->set_deleter(pointer_ref_count->deleter());
+  device_address_->pointer_ref_count()->set_allocator(pointer_ref_count->allocator());
+  device_address_->SetSize(size);
+  device_address_->SetShapeVector(shape_vector);
+  device_address_->set_format(format);
+  device_address_->set_type_id(dtype_id);
+  device_address_->SetDeviceType(device::GetDeviceTypeByName(device_name));
+  device_address_->set_device_id(device_id);
   device_address_->set_host_shape(host_shape);
 }
 
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
                            const TypePtr &type, const ValuePtr &value, const ShapeVector &host_shape,
                            const UserDataPtr &user_data) {
-  if (device_address != nullptr) {
-    device_address_ = device_address;
-    address_common_ = device_address_->address_common();
-    device_address_->set_user_data(user_data);
-    device_address_->set_host_shape(host_shape);
-  } else {
-    address_common_ = std::make_shared<AddressCommon>();
-  }
+  MS_EXCEPTION_IF_NULL(device_address);
+  device_address_ = device_address;
+  device_address_->set_user_data(user_data);
+  device_address_->set_host_shape(host_shape);
 
   host_info_ = std::make_unique<KernelHostInfo>();
   if (type) {
@@ -173,14 +169,10 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
 
   // Copy device info.
   task_id_on_stream_ = other.task_id_on_stream_;
-  if (other.device_address_ != nullptr) {
-    device_address_ = other.device_address_->CloneDeviceAddress();
-    address_common_ = device_address_->address_common();
-    device_address_->set_user_data(other.user_data());
-    device_address_->set_host_shape(other.host_shape());
-  } else {
-    address_common_ = std::make_shared<AddressCommon>(*other.address_common_);
-  }
+  MS_EXCEPTION_IF_NULL(other.device_address_);
+  device_address_ = other.device_address_->CloneDeviceAddress();
+  device_address_->set_user_data(other.user_data());
+  device_address_->set_host_shape(other.host_shape());
 }
 
 inline void KernelTensor::CheckHostInfoValid() {
@@ -214,13 +206,13 @@ void KernelTensor::SetShape(const abstract::BaseShapePtr &shape) {
       // The shape type check will affect the performance. The following check will be deleted after the framework is
       // stable.
       if (shape_->isa<abstract::NoShape>()) {
-        address_common_->shape_vector_ = {};
+        device_address_->SetShapeVector({});
       } else {
         if (!shape_->isa<abstract::TensorShape>()) {
           MS_LOG(EXCEPTION) << "Expected TensorShape for SetShape, but got: " << shape_->type_name() << ", "
                             << shape_->ToString();
         }
-        address_common_->shape_vector_ = shape_->GetShapeVector();
+        device_address_->SetShapeVector(shape_->GetShapeVector());
       }
 
       break;
@@ -229,7 +221,7 @@ void KernelTensor::SetShape(const abstract::BaseShapePtr &shape) {
     case kObjectTypeList:
     case kObjectTypeTuple: {
       if (shape->isa<abstract::DynamicSequenceShape>()) {
-        address_common_->shape_vector_ = {-1};
+        device_address_->SetShapeVector({-1});
         break;
       }
       const auto &seq_shape = shape_->cast<abstract::SequenceShapePtr>();
@@ -237,23 +229,22 @@ void KernelTensor::SetShape(const abstract::BaseShapePtr &shape) {
         MS_LOG(EXCEPTION) << "Expected SequenceShape for SetShape, but got: " << shape_->type_name() << ", "
                           << shape_->ToString();
       }
-      address_common_->shape_vector_.clear();
-      address_common_->shape_vector_.push_back(seq_shape->size());
+      device_address_->SetShapeVector({SizeToLong(seq_shape->size())});
       const auto &shapes = seq_shape->shape();
       if (shapes.empty()) {
         break;
       }
       const auto &element_shape = shapes[0];
       MS_EXCEPTION_IF_NULL(element_shape);
+      auto shape_vector = device_address_->GetShapeVector();
       if (element_shape->isa<abstract::TensorShape>()) {
         const ShapeVector &element_shape_vector = element_shape->GetShapeVector();
-        address_common_->shape_vector_.insert(address_common_->shape_vector_.end(), element_shape_vector.begin(),
-                                              element_shape_vector.end());
+        shape_vector.insert(shape_vector.end(), element_shape_vector.begin(), element_shape_vector.end());
       } else if (element_shape->isa<abstract::SequenceShape>()) {
         const ShapeVector &element_shape_vector = GetShapeVectorByBaseShape(element_shape);
-        address_common_->shape_vector_.insert(address_common_->shape_vector_.end(), element_shape_vector.begin(),
-                                              element_shape_vector.end());
+        shape_vector.insert(shape_vector.end(), element_shape_vector.begin(), element_shape_vector.end());
       }
+      device_address_->SetShapeVector(shape_vector);
 
       break;
     }
@@ -276,23 +267,22 @@ void KernelTensor::CalculateMemSize() {
   MS_EXCEPTION_IF_NULL(host_info_);
   if (host_info_->type_id_ == kObjectTypeTensorType || host_info_->type_id_ == kObjectTypeTuple ||
       host_info_->type_id_ == kObjectTypeList) {
-    // If address_common_->shape_vector_ is a dynamic shape, device_info_->size_ will be 0.
-    size_t element_num = SizeOf(address_common_->shape_vector_);
-    address_common_->size_ = element_num * UnitSizeInBytes(address_common_->dtype_id_);
+    // If device_address_->GetShapeVector() is a dynamic shape, device_info_->size_ will be 0.
+    size_t element_num = SizeOf(device_address_->GetShapeVector());
+    device_address_->SetSize(element_num * UnitSizeInBytes(device_address_->type_id()));
   } else if (host_info_->type_id_ == kObjectTypeNumber) {
-    address_common_->size_ = UnitSizeInBytes(address_common_->dtype_id_);
+    device_address_->SetSize(UnitSizeInBytes(device_address_->type_id()));
   }
 }
 
 void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
   CheckHostInfoValid();
   if (host_info_->type_id_ == kObjectTypeTensorType || host_info_->type_id_ == kObjectTypeMapTensorType) {
-    address_common_->shape_vector_ = shape_vector;
+    device_address_->SetShapeVector(shape_vector);
     MS_EXCEPTION_IF_NULL(shape_);
-    shape_->SetShapeVector(address_common_->shape_vector_);
+    shape_->SetShapeVector(device_address_->GetShapeVector());
 
-    MS_LOG(DEBUG) << "Set shape vector: " << shape_vector
-                  << ", the format: " << GetFormatFromEnumToStr(address_common_->format_);
+    MS_LOG(DEBUG) << "Set shape vector: " << shape_vector << ", the format: " << device_address_->format();
     return;
   }
 
@@ -317,12 +307,11 @@ void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
 void KernelTensor::SetShapeVector(ShapeVector &&shape_vector) {
   CheckHostInfoValid();
   if (host_info_->type_id_ == kObjectTypeTensorType || host_info_->type_id_ == kObjectTypeMapTensorType) {
-    address_common_->shape_vector_ = std::move(shape_vector);
+    device_address_->SetShapeVector(std::move(shape_vector));
     MS_EXCEPTION_IF_NULL(shape_);
-    shape_->SetShapeVector(address_common_->shape_vector_);
+    shape_->SetShapeVector(device_address_->GetShapeVector());
 
-    MS_LOG(DEBUG) << "Set shape vector: " << shape_vector
-                  << ", the format: " << GetFormatFromEnumToStr(address_common_->format_);
+    MS_LOG(DEBUG) << "Set shape vector: " << shape_vector << ", the format: " << device_address_->format();
     return;
   }
 
@@ -356,21 +345,20 @@ const ShapeVector &KernelTensor::TransposeToDeviceShape() const {
     {Format::NCHW, TransposeNCHWShape},
     {Format::NHWC, TransposeNHWCShape}};
 
-  auto iter = shape_trans_funcs.find(address_common_->format_);
+  auto iter = shape_trans_funcs.find(kernel::GetFormatFromStrToEnum(device_address_->format()));
   if (iter == shape_trans_funcs.end()) {
-    MS_LOG(EXCEPTION) << "Can not find shape transpose function for format: "
-                      << GetFormatFromEnumToStr(address_common_->format_);
+    MS_LOG(EXCEPTION) << "Can not find shape transpose function for format: " << device_address_->format();
   }
 
-  // The shape of the device corresponding to 'address_common_->shape_vector_'. For example, if format is NHWC, the
+  // The shape of the device corresponding to 'device_address_->GetShapeVector()'. For example, if format is NHWC, the
   // shape of the device and host may be different.
-  iter->second(&address_common_->shape_vector_, &host_info_->shape_vector_after_format_trasform_);
+  iter->second(&device_address_->GetShapeVector(), &host_info_->shape_vector_after_format_trasform_);
   return host_info_->shape_vector_after_format_trasform_;
 }
 
 bool KernelTensor::NeedTransposeToDeviceShape() const noexcept {
   static std::set<mindspore::Format> black_list{Format::DEFAULT_FORMAT, Format::NCHW, Format::ND, Format::NCDHW};
-  auto it = black_list.find(address_common_->format_);
+  auto it = black_list.find(kernel::GetFormatFromStrToEnum(device_address_->format()));
   return it == black_list.end();
 }
 
@@ -380,7 +368,7 @@ const ShapeVector &KernelTensor::GetDeviceShapeVector() const {
     std::lock_guard<std::mutex> lock(host_info_->shape_transform_mutex_);
     return TransposeToDeviceShape();
   }
-  return address_common_->shape_vector_;
+  return device_address_->GetShapeVector();
 }
 
 void KernelTensor::SetType(const TypePtr &type) {
@@ -400,7 +388,7 @@ void KernelTensor::SetType(const TypePtr &type) {
       MS_EXCEPTION_IF_NULL(tensor_type_ptr);
       auto element_type = tensor_type_ptr->element();
       if (element_type) {
-        address_common_->dtype_id_ = element_type->type_id();
+        device_address_->set_type_id(element_type->type_id());
       }
     } break;
 
@@ -443,7 +431,7 @@ void KernelTensor::SetType(const TypePtr &type) {
     } break;
 
     default:
-      address_common_->dtype_id_ = type->type_id();
+      device_address_->set_type_id(type->type_id());
       MS_LOG(DEBUG) << "Set dtype for: " << type->ToString();
   }
 }
@@ -456,14 +444,14 @@ void KernelTensor::SetSequenceDType(const TypePtr &element_type) {
     MS_EXCEPTION_IF_NULL(tensor_type_ptr);
     auto tensor_element_type = tensor_type_ptr->element();
     if (tensor_element_type) {
-      address_common_->dtype_id_ = tensor_element_type->type_id();
+      device_address_->set_type_id(tensor_element_type->type_id());
     }
   } else if (element_type->object_type() == kObjectTypeNumber) {
     // Scalar type element.
-    address_common_->dtype_id_ = element_type->type_id();
+    device_address_->set_type_id(element_type->type_id());
   } else if (element_type->object_type() == kObjectTypeString) {
     // String type element.
-    address_common_->dtype_id_ = element_type->type_id();
+    device_address_->set_type_id(element_type->type_id());
   } else if (element_type->object_type() == kObjectTypeTuple) {
     // Sequence type element.
     auto tuple_type = element_type->cast<TuplePtr>();
@@ -504,18 +492,16 @@ void KernelTensor::SetSequenceDType(const TypePtr &element_type) {
   }
 }
 
-std::string KernelTensor::GetStringFormat() const { return GetFormatFromEnumToStr(address_common_->format_); }
+std::string KernelTensor::GetStringFormat() const { return device_address_->format(); }
 
-void KernelTensor::SetStringFormat(const std::string &format) {
-  address_common_->format_ = GetFormatFromStrToEnum(format);
-}
+void KernelTensor::SetStringFormat(const std::string &format) { device_address_->set_format(format); }
 
 ValuePtr KernelTensor::GetValue() const {
   MS_EXCEPTION_IF_NULL(host_info_);
   std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
   // There is a origin value in KernelTensor(maybe come from a ValueNode).
-  if (address_common_->dtype_id_ == kMetaTypeNone) {
+  if (device_address_->type_id() == kMetaTypeNone) {
     return kNone;
   }
   if (!SetKernelTensorValue()) {
@@ -529,7 +515,7 @@ const void *KernelTensor::GetValuePtr() {
   std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
   // There is a origin value in KernelTensor(maybe come from a ValueNode).
-  if (address_common_->dtype_id_ == kMetaTypeNone) {
+  if (device_address_->type_id() == kMetaTypeNone) {
     return nullptr;
   }
   if (!SetKernelTensorValue()) {
@@ -554,30 +540,31 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   void *device_ptr = this->device_ptr();
   if (device_ptr == nullptr) {
     MS_LOG(INFO) << "Not malloc device memory yet, sync data from device to host side failed, size: "
-                 << address_common_->size_;
+                 << device_address_->size();
     return false;
   }
 
   MS_EXCEPTION_IF_NULL(host_info_);
   // For performance, the CPU back-end does not need to copy the device to host, and directly uses the
   // device pointer in the kernel Tensor.
-  if (address_common_->device_name_ == kCPUDevice) {
+  if (device_address_->GetDeviceType() == device::DeviceType::kCPU) {
     if (!host_info_->kernel_tensor_value_) {
-      host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(device_ptr, address_common_->size_, type_);
+      host_info_->kernel_tensor_value_ =
+        std::make_shared<KernelTensorValue>(device_ptr, device_address_->size(), type_);
     } else {
       host_info_->kernel_tensor_value_->SetDataPtr(device_ptr);
-      host_info_->kernel_tensor_value_->Resize(address_common_->size_);
+      host_info_->kernel_tensor_value_->Resize(device_address_->size());
     }
     return true;
   }
 
   if (!host_info_->kernel_tensor_value_) {
-    host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(address_common_->size_, type_);
+    host_info_->kernel_tensor_value_ = std::make_shared<KernelTensorValue>(device_address_->size(), type_);
   } else {
-    host_info_->kernel_tensor_value_->Resize(address_common_->size_);
+    host_info_->kernel_tensor_value_->Resize(device_address_->size());
   }
 
-  if (address_common_->size_ == 0) {
+  if (device_address_->size() == 0) {
     return true;
   }
 
@@ -585,8 +572,8 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   MS_EXCEPTION_IF_NULL(host_ptr);
 
   MS_EXCEPTION_IF_NULL(device_address_);
-  if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, address_common_->size_,
-                  address_common_->stream_id_)) {
+  if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, device_address_->size(),
+                  device_address_->stream_id())) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed, device type:" << device_address_->GetDeviceType();
   }
   return true;
@@ -651,10 +638,16 @@ ShapeVector KernelTensor::GetMaxShape() const {
 }
 
 const DeviceAddressPtr &KernelTensor::device_address() const { return device_address_; }
-void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) {
-  device_address_ = device_address;
-  if (device_address_ != nullptr) {
-    address_common_ = device_address_->address_common();
-  }
+void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) { device_address_ = device_address; }
+
+ContinuousDeviceAddressesPtr KernelTensor::continuous_device_addresses() const { return continuous_device_addresses_; }
+
+void KernelTensor::set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses) {
+  continuous_device_addresses_ = continuous_device_addresses;
+}
+
+mindspore::Format KernelTensor::format() const { return kernel::GetFormatFromStrToEnum(device_address_->format()); }
+void KernelTensor::set_format(mindspore::Format format) {
+  device_address_->set_format(kernel::GetFormatFromEnumToStr(format));
 }
 }  // namespace mindspore::kernel

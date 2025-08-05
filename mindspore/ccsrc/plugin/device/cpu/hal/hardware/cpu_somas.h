@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "backend/common/somas/somas.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace device {

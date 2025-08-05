@@ -17,7 +17,6 @@
 #include "kernel/cpu/eigen/expand_cpu_kernel.h"
 #include <algorithm>
 #include "unsupported/Eigen/CXX11/Tensor"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

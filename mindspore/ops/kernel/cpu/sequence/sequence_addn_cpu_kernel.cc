@@ -19,7 +19,7 @@
 #include <utility>
 #include <complex>
 #include <functional>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "kernel/cpu/nnacl/fp32/add_fp32.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 

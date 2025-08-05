@@ -17,7 +17,6 @@
 #include "kernel/cpu/sparse_to_dense_cpu_kernal.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

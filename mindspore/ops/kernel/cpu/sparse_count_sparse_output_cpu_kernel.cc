@@ -21,7 +21,7 @@
 #include <map>
 #include <limits>
 #include <memory>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "infer/sparse_count_sparse_output.h"
 
 namespace mindspore {

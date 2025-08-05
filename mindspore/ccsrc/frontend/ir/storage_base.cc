@@ -29,9 +29,10 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
                                                  const DeviceContext *device_context) {
   ShapeVector shape = {static_cast<int64_t>(device_address->size())};
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->GetMutablePtr(), device_address->size(), shape, device_address->address_common()->format_,
-    device_address->type_id(), device_address->device_name(), device_address->device_id(), device_address->stream_id(),
-    device_address->user_data());
+    device_address->GetMutablePtr(), device_address->size(), shape,
+    kernel::GetFormatFromStrToEnum(device_address->format()), device_address->type_id(),
+    device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id(),
+    device_address->stream_id(), nullptr);
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
 }
@@ -57,7 +58,7 @@ void StorageBase::InplaceReSize(int64_t size) {
       return;
     }
 
-    device::ResKey res_key{device::GetDeviceTypeByName(device_data_->device_name()), device_data_->device_id()};
+    device::ResKey res_key{device_data_->GetDeviceType(), device_data_->device_id()};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     void *device_ptr = nullptr;
@@ -94,12 +95,12 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
   runtime::Pipeline::Get().WaitAll();
   if (device_data_ != nullptr && src->device_data_ != nullptr) {
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_data_->device_name(), device_data_->device_id()});
+      {device::GetDeviceNameByType(device_data_->GetDeviceType()), device_data_->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->Initialize();
     auto dst_address = device_data_;
     auto src_address = src->device_data_;
-    if (device_data_->address_common()->shape_vector_ != src->device_data_->address_common()->shape_vector_) {
+    if (device_data_->GetShapeVector() != src->device_data_->GetShapeVector()) {
       dst_address = CreateTempDeviceAddress(dst_address, device_context);
       src_address = CreateTempDeviceAddress(src_address, device_context);
     }
@@ -121,7 +122,7 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
 
 std::string StorageBase::device() const {
   if (device_data_ != nullptr) {
-    return device_data_->device_name();
+    return device::GetDeviceNameByType(device_data_->GetDeviceType());
   }
 
   MS_LOG(EXCEPTION) << "The current Storage does not yet support CPU";

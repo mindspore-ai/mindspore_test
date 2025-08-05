@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include "mindspore/ops/infer/grad/resize_v2_grad.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "common/common_utils.h"
 
 namespace mindspore {

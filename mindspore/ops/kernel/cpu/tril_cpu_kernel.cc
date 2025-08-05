@@ -19,8 +19,6 @@
 #include <algorithm>
 #include "Eigen/Core"
 
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-
 namespace mindspore {
 namespace kernel {
 namespace tril_cpu {

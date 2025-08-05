@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "ir/tensor.h"
 
 namespace mindspore {

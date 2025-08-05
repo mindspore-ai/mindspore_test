@@ -18,7 +18,7 @@
 #include <vector>
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"

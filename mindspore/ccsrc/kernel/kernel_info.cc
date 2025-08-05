@@ -92,7 +92,8 @@ bool KernelInfo::WorkspaceKernelTensorExist(size_t index) const {
 
 const DeviceAddress *KernelInfo::GetOutputAddr(size_t index) const {
   if (index >= output_kernel_tensor_list_.size()) {
-    MS_LOG(ERROR) << "Index [" << index << "] out of range 0~" << (output_kernel_tensor_list_.size() - 1);
+    MS_LOG(DEBUG) << "Index [" << index << "] out of range, kernel tensor list size "
+                  << output_kernel_tensor_list_.size();
     return nullptr;
   }
   const auto &output_kernel_tensor = output_kernel_tensor_list_[index];
@@ -105,7 +106,8 @@ const DeviceAddress *KernelInfo::GetOutputAddr(size_t index) const {
 
 DeviceAddressPtr KernelInfo::GetMutableOutputAddr(size_t index) const {
   if (index >= output_kernel_tensor_list_.size()) {
-    MS_LOG(ERROR) << "Index [" << index << "] out of range";
+    MS_LOG(DEBUG) << "Index [" << index << "] out of range, kernel tensor list size "
+                  << output_kernel_tensor_list_.size();
     return nullptr;
   }
   const auto &output_kernel_tensor = output_kernel_tensor_list_[index];

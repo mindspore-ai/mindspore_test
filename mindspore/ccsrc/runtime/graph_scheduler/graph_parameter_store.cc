@@ -174,7 +174,8 @@ void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const Ker
   kernel_tensor_with_info.second.first = cnt;
   if (value->device_address()) {
     parameter_device_types_[outer_index][inner_index] = value->device_address()->GetDeviceType();
-    MS_LOG(DEBUG) << "Set graph parameter name:" << value->device_address()->device_name()
+    MS_LOG(DEBUG) << "Set graph parameter name:"
+                  << device::GetDeviceNameByType(value->device_address()->GetDeviceType())
                   << " outer index:" << outer_index << " inner index:" << inner_index;
   }
 }

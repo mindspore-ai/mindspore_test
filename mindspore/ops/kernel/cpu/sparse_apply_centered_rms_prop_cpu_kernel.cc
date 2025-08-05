@@ -20,8 +20,6 @@
 #include <utility>
 #include <map>
 
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-
 namespace mindspore {
 namespace kernel {
 namespace sparse_apply_centered_rms_prop_cpu {

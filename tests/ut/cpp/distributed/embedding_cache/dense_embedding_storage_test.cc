@@ -19,7 +19,7 @@
 
 #include "common/common_test.h"
 #include "distributed/embedding_cache/embedding_storage/dense_embedding_storage.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 
 namespace mindspore {
 namespace distributed {
@@ -34,7 +34,6 @@ class TestDenseEmbeddingStorage : public UT::Common {
 };
 
 using device::DeviceAddressPtr;
-using device::cpu::CPUDeviceAddress;
 /// Feature: test dense embedding storage all api.
 /// Description: test dense embedding storage data structure and interface.
 /// Expectation: all interface work normally or throw expectant exception.
@@ -46,7 +45,7 @@ TEST_F(TestDenseEmbeddingStorage, test_dense_embedding_storage) {
   std::unique_ptr<float[]> embedding_table = std::make_unique<float[]>(capacity * embedding_dim);
 
   DeviceAddressPtr device_address =
-    std::make_shared<CPUDeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float));
+    std::make_shared<DeviceAddress>(embedding_table.get(), capacity * embedding_dim * sizeof(float), kCPUDevice);
   EXPECT_NE(device_address, nullptr);
   EXPECT_NO_THROW(embed_storage.Initialize(device_address.get()));
 

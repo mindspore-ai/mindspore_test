@@ -21,7 +21,6 @@
 #include <cmath>
 #include <tuple>
 #include <type_traits>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -15,7 +15,7 @@
  */
 #include "kernel/cpu/igamma_cpu_kernel.h"
 #include <limits>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 namespace mindspore {
 namespace kernel {
 namespace igamma_cpu {

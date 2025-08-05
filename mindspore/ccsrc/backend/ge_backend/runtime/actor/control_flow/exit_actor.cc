@@ -185,7 +185,8 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
         (device_type != input_kernel_tensors_[i]->GetDeviceType())) {
-      MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get " << input_kernel_tensors_[i]->device_name();
+      MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get "
+                        << device::GetDeviceNameByType(input_kernel_tensors_[i]->GetDeviceType());
     }
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
         (input_kernel_tensors_[i]->device_address()->dynamic_ref_count() == 0)) {

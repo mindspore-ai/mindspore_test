@@ -36,7 +36,7 @@ void TensorShapeKernelMod::Execute(const std::vector<KernelTensor *> &inputs,
 
   auto shape = inputs[0]->GetShapeVector();
   auto size = shape.size() > 0 ? shape.size() * sizeof(shape[0]) : 0;
-  if (device::GetDeviceTypeByName(outputs[0]->device_name()) == device::DeviceType::kCPU) {
+  if (outputs[0]->GetDeviceType() == device::DeviceType::kCPU) {
     auto ret = memcpy_s(outputs[0]->GetHostData()->addr, outputs[0]->size(), shape.data(), LongToSize(size));
     if (ret != EOK) {
       MS_LOG(EXCEPTION) << "Execute TensorShapeKernel memcpy_s failed!";

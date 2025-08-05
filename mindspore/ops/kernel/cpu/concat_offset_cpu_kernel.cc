@@ -19,7 +19,6 @@
 #include <utility>
 #include <vector>
 #include "mindspore/ops/infer/concat_offset.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -31,7 +31,7 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "ir/device_type.h"
+#include "ir/tensor_data.h"
 #include "common/kernel_visible.h"
 
 namespace mindspore {
@@ -244,81 +244,6 @@ class PointerRefCount {
 };
 using PointerRefCountPtr = std::shared_ptr<PointerRefCount>;
 
-struct AddressCommon {
-  AddressCommon() { pointer_ref_count_ = std::make_shared<PointerRefCount>(); }
-  AddressCommon(void *device_ptr, size_t size)
-      : pointer_ref_count_(std::make_shared<PointerRefCount>(device_ptr)), size_(size) {}
-  AddressCommon(void *device_ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId dtype_id,
-                const std::string &device_name, uint32_t device_id, uint32_t stream_id = 0)
-      : pointer_ref_count_(std::make_shared<PointerRefCount>(device_ptr)),
-        stream_id_(stream_id),
-        size_(size),
-        format_(format),
-        dtype_id_(dtype_id),
-        device_name_(device_name),
-        device_id_(device_id),
-        shape_vector_(shape_vector) {}
-  AddressCommon(const AddressCommon &other) {
-    pointer_ref_count_ =
-      other.pointer_ref_count_ != nullptr
-        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter(),
-                                            other.pointer_ref_count_->allocator())
-        : std::make_shared<PointerRefCount>();
-    tensor_storage_info_ = other.tensor_storage_info_;
-    stream_id_ = other.stream_id_;
-    size_ = other.size_;
-    format_ = other.format_;
-    dtype_id_ = other.dtype_id_;
-    device_id_ = other.device_id_;
-    device_name_ = other.device_name_;
-    dtype_id_ = other.dtype_id_;
-    shape_vector_ = other.shape_vector_;
-    managed_by_somas_ = other.managed_by_somas_;
-  }
-  AddressCommon &operator=(const AddressCommon &) = delete;
-
-  std::string ToString() const {
-    std::ostringstream ofs;
-    ofs << " size:" << size_ << " tensor storage info:" << tensor_storage_info_;
-    if (tensor_storage_info_ != nullptr) {
-      ofs << tensor_storage_info_->ToString();
-    }
-    ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
-        << " device name:" << device_name_ << " shape vector:{";
-    std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
-    ofs << "} point ref count:";
-    if (pointer_ref_count_ == nullptr) {
-      ofs << "0";
-    } else {
-      ofs << pointer_ref_count_->ToString();
-    }
-    return ofs.str();
-  }
-
-  PointerRefCountPtr pointer_ref_count_;
-  TensorStorageInfoPtr tensor_storage_info_{nullptr};
-  uint32_t stream_id_{0};
-  size_t size_{0};
-  Format format_{Format::DEFAULT_FORMAT};
-  // The data enum type id of the KernelTensor.
-  TypeId dtype_id_{kTypeUnknown};
-  // The device target name, such as "GPU","Ascend".
-  std::string device_name_;
-  // Represents the device card id associated with the KernelTensor.
-  uint32_t device_id_{0};
-  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
-  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
-  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
-  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
-  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
-  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
-  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
-  // this Tuple is {2}.
-  ShapeVector shape_vector_{};
-  bool managed_by_somas_{false};
-};
-using AddressCommonPtr = std::shared_ptr<AddressCommon>;
-
 enum class NeedAllocateHeteRes : int64_t { NoNeedHeteRes = 0, NeedHostMem = 1, NeedDiskFile = 2 };
 struct HeterogeneousInfo {
   // Address on cpu ddr when the KernelTensor is stored on CPU.
@@ -366,15 +291,12 @@ constexpr size_t kDeviceAddressFlagNullptr = 8;
 
 class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
  public:
-  using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
   using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
   DeviceAddress();
-  explicit DeviceAddress(const AddressCommonPtr &address_common);
+  DeviceAddress(void *device_ptr, size_t size);
 
-  explicit DeviceAddress(void *ptr, size_t size);
-  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id);
-  explicit DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                         const KernelWithIndex &node_index);
+  explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name);
+  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name);
 
   explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id);
   explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name,
@@ -383,14 +305,13 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
                          const std::string &device_name, uint32_t device_id, uint32_t stream_id);
   explicit DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                          const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id);
+  explicit DeviceAddress(const DeviceAddress &other);
+  DeviceAddress &operator=(const DeviceAddress &) = delete;
+  ~DeviceAddress();
 
-  virtual ~DeviceAddress();
+  std::string ToString() const;
 
-  virtual std::string ToString() const;
-
-  virtual void CloneDeviceAddress(const DeviceAddressPtr &device_address);
-
-  virtual DeviceAddressPtr CloneDeviceAddress() { MS_LOG(EXCEPTION) << "Not implemented."; }
+  DeviceAddressPtr CloneDeviceAddress();
 
   const void *GetPtr() const;
   void set_ptr(void *ptr);
@@ -402,7 +323,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   const std::string &padding_type() const;
   void set_padding_type(const std::string &padding_type);
   TypeId type_id() const override;
-  void set_type_id(TypeId type_id);
+  void set_type_id(TypeId dtype_id);
   bool from_mem_pool() const;
   void set_from_mem_pool(bool from_mem_pool) const;
   virtual void set_communication_ptr(uint8_t *communication_ptr);
@@ -410,8 +331,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_is_ptr_persisted(bool is_ptr_persisted);
   void set_host_shape(const ShapeVector &shape);
   const ShapeVector &host_shape() const;
-  void set_device_shape(const ShapeVector &shape);
-  const ShapeVector &device_shape() const;
   bool from_persistent_mem() const;
   void set_from_persistent_mem(bool from_persistent_mem);
   bool need_recycle() const;
@@ -426,8 +345,8 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   TensorStorageInfoPtr GetTensorStorageInfo() const override;
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info);
 
-  const std::string &device_name() const;
-  void set_device_name(const std::string &device_name);
+  device::DeviceType GetDeviceType() const override;
+  void SetDeviceType(const device::DeviceType &device_type);
 
   uint32_t device_id() const;
   void set_device_id(uint32_t device_id);
@@ -442,7 +361,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes() const;
   void ClearHeldByNodes();
 
-  virtual void SetNodeIndex(const AnfNodePtr &node, size_t out_index);
+  void SetNodeIndex(const AnfNodePtr &node, size_t out_index);
   KernelWithIndex GetNodeIndex() const;
 
   void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
@@ -474,13 +393,13 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   int32_t DecreaseDynamicRefCount(const std::string &op_object);
 
   // Return whether DeviceAddress has a valid ptr.
-  virtual bool IsPtrValid() const;
+  bool IsPtrValid() const;
   bool IsNotNeedAlloc() const;
   bool IsNotNeedAllocWOLock() const;
 
   using SyncUserDataHandler = void (*)(DeviceAddress *const device_address);
   // Return the valid device ptr.
-  virtual void *GetValidPtr(size_t);
+  void *GetValidPtr(size_t);
 
   inline void TouchSyncHandler() {
     if (!need_sync_user_data_ || user_data() == nullptr) {
@@ -496,7 +415,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     need_sync_user_data_ = false;
   }
 
-  virtual void Swap(DeviceAddress *other);
+  void Swap(DeviceAddress *other);
 
   // Get user data maintained by the DeviceAddress.
   const UserDataPtr &user_data() const override;
@@ -508,7 +427,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_heterogeneous_info(HeterogeneousInfoPtr hete_info);
 
   // Free the ptr in user data when the ref count is 0.
-  virtual void ClearUserData() {}
+  void ClearUserData() {}
 
   // The interface of flag.
   size_t flag() const;
@@ -528,70 +447,30 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   const PointerRefCountPtr &pointer_ref_count() const;
   void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt);
 
-  void set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref_cnt);
-
   void set_is_view(bool is_view);
   bool is_view() const;
-  AddressCommonPtr address_common() const;
-  void set_address_common(const AddressCommonPtr &address_common);
-  ContinuousDeviceAddressesPtr continuous_device_addresses() const;
-  void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
-  size_t size() const { return address_common_->size_; }
+  size_t size() const { return size_; }
 
   void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
-    address_common_->pointer_ref_count_->set_allocator(allocator);
+    pointer_ref_count_->set_allocator(allocator);
   }
 
-  std::shared_ptr<AddressAllocator> allocator() const { return address_common_->pointer_ref_count_->allocator(); }
+  std::shared_ptr<AddressAllocator> allocator() const { return pointer_ref_count_->allocator(); }
+
+  void set_data(tensor::TensorDataPtr &&data) override;
+  const tensor::TensorDataPtr &data() const override;
+  bool has_data() const override;
+
+  void ClearDeviceMemory() override;
 
  protected:
-  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
-    return nullptr;
-  }
+  // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
+  // automatically when DeviceAddress destructed.
+  void SetDevicePtrDeleter();
 
-  virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    return true;
-  }
-  virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
-                                 size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
+  void *GetDevicePtr() const { return pointer_ref_count_->ptr(); }
+  void SetDevicePtr(void *ptr) const { pointer_ref_count_->set_ptr(ptr); }
 
-  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-
-  // Asynchronously copy host memory to device side.
-  virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
-  // Asynchronously copy device memory to host side.
-  virtual bool AsyncDeviceToHost(const ShapeVector &, size_t, TypeId, void *, size_t) const { return true; }
-  // Synchronously copy device memory to device side.
-  virtual bool SyncDeviceToDevice(const DeviceSync *) const { return true; }
-  virtual bool SyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
-    return true;
-  }
-  // Asynchronously copy device memory to device side.
-  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
-
-  // address basic info
-  AddressCommonPtr address_common_{nullptr};
-
-  void *GetDevicePtr() const { return address_common_->pointer_ref_count_->ptr(); }
-  void SetDevicePtr(void *ptr) const { address_common_->pointer_ref_count_->set_ptr(ptr); }
-
-  void SetTypeId(TypeId type) const { address_common_->dtype_id_ = type; }
-  virtual bool AsyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &,
-                                   size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-
-  ShapeVector device_shape_{};
   // {node, out_index}
   std::pair<AnfNodeWeakPtr, size_t> node_index_{AnfNodePtr(nullptr), 0};
   // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
@@ -620,8 +499,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // The specified deleter to release memory
   std::function<void(uint8_t *)> deleter_;
 
-  ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
-
   // Move to kernel tensor later.
   // host_shape_/hete_info_/user_data_ will be removed from device address later.
   // The flatten shape(maybe after padding) vector.
@@ -630,6 +507,31 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // heterogeneous info
   HeterogeneousInfoPtr hete_info_{nullptr};
   UserDataPtr user_data_{nullptr};
+
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
+
+  PointerRefCountPtr pointer_ref_count_;
+  TensorStorageInfoPtr tensor_storage_info_{nullptr};
+  uint32_t stream_id_{0};
+  size_t size_{0};
+  Format format_{Format::DEFAULT_FORMAT};
+  // The data enum type id of the KernelTensor.
+  TypeId dtype_id_{kTypeUnknown};
+  // The device target name, such as "GPU","Ascend".
+  device::DeviceType device_type_{device::DeviceType::kUnknown};
+  // Represents the device card id associated with the KernelTensor.
+  uint32_t device_id_{0};
+  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
+  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
+  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
+  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
+  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
+  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
+  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
+  // this Tuple is {2}.
+  ShapeVector shape_vector_{};
+  bool managed_by_somas_{false};
 
   friend class KernelRuntime;
   friend class MemoryManager;
@@ -650,6 +552,21 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
 using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
 using DeviceAddressPtrList = std::vector<DeviceAddressPtr>;
+
+using DevicePtrDeleterMakerFunc = std::function<void(void *, bool)>;
+MS_CORE_API void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMakerFunc &&func);
+
+template <device::DeviceType t>
+struct DevicePtrDeleterMakerRegister {
+  explicit DevicePtrDeleterMakerRegister(DevicePtrDeleterMakerFunc &&maker) {
+    SetDevicePtrDeleterMaker(t, std::move(maker));
+  }
+};
+
+#define REGISTER_DEVICE_PTR_DELETER_MAKER(t, f)                        \
+  namespace {                                                          \
+  static DevicePtrDeleterMakerRegister<t> g_deleter_maker_register(f); \
+  }
 }  // namespace device
 }  // namespace mindspore
 #endif  // MINDSPORE_DEVICE_TENSOR_H

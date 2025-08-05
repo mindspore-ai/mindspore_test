@@ -29,7 +29,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/optimizer/helper.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
@@ -188,8 +188,9 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
   runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-    MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
-    device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+    MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
+    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
+    device_address->GetTensorStorageInfo());
 }
 
 void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context) {
@@ -595,13 +596,15 @@ void TrackerACLMemory(const std::vector<kernel::KernelTensor *> &input_tensors,
   }
   for (auto &kernel_tensor : input_tensors) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      MarkTensorAsInput, "PyNative", kernel_tensor->device_name(), kernel_tensor->device_ptr(),
-      kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(), kernel_tensor->tensor_storage_info());
+      MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(kernel_tensor->GetDeviceType()),
+      kernel_tensor->device_ptr(), kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(),
+      kernel_tensor->tensor_storage_info());
   }
   for (auto &kernel_tensor : output_tensors) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      MarkTensorAsOutput, "PyNative", kernel_tensor->device_name(), kernel_tensor->device_ptr(),
-      kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(), kernel_tensor->tensor_storage_info());
+      MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(kernel_tensor->GetDeviceType()),
+      kernel_tensor->device_ptr(), kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(),
+      kernel_tensor->tensor_storage_info());
   }
 }
 

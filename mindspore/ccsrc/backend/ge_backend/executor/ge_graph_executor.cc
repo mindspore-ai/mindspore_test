@@ -41,7 +41,6 @@
 #include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
@@ -258,8 +257,9 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
     }
     output_addr->set_from_mem_pool(true);
     output_addr->set_ptr(mem);
-    auto *ascend_addr = dynamic_cast<device::ascend::AscendDeviceAddress *>(output_addr.get());
+    auto *ascend_addr = output_addr.get();
     MS_EXCEPTION_IF_NULL(ascend_addr);
+    ascend_addr->SetDeviceType(device::DeviceType::kAscend);
     auto tensor = tensor::from_spec(ascend_addr->type_id(), ascend_addr->GetShapeVector(), device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(tensor);
     MS_EXCEPTION_IF_NULL(tensor->device_address());

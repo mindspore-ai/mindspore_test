@@ -15,7 +15,6 @@
  */
 
 #include "kernel/cpu/sparse_segment_sqrt_n_grad_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
