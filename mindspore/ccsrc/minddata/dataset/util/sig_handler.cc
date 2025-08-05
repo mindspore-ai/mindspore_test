@@ -65,6 +65,30 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
+void DoReleaseShmAndMsg(const std::string &key) {
+  // release the shm
+  if (g_shm_id[key] != -1) {
+    if (shmctl(g_shm_id[key], IPC_RMID, NULL) == -1 && errno != EINVAL) {
+      MS_LOG(ERROR) << "shmctl delete shm_id: " << std::to_string(g_shm_id[key])
+                    << " error. Errno: " << std::to_string(errno);
+    } else {
+      MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(g_shm_id[key]) << " successfully.";
+    }
+    g_shm_id[key] = -1;
+  }
+
+  // release the msg
+  if (g_msg_id[key] != -1) {
+    if (msgctl(g_msg_id[key], IPC_RMID, 0) == -1 && errno != EINVAL) {
+      MS_LOG(ERROR) << "msgctl delete msg_id: " << std::to_string(g_msg_id[key])
+                    << " error. Errno: " << std::to_string(errno);
+    } else {
+      MS_LOG(INFO) << "Delete message queue with msg_id: " << std::to_string(g_msg_id[key]) << " successfully.";
+    }
+    g_msg_id[key] = -1;
+  }
+}
+
 /// \brief Release the shared memory and message queue by process ids
 /// \param[in] pids The map / batch worker process ids
 void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
@@ -78,27 +102,8 @@ void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
           continue;
         }
 
-        // release the shm
-        if (g_shm_id[item.first] != -1) {
-          if (shmctl(g_shm_id[item.first], IPC_RMID, NULL) == -1 && errno != EINVAL) {
-            MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(g_shm_id[item.first])
-                          << " error. Errno: " << std::to_string(errno);
-          } else {
-            MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(g_shm_id[item.first])
-                         << " successfully.";
-          }
-          g_shm_id[item.first] = -1;
-        }
-
-        // release the msg
-        if (g_msg_id[item.first] != -1) {
-          if (msgctl(g_msg_id[item.first], IPC_RMID, 0) == -1 && errno != EINVAL) {
-            MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " failed.";
-          } else {
-            MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " successfully.";
-          }
-          g_msg_id[item.first] = -1;
-        }
+        // release the shm and msg
+        DoReleaseShmAndMsg(item.first);
       }
     }
   }
@@ -127,14 +132,6 @@ void ReleaseShmAndMsg() {
         continue;
       }
 
-      // get the msg queue status
-      msqid_ds status;
-      if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &status) != 0) {
-        // it may have already been released yet
-        MS_LOG(INFO) << "Get msg queue: " << g_msg_id[item.first] << " status failed.";
-        continue;
-      }
-
       // no need to release the shm & msg in the map worker / batch worker / independent process when the main process
       // is still alive
       auto first_underline_char = item.first.find("_");
@@ -154,41 +151,40 @@ void ReleaseShmAndMsg() {
       // Scenario 2: when the tree_adapter launch Python Workers success, but launch C++ op failed, the status.msg_stime
       //             is not changed. Should release the shm & msg
       if (ppid == substr_ppid && kill(std::stoi(ppid), 0) == 0) {
-        if (status.msg_stime != 0) {
+        // get the msg queue status
+        msqid_ds msg_status;
+        if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &msg_status) != 0) {
+          // it may have already been released yet
+          MS_LOG(INFO) << "Get msg queue: " << g_msg_id[item.first] << " status failed.";
+        }
+
+        // get the shm queue status
+        shmid_ds shm_status;
+        if (g_shm_id[item.first] != -1 && shmctl(g_shm_id[item.first], IPC_STAT, &shm_status) != 0) {
+          // it may have already been released yet
+          MS_LOG(INFO) << "Get shm queue: " << g_shm_id[item.first] << " status failed.";
+        }
+
+        // the msg & shm already be used by current process and parent process, it will be released by parent process
+        if (msg_status.msg_stime != 0 && shm_status.shm_ctime != 0) {
           // Scenario 1
           MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                       << " is still alive. And the msg send time is not 0. No need to release the shm & msg.";
+                       << " is still alive. And the msg & shm are used by current and parent process."
+                       << " No need to release the shm & msg by current process.";
           continue;
-        } else {
+        } else {  // the msg & shm just be used by current process, it will be released by current process
           // Scenario 2
           MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                       << " is still alive. But the msg send time is 0. Need to release the shm & msg.";
+                       << " is still alive. But the msg & shm is not used by parent process yet."
+                       << " Need to release the shm & msg by current process.";
         }
       } else {
         MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                     << " is not alive. Need to release the shm & msg.";
+                     << " is not alive. Need to release the shm & msg by current process.";
       }
 
-      // release the shm
-      if (item.second != -1) {
-        if (shmctl(item.second, IPC_RMID, NULL) == -1 && errno != EINVAL) {
-          MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(item.second)
-                        << " error. Errno: " << std::to_string(errno);
-        } else {
-          MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(item.second) << " successfully.";
-        }
-        g_shm_id[item.first] = -1;
-      }
-
-      // release the msg
-      if (g_msg_id[item.first] != -1) {
-        if (msgctl(g_msg_id[item.first], IPC_RMID, 0) == -1 && errno != EINVAL) {
-          MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " failed.";
-        } else {
-          MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " successfully.";
-        }
-        g_msg_id[item.first] = -1;
-      }
+      // release the shm & msg
+      DoReleaseShmAndMsg(item.first);
     }
   }
 }
