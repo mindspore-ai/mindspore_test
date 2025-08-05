@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 At the heart of MindSpore data loading utility is the `mindspore.dataset` module.
-It is a `dataset engine <https://www.mindspore.cn/docs/en/master/design/data_engine.html>`_ based on pipline design.
+It is a `dataset engine <https://www.mindspore.cn/docs/en/master/features/data_engine.html>`_ based on pipline design.
 
 This module provides the following data loading methods to help users load datasets into MindSpore.
 

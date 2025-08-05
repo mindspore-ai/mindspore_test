@@ -654,9 +654,7 @@ def _check_jvp_input_v_len(inputs_len, v_len):
 
 def jvp(fn, inputs, v, has_aux=False):
     """
-    Compute the jacobian-vector-product of the given network. The calculation procedure of JVP can be found in
-    `forward-mode differentiation
-    <https://www.mindspore.cn/docs/en/master/design/programming_paradigm.html#forward-mode-ad>`_.
+    Compute the jacobian-vector-product of the given network.
 
     Args:
         fn (Union[Function, Cell]): The function or net that takes Tensor inputs and returns single Tensor or tuple of
@@ -869,9 +867,7 @@ _vjp_grad_op_with_weight = _Grad(get_all=True, get_by_list=True, sens_param=True
 
 def vjp(fn, *inputs, weights=None, has_aux=False):
     """
-    Compute the vector-jacobian-product of the given network. `vjp` matches
-    `reverse-mode differentiation
-    <https://www.mindspore.cn/docs/en/master/design/programming_paradigm.html#reverse-mode-ad>`_.
+    Compute the vector-jacobian-product of the given network.
 
     Args:
         fn (Union[Function, Cell]): The function or net that takes Tensor inputs and returns single Tensor or tuple of
@@ -1070,9 +1066,7 @@ _vmap = _Vmap()
 
 def jacfwd(fn, grad_position=0, has_aux=False):
     """
-    Compute Jacobian via forward mode, corresponding to
-    `forward-mode differentiation
-    <https://www.mindspore.cn/docs/en/master/design/programming_paradigm.html#forward-mode-ad>`_.
+    Compute Jacobian via forward mode.
     When number of outputs is much greater than that of inputs, it's better to calculate Jacobian via forward mode than
     reverse mode to get better performance.
 
@@ -1241,9 +1235,7 @@ _grad = _Grad(get_by_position=True, has_aux=False, sens_param=True)
 
 def jacrev(fn, grad_position=0, has_aux=False):
     """
-    Compute Jacobian via reverse mode, corresponding to
-    `reverse-mode differentiation
-    <https://www.mindspore.cn/docs/en/master/design/programming_paradigm.html#reverse-mode-ad>`_.
+    Compute Jacobian via reverse mode.
     When number of inputs is much greater than that of outputs, it's better to calculate Jacobian via reverse mode than
     forward mode to get better performance.
 

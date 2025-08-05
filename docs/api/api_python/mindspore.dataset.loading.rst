@@ -1,7 +1,7 @@
 mindspore.dataset
 ==================
 
-MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计的 `数据引擎 <https://www.mindspore.cn/docs/zh-CN/master/design/data_engine.html>`_ 。
+MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计的 `数据引擎 <https://www.mindspore.cn/docs/zh-CN/master/features/data_engine.html>`_ 。
 
 该模块提供了以下几种数据加载方式，帮助用户加载数据集到MindSpore中。
 
