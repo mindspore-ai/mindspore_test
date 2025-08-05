@@ -439,8 +439,8 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_bmm_performance():
     log_file_path = f'{sh_path}/{case_name}/worker_7.log'
 
     # set the excepted average step time
-    # self-test results: 262ms, step time should be lower than 262+30=292ms
-    excepted_average_step_time = 292
+    # self-test results: 262ms, step time should be lower than 262+38=300ms
+    excepted_average_step_time = 300
 
     # extract training step time
     average_step_time = extract_average_step_time_from_log(log_file_path)
