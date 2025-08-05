@@ -66,6 +66,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace common {
@@ -3061,6 +3062,15 @@ bool AnfAlgo::IsMonadType(const TypeId &type_id) {
     return true;
   }
   return false;
+}
+
+bool AnfAlgo::IsFusion(const CNodePtr &cnode) {
+  return HasNodeAttr(kAttrFusion, cnode) && GetNodeAttr<int64_t>(cnode, kAttrFusion) > 0;
+}
+
+bool AnfAlgo::IsRecompute(const CNodePtr &cnode) {
+  auto attr_dup = cnode->GetAttr(kAttrDuplicated);
+  return attr_dup != nullptr && GetValue<bool>(attr_dup);
 }
 }  // namespace common
 }  // namespace mindspore

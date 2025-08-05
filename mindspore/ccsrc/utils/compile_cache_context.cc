@@ -17,6 +17,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 bool CompileCacheEnable() {

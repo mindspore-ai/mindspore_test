@@ -40,6 +40,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace pijit {

@@ -26,6 +26,7 @@
 #include "frontend/optimizer/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/func_graph.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

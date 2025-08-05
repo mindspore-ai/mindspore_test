@@ -44,6 +44,7 @@
 #include "graph/operator_reg.h"
 #include "ge/ge_api.h"
 #include "include/backend/visible.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore::backend::ge_backend {
 using OpAdapterPtr = device::ascend::OpAdapterPtr;

@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore::graphkernel {
 constexpr auto USER_NUM = 1;

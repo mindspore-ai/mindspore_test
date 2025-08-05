@@ -32,6 +32,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/graph_transform.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

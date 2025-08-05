@@ -34,9 +34,7 @@
 #include "ir/scope.h"
 #include "ir/primal_attr.h"
 #include "ir/primal_debug_info.h"
-#include "utils/info.h"
 #include "utils/hashing.h"
-#include "utils/ms_utils.h"
 #include "utils/os.h"
 
 // A MindSpore ANF IR defined here.

@@ -34,7 +34,6 @@
 #include "base/base.h"
 #include "ir/named.h"
 #include "ir/dtype/type_id.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 
@@ -296,18 +295,7 @@ struct MS_CORE_API TypeListHasher {
 
 /// \brief TypeListEqual provides an equivalent function for the list of shared_ptr of Type.
 struct MS_CORE_API TypeListEqual {
-  bool operator()(TypePtrList const &lhs, TypePtrList const &rhs) const {
-    const auto size = lhs.size();
-    if (size != rhs.size()) {
-      return false;
-    }
-    for (std::size_t i = 0; i < size; ++i) {
-      if (!common::IsEqual(lhs[i], rhs[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool operator()(TypePtrList const &lhs, TypePtrList const &rhs) const;
 };
 
 // Hash map that using TypePtrList as the key.

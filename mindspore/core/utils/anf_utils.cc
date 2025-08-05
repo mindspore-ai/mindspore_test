@@ -23,6 +23,7 @@
 #include "utils/trace_base.h"
 #include "utils/os.h"
 #include "utils/ms_context.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 constexpr auto kValueTrue = "true";

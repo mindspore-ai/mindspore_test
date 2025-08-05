@@ -30,7 +30,6 @@
 #include "common/kernel_tensor.h"
 #include "ir/tensor.h"
 #include "include/backend/kernel_graph.h"
-#include "utils/ms_context.h"
 #include "runtime/hardware/visible.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"

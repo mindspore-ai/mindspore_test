@@ -57,6 +57,7 @@
 #include "mindspore/ccsrc/frontend/optimizer/ad/grad.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "utils/device_manager_conf.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace pynative {

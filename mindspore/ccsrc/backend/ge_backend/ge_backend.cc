@@ -74,6 +74,7 @@
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace backend {

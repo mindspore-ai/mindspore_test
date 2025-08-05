@@ -42,6 +42,7 @@
 #ifdef ENABLE_AKG
 #include "kernel/graph_kernel/graph_kernel_builder.h"
 #endif
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 // find outputs of nodes

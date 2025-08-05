@@ -20,6 +20,7 @@
 #include "include/common/utils/utils.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "include/common/utils/python_adapter.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace expander {

@@ -25,6 +25,7 @@
 #include "ir/dtype/number.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 static mindspore::HashMap<TypeId, std::string> g_type_2_lable{{kTypeUnknown, "Unknown"},
@@ -271,5 +272,18 @@ std::ostream &operator<<(std::ostream &os, const TypePtrList &types) {
   }
   os << "]";
   return os;
+}
+
+bool TypeListEqual::operator()(TypePtrList const &lhs, TypePtrList const &rhs) const {
+  const auto size = lhs.size();
+  if (size != rhs.size()) {
+    return false;
+  }
+  for (std::size_t i = 0; i < size; ++i) {
+    if (!common::IsEqual(lhs[i], rhs[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 }  // namespace mindspore

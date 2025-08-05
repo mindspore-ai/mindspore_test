@@ -44,6 +44,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "utils/ms_utils_secure.h"
 #include "ir/tensor_new.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

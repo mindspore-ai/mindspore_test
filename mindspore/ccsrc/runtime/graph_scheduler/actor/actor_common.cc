@@ -37,6 +37,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace runtime {

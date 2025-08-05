@@ -21,6 +21,7 @@
 #include "ir/manager.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

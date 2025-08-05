@@ -37,6 +37,7 @@
 #include "frontend/operator/ops.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "include/common/utils/utils.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace ad {

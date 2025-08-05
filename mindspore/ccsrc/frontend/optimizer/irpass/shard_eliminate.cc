@@ -15,6 +15,7 @@
  */
 
 #include "frontend/optimizer/irpass/shard_eliminate.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

@@ -16,6 +16,7 @@
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include <complex>
 #include <vector>
+#include "utils/shape_utils.h"
 namespace mindspore {
 namespace device {
 void HalfToFloat(void *dst, const void *src, size_t elem_num) {

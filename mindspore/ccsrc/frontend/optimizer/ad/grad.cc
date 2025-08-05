@@ -29,6 +29,7 @@
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "include/common/utils/parallel_context.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace ad {

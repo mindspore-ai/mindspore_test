@@ -25,7 +25,6 @@
 #include <mutex>
 #include <vector>
 #include <optional>
-#include "utils/ms_utils.h"
 #include "utils/device_manager_conf.h"
 
 namespace mindspore {

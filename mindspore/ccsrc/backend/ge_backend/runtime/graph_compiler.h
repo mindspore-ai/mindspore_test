@@ -33,6 +33,7 @@
 #include "kernel/framework_utils.h"
 #include "ir/device_type.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ge_backend {

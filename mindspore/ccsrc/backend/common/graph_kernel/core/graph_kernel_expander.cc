@@ -23,6 +23,7 @@
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 HashMap<std::string, ValuePtr> GetAttributesToInherit(const CNodePtr &cnode) {

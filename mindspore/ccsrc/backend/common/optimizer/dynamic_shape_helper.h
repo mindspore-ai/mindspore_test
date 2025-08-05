@@ -23,7 +23,6 @@
 
 #include "ir/anf.h"
 #include "ir/functor.h"
-#include "utils/ms_utils.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/convert_utils.h"

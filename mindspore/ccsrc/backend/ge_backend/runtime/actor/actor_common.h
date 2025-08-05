@@ -40,6 +40,7 @@
 #include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ge_backend {

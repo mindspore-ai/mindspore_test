@@ -34,6 +34,7 @@
 
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "utils/hash_map.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace abstract {

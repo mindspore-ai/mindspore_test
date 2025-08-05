@@ -30,7 +30,6 @@
 #include "ir/scalar.h"
 #include "ir/dtype/ref.h"
 #include "utils/hashing.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 /// \brief ValueSequence defines a Value class whose type is Sequence.
@@ -668,7 +667,7 @@ inline const char *GetValue(const ValuePtr &value) {
   if (imm == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "GetValue:" << value->ToString() << ", Type:" << value->type_name();
   }
-  return common::SafeCStr(imm->value());
+  return imm->value().c_str();
 }
 
 template <typename T, typename S = typename std::decay<T>::type,

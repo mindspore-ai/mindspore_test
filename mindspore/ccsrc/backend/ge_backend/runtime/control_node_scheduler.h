@@ -28,6 +28,7 @@
 #include <queue>
 #include "backend/ge_backend/runtime/actor/actor_set.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace ge_backend {

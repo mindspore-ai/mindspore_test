@@ -58,6 +58,7 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
 #endif
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace ge_backend {
