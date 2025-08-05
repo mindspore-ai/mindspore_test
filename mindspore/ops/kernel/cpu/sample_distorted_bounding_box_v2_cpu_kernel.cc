@@ -94,6 +94,10 @@ uint32_t SampleDistortedBoundingBoxV2CPUKernelMod::GenerateSingle() {
 }
 
 bool SampleDistortedBoundingBoxV2CPUKernelMod::SatisfiesOverlapConstraints(
+  /**
+   * Note: The implementation of this function is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/image/sample_distorted_bounding_box_op.cc
+   */
   const Region &crop, float minimum_object_covered, const std::vector<Region> &bounding_boxes) const {
   const float kMinArea = 1.0;
   if (crop.Area() < kMinArea) {
@@ -129,6 +133,10 @@ bool SampleDistortedBoundingBoxV2CPUKernelMod::GenerateRandomCrop(int ms_origina
                                                                   float ms_min_relative_crop_area,
                                                                   float ms_max_relative_crop_area,
                                                                   float ms_aspect_ratio, Region *ms_crop_rect) {
+  /**
+   * Note: The implementation of this function is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/image/sample_distorted_bounding_box_op.cc
+   */
   if (TestGenerateRandomCropInput(ms_original_width, ms_original_height, ms_min_relative_crop_area,
                                   ms_max_relative_crop_area, ms_aspect_ratio) == false) {
     return false;

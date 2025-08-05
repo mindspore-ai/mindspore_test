@@ -81,6 +81,10 @@ int GammaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 template <typename T>
 void GammaCpuKernelMod::Generate(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
+  /**
+   * Note: The implementation of this function is referenced from
+   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/random_op.cc
+   */
   const auto *alpha_flat = GetDeviceAddress<T>(inputs, 1);
   auto *samples_flat = GetDeviceAddress<T>(outputs, 0);
 
