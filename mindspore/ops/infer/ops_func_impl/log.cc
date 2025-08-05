@@ -28,10 +28,10 @@ namespace mindspore {
 namespace ops {
 namespace {
 template <typename T>
-void ImpleLog(void *origin, void *target, size_t size) {
+void ImpleLog(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<T *>(origin);
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<T>(log(static_cast<double>(origin_data[i])));
@@ -39,10 +39,10 @@ void ImpleLog(void *origin, void *target, size_t size) {
 }
 
 template <typename T>
-void ImpleComplexLog(void *origin, void *target, size_t size) {
+void ImpleComplexLog(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<T *>(origin);
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<T>(log(origin_data[i]));
@@ -50,10 +50,10 @@ void ImpleComplexLog(void *origin, void *target, size_t size) {
 }
 
 template <typename T>
-void ImpleLogInteger(void *origin, void *target, size_t size) {
+void ImpleLogInteger(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<T *>(origin);
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<float *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<float>(log(static_cast<double>(origin_data[i])));
@@ -114,7 +114,8 @@ class OPS_API LogFrontendFuncImpl : public OpFrontendFuncImpl {
     auto shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto result_tensor =
       tensor::from_spec(GetOutputTypeId(dtype), shape, device::DeviceType::kCPU);  // same shape and dtype
-    auto x_datac = x_tensor->data_c();
+    auto x_tensor_cpu = x_tensor->cpu();
+    auto x_datac = x_tensor_cpu->data_c();
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();
     switch (dtype) {

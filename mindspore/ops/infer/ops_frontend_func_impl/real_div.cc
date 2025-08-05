@@ -30,12 +30,12 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void RealDivImpl(void *x, void *y, void *result, size_t size) {
+void RealDivImpl(const void *x, const void *y, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x);
   MS_EXCEPTION_IF_NULL(y);
   MS_EXCEPTION_IF_NULL(result);
-  T *x_data = static_cast<T *>(x);
-  T *y_data = static_cast<T *>(y);
+  const T *x_data = static_cast<const T *>(x);
+  const T *y_data = static_cast<const T *>(y);
   auto result_data = static_cast<T *>(result);
   MS_EXCEPTION_IF_NULL(x_data);
   MS_EXCEPTION_IF_NULL(y_data);
@@ -60,12 +60,12 @@ void RealDivImpl(void *x, void *y, void *result, size_t size) {
 }
 
 template <typename T>
-void ComplexRealDivImpl(void *x, void *y, void *result, size_t size) {
+void ComplexRealDivImpl(const void *x, const void *y, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x);
   MS_EXCEPTION_IF_NULL(y);
   MS_EXCEPTION_IF_NULL(result);
-  T *x_data = static_cast<T *>(x);
-  T *y_data = static_cast<T *>(y);
+  const T *x_data = static_cast<const T *>(x);
+  const T *y_data = static_cast<const T *>(y);
   auto result_data = static_cast<T *>(result);
   MS_EXCEPTION_IF_NULL(x_data);
   MS_EXCEPTION_IF_NULL(y_data);
@@ -106,7 +106,9 @@ class RealDivFrontendFuncImpl : public OpFrontendFuncImpl {
     auto result_datac = result_tensor->data_c();
     auto iter = func_map.find(type_id);
     if (iter != func_map.end()) {
-      iter->second(x_tensor->data_c(), y_tensor->data_c(), result_datac, data_size);
+      auto x_tensor_cpu = x_tensor->cpu();
+      auto y_tensor_cpu = y_tensor->cpu();
+      iter->second(x_tensor_cpu->data_c(), y_tensor_cpu->data_c(), result_datac, data_size);
     } else {
       MS_LOG(DEBUG) << "For '" << primitive->name() << "', 'x' is " << x_tensor->ToString()
                     << ", the type is not supported.";
@@ -116,7 +118,7 @@ class RealDivFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 
  private:
-  std::map<TypeId, std::function<void(void *x, void *y, void *result, size_t size)>> func_map = {
+  std::map<TypeId, std::function<void(const void *x, const void *y, void *result, size_t size)>> func_map = {
     {kNumberTypeInt8, RealDivImpl<int8_t>},
     {kNumberTypeInt16, RealDivImpl<int16_t>},
     {kNumberTypeInt32, RealDivImpl<int32_t>},

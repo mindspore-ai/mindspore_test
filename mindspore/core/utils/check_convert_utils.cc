@@ -926,23 +926,24 @@ ShapeVector CheckAndConvertUtils::CheckTensorIntValue(const std::string &tensor_
   MS_EXCEPTION_IF_NULL(input_tensor);
   size_t data_size = input_tensor->DataSize();
   auto tensor_type = input_tensor->Dtype();
+  auto input_tensor_cpu = input_tensor->cpu();
   if (tensor_type->type_id() == kNumberTypeInt32) {
-    auto data_c = reinterpret_cast<int *>(input_tensor->data_c());
+    auto data_c = reinterpret_cast<int *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(data_c);
     for (size_t i = 0; i < data_size; i++) {
       tensor_value.push_back(static_cast<int64_t>(*data_c));
       ++data_c;
     }
   } else if (tensor_type->type_id() == kNumberTypeInt64) {
-    auto tensor_data = reinterpret_cast<int64_t *>(input_tensor->data_c());
+    auto tensor_data = reinterpret_cast<int64_t *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(tensor_data);
     tensor_value = {tensor_data, tensor_data + data_size};
   } else if (tensor_type->type_id() == kNumberTypeUInt32) {
-    auto tensor_data = reinterpret_cast<uint32_t *>(input_tensor->data_c());
+    auto tensor_data = reinterpret_cast<uint32_t *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(tensor_data);
     tensor_value = {tensor_data, tensor_data + data_size};
   } else if (tensor_type->type_id() == kNumberTypeUInt64) {
-    auto tensor_data = reinterpret_cast<uint64_t *>(input_tensor->data_c());
+    auto tensor_data = reinterpret_cast<uint64_t *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(tensor_data);
     tensor_value = {tensor_data, tensor_data + data_size};
   } else {
@@ -1218,15 +1219,16 @@ std::vector<double> CheckAndConvertUtils::CheckTensorFloatValue(const std::strin
   MS_EXCEPTION_IF_NULL(input_tensor);
   size_t data_size = input_tensor->DataSize();
   auto tensor_type = input_tensor->Dtype();
+  auto input_tensor_cpu = input_tensor->cpu();
   if (tensor_type->type_id() == kNumberTypeFloat32) {
-    auto data_c = static_cast<float *>(input_tensor->data_c());
+    auto data_c = static_cast<float *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(data_c);
     for (size_t i = 0; i < data_size; i++) {
       tensor_value.push_back(static_cast<double>(*data_c));
       ++data_c;
     }
   } else if (tensor_type->type_id() == kNumberTypeFloat64) {
-    auto tensor_data = static_cast<double *>(input_tensor->data_c());
+    auto tensor_data = static_cast<double *>(input_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(tensor_data);
     tensor_value = {tensor_data, tensor_data + data_size};
   } else {

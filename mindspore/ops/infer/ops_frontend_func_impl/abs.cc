@@ -26,10 +26,10 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void ImpleAbs(void *origin, void *target, size_t size) {
+void ImpleAbs(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<T *>(origin);
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   auto zero_val = static_cast<T>(0);
   for (size_t i = 0; i < size; ++i) {
@@ -59,7 +59,8 @@ class AbsFrontendFuncImpl : public OpFrontendFuncImpl {
     auto dtype = x_tensor->data_type();
     auto result_tensor = tensor::from_spec(dtype, x_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
-    auto x_datac = x_tensor->data_c();
+    auto x_tensor_cpu = x_tensor->cpu();
+    auto x_datac = x_tensor_cpu->data_c();
     auto result_datac = result_tensor->data_c();
     switch (dtype) {
       case kNumberTypeInt8: {

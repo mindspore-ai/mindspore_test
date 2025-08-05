@@ -38,10 +38,10 @@ std::vector<TypeId> ReciprocalFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 template <typename T>
-void ImplReciprocal(void *origin, void *target, size_t size) {
+void ImplReciprocal(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<T *>(origin);
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   T numerator = 1;
   for (size_t i = 0; i < size; ++i) {
@@ -49,10 +49,10 @@ void ImplReciprocal(void *origin, void *target, size_t size) {
   }
 }
 
-void ImplReciprocalFloat16(void *origin, void *target, size_t size) {
+void ImplReciprocalFloat16(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = reinterpret_cast<float16 *>(origin);
+  auto origin_data = reinterpret_cast<const float16 *>(origin);
   auto target_data = reinterpret_cast<float16 *>(target);
   float16 numerator(1);
   for (size_t i = 0; i < size; ++i) {
@@ -75,7 +75,8 @@ class OPS_API ReciprocalFrontendFuncImpl : public OpFrontendFuncImpl {
     auto data_size = x_tensor->DataSize();
     auto dtype = x_tensor->data_type();
     auto shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-    auto x_datac = x_tensor->data_c();
+    auto x_tensor_cpu = x_tensor->cpu();
+    auto x_datac = x_tensor_cpu->data_c();
     auto result_tensor = tensor::from_spec(dtype, shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();
@@ -91,7 +92,7 @@ class OPS_API ReciprocalFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 
  private:
-  std::map<TypeId, std::function<void(void *origin, void *target, size_t size)>> func_map = {
+  std::map<TypeId, std::function<void(const void *origin, void *target, size_t size)>> func_map = {
     {kNumberTypeBool, ImplReciprocal<bool>},
     {kNumberTypeInt, ImplReciprocal<int>},
     {kNumberTypeInt8, ImplReciprocal<int8_t>},

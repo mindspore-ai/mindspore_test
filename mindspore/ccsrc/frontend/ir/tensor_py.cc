@@ -357,11 +357,11 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
   return strides;
 }
 
-static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
-  std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
+static py::buffer_info GetPyBufferInfo(const TensorPtr &tensor) {
+  std::vector<ssize_t> shape(tensor->shape().begin(), tensor->shape().end());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor->DataItemSize());
   return py::buffer_info{
-    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
+    tensor->data_c(), tensor->DataItemSize(), GetPyTypeFormat(tensor->data_type()), tensor->DataDim(), shape, strides};
 }
 
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
@@ -659,17 +659,18 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   // We can NOT use Tensor as the owner since its TensorData may change
   // by other operations such as AssignValue().
   py::gil_scoped_acquire acquire;
-  py::object owner = py::cast(tensor.device_address());
-  if (tensor.device_address() != nullptr && tensor.device_address()->has_data()) {
-    const auto &data = tensor.device_address()->data();
+  auto tensor_cpu = tensor.cpu();
+  py::object owner = py::cast(tensor_cpu->device_address());
+  if (tensor_cpu->device_address() != nullptr && tensor_cpu->device_address()->has_data()) {
+    const auto &data = tensor_cpu->device_address()->data();
     auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
     if (raw_data != nullptr) {
       return raw_data->py_array(owner);
     }
   }
   // Create numpy array by buffer protocol.
-  auto info = GetPyBufferInfo(tensor);
-  py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
+  auto info = GetPyBufferInfo(tensor_cpu);
+  py::dtype np_dtype = (tensor_cpu->data_type() == kNumberTypeBFloat16)
                          ? py::detail::npy_format_descriptor<bfloat16>::dtype()
                          : py::dtype(info);
   return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);

@@ -29,9 +29,9 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void EqualImpl(void *x1, void *x2, void *result, size_t size) {
-  T *x1_data = static_cast<T *>(x1);
-  T *x2_data = static_cast<T *>(x2);
+void EqualImpl(const void *x1, const void *x2, void *result, size_t size) {
+  const T *x1_data = static_cast<const T *>(x1);
+  const T *x2_data = static_cast<const T *>(x2);
   auto result_data = static_cast<bool *>(result);
   for (size_t i = 0; i < size; ++i) {
     result_data[i] = x1_data[i] == x2_data[i];
@@ -39,16 +39,16 @@ void EqualImpl(void *x1, void *x2, void *result, size_t size) {
 }
 
 template <typename T>
-void EqualFloatImpl(void *x1, void *x2, void *result, size_t size) {
-  T *x1_data = static_cast<T *>(x1);
-  T *x2_data = static_cast<T *>(x2);
+void EqualFloatImpl(const void *x1, const void *x2, void *result, size_t size) {
+  const T *x1_data = static_cast<const T *>(x1);
+  const T *x2_data = static_cast<const T *>(x2);
   auto result_data = static_cast<bool *>(result);
   for (size_t i = 0; i < size; ++i) {
     result_data[i] = std::abs(x1_data[i] - x2_data[i]) < std::numeric_limits<T>::epsilon();
   }
 }
 
-using Handler = std::function<void(void *x1, void *x2, void *result, size_t size)>;
+using Handler = std::function<void(const void *x1, const void *x2, void *result, size_t size)>;
 std::map<TypeId, Handler> equal_impl_list = {{kNumberTypeBool, EqualImpl<bool>},
                                              {kNumberTypeInt8, EqualImpl<int8_t>},
                                              {kNumberTypeInt16, EqualImpl<int16_t>},
@@ -91,7 +91,9 @@ class EqualFrontendFuncImpl : public OpFrontendFuncImpl {
                     << ", the type is not supported.";
       return nullptr;
     }
-    iter->second(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+    auto x1_tensor_cpu = x1_tensor->cpu();
+    auto x2_tensor_cpu = x2_tensor->cpu();
+    iter->second(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
     return result_tensor;
   }
 };

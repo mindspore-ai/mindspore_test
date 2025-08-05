@@ -39,6 +39,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/primfunc_utils.h"
+#include "include/common/utils/tensor_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -624,9 +625,7 @@ void CheckJITForbiddenAPI(const py::object &obj) {
     oss << "Failed to compile in GRAPH_MODE because the " << obj_type << " '" << obj_module << "." << obj_name
         << "' is not supported in 'construct' or function with @jit decorator. "
         << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
-        << "such as initialized in the method '__init__' before assigning"
-        << ".\nFor more details, please refer to "
-        << "https://www.mindspore.cn/docs/zh-CN/master/features/program_form/overview.html \n";
+        << "such as initialized in the method '__init__' before assigning.\n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
     if (is_jit_forbidden_register) {
@@ -1284,14 +1283,6 @@ TensorPtr ConvertTensorValue(const py::object &obj) {
   return nullptr;
 }
 
-template <typename T>
-static inline T GetTensorData(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  auto cpu_tensor = tensor->cpu();
-  // The data_c is a raw pointer and will become invalid when cpu_tensor is destructed.
-  return *(static_cast<T *>(cpu_tensor->data_c()));
-}
-
 ValuePtr ConvertStr(const py::object &obj) {
   if (!py::isinstance<py::str>(obj)) {
     return nullptr;
@@ -1554,15 +1545,15 @@ ValuePtr ConvertTensorToInt64(const py::object &obj) {
     return nullptr;
   }
   if (tensor->data_type() == kNumberTypeInt64) {
-    return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
+    return std::make_shared<Int64Imm>(tensor::GetTensorData<int64_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt32) {
-    return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
+    return std::make_shared<Int64Imm>(tensor::GetTensorData<int32_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt16) {
-    return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
+    return std::make_shared<Int64Imm>(tensor::GetTensorData<int16_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt8) {
-    return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
+    return std::make_shared<Int64Imm>(tensor::GetTensorData<int8_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeUInt8) {
-    return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
+    return std::make_shared<Int64Imm>(tensor::GetTensorData<uint8_t>(tensor));
   } else {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int";
     return nullptr;
@@ -1580,21 +1571,21 @@ ValuePtr ConvertTensorToInt(const py::object &obj) {
   }
   switch (tensor->data_type()) {
     case kNumberTypeInt64:
-      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int64_t>(tensor));
     case kNumberTypeInt32:
-      return std::make_shared<Int32Imm>(GetTensorData<int32_t>(tensor));
+      return std::make_shared<Int32Imm>(tensor::GetTensorData<int32_t>(tensor));
     case kNumberTypeInt16:
-      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int16_t>(tensor));
     case kNumberTypeInt8:
-      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int8_t>(tensor));
     case kNumberTypeUInt64:
-      return std::make_shared<Int64Imm>(GetTensorData<uint64_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint64_t>(tensor));
     case kNumberTypeUInt32:
-      return std::make_shared<Int64Imm>(GetTensorData<uint32_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint32_t>(tensor));
     case kNumberTypeUInt16:
-      return std::make_shared<Int64Imm>(GetTensorData<uint16_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint16_t>(tensor));
     case kNumberTypeUInt8:
-      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint8_t>(tensor));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to Int.";
   }
@@ -1624,7 +1615,7 @@ ValuePtr ConvertTensorToFloat(const py::object &obj) {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to float";
     return nullptr;
   }
-  return ConvertPythonFloatToScalarValue(GetTensorData<double>(tensor));
+  return ConvertPythonFloatToScalarValue(tensor::GetTensorData<double>(tensor));
 }
 
 ValuePtr ConvertTensorToBool(const py::object &obj) {
@@ -1636,7 +1627,7 @@ ValuePtr ConvertTensorToBool(const py::object &obj) {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to bool";
     return nullptr;
   }
-  return std::make_shared<BoolImm>(GetTensorData<bool>(tensor));
+  return std::make_shared<BoolImm>(tensor::GetTensorData<bool>(tensor));
 }
 
 ValuePtr ConvertTensorToNumber(const py::object &obj) {
@@ -1650,29 +1641,29 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
 
   switch (tensor->data_type()) {
     case kNumberTypeBool:
-      return std::make_shared<BoolImm>(GetTensorData<bool>(tensor));
+      return std::make_shared<BoolImm>(tensor::GetTensorData<bool>(tensor));
     case kNumberTypeInt64:
-      return std::make_shared<Int64Imm>(GetTensorData<int64_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int64_t>(tensor));
     case kNumberTypeInt32:
-      return std::make_shared<Int64Imm>(GetTensorData<int32_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int32_t>(tensor));
     case kNumberTypeInt16:
-      return std::make_shared<Int64Imm>(GetTensorData<int16_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int16_t>(tensor));
     case kNumberTypeInt8:
-      return std::make_shared<Int64Imm>(GetTensorData<int8_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<int8_t>(tensor));
     case kNumberTypeUInt64:
-      return std::make_shared<Int64Imm>(GetTensorData<uint64_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint64_t>(tensor));
     case kNumberTypeUInt32:
-      return std::make_shared<Int64Imm>(GetTensorData<uint32_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint32_t>(tensor));
     case kNumberTypeUInt16:
-      return std::make_shared<Int64Imm>(GetTensorData<uint16_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint16_t>(tensor));
     case kNumberTypeUInt8:
-      return std::make_shared<Int64Imm>(GetTensorData<uint8_t>(tensor));
+      return std::make_shared<Int64Imm>(tensor::GetTensorData<uint8_t>(tensor));
     case kNumberTypeFloat64:
-      return ConvertPythonFloatToScalarValue(GetTensorData<double>(tensor));
+      return ConvertPythonFloatToScalarValue(tensor::GetTensorData<double>(tensor));
     case kNumberTypeFloat32:
-      return ConvertPythonFloatToScalarValue(GetTensorData<float>(tensor));
+      return ConvertPythonFloatToScalarValue(tensor::GetTensorData<float>(tensor));
     case kNumberTypeFloat16:
-      return ConvertPythonFloatToScalarValue(static_cast<float>(GetTensorData<float16>(tensor)));
+      return ConvertPythonFloatToScalarValue(static_cast<float>(tensor::GetTensorData<float16>(tensor)));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to number";
   }

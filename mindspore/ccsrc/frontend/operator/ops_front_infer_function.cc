@@ -743,6 +743,7 @@ AbstractBasePtr InferImplMakeSlice(const AnalysisEnginePtr &, const PrimitivePtr
       auto build_value = arg->BuildValue();
       MS_EXCEPTION_IF_NULL(build_value);
       auto value = build_value->cast<tensor::TensorPtr>();
+      auto value_cpu = value->cpu();
       if (value != nullptr) {
         if (value->DataSize() != 1) {
           MS_EXCEPTION(TypeError) << "The input tensor of the MakeSlice operator must contain only one element,"
@@ -750,13 +751,13 @@ AbstractBasePtr InferImplMakeSlice(const AnalysisEnginePtr &, const PrimitivePtr
         }
         MS_EXCEPTION_IF_NULL(tensor_dtype);
         if (tensor_dtype->isa<Bool>()) {
-          auto *bool_value = static_cast<bool *>(value->data_c());
+          auto *bool_value = static_cast<bool *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((static_cast<int64_t>(*bool_value)))->ToAbstract());
         } else if (tensor_dtype == kInt64) {
-          auto *int_value = static_cast<int64_t *>(value->data_c());
+          auto *int_value = static_cast<int64_t *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((*int_value))->ToAbstract());
         } else if (tensor_dtype == kInt32) {
-          auto *int_value = static_cast<int32_t *>(value->data_c());
+          auto *int_value = static_cast<int32_t *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((*int_value))->ToAbstract());
         } else {
           MS_EXCEPTION(TypeError) << "The input tensor type of the MakeSlice operator must be int or bool, but got "

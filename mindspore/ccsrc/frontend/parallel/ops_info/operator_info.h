@@ -780,7 +780,6 @@ AnfNodePtr CreateTensorTupleAnfNodePtr(const tensor::TensorPtrList &tensor_tuple
 
 ForwardOp CreateAllReduceMeanForwardOp(const Group &forward_group, const TypePtr &dtype);
 Operator CreateDivOpWithType(float divisor, const TypePtr &dtype);
-std::vector<int64_t> GetTensorValue(const ValuePtr &ori_value);
 
 inline std::string GetPrimNameFromInfoName(const std::string &info_name) {
   auto prim_name = info_name;

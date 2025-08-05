@@ -23,6 +23,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/utils/tensor_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 
 namespace mindspore {
@@ -604,15 +605,15 @@ std::optional<int64_t> ConvertTensorToInt64(const py::object &obj) {
     return std::nullopt;
   }
   if (tensor->data_type() == kNumberTypeInt64) {
-    return parse::GetTensorDataValue<int64_t>(tensor);
+    return tensor::GetTensorData<int64_t>(tensor);
   } else if (tensor->data_type() == kNumberTypeInt32) {
-    return static_cast<int64_t>(parse::GetTensorDataValue<int32_t>(tensor));
+    return static_cast<int64_t>(tensor::GetTensorData<int32_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt16) {
-    return static_cast<int64_t>(parse::GetTensorDataValue<int16_t>(tensor));
+    return static_cast<int64_t>(tensor::GetTensorData<int16_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeInt8) {
-    return static_cast<int64_t>(parse::GetTensorDataValue<int8_t>(tensor));
+    return static_cast<int64_t>(tensor::GetTensorData<int8_t>(tensor));
   } else if (tensor->data_type() == kNumberTypeUInt8) {
-    return static_cast<int64_t>(parse::GetTensorDataValue<uint8_t>(tensor));
+    return static_cast<int64_t>(tensor::GetTensorData<uint8_t>(tensor));
   } else {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int.";
     return std::nullopt;

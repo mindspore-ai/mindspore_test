@@ -46,12 +46,12 @@ namespace mindspore {
 namespace ops {
 namespace {
 template <typename T>
-void DivNoNanImpl(void *x1, void *x2, void *result, size_t size) {
+void DivNoNanImpl(const void *x1, const void *x2, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(x2);
   MS_EXCEPTION_IF_NULL(result);
-  T *x1_data = static_cast<T *>(x1);
-  T *x2_data = static_cast<T *>(x2);
+  const T *x1_data = static_cast<const T *>(x1);
+  const T *x2_data = static_cast<const T *>(x2);
   auto result_data = static_cast<T *>(result);
   MS_EXCEPTION_IF_NULL(x1_data);
   MS_EXCEPTION_IF_NULL(x2_data);
@@ -96,68 +96,72 @@ ValuePtr DivNoNanInferValue(const PrimitivePtr &prim, const std::vector<Abstract
   auto x2_tensor = x2->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x1_tensor);
   MS_EXCEPTION_IF_NULL(x2_tensor);
+
+  auto x1_tensor_cpu = x1_tensor->cpu();
+  auto x2_tensor_cpu = x2_tensor->cpu();
+
   auto type_id = x1_tensor->data_type();
   auto data_size = x1_tensor->DataSize();
   auto result_tensor = tensor::from_spec(type_id, result_shape->shape(), device::DeviceType::kCPU);
   switch (type_id) {
     case kNumberTypeBool: {
-      DivNoNanImpl<bool>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<bool>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeInt: {
-      DivNoNanImpl<int>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<int>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeInt8: {
-      DivNoNanImpl<int8_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<int8_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeInt16: {
-      DivNoNanImpl<int16_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<int16_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeInt32: {
-      DivNoNanImpl<int32_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<int32_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeInt64: {
-      DivNoNanImpl<int64_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<int64_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeUInt: {
-      DivNoNanImpl<uint32_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<uint32_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeUInt8: {
-      DivNoNanImpl<uint8_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<uint8_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeUInt16: {
-      DivNoNanImpl<uint16_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<uint16_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeUInt32: {
-      DivNoNanImpl<uint32_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<uint32_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeUInt64: {
-      DivNoNanImpl<uint64_t>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<uint64_t>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeFloat: {
-      DivNoNanImpl<float>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<float>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeFloat16: {
-      DivNoNanImpl<float16>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<float16>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeFloat32: {
-      DivNoNanImpl<float>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<float>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     case kNumberTypeFloat64: {
-      DivNoNanImpl<double>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+      DivNoNanImpl<double>(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
       break;
     }
     default: {

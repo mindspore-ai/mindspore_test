@@ -28,19 +28,19 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void ImplAdd(void *x1, void *x2, void *result, size_t size) {
+void ImplAdd(const void *x1, const void *x2, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(x2);
   MS_EXCEPTION_IF_NULL(result);
-  T *x1_data = static_cast<T *>(x1);
-  T *x2_data = static_cast<T *>(x2);
+  const T *x1_data = static_cast<const T *>(x1);
+  const T *x2_data = static_cast<const T *>(x2);
   auto result_data = static_cast<T *>(result);
   for (size_t i = 0; i < size; ++i) {
     result_data[i] = x1_data[i] + x2_data[i];
   }
 }
 
-using Handler = std::function<void(void *x1, void *x2, void *result, size_t size)>;
+using Handler = std::function<void(const void *x1, const void *x2, void *result, size_t size)>;
 std::map<TypeId, Handler> add_impl_list = {{kNumberTypeBool, ImplAdd<bool>},
                                            {kNumberTypeInt8, ImplAdd<int8_t>},
                                            {kNumberTypeInt16, ImplAdd<int16_t>},
@@ -92,7 +92,9 @@ class AddFrontendFuncImpl : public OpFrontendFuncImpl {
     std::map<std::string, TypePtr> types{{"x", input_args[kIndex0]->GetType()}, {"y", input_args[kIndex1]->GetType()}};
     (void)CheckAndConvertUtils::CheckMathBinaryOpTensorType(types, common_valid_types, primitive->name());
 
-    iter->second(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+    auto x1_tensor_cpu = x1_tensor->cpu();
+    auto x2_tensor_cpu = x2_tensor->cpu();
+    iter->second(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
     return result_tensor;
   }
 };

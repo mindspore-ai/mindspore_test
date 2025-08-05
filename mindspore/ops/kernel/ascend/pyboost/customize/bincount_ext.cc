@@ -32,18 +32,19 @@ int64_t ConvertTensorToInt64(const TensorPtr &tensor) {
   if (tensor == nullptr) {
     MS_LOG(EXCEPTION) << "Bincount ops receive null tensor.";
   }
+  auto tensor_cpu = tensor->cpu();
   auto data_type = tensor->data_type_c();
   switch (data_type) {
     case kNumberTypeInt8:
-      return static_cast<int64_t>(*(static_cast<const int8_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int8_t *>(tensor_cpu->data_c())));
     case kNumberTypeInt16:
-      return static_cast<int64_t>(*(static_cast<const int16_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int16_t *>(tensor_cpu->data_c())));
     case kNumberTypeInt32:
-      return static_cast<int64_t>(*(static_cast<const int32_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int32_t *>(tensor_cpu->data_c())));
     case kNumberTypeInt64:
-      return static_cast<int64_t>(*(static_cast<const int64_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int64_t *>(tensor_cpu->data_c())));
     case kNumberTypeUInt8:
-      return static_cast<int64_t>(*(static_cast<const uint8_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const uint8_t *>(tensor_cpu->data_c())));
     default:
       MS_LOG(EXCEPTION) << "Unsupported input data type: " << data_type;
   }
