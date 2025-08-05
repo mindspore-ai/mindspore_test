@@ -1481,22 +1481,8 @@ def check_map(method):
     @wraps(method)
     def new_method(self, *args, **kwargs):
         from mindspore.dataset.callback import DSCallback
-        [operations, input_columns, output_columns, column_order, num_parallel_workers, param_dict], _ = \
+        [operations, input_columns, output_columns, num_parallel_workers, param_dict], _ = \
             parse_user_args(method, *args, **kwargs)
-
-        if column_order is not None:
-            raise ValueError("The parameter 'column_order' had been deleted in map operation. "
-                             "Please use '.project' operation instead.\n"
-                             ">> # Usage of old api:\n"
-                             ">> dataset = dataset.map(operations=PyFunc,\n"
-                             ">>                       input_columns=[\"column_a\"],\n"
-                             ">>                       output_columns=[\"column_b\", \"column_c\"],\n"
-                             ">>                       column_order=[\"column_b\", \"column_c\"])\n"
-                             ">> # Usage of new api:\n"
-                             ">> dataset = dataset.map(operations=PyFunc,\n"
-                             ">>                       input_columns=[\"column_a\"],\n"
-                             ">>                       output_columns=[\"column_b\", \"column_c\"])\n"
-                             ">> dataset = dataset.project([\"column_b\", \"column_c\"])")
 
         (python_multiprocessing, max_rowsize, cache, callbacks, offload) = get_map_kwargs_from_dict(param_dict)
 
