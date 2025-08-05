@@ -17,16 +17,16 @@
 #include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
 #if defined(_WIN32)
 #include <windows.h>
-#define DL_OPEN(path)                                                              \
-  [](const std::string &p) -> void * {                                             \
-    SetLastError(0);                                                               \
-    return (void *)LoadLibraryExA(p.c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH); \
+#define DL_OPEN(path)                                                                                   \
+  [](const std::string &p) -> void * {                                                                  \
+    SetLastError(0);                                                                                    \
+    return reinterpret_cast<void *>(LoadLibraryExA(p.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH)); \
   }(path)
 
-#define DL_SYM(handle, name)                      \
-  [](void *h, const char *n) -> void * {          \
-    SetLastError(0);                              \
-    return (void *)GetProcAddress((HMODULE)h, n); \
+#define DL_SYM(handle, name)                                                     \
+  [](void *h, const char *n) -> void * {                                         \
+    SetLastError(0);                                                             \
+    return reinterpret_cast<void *>(GetProcAddress(static_cast<HMODULE>(h), n)); \
   }(handle, name)
 
 #define DL_CLOSE(handle) FreeLibrary((HMODULE)handle)
@@ -146,7 +146,10 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
   }
 
   // Clear previous errors before dlsym
-  auto error_info = DL_ERROR();
+  (void)DL_ERROR();
+#ifdef _WIN32
+  SetLastError(0);
+#endif
   op_plugin_func =
     reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
       DL_SYM(handle, op_name.c_str()));
