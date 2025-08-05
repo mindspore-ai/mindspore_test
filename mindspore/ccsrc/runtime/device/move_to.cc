@@ -109,18 +109,20 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   // Need to create cpu device address even if the tensor is on CPU.
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
   auto dst_addr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
+  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto target_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({to, device_id});
+  MS_EXCEPTION_IF_NULL(target_context);
+  target_context->Initialize();
+  auto stream_id = target_context->device_res_manager_->GetCurrentStreamId();
+  if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
+    stream_id = kDefaultStreamIndex;
+  }
+
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
     auto host_shape = src_tensor->shape();
-    auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto target_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({to, device_id});
-    MS_EXCEPTION_IF_NULL(target_context);
-    target_context->Initialize();
-    auto stream_id = target_context->device_res_manager_->GetCurrentStreamId();
-    if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
-      stream_id = kDefaultStreamIndex;
-    }
+
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT),
                                                      type_id, host_shape, to, device_id);
     MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
@@ -133,6 +135,15 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
                         << ") isn't enough. Allocate size: " << size;
     }
     dst_tensor->set_device_address(dst_addr);
+  } else if (dst_addr->GetMutablePtr() == nullptr) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
+                                                   dst_addr->GetSize(), dst_addr.get());
+    if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
+                        << ") isn't enough. Allocate size: " << dst_addr->GetSize();
+    }
+  } else {
+    MS_LOG(DEBUG) << "Dst Address already have allocated memory, " << dst_addr->ToString();
   }
 
   // D2H copy, src_device_ptr: GPU/ASCEND; dst_device_ptr: CPU.
