@@ -27,12 +27,12 @@
 #include <mutex>
 #include <vector>
 #include "runtime/hardware/device_context.h"
-#include "include/backend/visible.h"
+#include "runtime/hardware/visible.h"
 #include "include/common/pybind_api/api_register.h"
 
 namespace mindspore {
 namespace plugin_loader {
-class BACKEND_COMMON_EXPORT PluginLoader {
+class RUNTIME_HARDWARE_EXPORT PluginLoader {
  public:
   static bool LoadDynamicLib(const std::string &plugin_file, std::map<std::string, void *> *all_handles,
                              std::stringstream *err_msg, const bool gpu_env = false);
@@ -50,10 +50,10 @@ using DeviceContextCreator = std::function<std::shared_ptr<DeviceContext>(const 
 // This callback registers stateless functions to _c_expression. It is set by different device contexts.
 using RegisterStatelessFuncCb = std::function<void(py::module *m)>;
 
-BACKEND_COMMON_EXPORT const DeviceContext *FetchRealDeviceContext(const AnfNodePtr &node,
-                                                                  const DeviceContext *device_context);
+RUNTIME_HARDWARE_EXPORT const DeviceContext *FetchRealDeviceContext(const AnfNodePtr &node,
+                                                                    const DeviceContext *device_context);
 
-class BACKEND_COMMON_EXPORT DeviceContextManager {
+class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
  public:
   ~DeviceContextManager() = default;
   static DeviceContextManager &GetInstance();
@@ -99,7 +99,7 @@ class BACKEND_COMMON_EXPORT DeviceContextManager {
   std::map<std::string, RegisterStatelessFuncCb> register_func_cbs_;
 };
 
-class BACKEND_COMMON_EXPORT DeviceContextRegister {
+class RUNTIME_HARDWARE_EXPORT DeviceContextRegister {
  public:
   DeviceContextRegister(const std::string &device_name, DeviceContextCreator &&runtime_creator) {
     DeviceContextManager::GetInstance().Register(device_name, std::move(runtime_creator));
@@ -113,7 +113,7 @@ class BACKEND_COMMON_EXPORT DeviceContextRegister {
       return std::make_shared<DEVICE_CONTEXT_CLASS>(device_context_key); \
     })
 
-class BACKEND_COMMON_EXPORT StatelessFuncCbRegister {
+class RUNTIME_HARDWARE_EXPORT StatelessFuncCbRegister {
  public:
   StatelessFuncCbRegister(const std::string &device_name, const RegisterStatelessFuncCb &func) {
     DeviceContextManager::GetInstance().SetRegisterDeviceStatelessFuncCb(device_name, func);

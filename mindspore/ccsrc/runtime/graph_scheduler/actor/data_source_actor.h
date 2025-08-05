@@ -27,7 +27,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "runtime/hardware/device_context.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/graph_scheduler/host_tensor_queue.h"
 #include "base/base.h"
 

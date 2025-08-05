@@ -20,7 +20,7 @@
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/graph_scheduler/pre_launch_comm.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "include/backend/distributed/collective/collective_manager.h"

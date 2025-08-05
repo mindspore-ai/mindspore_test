@@ -29,7 +29,7 @@
 #include "async/spinlock.h"
 #include "ir/device_event.h"
 #include "runtime/device/res_manager/hal_res_base.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -39,7 +39,7 @@ using TaskIdOnStreamManagerPtr = std::shared_ptr<TaskIdOnStreamManager>;
 class EventPool;
 using EventPoolPtr = std::shared_ptr<EventPool>;
 
-class RES_EXPORT MultiStreamController {
+class RUNTIME_HARDWARE_EXPORT MultiStreamController {
  public:
   explicit MultiStreamController(HalResBase *device_res_base);
 

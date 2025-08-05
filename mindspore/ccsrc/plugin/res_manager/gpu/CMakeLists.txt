@@ -12,7 +12,7 @@ if(ENABLE_GPU)
 
   add_library(mindspore_gpu_res_manager SHARED ${GPU_RES_MANAGER_OBJECTS_SRC})
   target_link_libraries(mindspore_gpu_res_manager PRIVATE mindspore_core mindspore_common pybind11::module
-    mindspore_res_manager mindspore_profiler)
+    mindspore_hardware mindspore_profiler)
   message("add gpu lib to mindspore_gpu_res_manager")
   if(WIN32)
     target_link_libraries(mindspore_gpu_res_manager PRIVATE

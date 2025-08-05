@@ -646,6 +646,23 @@ void GPUKernelExecutor::UpdateKernelRefInfo(const KernelGraphPtr &graph) const {
   }
 }
 
+std::vector<size_t> GPUKernelExecutor::GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  auto kernel_mod = kernel_info->MutableKernelMod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  return kernel_mod->GetLaunchIgnoredInputAddressIdx();
+}
+
+bool GPUKernelExecutor::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
+  auto ignored_input_list = GetLaunchIgnoredInputAddressIdx(node);
+  if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
+    return true;
+  }
+  return false;
+}
+
 void GPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
   uint64_t start_time = profiler::GetClockSyscnt();
   auto mng = graph->manager();

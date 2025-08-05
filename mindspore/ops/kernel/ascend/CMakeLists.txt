@@ -23,6 +23,6 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     target_compile_definitions(mindspore_ops_ascend PRIVATE OPS_ASCEND_DLL)
 endif()
 target_link_libraries(mindspore_ops_ascend PRIVATE mindspore_core mindspore_ops mindspore_common mindspore_ms_backend
-                      mindspore_ops_kernel_common mindspore_pyboost mindspore_backend_common
+                      mindspore_ops_kernel_common mindspore_pyboost mindspore_backend_common mindspore_hardware
                       mindspore_ascend_res_manager)
 set_target_properties(mindspore_ops_ascend PROPERTIES INSTALL_RPATH "$ORIGIN:$ORIGIN/..")

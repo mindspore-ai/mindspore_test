@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_VISIBLE_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_VISIBLE_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_VISIBLE_H_
+#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_VISIBLE_H_
 
 #if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef RES_MANAGER_DLL
-#define RES_EXPORT __declspec(dllexport)
+#ifdef RUNTIME_HARDWARE_DLL
+#define RUNTIME_HARDWARE_EXPORT __declspec(dllexport)
 #else
-#define RES_EXPORT __declspec(dllimport)
+#define RUNTIME_HARDWARE_EXPORT __declspec(dllimport)
 #endif
-#define RES_LOCAL
+#define RUNTIME_HARDWARE_LOCAL
 #else
-#define RES_EXPORT __attribute__((visibility("default")))
-#define RES_LOCAL __attribute__((visibility("hidden")))
+#define RUNTIME_HARDWARE_EXPORT __attribute__((visibility("default")))
+#define RUNTIME_HARDWARE_LOCAL __attribute__((visibility("hidden")))
 #endif
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_VISIBLE_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_VISIBLE_H_

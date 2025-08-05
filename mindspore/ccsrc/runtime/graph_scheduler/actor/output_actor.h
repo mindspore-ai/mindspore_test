@@ -25,7 +25,7 @@
 #include <map>
 #include "utils/hash_map.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/abstract_actor.h"
 #include "runtime/hardware/device_context.h"

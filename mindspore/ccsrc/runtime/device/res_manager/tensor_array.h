@@ -22,11 +22,11 @@
 #include <memory>
 #include "common/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace device {
-class RES_EXPORT TensorArray {
+class RUNTIME_HARDWARE_EXPORT TensorArray {
  public:
   // Base TensorArray. Constructed by name, dtype and shapes.
   TensorArray(const string &name, const TypePtr &dtype, const ShapeVector &shapes)
@@ -83,7 +83,7 @@ class RES_EXPORT TensorArray {
   std::vector<mindspore::kernel::AddressPtr> tensors_;
 };
 using TensorArrayPtr = std::shared_ptr<TensorArray>;
-std::vector<size_t> RES_EXPORT GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list);
+std::vector<size_t> RUNTIME_HARDWARE_EXPORT GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list);
 }  // namespace device
 }  // namespace mindspore
 

@@ -22,7 +22,7 @@
 #include <shared_mutex>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
-#include "include/backend/visible.h"
+#include "common/kernel_visible.h"
 #include "common/kernel.h"
 
 namespace mindspore {
@@ -35,7 +35,7 @@ using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 // which represents the basic data structure of kernel launch and transfers between actors.
 // Some device tensors (such as weights and value nodes of graph) are fixed addresses and persistent,
 // so they are more suitable for store and can be obtained when they are used by actor.
-class BACKEND_COMMON_EXPORT DeviceTensorStore {
+class OPS_KERNEL_COMMON_API DeviceTensorStore {
  public:
   static DeviceTensorStore &GetInstance();
 

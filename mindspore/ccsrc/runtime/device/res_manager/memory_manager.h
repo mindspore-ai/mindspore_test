@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "common/device_address.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -34,7 +34,7 @@ const uint32_t kInvalidGraphId = UINT32_MAX;
 constexpr int kGetAllOuts = -1;
 constexpr uint64_t kMemAlignSize = 512;
 constexpr uint64_t kTwiceMemAlignSize = kMemAlignSize << 1;
-class RES_EXPORT MemoryManager {
+class RUNTIME_HARDWARE_EXPORT MemoryManager {
  public:
   MemoryManager() = default;
   virtual ~MemoryManager() = default;

@@ -14,6 +14,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_compile_definitions(mindspore_pyboost PRIVATE PYBOOST_DLL)
 endif()
 target_link_libraries(mindspore_pyboost PRIVATE mindspore_core mindspore_ops mindspore_common mindspore_ms_backend
-                      mindspore_ops_kernel_common mindspore_res_manager mindspore::pybind11_module mindspore_profiler
+                      mindspore_ops_kernel_common mindspore_hardware mindspore::pybind11_module mindspore_profiler
                       mindspore_runtime_pipeline mindspore_backend_common)
 add_dependencies(mindspore_pyboost generated_code)

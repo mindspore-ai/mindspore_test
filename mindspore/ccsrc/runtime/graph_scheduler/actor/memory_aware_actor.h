@@ -21,7 +21,7 @@
 #include <string>
 
 #include "runtime/graph_scheduler/actor/abstract_actor.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 
 namespace mindspore {
 namespace runtime {
