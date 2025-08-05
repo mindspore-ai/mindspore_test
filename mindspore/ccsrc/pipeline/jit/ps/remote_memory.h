@@ -28,6 +28,18 @@ namespace remote_memory {
 constexpr auto kRemoteActivationAttr = "remote_activation";
 constexpr auto kEnableGradOffloadAttr = "_enable_grad_offload";
 
+CNodePtr CreateToRemoteNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                            const AnfNodePtr &sync);
+
+CNodePtr CreateLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                        const AnfNodePtr &sync);
+
+CNodePtr CreateDetachNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                          const AnfNodePtr &sync);
+
+CNodePtr CreateGradLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &position_node, const AnfNodePtr &data_node,
+                            const AnfNodePtr &depend_node, const AnfNodePtr &sync);
+
 bool IsEnableGradOffload(const py::object &obj);
 void SetEnableGradOffloadToAbstract(const AbstractBasePtr &abs);
 bool IsEnableGradOffloadAbstract(const AbstractBasePtr &abs);

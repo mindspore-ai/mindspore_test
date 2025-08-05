@@ -103,9 +103,7 @@ AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncG
     auto prefetch_param_node = prefetch_elements[i];
     // todo: Need to add depend node for prefetch.
     // todo: Need to decide whether the remote ops is run synchronously.
-    AnfNodePtrList cur_prefetch_inputs{NewValueNode(prim::kPrimPrefetch), prefetch_param_node, NewValueNode(kNone),
-                                       NewValueNode(false)};
-    auto prefetch_result = wrapped_fg->NewCNodeInOrder(cur_prefetch_inputs);
+    auto prefetch_result = CreateLoadNode(wrapped_fg, prefetch_param_node, NewValueNode(kNone), NewValueNode(false));
     (void)prefetch_results_inputs.emplace_back(prefetch_result);
   }
   auto prefetch_result = wrapped_fg->NewCNodeInOrder(prefetch_results_inputs);
@@ -130,8 +128,7 @@ AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPt
     AnfNodePtrList update_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
     for (auto detach_node : detach_nodes) {
       auto depend_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), node});
-      auto update_result =
-        fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), detach_node, depend_node, NewValueNode(false)});
+      auto update_result = CreateToRemoteNode(fg, detach_node, depend_node, NewValueNode(false));
       (void)update_result_inputs.emplace_back(update_result);
     }
     auto update_result_node = fg->NewCNodeInOrder(update_result_inputs);
@@ -140,8 +137,7 @@ AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPt
   AnfNodePtrList detach_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
   auto depend_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), node_after_update});
   for (auto detach_node : detach_nodes) {
-    auto detach_result =
-      fg->NewCNodeInOrder({NewValueNode(prim::kPrimDetach), detach_node, depend_node, NewValueNode(MakeValue(false))});
+    auto detach_result = CreateDetachNode(fg, detach_node, depend_node, NewValueNode(false));
     (void)detach_result_inputs.emplace_back(detach_result);
   }
   auto detach_result_node = fg->NewCNodeInOrder(detach_result_inputs);
@@ -266,7 +262,7 @@ void AddDetachAfterLastForwardUsers(const FuncGraphManagerPtr &mng, const FuncGr
       (void)depend_nodes_input.emplace_back(user_cnode);
     }
     auto depend_node = cur_fg->NewCNode(depend_nodes_input);
-    auto detach_node = cur_fg->NewCNode({NewValueNode(prim::kPrimDetach), cur_node, depend_node, NewValueNode(false)});
+    auto detach_node = CreateDetachNode(cur_fg, cur_node, depend_node, NewValueNode(false));
     auto new_last_user_node = cur_fg->NewCNode({NewValueNode(prim::kPrimDepend), last_user_node, detach_node});
     tr.Replace(last_user_node, new_last_user_node);
   }
@@ -290,15 +286,62 @@ void AddGradLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph,
       continue;
     }
     auto fg = fetch_position_node->func_graph();
-    AnfNodePtrList grad_load_node_inputs{NewValueNode(prim::kPrimGradLoad), fetch_position_node, fetch_node,
-                                         NewValueNode(kNone), NewValueNode(false)};
-    auto grad_load_node = fg->NewCNode(grad_load_node_inputs);
+    auto grad_load_node =
+      CreateGradLoadNode(fg, fetch_position_node, fetch_node, NewValueNode(kNone), NewValueNode(false));
     tr.Replace(fetch_position_node, grad_load_node);
   }
   tr.Commit();
 }
 
 }  // namespace
+
+CNodePtr CreateToRemoteNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                            const AnfNodePtr &sync) {
+  MS_EXCEPTION_IF_NULL(fg);
+  PrimitivePtr prim = nullptr;
+  if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
+    prim = prim::kPrimToRemote;
+  } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
+    MS_LOG(EXCEPTION) << "No ops yet.";
+  }
+  return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
+}
+
+CNodePtr CreateLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                        const AnfNodePtr &sync) {
+  MS_EXCEPTION_IF_NULL(fg);
+  PrimitivePtr prim = nullptr;
+  if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
+    prim = prim::kPrimPrefetch;
+  } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
+    MS_LOG(EXCEPTION) << "No ops yet.";
+  }
+  return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
+}
+
+CNodePtr CreateDetachNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, const AnfNodePtr &depend_node,
+                          const AnfNodePtr &sync) {
+  MS_EXCEPTION_IF_NULL(fg);
+  PrimitivePtr prim = nullptr;
+  if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
+    prim = prim::kPrimDetach;
+  } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
+    MS_LOG(EXCEPTION) << "No ops yet.";
+  }
+  return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
+}
+
+CNodePtr CreateGradLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &position_node, const AnfNodePtr &data_node,
+                            const AnfNodePtr &depend_node, const AnfNodePtr &sync) {
+  MS_EXCEPTION_IF_NULL(fg);
+  PrimitivePtr prim = nullptr;
+  if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
+    prim = prim::kPrimGradLoad;
+  } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
+    MS_LOG(EXCEPTION) << "No ops yet.";
+  }
+  return fg->NewCNodeInOrder({NewValueNode(prim), position_node, data_node, depend_node, sync});
+}
 
 bool IsEnableGradOffload(const py::object &obj) {
   if (!py::hasattr(obj, kEnableGradOffloadAttr)) {
@@ -319,8 +362,7 @@ bool IsEnableGradOffloadAbstract(const AbstractBasePtr &abs) {
 }
 
 CNodePtr ActivationToRemote(const FuncGraphPtr &fprop, const AnfNodePtr &activaction) {
-  AnfNodePtrList inputs{NewValueNode(prim::kPrimToRemote), activaction, NewValueNode(kNone), NewValueNode(false)};
-  return fprop->NewCNode(inputs);
+  return CreateToRemoteNode(fprop, activaction, NewValueNode(kNone), NewValueNode(false));
 }
 
 void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
@@ -339,8 +381,7 @@ void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &f
     MS_EXCEPTION_IF_NULL(cur_fg);
     auto ref_input = cnode->input(load_ref_index);
     auto monad_input = cnode->input(load_monad_index);
-    AnfNodePtrList prefetch_inputs{NewValueNode(prim::kPrimPrefetch), ref_input, monad_input, NewValueNode(false)};
-    auto prefetch_node = cur_fg->NewCNode(prefetch_inputs);
+    auto prefetch_node = CreateLoadNode(cur_fg, ref_input, monad_input, NewValueNode(false));
     AnfNodePtrList update_input{NewValueNode(prim::kPrimUpdateState), NewValueNode(kUMonad), prefetch_node};
     auto update_node = cur_fg->NewCNode(update_input);
     (void)tr.SetEdge(node, load_monad_index, update_node);

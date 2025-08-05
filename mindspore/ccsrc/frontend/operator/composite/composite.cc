@@ -1183,10 +1183,8 @@ CNodePtr GradOperation::FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr
     if (!remote_memory::IsEnableGradOffloadAbstract(weight_ref)) {
       return grad;
     }
-    auto fv_bprop_to_remote =
-      fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), grad, NewValueNode(kNone), NewValueNode(false)});
-    fv_bprop = fg->NewCNodeInOrder(
-      {NewValueNode(prim::kPrimDetach), fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false)});
+    auto fv_bprop_to_remote = remote_memory::CreateToRemoteNode(fg, grad, NewValueNode(kNone), NewValueNode(false));
+    fv_bprop = remote_memory::CreateDetachNode(fg, fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false));
   } else {
     std::vector<AnfNodePtr> params;
     AbstractTuplePtr weight_tuple = weight_value_->cast<AbstractTuplePtr>();
@@ -1204,10 +1202,9 @@ CNodePtr GradOperation::FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr
           params.push_back(grad_value);
           continue;
         }
-        auto fv_bprop_to_remote = fg->NewCNodeInOrder(
-          {NewValueNode(prim::kPrimToRemote), grad_value, NewValueNode(kNone), NewValueNode(false)});
-        fv_bprop = fg->NewCNodeInOrder(
-          {NewValueNode(prim::kPrimDetach), fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false)});
+        auto fv_bprop_to_remote =
+          remote_memory::CreateToRemoteNode(fg, grad_value, NewValueNode(kNone), NewValueNode(false));
+        fv_bprop = remote_memory::CreateDetachNode(fg, fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false));
         params.push_back(fv_bprop);
       } else {
         MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
@@ -2909,8 +2906,7 @@ AnfNodePtr BpropInputPrefetch::InsertPrefetchRecursively(const FuncGraphPtr &fg,
     }
     return fg->NewCNode(make_sequence_inputs);
   }
-  auto prefetch_node =
-    fg->NewCNode({NewValueNode(prim::kPrimPrefetch), node, NewValueNode(kNone), NewValueNode(false)});
+  auto prefetch_node = remote_memory::CreateLoadNode(fg, node, NewValueNode(kNone), NewValueNode(false));
   auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, prefetch_node});
   return depend_node;
 }
