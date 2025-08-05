@@ -37,7 +37,6 @@ class _NormBase(Cell):
                  dtype=None
                  ) -> None:
         super(_NormBase, self).__init__()
-        self.set_train()
         self.shape = ops.Shape()
         self.num_features = num_features
         self.eps = eps
@@ -110,7 +109,6 @@ class _BatchNorm(_NormBase):
             dtype=None) -> None:
         super(_BatchNorm, self).__init__(num_features, eps, momentum, affine, track_running_stats,
                                          dtype)
-        self.training = True
 
 
     def _check_input_dim(self, input):
