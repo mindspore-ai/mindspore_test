@@ -459,7 +459,7 @@ std::string Tensor::DataToString(bool use_comma) const {
   }
   if (device_sync_->has_data()) {
     const auto &data = device_sync_->data();
-    return data->ToString(data_type_, shape_, false);
+    return data->ToString(data_type_, shape_, use_comma);
   }
   return GetTensorDataString(data_type_, shape_, device_sync_->GetMutablePtr(), DataSize(), DataDim(), use_comma);
 }
