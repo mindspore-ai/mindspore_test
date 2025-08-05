@@ -13,6 +13,8 @@
 # limitations under the License.
 # ============================================================================
 
+import numpy as np
+import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor, jit
 from mindspore import Parameter
@@ -61,4 +63,41 @@ def test_augassign_backend():
     pynative_output = Net()()
     assert graph_output == pynative_output
 
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_initial_scalar_body_tensor1():
+    """
+    Feature: While specialize.
+    Description: Test scalar arg when first entry of while and set to tensor in body.
+    Expectation: No exception in infer process.
+    """
+
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+
+    def func(x, a, b):
+        y = 1
+        while a < b:
+            while a < b - 1:
+                y = Tensor(2, ms.float32)
+                a += 1
+            a += 1
+        return x + y
+
+    @jit(backend='ms_backend')
+    def test_net(x, a, b):
+        out = x
+        while a < b:
+            while a < b - 1:
+                out = func(out, a, b)
+                a += 1
+            a += 1
+        return out
+
+    input_np_x = np.random.rand(2, 3, 4, 5).astype(np.float32)
+    input_me_x = Tensor(input_np_x)
+    input_me_a = Tensor(2, ms.float32)
+    input_me_b = Tensor(6, ms.float32)
+    test_net(input_me_x, input_me_a, input_me_b)
     compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'

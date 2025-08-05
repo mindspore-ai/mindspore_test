@@ -54,11 +54,11 @@ void PartialJCallOptPass(const FuncGraphPtr &func_graph) {
     std::vector<AnfNodePtr> args;
     AnfNodePtr func_node = nullptr;
     if (IsPrimitiveCNode(j_partial_input, prim::kPrimPartial)) {
-      auto partail_inputs = j_partial_input->cast<CNodePtr>()->inputs();
-      func_node = partail_inputs[1];
+      const auto &partial_inputs = j_partial_input->cast<CNodePtr>()->inputs();
+      func_node = partial_inputs[1];
       // partial(func, arg1, arg2, ...)
-      for (size_t index = 2; index < partail_inputs.size(); ++index) {
-        args.push_back(partail_inputs[index]);
+      for (size_t index = 2; index < partial_inputs.size(); ++index) {
+        args.push_back(partial_inputs[index]);
       }
     }
     const auto &j_caller_inputs = cnode->inputs();
