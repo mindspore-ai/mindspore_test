@@ -23,6 +23,44 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_copy_to_remote():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+
+    @jit
+    def foo(x):
+        x = ops.auto_generate.CopyToRemote()(x)
+        return x
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo(x)
+    assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    assert ret.device == "CPU"
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_copy_to():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+    ms.set_context(device_id=0)
+
+    @jit
+    def foo(x):
+        x = ops.auto_generate.CopyToRemote()(x)
+        x = ops.auto_generate.CopyToDevice()(x)
+        return x
+
+    x = Tensor([1, 2, 3, 4])
+    ret = foo(x)
+    assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+    assert ret.device == "Ascend:0"
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_remote_ops_to_remote():
     """
     Feature: Remote memory base operator

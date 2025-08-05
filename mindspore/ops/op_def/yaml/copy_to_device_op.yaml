@@ -1,0 +1,14 @@
+#operator copy_to_device
+copy_to_device:
+  args:
+    x:
+      dtype: tensor
+    depend_nodes:
+      dtype: tuple[tensor]
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

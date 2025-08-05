@@ -26,6 +26,7 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
@@ -302,7 +303,7 @@ CNodePtr CreateToRemoteNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node,
   if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
     prim = prim::kPrimToRemote;
   } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
-    MS_LOG(EXCEPTION) << "No ops yet.";
+    prim = prim::kPrimCopyToRemote;
   }
   return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
 }
@@ -314,7 +315,7 @@ CNodePtr CreateLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, con
   if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
     prim = prim::kPrimPrefetch;
   } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
-    MS_LOG(EXCEPTION) << "No ops yet.";
+    prim = prim::kPrimCopyToDevice;
   }
   return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
 }
@@ -338,7 +339,7 @@ CNodePtr CreateGradLoadNode(const FuncGraphPtr &fg, const AnfNodePtr &position_n
   if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
     prim = prim::kPrimGradLoad;
   } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
-    MS_LOG(EXCEPTION) << "No ops yet.";
+    prim = prim::kPrimGradientToDevice;
   }
   return fg->NewCNodeInOrder({NewValueNode(prim), position_node, data_node, depend_node, sync});
 }

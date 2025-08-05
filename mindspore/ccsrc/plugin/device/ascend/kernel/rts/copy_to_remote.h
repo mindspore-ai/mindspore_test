@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_GRAD_LOAD_H
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_GRAD_LOAD_H
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_REMOTE_H
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_REMOTE_H
 #include <memory>
 #include <vector>
 
@@ -23,18 +23,17 @@
 
 namespace mindspore {
 namespace kernel {
-class GradLoadKernel : public RtKernel {
+class CopyToRemoteKernel : public RtKernel {
  public:
-  GradLoadKernel() = default;
-  ~GradLoadKernel() override {}
+  CopyToRemoteKernel() = default;
+  ~CopyToRemoteKernel() override {}
   bool Init(const AnfNodePtr &anf_node) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *) override;
 };
 
-MS_REG_RTKERNEL(gradload, GradLoadKernel);
-MS_REG_RTKERNEL(gradienttodevice, GradLoadKernel);
+MS_REG_RTKERNEL(copytoremote, CopyToRemoteKernel);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_GRAD_LOAD_H
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_COPY_TO_REMOTE_H

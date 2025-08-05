@@ -47,6 +47,7 @@
 #include "ir/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
@@ -581,6 +582,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
 
     auto output_size = AnfAlgo::GetOutputAddressNum(kernel);
     const bool is_move_to = IsPrimitiveCNode(kernel, prim::kPrimMoveTo);
+    const bool is_copy_to_remote = IsPrimitiveCNode(kernel, prim::kPrimCopyToRemote);
     std::string move_to;
     if (is_move_to) {
       move_to = common::AnfAlgo::GetMoveToDstStr(kernel);
@@ -600,6 +602,11 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         } else if (move_to != kToNpu) {
           MS_LOG(EXCEPTION) << R"(Destination for MoveTo is supposed to be "CPU" or "Ascend", but got )" << move_to;
         }
+      }
+      if (real_device_context != nullptr && is_copy_to_remote) {
+        real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+          {kToCpu, real_device_context->device_context_key().device_id_});
+        MS_LOG(INFO) << "Use " << kToCpu << " DeviceContext for CopyToRemote node: " << kernel->DebugString();
       }
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(kernel, i);

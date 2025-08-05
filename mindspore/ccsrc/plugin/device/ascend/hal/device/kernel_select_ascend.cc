@@ -693,11 +693,13 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
 
   // for backend inline
   if (IsOneOfPrimitiveCNode(
-        node, {prim::kPrimCallInline,      prim::kPrimSwitch,     prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape,       prim::kPrimMoveTo,
-               prim::kPrimMoveAssign,      prim::kPrimStreamSend, prim::kPrimStreamRecv,    prim::kPrimExpandDims,
-               prim::kPrimSqueeze,         prim::kPrimFlatten,    prim::kPrimFlattenGrad,   prim::kPrimReformat,
-               prim::kPrimPrefetch,        prim::kPrimToRemote,   prim::kPrimDetach,        prim::kPrimGradLoad})) {
+        node,
+        {prim::kPrimCallInline,      prim::kPrimSwitch,       prim::kPrimPartialInline,   prim::kPrimConditionSwitch,
+         prim::kPrimConditionGather, prim::kPrimReshapeExt,   prim::kPrimReshape,         prim::kPrimMoveTo,
+         prim::kPrimMoveAssign,      prim::kPrimStreamSend,   prim::kPrimStreamRecv,      prim::kPrimExpandDims,
+         prim::kPrimSqueeze,         prim::kPrimFlatten,      prim::kPrimFlattenGrad,     prim::kPrimReformat,
+         prim::kPrimPrefetch,        prim::kPrimToRemote,     prim::kPrimDetach,          prim::kPrimGradLoad,
+         prim::kPrimCopyToDevice,    prim::kPrimCopyToRemote, prim::kPrimGradientToDevice})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }
