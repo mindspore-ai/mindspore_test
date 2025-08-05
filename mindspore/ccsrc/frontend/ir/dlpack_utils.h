@@ -29,7 +29,7 @@ class DLPackUtils {
   static DLDevice GetDLDevice(size_t device_id);
   static TypeId GetTypeId(const DLDataType &dtype);
   static TensorPtr FromDLPack(DLManagedTensor *dlpack);
-  static DLManagedTensor *ToDLPack(const Tensor &src);
+  static DLManagedTensor *ToDLPack(const TensorPtr &src);
 };
 }  // namespace tensor
 }  // namespace mindspore
