@@ -14,8 +14,7 @@
 # ============================================================================
 """Softplus Bijector"""
 import numpy as np
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
+import mindspore.ops as ops
 from mindspore.nn.layer.activation import LogSigmoid
 from ..distribution._utils.custom_ops import exp_generic, log_generic
 from .bijector import Bijector
@@ -82,17 +81,17 @@ class Softplus(Bijector):
 
         self.exp = exp_generic
         self.log = log_generic
-        self.expm1 = P.Expm1()
-        self.abs = P.Abs()
-        self.dtypeop = P.DType()
-        self.cast = P.Cast()
-        self.greater = P.Greater()
-        self.less = P.Less()
+        self.expm1 = ops.Expm1()
+        self.abs = ops.Abs()
+        self.dtypeop = ops.DType()
+        self.cast = ops.Cast()
+        self.greater = ops.Greater()
+        self.less = ops.Less()
         self.log_sigmoid = LogSigmoid()
-        self.logicalor = P.LogicalOr()
-        self.select = P.Select()
-        self.shape = P.Shape()
-        self.sigmoid = P.Sigmoid()
+        self.logicalor = ops.LogicalOr()
+        self.select = ops.Select()
+        self.shape = ops.Shape()
+        self.sigmoid = ops.Sigmoid()
         self.softplus = self._softplus
         self.inverse_softplus = self._inverse_softplus
 
@@ -104,7 +103,7 @@ class Softplus(Bijector):
         too_large = self.greater(x, -self.threshold)
         too_small_value = self.exp(x)
         too_large_value = x
-        ones = F.fill(self.dtypeop(x), self.shape(x), 1.0)
+        ones = ops.fill(self.dtypeop(x), self.shape(x), 1.0)
         too_small_or_too_large = self.logicalor(too_small, too_large)
         x = self.select(too_small_or_too_large, ones, x)
         y = self.log(self.exp(x) + 1.0)
@@ -120,7 +119,7 @@ class Softplus(Bijector):
         too_large = self.greater(x, (-1) * self.threshold)
         too_small_value = self.log(x)
         too_large_value = x
-        ones = F.fill(self.dtypeop(x), self.shape(x), 1.0)
+        ones = ops.fill(self.dtypeop(x), self.shape(x), 1.0)
         too_small_or_too_large = self.logicalor(too_small, too_large)
         x = self.select(too_small_or_too_large, ones, x)
         y = x + self.log(self.abs(self.expm1((-1)*x)))

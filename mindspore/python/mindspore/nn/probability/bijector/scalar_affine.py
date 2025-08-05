@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Scalar Affine Bijector"""
-from mindspore.ops import operations as P
+import mindspore.ops as ops
 from ..distribution._utils.custom_ops import log_generic
 from .bijector import Bijector
 
@@ -86,10 +86,10 @@ class ScalarAffine(Bijector):
         self._scale = self._add_parameter(scale, 'scale')
         self._shift = self._add_parameter(shift, 'shift')
 
-        self.abs = P.Abs()
-        self.oneslike = P.OnesLike()
-        self.dtypeop = P.DType()
-        self.cast = P.Cast()
+        self.abs = ops.Abs()
+        self.oneslike = ops.OnesLike()
+        self.dtypeop = ops.DType()
+        self.cast = ops.Cast()
         self.log = log_generic
 
     @property

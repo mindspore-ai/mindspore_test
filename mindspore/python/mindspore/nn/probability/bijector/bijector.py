@@ -15,8 +15,7 @@
 """Bijector"""
 from mindspore import context
 from mindspore.nn.cell import Cell
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
+import mindspore.ops as ops
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
@@ -99,9 +98,9 @@ class Bijector(Cell):
         self.checktensor = CheckTensor()
 
         # ops needed for the base class
-        self.cast_base = P.Cast()
-        self.dtype_base = P.DType()
-        self.shape_base = P.Shape()
+        self.cast_base = ops.Cast()
+        self.dtype_base = ops.DType()
+        self.shape_base = ops.Shape()
         self.sametypeshape_base = inner.SameTypeShape()
         self.issubclass_base = inner.IsSubClass()
 
@@ -145,13 +144,13 @@ class Bijector(Cell):
             if self.issubclass_base(value_type, mstype.float_):
                 return value
             return raise_type_error('input value of bijector', value_type, mstype.float_)
-        dtype_tensor = F.fill(self.dtype, self.shape_base(value), 0.0)
+        dtype_tensor = ops.fill(self.dtype, self.shape_base(value), 0.0)
         self.sametypeshape_base(value, dtype_tensor)
         return value
 
     def _shape_mapping(self, shape):
-        shape_tensor = F.fill(self.parameter_type, shape, 0.0)
-        dist_shape_tensor = F.fill(
+        shape_tensor = ops.fill(self.parameter_type, shape, 0.0)
+        dist_shape_tensor = ops.fill(
             self.parameter_type, self.batch_shape, 0.0)
         return (shape_tensor + dist_shape_tensor).shape
 
