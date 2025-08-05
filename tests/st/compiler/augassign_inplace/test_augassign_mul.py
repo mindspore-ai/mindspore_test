@@ -17,7 +17,15 @@ import pytest
 import mindspore.nn as nn
 from mindspore import context, Tensor, jit, ParameterTuple
 from mindspore import ops
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_teardown():
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+    yield
+    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 class GradOfFirstInput(nn.Cell):
@@ -113,8 +121,8 @@ def test_augassign_mul_tensor_tensor(mode):
     assert graph_ret == pynative_ret
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
 def test_tensor_tensor_grad_first_input(mode):
     """
@@ -135,8 +143,8 @@ def test_tensor_tensor_grad_first_input(mode):
     assert graph_ret == pynative_ret
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
 def test_tensor_scalar_grad_first_input(mode):
     """
@@ -157,8 +165,8 @@ def test_tensor_scalar_grad_first_input(mode):
     assert graph_ret == pynative_ret
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
 def test_tensor_tensor_grad_all_inputs(mode):
     """
@@ -179,8 +187,8 @@ def test_tensor_tensor_grad_all_inputs(mode):
     assert graph_ret == pynative_ret
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
 def test_tensor_scalar_grad_all_inputs(mode):
     """

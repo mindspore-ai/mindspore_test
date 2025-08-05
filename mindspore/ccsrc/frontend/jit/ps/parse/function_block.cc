@@ -327,7 +327,7 @@ AnfNodePtr FunctionBlock::ReadVariable(const std::string &var_name) {
   return phi_param;
 }
 
-// Resolve Ast operator node: augassign +=, -=, *=, /=, //=
+// Resolve Ast operator node: augassign +=, -=, *=, /=, //=, %=
 py::tuple FunctionBlock::GetAugAssignAstOpNameSpace(const py::object &op) {
   auto ast = parser_.ast();
   MS_EXCEPTION_IF_NULL(ast);

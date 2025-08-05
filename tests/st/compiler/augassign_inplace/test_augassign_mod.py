@@ -64,7 +64,7 @@ class GradOfAllInputsAndParams(nn.Cell):
 
 class Net(nn.Cell):
     def construct(self, x, y):
-        x += y
+        x %= y
         return x
 
 
@@ -80,20 +80,21 @@ def set_context_mode(input_net, mode):
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
-def test_augassign_add_tensor_scalar(mode):
+def test_augassign_mod_tensor_scalar(mode):
     """
     Feature: Support augassign inplace.
     Description: Support augassign inplace.
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = 2
+    x = Tensor(10)
+    y = 3
     set_context_mode(net, mode)
     graph_ret = net(x, y)
+    print("graph_ret: ", graph_ret)
 
-    x2 = Tensor(1)
-    y2 = 2
+    x2 = Tensor(10)
+    y2 = 3
     set_context_mode(net, 'pynative')
     pynative_ret = net(x2, y2)
     assert graph_ret == pynative_ret
@@ -102,20 +103,20 @@ def test_augassign_add_tensor_scalar(mode):
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", ['kbk', 'ge'])
-def test_augassign_add_tensor_tensor(mode):
+def test_augassign_mod_tensor_tensor(mode):
     """
     Feature: Support augassign inplace.
     Description: Support augassign inplace.
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = Tensor(1)
+    x = Tensor(10)
+    y = Tensor(3)
     set_context_mode(net, mode)
     graph_ret = net(x, y)
 
-    x2 = Tensor(1)
-    y2 = Tensor(1)
+    x2 = Tensor(10)
+    y2 = Tensor(3)
     set_context_mode(net, 'pynative')
     pynative_ret = net(x2, y2)
     assert graph_ret == pynative_ret
@@ -131,13 +132,13 @@ def test_tensor_tensor_grad_first_input(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = Tensor(2)
+    x = Tensor(10)
+    y = Tensor(3)
     set_context_mode(net, mode)
     graph_ret = GradOfFirstInput(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = Tensor(2)
+    x2 = Tensor(10)
+    y2 = Tensor(3)
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfFirstInput(net)(x2, y2)
     assert graph_ret == pynative_ret
@@ -153,13 +154,13 @@ def test_tensor_scalar_grad_first_input(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = 2
+    x = Tensor(10)
+    y = 3
     set_context_mode(net, mode)
     graph_ret = GradOfFirstInput(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = 2
+    x2 = Tensor(10)
+    y2 = 3
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfFirstInput(net)(x2, y2)
     assert graph_ret == pynative_ret
@@ -175,13 +176,13 @@ def test_tensor_tensor_grad_all_inputs(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = Tensor(2)
+    x = Tensor(10)
+    y = Tensor(3)
     set_context_mode(net, mode)
     graph_ret = GradOfAllInputs(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = Tensor(2)
+    x2 = Tensor(10)
+    y2 = Tensor(3)
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfAllInputs(net)(x2, y2)
     assert graph_ret == pynative_ret
@@ -197,13 +198,13 @@ def test_tensor_scalar_grad_all_inputs(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = 2
+    x = Tensor(10)
+    y = 3
     set_context_mode(net, mode)
     graph_ret = GradOfAllInputs(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = 2
+    x2 = Tensor(10)
+    y2 = 3
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfAllInputs(net)(x2, y2)
     assert graph_ret == pynative_ret
@@ -219,13 +220,13 @@ def test_tensor_tensor_grad_all_inputs_and_params(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = Tensor(2)
+    x = Tensor(10)
+    y = Tensor(3)
     set_context_mode(net, mode)
     graph_ret = GradOfAllInputsAndParams(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = Tensor(2)
+    x2 = Tensor(10)
+    y2 = Tensor(3)
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfAllInputsAndParams(net)(x2, y2)
     assert graph_ret == pynative_ret
@@ -241,13 +242,13 @@ def test_tensor_scalar_grad_all_inputs_and_params(mode):
     Expectation: Run success.
     """
     net = Net()
-    x = Tensor(1)
-    y = 2
+    x = Tensor(10)
+    y = 3
     set_context_mode(net, mode)
     graph_ret = GradOfAllInputsAndParams(net)(x, y)
 
-    x2 = Tensor(1)
-    y2 = 2
+    x2 = Tensor(10)
+    y2 = 3
     set_context_mode(net, 'pynative')
     pynative_ret = GradOfAllInputsAndParams(net)(x2, y2)
     assert graph_ret == pynative_ret

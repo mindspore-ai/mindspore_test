@@ -50,6 +50,7 @@ from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
 from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
 from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
 from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+from mindspore.ops.composite.multitype_ops.mod_impl import augassign_mod
 
 __all__ = [
     'add',
@@ -87,5 +88,6 @@ __all__ = [
     'augassign_sub',
     'augassign_mul',
     'augassign_div',
-    'augassign_floordiv'
+    'augassign_floordiv',
+    'augassign_mod'
 ]

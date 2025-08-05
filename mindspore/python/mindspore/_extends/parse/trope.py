@@ -42,6 +42,7 @@ from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
 from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
 from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
 from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+from mindspore.ops.composite.multitype_ops.mod_impl import augassign_mod
 
 from ...common import mutable
 
@@ -51,7 +52,7 @@ __all__ = ['add', 'sub', 'mul', 'truediv', 'floordiv', 'mod', 'eq', 'ne', 'lt', 
            'bool', 'getattr', 'setattr', 'hasattr', 'len', 'iter', 'next', 'pow', 'range', 'map', 'zip',
            'partial', 'print', 'enumerate', 'isinstance', 'filter', 'abs', 'round', 'mutable',
            'max', 'min', 'sum', 'list', 'tuple',
-           'augassign_add', 'augassign_sub', 'augassign_mul', 'augassign_div', 'augassign_floordiv']
+           'augassign_add', 'augassign_sub', 'augassign_mul', 'augassign_div', 'augassign_floordiv', 'augassign_mod']
 
 
 def MakeTuple(*elts):  # pragma: no cover
