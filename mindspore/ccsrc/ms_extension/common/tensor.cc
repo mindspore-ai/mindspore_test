@@ -49,6 +49,9 @@ Tensor::Tensor(TypeId type_id, const ShapeVector &shape)
 Tensor::Tensor(const mindspore::ValuePtr &value) {
   if (value != nullptr) {
     _tensor_holder_ = std::make_shared<RealTensorHolder>(value);
+    if (_tensor_holder_->tensor_ != nullptr) {
+      _tensor_holder_->tensor_->set_need_pipeline_sync(true);
+    }
   }
 }
 

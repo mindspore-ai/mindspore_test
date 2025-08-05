@@ -39,6 +39,7 @@ bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std
     auto seq_length_tensor = llm_manager.get_graph_input(tensor_name);
     if (seq_length_tensor != nullptr) {
       // then use graph_input tensor value to set seq_len if saved
+      seq_length_tensor->set_need_pipeline_sync(false);
       auto seq_length_tensor_cpu = seq_length_tensor->cpu();
       MS_EXCEPTION_IF_NULL(seq_length_tensor_cpu);
       auto seq_length_values = static_cast<int32_t *>(seq_length_tensor_cpu->data_c());
