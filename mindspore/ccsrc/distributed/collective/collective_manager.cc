@@ -338,8 +338,8 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                                                  const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
-  MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
-                  << ", async: " << config.async << ", submit_now: " << config.submit_now;
+  MS_LOG(INFO) << "Start to create communication group: " << group_name << " " << group_ranks
+               << ", async: " << config.async << ", submit_now: " << config.submit_now;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -1223,10 +1223,10 @@ void CollectiveManager::SetDistributedMeta() {
 }
 
 void CollectiveManager::CacheInitedGroups(const std::string &name) {
-  MS_LOG(WARNING) << "Cache inited group: " << name;
+  MS_LOG(INFO) << "Cache inited group: " << name;
   std::unique_lock<std::mutex> result_lock(cache_mutes_);
   (void)inited_groups_.emplace_back(name);
-  MS_LOG(WARNING) << "Cache inited group: " << name << " end.";
+  MS_LOG(INFO) << "Cache inited group: " << name << " end.";
 }
 
 void CollectiveManager::ClearCacheInitedGroups() { inited_groups_.clear(); }
