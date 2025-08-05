@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/res_manager/test_device_address.h"
+#include "common/test_device_address.h"
 #include <utility>
 #include <unordered_map>
 #include "ir/device_address_maker.h"

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_TEST_DEVICE_ADDRESS_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_TEST_DEVICE_ADDRESS_H_
+#ifndef MINDSPORE_UT_COMMON_TEST_DEVICE_ADDRESS_H_
+#define MINDSPORE_UT_COMMON_TEST_DEVICE_ADDRESS_H_
 
 #include <memory>
 #include <utility>
@@ -300,4 +300,4 @@ class TestResManager : public device::HalResBase {
 }  // namespace test
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_TEST_DEVICE_ADDRESS_H_
+#endif  // MINDSPORE_UT_COMMON_TEST_DEVICE_ADDRESS_H_
