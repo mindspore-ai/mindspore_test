@@ -836,7 +836,7 @@ std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = tensor::from_spec(self.data_type(), self.shape(), device::DeviceType::kCPU);
+  auto target_tensor = tensor::from_spec(self.data_type(), self.shape(), device::GetDeviceTypeByName(to));
   bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();

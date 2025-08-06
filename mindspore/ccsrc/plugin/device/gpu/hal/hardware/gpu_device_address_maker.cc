@@ -29,6 +29,7 @@ DeviceSyncPtr MakeGPUDeviceAddress(TypeId data_type, const ShapeVector &shape, v
   auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
   auto device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({"GPU", device_id});
+  device_context->Initialize();
 
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "GPU", device_id, 0);

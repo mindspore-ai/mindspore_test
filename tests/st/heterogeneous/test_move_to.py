@@ -15,6 +15,7 @@
 
 import os
 import subprocess
+from mindspore import Tensor
 from tests.mark_utils import arg_mark
 
 def msrun_cross_cluster(rank_size=8):
@@ -41,3 +42,16 @@ def test_move_to_2_cards():
     '''
     result, msg = msrun_cross_cluster(rank_size=2)
     assert result, msg
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_tensor_move_to():
+    '''
+    Feature: Test Tensor move_to
+    Description: Test Tensor move_to
+    Expectation: Run success
+    '''
+    x = Tensor([1, 2, 3]).move_to("Ascend")
+    assert "Ascend" in x.device
+
+    assert "CPU" in x.move_to("CPU").device
