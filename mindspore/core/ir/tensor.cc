@@ -378,7 +378,7 @@ const int64_t Tensor::storage_offset() const {
 }
 
 void Tensor::ExecuteLazyTask() const {
-  if (lazy_callback_ != nullptr && (need_pipeline_sync_ || device_sync_ != nullptr)) {
+  if (lazy_callback_ != nullptr && need_pipeline_sync_) {
     lazy_callback_();
   }
 }
