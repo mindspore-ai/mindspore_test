@@ -25,7 +25,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"

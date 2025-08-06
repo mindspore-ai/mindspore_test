@@ -31,6 +31,7 @@
 #include "ir/tensor.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/ms_context.h"
+#include "runtime/hardware/visible.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
@@ -62,7 +63,7 @@ class DeviceResManager;
 class KernelExecutor;
 
 // DeviceContext is unified interface of interaction with device.
-class BACKEND_COMMON_EXPORT DeviceContext {
+class RUNTIME_HARDWARE_EXPORT DeviceContext {
  public:
   explicit DeviceContext(const DeviceContextKey &device_context_key)
       : device_context_key_(device_context_key), initialized_(false) {}
@@ -117,7 +118,7 @@ class OffloadedMemPool;
 using DeviceMemPtr = void *;
 enum class CopyType;
 
-class BACKEND_COMMON_EXPORT DeviceResManager {
+class RUNTIME_HARDWARE_EXPORT DeviceResManager {
  public:
   DeviceResManager();
 
@@ -353,7 +354,7 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
 using CallbackFunc = std::function<void(void)>;
 
-class BACKEND_COMMON_EXPORT KernelExecutor {
+class RUNTIME_HARDWARE_EXPORT KernelExecutor {
  public:
   virtual ~KernelExecutor() = default;
 
@@ -404,9 +405,9 @@ class BACKEND_COMMON_EXPORT KernelExecutor {
     return false;
   };
 
-  virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const;
+  virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const { return {}; }
 
-  virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const;
+  virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const { return false; }
 
  protected:
   DeviceContext *device_context_{nullptr};

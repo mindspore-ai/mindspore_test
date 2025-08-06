@@ -589,6 +589,23 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
 #endif
 }
 
+std::vector<size_t> CPUKernelExecutor::GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  auto kernel_mod = kernel_info->MutableKernelMod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  return kernel_mod->GetLaunchIgnoredInputAddressIdx();
+}
+
+bool CPUKernelExecutor::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
+  auto ignored_input_list = GetLaunchIgnoredInputAddressIdx(node);
+  if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
+    return true;
+  }
+  return false;
+}
+
 void CPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();

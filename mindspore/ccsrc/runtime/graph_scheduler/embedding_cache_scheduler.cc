@@ -26,7 +26,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"

@@ -20,19 +20,19 @@
 #include <iostream>
 #include <vector>
 #include "ir/tensor.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace device {
-RES_EXPORT void HalfToFloat(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void FloatToHalf(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void DoubleToFloat(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void FloatToDouble(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void ShortToInt(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void IntToShort(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void LongToInt(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void IntToLong(void *dst, const void *src, size_t elem_num);
-RES_EXPORT void ConvertSameType(void *const dst, const void *src, size_t size, TypeId type);
+RUNTIME_HARDWARE_EXPORT void HalfToFloat(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void FloatToHalf(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void DoubleToFloat(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void FloatToDouble(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void ShortToInt(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void IntToShort(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void LongToInt(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void IntToLong(void *dst, const void *src, size_t elem_num);
+RUNTIME_HARDWARE_EXPORT void ConvertSameType(void *const dst, const void *src, size_t size, TypeId type);
 
 template <typename T>
 void ConvertSameType(T *dst, const T *src, size_t elem_num) {

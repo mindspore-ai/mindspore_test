@@ -26,11 +26,11 @@
 #include "common/device_address.h"
 #include "runtime/device/res_manager/utils/io_handle.h"
 #include "runtime/device/res_manager/utils/pin_mem_pool.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 
 namespace mindspore {
 namespace device {
-class RES_EXPORT SwapManager {
+class RUNTIME_HARDWARE_EXPORT SwapManager {
  public:
   SwapManager(size_t stream_id, DynamicMemPool *device_memory_pool, PinMemPool *pin_mem_pool);
   ~SwapManager() = default;

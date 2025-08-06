@@ -30,7 +30,7 @@ namespace mindspore {
 namespace device {
 using HalResManagerCreator = std::function<std::shared_ptr<HalResBase>(const ResKey &)>;
 
-class RES_EXPORT HalResManager {
+class RUNTIME_HARDWARE_EXPORT HalResManager {
  public:
   ~HalResManager() = default;
   static HalResManager &GetInstance();
@@ -52,7 +52,7 @@ class RES_EXPORT HalResManager {
   // Device target type : 0, 1, 2, 3, and real device support : 'GPU' 'Ascend' 'CPU'.
   std::map<std::string, MultiStreamControllerPtr> multi_stream_controllers_;
 };
-class RES_EXPORT HalResManagerRegister {
+class RUNTIME_HARDWARE_EXPORT HalResManagerRegister {
  public:
   HalResManagerRegister(const DeviceType device, HalResManagerCreator &&hal_res_manager_creator) {
     HalResManager::GetInstance().Register(device, std::move(hal_res_manager_creator));

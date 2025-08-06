@@ -109,6 +109,10 @@ class CPUKernelExecutor : public KernelExecutor {
                          const std::vector<device::DeviceAddress *> &output_addr_list,
                          const size_t &stream_id) const override;
 
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const override;
+
+  bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const override;
+
  private:
   // Select the matching backend kernels according to the data type and format of input and output for all
   // execution operators, and set final device data type and format information for backend kernels, device

@@ -36,7 +36,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/file_utils.h"
 

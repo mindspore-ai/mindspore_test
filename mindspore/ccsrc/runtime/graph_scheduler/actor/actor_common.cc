@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/common/utils/anfalgo.h"

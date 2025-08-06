@@ -27,7 +27,7 @@ else()
 endif()
 target_link_libraries(mindspore_pynative PRIVATE mindspore_core mindspore_ops mindspore_frontend mindspore_pyboost
                       mindspore_common mindspore_ops_kernel_common mindspore_ms_backend mindspore_backend_manager
-                      mindspore::pybind11_module mindspore_profiler mindspore_runtime_pipeline
+                      mindspore::pybind11_module mindspore_profiler mindspore_runtime_pipeline mindspore_hardware
                       mindspore_backend_common)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")

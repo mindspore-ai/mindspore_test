@@ -16,14 +16,14 @@
 
 #include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
-#include "include/backend/kernel_info.h"
-#include "runtime/device/res_manager/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"  // to delect
 
 namespace mindspore {
 namespace device {
 DeviceResManager::DeviceResManager() {
   collective_comm_lib_ = nullptr;
   device_context_ = nullptr;
+  // to delete
   offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
 }
 
@@ -77,23 +77,6 @@ void DeviceResManager::FreeMemory(DeviceAddress *const &address) const {
     FreeMemory(address->GetMutablePtr());
   }
   address->set_ptr(nullptr);
-}
-
-std::vector<size_t> KernelExecutor::GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
-  MS_EXCEPTION_IF_NULL(node);
-  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info);
-  auto kernel_mod = kernel_info->MutableKernelMod();
-  MS_EXCEPTION_IF_NULL(kernel_mod);
-  return kernel_mod->GetLaunchIgnoredInputAddressIdx();
-}
-
-bool KernelExecutor::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
-  auto ignored_input_list = GetLaunchIgnoredInputAddressIdx(node);
-  if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
-    return true;
-  }
-  return false;
 }
 }  // namespace device
 }  // namespace mindspore

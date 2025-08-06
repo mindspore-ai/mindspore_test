@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
 #include "debug/profiler/profiling.h"
 #include "common/kernel.h"

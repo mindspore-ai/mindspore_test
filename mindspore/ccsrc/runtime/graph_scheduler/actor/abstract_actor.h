@@ -27,7 +27,7 @@
 #include <map>
 #include "actor/op_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
 #include "runtime/hardware/device_context.h"

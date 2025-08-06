@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "common/device_tensor_store.h"
 
 namespace mindspore {
 namespace runtime {

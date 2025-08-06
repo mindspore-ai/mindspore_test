@@ -34,7 +34,7 @@
 #include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/device/res_manager/memory_manager.h"
-#include "runtime/device/res_manager/utils/visible.h"
+#include "runtime/hardware/visible.h"
 #include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/device/res_manager/capture_graph.h"
 
@@ -45,7 +45,7 @@ constexpr auto kWorldGroupStreamIndex = 1;
 
 using KernelTensor = kernel::KernelTensor;
 
-class RES_EXPORT HalResBase {
+class RUNTIME_HARDWARE_EXPORT HalResBase {
  public:
   explicit HalResBase(const ResKey &res_key) : res_key_(res_key) {}
   virtual ~HalResBase() = default;
