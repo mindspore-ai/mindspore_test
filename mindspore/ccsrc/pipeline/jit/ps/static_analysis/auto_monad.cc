@@ -1787,7 +1787,9 @@ class AutoMonadConverter {
 
   std::vector<AnfNodePtr> MakeLoads(const CNodePtr &cnode, const RefInputs &ref_inputs, const AnfNodePtr &u) {
     std::vector<AnfNodePtr> loads;
-    PrimitiveSet skip_loads_prim{prim::kPrimToRemote, prim::kPrimDetach, prim::kPrimPrefetch, prim::kPrimGradLoad};
+    PrimitiveSet skip_loads_prim{prim::kPrimToRemote,         prim::kPrimDetach,       prim::kPrimPrefetch,
+                                 prim::kPrimGradLoad,         prim::kPrimCopyToDevice, prim::kPrimCopyToRemote,
+                                 prim::kPrimGradientToDevice, prim::kPrimFreeDevice};
     if (IsOneOfPrimitiveCNode(cnode, skip_loads_prim)) {
       return loads;
     }

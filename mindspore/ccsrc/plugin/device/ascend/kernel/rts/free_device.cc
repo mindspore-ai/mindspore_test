@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/copy_to_remote.h"
+#include "plugin/device/ascend/kernel/rts/free_device.h"
+
+#include <string>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/framework_utils.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {
-bool CopyToRemoteKernel::Init(const AnfNodePtr &anf_node) {
+bool FreeDeviceKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
@@ -44,52 +48,38 @@ bool CopyToRemoteKernel::Init(const AnfNodePtr &anf_node) {
   return true;
 }
 
-bool CopyToRemoteKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
-                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  MS_LOG(ERROR) << "Begin to call CopyToRemote kernel.";
+bool FreeDeviceKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  MS_LOG(ERROR) << "Begin to call FreeDevice kernel.";
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(EXCEPTION) << "Invalid TensorShape input or output size (" << inputs.size() << ", " << outputs.size()
                       << ").";
   }
   const auto input = inputs[0];
   MS_EXCEPTION_IF_NULL(input);
-  const auto output = outputs[0];
-  MS_EXCEPTION_IF_NULL(output);
   MS_EXCEPTION_IF_NULL(input->device_address());
-  MS_EXCEPTION_IF_NULL(output->device_address());
   const auto input_device = input->device_address()->GetDeviceType();
-  const auto output_device = output->device_address()->GetDeviceType();
-  if (input_device != device::DeviceType::kAscend || output_device != device::DeviceType::kCPU) {
-    MS_LOG(EXCEPTION) << "For Primitive '" << kernel_name_
-                      << "', the device type of the first input and output must be Ascend(2) and CPU(1)."
-                      << "But got input device type: " << input_device << ", output device type: " << output_device;
+  if (input_device != device::DeviceType::kAscend) {
+    MS_LOG(EXCEPTION) << "For Primitive '" << kernel_name_ << "', the device type of the first input must be CPU(1)."
+                      << "But got input device type: " << input_device;
   }
 
-  // Get input ptr.
+  // Get src input ptr.
   const auto &input_device_ptr = input->device_ptr();
   if (input_device_ptr == nullptr) {
-    MS_LOG(EXCEPTION) << "The first input of Primitive '" << kernel_name_
-                      << "' has been released before. Please Check!";
+    MS_LOG(WARNING) << "the input of Primitive '" << kernel_name_ << "' has been released before. Please Check!";
+    return true;
   }
-  // Get output device ptr.
-  const auto output_device_ptr = output->device_ptr();
-  MS_EXCEPTION_IF_NULL(output_device_ptr);
-  const auto size = input->size();
-  auto sync = device::ascend::ConvertKernelTensor<bool>(inputs[inputs.size() - 1]);
-  const auto mem_cpy_status = CALL_ASCEND_API(aclrtMemcpyAsync, output_device_ptr, size, input_device_ptr, size,
-                                              ACL_MEMCPY_DEVICE_TO_HOST, stream_ptr);
-  if (mem_cpy_status != ACL_SUCCESS) {
-    MS_LOG(ERROR) << "CopyToRemote kernel aclrtMemcpyAsync device to host failed! src ptr: " << input_device_ptr
-                  << ", dst ptr: " << output_device_ptr << ", size: " << size << ", stream: " << stream_ptr;
-    return false;
-  }
-  if (sync) {
-    const auto sync_status = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream_ptr, -1);
-    if (sync_status != ACL_SUCCESS) {
-      MS_LOG(ERROR) << "Failed to synchronize stream, ret = " << sync_status << ".";
-      return false;
-    }
-  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  MS_EXCEPTION_IF_NULL(input->device_address());
+  MS_LOG(ERROR) << "Try to release input memory, the addr: " << input_device_ptr;
+  res_manager->FreeMemory(input->device_address().get());
   return true;
 }
 }  // namespace kernel

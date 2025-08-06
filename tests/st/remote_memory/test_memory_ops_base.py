@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mutable
@@ -59,6 +60,29 @@ def test_remote_ops_copy_to():
     ret = foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
     assert ret.device == "Ascend:0"
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_copy_to_and_free():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: Throw RuntimeError.
+    """
+    ms.set_context(device_id=0)
+
+    @jit
+    def foo(x):
+        y = ops.auto_generate.CopyToRemote()(x)
+        a = ops.auto_generate.FreeDevice()(x)
+        b = ops.depend(y, a)
+        z = ops.auto_generate.CopyToRemote()(x, b)
+        return b, z
+
+    with pytest.raises(RuntimeError) as err:
+        x = Tensor([1, 2, 3, 4])
+        y, z = foo(x)
+        print(f'y: {y}, device of z: {z.device}')
+    assert "The first input of Primitive 'CopyToRemote' has been released before." in str(err.value)
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_remote_ops_to_remote():

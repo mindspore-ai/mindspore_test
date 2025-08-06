@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_COPY_TO_REMOTE_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_COPY_TO_REMOTE_H_
+#include "infer/ops_func_impl/free_device.h"
 
-#include <vector>
-#include <set>
+#include <map>
 #include <memory>
-#include "ir/primitive.h"
-#include "ops/ops_func_impl/op_func_impl.h"
-#include "mindspore/ops/infer/ops_func_impl/copy_to_device.h"
+#include <set>
+#include <string>
+#include <vector>
 
 namespace mindspore {
 namespace ops {
-class OPS_API CopyToRemoteFuncImpl : public CopyToDeviceFuncImpl {};
+BaseShapePtr FreeDeviceFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                            const std::vector<AbstractBasePtr> &input_args) const {
+  return std::make_shared<abstract::Shape>(ShapeVector({1}));
+}
+
+TypePtr FreeDeviceFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+  return kBool;
+}
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_COPY_TO_REMOTE_H_

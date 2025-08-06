@@ -1,5 +1,5 @@
-#operator copy_to_device
-copy_to_device:
+#operator free_device
+free_device:
   args:
     x:
       dtype: tensor
@@ -11,4 +11,4 @@ copy_to_device:
       default: False
   returns:
     output:
-      dtype: tensor
+      dtype: bool

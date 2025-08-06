@@ -6,7 +6,7 @@ gradient_to_device:
     data:
       dtype: tensor
     depend_nodes:
-      dtype: tuple[tensor]
+      dtype: Any
       default: None
     sync:
       dtype: bool

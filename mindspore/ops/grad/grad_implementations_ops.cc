@@ -77,6 +77,13 @@ REG_BPROP_BUILDER("Detach").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
 });
 
+REG_BPROP_BUILDER("FreeDevice").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
 REG_BPROP_BUILDER("GradLoad").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto data = ib->GetInput(i1);
   auto out = ib->GetInput(i4);

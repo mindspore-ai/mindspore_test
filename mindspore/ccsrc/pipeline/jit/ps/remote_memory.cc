@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -327,7 +328,7 @@ CNodePtr CreateDetachNode(const FuncGraphPtr &fg, const AnfNodePtr &data_node, c
   if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1") {
     prim = prim::kPrimDetach;
   } else if (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "2") {
-    MS_LOG(EXCEPTION) << "No ops yet.";
+    prim = prim::kPrimFreeDevice;
   }
   return fg->NewCNodeInOrder({NewValueNode(prim), data_node, depend_node, sync});
 }
