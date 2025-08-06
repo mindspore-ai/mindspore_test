@@ -2682,7 +2682,9 @@ def _get_mindir_inputs(file_name):
             raise RuntimeError(f"MindIR input's type: {mindir_type} is not supported.")
 
         input_type = mindir_to_tensor_type.get(mindir_type)
-        input_tensor.append(Tensor(shape=input_shape, dtype=input_type, init=One()))
+        ones_tensor = Tensor(shape=input_shape, dtype=input_type, init=One())
+        ones_tensor.init_data()
+        input_tensor.append(ones_tensor)
 
     if not input_tensor:
         logger.warning("The MindIR model has no input, return None.")

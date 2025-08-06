@@ -660,7 +660,9 @@ def handle_empty_tensor(arg, data):
     if 0 in arg:
         init_func = Zero()
         init_func.__enable_zero_dim__ = True
-        return Tensor(shape=arg, dtype=data.dtype, init=init_func)
+        zero_tensor = Tensor(shape=arg, dtype=data.dtype, init=init_func)
+        zero_tensor.init_data()
+        return zero_tensor
     return const_utils.make_tensor([], data.dtype, arg)
 
 
