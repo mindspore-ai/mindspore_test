@@ -56,6 +56,45 @@ AnfNodePtr FindNodeUserWithIOMonad(const mindspore::CompactSet<std::pair<AnfNode
   return found ? node_user_with_io_monad : nullptr;
 }
 
+void ReplaceInplaceNodeForCNode(const CNodePtr &cnode, const std::map<AnfNodePtr, AnfNodePtr> &inplace_input,
+                                const FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(manager);
+  auto find_replaced_node = [&inplace_input](const AnfNodePtr &node) -> AnfNodePtr {
+    auto it = inplace_input.find(node);
+    if (it == inplace_input.end()) {
+      return nullptr;
+    }
+    // Find the final inplaced cnode to replace
+    // For example:
+    // %1 = Inplace(%0)
+    // %2 = Inplace(%1)
+    // %3 = Depend(%0, U) ==> %3 = Depend(%2, U)
+    AnfNodePtr replaced_node = it->second;
+    it = inplace_input.find(replaced_node);
+    while (it != inplace_input.end()) {
+      replaced_node = it->second;
+      it = inplace_input.find(replaced_node);
+    }
+    return replaced_node;
+  };
+
+  // Replace cnode inputs from inplace input to inplace output
+  for (size_t i = 1; i < cnode->size(); ++i) {
+    auto original_input = cnode->input(i);
+    if (original_input->func_graph() != func_graph) {
+      continue;
+    }
+    auto replaced_node = find_replaced_node(original_input);
+    if (replaced_node == nullptr) {
+      continue;
+    }
+    MS_LOG(INFO) << "Replace cnode : " << cnode->DebugString() << " input from: " << original_input->DebugString()
+                 << " to: " << replaced_node->DebugString() << " for inplace ops replacement.";
+    manager->SetEdge(cnode, i, replaced_node);
+  }
+}
+
 /**
  * \brief Change inplace input of cnode in func_graph.
  *
@@ -77,7 +116,8 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto &node_users_map = manager->node_users();
-  for (auto node : TopoSort(func_graph->return_node())) {
+  auto output_node = func_graph->output();
+  for (auto node : TopoSort(output_node)) {
     if (!irpass::IsCNode(node) || IsPrimitiveCNode(node, prim::kPrimVirtualAssignAdd) ||
         node->func_graph() != func_graph) {
       continue;
@@ -96,30 +136,9 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       }
     }
 
-    for (size_t i = 1; i < cnode->size(); ++i) {
-      auto original_input = cnode->input(i);
-      if (original_input->func_graph() != func_graph) {
-        continue;
-      }
-      auto it = inplace_input.find(original_input);
-      if (it == inplace_input.end()) {
-        continue;
-      }
-      // Find the final inplaced cnode to replace
-      // For example:
-      // %1 = Inplace(%0)
-      // %2 = Inplace(%1)
-      // %3 = Depend(%0, U) ==> %3 = Depend(%2, U)
-      AnfNodePtr replaced_node = it->second;
-      it = inplace_input.find(replaced_node);
-      while (it != inplace_input.end()) {
-        replaced_node = it->second;
-        it = inplace_input.find(replaced_node);
-      }
-      MS_LOG(INFO) << "Replace cnode : " << cnode->DebugString() << " input from: " << original_input->DebugString()
-                   << " to: " << replaced_node->DebugString() << " for inplace ops replacement.";
-      manager->SetEdge(cnode, i, replaced_node);
-    }
+    ReplaceInplaceNodeForCNode(cnode, inplace_input, manager, func_graph);
+
+    // Record nodes need to be replaced later
     const auto &prim = GetCNodePrimitive(cnode);
     if (prim == nullptr) {
       continue;
@@ -134,6 +153,18 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
     } else if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
       inplace_input[cnode->input(1)] = cnode;
       MS_LOG(INFO) << "Record VirtualViewGrad cnode as inplace node: " << cnode->DebugString();
+    }
+  }
+
+  // Reprocess return node separately, avoid leaving any isolated nodes unreplaced
+  if (IsPrimitiveCNode(output_node, prim::kPrimDepend)) {
+    // real_output = {prim::kPrimMakeTuple, inplace_input, ...}
+    // Isolated inplace nodes
+    // Return {prim::kPrimDepend, real_output, ...}
+    auto real_output = output_node->cast<CNodePtr>()->input(kIndex1);
+    auto real_output_cnode = real_output->cast<CNodePtr>();
+    if (real_output_cnode != nullptr && !IsMonad(real_output_cnode->inputs().back())) {
+      ReplaceInplaceNodeForCNode(real_output_cnode, inplace_input, manager, func_graph);
     }
   }
   return;

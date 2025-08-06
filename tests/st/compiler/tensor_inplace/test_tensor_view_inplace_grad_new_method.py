@@ -20,7 +20,7 @@ from mindspore import ops, Tensor
 from mindspore.nn import ReLU
 from mindspore.common.parameter import Parameter
 from mindspore import dtype as mstype
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_view_op, inplace_copy_op
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_view_op, inplace_copy_op, NarrowView
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
@@ -589,3 +589,37 @@ def test_tensor_index_grad():
         assert (out_me_1.asnumpy() == [[1, 1, 2, 2], [2, 3, 4, 5]]).all()
     finally:
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_with_tuple_output():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.narrowview = NarrowView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj1 = self.narrowview(y, 1, 0, 4)
+            view_obj1.add_(x)
+            view_obj2 = self.narrowview(y, 1, 0, 4)
+            view_obj2.add_(x)
+            return view_obj2, y
+
+    x_np = np.ones([2, 4]).astype(np.float32)
+    input_x = Tensor(x_np)
+    y_np = 2 * np.ones([2, 4]).astype(np.float32)
+    input_y = Tensor(y_np)
+    net = Net()
+
+    out_expect = grad(net)(input_x, input_y)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net)(input_x, input_y)
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
