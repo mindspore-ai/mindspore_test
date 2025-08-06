@@ -89,7 +89,7 @@ def test_enable_dynamic_symbolic_shape_grad():
     Description: Test symbolic_shape by set enable_dynamic
     Expectation: success
     """
-    dir_path = 'ir'
+    dir_path = 'ir_enable_dynamic_symbolic_shape_grad'
     target_str = '-> (S'
     os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
     os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir_path
@@ -128,7 +128,7 @@ def test_enable_auto_dynamic_symbolic_shape():
     Description: Test symbolic_shape by set enable_dynamic and dynamic
     Expectation: success
     """
-    dir_path = 'ir'
+    dir_path = 'ir_enable_auto_dynamic_symbolic_shape'
     target_str = '<[1,inf]>'
     os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
     os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir_path
