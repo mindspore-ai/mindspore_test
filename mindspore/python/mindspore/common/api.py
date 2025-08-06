@@ -1154,29 +1154,26 @@ def jit(
 
     Keyword Args:
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
-            should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
+            should be ``"ast"`` , ``"bytecode"`` or ``"trace"`` . Default: ``"ast"`` .
 
-            - `ast <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#ast>`_ :
-              Parse Python ast to build graph.
-            - `bytecode <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
-              Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
-              change and/or deletion.
-            - `trace <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#trace>`_ :
-              Trace the execution of Python code to build graph. This is an experimental prototype that is
-              subject to change and/or deletion.
+            - ast: Parse Python ast to build graph.
+            - bytecode: Parse Python bytecode to build graph at runtime. This is an experimental prototype
+              that is subject to change and/or deletion.
+            - trace: Trace the execution of Python code to build graph. This is an experimental prototype
+              that is subject to change and/or deletion.
 
         jit_level (str, optional): Used to control the compilation optimization level. Currently is only effective
-            with ms_backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
+            with ms_backend. The value of jit_level should be ``"O0"`` or ``"O1"`` . Default: ``"O0"`` .
 
-            - `O0`: Except for optimizations that may affect functionality, all other optimizations are turned off.
-            - `O1`: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
+            - O0: Except for optimizations that may affect functionality, all other optimizations are turned off.
+            - O1: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
               level is experimental and is being improved.
 
         dynamic (int, optional): Whether dynamic shape compilation should be performed. Default: ``0``. The value range
             is as follows:
 
-            - `0`: Do not perform dynamic shape compilation.
-            - `1`: Enable dynamic shape compilation and automatically detect shape changes.
+            - 0: Do not perform dynamic shape compilation.
+            - 1: Enable dynamic shape compilation and automatically detect shape changes.
 
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
             be compatible with all Python syntax in the function as much as possible. If True, we require that the
@@ -1214,11 +1211,11 @@ def jit(
               `disable_format_transform` can be set to ``True`` to try to improve training performance.
               Default: ``False`` .
             - exec_order (str, optional): Set the sorting method for operator execution, currently only two sorting
-              methods are supported: ``bfs`` and ``dfs`` . Default: ``bfs`` .
+              methods are supported: ``"bfs"`` and ``"dfs"`` . Default: ``"bfs"`` .
 
-              - `bfs`: The default sorting method, breadth priority, good communication masking, relatively good
+              - bfs: The default sorting method, breadth priority, good communication masking, relatively good
                 performance.
-              - `dfs`: An optional sorting method, depth-first sorting. The performance is relatively worse than that
+              - dfs: An optional sorting method, depth-first sorting. The performance is relatively worse than that
                 of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where
                 other execution orders run out of memory (OOM).
 
@@ -1229,11 +1226,11 @@ def jit(
               - global (dict): Set global options.
               - session (dict): Set session options.
 
-            - infer_boost (str, optional): Used to control the inference mode. Default: ``off``, which means
+            - infer_boost (str, optional): Used to control the inference mode. Default: ``"off"``, which means
               the inference mode is disabled. The range is as follows:
 
-              - `on`: Enable inference mode, get better infer performance.
-              - `off`: Disable inference mode, use forward for inference. The performance is poor.
+              - on: Enable inference mode, get better infer performance.
+              - off: Disable inference mode, use forward for inference. The performance is poor.
 
     Returns:
         Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
