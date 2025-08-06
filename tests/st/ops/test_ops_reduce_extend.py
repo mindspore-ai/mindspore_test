@@ -458,7 +458,7 @@ def test_prod_default_dtype(axis, in_dtype, context_mode):
     np.testing.assert_equal(grads.dtype, in_dtype)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["pynative", "kbk"])
 def test_mean_scalar_view_tensor(mode):
     """

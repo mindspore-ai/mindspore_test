@@ -94,7 +94,7 @@ def run_trans_flag(test_name):
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ascend_kernel_by_kernel_trans_true_op_debug_mode():
     """
@@ -111,7 +111,7 @@ def test_ascend_kernel_by_kernel_trans_true_op_debug_mode():
     del os.environ['MS_ASCEND_CHECK_OVERFLOW_MODE']
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_e2e_dump_set_overflow_number():
     """
