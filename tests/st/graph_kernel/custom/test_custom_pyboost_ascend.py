@@ -20,7 +20,7 @@ from mindspore.ops import CustomOpBuilder
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pyboost_atb_swiglu():
     """
     Feature: CustomOpBuilder.
@@ -43,7 +43,7 @@ def test_pyboost_atb_swiglu():
                        [0.459, 0.02806, 0.01624, 0.2295, 0.1123, 0.2357, 0.0163, 0.2664,
                         0.0526, 0.0998, 0.1132, 0.01584, 0.07697, 0.01211, 0.1747, 0.000609]], dtype=np.float16)
     output = my_ops.npu_swiglu(ms.Tensor(x), -1)
-    np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+    assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -109,7 +109,7 @@ def test_pyboost_atb_rope():
     assert np.allclose(run_key.asnumpy(), benchmark_key.asnumpy(), 1e-3, 1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pyboost_aclnn():
     """
     Feature: CustomOpBuilder.
@@ -121,7 +121,7 @@ def test_pyboost_aclnn():
     my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp'], backend="Ascend").load()
     x = np.random.rand(4, 5, 6).astype(np.float32)
     expect = np.sum(np.abs(x), 1, keepdims=True)
-    output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True)
+    output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True, None)
     assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
 

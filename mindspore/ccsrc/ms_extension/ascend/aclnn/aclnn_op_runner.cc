@@ -13,21 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_MS_EXTENSION_API_H_
-#define MINDSPORE_CCSRC_MS_EXTENSION_API_H_
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
-#include "ms_extension/common/tensor.h"
-#include "ms_extension/common/utils.h"
-#include "ms_extension/common/tensor_utils.h"
-#include "ms_extension/pynative/pyboost_extension.h"
-
-// ascend files
-#ifdef CUSTOM_ASCEND_OP
 #include "ms_extension/ascend/aclnn/aclnn_op_runner.h"
-#ifdef CUSTOM_ENABLE_ATB
-#include "ms_extension/ascend/atb/atb_common.h"
-#endif  // CUSTOM_ENABLE_ATB
-#endif  // CUSTOM_ASCEND_OP
-#endif  // MINDSPORE_CCSRC_MS_EXTENSION_API_H_
+
+namespace ms::pynative {
+void AclnnOpRunner::_DispatchLaunchTask() {
+  MS_EXCEPTION_IF_NULL(launch_func_);
+  launch_func_(_device_context_, _stream_id_);
+}
+}  // namespace ms::pynative

@@ -1498,12 +1498,14 @@ class CustomOpBuilder:
             '-lmindspore_extension'
         ]
         if self.backend == "Ascend":
-            flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin'))}")
             flags.append(f"-L{os.path.abspath(os.path.join(self.ascend_cann_path, 'lib64'))}")
             flags.append('-lascendcl')
+            plugin_path = os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin'))
+            flags.append(f"-L{plugin_path}")
+            flags.append(f"-L{os.path.join(plugin_path, 'ascend')}")
             flags.append('-l:libmindspore_ascend.so.2')
+            flags.append('-lmindspore_extension_ascend_aclnn')
             if self.enable_atb:
-                flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin', 'ascend'))}")
                 flags.append('-lmindspore_extension_ascend_atb')
                 flags.append(f"-L{os.path.abspath(os.path.join(self.atb_home_path, 'lib'))}")
                 flags.append('-latb')
