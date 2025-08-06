@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test tensor instantiation in pijit """
+import os
 import pytest
 import mindspore as ms
 from mindspore import Tensor, jit
@@ -56,12 +57,14 @@ def test_tensor_instantiation_2(data):
             x = x.astype(ms.int32)
         return y + x
 
+    os.environ['GLOG_v'] = '0'
     y = Tensor(data)
     excepted = func.__wrapped__(data, y)
     res = func(data, y)
     assert (res == excepted).all()
     # now, scalar input is constant
     assert_executed_by_graph_mode(func)
+    del os.environ['GLOG_v']
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
