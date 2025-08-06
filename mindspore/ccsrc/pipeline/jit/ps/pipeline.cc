@@ -26,8 +26,6 @@
 #include <unordered_map>
 #include <functional>
 
-#include "backend/graph_compiler/transform.h"
-
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/ps/action.h"
@@ -54,6 +52,7 @@
 #include "include/common/debug/dump_proto.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "include/common/debug/draw.h"
+#include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/backend/distributed/init.h"
@@ -787,9 +786,10 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
   mindspore::RDR::ResetRecorder();
 #endif
 
-  compile::SetMindRTEnable();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  MS_LOG(DEBUG) << "Enable mindRT.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
   context_ptr->Refresh();
 
 #if defined(__linux__) && defined(WITH_BACKEND)

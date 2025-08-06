@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "backend/graph_compiler/segment_runner.h"
+#include "backend/ms_backend/segment_runner.h"
 
 #include <algorithm>
 #include <functional>
@@ -27,6 +27,7 @@
 #include <string>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
 #include "utils/hash_map.h"
@@ -43,6 +44,7 @@
 namespace mindspore {
 namespace compile {
 namespace {
+using AnfNodePtrToAnfNodePtrMap = mindspore::HashMap<AnfNodePtr, AnfNodePtr>;
 // Return the list of nodes whose values are required beyond this segment.
 // Arguments:
 //   nodes: list of nodes in the segment
@@ -172,43 +174,11 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> TransformSegmentToAnfGr
   return std::make_tuple(fg, inputs, outputs);
 }
 
-// Converts the list of nodes to a runnable form.
-// All the nodes in the list must represent linear flow (no calls, branches, ...)
-// Returns:
-//  (fn, inputs, outputs):
-//  - fn: A callable function
-//  - inputs: the list of inputs nodes whose values should be
-//             provided to the function
-//  - outputs: the list of output nodes corresponding to the
-//             outputs of the function
-// Notes:
-//   This implementation will convert the nodes into a subgraph
-//   that will run using the MsVM.
-template <typename T>
-LinConvertResult Convert(const GraphSegmentPtr &segment, const std::string &) {
-  MS_EXCEPTION_IF_NULL(segment);
-  LinConvertResult result;
-
-  FuncGraphPtr fg = nullptr;
-  AnfNodePtrList inputs;
-  AnfNodePtrList outputs;
-
-  std::tie(fg, inputs, outputs) = TransformSegmentToAnfGraph(segment->nodes_);
-
-  // Clone in case g contains subgraphs that have a different manager
-  fg = BasicClone(fg);
-
-  std::shared_ptr<VMImpl> vm = std::make_shared<T>();
-
-  result.run =
-    std::make_shared<RunFunc>([fg, vm](const VectorRef &args) -> VectorRef { return vm->RunGraph(fg, args); });
-  result.inputs = inputs;
-  result.outputs = outputs;
-  result.graph_id = UINT32_MAX;
-
-  return result;
+const std::vector<PrimitivePtr> &GetMSNonlinearOps() {
+  static const std::vector<PrimitivePtr> ms_nonlinear_ops = {prim::kPrimReturn,   prim::kPrimPartial,
+                                                             prim::kPrimSwitch,   prim::kPrimMakeTuple,
+                                                             prim::kPrimBpropCut, prim::kPrimSwitchLayer};
+  return ms_nonlinear_ops;
 }
-
-LinkFuncType MsVmConvert = Convert<VM>;
 }  // namespace compile
 }  // namespace mindspore

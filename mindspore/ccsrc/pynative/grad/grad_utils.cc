@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "ir/tensor_new.h"
-#include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -62,6 +61,7 @@ namespace mindspore {
 namespace pynative {
 constexpr char kGrad[] = "grad";
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
+using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         kMakeListOpName,
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
@@ -785,7 +785,7 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
       resource->SetResult(kNeedCompile, false);
     }
     MS_LOG(DEBUG) << "Start execute action for graph " << resource->func_graph()->ToString();
-    compile::VmEvalFuncPtr run = resource->GetResult(pipeline::kOutput).cast<compile::VmEvalFuncPtr>();
+    BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
     return utils::cast<VectorRef>((*run)(arg_list));
   };
   return fn;

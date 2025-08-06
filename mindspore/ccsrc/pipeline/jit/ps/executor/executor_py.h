@@ -27,7 +27,6 @@
 #include "pybind11/pybind11.h"
 
 #include "base/base.h"
-#include "backend/graph_compiler/transform.h"
 #include "pipeline/jit/ps/base.h"
 #include "include/common/visible.h"
 
@@ -81,7 +80,8 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   virtual void SaveCompiledGraph(const std::string &phase) = 0;
   ResourcePtr GetResource(const std::string &phase);
   void ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list);
-  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
+  std::shared_ptr<std::function<BaseRef(const VectorRef &)>> GetVmEvalFunc(const std::string &phase,
+                                                                           const std::string &kind = kOutput);
   void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
   // If enable compile cache, get the compile cache resource.
   void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);

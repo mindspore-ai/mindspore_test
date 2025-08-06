@@ -27,7 +27,6 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/amp/amp.h"
 #include "include/common/utils/python_fallback_running.h"
-#include "backend/graph_compiler/transform.h"
 #include "symbolic_shape/symbol.h"
 #include "utils/ms_context.h"
 #include "pynative/forward/forward_task.h"
@@ -413,7 +412,10 @@ void ForwardExecutor::Init() {
   }
   init_ = true;
   MS_LOG(DEBUG) << "Init ForwardExecutor";
-  compile::SetMindRTEnable();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  MS_LOG(DEBUG) << "Enable mindRT.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
   python_adapter::set_python_env_flag(true);
   tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
   runtime::OpExecutor::GetInstance().RegisterCallbackForMemoryPool();

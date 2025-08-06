@@ -26,6 +26,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/device/device_address_utils.h"
+#include "include/common/utils/primitive_utils.h"
 #include "mindspore/ccsrc/pyboost/pyboost_kernel_extra_func.h"
 #include "utils/simple_info.h"
 #include "include/common/pynative/abstract_converter.h"
@@ -275,6 +276,8 @@ class PYBOOST_API PyBoostUtils {
     MS_LOG(DEBUG) << "Convert TensorList to ValueTuple " << result->ToString();
     return result;
   }
+  static BaseRef RunOperation(const PrimitivePtr &prim, const VectorRef &args);
+
   static TensorPtr ScalarToTensor(const ScalarPtr &scalar);
   static TensorPtr ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype);
 

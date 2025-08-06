@@ -29,8 +29,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "include/common/debug/draw.h"
 #include "frontend/operator/ops.h"
-#include "backend/graph_compiler/segment_runner.h"
-#include "backend/graph_compiler/transform.h"
+#include "pyboost/pyboost_utils.h"
 #include "ir/tensor.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
@@ -48,20 +47,19 @@ class TestCompileSegmentRunner : public UT::Common {
 
  protected:
   UT::PyFuncGraphFetcher get_py_fun_;
-  VM vm_;
 };
 
 TEST_F(TestCompileSegmentRunner, test_RunOperation1) {
   VectorRef args({1});
-  auto res =
-    RunOperation(std::make_shared<PrimitivePy>(py::str(prim::kPrimIdentity->name()).cast<std::string>()), args);
+  auto res = kernel::pyboost::PyBoostUtils::RunOperation(
+    std::make_shared<PrimitivePy>(py::str(prim::kPrimIdentity->name()).cast<std::string>()), args);
   ASSERT_EQ(py::cast<int>(BaseRefToPyData(res)), 1);
 }
 
 TEST_F(TestCompileSegmentRunner, test_RunOperation2) {
   VectorRef args({1, 2});
-  auto res =
-    RunOperation(std::make_shared<PrimitivePy>(py::str(prim::kPrimScalarGt->name()).cast<std::string>()), args);
+  auto res = kernel::pyboost::PyBoostUtils::RunOperation(
+    std::make_shared<PrimitivePy>(py::str(prim::kPrimScalarGt->name()).cast<std::string>()), args);
   ASSERT_EQ(py::cast<bool>(BaseRefToPyData(res)), false);
 }
 }  // namespace compile

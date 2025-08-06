@@ -22,7 +22,6 @@
 #include <utility>
 #include <algorithm>
 #include <set>
-#include "backend/graph_compiler/transform.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/pynative/common_utils.h"
@@ -50,6 +49,7 @@ mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
 std::set<std::string> check_invalid_dout_bprop_graph;
 
 namespace {
+using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
   prim::kPrimStopGradient, prim::kPrimUpdateState,      prim::kPrimMirror,
   prim::kPrimVirtualDiv,   prim::kPrimMutable,          prim::kPrimInsertGradientOf,
@@ -178,7 +178,7 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
   } else {
     resource = it->second;
   }
-  compile::VmEvalFuncPtr run = resource->GetResult(pipeline::kOutput).cast<compile::VmEvalFuncPtr>();
+  BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
   auto result = (*run)(arg_list);
   MS_LOG(INFO) << "Finish running funcgraph: " << fg->ToString() << " , result: " << result.ToString();
   return result;

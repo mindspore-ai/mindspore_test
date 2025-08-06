@@ -116,7 +116,10 @@ void Optimize(const ResourcePtr &resource, const std::vector<PassItem> &passes) 
 }
 
 void DoOptimize(const ResourcePtr &resource, bool build_top_graph = true) {
-  compile::SetMindRTEnable();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  MS_LOG(DEBUG) << "Enable mindRT.";
+  context_ptr->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
   std::vector<PassItem> jit_passes = JitPipeline(resource, build_top_graph);
   Optimize(resource, jit_passes);
 }
@@ -337,7 +340,7 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
     MS_LOG(INFO) << "No backend.";
     return py::none();
   }
-  compile::VmEvalFuncPtr run = GetVmEvalFunc(phase);
+  auto run = GetVmEvalFunc(phase);
   if (run == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
   }

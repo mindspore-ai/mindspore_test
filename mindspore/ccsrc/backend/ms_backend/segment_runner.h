@@ -26,22 +26,11 @@
 
 #include "utils/hash_map.h"
 #include "ir/anf.h"
-#include "backend/graph_compiler/vmimpl.h"
-#include "backend/graph_compiler/graph_partition.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace compile {
-struct LinConvertResult {
-  RunFuncPtr run;
-  RunFuncPtr simu_run;
-  std::vector<AnfNodePtr> inputs;
-  std::vector<AnfNodePtr> outputs;
-  uint32_t graph_id;
-};
-
-using LinkFuncType = std::function<LinConvertResult(const GraphSegmentPtr &, const std::string &)>;
-extern LinkFuncType MsVmConvert;
+BACKEND_EXPORT const std::vector<PrimitivePtr> &GetMSNonlinearOps();
 BACKEND_EXPORT std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> TransformSegmentToAnfGraph(
   const AnfNodePtrList &lst);
 }  // namespace compile

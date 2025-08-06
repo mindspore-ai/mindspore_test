@@ -55,6 +55,7 @@ namespace pipeline {
 using Tensor = mindspore::tensor::Tensor;
 using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTensorPtr;
+using VmEvalPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 
 const char IR_TYPE_ANF[] = "anf_ir";
 const char IR_TYPE_ONNX[] = "onnx_ir";
@@ -337,11 +338,11 @@ void ExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::stri
   it->second->jit_grad_graph = grad_graph;
 }
 
-compile::VmEvalFuncPtr ExecutorPy::GetVmEvalFunc(const std::string &phase, const std::string &kind) {
+VmEvalPtr ExecutorPy::GetVmEvalFunc(const std::string &phase, const std::string &kind) {
   ResourcePtr res = GetResource(phase);
   MS_EXCEPTION_IF_NULL(res);
-  if (res->HasResult(kind) && res->GetResult(kind).is<compile::VmEvalFuncPtr>()) {
-    return res->GetResult(kind).cast<compile::VmEvalFuncPtr>();
+  if (res->HasResult(kind) && res->GetResult(kind).is<VmEvalPtr>()) {
+    return res->GetResult(kind).cast<VmEvalPtr>();
   }
   MS_LOG(ERROR) << "GetVmEvalFunc vm model can't find kind:" << kind;
   return nullptr;
