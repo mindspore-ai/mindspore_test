@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
+#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
 #if defined(_WIN32)
-#include <string>
-#include <unordered_set>
-#include <cstdlib>
 #include <windows.h>
+#define DL_OPEN(path)                                                                                   \
+  [](const std::string &p) -> void * {                                                                  \
+    SetLastError(0);                                                                                    \
+    return reinterpret_cast<void *>(LoadLibraryExA(p.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH)); \
+  }(path)
 
-#define DL_OPEN(path) [](const std::string &p) -> void * { \
-    SetLastError(0); \
-    return (void*)LoadLibraryExA( \
-        p.c_str(), \
-        NULL, \
-        LOAD_WITH_ALTERED_SEARCH_PATH \
-    ); }(path)
-
-#define DL_SYM(handle, name) [](void *h, const char *n) -> void * { \
-    SetLastError(0); \
-    return (void*)GetProcAddress((HMODULE)h, n); }(handle, name)
+#define DL_SYM(handle, name)                                                     \
+  [](void *h, const char *n) -> void * {                                         \
+    SetLastError(0);                                                             \
+    return reinterpret_cast<void *>(GetProcAddress(static_cast<HMODULE>(h), n)); \
+  }(handle, name)
 
 #define DL_CLOSE(handle) FreeLibrary((HMODULE)handle)
 
-#define DL_ERROR() []() -> const char * { \
-    static std::string errMsg; \
-    DWORD errCode = GetLastError(); \
-    if(errCode == 0) return nullptr; \
+#define DL_ERROR()                                  \
+  []() -> const char * {                            \
+    static std::string errMsg;                      \
+    DWORD errCode = GetLastError();                 \
+    if (errCode == 0) return nullptr;               \
     errMsg = "WinError " + std::to_string(errCode); \
-    return errMsg.c_str(); }()
+    return errMsg.c_str();                          \
+  }()
 #elif !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
 #define DL_OPEN(path) dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL)
@@ -52,7 +51,6 @@
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
-#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
 
 namespace mindspore::kernel {
 void *GetOpPluginHandle() {
@@ -77,7 +75,6 @@ void *GetOpPluginHandle() {
   }
   handle = DL_OPEN(real_path);
   if (handle == nullptr) {
-    DWORD error = GetLastError();
     MS_LOG(WARNING) << "Failed to open op plugin file: " << real_path << " Error code: " << DL_ERROR();
   }
 
@@ -94,14 +91,12 @@ bool IsOpPluginKernel(const std::string &op_name) {
       return false;
     }
     const std::string reg_func_name = "IsKernelRegistered";
-    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(
-      DL_SYM(handle, reg_func_name.c_str()));
+    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(DL_SYM(handle, reg_func_name.c_str()));
     if (reg_func == nullptr) {
       MS_LOG(WARNING) << "Error occurs when fetching function '" << reg_func_name
                       << "' from op plugin library. Error code: " << DL_ERROR();
       return false;
     }
-
   }
   return reg_func != nullptr && reg_func(op_name.c_str());
 }
@@ -151,7 +146,10 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
   }
 
   // Clear previous errors before dlsym
-  DL_ERROR();
+  (void)DL_ERROR();
+#ifdef _WIN32
+  SetLastError(0);
+#endif
   op_plugin_func =
     reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
       DL_SYM(handle, op_name.c_str()));
@@ -159,7 +157,6 @@ int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **param
     MS_LOG(ERROR) << "Failed to load op plugin kernel function for '" << op_name << "'. Error info: " << error_info;
     return -1;
   }
-
 
   return op_plugin_func(nparam, params, ndims, shapes, dtypes, kernel_info, stream);
 }
