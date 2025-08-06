@@ -4038,7 +4038,12 @@ REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").FreeUselessValues_IO(
   return {grad, ib->OutZeros(labels)};
 });
 
-REG_BPROP_BUILDER("PadV3").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+void FreeTensorsOfPadV3(const PynativeCallback &cb) {
+  cb.FreeInputDeviceAddress({i0});
+  cb.FreeOutputDeviceAddress({i0});
+}
+
+REG_BPROP_BUILDER("PadV3").FreeUselessValues(FreeTensorsOfPadV3).SetBody(BODYFUNC(ib) {
   auto paddings = ib->GetInput(i1);
   bool has_constant_values = ib->GetInputs().size() == i5;
   auto dout = has_constant_values ? ib->GetInput(i4) : ib->GetInput(i3);
