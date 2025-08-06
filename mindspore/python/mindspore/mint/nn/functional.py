@@ -56,7 +56,7 @@ from mindspore.ops.function.nn_func import relu_
 # 14
 from mindspore.ops.function.nn_func import dropout_ext as dropout
 # 15
-from mindspore.ops.function.nn_func import conv1d_ext as conv1d
+from mindspore.ops.functional_overload import conv1d
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 # 16
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
@@ -1402,7 +1402,6 @@ __all__ = [
     'adaptive_avg_pool2d',
 
     # 350
-    'conv1d',
 
     # 393
     'dropout2d',

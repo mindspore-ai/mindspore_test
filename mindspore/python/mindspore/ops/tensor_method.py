@@ -1862,6 +1862,9 @@ def all_gather_matmul(
     """
     raise NotImplementedError('all_gather_matmul only supports Ascend.')
 
+def conv1d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    raise NotImplementedError('conv1d only supports Ascend.')
+
 
 def conv3d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     raise NotImplementedError('conv3d only supports Ascend.')
