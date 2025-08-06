@@ -1964,6 +1964,7 @@ def infer_value_for_BroadcastTo(x, shape):
         init_func = Zero()
         init_func.__enable_zero_dim__ = True
         out = Tensor(shape=shape, dtype=x.dtype, init=init_func)
+        out.init_data()
         return out
     return Tensor(np_data)
 
@@ -2014,6 +2015,7 @@ def infer_value_for_Reshape(x, shape):
             init_func = Zero()
             init_func.__enable_zero_dim__ = True
             out = Tensor(shape=shape, dtype=x.dtype, init=init_func)
+            out.init_data()
         else:
             out = Tensor(x.asnumpy().reshape(shape))
     return out

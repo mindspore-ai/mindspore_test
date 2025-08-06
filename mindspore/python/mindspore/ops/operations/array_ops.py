@@ -1157,6 +1157,7 @@ class FillV2(PrimitiveWithCheck):
             init_func = Zero()
             init_func.__enable_zero_dim__ = True
             out = Tensor(shape=dims, dtype=x.dtype, init=init_func)
+            out.init_data()
             return out
         return Tensor(np.full(dims, x.asnumpy()))
 
