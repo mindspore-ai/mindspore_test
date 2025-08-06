@@ -624,9 +624,7 @@ void CheckJITForbiddenAPI(const py::object &obj) {
     oss << "Failed to compile in GRAPH_MODE because the " << obj_type << " '" << obj_module << "." << obj_name
         << "' is not supported in 'construct' or function with @jit decorator. "
         << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
-        << "such as initialized in the method '__init__' before assigning"
-        << ".\nFor more details, please refer to "
-        << "https://www.mindspore.cn/docs/zh-CN/master/features/program_form/overview.html \n";
+        << "such as initialized in the method '__init__' before assigning.\n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
     if (is_jit_forbidden_register) {
