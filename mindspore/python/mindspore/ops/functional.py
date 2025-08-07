@@ -19,7 +19,7 @@
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
-from mindspore.ops.function.array_func import chunk_ext, zero_
+from mindspore.ops.function.array_func import chunk_ext, zero_, tensor_scatter_add
 from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext, bernoulli_
 from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_, exponential_
 from mindspore.ops import operations as P

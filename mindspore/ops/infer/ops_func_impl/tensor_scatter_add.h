@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_TENSOR_SCATTER_ADD_H_
-#define MINDSPORE_CORE_OPS_TENSOR_SCATTER_ADD_H_
-#include <memory>
-#include <vector>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_TENSOR_SCATTER_ADD_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_TENSOR_SCATTER_ADD_H_
 
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name_t.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindapi/base/macros.h"
+#include "infer/ops_func_impl/tensor_scatter_arithmetic.h"
 
-#endif  // MINDSPORE_CORE_OPS_TENSOR_SCATTER_ADD_H_
+namespace mindspore {
+namespace ops {
+class OPS_API TensorScatterAddFuncImpl : public TensorScatterArithmeticFuncImpl {};
+}  // namespace ops
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_TENSOR_SCATTER_ADD_H_

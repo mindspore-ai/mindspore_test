@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_ARRAYS_GATHERND_GPU_KERNEL_H_
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -27,84 +28,42 @@
 
 namespace mindspore {
 namespace kernel {
-template <typename T, typename S>
 class GatherNdFwdGpuKernelMod : public NativeGpuKernelMod {
  public:
   GatherNdFwdGpuKernelMod() = default;
   ~GatherNdFwdGpuKernelMod() = default;
 
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
-    T *input_addr = GetDeviceAddress<T>(inputs, 0);
-    S *indices_addr = GetDeviceAddress<S>(inputs, 1);
-    T *output_addr = GetDeviceAddress<T>(outputs, 0);
-
-    // strides and indices
-    GatherNdInfo<S> info;
-    for (int64_t i = 0; i < dim_indices_last_; ++i) {
-      info.indices[i] = batch_indices_[i];
-      info.strides[i] = batch_strides_[i];
+    if (!kernel_func_) {
+      MS_LOG(ERROR) << "GatherNd's kernel function is not initialized.";
+      return false;
     }
-
-    auto status = GatherNd(input_addr, indices_addr, output_addr, dims_[0], dims_[1], dims_[2], info,
-                           reinterpret_cast<cudaStream_t>(stream_ptr));
-    CHECK_CUDA_STATUS(status, kernel_name_);
-    return true;
+    return kernel_func_(this, inputs, workspace, outputs, stream_ptr);
   }
 
-  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-    const size_t input_num = 2;
-    const size_t output_num = 1;
-
-    CHECK_KERNEL_INPUTS_NUM(inputs.size(), input_num, kernel_name_);
-    CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), output_num, kernel_name_);
-    return true;
-  }
-
-  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-    int ret = KernelMod::Resize(inputs, outputs);
-    if (ret != KRET_OK) {
-      return ret;
-    }
-    input_shapes_ = inputs[0]->GetShapeVector();
-    ShapeVector indices_shapes = inputs[1]->GetShapeVector();
-    // make a scalar to tensor whose shape is (1,)
-    if (indices_shapes.size() == 0) {
-      indices_shapes.emplace_back(1);
-    }
-    int64_t dim_of_indices = 1;
-    for (size_t i = 0; i < indices_shapes.size() - IntToSize(1); i++) {
-      dim_of_indices *= indices_shapes[i];
-    }
-
-    int64_t dim_after_indices = 1;
-    dim_indices_last_ = indices_shapes[indices_shapes.size() - IntToSize(1)];
-    for (size_t i = dim_indices_last_; i < input_shapes_.size(); i++) {
-      dim_after_indices *= input_shapes_[i];
-    }
-    dims_ = {LongToSize(dim_of_indices), LongToSize(dim_after_indices), LongToSize(dim_indices_last_)};
-
-    batch_strides_.resize(dim_indices_last_, 0);
-    batch_indices_.resize(dim_indices_last_, 0);
-
-    if (dim_indices_last_ > 0) {
-      batch_strides_[dim_indices_last_ - 1] = input_shapes_[dim_indices_last_ - 1];
-      batch_indices_[dim_indices_last_ - 1] = dims_[1];
-    }
-    for (int i = static_cast<int>(dim_indices_last_) - 1; i > 0; --i) {
-      batch_strides_[i - 1] = input_shapes_[i - 1];
-      batch_indices_[i - 1] = batch_indices_[i] * input_shapes_[i];
-    }
-
-    return ret;
-  }
+  std::vector<KernelAttr> GetOpSupport() override;
 
  private:
+  template <typename T, typename S>
+  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                    const std::vector<KernelTensor *> &outputs, void *stream_ptr);
+
+  using GatherNdFwdFunc = std::function<bool(GatherNdFwdGpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
+                                             const std::vector<kernel::KernelTensor *> &,
+                                             const std::vector<kernel::KernelTensor *> &, void *)>;
+
+  GatherNdFwdFunc kernel_func_;
+  static std::vector<std::pair<KernelAttr, GatherNdFwdFunc>> func_list_;
+
+  bool is_null_input_{false};
   int64_t dim_indices_last_{0};
   std::vector<size_t> dims_;
   std::vector<int64_t> input_shapes_;
-  std::vector<S> batch_strides_;
-  std::vector<S> batch_indices_;
+  std::vector<int64_t> batch_strides_;
+  std::vector<int64_t> batch_indices_;
   void *cuda_stream_{nullptr};
 };
 }  // namespace kernel

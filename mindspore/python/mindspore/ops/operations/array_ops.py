@@ -42,7 +42,7 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter)
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter, TensorScatterAdd)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -4243,57 +4243,6 @@ class TensorScatterSub(Primitive):
         >>> print(output)
         [[-3.3000002  0.3        3.6      ]
          [ 0.4        0.5       -3.2      ]]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        self.init_prim_io_names(inputs=['input_x', 'indices', 'updates'], outputs=['y'])
-
-
-class TensorScatterAdd(Primitive):
-    """
-    Creates a new tensor by adding the values from the positions in `input_x` indicated by
-    `indices`, with values from `updates`. When multiple values are given for the same
-    index, the updated result will be the sum of all values. This operation is almost
-    equivalent to using :class:`mindspore.ops.ScatterNdAdd`, except that the updates are applied on output `Tensor`
-    instead of input `Parameter`.
-
-    Refer to :func:`mindspore.ops.tensor_scatter_add` for more details.
-
-    Inputs:
-        - **input_x** (Tensor) - The target tensor. The dimension of input_x must be no less than indices.shape[-1].
-        - **indices** (Tensor) - The index of input tensor whose data type is int32 or int64.
-          The rank must be at least 2.
-        - **updates** (Tensor) - The tensor to update the input tensor, has the same type as input,
-          and updates. Shape should be equal to indices.shape[:-1] + input_x.shape[indices.shape[-1]:].
-
-    Outputs:
-        Tensor, has the same shape and type as `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
-        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> # Next, demonstrate the approximate operation process of this operator:
-        >>> # 1, indices[0] = [0, 0], indices[1] = [0, 0]
-        >>> # 2, And input_x[0, 0] = -0.1
-        >>> # 3, So input_x[indices] = [-0.1, -0.1]
-        >>> # 4, Satisfy the above formula: input_x[indices].shape=(2) == updates.shape=(2)
-        >>> op = ops.TensorScatterAdd()
-        >>> # 5, Perform the addition operation for the first time:
-        >>> #      first_input_x = input_x[0][0] + updates[0] = [[0.9, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> # 6, Perform the addition operation for the second time:
-        >>> #      second_input_x = input_x[0][0] + updates[1] = [[3.1, 0.3, 3.6], [0.4, 0.5, -3.2]]
-        >>> output = op(input_x, indices, updates)
-        >>> print(output)
-        [[ 3.1  0.3  3.6]
-         [ 0.4  0.5 -3.2]]
     """
 
     @prim_attr_register
