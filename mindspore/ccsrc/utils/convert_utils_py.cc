@@ -184,6 +184,7 @@ py::object COOTensorToPyData(const tensor::COOTensorPtr &coo_tensor) {
 
 py::object TensorToPyData(const tensor::TensorPtr &tensor, const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(tensor);
+  tensor->set_need_pipeline_sync(true);
   auto scalar_obj = CheckAndConvertToScalar(tensor, abs);
   if (!py::isinstance<py::none>(scalar_obj)) {
     return scalar_obj;

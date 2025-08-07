@@ -437,17 +437,23 @@ TensorPtr Tensor::cpu() const {
   }
   if (device_address == nullptr) {
     MS_LOG(WARNING) << "Can't do cpu() for uninitialized tensor " << ToString();
-    return std::make_shared<Tensor>(data_type_, shape_, MakeDeviceAddress(data_type_, shape_, true));
+    auto ret = std::make_shared<Tensor>(data_type_, shape_, MakeDeviceAddress(data_type_, shape_, true));
+    ret->set_need_pipeline_sync(true);
+    return ret;
   }
   if (device_address->GetDeviceType() == device::DeviceType::kCPU && data_type_ == device_address->type_id()) {
-    return std::make_shared<Tensor>(data_type_, shape_, device_address);
+    auto ret = std::make_shared<Tensor>(data_type_, shape_, device_address);
+    ret->set_need_pipeline_sync(true);
+    return ret;
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
   if (!SyncCopy(dst, device_address, CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
   }
-  return std::make_shared<Tensor>(data_type_, shape_, dst);
+  auto ret = std::make_shared<Tensor>(data_type_, shape_, dst);
+  ret->set_need_pipeline_sync(true);
+  return ret;
 }
 
 std::string Tensor::DataToString(bool use_comma) const {
