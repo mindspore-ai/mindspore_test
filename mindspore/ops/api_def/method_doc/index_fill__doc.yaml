@@ -8,6 +8,10 @@ index_fill_:
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
+    .. note::
+        While calculating the gradient of `value` , the value of `index` must be in the range `[0, self.shape[dim])` ,
+        if it is out of range, the result is undefined.
+
     Args:
         dim (int): Dimension along which to fill the `self` Tensor.
         index (Tensor): Indices of the `self` Tensor to fill in. The `index` must be a 0D or 1D Tensor with dtype int32
