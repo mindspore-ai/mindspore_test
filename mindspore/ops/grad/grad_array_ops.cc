@@ -1871,7 +1871,7 @@ REG_BPROP_BUILDER("InplaceIndexFillTensor").FreeUselessValues_IO({i0, i3}, {}).S
     x_grad = ib->OutZeros(x);
   }
   if (value->need_compute_grad_out()) {
-    auto index_unsorted = ib->Unique2(index, ib->Value(false), ib->Value(false), ib->Value(false));
+    auto index_unsorted = ib->Emit("InnerUnique", {index, ib->Value(false), ib->Value(false)});
     auto index_unsorted_first = ib->TupleGetItem(index_unsorted, kIndex0);
     auto index_select_answer = ib->Emit("IndexSelect", {dout, dim, index_unsorted_first});
     value_grad = ib->SumExt(index_select_answer, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
