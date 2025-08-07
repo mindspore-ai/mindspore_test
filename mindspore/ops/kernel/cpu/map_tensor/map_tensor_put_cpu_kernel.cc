@@ -18,7 +18,6 @@
 
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 #include "kernel/cpu/map_tensor/map_tensor_put_cpu_kernel.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -62,14 +61,6 @@ bool MapTensorPutCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   kernel_launch_func_ = map_tensor_put_func_list_[index].second;
   input_key_type_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex1).dtype);
   input_value_type_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex2).dtype);
-
-  if (primitive_->HasAttr(kAttrEnableEmbeddingStorage)) {
-    enable_embedding_storage_ = GetValue<bool>(primitive_->GetAttr(kAttrEnableEmbeddingStorage));
-  }
-  if (primitive_->HasAttr(kAttrParameterKey)) {
-    parameter_key_ = GetValue<int32_t>(primitive_->GetAttr(kAttrParameterKey));
-  }
-
   return true;
 }
 
@@ -96,18 +87,6 @@ bool MapTensorPutCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
   // Check the inputs and outputs num.
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMapTensorPutInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMapTensorPutOutputNum, kernel_name_);
-
-  if (enable_embedding_storage_) {
-    auto embedding_storage = embedding_storage_manager.Get(parameter_key_);
-    MS_ERROR_IF_NULL(embedding_storage);
-    if (!embedding_storage->Put({inputs[kIndex1]->device_ptr(), inputs[kIndex1]->size()},
-                                {inputs[kIndex2]->device_ptr(), inputs[kIndex2]->size()})) {
-      MS_LOG(ERROR) << "For '" << kernel_name_
-                    << "', Update sparse embedding storage failed, parameter key: " << parameter_key_;
-      return false;
-    }
-    return true;
-  }
 
   // The real hash table should be accessed by user data.
   auto user_data = inputs[kIndex0]->user_data();

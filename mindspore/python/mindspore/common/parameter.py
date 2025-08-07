@@ -28,7 +28,6 @@ from mindspore import log as logger
 from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
-from mindspore import context
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor, _TensorMeta
 from mindspore.common.hook_handle import _update_hook_version
@@ -37,10 +36,6 @@ from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.parallel._tensor import _get_slice_index
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
-from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_role_sched, _clone_hash_table, \
-                                           _is_ps_mode
-from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info
-from mindspore.common._decorator import deprecated
 from mindspore.communication._comm_helper import _is_initialized
 from mindspore.communication import get_group_size, get_rank
 import mindspore.common._monad as monad
@@ -279,7 +274,6 @@ class Parameter(Tensor_):
     def __init__(self, default_input, name=None, requires_grad=True, layerwise_parallel=False, parallel_optimizer=True,
                  storage_format="", device=None):
         self.param_info = ParamInfo()
-        self.init_in_server = False
         self.name = name
         self.requires_grad = requires_grad
         self.layerwise_parallel = layerwise_parallel
@@ -290,9 +284,6 @@ class Parameter(Tensor_):
         self.is_init = False
         self._inited_param = None
         self._sliced = False
-        self.is_param_ps = False
-        self.push_weight_to_server = False
-        self.pull_weight_from_server = False
         self.requires_aggr = True
         self._cast_type = None
         self._unique = False
@@ -363,7 +354,7 @@ class Parameter(Tensor_):
                     return (Tensor, data.asnumpy(), mstype.qint4x2)
                 return (Tensor, data.asnumpy())
 
-            not_init_data = not init_param or _is_role_sched() or _is_in_auto_parallel_mode() or _is_parallel_mode()
+            not_init_data = not init_param or _is_in_auto_parallel_mode() or _is_parallel_mode()
             if not_init_data:
                 # do not init data while in auto parallel.
                 return (Tensor, None, data.dtype, data.shape, data.init)
@@ -373,29 +364,6 @@ class Parameter(Tensor_):
         if isinstance(data, float):
             return (Tensor, data, mstype.float32)
         return (Tensor, data)
-
-    def set_param_ps(self, init_in_server=False):
-        """
-        Set whether the trainable parameter is updated by parameter server and whether the
-        trainable parameter is initialized on server.
-
-        Note:
-            It only works when a running task is in the parameter server mode.
-            It is supported only in graph mode.
-
-        Args:
-            init_in_server (bool): Whether trainable parameter updated by parameter server is
-                initialized on server. Default: ``False``.
-
-        """
-        if not _is_ps_mode() or not (_is_role_worker() or _is_role_pserver() or _is_role_sched()):
-            raise RuntimeError("Must complete following two steps before calling set_param_ps: \n"
-                               "1. context.set_ps_context(enable_ps=True) \n"
-                               "2. export MS_ROLE environment variable \n"
-                               "Please refer to the official website for detailed usage.")
-        self.is_param_ps = True
-        self.init_in_server = init_in_server
-        self.param_info.init_in_server = init_in_server
 
     def copy(self):
         """
@@ -411,16 +379,6 @@ class Parameter(Tensor_):
             >>> y = x.copy()
         """
         return self.clone(init='same')
-
-    @deprecated("1.8", "set_param_fl")
-    def set_param_fl(self, push_to_server=False, pull_from_server=False, requires_aggr=True):
-        if push_to_server:
-            self.push_weight_to_server = True
-        if pull_from_server:
-            self.pull_weight_from_server = True
-        if not requires_aggr:
-            self.requires_aggr = False
-            self.param_info.requires_aggr = False
 
     @property
     def inited_param(self):
@@ -487,8 +445,6 @@ class Parameter(Tensor_):
             raise ValueError("The type of the Parameter's name should be 'string' or 'None', "
                              "but got {}.".format(type(name_)))
 
-        if _is_role_worker() and self.cache_enable:
-            _reinsert_hash_table_size(name_, self.param_info.name)
         self.param_info.name = name_
 
     @property
@@ -619,9 +575,6 @@ class Parameter(Tensor_):
         x.init = self.init
         x.is_param_ps = self.is_param_ps
         x.init_in_server = self.init_in_server
-        x.cache_enable = self.cache_enable
-        if x.cache_enable:
-            x.key = _get_unique_parameter_key()
         x.requires_aggr = self.requires_aggr
         if self.cache_shape:
             x.cache_shape = self.cache_shape
@@ -942,14 +895,7 @@ class Parameter(Tensor_):
 
         init_data_args = self._get_init_data_args(layout)
 
-        if self.init_in_server and self.is_param_ps and isinstance(self.init_mode, Tensor) and \
-                self.init_mode.init is not None and (_is_role_worker() or _is_role_sched()):
-            if self.cache_enable:
-                data = self.init_mode.init_data(*init_data_args)
-            else:
-                data = self.init_mode.init_data(0, [1])
-        else:
-            data = self.init_mode.init_data(*init_data_args)
+        data = self.init_mode.init_data(*init_data_args)
         origin_dtype = self.dtype
         obj = self._update_tensor_data(data)
         if self.dtype != origin_dtype:
@@ -1109,12 +1055,6 @@ class ParameterTuple(tuple):
             x1.name = prefix + "." + x1.name
             new.append(x1)
 
-            if not x1.cache_enable:
-                continue
-
-            if _is_role_worker():
-                _clone_hash_table(x.name, x.key, x1.name, x1.key)
-                _insert_accumu_init_info(x1.name, init_to_value(init))
         return ParameterTuple(new)
 
     def __parameter_tuple__(self):

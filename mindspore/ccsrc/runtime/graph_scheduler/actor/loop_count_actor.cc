@@ -27,9 +27,6 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "runtime/graph_scheduler/rpc_node_scheduler.h"
-#endif
 
 namespace mindspore {
 namespace runtime {
@@ -177,11 +174,6 @@ void LoopCountActor::SendOutput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(output_control);
     ActorDispatcher::Send(output_control->to_op_id_, &OpRTActor::RunOpControl, from_aid, context);
   }
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-  // Flush sent data after each step is done.
-  RpcActorStatusUpdater::GetInstance().FlushRpcData(graph_name_);
-#endif
 
   // The LoopCountActor exits.
   if (current_count_ == loop_count_) {

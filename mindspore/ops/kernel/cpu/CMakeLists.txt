@@ -13,7 +13,6 @@ file(GLOB CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "eigen/*.cc"
     "mkldnn/*.cc"
     "environ/*.cc"
-    "rpc/*.cc"
     "utils/*.cc"
     "map_tensor/*.cc"
     "sequence/*.cc"

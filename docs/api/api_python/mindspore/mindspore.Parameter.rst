@@ -185,17 +185,6 @@
         返回：
             完成数据设置的新参数。
 
-    .. py:method:: set_param_ps(init_in_server=False)
-
-        表示可训练参数是否由参数服务器更新，以及可训练参数是否在服务器上初始化。
-
-        .. note::
-            仅当运行的任务处于参数服务器模式下有效。
-            只支持在图模式下调用。
-
-        参数：
-            - **init_in_server** (bool) - 表示参数服务器更新的可训练参数是否在服务器上初始化。默认值： ``False`` 。
-
     .. py:method:: sliced
         :property:
 

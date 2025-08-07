@@ -40,11 +40,6 @@ if(NOT ENABLE_CPU OR WIN32)
     list(REMOVE_ITEM _PS_SRC_FILES "core/collective_ops_impl.cc")
 endif()
 
-
-list(REMOVE_ITEM _PS_SRC_FILES "ps_cache/ps_data/ps_data_prefetch.cc")
-list(REMOVE_ITEM _PS_SRC_FILES "ps_cache/ps_data/ps_data_channel.cc")
-add_subdirectory(ps_cache)
-
 set_property(SOURCE ${_PS_SRC_FILES} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PS)
 add_library(_mindspore_ps_obj OBJECT ${_PS_SRC_FILES})
 target_link_libraries(_mindspore_ps_obj mindspore::flatbuffers)

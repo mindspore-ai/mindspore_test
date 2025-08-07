@@ -1587,14 +1587,7 @@ void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *ou
   MS_EXCEPTION_IF_NULL(actor_set->output_actor_);
   // Update device address for output node of graph.
   // Summary processing will use the output device address, so must be after the summary processing.
-#if defined(__linux__) && defined(WITH_BACKEND)
-  bool is_embedding_cache_server = ps::PSContext::instance()->cache_enable() && ps::PSContext::instance()->is_server();
-  if (!is_embedding_cache_server) {
-    actor_set->output_actor_->UpdateOutputDeviceAddress();
-  }
-#else
   actor_set->output_actor_->UpdateOutputDeviceAddress();
-#endif
 
   if (enable_graph_pipeline) {
     MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_set->name_

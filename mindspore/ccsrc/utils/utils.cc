@@ -245,7 +245,6 @@ bool IsOneOfComputeDepend(const std::string &name) {
                                                        kNonZeroOpName,
                                                        kSparseSparseMinimumOpName,
                                                        kSparseSparseMaximumOpName,
-                                                       kRpcRecvOpName,
                                                        kSparseFillEmptyRowsOpName,
                                                        kSparseCrossOpName,
                                                        kAdaptiveMaxPool3DOpName,

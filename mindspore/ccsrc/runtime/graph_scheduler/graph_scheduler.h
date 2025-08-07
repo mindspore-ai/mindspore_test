@@ -34,9 +34,6 @@
 #include "runtime/graph_scheduler/actor/actor_dump.h"
 #include "thread/actor_threadpool.h"
 
-#ifdef ENABLE_RPC_ACTOR
-#include "runtime/graph_scheduler/rpc_node_scheduler.h"
-#endif
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -83,11 +80,6 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }
-
-#ifdef ENABLE_RPC_ACTOR
-  // Returns pointer of RpcNodeScheduler to distributed module.
-  RpcNodeScheduler *rpc_node_scheduler() { return rpc_node_scheduler_.get(); }
-#endif
 
   // The callback function after process fork finish to reinitialize multi pipeline actors.
   void ChildAfterFork();
@@ -147,10 +139,6 @@ class BACKEND_EXPORT GraphScheduler {
   std::vector<AbstractActorPtr> BuildNoInputKernelActor(const ActorSet *actor_set,
                                                         GraphExecutionStrategy strategy) const;
 
-  // Generate rpc actor object inherited from kernel actor.
-  KernelActorPtr GenerateRpcActor(const CNodePtr &kernel, const DeviceContext *device_context,
-                                  GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
-                                  const std::set<size_t> &modifiable_ref_output_indexes);
   // Cache the information of graph output node to actor between “build” and “link”, for linking between the tail of
   // previous graph and the head of next graph.
   void CacheGraphOutputToActor(const GraphCompilerInfo &graph_compiler_info);
@@ -160,7 +148,7 @@ class BACKEND_EXPORT GraphScheduler {
                                std::vector<AbstractActor *> *const auto_monad_actors);
   void LinkDataArrowInNonSinkMode(const KernelGraphPtr &graph, const GraphCompilerInfo &graph_compiler_info,
                                   std::vector<AbstractActor *> *const auto_monad_actors,
-                                  std::vector<CNodePtr> *const communication_nodes, bool is_include_rpc);
+                                  std::vector<CNodePtr> *const communication_nodes);
   // The gather of linking data arrows of kernel, it will call following functions by the different from actor type.
   void LinkDataArrow(AbstractActor *const to_actor, const GraphCompilerInfo &graph_compiler_info,
                      const KernelGraphPtr &graph, const KernelWithIndex &from_kernel_with_output_idx,
@@ -271,14 +259,6 @@ class BACKEND_EXPORT GraphScheduler {
   ControlNodeScheduler control_node_scheduler_;
   // If there is an any type input in graph, it will be used to transform it.
   AnyTypeGraphScheduler any_type_graph_scheduler_;
-
-#ifdef ENABLE_RPC_ACTOR
-  // Return whether the actor set has rpc actors.
-  bool HaveRpcActors(const ActorSet *actor_set) const;
-
-  // Used to build and link for rpc actors.
-  std::unique_ptr<RpcNodeScheduler> rpc_node_scheduler_{nullptr};
-#endif
 
   // The id of global actor.
   AID memory_manager_aid_;

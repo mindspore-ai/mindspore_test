@@ -1213,4 +1213,45 @@ Status MergeEntireShapeForDynamic(const FuncGraphPtr &root) {
   }
   return Status::SUCCESS;
 }
+
+CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node_with_tuple_output,
+                                size_t item_index) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(node_with_tuple_output);
+
+  auto item_index_value_node = NewValueNode(MakeValue(UlongToLong(item_index)));
+  MS_EXCEPTION_IF_NULL(item_index_value_node);
+
+  std::vector<AnfNodePtr> tuple_get_item_inputs = {NewValueNode(prim::kPrimTupleGetItem), node_with_tuple_output,
+                                                   item_index_value_node};
+  CNodePtr tuple_get_item_node = func_graph->NewCNode(tuple_get_item_inputs);
+  MS_EXCEPTION_IF_NULL(tuple_get_item_node);
+  const auto &tuple_abstract = node_with_tuple_output->abstract();
+  if (!tuple_abstract) {
+    return tuple_get_item_node;
+  }
+  if (!tuple_abstract->isa<abstract::AbstractTuple>()) {
+    MS_LOG(EXCEPTION) << "Only create TupleGetItem for tuple output.";
+  }
+  tuple_get_item_node->set_abstract(tuple_abstract->cast<abstract::AbstractTuplePtr>()->elements()[item_index]);
+  return tuple_get_item_node;
+}
+
+CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  AnfNodePtrList new_make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  (void)new_make_tuple_inputs.insert(new_make_tuple_inputs.cend(), tuple_inputs.cbegin(), tuple_inputs.cend());
+  auto make_tuple_node = func_graph->NewCNode(new_make_tuple_inputs);
+  MS_EXCEPTION_IF_NULL(make_tuple_node);
+
+  // MakeTuple's abstract must consist of all inputs' abstract in case unexpected graph compiling error.
+  AbstractBasePtrList abstract_list;
+  (void)std::for_each(tuple_inputs.cbegin(), tuple_inputs.cend(),
+                      [&](const auto &input) { (void)abstract_list.emplace_back(input->abstract()); });
+  if (std::find_if(abstract_list.begin(), abstract_list.end(), [](auto abs) { return !abs; }) != abstract_list.end()) {
+    return make_tuple_node;
+  }
+  make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
+  return make_tuple_node;
+}
 }  // namespace mindspore::parallel

@@ -53,7 +53,6 @@ constexpr auto kPyExecuteOpName = "PyExecute";
 constexpr auto kPyInterpretOpName = "PyInterpret";
 constexpr auto kPushOpName = "Push";
 constexpr auto kQuantDTypeCastOpName = "QuantDTypeCast";
-constexpr auto kRpcSendOpName = "RpcSend";
 constexpr auto kTensorMoveOpName = "TensorMove";
 constexpr auto kCheckValidOpName = "CheckValid";
 constexpr auto kMakeDictOpName = "make_dict";

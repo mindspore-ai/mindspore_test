@@ -43,9 +43,6 @@
 #include "include/backend/distributed/init.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/cluster/tcp_store.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
-#endif
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
@@ -666,11 +663,6 @@ PYBIND11_MODULE(_c_expression, m) {
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Failed to parse profiler data." << e.what();
     }
-    MS_LOG(INFO) << "Start EmbeddingCacheScheduler...";
-#if defined(__linux__) && defined(WITH_BACKEND)
-    mindspore::runtime::EmbeddingCacheScheduler::GetInstance().Finalize(
-      !mindspore::distributed::cluster_exit_with_exception());
-#endif
 
 #ifdef ENABLE_MINDDATA
     MS_LOG(INFO) << "Start releasing dataset handles...";

@@ -28,8 +28,6 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "include/common/utils/parallel_context.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
-#include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 
@@ -212,11 +210,6 @@ Status GatherInfo::GetAttrs() {
   if (std::find(inputs_shape_[1].begin(), inputs_shape_[1].end(), -1) != inputs_shape_[1].end()) {
     dynamic_shape_indices_ = true;
   }
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
-    dynamic_shape_indices_ = true;
-  }
-#endif
   return SUCCESS;
 }
 
@@ -1173,14 +1166,6 @@ Status ShardAxisImpl::InferBias() {
         rank = rank % (param_strategy_[0] * param_strategy_[1]);
       }
     }
-#if defined(__linux__) && defined(WITH_BACKEND)
-    if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
-      if (ps::PSContext::instance()->enable_distributed_mindrt()) {
-        bias_ = static_cast<int64_t>(embedding_cache_table_manager.cache_indices_lower_bound());
-      }
-      return SUCCESS;
-    }
-#endif
     bias_ = rank / param_strategy_.at(1) * slice_size_;
     return SUCCESS;
   }
@@ -1787,11 +1772,6 @@ Status EmbeddingInfo::GetAttrs() {
   if (std::find(inputs_shape_[0].begin(), inputs_shape_[0].end(), -1) != inputs_shape_[0].end()) {
     dynamic_shape_indices_ = true;
   }
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
-    dynamic_shape_indices_ = true;
-  }
-#endif
   return SUCCESS;
 }
 

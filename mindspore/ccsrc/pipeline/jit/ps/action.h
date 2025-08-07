@@ -44,10 +44,6 @@ FRONTEND_EXPORT bool ExecuteAction(const ResourcePtr &resource);
 bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &passes);
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource);
 bool SilentCheckAction(const ResourcePtr &resource);
-#if defined(__linux__) && defined(WITH_BACKEND)
-bool StartPSSchedulerAction(const ResourcePtr &resource);
-bool DistributedSplitAction(const ResourcePtr &resource);
-#endif
 
 std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag = false, bool erase_parse = false);
 std::vector<ActionItem> MindIRPipeline();

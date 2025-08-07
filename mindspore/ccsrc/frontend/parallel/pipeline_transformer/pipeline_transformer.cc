@@ -40,7 +40,6 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/tensor_layout/shared_parameter.h"
 #include "frontend/parallel/strategy_utils.h"
 #include "ir/anf.h"

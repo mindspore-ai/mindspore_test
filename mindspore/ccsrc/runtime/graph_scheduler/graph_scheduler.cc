@@ -89,16 +89,11 @@
 #include "include/common/utils/signal_util.h"
 #endif
 
-#ifdef ENABLE_RPC_ACTOR
-#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
-#include "runtime/graph_scheduler/actor/rpc/mux_send_actor.h"
-#include "runtime/graph_scheduler/actor/rpc/mux_recv_actor.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
-#endif
 
 namespace mindspore {
 namespace runtime {
@@ -152,11 +147,6 @@ int64_t GetLoopCount(const GraphCompilerInfo &graph_compiler_info) {
   if ((graph_compiler_info.strategy_ == GraphExecutionStrategy::kStep) ||
       (graphs.size() == 1 && graphs[0]->is_loop_count_sink()) || graphs[0]->has_flag(kFlagPyNativeRunInGraph)) {
     loop_count = 1;
-  }
-
-  // For embedding cache mode, server is long running service.
-  if (is_embedding_cache_server()) {
-    loop_count = LONG_MAX;
   }
 
   return loop_count;
@@ -334,16 +324,6 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
       MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
                    << ", graph mode: " << device::run_mode_to_name_map.at(graph->RunMode())
                    << ", has inline sub graph: " << !(graph->inline_sub_graph_kernels().empty());
-      return false;
-    }
-  }
-
-  for (const auto &graph : graphs) {
-    MS_EXCEPTION_IF_NULL(graph);
-    if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(),
-                    [&](const CNodePtr &kernel) { return IsRpcActor(kernel); })) {
-      MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
-                   << ", kbk sub graph mode doesn't support 'RpcSend', 'RpcRecv', 'PyExecute' currently.";
       return false;
     }
   }
@@ -630,12 +610,6 @@ void GraphScheduler::Clear(const ActorInfo &actor_info, const std::vector<Kernel
 }
 
 void GraphScheduler::Clear() {
-#ifdef ENABLE_RPC_ACTOR
-  if (rpc_node_scheduler_ != nullptr) {
-    rpc_node_scheduler_->Clear();
-  }
-#endif
-
   // Terminate all actors.
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
@@ -719,8 +693,6 @@ void GraphScheduler::Initialize() {
                                       &GraphScheduler::LinkDataArrowForDeviceTensorStore);
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kInternalParameter,
                                       &GraphScheduler::LinkDataArrowForInternalParameter);
-  (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kSendActor, &GraphScheduler::LinkDataArrowForBaseActor);
-  (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kRecvActor, &GraphScheduler::LinkDataArrowForBaseActor);
 
   // Create the thread pool of actor runtime and Set the OMP_NUM_THREADS env.
   size_t actor_thread_num = 0;
@@ -764,15 +736,6 @@ void GraphScheduler::Initialize() {
                        "may not reach the optimal level. Please "
                        "increase the value of `runtime_num_threads` in context or not set `runtime_num_threads`.";
   }
-
-#ifdef ENABLE_RPC_ACTOR
-  // Create and initialize RpcNodeScheduler.
-  rpc_node_scheduler_ = std::make_unique<RpcNodeScheduler>();
-  MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
-
-  // Initialize EmbeddingCacheScheduler.
-  EmbeddingCacheScheduler::GetInstance().Initialize();
-#endif
 
   BuildAndScheduleGlobalActor();
 
@@ -916,19 +879,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   DumpFinalActor(actor_set.get(), graph_compiler_info);
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_ << ") transforms actor end.";
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-  // Save data channel for this actor set.
-  MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
-  EmbeddingCacheScheduler::GetInstance().SetDataSetChannel(actor_set->data_prepare_actor_->GetAID(),
-                                                           graph_compiler_info.graphs_);
-
-  // Initialize all embedding storage instances.
-  EmbeddingCacheScheduler::GetInstance().InitEmbeddingStorage(graph_compiler_info.origin_parameters_order_);
-
-  // Set rpc actors in order to update rpc actors status.
-  RpcActorStatusUpdater::GetInstance().set_rpc_actors(graph_compiler_info.name_, actor_set->rpc_actors_);
-#endif
-
   for (const auto &graph : graph_compiler_info.graphs_) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->is_dynamic_shape()) {
@@ -1026,16 +976,6 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
       actor->Init();
     }
   }
-
-#ifdef ENABLE_RPC_ACTOR
-  // Build physical connections in 'RpcNodeScheduler::Schedule()' method. This costs some time.
-  MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
-  rpc_node_scheduler_->Schedule(actor_set);
-
-  // Build network connection between local and remote cache for embedding cache prefetch actor.
-  // Schedule and Run embedding cache prefetch actor.
-  EmbeddingCacheScheduler::GetInstance().Schedule();
-#endif
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
@@ -1209,13 +1149,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   op_context.sequential_num_ = RandInt::Instance().Get();
   op_context.results_ = &result;
 
-#ifdef ENABLE_RPC_ACTOR
-  // Set OpContext to rpc node scheduler.
-  auto op_context_setter =
-    std::make_shared<RpcActorOpContextSetter>(rpc_node_scheduler_.get(), actor_set->rpc_actors_, &op_context);
-  MS_EXCEPTION_IF_NULL(op_context_setter);
-#endif
-
   ResetTraceMemoryStatus();
   // Trigger data prepare actor running.
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
@@ -1326,14 +1259,6 @@ bool GraphScheduler::CheckSingleThreadRunningCondition(ActorSet *const actor_set
       (actor_set->kernel_actors_.size() > ActorDispatcher::kSingleThreadExecutionActorMaxNum)) {
     return false;
   }
-
-#ifdef ENABLE_RPC_ACTOR
-  // If there're rpc actors, do not use single thread execution because the callbacks of recv actors are
-  // multi-thread.
-  if (HaveRpcActors(actor_set)) {
-    return false;
-  }
-#endif
 
   return true;
 }
@@ -1519,10 +1444,6 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   actor_set->output_actor_ = BuildOutputActor(graph_compiler_info);
   actor_set->control_actors_ = control_node_scheduler_.Build(graph_compiler_info, memory_manager_aid_);
 
-#ifdef ENABLE_RPC_ACTOR
-  MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
-  actor_set->rpc_actors_ = rpc_node_scheduler_->Build(actor_set.get());
-#endif
   return actor_set;
 }
 
@@ -1659,16 +1580,6 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
   std::string default_group_name = "";
   const auto &parser = graph_compiler_info.control_node_parser_;
   MS_EXCEPTION_IF_NULL(parser);
-  auto is_include_rpc = [](const GraphCompilerInfo &graph_compiler_info) {
-    for (const auto &sub_graph : graph_compiler_info.graphs_) {
-      MS_EXCEPTION_IF_NULL(sub_graph);
-      if (std::any_of(sub_graph->execution_order().begin(), sub_graph->execution_order().end(),
-                      [](const CNodePtr &kernel) { return IsRpcActor(kernel); })) {
-        return true;
-      }
-    }
-    return false;
-  };
 
   // Maintain shared pointer for graphs manager which will be used in Link and LinkKernelActorsForSubGraphExecute phase.
   std::vector<FuncGraphManagerPtr> graph_managers;
@@ -1705,8 +1616,7 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
       std::vector<CNodePtr> communication_nodes;
       const auto &group_name = (parser->IsInited() ? parser->FetchGroupNameByKernelGraph(graph) : default_group_name);
       PROF_START(GraphSchedulerLinkNoSinkMode);
-      LinkDataArrowInNonSinkMode(graph, graph_compiler_info, &auto_monad_actors, &communication_nodes,
-                                 is_include_rpc(graph_compiler_info));
+      LinkDataArrowInNonSinkMode(graph, graph_compiler_info, &auto_monad_actors, &communication_nodes);
       PROF_END(GraphSchedulerLinkNoSinkMode);
       (void)group_name_to_communication_nodes[group_name].first.insert(
         group_name_to_communication_nodes[group_name].first.end(), communication_nodes.begin(),
@@ -1726,11 +1636,6 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
     control_node_scheduler_.Link(actor_set, graph_compiler_info);
   }
 
-#ifdef ENABLE_RPC_ACTOR
-  // Link inter-process arrows for rpc actors.
-  MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
-  rpc_node_scheduler_->Link(actor_set);
-#endif
   // Need to call after all link task finish, because all kernel actor of super kernel actor will be initialized and
   // need to known the graph output(ref count: SIZE_MAX)
   LinkKernelActorsForSubGraphExecute(actor_set);
@@ -2062,9 +1967,7 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
         const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
         MS_EXCEPTION_IF_NULL(real_device_context);
         KernelActorPtr kernel_actor = nullptr;
-        if (IsRpcActor(kernel)) {
-          kernel_actor = GenerateRpcActor(kernel, real_device_context, strategy, ref_input_indexes, ref_output_indexes);
-        } else if (IsInnerControlFlowActor(kernel)) {
+        if (IsInnerControlFlowActor(kernel)) {
           MS_LOG(EXCEPTION) << "Can not build a sub graph which contains ConditionSwitch or ConditionSwitch by kbk.";
         } else {
           kernel_actor = std::make_shared<KernelActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context,
@@ -2250,47 +2153,6 @@ std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const Acto
   return no_input_kernel_actors;
 }
 
-KernelActorPtr GraphScheduler::GenerateRpcActor(const CNodePtr &kernel, const DeviceContext *device_context,
-                                                GraphExecutionStrategy strategy,
-                                                const std::set<size_t> &ref_input_indexes,
-                                                const std::set<size_t> &ref_output_indexes) {
-  MS_EXCEPTION_IF_NULL(kernel);
-  MS_EXCEPTION_IF_NULL(device_context);
-#ifdef ENABLE_RPC_ACTOR
-  const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
-  MS_EXCEPTION_IF_NULL(real_device_context);
-  bool generate_mux_rpc_actor = common::AnfAlgo::HasNodeAttr(kAttrIsMuxRpcKernel, kernel) &&
-                                (common::AnfAlgo::GetNodeAttr<bool>(kernel, kAttrIsMuxRpcKernel) == true);
-
-  MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
-  if (common::AnfAlgo::GetCNodeName(kernel) == kRpcSendOpName) {
-    SendActorPtr send_actor =
-      generate_mux_rpc_actor
-        ? std::make_shared<MuxSendActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context,
-                                         memory_manager_aid_, debug_aid_, recorder_aid_, strategy, ref_input_indexes,
-                                         ref_output_indexes)
-        : std::make_shared<SendActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context, memory_manager_aid_,
-                                      debug_aid_, recorder_aid_, strategy, ref_input_indexes, ref_output_indexes);
-    MS_EXCEPTION_IF_NULL(send_actor);
-    return send_actor;
-  } else if (common::AnfAlgo::GetCNodeName(kernel) == kRpcRecvOpName) {
-    RecvActorPtr recv_actor =
-      generate_mux_rpc_actor
-        ? std::make_shared<MuxRecvActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context,
-                                         memory_manager_aid_, debug_aid_, recorder_aid_, strategy, ref_input_indexes,
-                                         ref_output_indexes)
-        : std::make_shared<RecvActor>(GenerateActorIdByKernel(kernel), kernel, real_device_context, memory_manager_aid_,
-                                      debug_aid_, recorder_aid_, strategy, ref_input_indexes, ref_output_indexes);
-    MS_EXCEPTION_IF_NULL(recv_actor);
-    return recv_actor;
-  } else {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, kernel)
-      << "#dmsg#Runtime error info:#dmsg#Kernel " << kernel->fullname_with_scope() << " is not a rpc kernel.";
-  }
-#endif
-  return nullptr;
-}
-
 namespace {
 void GetAllUInputByCNode(const CNodePtr &cnode,
                          mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> *cnode_to_monad_inputs) {
@@ -2443,18 +2305,12 @@ void GraphScheduler::LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const 
 }
 
 namespace {
-bool IsNeedLinkControlArrowByMonad(const KernelGraphPtr &graph, const GraphCompilerInfo &graph_compiler_info,
-                                   bool is_include_rpc) {
+bool IsNeedLinkControlArrowByMonad(const KernelGraphPtr &graph, const GraphCompilerInfo &graph_compiler_info) {
   MS_EXCEPTION_IF_NULL(graph);
   if (EnableKbkSubGraphExecute() || graph->is_graph_run_mode() || graph->is_any_type_input() ||
       graph->execution_order().empty()) {
     MS_LOG(INFO) << "No need to link control arrow for graph:" << graph->ToString();
     return false;
-  }
-
-  if (is_include_rpc) {
-    MS_LOG(INFO) << "Need to link control arrow for graph:" << graph->ToString() << " by rpc kernel.";
-    return true;
   }
 
   auto context_ptr = MsContext::GetInstance();
@@ -2480,7 +2336,7 @@ bool IsNeedLinkControlArrowByMonad(const KernelGraphPtr &graph, const GraphCompi
 void GraphScheduler::LinkDataArrowInNonSinkMode(const KernelGraphPtr &graph,
                                                 const GraphCompilerInfo &graph_compiler_info,
                                                 std::vector<AbstractActor *> *const auto_monad_actors,
-                                                std::vector<CNodePtr> *const communication_nodes, bool is_include_rpc) {
+                                                std::vector<CNodePtr> *const communication_nodes) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(auto_monad_actors);
   MS_EXCEPTION_IF_NULL(communication_nodes);
@@ -2492,7 +2348,7 @@ void GraphScheduler::LinkDataArrowInNonSinkMode(const KernelGraphPtr &graph,
   // Collect all the depend updatestate nodes of the kernels for linking control arrow.
   mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> cnode_to_monad_inputs;
   MS_LOG(INFO) << "Get all monad input of cnode in graph:" << graph->ToString() << " start.";
-  bool is_need_auto_monad_link = IsNeedLinkControlArrowByMonad(graph, graph_compiler_info, is_include_rpc);
+  bool is_need_auto_monad_link = IsNeedLinkControlArrowByMonad(graph, graph_compiler_info);
   if (is_need_auto_monad_link) {
     GetAllCNodeUInputByGraph(graph, &cnode_to_monad_inputs);
   }
@@ -3202,15 +3058,6 @@ void GraphScheduler::LinkControlArrowByExecutionOrder(const KernelGraphPtr &grap
     const auto &to_kernel = execution_order[i];
     const auto to_kernel_type = FetchKernelTransformType(to_kernel, graph, {}, GraphExecutionStrategy::kPipeline);
     auto to_actor = FetchActor(to_kernel_type, graph_compiler_info.name_, to_kernel, graph);
-    if (IsRpcActor(execution_order[i - 1]) || IsRpcActor(execution_order[i])) {
-      MS_LOG(INFO) << "Rpc op is not available in the execution order, from kernel: "
-                   << execution_order[i - 1]->fullname_with_scope()
-                   << ", to kernel:" << execution_order[i]->fullname_with_scope();
-      if (to_actor != nullptr) {
-        last_actor = to_actor;
-      }
-      continue;
-    }
     if ((last_actor != nullptr) && (to_actor != nullptr)) {
       SchedulerHelper::AddControlArrow(last_actor, to_actor);
     } else {
@@ -4103,17 +3950,5 @@ void GraphScheduler::BindNumaNode() {
   MS_LOG(INFO) << "Numa bind memory and cpu successful.";
 #endif
 }
-
-#ifdef ENABLE_RPC_ACTOR
-bool GraphScheduler::HaveRpcActors(const ActorSet *actor_set) const {
-  MS_EXCEPTION_IF_NULL(actor_set);
-  const auto &rpc_actor_set = actor_set->rpc_actors_;
-  if (rpc_actor_set != nullptr && (!rpc_actor_set->send_actors_.empty() || !rpc_actor_set->recv_actors_.empty())) {
-    return true;
-  }
-  return false;
-}
-#endif
-
 }  // namespace runtime
 }  // namespace mindspore

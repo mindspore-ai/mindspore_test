@@ -275,14 +275,6 @@ if(ENABLE_D)
     endif()
 endif()
 
-if(ENABLE_CPU AND NOT WIN32)
-    install(
-        TARGETS ps_cache
-        DESTINATION ${INSTALL_LIB_DIR}
-        COMPONENT mindspore
-    )
-endif()
-
 if(ENABLE_D OR ENABLE_ACL)
     if(DEFINED ENV{ASCEND_CUSTOM_PATH})
         set(ASCEND_PATH $ENV{ASCEND_CUSTOM_PATH})

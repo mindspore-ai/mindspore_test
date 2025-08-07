@@ -26,7 +26,6 @@
 #include "abstract/abstract_value.h"
 #include "utils/cache_embedding_hashmap_struct.h"
 #include "include/common/utils/python_adapter.h"
-#include "mindspore/ccsrc/include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "debug/profiler/profiler.h"
 #include "include/common/pynative/adapter.h"
 #include "runtime/hardware/device_context_manager.h"

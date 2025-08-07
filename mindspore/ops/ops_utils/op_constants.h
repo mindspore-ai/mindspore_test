@@ -375,7 +375,6 @@ constexpr auto kAttrBinaryOutput = "binary_output";
 constexpr auto kAttrMinLength = "minlength";
 constexpr auto kAttrMaxLength = "maxlength";
 constexpr auto kAttrIouThreshold = "iou_threshold";
-constexpr auto kAttrEnableEmbeddingStorage = "enable_embedding_storage";
 constexpr auto kAttrParameterKey = "parameter_key";
 constexpr auto kAttrJitCallNode = "jit_call_node";
 constexpr auto kAttrInsertDefaultValue = "insert_default_value";

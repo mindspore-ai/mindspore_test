@@ -221,8 +221,6 @@ def train_net():
     set_parameter()
     ckpt_param_dict = load_pre_trained_checkpoint()
     net = resnet(class_num=config.class_num)
-    if config.parameter_server:
-        net.set_param_ps()
 
     init_weight(net=net, param_dict=ckpt_param_dict)
     lr = Tensor(init_lr(step_size=500))

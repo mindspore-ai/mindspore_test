@@ -24,7 +24,6 @@
 #include <functional>
 #include "mindspore/ops/op_def/array_ops.h"
 
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
@@ -45,13 +44,6 @@ constexpr size_t kScatterArithmeticOutputsNum = 1;
 
 bool ScatterArithmeticCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  if (primitive_->HasAttr(kAttrEnableEmbeddingStorage)) {
-    enable_embedding_storage_ = GetValue<bool>(primitive_->GetAttr(kAttrEnableEmbeddingStorage));
-  }
-  if (primitive_->HasAttr(kAttrParameterKey)) {
-    parameter_key_ = GetValue<int32_t>(primitive_->GetAttr(kAttrParameterKey));
-  }
-
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
@@ -138,17 +130,6 @@ bool ScatterArithmeticCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
       }
     }
   } else {
-    if (enable_embedding_storage_) {
-      auto embedding_storage = embedding_storage_manager.Get(parameter_key_);
-      MS_ERROR_IF_NULL(embedding_storage);
-      if (!embedding_storage->Put({indices, inputs[kIndex1]->size()}, {updates, inputs[kIndex2]->size()})) {
-        MS_LOG(ERROR) << "For '" << kernel_name_
-                      << "', Update embedding storage failed, parameter key: " << parameter_key_;
-        return false;
-      }
-      return true;
-    }
-
     for (size_t i = 0; i < indices_size_; i++) {
       auto idx = static_cast<int>(*(indices + i));
       auto base_index_updates = i * inner_size_;

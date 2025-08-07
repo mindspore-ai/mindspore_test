@@ -21,7 +21,6 @@
 
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 #include "kernel/cpu/map_tensor/map_tensor_put_with_status_cpu_kernel.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 
 namespace mindspore {
 namespace kernel {

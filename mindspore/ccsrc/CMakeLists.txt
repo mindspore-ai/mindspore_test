@@ -235,10 +235,10 @@ endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl mindspore::event_core ps_cache)
+            mindspore::event_openssl mindspore::event_core)
 elseif(ENABLE_CPU AND NOT WIN32)
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
+            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
 endif()
 
 

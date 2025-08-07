@@ -298,7 +298,6 @@ size_t AnfRuntimeAlgorithm::GetOutputTensorNum(const AnfNodePtr &node) {
     constexpr size_t kCOOTensorOutputNum = 4;
     res = kCOOTensorOutputNum;
   } else if (AnfUtils::NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     res = 0;
   } else {
     res = 1;
@@ -330,7 +329,6 @@ size_t AnfRuntimeAlgorithm::GetOutputNumWithoutKernelInfo(const AnfNodePtr &node
     constexpr size_t kCOOTensorOutputNum = 4;
     res = kCOOTensorOutputNum;
   } else if (AnfUtils::NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     res = 0;
   } else {
     res = 1;

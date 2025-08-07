@@ -1082,9 +1082,6 @@ class Model:
             dataset_helper = train_dataset._dataset_helper
 
         self.epoch_iter = 0
-        # Check whether this process is embedding cache server.
-        is_embedding_cache_server = _is_role_pserver() and _cache_enable()
-
         while self.epoch_iter < (epoch - initial_epoch):
             cb_params.cur_epoch_num = self.epoch_iter + 1 + initial_epoch
             self._current_epoch_num = cb_params.cur_epoch_num
@@ -1121,10 +1118,6 @@ class Model:
                     set_is_arf(False)
                 _clean_rootinfo()
 
-                # Embedding cache server only run one step.
-                if is_embedding_cache_server:
-                    break
-
             dataset_helper.continue_send()
 
             # When it's distributed training and using MindRT,
@@ -1134,13 +1127,7 @@ class Model:
                 _reset_op_id_with_offset()
 
             self._eval_during_train(valid_infos, cb_params, list_callback)
-
-            # In disaster recovery scenarios, need not to execute callbacks if this epoch executes failed.
-            # Embedding cache server need not do epoch end callback, this process only run one step.
-            need_exec_callback_epoch_end = not is_embedding_cache_server
-
-            if need_exec_callback_epoch_end:
-                list_callback.on_train_epoch_end(run_context)
+            list_callback.on_train_epoch_end(run_context)
             if "metrics" in cb_params or "eval_results" in cb_params:
                 cb_params.pop("metrics", None)
                 cb_params.pop("eval_results", None)
@@ -1207,7 +1194,6 @@ class Model:
         cb_params.dataset_sink_mode = False
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
-        is_embedding_cache_server = _is_role_pserver() and _cache_enable()
 
         for i in range(initial_epoch, epoch):
             cb_params.cur_epoch_num = i + 1
@@ -1240,9 +1226,6 @@ class Model:
                     cb_params.is_arf = False
                     set_is_arf(False)
                 _clean_rootinfo()
-                # Embedding cache server only run one step.
-                if is_embedding_cache_server:
-                    break
                 should_stop = run_context.get_stop_requested()
                 if should_stop:
                     break
@@ -1260,9 +1243,6 @@ class Model:
             # if param is cache enable, flush data from cache to host before epoch end
             self._flush_from_cache(cb_params)
 
-            # Embedding cache server need not do epoch end callback, this process only run one step.
-            if not is_embedding_cache_server:
-                list_callback.on_train_epoch_end(run_context)
             if "metrics" in cb_params or "eval_results" in cb_params:
                 cb_params.pop("metrics", None)
                 cb_params.pop("eval_results", None)
@@ -1788,13 +1768,6 @@ class Model:
         cb_params.network = self._network
 
         self._clear_metrics()
-
-        # Embedding cache server as a storage service, no need to execute eval.
-        is_embedding_cache_server = _is_role_pserver() and _cache_enable()
-        if is_embedding_cache_server:
-            metrics = self._get_metrics()
-            cb_params.metrics = metrics
-            return metrics
 
         if context.get_context("device_target") == "CPU" and dataset_sink_mode:
             dataset_sink_mode = False

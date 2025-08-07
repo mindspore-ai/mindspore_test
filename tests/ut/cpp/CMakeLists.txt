@@ -107,7 +107,6 @@ if(NOT ENABLE_CPU OR WIN32 OR APPLE)
             ./distributed/cluster/*.cc
             ./distributed/cluster/topology/*.cc
             ./distributed/recovery/*.cc
-            ./distributed/embedding_cache/*.cc)
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
 
@@ -162,7 +161,6 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/*.cc"
         "../../../mindspore/ops/kernel/cpu/fused_ada_factor_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/nnacl/fp32/adam_fp32.c"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/rpc_recv_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_adam_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_ftrl_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_lazy_adam_cpu_kernel.cc"

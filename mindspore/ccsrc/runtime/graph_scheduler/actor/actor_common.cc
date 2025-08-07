@@ -186,15 +186,6 @@ bool IsSkippedKernelActor(const AnfNodePtr &node) {
   return false;
 }
 
-bool IsRpcActor(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  if (IsKernelActor(node) && (common::AnfAlgo::GetCNodeName(node) == kRpcSendOpName ||
-                              common::AnfAlgo::GetCNodeName(node) == kRpcRecvOpName)) {
-    return true;
-  }
-  return false;
-}
-
 bool IsInnerControlFlowActor(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (IsKernelActor(node) && (common::AnfAlgo::GetCNodeName(node) == "ConditionSwitch" ||
@@ -634,10 +625,6 @@ std::set<size_t> FetchModifiableRefOutputIndex(const CNodePtr &cnode, const Kern
     }
   }
   return ref_output_indexes;
-}
-
-bool is_embedding_cache_server() {
-  return ps::PSContext::instance()->cache_enable() && ps::PSContext::instance()->is_server();
 }
 
 void MemoryTraceManager::ReserveKernelMemoryBlocks(size_t size, const DeviceContext *device_context) {

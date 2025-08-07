@@ -59,12 +59,6 @@
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-
-#include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/distributed/embedding_cache/data_queue_manager.h"
-#endif
-
 #ifdef ENABLE_DUMP_IR
 #include "debug/rdr/graph_recorder.h"
 #include "include/common/debug/rdr/recorder_manager.h"
@@ -739,12 +733,6 @@ bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t ba
 bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batch_size,
                        const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
                        const std::vector<int64_t> &input_indexes, bool need_run) {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_ps_mode() && ps::PSContext::instance()->cache_enable() &&
-      !ps::PSContext::instance()->is_worker()) {
-    return true;
-  }
-#endif
   PROF_START(InitExecDatasetVm);
   MS_LOG(INFO) << "Start InitDataSet Entry";
   mindspore::python_adapter::set_python_env_flag(true);
@@ -791,12 +779,6 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
   MS_LOG(DEBUG) << "Enable mindRT.";
   context_ptr->set_param<bool>(MS_CTX_ENABLE_MINDRT, true);
   context_ptr->Refresh();
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_worker() && ps::PSContext::instance()->cache_enable()) {
-    distributed::DataQueueManager::GetInstance().CreateDataQueue(queue_name, size, 128);
-  }
-#endif
 
   VectorRef args;
   if (need_run) {

@@ -131,11 +131,6 @@ bool Somas::IsSupportSomas(const session::KernelGraph &graph) const {
       MS_LOG(INFO) << "Somas can't allocate graph with backoff now.";
       return false;
     }
-    auto kernel_name = common::AnfAlgo::GetCNodeName(kernel);
-    if ((kernel_name == kRpcSendOpName) || (kernel_name == kRpcRecvOpName)) {
-      MS_LOG(INFO) << "Somas can't allocate graph with rpc op now.";
-      return false;
-    }
   }
 
   return true;
