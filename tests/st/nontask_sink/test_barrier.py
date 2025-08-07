@@ -63,10 +63,13 @@ def test_hccl_barrier_func_8p():
     Expectation: all processes in the group synchronize in this operator.
     """
     net = BarrierFuncNet()
+    start_time = time.time()
+    print("Process {} start time: {}".format(rank, time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime(start_time))))
     if rank == 3:
         time.sleep(3)
     if rank == 4:
         time.sleep(6)
-    print("Process {} start time: {}".format(rank, time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime(time.time()))))
     net()
-    print("Process {} end time: {}".format(rank, time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime(time.time()))))
+    end_time = time.time()
+    print("Process {} end time: {}".format(rank, time.strftime('%Y-%m-%d-%H:%M:%S', time.localtime(end_time))))
+    assert end_time - start_time > 4
