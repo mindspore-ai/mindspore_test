@@ -1,7 +1,7 @@
 file(GLOB_RECURSE DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "common/*.cc" "gsm/*.cc"
     "executor/dynamic_kernel.cc" "executor/executor_callback.cc"
     "memory_scheduler.cc" "memory_offload_strategy.cc" "launch_kernel.cc"
-    "context_extends.cc" "stream_synchronizer.cc" "tensors_queue.cc"
+    "context_extends.cc" "tensors_queue.cc"
     "common_somas_allocator.cc" "device_address_utils.cc"
     "py_execute_utils.cc" "move_to.cc"
 )
