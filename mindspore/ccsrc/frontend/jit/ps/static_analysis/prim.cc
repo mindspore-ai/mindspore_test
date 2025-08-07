@@ -2927,6 +2927,16 @@ class PyInterpretEvaluator final : public TransitionPrimEvaluator {
     }
 
     AbstractBasePtr res = ToAbstract(converted_val, AnalysisContext::DummyContext(), out_conf);
+    if (!converted_val->ContainsValueAny()) {
+      AnfNodePtr value_node = NewValueNode(converted_val);
+      value_node->set_abstract(res);
+      value_node->set_debug_info(node->debug_info());
+      AnalysisEnginePtr eng = out_conf->engine();
+      MS_EXCEPTION_IF_NULL(eng);
+      AnfNodeConfigPtr fn_conf = eng->MakeConfig(value_node, out_conf->context(), out_conf->func_graph());
+      return eng->ForwardConfig(out_conf, fn_conf);
+    }
+
     auto infer_result = std::make_shared<EvalResult>(res, std::make_shared<AttrValueMap>());
     evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
     return infer_result;

@@ -22,7 +22,8 @@ from mindspore.nn import ReLU
 from mindspore.common.parameter import Parameter
 from mindspore import dtype as mstype
 from mindspore.ops.auto_generate.gen_ops_prim import (select_ext_view_op, slice_ext_view_op, inplace_copy_op,
-                                                      NarrowView, UnstackExtView)
+                                                      NarrowView, UnstackExtView, BroadcastToView, ExpandDimsView,
+                                                      TransposeView)
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
@@ -660,3 +661,41 @@ def test_muti_output_view_inplace_grad():
         grad(net)(input_x, input_y)
     assert ("In backpropagation, in-place modification operations are not supported for view operators with multiple "
             "outputs.") in str(err.value)
+
+
+def func(x):
+    x = ops.abs(x)
+    view_obj1 = BroadcastToView()(x, (1, 4, 2))
+    view_obj2 = ExpandDimsView()(view_obj1, 0)
+    if x[0][0] > 0:
+        view_obj2.mul_(2)
+    else:
+        view_obj2.mul_(3)
+    return view_obj2, x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_and_inplace_fallback_pyinterpret():
+    """
+    Feature: view inplace operation in grad which input of the view operator is PyInterpret node,
+    which can be constant folded.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    def func_pyinterpret(x):
+        x = TransposeView()(Tensor(np.ones([2, 4]).astype(np.float32)), (1, 0))
+        _, y = func(x)
+        y.mul_(x)
+        return y
+
+    x_np = np.ones([2, 4]).astype(np.float32)
+    input_x = Tensor(x_np)
+    out_forword_expect = func_pyinterpret(input_x)
+    out_back_expect = grad(func_pyinterpret)(input_x)
+
+    func18_jit = ms.jit(func_pyinterpret, backend="ms_backend")
+    out_forword_jit = func18_jit(input_x)
+    out_back_jit = grad(func18_jit)(input_x)
+    assert np.allclose(out_forword_expect.asnumpy(), out_forword_jit.asnumpy())
+    assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
