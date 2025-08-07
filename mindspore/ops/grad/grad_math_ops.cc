@@ -1191,42 +1191,42 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_transpose_perm_shapecalc)
     return {abstract::TensorShape::kShapeDimAny};
   });
 
-inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr w, NodePtr dout, const NodePtrList &shapes,
+inline NodePtr MatMulInputBackwardDyn(BpropBuilder *ib, NodePtr w, NodePtr dout, const NodePtrList &shapes,
                                       const bool &is_complex) {
   auto w_expanded_shape = shapes[i0];
   auto w_optim_shape = shapes[i2];
   auto dout_optim_shape_for_dx = shapes[i3];
   auto dout_perm = shapes[i5];
 
-  w = e->Reshape(w, w_expanded_shape);
+  w = ib->Reshape(w, w_expanded_shape);
   // TransposeExtView is not complete for now
-  auto perm = e->ShapeCalc(g_matmul_ext_transpose_perm_shapecalc, {w});
-  w = e->Transpose(w, perm[0]);
+  auto perm = ib->ShapeCalc(g_matmul_ext_transpose_perm_shapecalc, {w});
+  w = ib->Transpose(w, perm[0]);
   if (is_complex) {
-    dout = e->Emit("Conj", {dout});
+    dout = ib->Emit("Conj", {dout});
   }
 
-  w = e->Reshape(w, w_optim_shape);
-  dout = e->Transpose(dout, dout_perm);
-  dout = e->Reshape(dout, dout_optim_shape_for_dx);
-  auto dx = e->MatMulExt(dout, w);
-  return is_complex ? e->Emit("Conj", {dx}) : dx;
+  w = ib->Reshape(w, w_optim_shape);
+  dout = ib->Transpose(dout, dout_perm);
+  dout = ib->Reshape(dout, dout_optim_shape_for_dx);
+  auto dx = ib->MatMulExt(dout, w);
+  return is_complex ? ib->Emit("Conj", {dx}) : dx;
 }
 
-inline NodePtr MatMulWeightBackwardDyn(Emitter *e, NodePtr x, NodePtr dout, const NodePtrList &shapes,
+inline NodePtr MatMulWeightBackwardDyn(BpropBuilder *ib, NodePtr x, NodePtr dout, const NodePtrList &shapes,
                                        const bool &is_complex) {
   auto x_optim_shape = shapes[i1];
   auto dout_optim_shape_for_dw = shapes[i4];
   if (is_complex) {
-    x = e->Emit("Conj", {x});
+    x = ib->Emit("Conj", {x});
   }
 
-  x = e->Reshape(x, x_optim_shape);
-  dout = e->Reshape(dout, dout_optim_shape_for_dw);
+  x = ib->Reshape(x, x_optim_shape);
+  dout = ib->Reshape(dout, dout_optim_shape_for_dw);
   // TransposeExtView is not complete for now
-  auto perm = e->ShapeCalc(g_matmul_ext_transpose_perm_shapecalc, {x});
-  x = e->Transpose(x, perm[0]);
-  auto dw = e->MatMulExt(x, dout);
+  auto perm = ib->ShapeCalc(g_matmul_ext_transpose_perm_shapecalc, {x});
+  x = ib->Transpose(x, perm[0]);
+  auto dw = ib->MatMulExt(x, dout);
   return dw;
 }
 
@@ -1234,53 +1234,28 @@ inline NodePtrList MatMulBackwardDynamic(BpropBuilder *ib, const bool &is_comple
   auto x = ib->GetInput(i0);
   auto w = ib->GetInput(i1);
   auto dout = ib->GetInput(i3);
-  auto x_size = ib->Emit("Size", {x});
-  auto w_size = ib->Emit("Size", {w});
-  auto x_empty = ib->Equal(x_size, ib->Value<int64_t>(0));
-  auto w_empty = ib->Equal(w_size, ib->Value<int64_t>(0));
-  auto true_case = [&x, &w, &x_empty, &w_empty](Emitter *e) -> NodePtrList {
-    // the case to handle empty tensor
-    auto nested_true_case_x = [&x](Emitter *e) -> NodePtrList { return {x}; };
-    auto nested_false_case_x = [&x](Emitter *e) -> NodePtrList { return {e->ZerosLike(x)}; };
-    auto nested_true_case_w = [&w](Emitter *e) -> NodePtrList { return {w}; };
-    auto nested_false_case_w = [&w](Emitter *e) -> NodePtrList { return {e->ZerosLike(w)}; };
-    auto dx =
-      x->need_compute_grad_out() ? e->Conditional(x_empty, nested_true_case_x, nested_false_case_x) : e->ZerosLike(x);
-    auto dw =
-      w->need_compute_grad_out() ? e->Conditional(w_empty, nested_true_case_w, nested_false_case_w) : e->ZerosLike(w);
+  NodePtrList shapes{};
+  // Calculate optimized shapes used in back propagation of input or weight
+  if (x->need_compute_grad_out() || w->need_compute_grad_out()) {
+    shapes = ib->ShapeCalc(g_matmul_ext_bprop_shapecalc, {x, w, dout});
+  }
+  auto dx = x->need_compute_grad_out() ? MatMulInputBackwardDyn(ib, w, dout, shapes, is_complex) : ib->ZerosLike(x);
+  auto dw = w->need_compute_grad_out() ? MatMulWeightBackwardDyn(ib, x, dout, shapes, is_complex) : ib->ZerosLike(w);
+  // If the dimension of x or w larger than 2, inverse broadcasting must be took into consideration.
+  const auto &dx_shape = dx->shape();
+  const auto &dw_shape = dw->shape();
+  if ((!IsDynamicRank(dx_shape) && dx_shape.size() <= 2) || (!IsDynamicRank(dw_shape) && dw_shape.size() <= 2)) {
+    dx = ib->Reshape(dx, ib->Shape(x));
+    dw = ib->Reshape(dw, ib->Shape(w));
     return {dx, dw};
-  };
-  auto false_case = [&x, &w, &dout, &is_complex](Emitter *e) -> NodePtrList {
-    NodePtrList shapes{};
-    // Calculate optimized shapes used in back propagation of input or weight
-    if (x->need_compute_grad_out() || w->need_compute_grad_out()) {
-      shapes = e->ShapeCalc(g_matmul_ext_bprop_shapecalc, {x, w, dout});
-    }
-    auto dx = x->need_compute_grad_out() ? MatMulInputBackwardDyn(e, w, dout, shapes, is_complex) : e->ZerosLike(x);
-    auto dw = w->need_compute_grad_out() ? MatMulWeightBackwardDyn(e, x, dout, shapes, is_complex) : e->ZerosLike(w);
-    // If the dimension of x or w larger than 2, inverse broadcasting must be took into consideration.
-    const auto &dx_shape = dx->shape();
-    const auto &dw_shape = dw->shape();
-    if ((!IsDynamicRank(dx_shape) && dx_shape.size() <= 2) || (!IsDynamicRank(dw_shape) && dw_shape.size() <= 2)) {
-      dx = e->Reshape(dx, e->Shape(x));
-      dw = e->Reshape(dw, e->Shape(w));
-      return {dx, dw};
-    }
-    // Calculate the reduce axis of inverse broadcast
-    auto bc_axis = e->ShapeCalc(g_matmul_ext_bprop_bc_shapecalc, {x, w, dx, dw});
-    // SumExt is not adopted, since the 'skip mode' in ReduceSum is necessary for dynamic rank case.
-    dx = e->ReduceSum(dx, bc_axis[0], false, true);
-    dx = e->Reshape(dx, e->Shape(x));
-    dw = e->ReduceSum(dw, bc_axis[1], false, true);
-    dw = e->Reshape(dw, e->Shape(w));
-    return {dx, dw};
-  };
-  auto x_empty_tensor = ib->ScalarToTensor(x_empty, ib->GetDtype(x_empty));
-  auto w_empty_tensor = ib->ScalarToTensor(w_empty, ib->GetDtype(w_empty));
-  auto cond = ib->LogicalOr(x_empty_tensor, w_empty_tensor);
-  auto ret = ib->Conditional(cond, true_case, false_case);
-  auto dx = ib->TupleGetItem(ret, 0);
-  auto dw = ib->TupleGetItem(ret, 1);
+  }
+  // Calculate the reduce axis of inverse broadcast
+  auto bc_axis = ib->ShapeCalc(g_matmul_ext_bprop_bc_shapecalc, {x, w, dx, dw});
+  // SumExt is not adopted, since the 'skip mode' in ReduceSum is necessary for dynamic rank case.
+  dx = ib->ReduceSum(dx, bc_axis[0], false, true);
+  dx = ib->Reshape(dx, ib->Shape(x));
+  dw = ib->ReduceSum(dw, bc_axis[1], false, true);
+  dw = ib->Reshape(dw, ib->Shape(w));
   return {dx, dw};
 }
 
