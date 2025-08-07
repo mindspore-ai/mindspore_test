@@ -59,14 +59,18 @@ class PYBOOST_API OpRunStatus {
 
   OpPtr GetLastOp() { return std::move(last_op_); }
 
+  void HeterBarrier(const std::string &device);
+
  private:
-  OpRunStatus() = default;
+  OpRunStatus();
   ~OpRunStatus() = default;
   DISABLE_COPY_AND_ASSIGN(OpRunStatus);
 
   OpStatus status_{};
   bool require_grad_{false};
   OpPtr last_op_{nullptr};
+  // Change device name to device type latter.
+  std::string cur_device_;
 };
 
 class PYBOOST_API RequireGradGuard {

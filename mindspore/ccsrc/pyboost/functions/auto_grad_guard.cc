@@ -16,6 +16,7 @@
 
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "utils/ms_context.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -25,6 +26,20 @@ OpStatus::OpStatus() { device_target = MsContext::GetInstance()->get_param<std::
 OpRunStatus &OpRunStatus::Get() {
   static OpRunStatus instance;
   return instance;
+}
+
+OpRunStatus::OpRunStatus() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  cur_device_ = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+}
+
+void OpRunStatus::HeterBarrier(const std::string &device) {
+  if (cur_device_ != device) {
+    MS_LOG(DEBUG) << "Current device " << cur_device_ << " incoming device " << device;
+    cur_device_ = device;
+    runtime::Pipeline::Get().WaitAll();
+  }
 }
 }  // namespace pyboost
 }  // namespace kernel
