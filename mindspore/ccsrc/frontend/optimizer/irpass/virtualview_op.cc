@@ -263,6 +263,7 @@ void VirtualViewInsertProcesser::ProcessViewNode(const CNodePtr &cnode) {
 
 void VirtualViewInsertProcesser::ProcessInplaceNode(const CNodePtr &cnode) {
   auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   const auto &inplace_indexes = prim->rw_write_input_indexes();
   for (size_t index = 0; index < inplace_indexes.size(); ++index) {
     auto input_node = cnode->input(inplace_indexes[index] + 1);

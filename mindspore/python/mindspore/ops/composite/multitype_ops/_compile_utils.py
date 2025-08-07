@@ -349,11 +349,12 @@ def _get_need_index_prim(index, need_index_prim):
         need_index_prim = True
     elif isinstance(index, Tensor):
         if F.rank(index) == 0 and index.dtype in mstype.int_type + mstype.uint_type + (mstype.bool_,):
-            if not index.dtype in mstype.int_type + mstype.uint_type:
+            if index.dtype not in mstype.int_type + mstype.uint_type:
                 need_index_prim = True
         else:
             need_index_prim = True
     return need_index_prim
+
 
 def _process_with_inplace_index_input(prev_result, orig_tensor, index, dim, dim_index, remain_indexes, orig_dim, value):
     """Process dim in multi dim index"""

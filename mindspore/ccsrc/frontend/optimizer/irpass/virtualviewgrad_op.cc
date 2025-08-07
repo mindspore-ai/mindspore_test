@@ -40,6 +40,9 @@ void InsertVirtualViewGradAfterInplaceCNodeInner(const FuncGraphPtr &func_graph,
   // U3 = UpdateState(U2, CNode2)
   // CNode3 = VirtualViewGrad(x_view_input1, x_view_input2(x_view_output1), U3)
   // U4 = UpdateState(U3, CNode3)
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(manager);
+  MS_EXCEPTION_IF_NULL(view_cnode);
   CNodePtr view_output = view_cnode;
   AnfNodePtr last_umonad = umonad;
   AnfNodePtr first_virtual_view_grad_node = nullptr;
@@ -106,7 +109,7 @@ void InsertVirtualViewGradAfterInplaceCNode(const CNodePtr &inplace_cnode, const
       continue;
     }
     auto update_cnode = used_node->cast<CNodePtr>();
-    if (update_cnode->input(1) == inplace_umonad && update_cnode->input(2) == inplace_cnode) {
+    if (update_cnode->input(kIndex1) == inplace_umonad && update_cnode->input(kIndex2) == inplace_cnode) {
       inplace_next_updatestate = used_node;
       break;
     }
@@ -152,6 +155,8 @@ void VirtualViewGradInsertInner(const FuncGraphPtr &root, const FuncGraphManager
 }
 
 bool CheckControlFlow(const PrimitivePtr &prim, const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_EXCEPTION_IF_NULL(cnode);
   for (auto index : prim->rw_write_input_indexes()) {
     const auto &input = cnode->input(prim->rw_write_input_indexes()[index] + 1);
     const auto &input_abs = input->abstract();
@@ -186,7 +191,7 @@ void MarkViewOp(const AnfNodePtr &node, bool *control_flow_scene) {
   if (IsViewNode(node)) {
     const auto &abs = node->abstract();
     MS_EXCEPTION_IF_NULL(abs);
-    if (!abs->isa<abstract::AbstractTensor>() && !abs->isa<abstract::AbstractTuple>()) {
+    if (!abs->isa<abstract::AbstractRefTensor>() && !abs->isa<abstract::AbstractTuple>()) {
       MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << abs->ToString();
     }
     if (abs->isa<abstract::AbstractTuple>()) {
