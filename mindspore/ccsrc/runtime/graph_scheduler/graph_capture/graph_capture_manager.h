@@ -72,6 +72,9 @@ class BACKEND_EXPORT GraphCaptureManager {
                                         const std::vector<KernelRunnerPtr> &kernel_runners,
                                         std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);
 
+  void FetchNonFixedInput(const KernelRunnerPtr &kernel_actor, OpContext<KernelTensor> *const context,
+                          size_t stream_id);
+
   // Through D2D copy operations, update all the fixed ddresses recorded during the capture phase to ensure that
   // the addresses of all normal inputs are valid during the replay phase.
   void UpdateFixAddressBeforeReplayGraph(size_t stream_id, std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);

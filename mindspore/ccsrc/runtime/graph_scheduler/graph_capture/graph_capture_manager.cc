@@ -224,6 +224,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
       capture_graphs_[executor.second]->ExecuteCaptureGraph(0);
     } else {
       auto &kernel_runner = kernel_runners[executor.second];
+      FetchNonFixedInput(kernel_runner, context, 0);
       if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
         MS_LOG(ERROR) << "Launch kernel failed: " << kernel_runner->kernel()->fullname_with_scope();
         return false;
@@ -343,6 +344,35 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
       if (is_first_user) {
         HandleFirstUserMemoryFree(kernel_tensor, kernel_actor, memory_free_lists);
       }
+    }
+  }
+}
+
+void GraphCaptureManager::FetchNonFixedInput(const KernelRunnerPtr &kernel_actor,
+                                             OpContext<KernelTensor> *const context, size_t stream_id) {
+  auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
+  for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
+    auto outer_index = parameter_index.second.second;
+    auto node = parameter_index.second.first.first;
+    if (IsWeightOrKVCache(cur_graph_parameter_store, node, outer_index)) {
+      size_t kernel_input_index = parameter_index.first;
+      bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
+      bool has_h2d_copy = false;
+      auto kernel_tensor =
+        FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id, false, &has_h2d_copy);
+      if (has_h2d_copy) {
+        MS_LOG(EXCEPTION) << "current parameter device address has changed!!!"
+                          << " kernel_actor: " << kernel_actor->GetAID().Name()
+                          << ", front node: " << node->DebugString()
+                          << ", with index: " << parameter_index.second.first.second << ", addr index: " << outer_index;
+      }
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
+        << ", kernel tensor info: " << kernel_tensor->ToString()
+        << " super kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString()
+        << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
+      kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
     }
   }
 }
