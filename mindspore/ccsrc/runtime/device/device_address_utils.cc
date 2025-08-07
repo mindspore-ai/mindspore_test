@@ -1024,7 +1024,13 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   }
 
   auto addr = tensor->device_address();
-  MS_EXCEPTION_IF_NULL(addr);
+  if (addr == nullptr) {
+    MS_LOG(EXCEPTION) << "The " << tensor->ToString() << " is uninitialized. "
+                      << "Maybe the Tensor is create by initializer. "
+                      << "You need to call Tensor.init_data before using this Tensor. "
+                      << "For more detail with 'Tensor', Please refer to "
+                      << "https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html";
+  }
   auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
     MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
