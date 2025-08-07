@@ -986,6 +986,21 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
                 << ", Size:" << tensor_size;
 }
 
+void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
+                                                  const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto &values = value_tuple->value();
+  auto size = values.size();
+  std::vector<tensor::TensorPtr> tensors;
+  for (size_t i = 0; i < size; ++i) {
+    const auto &value = values[i];
+    if (value != nullptr && value->isa<tensor::Tensor>()) {
+      tensors.push_back(GetValue<tensor::TensorPtr>(value));
+    }
+  }
+  CreateInputTensorAddress(device_context, stream_id, index, tensors);
+}
+
 void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor,
                                         bool is_view) {
   if (tensor == nullptr) {
@@ -1048,6 +1063,20 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context,
   for (const auto &tensor : tensors) {
     MallocForInput(device_context, tensor, is_view);
   }
+}
+
+void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple,
+                                        bool is_view) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto &values = value_tuple->value();
+  std::vector<tensor::TensorPtr> tensors;
+  for (size_t i = 0; i < values.size(); ++i) {
+    const auto &value = values[i];
+    if (value != nullptr && value->isa<tensor::Tensor>()) {
+      tensors.push_back(GetValue<tensor::TensorPtr>(value));
+    }
+  }
+  return DeviceAddressUtils::MallocForInput(device_context, tensors, is_view);
 }
 
 void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context,
