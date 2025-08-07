@@ -1215,7 +1215,7 @@ bool ControlNodeParser::IsCommuControlNode(const AnfNodePtr &control_node) const
     return false;
   }
 
-  for (const auto group : kernel_graph_iter->second) {
+  for (const auto &group : kernel_graph_iter->second) {
     for (const auto &kernel_graph : group) {
       if (kernel_graph == nullptr) {
         continue;
@@ -1326,7 +1326,7 @@ void ControlNodeParser::ParseParallelCallAndKernelGraph(
   }
   std::map<KernelGraphPtr, FuncGraphPtr> kernel_graph_to_func_graph;
   for (const auto &pair : func_graph_to_kernel_graph_groups_) {
-    for (const auto group : pair.second) {
+    for (const auto &group : pair.second) {
       for (const auto &kernel_graph : group) {
         kernel_graph_to_func_graph[kernel_graph] = pair.first;
       }
