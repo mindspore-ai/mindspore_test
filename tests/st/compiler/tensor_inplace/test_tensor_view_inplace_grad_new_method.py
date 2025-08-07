@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import pytest
 import os
 import numpy as np
 import mindspore as ms
@@ -20,7 +21,8 @@ from mindspore import ops, Tensor
 from mindspore.nn import ReLU
 from mindspore.common.parameter import Parameter
 from mindspore import dtype as mstype
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, slice_ext_view_op, inplace_copy_op, NarrowView
+from mindspore.ops.auto_generate.gen_ops_prim import (select_ext_view_op, slice_ext_view_op, inplace_copy_op,
+                                                      NarrowView, UnstackExtView)
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
@@ -623,3 +625,38 @@ def test_tensor_view_inplace_grad_with_tuple_output():
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_jit = grad(net)(input_x, input_y)
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_muti_output_view_inplace_grad():
+    """
+    Feature: view inplace operation in grad which view operator has multiple outputs.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.unstackview = UnstackExtView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj1 = self.unstackview(x)
+            view_obj2 = self.unstackview(y)
+            view_obj1 = view_obj1[0]
+            view_obj2 = view_obj2[0]
+            view_obj1.mul_(y[0])
+            return view_obj1, view_obj2
+
+    with pytest.raises(RuntimeError) as err:
+        x_np = np.ones([4, 8]).astype(np.float32)
+        input_x = Tensor(x_np)
+        y_np = 2 * np.ones([4, 8]).astype(np.float32)
+        input_y = Tensor(y_np)
+        net = Net()
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        grad(net)(input_x, input_y)
+    assert ("In backpropagation, in-place modification operations are not supported for view operators with multiple "
+            "outputs.") in str(err.value)

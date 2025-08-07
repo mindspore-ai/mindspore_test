@@ -186,11 +186,17 @@ void MarkViewOp(const AnfNodePtr &node, bool *control_flow_scene) {
   if (IsViewNode(node)) {
     const auto &abs = node->abstract();
     MS_EXCEPTION_IF_NULL(abs);
-    auto ref = abs->cast<abstract::AbstractRefPtr>();
-    if (ref == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The view op abstract is not ref:" << ref->ToString()
-                                 << ", view operation is: " << node->DebugString();
+    if (!abs->isa<abstract::AbstractTensor>() && !abs->isa<abstract::AbstractTuple>()) {
+      MS_LOG(EXCEPTION) << "The abstract of view operation is exception: " << abs->ToString();
     }
+    if (abs->isa<abstract::AbstractTuple>()) {
+      MS_LOG(EXCEPTION) << "In backpropagation, in-place modification operations are not supported for view operators "
+                           "with multiple outputs.\nThe node is: "
+                        << node->DebugString() << ".\nPlease check your codes which location is as follows:"
+                        << trace::GetDebugInfoStr(node->debug_info());
+    }
+    auto ref = abs->cast<abstract::AbstractRefPtr>();
+    MS_EXCEPTION_IF_NULL(ref);
     auto cnode = node->cast<CNodePtr>();
     ref->set_user_data<CNode>(kOriginalViewOp, cnode);
     return;
