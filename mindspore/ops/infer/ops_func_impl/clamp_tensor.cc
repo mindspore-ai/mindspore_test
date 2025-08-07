@@ -42,23 +42,39 @@ TypePtr ClampTensorFuncImpl::InferType(const PrimitivePtr &primitive,
     MS_EXCEPTION(ValueError) << "For Clamp, the dtype of 'input', 'min' and 'max' must not be bool.";
   }
 
-  return input0_type->Clone();
+  TypePtr output_type = input0_type;
+  if (input1_type->type_id() != kMetaTypeNone) {
+    output_type = PromoteType(output_type, input1_type, primitive->name());
+  }
+  if (input2_type->type_id() != kMetaTypeNone) {
+    output_type = PromoteType(output_type, input2_type, primitive->name());
+  }
+  return output_type;
 }
 
 TypePtrList ClampTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &min_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
+  const auto &max_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+
   MS_EXCEPTION_IF_NULL(x_tensor);
-  if (input_values[kInputIndex1] == mindspore::kNone && input_values[kInputIndex2] == mindspore::kNone) {
+  if (min_tensor == nullptr && max_tensor == nullptr) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
   if (x_tensor->data_type() == kNumberTypeBool ||
-      (input_values[kInputIndex1]->type() != nullptr &&
-       input_values[kInputIndex1]->type()->type_id() == kNumberTypeBool) ||
-      (input_values[kInputIndex2]->type() != nullptr &&
-       input_values[kInputIndex2]->type()->type_id() == kNumberTypeBool)) {
+      (min_tensor != nullptr && min_tensor->data_type() == kNumberTypeBool) ||
+      (max_tensor != nullptr && max_tensor->data_type() == kNumberTypeBool)) {
     MS_EXCEPTION(ValueError) << "For Clamp, the dtype of 'input', 'min' and 'max' must not be bool.";
   }
-  return {x_tensor->Dtype()};
+
+  TypePtr output_type = x_tensor->Dtype();
+  if (min_tensor != nullptr) {
+    output_type = PromoteType(output_type, min_tensor->Dtype(), primitive->name());
+  }
+  if (max_tensor != nullptr) {
+    output_type = PromoteType(output_type, max_tensor->Dtype(), primitive->name());
+  }
+  return {output_type};
 }
 
 BaseShapePtr ClampTensorFuncImpl::InferShape(const PrimitivePtr &primitive,

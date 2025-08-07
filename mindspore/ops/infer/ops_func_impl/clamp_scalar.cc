@@ -24,6 +24,40 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::ops {
+
+constexpr int typeLevelNone = -1;
+constexpr int typeLevelBool = 0;
+constexpr int typeLevelInt = 1;
+constexpr int typeLevelFloat = 2;
+constexpr int typeLevelComplex = 3;
+
+static inline bool IsNone(TypePtr t) { return t == nullptr; }
+
+static inline bool IsBoolType(TypePtr t) { return t == kBool; }
+
+static inline bool IsIntegralType(TypePtr t) {
+  return t == kInt8 || t == kInt16 || t == kInt32 || t == kInt64 ||
+         t == kUInt8 || t == kUInt16 || t == kUInt32 || t == kUInt64;
+}
+
+static inline bool IsFloatingType(TypePtr t) {
+  return t == kFloat16 || t == kFloat32 || t == kFloat64 || t == kBFloat16;
+}
+
+static inline int TypeToLevel(TypePtr t) {
+  if (IsNone(t)) {
+    return typeLevelNone;
+  } else if (IsBoolType(t)) {
+    return typeLevelBool;
+  } else if (IsIntegralType(t)) {
+    return typeLevelInt;
+  } else if (IsFloatingType(t)) {
+    return typeLevelFloat;
+  } else {
+    return typeLevelComplex;
+  }
+}
+
 TypePtr ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto input0_type = input_args[kInputIndex0]->GetType();
@@ -41,7 +75,9 @@ TypePtr ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive,
     MS_EXCEPTION(ValueError) << "For Clamp, the dtype of 'input', 'min' and 'max' must not be bool.";
   }
 
-  return input0_type->Clone();
+  auto scalar_type = (TypeToLevel(input1_type) < TypeToLevel(input2_type)) ? input2_type : input1_type;
+  auto output_type = (TypeToLevel(input0_type) < TypeToLevel(scalar_type)) ? scalar_type : input0_type;
+  return output_type;
 }
 TypePtrList ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
@@ -49,14 +85,18 @@ TypePtrList ClampScalarFuncImpl::InferType(const PrimitivePtr &primitive, const 
   if (input_values[kInputIndex1] == mindspore::kNone && input_values[kInputIndex2] == mindspore::kNone) {
     MS_EXCEPTION(ValueError) << "For Clamp, at least one of 'min' or 'max' must not be None.";
   }
+
+  auto min_type = input_values[kInputIndex1]->type();
+  auto max_type = input_values[kInputIndex2]->type();
   if (x_tensor->data_type() == kNumberTypeBool ||
-      (input_values[kInputIndex1]->type() != nullptr &&
-       input_values[kInputIndex1]->type()->type_id() == kNumberTypeBool) ||
-      (input_values[kInputIndex2]->type() != nullptr &&
-       input_values[kInputIndex2]->type()->type_id() == kNumberTypeBool)) {
+      (min_type != nullptr && min_type->type_id() == kNumberTypeBool) ||
+      (max_type != nullptr && max_type->type_id() == kNumberTypeBool)) {
     MS_EXCEPTION(ValueError) << "For Clamp, the dtype of 'input', 'min' and 'max' must not be bool.";
   }
-  return {x_tensor->Dtype()};
+
+  auto scalar_type = (TypeToLevel(min_type) < TypeToLevel(max_type)) ? max_type : min_type;
+  auto output_type = (TypeToLevel(x_tensor->Dtype()) < TypeToLevel(scalar_type)) ? scalar_type : x_tensor->Dtype();
+  return {output_type};
 }
 
 BaseShapePtr ClampScalarFuncImpl::InferShape(const PrimitivePtr &primitive,
