@@ -791,7 +791,6 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)py::class_<RecoveryContext, std::shared_ptr<RecoveryContext>>(m, "RecoveryContext")
     .def_static("get_instance", &RecoveryContext::GetInstance, "Get recovery context instance.")
     .def("enable_recovery", &RecoveryContext::enable_recovery, "Get whether enable recovery.")
-    .def("enable_repeat_register", &RecoveryContext::enable_repeat_register, "Get whether workers repeatedly register.")
     .def("latest_ckpt_file", &RecoveryContext::latest_ckpt_file, "Get latest checkpoint file path.")
     .def("latest_ckpt_epoch", &RecoveryContext::latest_ckpt_epoch, "Get the epoch of latest checkpoint.")
     .def("latest_ckpt_step", &RecoveryContext::latest_ckpt_step, "Get the step of latest checkpoint.")
@@ -802,10 +801,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("recovery_path", &RecoveryContext::recovery_path,
          "Get the recovery path used to save that need to be persisted.")
     .def("ckpt_path", &RecoveryContext::GetCkptPath, "Get the recovery path used to save checkpoint.")
-    .def("set_ckpt_path", &RecoveryContext::SetCkptPath, "Set the recovery path used to save checkpoint.")
-    .def("set_is_reboot_node", &RecoveryContext::SetIsRebootNode, "Set reboot node flag for arf.")
-    .def("is_arf", &RecoveryContext::GetIsArf, "Get arf flag.")
-    .def("set_is_arf", &RecoveryContext::SetIsArf, "Set arf flag.");
+    .def("set_ckpt_path", &RecoveryContext::SetCkptPath, "Set the recovery path used to save checkpoint.");
 
   (void)py::class_<DeviceContextManager, std::shared_ptr<DeviceContextManager>>(m, "DeviceContextManager")
     .def_static("get_instance", &DeviceContextManager::GetInstance, py::return_value_policy::reference,

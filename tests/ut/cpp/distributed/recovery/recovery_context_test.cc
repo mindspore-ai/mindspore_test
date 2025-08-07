@@ -75,9 +75,6 @@ TEST_F(TestRecoveryContext, all_interface) {
   EXPECT_NO_THROW(RecoveryContext::GetInstance()->set_global_rank_id(1));
   EXPECT_NO_THROW(RecoveryContext::GetInstance()->set_global_rank_size(2));
 
-  EXPECT_NO_THROW(RecoveryContext::GetInstance()->SetIsRebootNode(false));
-  EXPECT_NO_THROW(RecoveryContext::GetInstance()->SetIsArf(false));
-
   EXPECT_THROW(RecoveryContext::GetInstance()->persistent_json(), std::runtime_error);
 
   auto real_recovery_config = real_recovery_path + "/config.json";

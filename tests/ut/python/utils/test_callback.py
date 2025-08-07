@@ -708,3 +708,25 @@ def test_mindio_ttp_adapter():
         assert mindio_cb.clean_unique_id is False
         with pytest.raises(ValueError):
             mindio_cb.on_train_begin(run_context)
+
+
+def test_tft_adapter_interface():
+    """
+    Feature: tft adapter interface.
+    Description: Test tft adapter interface.
+    Expectation: run success.
+    """
+    from mindspore._c_expression import set_is_reboot_node, is_reboot_node, check_is_arf, set_is_arf
+
+    reboot_flag = is_reboot_node()
+    assert reboot_flag is False
+    arf_flag = check_is_arf()
+    assert arf_flag is False
+
+    set_is_reboot_node(True)
+    set_is_arf(True)
+
+    reboot_flag = is_reboot_node()
+    assert reboot_flag is True
+    arf_flag = check_is_arf()
+    assert arf_flag is True

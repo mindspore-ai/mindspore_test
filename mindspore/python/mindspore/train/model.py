@@ -57,7 +57,7 @@ from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_trai
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
-from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo
+from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo, check_is_arf, set_is_arf
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from .serialization import load_param_into_net
@@ -163,7 +163,7 @@ def _handle_exception_info(obj, uce_env, tft, e):
         tft.tft_report_error(force_stop_err)
     elif "ARF FINISH" in e_str:
         logger.warning(f"ARF FINISH")
-        _set_recovery_context(is_arf=True)
+        set_is_arf(True)
         tft.tft_report_error(tft.ReportState.RS_PREREPAIR_FINISH.value)
     else:
         logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
@@ -1024,7 +1024,7 @@ class Model:
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
-        cb_params.is_arf = _get_recovery_context("is_arf")
+        cb_params.is_arf = check_is_arf()
         cb_params.initial_step = self._initial_step
 
         # build callback list
@@ -1132,7 +1132,7 @@ class Model:
                     list_callback.on_train_step_end(run_context)
                 if cb_params.is_arf:
                     cb_params.is_arf = False
-                    _set_recovery_context(is_arf=False)
+                    set_is_arf(False)
                 _clean_rootinfo()
 
                 # Embedding cache server only run one step.
@@ -1345,7 +1345,7 @@ class Model:
                 list_callback.on_train_step_end(run_context)
                 if cb_params.is_arf:
                     cb_params.is_arf = False
-                    _set_recovery_context(is_arf=False)
+                    set_is_arf(False)
                 _clean_rootinfo()
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:

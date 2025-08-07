@@ -36,20 +36,16 @@ def recovery_context():
 
 _set_recovery_context_func_map = {
     "ckpt_path": recovery_context().set_ckpt_path,
-    "need_reset": recovery_context().set_need_reset,
-    "is_reboot_node": recovery_context().set_is_reboot_node,
-    "is_arf": recovery_context().set_is_arf
+    "need_reset": recovery_context().set_need_reset
 }
 
 _get_recovery_context_func_map = {
     "enable_recovery": recovery_context().enable_recovery,
-    "enable_repeat_register": recovery_context().enable_repeat_register,
     "latest_ckpt_file": recovery_context().latest_ckpt_file,
     "latest_ckpt_epoch": recovery_context().latest_ckpt_epoch,
     "latest_ckpt_step": recovery_context().latest_ckpt_step,
     "need_reset": recovery_context().need_reset,
     "recovery_path": recovery_context().recovery_path,
-    "is_arf": recovery_context().is_arf,
     "ckpt_path": recovery_context().ckpt_path
 }
 
