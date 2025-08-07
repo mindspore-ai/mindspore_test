@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 
-class CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
+class BACKEND_EXPORT CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
  public:
   CustomOpPluginCpuKernelMod() = default;
   ~CustomOpPluginCpuKernelMod() = default;

@@ -90,8 +90,8 @@ bool IsOpPluginKernel(const std::string &op_name) {
     if (handle == nullptr) {
       return false;
     }
-    const std::string reg_func_name = "IsKernelRegistered";
-    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(DL_SYM(handle, reg_func_name.c_str()));
+    constexpr auto reg_func_name = "IsKernelRegistered";
+    reg_func = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(DL_SYM(handle, reg_func_name));
     if (reg_func == nullptr) {
       MS_LOG(WARNING) << "Error occurs when fetching function '" << reg_func_name
                       << "' from op plugin library. Error code: " << DL_ERROR();
@@ -99,6 +99,35 @@ bool IsOpPluginKernel(const std::string &op_name) {
     }
   }
   return reg_func != nullptr && reg_func(op_name.c_str());
+}
+const std::vector<std::string> &GetAllOpPluginKernelNames() {
+  static bool initialized = false;
+  static int (*get_op_count)() = nullptr;
+  static char **(*get_all_ops)() = nullptr;
+  static std::vector<std::string> op_names;
+  if (!initialized) {
+    initialized = true;
+    void *handle = GetOpPluginHandle();
+    if (handle == nullptr) {
+      return op_names;
+    }
+    constexpr auto get_op_count_func_name = "GetRegisteredOpCount";
+    constexpr auto get_all_ops_func_name = "GetAllRegisteredOps";
+    get_op_count = reinterpret_cast<std::add_pointer<int()>::type>(DL_SYM(handle, get_op_count_func_name));
+    get_all_ops = reinterpret_cast<std::add_pointer<char **()>::type>(DL_SYM(handle, get_all_ops_func_name));
+    if (get_op_count == nullptr || get_all_ops == nullptr) {
+      MS_LOG(WARNING) << "Error occurs when fetching function '" << get_op_count_func_name << "' or '"
+                      << get_all_ops_func_name << "' from op plugin library. Error code: " << DL_ERROR();
+      return op_names;
+    }
+    int op_count = get_op_count();
+    char **op_names_ptr = get_all_ops();
+    op_names.reserve(op_count);
+    for (int i = 0; i < op_count; i++) {
+      op_names.push_back(op_names_ptr[i]);
+    }
+  }
+  return op_names;
 }
 
 OpPluginKernelParam CreateOpPluginParam(const std::vector<KernelTensor *> &inputs,
