@@ -33,7 +33,6 @@
 #include "backend/common/pass/erase_invalid_micro_depend.h"
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include "backend/common/pass/switch_not_cut.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -1584,41 +1583,37 @@ void MSBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef *ou
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(root_graph);
-  bool need_contruct_output = !(distributed::recovery::RecoveryContext::GetInstance()->enable_recovery() &&
-                                distributed::recovery::RecoveryContext::GetInstance()->need_reset());
-  if (need_contruct_output) {
-    MS_EXCEPTION_IF_NULL(actor_set->output_actor_);
-    // Update device address for output node of graph.
-    // Summary processing will use the output device address, so must be after the summary processing.
+
+  MS_EXCEPTION_IF_NULL(actor_set->output_actor_);
+  // Update device address for output node of graph.
+  // Summary processing will use the output device address, so must be after the summary processing.
 #if defined(__linux__) && defined(WITH_BACKEND)
-    bool is_embedding_cache_server =
-      ps::PSContext::instance()->cache_enable() && ps::PSContext::instance()->is_server();
-    if (!is_embedding_cache_server) {
-      actor_set->output_actor_->UpdateOutputDeviceAddress();
-    }
-#else
+  bool is_embedding_cache_server = ps::PSContext::instance()->cache_enable() && ps::PSContext::instance()->is_server();
+  if (!is_embedding_cache_server) {
     actor_set->output_actor_->UpdateOutputDeviceAddress();
+  }
+#else
+  actor_set->output_actor_->UpdateOutputDeviceAddress();
 #endif
 
-    if (enable_graph_pipeline) {
-      MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_set->name_
-                    << ", early stop ConstructOutputs.";
-      return;
-    }
+  if (enable_graph_pipeline) {
+    MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_set->name_
+                  << ", early stop ConstructOutputs.";
+    return;
+  }
 
-    // Fetch outputs.
-    auto &output_tensors = actor_set->output_actor_->outputs();
-    auto &output_types = actor_set->output_actor_->output_types();
-    if (!output_tensors.empty()) {
-      size_t output_position = 0;
-      std::vector<tensor::TensorPtr> tuple_tensors;
-      ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors, output_types);
+  // Fetch outputs.
+  auto &output_tensors = actor_set->output_actor_->outputs();
+  auto &output_types = actor_set->output_actor_->output_types();
+  if (!output_tensors.empty()) {
+    size_t output_position = 0;
+    std::vector<tensor::TensorPtr> tuple_tensors;
+    ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors, output_types);
 
-      // The tensor may be repeated, so it needs to be set null last.
-      for (auto &tuple_tensor : tuple_tensors) {
-        MS_EXCEPTION_IF_NULL(tuple_tensor);
-        tuple_tensor->set_device_address(nullptr);
-      }
+    // The tensor may be repeated, so it needs to be set null last.
+    for (auto &tuple_tensor : tuple_tensors) {
+      MS_EXCEPTION_IF_NULL(tuple_tensor);
+      tuple_tensor->set_device_address(nullptr);
     }
   }
 }

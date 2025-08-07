@@ -73,7 +73,6 @@
 #include "debug/checksum/checksum_mgr.h"
 #include "debug/profiler/profiling.h"
 #include "include/common/debug/common.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -106,7 +105,6 @@ namespace mindspore {
 namespace runtime {
 using distributed::cluster::ClusterContext;
 using distributed::collective::CollectiveManager;
-using distributed::recovery::RecoveryContext;
 namespace {
 constexpr char kNumaEnableEnv[] = "MS_ENABLE_NUMA";
 constexpr char kNumaEnableEnv2[] = "DATASET_ENABLE_NUMA";
@@ -241,83 +239,6 @@ void ClearNodeInfo(const KernelGraphPtr &graph) {
     }
   }
 }
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-void SendFinishTransform(const std::string &actor_set_name) {
-  auto node = ClusterContext::instance()->node();
-  MS_EXCEPTION_IF_NULL(node);
-  auto cgn = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(node);
-  MS_EXCEPTION_IF_NULL(cgn);
-
-  auto key = kTransformFinishPrefix + std::to_string(cgn->rank_id()) + "_" + actor_set_name;
-  size_t retry = kRetry;
-  while (!cgn->PutMetadata(key, kTransformFinishReady)) {
-    if (--retry > 0) {
-      MS_LOG(WARNING) << "Retry to send transform finished state to the meta server node...";
-      (void)sleep(kInterval);
-    } else {
-      MS_LOG(INTERNAL_EXCEPTION)
-        << "#dmsg#Runtime error info:#dmsg#Failed to send transform finished state to the meta server node.";
-    }
-  }
-  MS_LOG(INFO) << "The transform finish info has been reported to the meta server for rank: " << cgn->rank_id()
-               << " sub graph: " << actor_set_name;
-}
-
-bool QueryFinishTransform(const std::string &actor_set_name) {
-  auto node = ClusterContext::instance()->node();
-  MS_EXCEPTION_IF_NULL(node);
-  auto cgn = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(node);
-  MS_EXCEPTION_IF_NULL(cgn);
-
-  size_t retry = kRetry;
-  bool success = true;
-  uint32_t worker_num = ClusterContext::instance()->node_num(distributed::kEnvRoleOfWorker);
-
-  while (--retry > 0) {
-    success = true;
-    for (uint32_t i = 0; i < worker_num; ++i) {
-      auto key = kTransformFinishPrefix + std::to_string(i) + "_" + actor_set_name;
-      auto value = cgn->GetMetadata(key);
-      if (value != kTransformFinishReady) {
-        MS_LOG(WARNING) << "Waiting for the rank " << i << " to finish the transform stage.";
-        success = false;
-      }
-    }
-    if (!success) {
-      (void)sleep(kInterval);
-    } else {
-      break;
-    }
-  }
-  return success;
-}
-
-void DoDisasterRecovery(const std::string &actor_set_name) {
-  if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
-    MS_LOG(INFO) << "Begin reinitialize collective communication for recovery.";
-    bool ret = false;
-    while (!ret) {
-      while (!CollectiveManager::instance()->Initialize()) {
-        MS_LOG(WARNING) << "ReInitialize collective communication failed, retrying...";
-      }
-      MS_LOG(INFO) << "Finish reinitialize collective communication for recovery.";
-
-      RecoveryContext::GetInstance()->ObtainGlobalLatestCkptInfo();
-
-      SendFinishTransform(actor_set_name);
-      ret = QueryFinishTransform(actor_set_name);
-      if (!ret) {
-        CollectiveManager::instance()->set_need_reinit(true);
-        (void)CollectiveManager::instance()->Finalize();
-      }
-    }
-
-    RecoveryContext::GetInstance()->set_need_reset(true);
-    RecoveryContext::GetInstance()->set_need_sync_weight_to_device(true);
-  }
-}
-#endif
 
 // Check whether this graph could optimize input data prepare.
 bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
@@ -997,12 +918,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_ << ") transforms actor end.";
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-  if (ClusterContext::instance()->initialized() && RecoveryContext::GetInstance()->enable_recovery()) {
-    SendFinishTransform(graph_compiler_info.name_);
-  }
-#endif
-
-#if defined(__linux__) && defined(WITH_BACKEND)
   // Save data channel for this actor set.
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
   EmbeddingCacheScheduler::GetInstance().SetDataSetChannel(actor_set->data_prepare_actor_->GetAID(),
@@ -1365,9 +1280,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   (void)SkipOrResetCopyAction(true);
   (void)SkipOrResetSyncAction(true);
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-  DoDisasterRecovery(actor_set->name_);
-#endif
   // If spin is turned on in the configuration, it will be turned on when exiting RunGraph.
   if (is_shut_spin_ && is_bind_core_) {
     runtime::Pipeline::Get().SetSpin(true);

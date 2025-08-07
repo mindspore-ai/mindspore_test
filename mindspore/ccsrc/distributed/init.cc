@@ -23,13 +23,11 @@
 #include <memory>
 #include <map>
 #include <functional>
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace distributed {
-using distributed::recovery::RecoveryContext;
 using mindspore::debug::tft::TFTWaitSem;
 
 constexpr char kStopSchedulerFunc[] = "StopRuntimeSchedulerOnException";
@@ -137,11 +135,6 @@ bool InitializeCluster() {
       collective::CollectiveManager::instance()->set_global_rank_id(node->rank_id());
       auto global_rank_size = cluster_ctx->node_num(cluster_ctx->node_role());
       collective::CollectiveManager::instance()->set_global_rank_size(global_rank_size);
-
-      if (RecoveryContext::GetInstance()->enable_recovery()) {
-        RecoveryContext::GetInstance()->set_global_rank_id(node->rank_id());
-        RecoveryContext::GetInstance()->set_global_rank_size(global_rank_size);
-      }
     }
   }
 #endif
@@ -161,10 +154,6 @@ bool InitializeCollective() {
   }
   if (!collective::CollectiveManager::instance()->Initialize()) {
     return false;
-  }
-
-  if (RecoveryContext::GetInstance()->enable_recovery()) {
-    RecoveryContext::GetInstance()->ObtainGlobalLatestCkptInfo();
   }
   return true;
 }

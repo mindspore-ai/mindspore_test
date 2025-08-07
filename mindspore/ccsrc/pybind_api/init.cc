@@ -41,7 +41,6 @@
 #endif
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/init.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/cluster/tcp_store.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -83,7 +82,6 @@ using mindspore::MsCtxParam;
 using PSContext = mindspore::ps::PSContext;
 using CollectiveManager = mindspore::distributed::collective::CollectiveManager;
 using TCPStoreClient = mindspore::distributed::cluster::TCPStoreClient;
-using RecoveryContext = mindspore::distributed::recovery::RecoveryContext;
 using GroupOptions = mindspore::device::GroupOptions;
 using DeviceContextManager = mindspore::device::DeviceContextManager;
 using DeviceContext = mindspore::device::DeviceContext;
@@ -787,21 +785,6 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("_decrypt", &mindspore::pipeline::PyDecrypt, "Decrypt the data.");
   (void)m.def("_decrypt_data", &mindspore::pipeline::PyDecryptData, "Decrypt the bytes data.");
   (void)m.def("_is_cipher_file", &mindspore::pipeline::PyIsCipherFile, "Determine whether the file is encrypted");
-
-  (void)py::class_<RecoveryContext, std::shared_ptr<RecoveryContext>>(m, "RecoveryContext")
-    .def_static("get_instance", &RecoveryContext::GetInstance, "Get recovery context instance.")
-    .def("enable_recovery", &RecoveryContext::enable_recovery, "Get whether enable recovery.")
-    .def("latest_ckpt_file", &RecoveryContext::latest_ckpt_file, "Get latest checkpoint file path.")
-    .def("latest_ckpt_epoch", &RecoveryContext::latest_ckpt_epoch, "Get the epoch of latest checkpoint.")
-    .def("latest_ckpt_step", &RecoveryContext::latest_ckpt_step, "Get the step of latest checkpoint.")
-    .def("set_need_reset", &RecoveryContext::set_need_reset,
-         "Set whether should call reset minddata and load ckpt for disaster recovery.")
-    .def("need_reset", &RecoveryContext::need_reset,
-         "Get whether should call reset minddata and load ckpt for disaster recovery.")
-    .def("recovery_path", &RecoveryContext::recovery_path,
-         "Get the recovery path used to save that need to be persisted.")
-    .def("ckpt_path", &RecoveryContext::GetCkptPath, "Get the recovery path used to save checkpoint.")
-    .def("set_ckpt_path", &RecoveryContext::SetCkptPath, "Set the recovery path used to save checkpoint.");
 
   (void)py::class_<DeviceContextManager, std::shared_ptr<DeviceContextManager>>(m, "DeviceContextManager")
     .def_static("get_instance", &DeviceContextManager::GetInstance, py::return_value_policy::reference,

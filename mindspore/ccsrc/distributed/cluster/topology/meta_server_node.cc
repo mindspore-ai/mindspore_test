@@ -27,9 +27,7 @@
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "distributed/recovery/file_configuration.h"
 #include "distributed/cluster/topology/meta_server_node.h"
 #include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
@@ -38,15 +36,6 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 namespace topology {
-// The keys for the persisted metadata of compute node states.
-constexpr char kComputeNodeStates[] = "compute_node_states";
-constexpr char kNodeId[] = "node_id";
-constexpr char kRecoveryFileName[] = "recovery.dat";
-constexpr char kHostName[] = "host_name";
-constexpr char kRole[] = "role";
-constexpr char kRankId[] = "rank_id";
-constexpr char kDeviceId[] = "device_id";
-
 // The keys for parsed information of rank table file.
 constexpr char kRankTableServerList[] = "server_list";
 constexpr char kRankTableClusterList[] = "cluster_list";
@@ -73,11 +62,6 @@ bool MetaServerNode::Initialize() {
   // Init the TCP server.
   RETURN_IF_FALSE_WITH_LOG(InitTCPServer(), "Failed to create the TCP server.");
 
-  // The meta server node is restarted and the metadata of cluster needs to be recovered.
-  if (recovery::IsEnableRecovery()) {
-    RETURN_IF_FALSE_WITH_LOG(Recovery(), "Failed to recover from configuration.");
-  }
-
   start_time_ = Now();
 
   // Init the thread for monitoring the state of the cluster topo.
@@ -94,7 +78,7 @@ bool MetaServerNode::Finalize(bool force) {
     return true;
   }
   if (topo_state_ != TopoState::kFinished && !force &&
-      (recovery::IsEnableRepeatRegister() || (abnormal_node_num_ == 0 && !recovery::IsEnableRepeatRegister()))) {
+      (enable_recovery_ || (abnormal_node_num_ == 0 && !enable_recovery_))) {
     MS_LOG(WARNING) << "The meta server node can not be finalized because there are still " << nodes_.size()
                     << " alive nodes.";
     return false;
@@ -258,7 +242,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
                     << ", expected node number: " << total_node_num_;
     return message.release();
   } else {
-    if (!recovery::IsEnableRepeatRegister()) {
+    if (!enable_recovery_) {
       MS_LOG(WARNING) << "Node " << node_id << " registered repeatedly. It's host ip is " << host_ip
                       << ". Reject this node.";
       RegistrationRespMessage reg_resp_msg;
@@ -513,7 +497,7 @@ void MetaServerNode::UpdateTopoState() {
           }
         }
         abnormal_node_num_ = abnormal_node_num;
-        if (abnormal_node_num_ > 0 && !recovery::IsEnableRepeatRegister()) {
+        if (abnormal_node_num_ > 0 && !enable_recovery_) {
           MS_LOG(EXCEPTION) << "The total number of timed out node is " << abnormal_node_num_
                             << ". Timed out node list is: " << time_out_node_ids << ", worker " << time_out_node_ids[0]
                             << " is the first one timed out, please check its log.";
@@ -539,96 +523,12 @@ bool MetaServerNode::TransitionToInitialized() {
       ReassignNodeRank();
     }
 
-    // Persist the cluster metadata into storage through configuration.
-    if (recovery::IsEnableRecovery() && configuration_ != nullptr && configuration_->Empty()) {
-      if (!Persist()) {
-        MS_LOG(EXCEPTION) << "Failed to persist the metadata of the cluster.";
-      }
-    }
     topo_state_ = TopoState::kInitialized;
     MS_LOG(INFO) << "The cluster topology has been constructed successfully.";
     MS_VLOG(VL_DISTRIBUTED_TRACE) << "Distribute networking cost : " << ElapsedTime(start_time_).count() << " ms.";
     return true;
   }
   return false;
-}
-
-bool MetaServerNode::Recovery() {
-  std::shared_lock<std::shared_mutex> lock(nodes_mutex_);
-  std::string recovery_path = recovery::RecoveryPath();
-  RETURN_IF_FALSE_WITH_LOG(CheckFilePath(recovery_path), "Invalid recovery path: " << recovery_path);
-  configuration_ = std::make_unique<recovery::FileConfiguration>(recovery_path + "/" + kRecoveryFileName);
-  MS_EXCEPTION_IF_NULL(configuration_);
-
-  RETURN_IF_FALSE_WITH_LOG(configuration_->Initialize(),
-                           "Failed to initialize the recovery file configuration from file path: " << recovery_path);
-
-  if (configuration_->Empty()) {
-    MS_LOG(INFO) << "The meta server node is started for the first time.";
-    return true;
-
-    // The meta server node is restarted and the metadata of cluster needs to be recovered.
-  } else {
-    MS_LOG(INFO) << "Begin to recover the meta server node.";
-    std::string states_key = kComputeNodeStates;
-    RETURN_IF_FALSE_WITH_LOG(configuration_->Exists(states_key),
-                             "Can not find the key " + states_key + " in configuration.");
-
-    // Check the validation of the previous metadata.
-    const auto &states = configuration_->Get(states_key, "");
-    nlohmann::json node_states = nlohmann::json::parse(states);
-    RETURN_IF_FALSE_WITH_LOG(node_states.size() == total_node_num_,
-                             "Invalid number of node in configuration: " + std::to_string(node_states.size()) +
-                               ", expected total number of node: " + std::to_string(total_node_num_));
-
-    // Restore the nodes state.
-    for (auto iter = node_states.begin(); iter != node_states.end(); ++iter) {
-      const auto &node_id = iter.key();
-      std::shared_ptr<NodeInfo> node_info = std::make_shared<NodeInfo>(node_id);
-      MS_EXCEPTION_IF_NULL(node_info);
-      (void)time(&(node_info->last_update));
-      node_info->host_name = iter.value().at(kHostName);
-      node_info->role = iter.value().at(kRole);
-      node_info->rank_id = iter.value().at(kRankId);
-      node_info->device_id = iter.value().at(kDeviceId);
-      node_info->state = NodeState::kRegistered;
-      nodes_[node_id] = node_info;
-    }
-
-    if (nodes_.size() == total_node_num_) {
-      topo_state_ = TopoState::kInitialized;
-    }
-    MS_LOG(INFO) << "The meta server node has been recovered successfully.";
-  }
-  return true;
-}
-
-bool MetaServerNode::Persist() {
-  if (total_node_num_ != nodes_.size()) {
-    MS_LOG(ERROR) << "Invalid number of alive node: " << nodes_.size()
-                  << ", the expected total number of node is: " << total_node_num_;
-    return false;
-  }
-
-  // The thread safety of nodes_ visiting has been guarded by the caller.
-  nlohmann::json node_states;
-  for (auto iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
-    const auto &node_id = iter->first;
-    nlohmann::json node_state;
-    node_state[kNodeId] = node_id;
-
-    MS_EXCEPTION_IF_NULL(iter->second);
-    node_state[kHostName] = iter->second->host_name;
-    node_state[kRole] = iter->second->role;
-    node_state[kRankId] = iter->second->rank_id;
-    node_state[kDeviceId] = iter->second->device_id;
-    node_states[node_id] = node_state;
-  }
-
-  MS_EXCEPTION_IF_NULL(configuration_);
-  configuration_->Put(kComputeNodeStates, node_states.dump());
-  RETURN_IF_FALSE_WITH_LOG(configuration_->Flush(), "Failed to flush configuration.");
-  return true;
 }
 
 uint32_t MetaServerNode::AllocateRankId(const std::string &role) {

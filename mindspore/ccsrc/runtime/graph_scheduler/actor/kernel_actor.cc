@@ -34,7 +34,6 @@
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "kernel/framework_utils.h"
@@ -186,7 +185,6 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
 }  // namespace
 
 using distributed::collective::CollectiveManager;
-using distributed::recovery::RecoveryContext;
 
 KernelActor::KernelActor(const std::string &name, const CNodePtr &kernel, const DeviceContext *device_context,
                          const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,

@@ -44,7 +44,6 @@
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"

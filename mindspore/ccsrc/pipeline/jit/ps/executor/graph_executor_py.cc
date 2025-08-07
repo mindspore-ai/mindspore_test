@@ -42,8 +42,6 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy.h"
 
-#include "include/backend/distributed/recovery/recovery_context.h"
-
 #include "include/common/debug/dump_proto.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
@@ -651,12 +649,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   const auto &output_abs = output->abstract();
   MS_EXCEPTION_IF_NULL(output_abs);
   BaseRef value = (*run)(execute_info->arg_list);
-  bool need_recovery = distributed::recovery::RecoveryContext::GetInstance()->enable_recovery() &&
-                       distributed::recovery::RecoveryContext::GetInstance()->need_reset();
-  if (need_recovery) {
-    // In recovery scenario, the output value could be empty, do not transform return data.
-    return py::none();
-  }
+
   py::object res = BaseRefToPyDataWithUserData(value, output_abs);
   ClearRunArgumentsResource(args.size(), &execute_info->arg_list);
   PhaseManager::GetInstance().ClearPhase();

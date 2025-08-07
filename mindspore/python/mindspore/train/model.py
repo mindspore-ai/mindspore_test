@@ -28,7 +28,7 @@ import numpy as np
 
 import mindspore
 from mindspore import log as logger
-from mindspore.train.serialization import save_checkpoint, load_checkpoint
+from mindspore.train.serialization import save_checkpoint
 from mindspore.train.callback._checkpoint import ModelCheckpoint, _chg_ckpt_file_name_if_same_exist
 from mindspore.common.tensor import Tensor
 from mindspore.train.metrics import get_metrics, get_metric_fn
@@ -42,14 +42,12 @@ from mindspore import context
 from mindspore.parallel._utils import _get_parallel_mode, _get_device_num, _get_parameter_broadcast, \
     _device_number_check, _parameter_broadcast_check, _parallel_predict_check, \
     _reset_op_id_with_offset
-from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_ps_mode, \
-    _cache_enable, _enable_distributed_mindrt
+from mindspore.parallel._ps_context import _is_role_pserver, _is_ps_mode, _cache_enable, _enable_distributed_mindrt
 from mindspore.train.metrics import Loss
 from mindspore.log import vlog_print
 from mindspore import nn
 from mindspore.boost import AutoBoost
 from mindspore.context import ParallelMode
-from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
 from mindspore.train.dataset_helper import DatasetHelper, connect_network_with_dataset
 from mindspore.common.api import _pynative_executor, ARG_SPECIFIED, TOTAL_ARG_LEN
 from mindspore.dataset.core.config import get_debug_mode
@@ -556,9 +554,7 @@ class Model:
         self._current_epoch_num = 0
         self._current_step_num = 0
         self.epoch_iter = 0
-        self.enable_recovery = False
         self._backbone_is_train = True
-        self.need_load_ckpt = False
         self._lite_full_predictor = None
         self._lite_incremental_predictor = None
         self._mindspore_lite = None
@@ -768,7 +764,7 @@ class Model:
             logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
-        if (_get_recovery_context("enable_recovery") or self._need_reset_data) and is_train:
+        if self._need_reset_data and is_train:
             _set_training_dataset(dataset_helper)
 
         network.set_train(is_train)
@@ -1086,9 +1082,6 @@ class Model:
             dataset_helper = train_dataset._dataset_helper
 
         self.epoch_iter = 0
-        self._check_enable_recovery()
-        # Used to check whether need perform recovery for process which is restarted.
-        self._check_need_load_ckpt(cb_params, dataset_size, sink_size)
         # Check whether this process is embedding cache server.
         is_embedding_cache_server = _is_role_pserver() and _cache_enable()
 
@@ -1107,11 +1100,6 @@ class Model:
             cb_params.train_network = train_network
             cb_params.dataset_helper = dataset_helper
 
-            # Perform recovery for process which is restarted.
-            self._reset_training_step_for_abnormal_process(cb_params, dataset_helper)
-            # Perform recovery for process which is not restarted.
-            self._reset_training_step_for_normal_process(cb_params, dataset_helper)
-
             # For data sink dataset_helper only iter once, other wise iter epoch_size times.
             for inputs in dataset_helper:
                 if is_graph:
@@ -1126,10 +1114,8 @@ class Model:
                 outputs = train_network(*inputs)
                 cb_params.net_outputs = outputs
 
-                # In disaster recovery scenarios, need not to execute callbacks if this step executes failed.
-                need_exec_callback_step_end = not (self.enable_recovery and _get_recovery_context("need_reset"))
-                if need_exec_callback_step_end:
-                    list_callback.on_train_step_end(run_context)
+                list_callback.on_train_step_end(run_context)
+
                 if cb_params.is_arf:
                     cb_params.is_arf = False
                     set_is_arf(False)
@@ -1151,8 +1137,7 @@ class Model:
 
             # In disaster recovery scenarios, need not to execute callbacks if this epoch executes failed.
             # Embedding cache server need not do epoch end callback, this process only run one step.
-            need_exec_callback_epoch_end = not ((self.enable_recovery and _get_recovery_context("need_reset"))
-                                                or is_embedding_cache_server)
+            need_exec_callback_epoch_end = not is_embedding_cache_server
 
             if need_exec_callback_epoch_end:
                 list_callback.on_train_epoch_end(run_context)
@@ -1164,12 +1149,7 @@ class Model:
             if should_stop:
                 break
 
-            need_reset_to_beginning = self.enable_recovery and _get_recovery_context("need_reset") \
-                                      and not _get_recovery_context("latest_ckpt_file")
             self.epoch_iter += 1
-            if need_reset_to_beginning:
-                self.epoch_iter = 0
-                cb_params.cur_step_num = 0
 
         dataset_helper.stop_send()
         dataset_helper.release()
@@ -1202,93 +1182,6 @@ class Model:
             cb_params.batch_num = train_batch_num
             cb_params.dataset_sink_mode = train_dataset_sink_mode
             cb_params.net_outputs = train_net_outputs
-
-    def _check_enable_recovery(self):
-        """
-        Check whether enable recovery and execution mode consistency.
-        """
-
-        enable_recovery = _get_recovery_context("enable_recovery") and context.get_context("device_target") == "GPU"
-        if not enable_recovery:
-            self.enable_recovery = False
-        else:
-            self.enable_recovery = enable_recovery and _is_role_worker()
-
-    def _check_need_load_ckpt(self, cb_params, dataset_size, sink_size=-1):
-        """
-        Check whether need to load checkpoint after abnormal process restart.
-
-        Args:
-            cb_params (_InternalCallbackParam): Callback parameters.
-            dataset_size (int): The number of batches in a dataset.
-            sink_size (int): Control the amount of data in each sink. Default: -1.
-        """
-        if context.get_context("device_target") != "GPU":
-            return
-        if not self.enable_recovery:
-            self.need_load_ckpt = False
-
-        cb_params.latest_ckpt_file = _get_recovery_context("latest_ckpt_file")
-        if cb_params.latest_ckpt_file:
-            recovery_epoch_num = _get_recovery_context("latest_ckpt_epoch")
-            recovery_step_num = _get_recovery_context("latest_ckpt_step")
-            dataset_sink_size = sink_size if sink_size > 0 else dataset_size
-            cb_params.cur_step_num = (recovery_epoch_num - 1) * dataset_sink_size + recovery_step_num
-            cb_params.last_save_ckpt_step = cb_params.cur_step_num
-            self.epoch_iter = recovery_epoch_num
-            self.need_load_ckpt = True
-        else:
-            self.need_load_ckpt = False
-
-    def _reset_training_step_for_abnormal_process(self, cb_params, dataset_helper):
-        """
-        Execute recovery for abnormal exit process when restart.
-
-        Args:
-            cb_params (_InternalCallbackParam): Callback parameters.
-        """
-
-        if self.need_load_ckpt:
-            try:
-                load_checkpoint(cb_params.latest_ckpt_file, cb_params.train_network)
-            except BaseException as e:
-                os.remove(cb_params.latest_ckpt_file)
-                raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: " \
-                                   + cb_params.latest_ckpt_file) from e
-            _reset_training_dataset(cb_params.cur_step_num, dataset_helper.iter.dataset.get_dataset_size())
-            self.need_load_ckpt = False
-
-    def _reset_training_step_for_normal_process(self, cb_params, dataset_helper):
-        """
-        Execute recovery for normal process when there is process exit abnormally.
-
-        Args:
-            cb_params (_InternalCallbackParam): Callback parameters.
-            dataset_helper (DatasetHelper): A class to process the MindData dataset,
-                it provides the type, shape and queue name of the dataset to wrap the `GetNext`.
-        """
-
-        if self.enable_recovery and _get_recovery_context("need_reset"):
-            cb_params.latest_ckpt_file = _get_recovery_context("latest_ckpt_file")
-            if cb_params.latest_ckpt_file:
-                try:
-                    load_checkpoint(cb_params.latest_ckpt_file, cb_params.train_network)
-                except BaseException as e:
-                    os.remove(cb_params.latest_ckpt_file)
-                    raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: "\
-                         + cb_params.latest_ckpt_file) from e
-
-                recovery_epoch_num = _get_recovery_context("latest_ckpt_epoch")
-                recovery_step_num = _get_recovery_context("latest_ckpt_step")
-                cb_params.cur_step_num = (recovery_epoch_num - 1) * dataset_helper.sink_size() + recovery_step_num
-                self.epoch_iter = recovery_epoch_num
-                cb_params.cur_epoch_num = self.epoch_iter + 1
-                cb_params.last_save_ckpt_step = cb_params.cur_step_num
-                _reset_training_dataset(cb_params.cur_step_num, dataset_helper.iter.dataset.get_dataset_size())
-            else:
-                _reset_training_dataset(0, dataset_helper.iter.dataset.get_dataset_size())
-
-            _set_recovery_context(need_reset=False)
 
     def _train_process(self, epoch, train_dataset, list_callback=None, cb_params=None, initial_epoch=0,
                        valid_infos=None):

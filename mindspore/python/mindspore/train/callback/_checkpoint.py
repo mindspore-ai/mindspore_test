@@ -27,7 +27,6 @@ from mindspore.train._utils import _make_directory
 from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_async_process_save_ckpt, \
     _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
-from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy, _get_pp_size_from_redundancy_map
 from mindspore.train.callback._callback import Callback
@@ -509,9 +508,6 @@ class ModelCheckpoint(Callback):
         if callable(prefix):
             self._prefix_func = prefix
 
-        if context.get_context("device_target") == "GPU" and _get_recovery_context("enable_recovery"):
-            _set_recovery_context(ckpt_path=self._directory)
-
         if config is None:
             self._config = CheckpointConfig()
         else:
@@ -577,11 +573,6 @@ class ModelCheckpoint(Callback):
             self._directory = self._directory_func(cb_params)
             _make_directory(self._directory)
         collect_host_info("Callback", "ModelCheckpoint", "step_end", start_time=get_clock_syscnt(), level=1)
-        # In disaster recovery scenario, the training process may be rolled back to the last step where
-        # the ckpt was successfully saved, so the _last_triggered_step should be updated.
-        if _get_recovery_context("enable_recovery") and cb_params.last_save_ckpt_step is not None:
-            self._last_triggered_step = cb_params.last_save_ckpt_step
-            cb_params.last_save_ckpt_step = None
 
         # save graph (only once)
         if not self._graph_saved:
