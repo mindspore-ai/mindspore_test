@@ -28,6 +28,7 @@
 #include "utils/llm_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "runtime/pipeline/pipeline.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
 #include "backend/ms_infer_backend/host_value_store.h"
@@ -215,6 +216,8 @@ da::tensor::DATensor *GraphAdapter::GetNodeDATensor(const AnfNodePtr &node) {
 void GraphAdapter::ConvertGraph() {
   MS_LOG(INFO) << "Convert graph: " << func_graph_->ToString();
 
+  runtime::Pipeline::Get().WaitAll();
+
   SetupFrontendParameterMapping();
 
   // parameters DATensor should be created before BeginGraph, added as parameters after BeginGraph
@@ -238,6 +241,8 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
   if (AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph_->output(), inputs, outputs)) {
     return;
   }
+
+  runtime::Pipeline::Get().WaitAll();
 
   ConvertInputs(inputs);
   graph_executor_.SetFreeFunc([this](void *data) {
