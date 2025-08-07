@@ -1022,6 +1022,13 @@ ShapeArray MatMulExtBPropShapeCalcFunc(const ShapeArray &inputs) {
   auto &input_shape = inputs.at(i0);
   auto &weight_shape = inputs.at(i1);
   auto &dout_shape = inputs.at(i2);
+  bool is_x_empty = IsShapeNone(input_shape);
+  bool is_w_empty = IsShapeNone(weight_shape);
+  if (is_x_empty || is_w_empty) {
+    MS_LOG(EXCEPTION)
+      << "For MatMulExt's backward, inputs must not be empty tensor for dynamic shape case in JIT mode.";
+  }
+
   auto x_rank = input_shape.size();
   auto w_rank = weight_shape.size();
   auto dout_rank = dout_shape.size();
