@@ -188,7 +188,7 @@ void AscendGraphOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph)
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  auto is_ge_mode = mindspore::AnfAlgo::IsBackendGe();
+  auto is_ge_mode = mindspore::AnfAlgo::GetBackend(kernel_graph) == kBackendGE;
   if (is_ge_mode || (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") || context_ptr->IsEnableInferBoost() ||
       kernel_graph->is_from_single_op()) {
     return;
