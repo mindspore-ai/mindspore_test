@@ -676,9 +676,6 @@ void SetCustomOpKernelInfo(const std::string &custom_op_type, const std::string 
   } else if (custom_op_type == kCustomTypeAOT) {
     kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<kernel::CustomAOTCpuKernelMod>(); });
-  } else if (custom_op_type == kCustomTypeOPPlugin) {
-    kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
-      op_name, []() { return std::make_shared<kernel::CustomOpPluginCpuKernelMod>(); });
   } else {
     MS_LOG(EXCEPTION) << "Unsupported func type for Custom operator on CPU, it should be "
                       << "'hybrid', 'akg', 'pyfunc' or 'aot', "
@@ -734,9 +731,9 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
   const auto &kernel_attrs = kernel::NativeCpuKernelMod::GetCpuSupportedList(op_name);
   if (kernel_attrs.empty()) {
-    if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+    static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+    if (op_plugin_path != nullptr) {
       // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-      SetCustomOpKernelInfo(kCustomTypeOPPlugin, op_name);
       UpdateCustomKernelBuildInfo(kernel_node, false);
       return {};
     }
