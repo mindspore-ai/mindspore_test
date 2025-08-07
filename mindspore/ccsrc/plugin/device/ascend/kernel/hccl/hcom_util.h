@@ -43,6 +43,7 @@ constexpr int64_t kComplex64ConvertFloat32Num = 2;
 
 /* Correspondence between data_type and hcom data type in Ascend */
 static const map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
+  {TypeId::kNumberTypeBool, HCCL_DATA_TYPE_INT8},
   {TypeId::kNumberTypeInt8, HCCL_DATA_TYPE_INT8},
   {TypeId::kNumberTypeInt16, HCCL_DATA_TYPE_INT16},
   {TypeId::kNumberTypeInt32, HCCL_DATA_TYPE_INT32},

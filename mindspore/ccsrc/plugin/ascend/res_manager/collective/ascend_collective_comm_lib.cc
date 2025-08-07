@@ -38,6 +38,7 @@ static std::map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
   {TypeId::kNumberTypeUInt64, HCCL_DATA_TYPE_UINT64}, {TypeId::kNumberTypeUInt8, HCCL_DATA_TYPE_UINT8},
   {TypeId::kNumberTypeUInt16, HCCL_DATA_TYPE_UINT16}, {TypeId::kNumberTypeUInt32, HCCL_DATA_TYPE_UINT32},
   {TypeId::kNumberTypeFloat64, HCCL_DATA_TYPE_FP64},  {TypeId::kNumberTypeBFloat16, HCCL_DATA_TYPE_BFP16},
+  {TypeId::kNumberTypeBool, HCCL_DATA_TYPE_INT8},
 };
 
 ::HcclDataType ConvertHcclType(TypeId type_id) {
