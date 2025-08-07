@@ -8433,8 +8433,10 @@ def matmul(input, other):
     Return the matrix product of two tensors.
 
     Note:
-        - The dtype of `input` and `other` must be same.
+        - `input` and `other` must have same data type, and both of them must be not scalar and support broadcast.
         - On Ascend, the rank of `input` or `other` must be between 1 and 6.
+        - `input` and `other` must not be empty tensor when executing the backward process for dynamic shape case in
+          JIT mode.
 
     Args:
         input (Tensor): The first input tensor.
