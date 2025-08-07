@@ -138,13 +138,10 @@ static TensorPtrSet parse_to_save(const FunctionPtr &fptr) {
 
 class ForwardGradGuard {
  public:
-  explicit ForwardGradGuard(const GradExecutorPtr ptr) : ptr_(ptr), grad_flag_(GradState::Get().grad_flag()) {
-    GradState::Get().set_grad_flag(false);
-  }
+  ForwardGradGuard() : grad_flag_(GradState::Get().grad_flag()) { GradState::Get().set_grad_flag(false); }
   ~ForwardGradGuard() { GradState::Get().set_grad_flag(grad_flag_); }
 
  private:
-  GradExecutorPtr ptr_;
   bool grad_flag_;
 };
 
@@ -266,16 +263,21 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   MS_LOG(DEBUG) << "enter apply function.";
   auto context = std::make_shared<FunctionContext>();
   py::function forward_fn = py::getattr(cls, CUSTOM_FORWARD_NAME);
-  context->backward_fn = py::getattr(cls, CUSTOM_BACKWARD_NAME);
-  // New a python object.
-  context->obj = cls();
-  context->inputs.reserve(inputs.size());
+  py::function backward_fn = py::getattr(cls, CUSTOM_BACKWARD_NAME);
 
-  auto ctx = py::cast<FunctionPtr>(context->obj);
+  // New a python object.
+  py::object ctx_obj = cls();
+  auto ctx = py::cast<FunctionPtr>(ctx_obj);
   MS_EXCEPTION_IF_NULL(ctx);
+
+  const auto inputs_size = inputs.size();
+  context->inputs.reserve(inputs_size);
   std::vector<bool> is_tensor_input;
-  is_tensor_input.reserve(inputs.size());
-  py::tuple need_grad_input = py::tuple(inputs.size());
+  is_tensor_input.reserve(inputs_size);
+  std::vector<TensorMeta> inputs_meta;
+  inputs_meta.reserve(inputs_size);
+  py::tuple need_grad_input = py::tuple(inputs_size);
+
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   for (size_t i = 0; i < inputs.size(); ++i) {
@@ -285,22 +287,22 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
       tensor->set_need_pipeline_sync(true);
       need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
       (void)context->inputs.emplace_back(tensor);
+      (void)inputs_meta.emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
     } else {
       (void)is_tensor_input.emplace_back(false);
       need_grad_input[i] = py::bool_(false);
       (void)context->inputs.emplace_back(kNone);
+      (void)inputs_meta.emplace_back();
     }
   }
   ctx->set_is_tensor_input(is_tensor_input);
   ctx->set_needs_input_grad(need_grad_input);
 
   // Call forward function.
-  const auto &pynative_executor = PyNativeAlgo::Common::GetPyNativeExecutor();
-  const auto &grad_executor = pynative_executor->grad_executor();
   py::object outputs;
   {
-    ForwardGradGuard guard(grad_executor);
-    outputs = forward_fn(context->obj, *inputs);
+    ForwardGradGuard guard;
+    outputs = forward_fn(ctx_obj, *inputs);
   }
   bool modified = ensure_obj_tuple(&outputs);
 
@@ -308,20 +310,24 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
     MS_LOG(DEBUG) << "no need to do grad.";
     if (modified) {
       return py::cast<py::tuple>(outputs)[0];
-    } else {
-      return outputs;
     }
+    return outputs;
   }
 
   runtime::Pipeline::Get().WaitFrontend();
 
   ConstructContextAfterForward(context, ctx, outputs);
+  const auto custom_fn = std::make_shared<PyBackwardNode>("FunctionCustomBackward", backward_fn, ctx_obj, inputs_meta,
+                                                          context->flatten_outputs.size());
+  ctx->set_weak_grad_node(custom_fn);
+  context->grad_node = std::move(custom_fn);
+
   auto &flatten_outputs = context->flatten_outputs;
   const auto &non_diff_tensors = context->non_diff_tensors;
   const auto &input_tensor_set = context->input_base_tensors;
   const auto &dirty_tensor_set = context->dirty_tensors;
 
-  size_t num_output = (py::cast<py::tuple>(outputs)).size();
+  size_t num_output = py::cast<py::tuple>(outputs).size();
   py::tuple output_ret(num_output);
   MS_LOG(DEBUG) << "Output info, modified: " << modified << ", num_output: " << num_output;
   for (size_t i = 0; i < num_output; ++i) {
@@ -344,7 +350,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
         output_ret[i] = CValueToPybindObj(tensor);
       }
     } else {
-      output_ret[i] = (py::cast<py::tuple>(outputs))[i];
+      output_ret[i] = py::cast<py::tuple>(outputs)[i];
     }
   }
 
@@ -353,12 +359,14 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   // Generate saved nodes， and clear saved tensor.
   ctx->GenerateSavedNodes(context);
 
+  const auto &pynative_executor = PyNativeAlgo::Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
+  const auto &grad_executor = pynative_executor->grad_executor();
   if (forward_executor->enable_async()) {
-    auto task = [new_context = std::move(context)]() mutable { (void)CallCustomPyFunction(new_context); };
+    auto task = [new_context = std::move(context)]() mutable { CallCustomPyFunction(new_context); };
     grad_executor->DispatchGradQueueTask(std::move(task));
   } else {
-    (void)CallCustomPyFunction(context);
+    CallCustomPyFunction(context);
   }
 
   MS_LOG(DEBUG) << "Leave apply function.";

@@ -1047,15 +1047,11 @@ void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
     MS_LOG(DEBUG) << "The custom bprop function no need grad!";
     return;
   }
-  BackwardNodePtr custom_fn;
-  auto input_meta = GenerateInputsMeta(context->inputs);
-  {
-    py::gil_scoped_acquire gil;
-    custom_fn = std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
-                                                 std::move(input_meta), GenerateFlattenAbs(context->flatten_outputs),
-                                                 context->flatten_outputs.size());
-    py::cast<FunctionPtr>(context->obj)->set_weak_grad_node(custom_fn);
-  }
+
+  auto out_abstract = GenerateFlattenAbs(context->flatten_outputs);
+  auto custom_fn = context->grad_node;
+  custom_fn->SetOutAbstract(out_abstract);
+
   UpdateNextEdges(custom_fn, context->inputs);
   ProcessForwardOutput(context->flatten_outputs, context->input_base_tensors, context->dirty_tensors,
                        context->non_diff_tensors, context->inputs, context->input_value_grad_type, custom_fn);

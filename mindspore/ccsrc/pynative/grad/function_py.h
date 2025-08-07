@@ -24,7 +24,9 @@
 #include <utility>
 #include "pybind11/pybind11.h"
 #include "include/common/pynative/variable.h"
-#include "mindspore/ccsrc/include/common/visible.h"
+#include "include/common/visible.h"
+#include "pynative/grad/grad_utils.h"
+#include "pynative/grad/custom_function.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;
@@ -50,12 +52,6 @@ struct FunctionContext {
   // The output of forward function in flatten format
   ValuePtrList flatten_outputs;
 
-  // The backward function
-  py::function backward_fn;
-
-  // The ctx pass to backward function
-  py::object obj;
-
   // The input type of apply function input
   std::vector<InputType> input_value_grad_type;
 
@@ -67,12 +63,7 @@ struct FunctionContext {
   TensorPtrSet non_diff_tensors;
   // Set of to_save tensors
   TensorPtrSet to_save_tensors;
-
-  ~FunctionContext() {
-    py::gil_scoped_acquire gil_acquire;
-    backward_fn = py::object();
-    obj = py::object();
-  }
+  PyBackwardNodePtr grad_node;
 };
 
 class PYNATIVE_EXPORT FunctionBase {
