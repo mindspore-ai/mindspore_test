@@ -580,8 +580,8 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
                                          !tensor_storage_info->is_contiguous)) {
     MS_LOG(EXCEPTION) << "Not support get value from non-contiguous input:" << ToString();
   }
- if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, device_address_->size(),
-                 device_address_->stream_id())) {
+  if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, device_address_->size(),
+                  device_address_->stream_id())) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed, device type:" << device_address_->GetDeviceType();
   }
   return true;

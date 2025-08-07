@@ -21,6 +21,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/action.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
