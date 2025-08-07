@@ -79,8 +79,8 @@
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/distributed/ps/util.h"
+#else
+#include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
 #include "debug/profiler/profiling_framework_data.h"
 #include "debug/profiler/profiler.h"
@@ -1370,14 +1370,6 @@ bool OptAddAttrWithInlineAction(const ResourcePtr &resource) {
 
 bool VmOptimizeAction(const ResourcePtr &resource) {
   EventMessage::PrintCompileStatusMessage("Start performing graph optimization.");
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_ps_mode()) {
-    (void)kVmPasses.emplace_back(PassItem("server_communication_op_fusion", [](const ResourcePtr &res) -> bool {
-      MS_EXCEPTION_IF_NULL(res);
-      return ps::Util::FuseServerCommOps(res->func_graph());
-    }));
-  }
-#endif
   bool ret;
   auto custom_passes = opt::PassConfigure::Instance().GetPasses();
   if (custom_passes.empty()) {
@@ -1735,14 +1727,6 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
   if (!SetModeForControlFlow(func_graph, all_nodes)) {
     return;
   }
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->cache_enable()) {
-    MS_LOG(INFO) << "Run graph mode with subgraph sink because PS cache enable.";
-    set_ctx(true, false, false);
-    return;
-  }
-#endif
 
   // GRAPH | normal network and if/for/switch scenario etc : MultiGraph path in MindRT.
   MS_LOG(INFO) << "Run graph mode with multi graph sink.";

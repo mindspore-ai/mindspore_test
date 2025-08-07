@@ -43,9 +43,6 @@ class ParamInfo {
   bool requires_grad() const { return requires_grad_; }
   void set_requires_grad(bool requires_grad) { requires_grad_ = requires_grad; }
 
-  bool init_in_server() const { return init_in_server_; }
-  void set_init_in_server(bool init_in_server) { init_in_server_ = init_in_server; }
-
   // Get the unique key of parameter.
   int32_t key() const { return key_; }
   // Set the unique key of parameter.
@@ -77,7 +74,6 @@ class ParamInfo {
     clone->cloned_index_ = index;
     this->be_cloned_ = true;
     this->be_cloned_index_.push_back(index);
-    clone->init_in_server_ = this->init_in_server_;
     clone->requires_aggr_ = this->requires_aggr_;
     clone->strategy_ckpt_saved_ = this->strategy_ckpt_saved_;
     clone->param_strategy_ = this->param_strategy_;
@@ -162,7 +158,6 @@ class ParamInfo {
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
-  bool init_in_server_{false};
   bool layerwise_parallel_{false};
   bool be_cloned_{false};
   bool strategy_ckpt_saved_{false};

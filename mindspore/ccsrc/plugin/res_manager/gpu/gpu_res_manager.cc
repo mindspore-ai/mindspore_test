@@ -25,7 +25,6 @@
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
-#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

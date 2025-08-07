@@ -144,7 +144,7 @@ from mindspore.mindrecord.config import encrypt, decrypt
 from mindspore.parallel.mpi._mpi_config import _MpiConfig
 from mindspore.parallel._ps_context import ps_context
 from mindspore.parallel.algo_parameter_config import _AlgoParameterConfig
-from mindspore.parallel._utils import _reset_op_id, _reset_op_id_with_offset
+from mindspore.parallel._utils import _reset_op_id
 from mindspore.parallel._auto_parallel_context import _AutoParallelContext
 from mindspore.common.api import ms_memory_recycle
 from mindspore.context import _Context
@@ -576,7 +576,6 @@ _func_map = {
     function_id(ps_context): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_AlgoParameterConfig.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_reset_op_id): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(_reset_op_id_with_offset): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_AutoParallelContext.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(ms_memory_recycle): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_Context.__init__): FUNC_KEY_PIJIT_FORBIDDEN,

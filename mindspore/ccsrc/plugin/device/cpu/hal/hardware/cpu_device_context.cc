@@ -24,7 +24,6 @@
 #include "plugin/device/cpu/optimizer/reg_cpu_const_input_to_attr.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #include "plugin/device/cpu/hal/hardware/cpu_somas.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #ifdef ENABLE_AKG
 #include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif

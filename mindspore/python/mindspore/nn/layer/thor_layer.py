@@ -30,8 +30,6 @@ from mindspore._checkparam import twice
 from mindspore import context
 from mindspore.nn.cell import Cell
 from mindspore.nn.layer.activation import get_activation
-from mindspore.parallel._ps_context import _is_role_worker, _get_ps_context, \
-    _set_rank_id, _insert_hash_table_size, _set_cache_enable
 from mindspore.parallel._utils import _get_parallel_mode, _get_full_batch
 from mindspore.context import ParallelMode
 from mindspore.nn.layer.basic import ClipByNorm
@@ -695,10 +693,6 @@ class EmbeddingLookupThor(Cell):
                                        Default: ``None`` .
         sparse (bool): Using sparse mode. When 'target' is set to 'CPU', 'sparse' has to be ``true`` .
                        Default: ``True`` .
-        vocab_cache_size (int): Cache size of the dictionary of embeddings. Default: ``0`` . It is valid only in
-            'DEVICE' target. And the moment parameter of corresponding optimizer will also be set to the cache size.
-            In addition, it should be noted that it will cost the 'DEVICE' memory, so suggests setting a reasonable
-            value to avoid insufficient memory.
 
     Inputs:
         - **input_indices** (Tensor) - The shape of tensor is :math:`(y_1, y_2, ..., y_S)`.
@@ -712,10 +706,9 @@ class EmbeddingLookupThor(Cell):
                     'table_row_slice' or 'table_column_slice'.
         ValueError: If `sparse` is False and `target` is 'CPU'.
         ValueError: If `slice_mode` is 'field_slice' and `manual_shapes` is None.
-        TypeError: If `vocab_size` or `embedding_size` or `vocab_cache_size` is not an int.
+        TypeError: If `vocab_size` or `embedding_size` is not an int.
         TypeError: If `sparse` is not a bool or `manual_shapes` is not a tuple.
         ValueError: If `vocab_size` or `embedding_size` is less than 1.
-        ValueError: If `vocab_cache_size` is less than 0.
 
 
     Supported Platforms:
@@ -736,14 +729,12 @@ class EmbeddingLookupThor(Cell):
 
     def __init__(self, vocab_size, embedding_size, param_init='normal',
                  target='CPU', slice_mode='batch_slice', manual_shapes=None,
-                 max_norm=None, sparse=True, vocab_cache_size=0):
+                 max_norm=None, sparse=True):
         super(EmbeddingLookupThor, self).__init__()
         Validator.check_value_type('sparse', sparse, [bool], self.cls_name)
         self.vocab_size = Validator.check_positive_int(vocab_size, 'vocab_size', self.cls_name)
-        self.vocab_cache_size = Validator.check_non_negative_int(vocab_cache_size, 'vocab_cache_size', self.cls_name)
         self.target = target
         self.sparse = sparse
-        self.cache_enable = self.vocab_cache_size > 0
         self.forward_unique = False
         self.dtype = mstype.float16
         if target not in ('CPU', 'DEVICE'):
@@ -757,9 +748,6 @@ class EmbeddingLookupThor(Cell):
         else:
             self.gatherv2 = ops.Gather()
         self.embeddinglookup = ops.EmbeddingLookup().set_device('CPU')
-        enable_ps = _get_ps_context("enable_ps")
-        if enable_ps:
-            self._process_vocab_cache(slice_mode)
         self.embedding_size = Validator.check_positive_int(embedding_size, 'embedding_size', self.cls_name)
         self.embedding_table = Parameter(initializer(param_init, [self.vocab_size, self.embedding_size],
                                                      mstype.float16), name='embedding_table')
@@ -772,10 +760,6 @@ class EmbeddingLookupThor(Cell):
         self.shape = ops.Shape()
         if is_auto_parallel:
             self.unique = ops.Unique().shard(((1,),))
-        if self.cache_enable and enable_ps:
-            self._set_voacb_cache_enable_for_ps(vocab_cache_size, embedding_size, vocab_size)
-            if is_auto_parallel:
-                self.unique.add_prim_attr('cache_enable', True)
         indices_shape_size = 2
         if slice_mode == "field_slice" and is_auto_parallel:
             if not manual_shapes:
@@ -792,7 +776,7 @@ class EmbeddingLookupThor(Cell):
             self.embeddinglookup.shard(((get_group_size(), 1), (1, get_group_size())))
         elif slice_mode == "table_row_slice" and is_auto_parallel:
             full_batch = _get_full_batch()
-            if (target == 'DEVICE' and not full_batch) or (self.cache_enable and enable_ps and sparse):
+            if (target == 'DEVICE' and not full_batch):
                 indices_shape_size = 1
                 self.gather_revert.shard(((1, 1), (get_group_size(),)))
                 self.forward_unique = True
@@ -818,11 +802,6 @@ class EmbeddingLookupThor(Cell):
                 raise ValueError(f"For '{self.cls_name}', the 'slice_mode' must be one of values in "
                                  f"['field_slice', 'table_row_slice', 'table_column_slice', 'batch_slice'], "
                                  f"but got 'slice_mode': {slice_mode}")
-        if self.cache_enable and not enable_ps:
-            if parallel_mode != ParallelMode.STAND_ALONE:
-                raise ValueError(f"For '{self.cls_name}', the 'parallel_mode' must be equal to "
-                                 f"'ParallelMode.STAND_ALONE', but got {parallel_mode}.")
-            self._set_cache_enable()
         self.embedding_table.unique = self.forward_unique
         self.max_norm = max_norm
         if self.max_norm is not None:
@@ -858,66 +837,6 @@ class EmbeddingLookupThor(Cell):
         matrix_g = self.cast(matrix_g, mstype.float16)
         self.matrix_g = matrix_g
         return out
-
-    def _set_cache_enable(self):
-        """EmbeddingLookup cache check for not ps env, which is only support 'ascend'."""
-        if self.target != 'DEVICE':
-            raise ValueError(f"For '{self.cls_name}', the configuration of 'vocab_cache_size' is valid "
-                             f"only when 'target' is 'DEVICE', but got 'target': {self.target}.")
-        if not self.sparse:
-            raise ValueError(f"For '{self.cls_name}', the configuration of 'vocab_cache_size' is valid "
-                             f"only when 'sparse' is true, but got 'sparse': {self.sparse}.")
-        if context.get_context("device_target") != 'Ascend':
-            raise ValueError(f"For '{self.cls_name}', the configuration of 'vocab_cache_size' is valid "
-                             f"only when 'device_target' is 'Ascend', but got {context.get_context('device_target')}.")
-
-        logger.info("EmbeddingLookup cache enable takes effect.")
-        self.forward_unique = True
-        self.unique = ops.Unique().set_device('CPU')
-        self.unique.add_prim_attr('cache_enable', True)
-        self.embedding_table.cache_enable = self.cache_enable
-        self.embedding_table.cache_shape = (self.vocab_cache_size, self.embedding_size)
-        self.reshape_first = ops.Reshape().set_device('CPU')
-
-    def _process_vocab_cache(self, slice_mode):
-        """PS embeddingLookup cache check and process."""
-        self.cache_enable = False
-        if self.vocab_cache_size > 0:
-            if self.target == 'CPU':
-                logger.warning("The configuration of 'vocab_cache_size' is valid only in 'DEVICE' target, "
-                               "current target is CPU, so it will be ignored.")
-                return
-            enable_ps = _get_ps_context("enable_ps")
-            if not enable_ps:
-                logger.warning(
-                    "The configuration of 'vocab_cache_size' is valid only in parameter server trainning "
-                    "mode, current mode is not parameter server trainning mode, so it will be ignored.")
-                return
-            parallel_mode = _get_parallel_mode()
-            is_auto_parallel = parallel_mode in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-            if is_auto_parallel:
-                rank_size = get_group_size()
-                rank_id = get_rank()
-                full_batch = _get_full_batch()
-                if rank_size > 1 and not (full_batch and slice_mode == "table_row_slice"):
-                    raise ValueError(f"For '{self.cls_name}', the embeddingLookup cache of parameter server parallel "
-                                     f"only be used in 'full_batch' and 'table_row_slice' parallel strategy, but got "
-                                     f"'full_batch': {full_batch}, 'slice_mode': {slice_mode}.")
-                self.vocab_cache_size = self.vocab_cache_size * rank_size
-                _set_rank_id(rank_id)
-            self.cache_enable = True
-            if _is_role_worker():
-                self.vocab_size = self.vocab_cache_size
-
-    def _set_voacb_cache_enable_for_ps(self, vocab_cache_size, embedding_size, vocab_size):
-        """PS embeddingLookup cache enable set."""
-        self.embedding_table.cache_enable = True
-        self.embedding_table.is_param_ps = True
-        _set_cache_enable(True)
-        if self.sparse:
-            self.forward_unique = True
-        if _is_role_worker():
-            _insert_hash_table_size(self.embedding_table.name, vocab_cache_size, embedding_size, vocab_size)
 
     def construct(self, indices):
         if self.target == "CPU":

@@ -42,6 +42,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/tensor_layout/shared_parameter.h"
 #include "frontend/parallel/strategy_utils.h"
+#include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "include/common/utils/comm_manager.h"

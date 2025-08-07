@@ -40,6 +40,7 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "ir/func_graph_cloner.h"

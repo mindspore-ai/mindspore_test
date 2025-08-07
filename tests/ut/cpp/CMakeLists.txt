@@ -106,7 +106,7 @@ if(NOT ENABLE_CPU OR WIN32 OR APPLE)
             ./distributed/rpc/tcp/*.cc
             ./distributed/cluster/*.cc
             ./distributed/cluster/topology/*.cc
-            ./distributed/recovery/*.cc
+            ./distributed/recovery/*.cc)
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
 

@@ -39,8 +39,5 @@ if(ENABLE_GPU)
             ${CUDA_PATH}/lib64/libnvrtc.so
             )
   endif()
-  if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND ${CUDA_VERSION} VERSION_GREATER "11.0")
-    target_link_libraries(mindspore_gpu_res_manager PRIVATE gpu_hash_table)
-  endif()
   set_target_properties(mindspore_gpu_res_manager PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/../..)
 endif()

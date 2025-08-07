@@ -22,10 +22,8 @@
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils_secure.h"
-#include "utils/hash_table.h"
 
 namespace mindspore {
-using device::HashTable;
 namespace tensor {
 using tensor::Tensor;
 using tensor::TensorPtr;
@@ -157,38 +155,7 @@ void MapTensor::TransExportDataToTensor(const HashTableExportData &export_data) 
 
 MapTensor::ExportData MapTensor::ExportDataFromDevice(const DeviceSyncPtr &device_sync, bool incremental,
                                                       bool *last_slice) const {
-  auto user_data = device_sync->user_data();
-  MS_EXCEPTION_IF_NULL(user_data);
-  HashTableExportData export_data;
-  if (key_dtype() == TypeId::kNumberTypeInt32 && value_dtype() == TypeId::kNumberTypeFloat32) {
-    const auto &hash_table = user_data->get<HashTable<int, float>>(kUserDataData);
-    MS_EXCEPTION_IF_NULL(hash_table);
-    if (!hash_table->is_dirty()) {
-      return {key_tensor(), value_tensor(), status_tensor()};
-    }
-    if (last_slice) {
-      export_data = hash_table->ExportSlice(incremental, last_slice);
-    } else {
-      export_data = hash_table->Export(incremental);
-    }
-  } else if (key_dtype() == TypeId::kNumberTypeInt64 && value_dtype() == TypeId::kNumberTypeFloat32) {
-    const auto &hash_table = user_data->get<HashTable<int64_t, float>>(kUserDataData);
-    MS_EXCEPTION_IF_NULL(hash_table);
-    if (!hash_table->is_dirty()) {
-      return {key_tensor(), value_tensor(), status_tensor()};
-    }
-    if (last_slice) {
-      export_data = hash_table->ExportSlice(incremental, last_slice);
-    } else {
-      export_data = hash_table->Export(incremental);
-    }
-  } else {
-    MS_LOG(EXCEPTION) << "UnSupported Map Tensor type: key type is " << TypeIdToType(key_dtype()) << ", value type is "
-                      << TypeIdToType(value_dtype()) << ".";
-  }
-  TransExportDataToTensor(export_data);
-
-  return {key_tensor(), value_tensor(), status_tensor()};
+  MS_LOG(EXCEPTION) << "Call deprecated interface ExportDataFromDevice.";
 }
 
 // If the data on the host side is valid, the data on the host side will be exported.

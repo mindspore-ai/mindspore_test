@@ -25,9 +25,6 @@ from mindspore.common.initializer import initializer, Normal
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.context import ParallelMode
 from mindspore.parallel._utils import _get_parallel_mode, _get_full_batch
-from mindspore.parallel._ps_context import _get_ps_context, _enable_distributed_mindrt
-from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver
-from mindspore.parallel._ps_context import _insert_hash_table_size, _set_cache_enable, _set_rank_id
 from mindspore import _checkparam as Validator
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.nn.layer.basic import ClipByNorm
@@ -341,10 +338,6 @@ class EmbeddingLookup(Cell):
         max_norm (Union[float, None]): A maximum clipping value. The data type must be float16, float32
                                        or None. Default: ``None`` .
         sparse (bool): Using sparse mode. When 'target' is set to 'CPU', 'sparse' has to be true. Default: ``True`` .
-        vocab_cache_size (int): Cache size of the dictionary of embeddings. Default: ``0`` . It is valid only in
-            parameter server trainning mode and 'DEVICE' target. And the moment parameter of corresponding
-            optimizer will also be set to the cache size. In addition, it should be noted that it will cost the 'DEVICE'
-            memory, so suggests setting a reasonable value to avoid insufficient memory.
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
@@ -358,10 +351,9 @@ class EmbeddingLookup(Cell):
         Tensor, the shape of tensor is :math:`(z_1, z_2, ..., z_N)`.
 
     Raises:
-        TypeError: If `vocab_size` or `embedding_size` or `vocab_cache_size` is not an int.
+        TypeError: If `vocab_size` or `embedding_size` is not an int.
         TypeError: If `sparse` is not a bool or `manual_shapes` is not a tuple.
         ValueError: If `vocab_size` or `embedding_size` is less than 1.
-        ValueError: If `vocab_cache_size` is less than 0.
         ValueError: If `target` is neither 'CPU' nor 'DEVICE'.
         ValueError: If `slice_mode` is not one of 'batch_slice' or 'field_slice' or
                     'table_row_slice' or 'table_column_slice'.
@@ -387,17 +379,14 @@ class EmbeddingLookup(Cell):
 
     def __init__(self, vocab_size, embedding_size, param_init='normal',
                  target='CPU', slice_mode='batch_slice', manual_shapes=None,
-                 max_norm=None, sparse=True, vocab_cache_size=0, dtype=mstype.float32):
+                 max_norm=None, sparse=True, dtype=mstype.float32):
         """Initialize EmbeddingLookup."""
         super(EmbeddingLookup, self).__init__()
         Validator.check_value_type('sparse', sparse, [bool], self.cls_name)
         self.vocab_size = Validator.check_positive_int(
             vocab_size, 'vocab_size')
-        self.vocab_cache_size = Validator.check_non_negative_int(
-            vocab_cache_size, 'vocab_cache_size')
         self.target = target
         self.sparse = sparse
-        self.cache_enable = self.vocab_cache_size > 0
         self.forward_unique = False
         Validator.check_string(
             target, ['CPU', 'DEVICE'], 'target', self.cls_name)
@@ -409,10 +398,6 @@ class EmbeddingLookup(Cell):
         else:
             self.gatherv2 = ops.Gather()
         self.embeddinglookup = ops.EmbeddingLookup().set_device('CPU')
-        self.is_ps_server = False
-        enable_ps = _get_ps_context("enable_ps")
-        if enable_ps:
-            self._process_vocab_cache(slice_mode)
         self.embedding_size = Validator.check_positive_int(
             embedding_size, 'embedding_size', self.cls_name)
         self.embedding_table = Parameter(initializer(param_init, [self.vocab_size, self.embedding_size],
@@ -427,11 +412,6 @@ class EmbeddingLookup(Cell):
         self.shape = ops.Shape()
         if is_auto_parallel:
             self.unique = ops.Unique().shard(((1,),))
-        if self.cache_enable and enable_ps:
-            self._set_voacb_cache_enable_for_ps(
-                vocab_cache_size, embedding_size, vocab_size, param_init, dtype=dtype)
-            if is_auto_parallel:
-                self.unique.add_prim_attr('cache_enable', True)
         indices_shape_size = 2
         if slice_mode == "field_slice" and is_auto_parallel:
             if not manual_shapes:
@@ -450,7 +430,7 @@ class EmbeddingLookup(Cell):
                 ((get_group_size(), 1), (1, get_group_size())))
         elif slice_mode == "table_row_slice" and is_auto_parallel:
             full_batch = _get_full_batch()
-            if (target == 'DEVICE' and not full_batch) or (self.cache_enable and enable_ps and sparse):
+            if (target == 'DEVICE' and not full_batch):
                 indices_shape_size = 1
                 self.gather_revert.shard(((1, 1), (get_group_size(),)))
                 self.forward_unique = True
@@ -479,9 +459,6 @@ class EmbeddingLookup(Cell):
                                 "table_column_slice", "batch_slice"]
                 raise ValueError(f"For '{self.cls_name}', the 'slice_mode' must be in {support_mode}, "
                                  f"but got \"{slice_mode}\".")
-        if self.cache_enable and not enable_ps:
-            raise ValueError(
-                f"For '{self.cls_name}', haven't supported cache enable for not ps mode.")
         self.embedding_table.unique = self.forward_unique
         self.max_norm = max_norm
         if self.max_norm is not None:
@@ -489,149 +466,9 @@ class EmbeddingLookup(Cell):
                 self.max_norm, 'max_norm', self.cls_name)
             self.max_norm = Tensor(self.max_norm, dtype=mstype.float32)
 
-    def _process_vocab_cache(self, slice_mode):
-        """PS embeddingLookup cache check and process."""
-        self.cache_enable = False
-        if self.vocab_cache_size > 0:
-            if self.target == 'CPU':
-                logger.warning("The configuration of 'vocab_cache_size' is valid only in 'DEVICE' target, "
-                               "current target is CPU, so it will be ignored.")
-                return
-            enable_ps = _get_ps_context("enable_ps")
-            if not enable_ps:
-                logger.warning("The configuration of 'vocab_cache_size' is valid only in parameter server training "
-                               "mode, current mode is not parameter server trainning mode, so it will be ignored.")
-                return
-            self.is_ps_server = _is_role_pserver() and _enable_distributed_mindrt()
-            parallel_mode = _get_parallel_mode()
-            is_auto_parallel = parallel_mode in (
-                ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-            if is_auto_parallel:
-                rank_size = get_group_size()
-                rank_id = get_rank()
-                full_batch = _get_full_batch()
-                if rank_size > 1 and not (full_batch and slice_mode == "table_row_slice"):
-                    raise ValueError(f"For '{self.cls_name}', the cache of parameter server parallel should only be "
-                                     f"used in \"full_batch\" and the value of \"full_batch\" must be True. "
-                                     f"Meanwhile, the value of 'slice_mode' must be \"table_row_slice\"."
-                                     f"But got full_batch: {full_batch} and 'slice_mode': \"{slice_mode}\".")
-                self.vocab_cache_size = self.vocab_cache_size * rank_size
-                _set_rank_id(rank_id)
-
-            self.cache_enable = True
-            _set_cache_enable(True)
-
-            if _is_role_worker():
-                self.vocab_size = self.vocab_cache_size
-
-    def _set_voacb_cache_enable_for_ps(self, vocab_cache_size, embedding_size, vocab_size, param_init,
-                                       dtype=mstype.float32):
-        """PS embeddingLookup cache enable set."""
-        if self.sparse:
-            self.forward_unique = True
-        param_key = _get_unique_parameter_key()
-        if _is_role_worker():
-            self.embedding_table.is_param_ps = True
-            self.embedding_table.cache_enable = True
-            self.embedding_table.key = param_key
-            _insert_hash_table_size(
-                self.embedding_table.name, vocab_cache_size, embedding_size, vocab_size, param_key)
-
-        if _enable_distributed_mindrt():
-            self.rank_id = get_rank()
-            if self.is_ps_server:
-                self._slice_pserver_embeddings("zeros", dtype=dtype)
-                self._set_cache_enable_and_key_for_pserver(param_key)
-
-    def _slice_pserver_embeddings(self, param_init, dtype=mstype.float32):
-        '''
-        Method to slice embedding tables on Parameter Servers.
-        It helps to train with a large scale embedding table and is used only in Parameter Server training mode.
-        So EmbeddingLookup op is on CPU device.
-        '''
-        self.embedding_lookup_list = []
-        # The dimension of each embedding table on servers could be different according to the slicing algorithm.
-        self.embedding_table_vocab_dim_list = []
-        self.embedding_table_list = []
-        # For different servers, the offset of their embedding table should be different.
-        self.embedding_offset = []
-
-        server_num = _get_ps_context("server_num")
-        if server_num == 0:
-            raise ValueError("The Parameter Server number is zero.")
-        # Assign the embedding table dimensions.
-        for _ in range(server_num):
-            self.embedding_table_vocab_dim_list.append(
-                self.vocab_size // server_num)
-        rest_vocab_size = self.vocab_size % server_num
-        if rest_vocab_size != 0:
-            for i in range(rest_vocab_size):
-                self.embedding_table_vocab_dim_list[i] += 1
-
-        offset = 0
-        for i in range(server_num):
-            self.embedding_table_list.append(Parameter(initializer(param_init,
-                                                                   [self.embedding_table_vocab_dim_list[i],
-                                                                    self.embedding_size], dtype=dtype),
-                                                       name="embedding_table_server_" + str(i)))
-
-            self.embedding_offset.append(offset)
-            offset += self.embedding_table_vocab_dim_list[i]
-
-            # Add EmbeddingLookup ops on different servers.
-            if self.target == 'CPU':
-                embedding_lookup = ops.EmbeddingLookup().set_device('CPU')
-            else:
-                if self.sparse:
-                    embedding_lookup = ops.SparseGatherV2()
-                else:
-                    embedding_lookup = ops.Gather()
-                embedding_lookup.add_prim_attr(
-                    'offset', self.embedding_offset[i])
-            embedding_lookup.add_prim_attr('rank_id', i)
-            embedding_lookup.add_prim_attr('ms_role', 'MS_PSERVER')
-            self.embedding_lookup_list.append(embedding_lookup)
-
-        # For now unique operation is not applied,
-        # so we need to reduce the lookup results from different servers with AddN.
-        self.reduce_lookup_result = ops.AddN()
-
-    def _do_server_embedding_lookup(self, indices):
-        '''
-        Construct backbone for EmbeddingLookup operators on servers.
-        '''
-        result_from_servers = []
-        for i in range(_get_ps_context("server_num")):
-            result = self.embedding_lookup_list[i](self.embedding_table_list[i],
-                                                   indices, self.embedding_offset[i])
-            result_from_servers.append(result)
-        final_result = self.reduce_lookup_result(result_from_servers)
-        return final_result
-
-    def _set_cache_enable_and_key_for_pserver(self, param_key):
-        '''
-        Set cache enable and parameter key for embedding table on parameter servers.
-        '''
-        # Parameter The Embedding Table on the Server side will be divided according to the number of servers.
-        # The divided Embedding Table will be used instead of the complete Embedding Table.
-        self.embedding_table = self.embedding_table_list[self.rank_id]
-        self.embedding_table.cache_enable = True
-        self.embedding_table.key = param_key
-
-    def _pserver_embedding_lookup(self, indices):
-        '''
-        Construct backbone for EmbeddingLookup operators on servers for embedding cache lookup.
-        '''
-        if self.target == 'CPU':
-            return self.embedding_lookup_list[self.rank_id](self.embedding_table, indices,
-                                                            self.embedding_offset[self.rank_id])
-        return self.embedding_lookup_list[self.rank_id](self.embedding_table, indices, 0)
-
     def construct(self, indices):
         if self.target == "CPU":
             out = self.embeddinglookup(self.embedding_table, indices, 0)
-        elif self.is_ps_server:
-            out = self._pserver_embedding_lookup(indices)
         else:
             if self.forward_unique:
                 shp = self.shape(indices) + (self.embedding_size,)

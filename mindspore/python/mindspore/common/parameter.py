@@ -573,8 +573,6 @@ class Parameter(Tensor_):
         x.param_info = param_info_clone
         x.is_init = False
         x.init = self.init
-        x.is_param_ps = self.is_param_ps
-        x.init_in_server = self.init_in_server
         x.requires_aggr = self.requires_aggr
         if self.cache_shape:
             x.cache_shape = self.cache_shape

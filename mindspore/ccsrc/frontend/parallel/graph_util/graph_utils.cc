@@ -1254,4 +1254,5 @@ CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrLis
   make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
   return make_tuple_node;
 }
+
 }  // namespace mindspore::parallel

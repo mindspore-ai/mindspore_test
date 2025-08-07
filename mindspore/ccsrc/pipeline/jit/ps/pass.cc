@@ -1452,27 +1452,6 @@ bool OverlapRecomputeAndGradModelParallel(const ResourcePtr &resource) {
   return true;
 }
 
-bool AddCacheEmbeddingPass(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_ps_mode()) {
-    return true;
-  }
-#endif
-  FuncGraphPtr func_graph = resource->func_graph();
-  MS_EXCEPTION_IF_NULL(func_graph);
-
-  parallel::AddCacheEmbedding(func_graph);
-  if (func_graph->has_flag(GRAPH_FLAG_CACHE_ENABLE)) {
-    auto params = func_graph->parameters();
-    AbstractBasePtrList args_abs_list;
-    (void)std::for_each(params.begin(), params.end(),
-                        [&args_abs_list](const AnfNodePtr &node) { args_abs_list.push_back(node->abstract()); });
-    func_graph = pipeline::Renormalize(resource, func_graph, args_abs_list);
-  }
-  return true;
-}
-
 bool RemoveValueNodeDuplicationsPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->func_graph() == nullptr) {
@@ -1877,7 +1856,6 @@ bool BackendPass(const ResourcePtr &resource) {
 }
 
 REGISTER_PASS_FUNC_IMPL(CconvPass)
-REGISTER_PASS_FUNC_IMPL(AddCacheEmbeddingPass)
 REGISTER_PASS_FUNC_IMPL(RemoveValueNodeDuplicationsPass)
 REGISTER_PASS_FUNC_IMPL(AddRecomputationPass)
 
@@ -1905,7 +1883,6 @@ std::vector<PassItem> kVmPasses = {
   {kRemoveDupValue, RemoveValueNodeDuplicationsPass},
   {kTupleTransform, OptPassTransformGraphGroup},
   {kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass},
-  {"add_cache_embedding", AddCacheEmbeddingPass},
   {kAddRecomputation, AddRecomputationPass},
   {kCseAfterRecomputation, OptAfterRecomputeGroup},
   {kEnvironConv, EnvironConversionPass},

@@ -1953,6 +1953,14 @@ void SuperKernelActor::GenerateKernelRunners() {
            "heterogeneous(cpu) kernel or disable kernel group launch feature.";
     }
 
+    if (IsInnerControlFlowActor(kernel)) {
+      kernel_actors_[i] = BuildInnerControlFlowActor(kernel, real_device_context, GraphExecutionStrategy::kPipeline,
+                                                     ref_input_indexes, ref_output_indexes);
+      SchedulerHelper::AddSomasInfoV2(kernel_actors_[i].get());
+      cnode_to_kernel_actor_[kernel] = kernel_actors_[i].get();
+      continue;
+    }
+
     KernelRunnerPtr kernel_actor = std::make_shared<KernelRunner>(
       GenerateActorIdByKernel(kernel), kernel, real_device_context, memory_manager_aid_, debug_aid_, recorder_aid_,
       GraphExecutionStrategy::kPipeline, ref_input_indexes, ref_output_indexes);

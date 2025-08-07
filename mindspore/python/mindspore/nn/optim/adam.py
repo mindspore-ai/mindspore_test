@@ -28,7 +28,6 @@ from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as validator
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.nn.optim.optimizer import opt_init_args_register
-from mindspore.nn.optim._dist_optimizer_registry import _register_dist_optimizer
 from mindspore.common._decorator import deprecated
 
 _adam_opt = C.MultitypeFuncGraph("adam_opt")
@@ -713,7 +712,6 @@ class Adam(Optimizer):
             self.opt = P.Adam(use_locking, use_nesterov)
             self.sparse_opt = P.FusedSparseLazyAdam(use_locking, use_nesterov)
             self.sparse_opt.set_device("CPU")
-            self._init_distributed_opts(use_locking, use_nesterov)
 
         else:
             self._is_device = True
@@ -723,7 +721,6 @@ class Adam(Optimizer):
                 self.opt = P.Adam(use_locking, use_nesterov)
             self.sparse_opt = P.FusedSparseAdam(use_locking, use_nesterov)
             self.sparse_opt.set_device("CPU")
-            self._init_distributed_opts(use_locking, use_nesterov)
 
     def _apply_adam(self, params, beta1_power, beta2_power, moment1, moment2, lr, gradients):
         """Execute Adam optimizer and its variants."""
@@ -736,83 +733,44 @@ class Adam(Optimizer):
                                                      self.beta2, self.eps, lr), gradients, params, moment1, moment2)
         # Lazy adam or normal adam
         else:
-            if self.use_dist_optimizer:
-                if self.use_dist_optimizer and self.use_amsgrad:
-                    raise ValueError(f"Adam with amsgrad is currently not supporting distributed training!"
-                                     f"Please set use_amsgrad=False for distributed training.")
-                if self.is_group_lr:
-                    if self.use_lazy:
-                        success = self.map_reverse(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
-                                                             self.use_locking, self.use_nesterov,
-                                                             self._is_device, beta1_power, beta2_power,
-                                                             self.beta1, self.beta2, self.eps),
-                                                   lr, gradients, self._parameters, self.moment1, self.moment2,
-                                                   self.dense_lazyadam_opts,
-                                                   self.use_dense_opt_flags, self.sparse_lazyadam_opts,
-                                                   self.use_sparse_opt_flags)
-                    # Normal Adam
-                    else:
-                        success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt, self.use_locking,
-                                                      self.use_nesterov, self._is_device, beta1_power, beta2_power,
-                                                      self.beta1, self.beta2, self.eps),
-                                            lr, gradients, params, moment1, moment2,
-                                            self.dense_adam_opts, self.use_dense_opt_flags,
-                                            self.sparse_adam_opts, self.use_sparse_opt_flags)
+            if self.is_group_lr:
+                if self.use_lazy:
+                    success = self.map_(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
+                                                  self.use_locking, self.use_nesterov,
+                                                  self._is_device, beta1_power, beta2_power, self.beta1, self.beta2,
+                                                  self.eps), lr, gradients, params, moment1, moment2)
                 else:
-                    if self.use_lazy:
-                        success = self.map_reverse(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
-                                                             self.use_locking, self.use_nesterov,
-                                                             self._is_device, beta1_power, beta2_power, self.beta1,
-                                                             self.beta2, self.eps, lr), gradients, self._parameters,
-                                                   self.moment1, self.moment2,
-                                                   self.dense_lazyadam_opts, self.use_dense_opt_flags,
-                                                   self.sparse_lazyadam_opts, self.use_sparse_opt_flags)
+                    if self.use_amsgrad:
+                        success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
+                                                      self.use_locking, self.use_nesterov,
+                                                      self._is_device, beta1_power, beta2_power,
+                                                      self.beta1, self.beta2, self.eps), lr, gradients, params,
+                                            moment1, moment2, self.vhat)
                     else:
                         success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
                                                       self.use_locking, self.use_nesterov,
-                                                      self._is_device, beta1_power, beta2_power, self.beta1, self.beta2,
-                                                      self.eps, lr), gradients, params, moment1, moment2,
-                                            self.dense_adam_opts,
-                                            self.use_dense_opt_flags, self.sparse_adam_opts, self.use_sparse_opt_flags)
+                                                      self._is_device, beta1_power, beta2_power,
+                                                      self.beta1, self.beta2, self.eps), lr, gradients, params,
+                                            moment1, moment2)
             else:
-                if self.is_group_lr:
-                    if self.use_lazy:
-                        success = self.map_(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
-                                                      self.use_locking, self.use_nesterov,
-                                                      self._is_device, beta1_power, beta2_power, self.beta1, self.beta2,
-                                                      self.eps), lr, gradients, params, moment1, moment2)
-                    else:
-                        if self.use_amsgrad:
-                            success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
-                                                          self.use_locking, self.use_nesterov,
-                                                          self._is_device, beta1_power, beta2_power,
-                                                          self.beta1, self.beta2, self.eps), lr, gradients, params,
-                                                moment1, moment2, self.vhat)
-                        else:
-                            success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
-                                                          self.use_locking, self.use_nesterov,
-                                                          self._is_device, beta1_power, beta2_power,
-                                                          self.beta1, self.beta2, self.eps), lr, gradients, params,
-                                                moment1, moment2)
+                if self.use_lazy:
+                    success = self.map_(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
+                                                  self.use_locking, self.use_nesterov,
+                                                  self._is_device, beta1_power, beta2_power, self.beta1, self.beta2,
+                                                  self.eps, lr), gradients, params, moment1, moment2)
                 else:
-                    if self.use_lazy:
-                        success = self.map_(F.partial(_lazy_adam_opt, self.opt, self.sparse_opt,
+                    if self.use_amsgrad:
+                        success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
                                                       self.use_locking, self.use_nesterov,
-                                                      self._is_device, beta1_power, beta2_power, self.beta1, self.beta2,
-                                                      self.eps, lr), gradients, params, moment1, moment2)
+                                                      self._is_device, beta1_power, beta2_power,
+                                                      self.beta1, self.beta2, self.eps, lr), gradients, params,
+                                            moment1, moment2, self.vhat)
                     else:
-                        if self.use_amsgrad:
-                            success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
-                                                          self.use_locking, self.use_nesterov,
-                                                          self._is_device, beta1_power, beta2_power,
-                                                          self.beta1, self.beta2, self.eps, lr), gradients, params,
-                                                moment1, moment2, self.vhat)
-                        else:
-                            success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
-                                                          self.use_locking, self.use_nesterov,
-                                                          self._is_device, beta1_power, beta2_power,
-                                                          self.beta1, self.beta2, self.eps, lr), gradients, params,
-                                                moment1, moment2)
+                        success = self.map_(F.partial(_adam_opt, self.opt, self.sparse_opt,
+                                                      self.use_locking, self.use_nesterov,
+                                                      self._is_device, beta1_power, beta2_power,
+                                                      self.beta1, self.beta2, self.eps, lr), gradients, params,
+                                            moment1, moment2)
 
         return success
 
@@ -843,13 +801,6 @@ class Adam(Optimizer):
         optimizer operation.
         """
         self._set_base_target(value)
-
-    def _init_distributed_opts(self, use_locking, use_nesterov):
-        self.use_dist_optimizer = self._use_distibuted_optimizer()
-        self.dense_adam_opts, self.use_dense_opt_flags = \
-            self._get_distributed_optimizer_list("adam", use_locking, use_nesterov)
-        self.sparse_adam_opts, self.use_sparse_opt_flags = \
-            self._get_distributed_optimizer_list("fused_sparse_adam", use_locking, use_nesterov)
 
 
 class AdamWeightDecay(Optimizer):
@@ -1218,30 +1169,3 @@ class AdamOffload(Optimizer):
                                                  beta1_power, beta2_power, self.beta1, self.beta2, self.eps, lr),
                                        gradients, params, moment1, moment2)
         return success
-
-
-def create_distributed_adam(*args, **kwargs):
-    """
-    Create the distributed Adam op.
-    """
-    adam = P.Adam(*args, **kwargs)
-    adam.add_prim_attr("gradient_type", "dense_gradient")
-    adam.add_prim_attr("parameter_input_index", 0)
-    adam.add_prim_attr("gradient_input_index", 9)
-    return adam
-
-
-def create_distributed_fused_sparse_adam(*args, **kwargs):
-    """
-    Create the distributed FusedSparseAdam op.
-    """
-    sparse_adam = P.FusedSparseAdam(*args, **kwargs)
-    sparse_adam.add_prim_attr("gradient_type", "sparse_gradient")
-    sparse_adam.add_prim_attr("parameter_input_index", 0)
-    sparse_adam.add_prim_attr("gradient_input_index", 9)
-    sparse_adam.add_prim_attr("indices_input_index", 10)
-    return sparse_adam
-
-
-_register_dist_optimizer("adam", create_distributed_adam)
-_register_dist_optimizer("fused_sparse_adam", create_distributed_fused_sparse_adam)

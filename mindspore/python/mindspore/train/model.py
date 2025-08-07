@@ -40,9 +40,7 @@ from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
 from mindspore.parallel._utils import _get_parallel_mode, _get_device_num, _get_parameter_broadcast, \
-    _device_number_check, _parameter_broadcast_check, _parallel_predict_check, \
-    _reset_op_id_with_offset
-from mindspore.parallel._ps_context import _is_role_pserver, _is_ps_mode, _cache_enable, _enable_distributed_mindrt
+    _device_number_check, _parameter_broadcast_check, _parallel_predict_check
 from mindspore.train.metrics import Loss
 from mindspore.log import vlog_print
 from mindspore import nn
@@ -727,10 +725,7 @@ class Model:
         metrics = dict()
         # There's no need for server to execute eval, just give fake metrics.
         for key, value in self._metric_fns.items():
-            if not _is_role_pserver():
-                metrics[key] = value.eval()
-            else:
-                metrics[key] = 1
+            metrics[key] = value.eval()
         return metrics
 
     def _get_scaling_sens(self):
@@ -1014,9 +1009,6 @@ class Model:
         callbacks = cb_params.list_callback
         cb_params.train_dataset_element = None
         cb_params.network = self._network
-        # Embedding cache server only run one step.
-        if _is_role_pserver() and _cache_enable():
-            epoch = 1
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
@@ -1119,12 +1111,6 @@ class Model:
                 _clean_rootinfo()
 
             dataset_helper.continue_send()
-
-            # When it's distributed training and using MindRT,
-            # the node id should be reset to start from 0.
-            # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
-            if _enable_distributed_mindrt():
-                _reset_op_id_with_offset()
 
             self._eval_during_train(valid_infos, cb_params, list_callback)
             list_callback.on_train_epoch_end(run_context)
@@ -1230,12 +1216,6 @@ class Model:
                 if should_stop:
                     break
 
-            # When it's distributed training and using MindRT,
-            # the node id should be reset to start from 0.
-            # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
-            if _enable_distributed_mindrt():
-                _reset_op_id_with_offset()
-
             self._eval_during_train(valid_infos, cb_params, list_callback)
 
             train_dataset.reset()
@@ -1243,6 +1223,7 @@ class Model:
             # if param is cache enable, flush data from cache to host before epoch end
             self._flush_from_cache(cb_params)
 
+            list_callback.on_train_epoch_end(run_context)
             if "metrics" in cb_params or "eval_results" in cb_params:
                 cb_params.pop("metrics", None)
                 cb_params.pop("eval_results", None)
@@ -1320,9 +1301,6 @@ class Model:
         _init_auto_parallel_context(self._network)
         _check_tft()
         device_target = context.get_context("device_target")
-        if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
-            logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
-            dataset_sink_mode = False
 
         Validator.check_bool(dataset_sink_mode)
         if isinstance(self._train_network, nn.GraphCell) and dataset_sink_mode:
@@ -1333,11 +1311,6 @@ class Model:
                              "should be equal to value in Model.train, but got the value of epoch in build {} and "
                              "the value of epoch in train {} separately."
                              .format(train_dataset._warmup_epoch, epoch))
-
-        # Parameter server and embedding cache mode check.
-        if _is_ps_mode():
-            if not dataset_sink_mode and _cache_enable():
-                raise ValueError("Embedding cache mode should run with 'dataset_sink_mode=True'.")
 
         self._check_sink_mode_for_ds_debug_mode(dataset_sink_mode)
 
@@ -1368,12 +1341,6 @@ class Model:
                     dataset_sink_mode=dataset_sink_mode,
                     sink_size=sink_size,
                     initial_epoch=initial_epoch)
-
-        # When it's distributed training and using MindRT,
-        # the node id should be reset to start from 0.
-        # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
-        if _enable_distributed_mindrt():
-            _reset_op_id_with_offset()
 
         _clear_auto_parallel_context(self._network)
 
@@ -1473,9 +1440,6 @@ class Model:
         """
         _init_auto_parallel_context(self._network)
         device_target = context.get_context("device_target")
-        if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
-            logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
-            dataset_sink_mode = False
 
         dataset_sink_mode = Validator.check_bool(dataset_sink_mode)
         valid_dataset_sink_mode = Validator.check_bool(valid_dataset_sink_mode)
@@ -1780,13 +1744,7 @@ class Model:
             else:
                 eval_result = self._eval_process(valid_dataset, list_callback, cb_params)
 
-        # When it's distributed training and using MindRT,
-        # the node id should be reset to start from 0.
-        # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
-        if _enable_distributed_mindrt():
-            _reset_op_id_with_offset()
         _clear_auto_parallel_context(self._network)
-
         return eval_result
 
     def _predict_lite(self, *predict_data, config=None):
@@ -2037,13 +1995,6 @@ class Model:
         result = self._predict_network(*predict_data)
 
         check_output_data(result)
-
-        # When it's distributed training and using MindRT,
-        # the node id should be reset to start from 0.
-        # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
-        if _enable_distributed_mindrt():
-            _reset_op_id_with_offset()
-
         return result
 
     def _infer_train_check(self, train_dataset, dataset_sink_mode, sink_size):

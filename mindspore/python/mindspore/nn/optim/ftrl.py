@@ -21,25 +21,8 @@ from mindspore.common.api import jit
 from mindspore import _checkparam as validator
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.nn.optim.optimizer import opt_init_args_register
-from mindspore.nn.optim._dist_optimizer_registry import _register_dist_optimizer
 
 _ftrl_opt = C.MultitypeFuncGraph("ftrl_opt")
-
-
-@_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "Tensor",
-                    "RowTensor", "Tensor", "Tensor", "Bool", "Function", "Bool", "Function", "Bool")
-def _tensor_run_opt_with_sparse_dist(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                                     gradient, weight, moment, cache_enable,
-                                     distributed_opt, use_flag, distributed_sparse_opt, use_sparse_flag):
-    """Apply sparse ftrl optimizer to the weight parameter when the gradient is sparse."""
-    success = True
-    indices = gradient.indices
-    values = gradient.values
-    if use_sparse_flag:
-        success = F.depend(success, distributed_sparse_opt(weight, moment, linear, values, indices))
-    else:
-        success = F.depend(success, spars_opt(weight, moment, linear, values, indices))
-    return success
 
 
 def _apply_map_tensor_ftrl(l1, l2, lr_power, learning_rate, linear, weight, moment, indices, values):
@@ -77,44 +60,10 @@ def _apply_map_tensor_ftrl(l1, l2, lr_power, learning_rate, linear, weight, mome
 
     return success
 
-
-@_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "MapTensor",
-                    "MapTensor", "MapTensor", "MapTensor", "Bool", "Function", "Bool", "Function", "Bool")
-def _run_map_tensor_opt_with_sparse_dist(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                                         gradient, weight, moment, cache_enable,
-                                         distributed_opt, use_flag, distributed_sparse_opt, use_sparse_flag):
-    """Apply sparse ftrl optimizer to the weight parameter when the gradient is sparse."""
-    success = True
-    indices, values = gradient.get_data()
-    if use_sparse_flag:
-        # PS Mode.
-        success = F.depend(success, distributed_sparse_opt(weight, moment, linear, values, indices))
-    elif cache_enable:
-        # PS Cache mode.
-        _apply_map_tensor_ftrl(l1, l2, lr_power, learning_rate, linear, weight, moment, indices, values)
-    else:
-        raise Exception("Unexpected mode for distributed optimizer.")
-    return success
-
-
 @_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "Tensor",
-                    "Tensor", "Tensor", "Tensor", "Bool", "Function", "Bool", "Function", "Bool")
-def _tensor_run_opt_dist(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                         gradient, weight, moment, cache_enable,
-                         distributed_opt, use_flag, distributed_sparse_opt, use_sparse_flag):
-    """Apply ftrl optimizer to the weight parameter."""
-    success = True
-    if use_flag:
-        success = F.depend(success, distributed_opt(weight, moment, linear, gradient, learning_rate, l1, l2, lr_power))
-    else:
-        success = F.depend(success, opt(weight, moment, linear, gradient, learning_rate, l1, l2, lr_power))
-    return success
-
-
-@_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "Tensor",
-                    "RowTensor", "Tensor", "Tensor", "Bool")
+                    "RowTensor", "Tensor", "Tensor")
 def _tensor_run_opt_with_sparse(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                                gradient, weight, moment, cache_enable):
+                                gradient, weight, moment):
     """Apply sparse ftrl optimizer to the weight parameter when the gradient is sparse."""
     success = True
     indices = gradient.indices
@@ -124,9 +73,9 @@ def _tensor_run_opt_with_sparse(opt, spars_opt, l1, l2, lr_power, learning_rate,
 
 
 @_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "MapTensor",
-                    "MapTensor", "MapTensor", "MapTensor", "Bool")
+                    "MapTensor", "MapTensor", "MapTensor")
 def _run_map_tensor_opt_with_sparse(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                                    gradient, weight, moment, cache_enable):
+                                    gradient, weight, moment):
     """Apply sparse ftrl optimizer to the weight parameter when the gradient is sparse."""
     success = True
     indices, values = gradient.get_data()
@@ -135,9 +84,9 @@ def _run_map_tensor_opt_with_sparse(opt, spars_opt, l1, l2, lr_power, learning_r
 
 
 @_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "Tensor",
-                    "Tensor", "Tensor", "Tensor", "Bool")
+                    "Tensor", "Tensor", "Tensor")
 def _tensor_run_opt(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
-                    gradient, weight, moment, cache_enable):
+                    gradient, weight, moment):
     """Apply ftrl optimizer to the weight parameter."""
     success = True
     success = F.depend(success, opt(weight, moment, linear, gradient, learning_rate, l1, l2, lr_power))
@@ -320,8 +269,6 @@ class FTRL(Optimizer):
         self.use_locking = use_locking
         self.sparse_opt = P.SparseApplyFtrl(learning_rate, l1, l2, lr_power, use_locking=use_locking)
 
-        self._init_distributed_opts(use_locking, learning_rate, l1, l2, lr_power)
-
     @jit
     def construct(self, grads):
         params = self._parameters
@@ -334,14 +281,8 @@ class FTRL(Optimizer):
         lr = self.get_lr()
         self.assignadd(self.global_step, self.global_step_increase_tensor)
 
-        if self.use_dist_optimizer:
-            success = self.map_(F.partial(_ftrl_opt, self.opt, self.sparse_opt, self.l1, self.l2, self.lr_power, lr),
-                                linear, grads, params, moments, self.cache_enable,
-                                self.distributed_opts, self.use_distributed_opt_flags,
-                                self.distributed_sparse_opts, self.use_distributed_sparse_opt_flags)
-        else:
-            success = self.map_(F.partial(_ftrl_opt, self.opt, self.sparse_opt, self.l1, self.l2, self.lr_power, lr),
-                                linear, grads, params, moments, self.cache_enable)
+        success = self.map_(F.partial(_ftrl_opt, self.opt, self.sparse_opt, self.l1, self.l2, self.lr_power, lr),
+                            linear, grads, params, moments)
         return success
 
     @Optimizer.target.setter
@@ -365,38 +306,3 @@ class FTRL(Optimizer):
             self.sparse_opt = P.SparseApplyFtrl(self.lr, self.l1, self.l2, self.lr_power, self.use_locking)
 
         self._target = value
-
-    def _init_distributed_opts(self, use_locking, learning_rate, l1, l2, lr_power):
-        self.use_dist_optimizer = self._use_distibuted_optimizer()
-        self.distributed_opts, self.use_distributed_opt_flags =\
-        self._get_distributed_optimizer_list("ftrl", use_locking=use_locking)
-        self.distributed_sparse_opts, self.use_distributed_sparse_opt_flags =\
-        self._get_distributed_optimizer_list("fused_sparse_ftrl", learning_rate,
-                                             l1, l2, lr_power, use_locking=use_locking)
-
-
-def create_distributed_ftrl(*args, **kwargs):
-    """
-    Create the distributed ApplyFtrl op.
-    """
-    ftrl = P.ApplyFtrl(*args, **kwargs)
-    ftrl.add_prim_attr("gradient_type", "dense_gradient")
-    ftrl.add_prim_attr("parameter_input_index", 0)
-    ftrl.add_prim_attr("gradient_input_index", 3)
-    return ftrl
-
-
-def create_distributed_fused_sparse_ftrl(*args, **kwargs):
-    """
-    Create the distributed FusedSparseFtrl op.
-    """
-    sparse_ftrl = P.FusedSparseFtrl(*args, **kwargs)
-    sparse_ftrl.add_prim_attr("gradient_type", "sparse_gradient")
-    sparse_ftrl.add_prim_attr("parameter_input_index", 0)
-    sparse_ftrl.add_prim_attr("gradient_input_index", 3)
-    sparse_ftrl.add_prim_attr("indices_input_index", 4)
-    return sparse_ftrl
-
-
-_register_dist_optimizer("ftrl", create_distributed_ftrl)
-_register_dist_optimizer("fused_sparse_ftrl", create_distributed_fused_sparse_ftrl)

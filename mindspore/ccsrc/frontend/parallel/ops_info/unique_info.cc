@@ -96,8 +96,6 @@ std::vector<StrategyPtr> UniqueInfo::GenerateOpStrategies(int64_t stage_id) {
 
   return sp_vector;
 }
-ReplaceGraphPtr UniqueInfo::replace_graph(const CNodePtr &cnode) { return nullptr; }
-
 REGISTER(UniqueInfo);
 }  // namespace parallel
 }  // namespace mindspore

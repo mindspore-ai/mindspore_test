@@ -494,9 +494,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
 
   const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(output_node, output_index);
   MS_EXCEPTION_IF_NULL(abstract);
-  if (abstract->isa<abstract::AbstractMapTensor>()) {
-    return AnfAlgo::CreateMapTensor(output_node, output_index);
-  }
 
   if (!flatten_stub_nodes_.empty() && is_dynamic_shape_output) {
     const auto &clone_abs = abstract->Clone();
