@@ -23,6 +23,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_expander_cloud.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "graph_kernel/expander/base.h"
 
 namespace mindspore::graphkernel::test {

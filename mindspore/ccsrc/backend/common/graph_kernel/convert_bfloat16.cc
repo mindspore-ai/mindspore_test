@@ -18,6 +18,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include "include/backend/kernel_info.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

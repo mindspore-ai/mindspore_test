@@ -34,6 +34,7 @@
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/trace_base.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "include/backend/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "backend/common/optimizer/common_backend_optimization.h"

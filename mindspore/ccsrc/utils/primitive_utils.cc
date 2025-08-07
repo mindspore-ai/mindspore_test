@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "ir/primitive.h"
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

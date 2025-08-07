@@ -16,6 +16,7 @@
 
 #include "pattern_to_pattern_pass_utils.h"
 
+#include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"

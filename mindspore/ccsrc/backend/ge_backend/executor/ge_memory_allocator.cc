@@ -27,6 +27,7 @@
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "abstract/abstract_value.h"
+#include "include/backend/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "backend/ge_backend/utils/device_address_utils.h"

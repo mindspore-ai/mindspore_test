@@ -32,14 +32,14 @@
 #include "ir/kernel_info_dev.h"
 #include "common/kernel.h"
 #include "common/kernel_build_info.h"
-#include "utils/anf_utils.h"
 #include "include/common/utils/contract.h"
 #include "common/device_address.h"
-#include "include/backend/kernel_graph.h"
-#include "include/backend/kernel_info.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
+namespace device {
+class KernelInfo;
+}
 namespace session {
 using DeviceAddress = device::DeviceAddress;
 using DeviceAddressPtr = device::DeviceAddressPtr;
@@ -48,6 +48,10 @@ using AddressPtr = kernel::AddressPtr;
 using kernel::KernelObjectType;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
+using AnfWithOutIndex = std::pair<AnfNodePtr, size_t>;
+using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
+class KernelGraph;
+using KernelGraphPtr = std::shared_ptr<KernelGraph>;
 
 class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
  public:
@@ -323,13 +327,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static abstract::AbstractBasePtr GetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
   static abstract::AbstractBasePtr GetNodeAbstractByIndex(AnfNode *node, size_t index);
 
-  static inline ValueNodePtr ConvertValueToNode(const KernelGraphPtr &kernel_graph, const ValuePtr &value) {
-    MS_EXCEPTION_IF_NULL(kernel_graph);
-    MS_EXCEPTION_IF_NULL(value);
-    auto value_node = kernel_graph->NewValueNode(value->ToAbstract(), value);
-    kernel_graph->AddValueNodeToGraph(value_node);
-    return value_node;
-  }
+  static ValueNodePtr ConvertValueToNode(const KernelGraphPtr &kernel_graph, const ValuePtr &value);
   // create type id value node and add it to graph
   static ValueNodePtr CreateTypeIdValueNodeToKernelGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static ValueNodePtr CreateTypeIdValueNodeToFuncGraph(const FuncGraphPtr &func_graph, TypeId data_type);

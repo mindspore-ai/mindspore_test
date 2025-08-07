@@ -27,6 +27,7 @@
 #include "common/kernel_build_client.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/cuda_env_checker.h"

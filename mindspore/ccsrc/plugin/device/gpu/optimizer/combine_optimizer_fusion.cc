@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"

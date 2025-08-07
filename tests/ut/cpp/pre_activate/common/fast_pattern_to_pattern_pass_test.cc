@@ -17,6 +17,7 @@
 #include "pattern_to_pattern_pass_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/node_pass.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace opt {

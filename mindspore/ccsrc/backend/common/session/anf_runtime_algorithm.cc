@@ -36,6 +36,8 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/backend/kernel_info.h"
+#include "include/backend/kernel_graph.h"
+#include "include/common/utils/convert_utils.h"
 #include "common/device_address.h"
 #include "include/backend/optimizer/helper.h"
 #include "common/kernel.h"
@@ -2677,6 +2679,14 @@ abstract::AbstractBasePtr AnfRuntimeAlgorithm::GetNodeAbstractByIndex(const AnfN
     return sub_abstract;
   }
   return elements[index];
+}
+
+ValueNodePtr AnfRuntimeAlgorithm::ConvertValueToNode(const KernelGraphPtr &kernel_graph, const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_EXCEPTION_IF_NULL(value);
+  auto value_node = kernel_graph->NewValueNode(value->ToAbstract(), value);
+  kernel_graph->AddValueNodeToGraph(value_node);
+  return value_node;
 }
 
 ValueNodePtr AnfRuntimeAlgorithm::CreateTypeIdValueNodeToKernelGraph(const FuncGraphPtr &func_graph, TypeId data_type) {

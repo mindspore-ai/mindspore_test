@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "include/backend/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/framework_ops.h"

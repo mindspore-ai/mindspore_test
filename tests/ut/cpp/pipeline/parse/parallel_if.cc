@@ -22,6 +22,7 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"
+#include "include/common/utils/convert_utils.h"
 
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/opt.h"

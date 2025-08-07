@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "include/common/utils/convert_utils.h"
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/cast_eliminate.h"
@@ -96,9 +97,9 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
     MakeSubstitution(std::make_shared<ArithmeticSimplify>(), "arithmetic_simplify",
                      {prim::kPrimScalarAdd, prim::kPrimScalarMul, prim::kPrimAdd, prim::kPrimidentity,
                       prim::kPrimMomentum, prim::kPrimMul, prim::kPrimMuls, prim::kPrimPow});
-  special_op_eliminate_ = MakeSubstitution(
-    std::make_shared<SpecialOpEliminater>(), "special_op_eliminate",
-    {prim::kPrimInsertGradientOf, prim::kPrimHookBackward, prim::kPrimPrintShapeType});
+  special_op_eliminate_ =
+    MakeSubstitution(std::make_shared<SpecialOpEliminater>(), "special_op_eliminate",
+                     {prim::kPrimInsertGradientOf, prim::kPrimHookBackward, prim::kPrimPrintShapeType});
   mutable_op_eliminate_ =
     MakeSubstitution(std::make_shared<MutableEliminater>(), "mutable_eliminate", prim::kPrimMutable);
   ad_related_special_op_eliminate_ =

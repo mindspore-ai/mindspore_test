@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "utils/log_adapter.h"

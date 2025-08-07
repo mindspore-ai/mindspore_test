@@ -24,6 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/convert_utils.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"

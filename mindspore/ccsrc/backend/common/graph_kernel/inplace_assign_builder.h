@@ -21,6 +21,8 @@
 #include <vector>
 #include <string>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/kernel_info.h"
+#include "include/common/utils/convert_utils.h"
 
 namespace mindspore::graphkernel {
 struct InplaceAssignerInfo {

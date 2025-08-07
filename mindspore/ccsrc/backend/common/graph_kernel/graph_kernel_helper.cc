@@ -25,6 +25,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "base/base.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/python_adapter.h"

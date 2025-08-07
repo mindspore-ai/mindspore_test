@@ -28,6 +28,7 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
+#include "include/common/utils/convert_utils.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
 #include "common/device_address.h"

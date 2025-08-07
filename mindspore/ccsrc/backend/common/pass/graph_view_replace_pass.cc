@@ -22,6 +22,7 @@
 #include <vector>
 #include <set>
 #include <utility>
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/other_op_name.h"

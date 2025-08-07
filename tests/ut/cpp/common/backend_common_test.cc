@@ -26,6 +26,7 @@
 #include "utils/log_adapter.h"
 #include "frontend/operator/ops.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/utils/convert_utils.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/action.h"
 #include "ir/anf.h"

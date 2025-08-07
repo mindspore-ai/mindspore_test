@@ -30,7 +30,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/convert_utils.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"

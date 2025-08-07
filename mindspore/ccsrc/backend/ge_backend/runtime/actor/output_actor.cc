@@ -16,6 +16,7 @@
 
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "utils/ms_context.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"

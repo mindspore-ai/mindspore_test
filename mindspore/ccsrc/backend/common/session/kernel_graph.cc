@@ -23,6 +23,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "common/common_utils.h"
 #include "kernel/framework_utils.h"

@@ -36,7 +36,6 @@
 #include "include/api/format.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/convert_utils.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"
