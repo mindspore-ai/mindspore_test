@@ -946,9 +946,9 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   }
 }
 
-void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
-                                const AnfNodePtr &node, bool is_first_user, size_t stream_id,
-                                bool *has_h2d_copy = nullptr) {
+void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
+                                 const AnfNodePtr &node, bool is_first_user, size_t stream_id,
+                                 bool *has_h2d_copy = nullptr) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
@@ -1022,9 +1022,8 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   graph_parameter_store->InsertDeviceTensorIntoCallback(tensor->device_address());
 }
 
-void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
-                                const AID &from_aid, bool is_first_user, size_t stream_id,
-                                bool *has_h2d_copy = nullptr) {
+void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
+                              const AID &from_aid, bool is_first_user, size_t stream_id, bool *has_h2d_copy = nullptr) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
@@ -1065,8 +1064,8 @@ void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parame
 
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
-  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id,
-                             has_h2d_copy);
+  AllocMemAndCopyForParameter(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id,
+                              has_h2d_copy);
   if ((graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
@@ -1179,7 +1178,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                   << device::GetDeviceNameByType(
                        graph_parameter_store->GetParameterDeviceType(outer_index, inner_index))
                   << " outer index:" << outer_index << " inner index:" << inner_index;
-    PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
+    PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
