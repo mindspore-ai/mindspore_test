@@ -30,6 +30,8 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "debug/profiler/profiling.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -92,6 +94,8 @@ class InternalKernelMod : public KernelMod {
   std::vector<size_t> nz_output_indices_;
   std::string fullname_;
   static SimpleSpinLock lock_;
+  aclmdlRICaptureStatus capture_status_{ACL_MODEL_RI_CAPTURE_STATUS_NONE};
+  aclmdlRI ri_model_{nullptr};
 };
 
 using InternalKernelModPtr = std::shared_ptr<InternalKernelMod>;

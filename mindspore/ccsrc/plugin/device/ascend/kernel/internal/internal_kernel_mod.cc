@@ -347,6 +347,22 @@ void InternalKernelMod::UpdateAddr(const std::vector<KernelTensor *> &inputs,
 
 bool InternalKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  auto acl_ret =
+    CALL_ASCEND_API(aclmdlRICaptureGetInfo, reinterpret_cast<aclrtStream>(stream_ptr), &capture_status_, &ri_model_);
+  if (acl_ret != ACL_SUCCESS) {
+    MS_LOG(ERROR) << "Op " << kernel_name_ << " call aclmdlRICaptureGetInfo failed, ret: " << acl_ret;
+    return false;
+  }
+
+  if (capture_status_ == ACL_MODEL_RI_CAPTURE_STATUS_ACTIVE) {
+    InternalTilingCache::GetInstance().SetItemToPermanent(last_item_);
+    MS_LOG(INFO) << "aclgraph is capturing model, set tiling item to permanent, op_name: " << kernel_name_
+                 << ", item_ptr: " << last_item_ << ", inputs info: ";
+    for (const auto input : inputs) {
+      MS_LOG(INFO) << input->ToString();
+    }
+  }
+
   UpdateAddr(inputs, outputs, workspace);
   internal::InternalStatus status =
     internal_op_->Launch(internal_inputs_addr_, internal_outputs_addr_, internal_wss_addr_, stream_ptr, fullname_);
