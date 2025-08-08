@@ -28,11 +28,6 @@
 #include "frontend/parallel/strategy.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
-#include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
-#endif
 
 namespace mindspore {
 namespace parallel {
@@ -101,73 +96,6 @@ std::vector<StrategyPtr> UniqueInfo::GenerateOpStrategies(int64_t stage_id) {
 
   return sp_vector;
 }
-#if defined(__linux__) && defined(WITH_BACKEND)
-Status UniqueInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
-  GenerateGraph gen_g = GenerateGraph(attrs_);
-  if (gen_g.Init(cnode) != SUCCESS) {
-    MS_LOG(ERROR) << "GenerateGraph Init failed";
-    return FAILED;
-  }
-
-  int64_t bias = 0;
-  if (ps::PSContext::instance()->enable_distributed_mindrt()) {
-    bias = static_cast<int64_t>(embedding_cache_table_manager.cache_indices_lower_bound());
-  }
-  auto slice_size = SizeToLong(embedding_cache_table_manager.cache_size());
-
-  auto sub = gen_g.PushBack({gen_g.NewOpInst(SUB), gen_g.virtual_input_node(), CreateInt32Tensor(bias)});
-  auto relu = gen_g.PushBack({gen_g.NewOpInst(RELU), sub});
-  auto minimum = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu, CreateInt32Tensor(slice_size - 1)});
-  auto equal = gen_g.PushBack({gen_g.NewOpInst(EQUAL), sub, minimum});
-  auto unique = gen_g.PushBack({gen_g.NewOpInst(replace_op_name_), gen_g.virtual_input_node()});
-  // Use name of tuple_getitem instance in mindspore.ops.functional, not the Primitive name
-  const std::string &tuple_getitem_op = "tuple_getitem";
-  auto tuple_getitem_0 = gen_g.PushBack({gen_g.NewOpInst(tuple_getitem_op), unique, CreatInt64Imm(0)});
-  auto tuple_getitem_1 = gen_g.PushBack({gen_g.NewOpInst(tuple_getitem_op), unique, CreatInt64Imm(1)});
-  auto dtype = gen_g.PushBack({gen_g.NewOpInst(DTYPE), tuple_getitem_1});
-  auto dtype_id =
-    gen_g.PushBack({gen_g.NewOpInst(DTYPETOENUM), CreateStringImm("DtypeToEnum"), CreateStringImm("dtype"), dtype});
-  auto cast = gen_g.PushBack({gen_g.NewOpInst(CAST), equal, dtype_id});
-  auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), tuple_getitem_1, cast});
-
-  Attr attr_op = std::make_pair(OP, MakeValue(REDUCE_OP_SUM));
-  OperatorAttrs attrs = {attr_op};
-  AnfNodePtr reduce_op = gen_g.PushBack({gen_g.NewOpInst(ALL_REDUCE, attrs), mul});
-  // Use name of make_tuple instance in mindspore.ops.functional, not the Primitive name
-  const std::string &make_tuple_op = "make_tuple";
-  auto make_tuple = gen_g.PushBack({gen_g.NewOpInst(make_tuple_op), tuple_getitem_0, reduce_op});
-  std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(sub, 1), std::make_pair(unique, 1)};
-  replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
-    std::make_pair(input_nodes, make_tuple));
-  return SUCCESS;
-}
-#endif
-ReplaceGraphPtr UniqueInfo::replace_graph(const CNodePtr &cnode) {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
-    auto inputs = cnode->inputs();
-    if (inputs.empty()) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid inputs";
-    }
-    const auto &primitive = GetValueNode<PrimitivePtr>(inputs[0]);
-    MS_EXCEPTION_IF_NULL(primitive);
-    const auto &attr = primitive->GetAttr("cache_enable");
-    if (attr == nullptr) {
-      return nullptr;
-    }
-    auto need_mask = GetValue<bool>(attr);
-    if (!need_mask) {
-      return nullptr;
-    }
-    if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
-    }
-    return replace_graph_;
-  }
-#endif
-  return nullptr;
-}
-
 REGISTER(UniqueInfo);
 }  // namespace parallel
 }  // namespace mindspore

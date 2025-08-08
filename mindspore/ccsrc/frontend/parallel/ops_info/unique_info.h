@@ -37,7 +37,6 @@ class UniqueInfo : public OperatorInfo {
 
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override;
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
-  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
 
  protected:
   Status CheckStrategy(const StrategyPtr &strategy) override;
@@ -47,9 +46,6 @@ class UniqueInfo : public OperatorInfo {
   Status InferDevMatrixShape() override;
   Status InferForwardCommunication() override { return SUCCESS; }
   Status InferAsLossDivisor() override { return SUCCESS; }
-#if defined(__linux__) && defined(WITH_BACKEND)
-  Status ComputeReplaceGraph(const CNodePtr &cnode);
-#endif
 
  private:
   std::string replace_op_name_ = UNIQUE;

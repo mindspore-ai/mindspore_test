@@ -47,7 +47,6 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_task.h"
-#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/optimizer/reg_gpu_const_input_to_attr.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/optimizer/dynamic_shape_helper.h"

@@ -1952,9 +1952,8 @@ void SuperKernelActor::GenerateKernelRunners() {
         << ". The kernel group launch(parallel launch) feature can not work in this case. Please eliminate "
            "heterogeneous(cpu) kernel or disable kernel group launch feature.";
     }
-    if (IsRpcActor(kernel)) {
-      MS_LOG(EXCEPTION) << "Can not launch a sub graph which contains rpc kernel by kbk.";
-    } else if (IsInnerControlFlowActor(kernel)) {
+
+    if (IsInnerControlFlowActor(kernel)) {
       kernel_actors_[i] = BuildInnerControlFlowActor(kernel, real_device_context, GraphExecutionStrategy::kPipeline,
                                                      ref_input_indexes, ref_output_indexes);
       SchedulerHelper::AddSomasInfoV2(kernel_actors_[i].get());

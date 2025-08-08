@@ -23,7 +23,6 @@ import mindspore.common.dtype as mstype
 from mindspore import _checkparam as Validator
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.nn.optim.optimizer import opt_init_args_register
-from mindspore.nn.optim._dist_optimizer_registry import _register_dist_optimizer
 
 
 _momentum_opt = C.MultitypeFuncGraph("momentum_opt")
@@ -34,18 +33,6 @@ def _tensor_run_opt_ext(opt, momentum, learning_rate, gradient, weight, moment):
     """Apply momentum optimizer to the weight parameter using Tensor."""
     success = F.depend(True, opt(weight, moment, learning_rate, gradient, momentum))
     return success
-
-
-@_momentum_opt.register("Function", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Function", "Bool")
-def _tensor_run_opt_ext_dist(opt, momentum, learning_rate, gradient, weight, moment,
-                             distributed_opt, use_flag):
-    """Apply momentum optimizer to the weight parameter using Tensor."""
-    if use_flag:
-        success = F.depend(True, distributed_opt(weight, moment, learning_rate, gradient, momentum))
-    else:
-        success = F.depend(True, opt(weight, moment, learning_rate, gradient, momentum))
-    return success
-
 
 class Momentum(Optimizer):
     r"""
@@ -196,9 +183,6 @@ class Momentum(Optimizer):
         self.moments = self.params.clone(prefix="moments", init='zeros')
         self.opt = P.ApplyMomentum(use_nesterov=self.use_nesterov)
 
-        self.distributed_opts, self.use_distributed_opt_flags =\
-        self._get_distributed_optimizer_list("momentum", use_nesterov=self.use_nesterov)
-        self.use_dist_optimizer = self._use_distibuted_optimizer()
 
     @jit(backend="ms_backend")
     def construct(self, gradients):
@@ -209,31 +193,10 @@ class Momentum(Optimizer):
         gradients = self.scale_grad(gradients)
         lr = self.get_lr()
         self.assignadd(self.global_step, self.global_step_increase_tensor)
-        if self.use_dist_optimizer:
-            if self.is_group_lr:
-                success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum),
-                                                 lr, gradients, params, moments,
-                                                 self.distributed_opts, self.use_distributed_opt_flags)
-            else:
-                success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum, lr),
-                                                 gradients, params, moments,
-                                                 self.distributed_opts, self.use_distributed_opt_flags)
+        if self.is_group_lr:
+            success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum),
+                                             lr, gradients, params, moments)
         else:
-            if self.is_group_lr:
-                success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum),
-                                                 lr, gradients, params, moments)
-            else:
-                success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum, lr),
-                                                 gradients, params, moments)
+            success = self.hyper_map_reverse(F.partial(_momentum_opt, self.opt, self.momentum, lr),
+                                             gradients, params, moments)
         return success
-
-
-def _create_distributed_momentum(*args, **kwargs):
-    momentum = P.ApplyMomentum(*args, **kwargs)
-    momentum.add_prim_attr("gradient_type", "dense_gradient")
-    momentum.add_prim_attr("parameter_input_index", 0)
-    momentum.add_prim_attr("gradient_input_index", 3)
-    return momentum
-
-
-_register_dist_optimizer("momentum", _create_distributed_momentum)

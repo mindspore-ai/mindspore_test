@@ -32,11 +32,9 @@ import mindspore.common.dtype as mstype
 from mindspore import _checkparam as validator
 from mindspore import log as logger
 from mindspore.parallel._utils import _get_global_rank, _get_device_num, _get_parallel_mode
-from mindspore.parallel._ps_context import _is_ps_mode
 from mindspore.context import ParallelMode
 from mindspore import context
 from mindspore.nn.learning_rate_schedule import LearningRateSchedule
-from mindspore.nn.optim._dist_optimizer_registry import generate_dist_optimizer_list
 
 __all__ = ['Optimizer', 'opt_init_args_register']
 
@@ -273,10 +271,6 @@ class Optimizer(Cell):
         # set user's parameters as local parameters
         for param in self._parameters:
             self._user_parameters.append(param.name)
-        ps_filter = lambda x: x.is_param_ps
-        self.ps_parameters = tuple(ps_filter(x) for x in self._parameters)
-        cache_filter = lambda x: x.cache_enable
-        self.cache_enable = tuple(cache_filter(x) for x in self._parameters)
         self.reciprocal_scale = Tensor(1.0 / self.loss_scale, mstype.float32)
         self.need_scale = self.loss_scale != 1.0
         self.global_step_increase_tensor = Tensor([1], mstype.int32)
@@ -375,13 +369,6 @@ class Optimizer(Cell):
         if not parameters:
             raise ValueError(f"For 'Optimizer', the argument {param_info} must not be empty.")
         return parameters
-
-    @staticmethod
-    def _use_distibuted_optimizer():
-        """
-        Whether use distributed optimizers.
-        """
-        return _is_ps_mode()
 
     def flatten_gradients(self, gradients):
         """
@@ -838,12 +825,6 @@ class Optimizer(Cell):
             for i in range(F.tuple_len(next_params)):
                 F.assign(param_group[root][i], next_params[i])
         return new_param_group
-
-    def _get_distributed_optimizer_list(self, optimizer_type, *args, **kwargs):
-        """
-        Get the distributed optimizers list in distributed training mode.
-        """
-        return generate_dist_optimizer_list(optimizer_type, self._parameters, *args, **kwargs)
 
     def construct(self, *hyper_params):
         raise NotImplementedError

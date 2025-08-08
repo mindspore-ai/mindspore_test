@@ -3490,24 +3490,6 @@ class Cell(Cell_):
         _update_hook_version()
         return handle
 
-    def set_param_ps(self, recurse=True, init_in_server=False):
-        """
-        Set whether the trainable parameters are updated by parameter server and whether the
-        trainable parameters are initialized on server.
-
-        Note:
-            It only works when a running task is in the parameter server mode.
-            It is only supported in graph mode.
-
-        Args:
-            recurse (bool): Whether sets the trainable parameters of subcells. Default: ``True`` .
-            init_in_server (bool): Whether trainable parameters updated by parameter server are
-                initialized on server. Default: ``False`` .
-        """
-        params = self.trainable_params(recurse)
-        for param in params:
-            param.set_param_ps(init_in_server)
-
     def set_comm_fusion(self, fusion_type, recurse=True):
         """
         Set `comm_fusion` for all the parameters in this cell. Please refer to the description of
@@ -3628,35 +3610,6 @@ class Cell(Cell_):
                 raise ValueError("For 'recompute', keyword '%s' is not recognized! "
                                  "the key kwargs must be 'mp_comm_recompute', "
                                  "'parallel_optimizer_comm_recompute', 'recompute_slice_activation'" % key)
-
-    def place(self, role, rank_id):
-        """
-        Set the label for all operators in this cell.
-        This label tells MindSpore compiler on which process this cell should be launched.
-        And each process's identical label consists of input `role` and `rank_id`.
-        So by setting different cells with different labels, which will be launched on different processes,
-        users can launch a distributed training or predicting job.
-
-        Note:
-            - This method is effective only after
-              `mindspore.communication.init()` is called for dynamic cluster building.
-
-        Args:
-            role (str): The role of the process on which this cell will be launched.
-                        Only 'MS_WORKER' is supported for now.
-            rank_id (int): The rank id of the process on which this cell will be launched.
-                           The rank is unique in processes with the same role.
-
-        Examples:
-            >>> from mindspore import context
-            >>> import mindspore.nn as nn
-            >>> context.set_context(mode=context.GRAPH_MODE)
-            >>> fc = nn.Dense(2, 3)
-            >>> fc.place('MS_WORKER', 0)
-        """
-        all_ops = self._get_prims_recursively()
-        for op in all_ops:
-            op.place(role, rank_id)
 
     def _get_attr_from_cell(self, network):
         if not isinstance(network, Cell):

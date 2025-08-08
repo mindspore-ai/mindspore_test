@@ -118,9 +118,6 @@ enum class KernelTransformType {
   kEntranceActor,
   kExitActor,
   kStackActor,
-  // RPC actor type.
-  kSendActor,
-  kRecvActor,
   // Fusion actor type.
   kFusionActor,
   // Memory actor type.
@@ -469,8 +466,6 @@ bool IsSwitchActor(const AnfNodePtr &node);
 // The skip kernel doesn't run, it exists in the inplace optimizer.
 bool IsSkippedKernelActor(const AnfNodePtr &node);
 
-bool IsRpcActor(const AnfNodePtr &node);
-
 bool IsInnerControlFlowActor(const AnfNodePtr &node);
 // Internal parameter is not the origin parameter of func graph, it is the output of previous kernel graph which is
 // related to the input of this kernel graph.
@@ -538,9 +533,6 @@ std::string FetchActorName(KernelTransformType kernel_type, const std::string &a
 std::set<size_t> FetchModifiableRefInputIndex(const CNodePtr &node);
 // Fetch the output indexes which may be modified that exist in the ref node.
 std::set<size_t> FetchModifiableRefOutputIndex(const CNodePtr &node, const KernelGraphPtr &graph);
-
-// Check whether this process is parameter server and enable embedding cache.
-bool is_embedding_cache_server();
 
 std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);

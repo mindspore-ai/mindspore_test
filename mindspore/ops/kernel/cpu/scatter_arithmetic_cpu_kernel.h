@@ -59,12 +59,6 @@ class ScatterArithmeticCpuKernelMod : public NativeCpuKernelMod,
   size_t indices_size_{0};
   int first_dim_size_{0};
 
-  // This flag indicates whether the embedding storage capability is enabled, which supports hot data caching and
-  // persistent storage of non-hotspot data for embedding tables, which is generally used in very large parameter
-  // scenarios.
-  bool enable_embedding_storage_{false};
-  // The global unique parameter key, used to get the embedding storage instance.
-  int32_t parameter_key_{-1};
   bool has_null_input_{false};
 };
 }  // namespace scatter_arithmetic_cpu

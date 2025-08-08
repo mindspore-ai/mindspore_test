@@ -50,5 +50,12 @@ bool IsToBeInsertedSplitOp(const Operator &op);
 Status MergeEntireShapeForDynamic(const FuncGraphPtr &func_graph);
 Status SegmentEntireShapeToPartialForDynamic(const CNodePtr &reshape_node, const FuncGraphPtr &func_graph);
 int64_t GetPrimeFactor(int64_t value);
+
+// Create a TupleGetItem node from a node with tuple output.
+CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node_with_tuple_output,
+                                size_t item_index);
+
+// Create a MakeTuple node from multiple inputs.
+CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs);
 }  // namespace mindspore::parallel
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_GRAPH_UTIL_GRAPH_UTILS_H_

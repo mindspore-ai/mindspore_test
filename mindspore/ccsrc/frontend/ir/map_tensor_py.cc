@@ -23,7 +23,6 @@
 #include "frontend/ir/tensor_py.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
-#include "mindspore/ccsrc/include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
@@ -96,16 +95,7 @@ std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportSliceAsNump
 
 std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportPersistentSliceAsNumpy(
   const MapTensorPtr &map_tensor, int32_t param_key, bool incremental) {
-  MS_EXCEPTION_IF_NULL(map_tensor);
-  bool last_slice = false;
-  auto storage = embedding_storage_manager.Get(param_key);
-  MS_EXCEPTION_IF_NULL(storage);
-  auto slice_data = storage->ExportSlice(incremental, &last_slice);
-  map_tensor->TransExportDataToTensor(slice_data);
-
-  return std::make_tuple(TensorPybind::AsNumpy(*(map_tensor->key_tensor())),
-                         TensorPybind::AsNumpy(*(map_tensor->value_tensor())),
-                         TensorPybind::AsNumpy(*(map_tensor->status_tensor())), last_slice);
+  return {};
 }
 
 static py::object PyMapTensorGetKeys(const MapTensorPtr &map_tensor) {

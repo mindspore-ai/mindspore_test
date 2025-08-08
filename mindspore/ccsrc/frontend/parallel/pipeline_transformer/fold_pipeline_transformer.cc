@@ -23,7 +23,6 @@
 #include <memory>
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
-#include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/group_manager.h"
 #include "frontend/parallel/parameter_manager.h"
@@ -33,8 +32,8 @@
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
-#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

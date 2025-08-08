@@ -29,7 +29,6 @@ void RegParamInfo(const py::module *m) {
     .def_property("name", &ParamInfo::name, &ParamInfo::set_name)
     .def_property("key", &ParamInfo::key, &ParamInfo::set_key)
     .def_property("requires_grad", &ParamInfo::requires_grad, &ParamInfo::set_requires_grad)
-    .def_property("init_in_server", &ParamInfo::init_in_server, &ParamInfo::set_init_in_server)
     .def_property("layerwise_parallel", &ParamInfo::layerwise_parallel, &ParamInfo::set_layerwise_parallel)
     .def_property("parallel_optimizer", &ParamInfo::parallel_optimizer, &ParamInfo::set_parallel_optimizer)
     .def_property("comm_fusion", &ParamInfo::comm_fusion, &ParamInfo::set_comm_fusion)

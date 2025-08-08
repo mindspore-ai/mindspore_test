@@ -51,7 +51,6 @@
 #include "include/backend/optimizer/graph_optimizer.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
-#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #endif
 #include "debug/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
@@ -682,12 +681,6 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   // Create device address for all anf nodes of graph.
   CreateDeviceAddress(graph, device_context);
   PROF_END(CreateDeviceAddress);
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-  // Set device address for embedding cache parameter, only enable when enable embedding cache mode.
-  // `CreateDeviceAddress` should execute before this step.
-  EmbeddingCacheScheduler::GetInstance().SetEmbedCachedParamAddress(device_context, graph);
-#endif
 
   SetSummaryNodesRefCount(graph.get());
 #ifdef ENABLE_DUMP_IR

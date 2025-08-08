@@ -584,11 +584,6 @@ def _reset_op_id():
     reset_op_id()
 
 
-def _reset_op_id_with_offset():
-    """Reset op id with offset."""
-    reset_op_id_with_offset()
-
-
 def _parallel_predict_check():
     """validate parallel model prediction"""
     if _is_in_auto_parallel_mode():

@@ -324,7 +324,6 @@ size_t AnfUtils::GetOutputTensorNum(const AnfNodePtr &node) {
     }
     auto last_type = tuple_type->elements()[res - 1];
     MS_EXCEPTION_IF_NULL(last_type);
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     if (NeedJumpMonadOutput(node) && last_type->isa<MonadType>()) {
       auto elements = tuple_type->elements();
       for (auto iter = elements.rbegin(); iter != elements.rend(); ++iter) {
@@ -350,7 +349,6 @@ size_t AnfUtils::GetOutputTensorNum(const AnfNodePtr &node) {
     constexpr size_t kCOOTensorOutputNum = 4;
     res = kCOOTensorOutputNum;
   } else if (NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     res = 0;
   }
 
@@ -696,8 +694,7 @@ bool AnfUtils::NeedJumpMonadOutput(const AnfNodePtr &node) {
     return false;
   }
 
-  std::vector<std::string> jump_monad_output_nodes = {kRpcRecvOpName, kPrimConditionSwitchOpName,
-                                                      kPrimConditionGatherOpName};
+  std::vector<std::string> jump_monad_output_nodes = {kPrimConditionSwitchOpName, kPrimConditionGatherOpName};
   if (std::find(jump_monad_output_nodes.begin(), jump_monad_output_nodes.end(), GetCNodeName(cnode)) !=
       jump_monad_output_nodes.end()) {
     return true;

@@ -17,7 +17,6 @@
 #include "kernel/cpu/embedding_look_up_cpu_kernel.h"
 #include "mindspore/ops/infer/embedding_lookup.h"
 #include "utils/check_convert_utils.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -118,13 +117,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &EmbeddingLookUpCpuKerne
 
 bool EmbeddingLookUpCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  if (primitive_->HasAttr(kAttrEnableEmbeddingStorage)) {
-    enable_embedding_storage_ = GetValue<bool>(primitive_->GetAttr(kAttrEnableEmbeddingStorage));
-  }
-  if (primitive_->HasAttr(kAttrParameterKey)) {
-    parameter_key_ = GetValue<int32_t>(primitive_->GetAttr(kAttrParameterKey));
-  }
-
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
 
@@ -166,26 +158,6 @@ bool EmbeddingLookUpCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
   T *output_addr = GetDeviceAddress<T>(outputs, 0);
   G offset = static_cast<G *>(inputs[kOffsetIndex]->device_ptr())[0];
   offset_ = static_cast<int64_t>(offset);
-
-  if (enable_embedding_storage_) {
-    if (offset_ != 0) {
-      // Indices should start from zero, so minus offset first.
-      auto rectify_index_task = [&](size_t start, size_t end) {
-        size_t task_proc_lens = end - start;
-        RectifyIndex<S>(input_indices_addr + start, task_proc_lens, offset_);
-      };
-      ParallelLaunchAutoSearch(rectify_index_task, input_indices_lens_, this, &parallel_search_info_);
-    }
-
-    auto embedding_storage = embedding_storage_manager.Get(parameter_key_);
-    MS_ERROR_IF_NULL(embedding_storage);
-    if (!embedding_storage->Get({input_indices_addr, inputs[1]->size()}, {output_addr, outputs[0]->size()})) {
-      MS_LOG(ERROR) << "For '" << kernel_name_
-                    << "', lookup embedding from embedding storage failed, parameter key: " << parameter_key_;
-      return false;
-    }
-    return true;
-  }
 
   auto task = [&](size_t start, size_t end) {
     size_t task_proc_lens = end - start;

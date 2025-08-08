@@ -485,14 +485,6 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
     builder->SetOutputsDeviceType(types);
   }
 
-  const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(front_node_with_index.first, front_node_with_index.second);
-  bool is_map_parameter = abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>();
-  if (is_map_parameter) {
-    DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(device_context, front_node_with_index.first,
-                                                           front_node_with_index.second);
-    return;
-  }
-
   // Fetch mem size by shape, the shape is first obtained from the abstract to deal with the scenario where
   // the value node is a multi-level tuple.
   size_t size = FetchOutputSizeByNode(node, front_node_with_index.second, type_id);
@@ -2222,11 +2214,6 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
     const auto &node = node_with_index_to_context.first.first;
     MS_EXCEPTION_IF_NULL(node);
     if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0) {
-      return node_with_index_to_context;
-    }
-    const auto &abstract =
-      AnfAlgo::GetNodeAbstractByIndex(front_parameter_with_index.first, front_parameter_with_index.second);
-    if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
       return node_with_index_to_context;
     }
     MS_LOG(DEBUG) << "Backend node:" << node->DebugString()

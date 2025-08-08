@@ -709,18 +709,6 @@
         参数：
             - **jit_config** (JitConfig) - Cell的Jit配置信息。详情请参考 :class:`mindspore.JitConfig` 。
 
-    .. py:method:: set_param_ps(recurse=True, init_in_server=False)
-
-        设置可训练参数是否由参数服务器更新，以及是否在服务器上初始化可训练参数。
-
-        .. note::
-            只在运行的任务处于参数服务器模式时有效。
-            只支持在图模式下调用。
-
-        参数：
-            - **recurse** (bool) - 是否设置子网络的可训练参数。默认值： ``True`` 。
-            - **init_in_server** (bool) - 是否在服务器上初始化由参数服务器更新的可训练参数。默认值： ``False`` 。
-
     .. py:method:: set_train(mode=True)
 
         将Cell设置为训练模式。

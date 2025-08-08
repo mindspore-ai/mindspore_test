@@ -98,7 +98,7 @@ find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PA
 target_link_libraries(mindspore_ascend PRIVATE ${GE_RUNNER} ${GRAPH})
 if(ENABLE_CPU)
     target_link_libraries(mindspore_ascend PRIVATE mindspore::event mindspore::event_pthreads
-        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
+        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
 endif()
 
 MESSAGE("USE DAV LIB PATH: ${ASCEND_PATH}")

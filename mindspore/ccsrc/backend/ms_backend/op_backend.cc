@@ -321,11 +321,6 @@ tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, s
   MS_EXCEPTION_IF_NULL(device_tensor);
 
   const auto &user_data = kernel_tensor->user_data();
-  bool is_map_tensor_output = user_data && user_data->get<UserDataType>(kUserDataType) &&
-                              *(user_data->get<UserDataType>(kUserDataType)) == UserDataType::kUserTypeHashTable;
-  if (is_map_tensor_output) {
-    return AnfAlgo::CreateMapTensor(output_node, output_index);
-  }
 
   device_tensor->SetNodeIndex(output_node, output_index);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
@@ -479,11 +474,6 @@ tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoP
   MS_EXCEPTION_IF_NULL(op_compiler_info);
 
   const auto &user_data = kernel_tensor->user_data();
-  bool is_map_tensor_output = user_data && user_data->get<UserDataType>(kUserDataType) &&
-                              *(user_data->get<UserDataType>(kUserDataType)) == UserDataType::kUserTypeHashTable;
-  if (is_map_tensor_output) {
-    return AnfAlgo::CreateMapTensor(kernel_tensor);
-  }
 
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.

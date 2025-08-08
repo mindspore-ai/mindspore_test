@@ -51,7 +51,7 @@ if(ENABLE_CPU)
     if(NOT WIN32)
         target_link_libraries(mindspore_gpu PRIVATE mindspore::ssl mindspore::crypto)
         target_link_libraries(mindspore_gpu PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
+            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
     endif()
 endif()
 if(ENABLE_GPU)
@@ -80,10 +80,6 @@ if(ENABLE_GPU)
             ${CUDA_PATH}/lib64/libcusparse.so
             ${CUDA_PATH}/lib64/libnvrtc.so
             )
-    endif()
-
-    if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND ${CUDA_VERSION} VERSION_GREATER "11.0")
-        target_link_libraries(mindspore_gpu PRIVATE gpu_hash_table)
     endif()
 endif()
 

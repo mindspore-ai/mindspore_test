@@ -310,8 +310,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static bool IsSequenceOutputOfScalar(const AnfNodePtr &node);
 
   // The tensor related interfaces.
-  static tensor::TensorPtr CreateMapTensor(const KernelTensorPtr &output_kernel_tensor);
-  static tensor::TensorPtr CreateMapTensor(const AnfNodePtr &output_node, size_t output_index);
   static tensor::TensorPtr SequenceToTensor(const ValuePtr &value);
   static void FlattenDynamicInputArg(const BaseRef &arg, const AnfNodePtr &node,
                                      std::vector<tensor::TensorPtr> *flatten_tensors);

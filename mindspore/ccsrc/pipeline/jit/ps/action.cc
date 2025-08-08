@@ -47,7 +47,6 @@
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"
-#include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/shard/shard.h"
 #include "pipeline/jit/ps/executor/graph_executor_py.h"
@@ -80,8 +79,8 @@
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/distributed/ps/util.h"
+#else
+#include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
 #include "debug/profiler/profiling_framework_data.h"
 #include "debug/profiler/profiler.h"
@@ -1371,14 +1370,6 @@ bool OptAddAttrWithInlineAction(const ResourcePtr &resource) {
 
 bool VmOptimizeAction(const ResourcePtr &resource) {
   EventMessage::PrintCompileStatusMessage("Start performing graph optimization.");
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_ps_mode()) {
-    (void)kVmPasses.emplace_back(PassItem("server_communication_op_fusion", [](const ResourcePtr &res) -> bool {
-      MS_EXCEPTION_IF_NULL(res);
-      return ps::Util::FuseServerCommOps(res->func_graph());
-    }));
-  }
-#endif
   bool ret;
   auto custom_passes = opt::PassConfigure::Instance().GetPasses();
   if (custom_passes.empty()) {
@@ -1737,14 +1728,6 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
     return;
   }
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->cache_enable()) {
-    MS_LOG(INFO) << "Run graph mode with subgraph sink because PS cache enable.";
-    set_ctx(true, false, false);
-    return;
-  }
-#endif
-
   // GRAPH | normal network and if/for/switch scenario etc : MultiGraph path in MindRT.
   MS_LOG(INFO) << "Run graph mode with multi graph sink.";
   set_ctx(true, true, is_jit);
@@ -1878,36 +1861,6 @@ bool ExecuteAction(const ResourcePtr &resource) {
   resource->SetResult(kOutput, run);
   return true;
 }
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-bool DistributedSplitAction(const ResourcePtr &resource) {
-  // Only run this action when the cluster is initialized.
-  if (!distributed::cluster::ClusterContext::instance()->initialized()) {
-    return true;
-  }
-  MS_EXCEPTION_IF_NULL(resource);
-  FuncGraphPtr func_graph = resource->func_graph();
-  auto node = distributed::cluster::ClusterContext::instance()->node();
-  MS_EXCEPTION_IF_NULL(node);
-  auto node_role = distributed::cluster::ClusterContext::instance()->node_role();
-
-  parallel::GraphSplitterPtr splitter =
-    std::make_shared<parallel::GraphSplitter>(func_graph, node->rank_id(), node_role);
-  MS_EXCEPTION_IF_NULL(splitter);
-  splitter->Run();
-  // Renomalize: Infer shape and Set abstract for all nodes in graph.
-  if (func_graph->has_flag(kFlagNeedRenormalize)) {
-    abstract::AbstractBasePtrList args_abs;
-    auto parameters = func_graph->parameters();
-    (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
-                         [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
-    FuncGraphPtr new_fg = Renormalize(resource, func_graph, args_abs);
-    resource->set_func_graph(new_fg);
-    resource->set_args_abs(args_abs);
-  }
-  return true;
-}
-#endif
 
 // The parallel primitive related valuenode might be partitioned so that its value changes by device,
 // that will result in a synchronization error due to different executing order.
@@ -2153,10 +2106,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     (void)actions.emplace_back(std::make_pair(kOptAfterJitGrad, OptAfterJitGrad));
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-    if (!pipeline::IsPhaseExport(phase)) {
-      (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
-    }
-
     if (IsEnableSilentCheck()) {
       // silent check pass, mark nodes which are need for silent check
       (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));

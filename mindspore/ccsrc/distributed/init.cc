@@ -30,7 +30,6 @@ namespace mindspore {
 namespace distributed {
 using mindspore::debug::tft::TFTWaitSem;
 
-constexpr char kStopSchedulerFunc[] = "StopRuntimeSchedulerOnException";
 constexpr char kOpExecutorWorkerJoinFunc[] = "OpExecutorWorkerJoin";
 std::map<std::string, std::function<void()>> gDistributedCallbackMap;
 
@@ -115,10 +114,6 @@ bool InitializeCluster() {
       MS_LOG(EXCEPTION) << "Failed to finalize the collective communication lib.";
     }
     MS_LOG(DEBUG) << "End finalizing CollectiveManager in abnormal callback.";
-
-    if (gDistributedCallbackMap[kStopSchedulerFunc]) {
-      gDistributedCallbackMap[kStopSchedulerFunc]();
-    }
 
     MS_LOG(WARNING) << "Kill this process with SIGTERM.";
     // Forcibly Kill this process.

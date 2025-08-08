@@ -298,7 +298,6 @@ size_t AnfRuntimeAlgorithm::GetOutputTensorNum(const AnfNodePtr &node) {
     constexpr size_t kCOOTensorOutputNum = 4;
     res = kCOOTensorOutputNum;
   } else if (AnfUtils::NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     res = 0;
   } else {
     res = 1;
@@ -330,7 +329,6 @@ size_t AnfRuntimeAlgorithm::GetOutputNumWithoutKernelInfo(const AnfNodePtr &node
     constexpr size_t kCOOTensorOutputNum = 4;
     res = kCOOTensorOutputNum;
   } else if (AnfUtils::NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     res = 0;
   } else {
     res = 1;
@@ -2430,36 +2428,6 @@ void SetScalarToTensor(const std::vector<ValuePtr> &values, const tensor::Tensor
   }
 }
 }  // namespace
-
-tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const KernelTensorPtr &output_kernel_tensor) {
-  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-  const auto &output_device_address = output_kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(output_device_address);
-  const auto &user_data = output_kernel_tensor->user_data();
-  MS_EXCEPTION_IF_NULL(user_data);
-  const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
-  MS_EXCEPTION_IF_NULL(user_data_type);
-  if (*user_data_type == UserDataType::kUserTypeHashTable) {
-    auto shape_vector = user_data->get<ShapeVector>(kHashTableShapeVector);
-    auto key_type = user_data->get<TypeId>(kHashTableKeyType);
-    auto value_type = user_data->get<TypeId>(kHashTableValueType);
-    auto default_value = user_data->get<Value>(kHashTableDefaultValue);
-    MS_EXCEPTION_IF_NULL(shape_vector);
-    MS_EXCEPTION_IF_NULL(key_type);
-    MS_EXCEPTION_IF_NULL(value_type);
-    MS_EXCEPTION_IF_NULL(default_value);
-    auto map_tensor = std::make_shared<tensor::MapTensor>(*key_type, *value_type, *shape_vector, default_value);
-    map_tensor->set_device_address(output_device_address);
-    return map_tensor;
-  }
-  MS_LOG(WARNING) << "Invalid user data type:" << *user_data_type;
-  return nullptr;
-}
-
-tensor::TensorPtr AnfRuntimeAlgorithm::CreateMapTensor(const AnfNodePtr &output_node, size_t output_index) {
-  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_index, false);
-  return CreateMapTensor(kernel_tensor);
-}
 
 // In dynamic sequence, since the number of members is not determined in compile time, the entire sequence needs
 // to be placed in single tensor, and the shape of the tuple needs to be recorded in the tensor, so that the shape

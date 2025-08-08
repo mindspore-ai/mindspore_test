@@ -27,9 +27,7 @@
 #include "kernel/gpu/nn/convolution/abstract_conv_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/convolution/convolution_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/pad_impl.cuh"
-#include "distributed/embedding_cache/cache_strategy/lru_cache.h"
 
-using mindspore::distributed::LRUCache;
 namespace mindspore {
 namespace kernel {
 template <typename T>
@@ -205,19 +203,8 @@ class ConvolutionCudnnGpuKernel : public AbstractConvolutionGpuKernel {
     }
 
     SetConvolutionMathType(conv_desc_, cudnn_data_type_);
-    if (!forward_shape_to_algo_cache_ptr_) {
-      forward_shape_to_algo_cache_ptr_ =
-        std::make_shared<LRUCache<std::vector<int64_t>, cudnnConvolutionFwdAlgo_t, VectorLongHash>>(kAlgoCacheSize);
-    }
-    if (!forward_shape_to_algo_cache_ptr_->Get(input_shape, &forward_algo_)) {
-      forward_algo_ = SelectForwardAlgorithm(cudnn_handle_, cudnn_data_type_, real_desc, filter_desc_, conv_desc_,
-                                             tensor1_desc_, conv_args->group);
-      if (forward_shape_to_algo_cache_ptr_->IsFull()) {
-        std::vector<LRUCache<std::vector<int64_t>, cudnnConvolutionFwdAlgo_t, VectorLongHash>::Element> left;
-        forward_shape_to_algo_cache_ptr_->TryEvict(2, &left);
-      }
-      forward_shape_to_algo_cache_ptr_->Put(input_shape, forward_algo_);
-    }
+    forward_algo_ = SelectForwardAlgorithm(cudnn_handle_, cudnn_data_type_, real_desc, filter_desc_, conv_desc_,
+                                           tensor1_desc_, conv_args->group);
     InitSizeLists(conv_args, input_size_list, output_size_list, workspace_size_list);
     return KRET_OK;
   }
@@ -310,26 +297,10 @@ class ConvolutionCudnnGpuKernel : public AbstractConvolutionGpuKernel {
     }
 
     SetConvolutionMathType(conv_desc_, cudnn_data_type_);
-    InputGradAlgoCache(input_shape, real_desc, conv_args);
+    input_grad_algo_ = SelectBackwardDataAlgorithm(cudnn_handle_, cudnn_data_type_, filter_desc_, tensor0_desc_,
+                                                   conv_desc_, real_desc, conv_args->group);
     InitSizeLists(conv_args, input_size_list, output_size_list, workspace_size_list);
     return KRET_OK;
-  }
-
-  void InputGradAlgoCache(const std::vector<int64_t> &input_shape, const cudnnTensorDescriptor_t &real_desc,
-                          ConvolutionArgs *conv_args) {
-    if (!input_grad_shape_to_algo_cache_ptr_) {
-      input_grad_shape_to_algo_cache_ptr_ =
-        std::make_shared<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdDataAlgo_t, VectorLongHash>>(kAlgoCacheSize);
-    }
-    if (!input_grad_shape_to_algo_cache_ptr_->Get(input_shape, &input_grad_algo_)) {
-      input_grad_algo_ = SelectBackwardDataAlgorithm(cudnn_handle_, cudnn_data_type_, filter_desc_, tensor0_desc_,
-                                                     conv_desc_, real_desc, conv_args->group);
-      if (input_grad_shape_to_algo_cache_ptr_->IsFull()) {
-        std::vector<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdDataAlgo_t, VectorLongHash>::Element> left;
-        input_grad_shape_to_algo_cache_ptr_->TryEvict(2, &left);
-      }
-      input_grad_shape_to_algo_cache_ptr_->Put(input_shape, input_grad_algo_);
-    }
   }
 
   int InitialFilterGrad(ConvolutionArgs *conv_args, const std::vector<int64_t> &dy_shape,
@@ -387,20 +358,8 @@ class ConvolutionCudnnGpuKernel : public AbstractConvolutionGpuKernel {
     }
 
     SetConvolutionMathType(conv_desc_, cudnn_data_type_);
-    if (!filter_grad_shape_to_algo_cache_ptr_) {
-      filter_grad_shape_to_algo_cache_ptr_ =
-        std::make_shared<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdFilterAlgo_t, VectorLongHash>>(
-          kAlgoCacheSize);
-    }
-    if (!filter_grad_shape_to_algo_cache_ptr_->Get(input_shape, &filter_grad_algo_)) {
-      filter_grad_algo_ = SelectBackwardFilterAlgorithm(cudnn_handle_, cudnn_data_type_, real_desc, tensor0_desc_,
-                                                        conv_desc_, filter_desc_, conv_args->group);
-      if (filter_grad_shape_to_algo_cache_ptr_->IsFull()) {
-        std::vector<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdFilterAlgo_t, VectorLongHash>::Element> left;
-        filter_grad_shape_to_algo_cache_ptr_->TryEvict(2, &left);
-      }
-      filter_grad_shape_to_algo_cache_ptr_->Put(input_shape, filter_grad_algo_);
-    }
+    filter_grad_algo_ = SelectBackwardFilterAlgorithm(cudnn_handle_, cudnn_data_type_, real_desc, tensor0_desc_,
+                                                      conv_desc_, filter_desc_, conv_args->group);
 
     InitSizeLists(conv_args, input_size_list, output_size_list, workspace_size_list);
     return KRET_OK;
@@ -583,13 +542,6 @@ class ConvolutionCudnnGpuKernel : public AbstractConvolutionGpuKernel {
   cudnnTensorDescriptor_t tensor1_desc_{nullptr};
   cudnnFilterDescriptor_t filter_desc_{nullptr};
   cudnnTensorDescriptor_t padded_desc_{nullptr};
-
-  std::shared_ptr<LRUCache<std::vector<int64_t>, cudnnConvolutionFwdAlgo_t, VectorLongHash>>
-    forward_shape_to_algo_cache_ptr_;
-  std::shared_ptr<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdDataAlgo_t, VectorLongHash>>
-    input_grad_shape_to_algo_cache_ptr_;
-  std::shared_ptr<LRUCache<std::vector<int64_t>, cudnnConvolutionBwdFilterAlgo_t, VectorLongHash>>
-    filter_grad_shape_to_algo_cache_ptr_;
 
   cudnnConvolutionFwdAlgo_t forward_algo_{CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM};
   cudnnConvolutionBwdDataAlgo_t input_grad_algo_{CUDNN_CONVOLUTION_BWD_DATA_ALGO_1};

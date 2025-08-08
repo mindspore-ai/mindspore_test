@@ -220,52 +220,6 @@ def check_log(role, log_name, str_to_check):
     assert str_to_check in data
 
 
-def start_ps_subprocess(script_path, cache_path, str_to_check, log_name):
-    cwd = os.getcwd()
-    cache_realpath = os.path.realpath(cache_path)
-    # start sched first time.
-    os.environ['MS_ROLE'] = 'MS_SCHED'
-    cmd_first = f"cd " + cwd + "/sched && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
-                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
-    print(f'[INFO] start sched process: {cmd_first}')
-    sched_process = subprocess.Popen(cmd_first, shell=True)
-    # start server first time.
-    os.environ['MS_ROLE'] = 'MS_PSERVER'
-    cmd_first = f"cd " + cwd + "/server && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
-                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
-    print(f'[INFO] start server process: {cmd_first}')
-    server_process = subprocess.Popen(cmd_first, shell=True)
-    # start worker first time.
-    os.environ['MS_ROLE'] = 'MS_WORKER'
-    cmd_first = f"cd " + cwd + "/worker && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
-                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
-    print(f'[INFO] start worker process: {cmd_first}')
-    try:
-        subprocess.run(cmd_first, shell=True, check=True)
-    except Exception:
-        print("[ERROR] Worker process Exception!!!")
-
-        def print_log(dirname: str):
-            fpath = os.path.join(dirname, log_name)
-            if not os.path.exists(fpath):
-                print(f'[ERROR] log not exist: {fpath}')
-                return
-            with open(fpath, 'r', encoding='utf-8') as f:
-                print(f'{dirname} log:')
-                print(f.read())
-                print('', flush=True)
-
-        print_log('sched')
-        print_log('server')
-        print_log('worker')
-        raise
-    os.chdir(cwd)
-    check_log("server", log_name, str_to_check)
-    check_log("worker", log_name, str_to_check)
-    sched_process.wait()
-    server_process.wait()
-
-
 def clear_and_make_run_dir(dir_path):
     shutil.rmtree(dir_path, ignore_errors=True)
     assert not os.path.exists(dir_path)
@@ -277,48 +231,6 @@ def check_compile_cache_files(cache_path, role):
     assert os.path.exists(cache_path)
     assert os.path.exists(cache_path + "/rank_0/graph_cache/" + role + "compile_cache_0.mindir")
     assert os.path.exists(cache_path + "/rank_0/graph_cache/" + role + "compile_dependency.hash")
-
-
-def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name_second):
-    # Clear compile cache folder and log files
-    shutil.rmtree(cache_path, ignore_errors=True)
-    assert not os.path.exists(cache_path)
-    clear_and_make_run_dir("sched")
-    clear_and_make_run_dir("server")
-    clear_and_make_run_dir("worker")
-    # Set envs
-    os.environ['MS_SCHED_HOST'] = '127.0.0.1'
-    os.environ['MS_SCHED_PORT'] = '8182'
-    os.environ['MS_SCHED_NUM'] = '1'
-    os.environ['MS_SERVER_NUM'] = '1'
-    os.environ['MS_WORKER_NUM'] = '1'
-    # First run
-    print(f'start run first time', flush=True)
-    first_str_to_check = "Check the consistency of dependency files hash failed. Execute all the compilation actions."
-    start_ps_subprocess(file_name, cache_path, first_str_to_check, log_file_name_first)
-    print('end run first time', flush=True)
-    assert os.path.exists(cache_path)
-    check_compile_cache_files(cache_path, "MS_WORKER")
-    check_compile_cache_files(cache_path, "MS_PSERVER")
-    # Second run
-    os.environ['MS_SCHED_PORT'] = '8183'
-    second_str_to_check = "Use the compilation cache and execute the backend actions only. Be aware of correctness" \
-                          " risks."
-    print(f'start run second time', flush=True)
-    start_ps_subprocess(file_name, cache_path, second_str_to_check, log_file_name_second)
-    print(f'end run second time', flush=True)
-
-    # Clear
-    del os.environ['MS_SCHED_HOST']
-    del os.environ['MS_SCHED_PORT']
-    del os.environ['MS_ROLE']
-    del os.environ['MS_SCHED_NUM']
-    del os.environ['MS_SERVER_NUM']
-    del os.environ['MS_WORKER_NUM']
-    shutil.rmtree("sched", ignore_errors=True)
-    shutil.rmtree("server", ignore_errors=True)
-    shutil.rmtree("worker", ignore_errors=True)
-    shutil.rmtree(cache_path, ignore_errors=True)
 
 
 def run_network_once_with_force_use_compile_cache(file_name, cache_path, log_file_name_first):
@@ -423,16 +335,6 @@ def test_compile_cache_lenet_change_dir():
                                 "../lenet_change_dir_second.txt")
     os.chdir(cwd)
     shutil.rmtree(new_path, ignore_errors=True)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_compile_cache_lenet_ps():
-    """
-    Feature: Compile cache.
-    Description: Test whether the regular compile cache function can run successfully with lenet in ps mode.
-    Expectation: success.
-    """
-    run_lenet_ps_twice("run_lenet_ps.py", "./lenet_ps", "lenet_ps_first.txt", "lenet_ps_second.txt")
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -28,5 +28,5 @@ if(ENABLE_D OR ENABLE_ACL)
     add_subdirectory(graph_ir)
 
     target_link_libraries(mindspore_ge_backend PRIVATE mindspore::event mindspore::event_pthreads
-        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
+        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
 endif()

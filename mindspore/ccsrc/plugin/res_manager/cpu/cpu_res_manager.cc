@@ -21,7 +21,6 @@
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
@@ -156,34 +155,13 @@ tensor::TensorPtr CPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
 }
 
 namespace {
-// Create user data content(such as CPU hash table) and set user data reference into device_address.
+// Create user data content and set user data reference into device_address.
 void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
   MS_EXCEPTION_IF_NULL(user_data);
   MS_EXCEPTION_IF_NULL(device_address);
 
   // Save reference of user data in device address.
   device_address->set_user_data(user_data);
-
-  const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
-  if (user_data_type == nullptr) {
-    return;
-  }
-  if (*user_data_type == UserDataType::kUserTypeHashTable) {
-    auto key_type = user_data->get<TypeId>(kHashTableKeyType);
-    auto value_type = user_data->get<TypeId>(kHashTableValueType);
-    MS_EXCEPTION_IF_NULL(key_type);
-    MS_EXCEPTION_IF_NULL(value_type);
-    const auto &iter = cpu_hash_table_funcs.find({*key_type, *value_type});
-    if (iter != cpu_hash_table_funcs.end()) {
-      // Create CPU hash table and set into `user_data`.
-      return std::get<kCreateFuncIndex>(iter->second)(user_data);
-    } else {
-      MS_LOG(EXCEPTION) << "Unsupported hash table type, key type:" << TypeIdLabel(*key_type)
-                        << ", value type:" << TypeIdLabel(*value_type);
-    }
-  } else {
-    MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
-  }
 }
 }  // namespace
 

@@ -22,9 +22,7 @@
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "ps/core/cluster_config.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #include "ps/core/cluster_config.h"
@@ -119,11 +117,6 @@ void PSContext::Reset() {
   is_worker_ = false;
   is_pserver_ = false;
   is_sched_ = false;
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
-    set_cache_enable(false);
-  }
-#endif
 }
 
 std::string PSContext::ms_role() const {
@@ -171,61 +164,27 @@ uint32_t PSContext::ps_rank_id() const { return rank_id_; }
 
 void PSContext::InsertHashTableSize(const std::string &param_name, size_t cache_vocab_size, size_t embedding_size,
                                     size_t vocab_size, int32_t param_key) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  if (enable_distributed_mindrt()) {
-    embedding_cache_table_manager.InsertHashTableSize(param_name, cache_vocab_size, embedding_size, vocab_size,
-                                                      param_key);
-  }
-#endif
+  return;
 }
 
 void PSContext::ReInsertHashTableSize(const std::string &new_param_name, const std::string &cur_param_name) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  if (enable_distributed_mindrt()) {
-    embedding_cache_table_manager.ReInsertHashTableSize(new_param_name, cur_param_name);
-  }
-#endif
+  return;
 }
 
-void PSContext::InsertAccumuInitInfo(const std::string &param_name, float init_val) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  embedding_cache_table_manager.InsertAccumuInitInfo(param_name, init_val);
-#endif
-}
+void PSContext::InsertAccumuInitInfo(const std::string &param_name, float init_val) const { return; }
 
 void PSContext::CloneHashTable(const std::string &dest_param_name, int32_t dest_param_key,
                                const std::string &src_param_name, int32_t src_param_key) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  if (enable_distributed_mindrt()) {
-    embedding_cache_table_manager.CloneHashTable(dest_param_name, dest_param_key, src_param_name, src_param_key);
-  }
-#endif
+  return;
 }
 
-void PSContext::set_cache_enable(bool cache_enable) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  PsDataPrefetch::GetInstance().set_cache_enable(cache_enable);
-#endif
-}
+void PSContext::set_cache_enable(bool cache_enable) const { return; }
 
-bool PSContext::cache_enable() const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32)) && !defined(__APPLE__)
-  return PsDataPrefetch::GetInstance().cache_enable();
-#endif
-  return false;
-}
+bool PSContext::cache_enable() const { return false; }
 
-void PSContext::set_cache_size(size_t cache_size) const {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  distributed::EmbeddingCacheTableManager::GetInstance().set_cache_size(cache_size);
-#endif
-}
+void PSContext::set_cache_size(size_t cache_size) const { return; }
 
-void PSContext::set_sparse_format(bool is_sparse) {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  distributed::EmbeddingCacheTableManager::GetInstance().set_sparse_format(is_sparse);
-#endif
-}
+void PSContext::set_sparse_format(bool is_sparse) { return; }
 
 void PSContext::set_rank_id(uint32_t) const { return; }
 
@@ -337,35 +296,16 @@ bool PSContext::enable_distributed_mindrt() const {
   return ms_cluster_enabled;
 }
 
-void PSContext::set_checkpoint_load_status(bool status) {
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  return embedding_cache_table_manager.set_checkpoint_load_status(status);
-#endif
-}
+void PSContext::set_checkpoint_load_status(bool status) { return; }
 
 int32_t PSContext::StoreWarmUpPtrByTensor(const int32_t param_key, const py::object &tensorpy_ptr) {
   MS_EXCEPTION_IF_NULL(tensorpy_ptr);
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  auto tensor_ptr = tensor::ConvertToTensor(tensorpy_ptr);
-  return embedding_cache_table_manager.StoreWarmUpPtr(param_key, tensor_ptr);
-#else
   return -1;
-#endif
 }
 
 int32_t PSContext::StoreWarmUpPtrByTensorList(const int32_t param_key, const py::object &key_ptr,
                                               const py::object &value_ptr, const py::object &status_ptr) {
-  MS_EXCEPTION_IF_NULL(key_ptr);
-  MS_EXCEPTION_IF_NULL(value_ptr);
-  MS_EXCEPTION_IF_NULL(status_ptr);
-#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  auto key_ptr_ = tensor::ConvertToTensor(key_ptr);
-  auto value_ptr_ = tensor::ConvertToTensor(value_ptr);
-  auto status_ptr_ = tensor::ConvertToTensor(status_ptr);
-  return embedding_cache_table_manager.StoreWarmUpPtr(param_key, key_ptr_, value_ptr_, status_ptr_);
-#else
   return -1;
-#endif
 }
 }  // namespace ps
 }  // namespace mindspore

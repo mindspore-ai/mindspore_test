@@ -36,10 +36,6 @@
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "runtime/graph_scheduler/rpc_node_scheduler.h"
-#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
-#endif
 
 namespace mindspore {
 namespace runtime {
@@ -502,11 +498,6 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
   MS_EXCEPTION_IF_NULL(context);
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-
-#if defined(__linux__) && defined(WITH_BACKEND)
-  // Update rpc actors' status.
-  RpcActorStatusUpdater::GetInstance().UpdateRpcActorStatus(graph_compiler_info_->name_);
-#endif
 
   try {
     // Preprocess before prepare data for data prepare actor.
@@ -1526,13 +1517,6 @@ void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node
 }
 
 void DataPrepareActor::PreprocessBeforePrepareData() const {
-  // Embedding Cache mode needs to record the number of global steps executed by the compute graph.
-  // The first step compute graph needs to wait for the Embedding cache prefetch cache to warm up to prevent the
-  // GetNext operator from timing out in the compute graph.
-#if defined(__linux__) && defined(WITH_BACKEND)
-  EmbeddingCacheScheduler::GetInstance().IncreaseGraphStep(GetAID());
-#endif
-
   // Try to defrag memory.
   auto defrag_memory_step_freq = GetDefragMemoryStepFreq();
   if (++execution_count_ % defrag_memory_step_freq == 0) {

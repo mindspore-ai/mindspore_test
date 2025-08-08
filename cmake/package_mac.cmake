@@ -60,11 +60,6 @@ endif()
 
 if(ENABLE_CPU AND NOT WIN32)
     install(
-        TARGETS ps_cache
-        DESTINATION ${INSTALL_LIB_DIR}
-        COMPONENT mindspore
-    )
-    install(
         TARGETS mindspore_cpu_res_manager
         DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
         COMPONENT mindspore

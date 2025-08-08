@@ -24,8 +24,6 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
-#include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

@@ -273,9 +273,6 @@ class KernelActor : public DebugAwareActor {
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;
-#ifdef ENABLE_RPC_ACTOR
-  friend class RpcNodeScheduler;
-#endif
   friend class SuperKernelActor;
 
   // Init the device tensors and kernel launch info.
