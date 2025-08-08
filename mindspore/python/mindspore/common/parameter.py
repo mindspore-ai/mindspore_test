@@ -573,6 +573,9 @@ class Parameter(Tensor_):
         x.param_info = param_info_clone
         x.is_init = False
         x.init = self.init
+        x.cache_enable = self.cache_enable
+        if x.cache_enable:
+            x.key = _get_unique_parameter_key()
         x.requires_aggr = self.requires_aggr
         if self.cache_shape:
             x.cache_shape = self.cache_shape
@@ -1052,6 +1055,9 @@ class ParameterTuple(tuple):
             x1 = x.clone(init)
             x1.name = prefix + "." + x1.name
             new.append(x1)
+
+            if not x1.cache_enable:
+                continue
 
         return ParameterTuple(new)
 

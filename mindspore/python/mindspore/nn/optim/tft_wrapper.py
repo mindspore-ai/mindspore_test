@@ -108,7 +108,6 @@ class OptTFTWrapper(Optimizer):
         self.dynamic_decay_flags = opt.dynamic_decay_flags
         self.weight_decay = opt.weight_decay
         self.exec_weight_decay = opt.exec_weight_decay
-        self.ps_parameters = opt.ps_parameters
         self.cache_enable = opt.cache_enable
         self.reciprocal_scale = opt.reciprocal_scale
         self.need_scale = opt.need_scale
