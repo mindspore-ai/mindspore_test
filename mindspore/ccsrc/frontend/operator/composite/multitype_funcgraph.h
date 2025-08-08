@@ -27,11 +27,11 @@
 #include <set>
 #include <memory>
 #include <algorithm>
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "utils/misc.h"
 #include "ir/dtype.h"
 #include "ir/meta_func_graph.h"
-#include "pipeline/jit/ps/parse/parse_base.h"
+#include "frontend/jit/ps/parse/parse_base.h"
 
 namespace mindspore {
 namespace prim {

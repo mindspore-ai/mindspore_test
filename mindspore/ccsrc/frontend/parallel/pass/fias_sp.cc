@@ -42,7 +42,7 @@
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/tensor_layout/tensor_info.h"
 #include "frontend/parallel/device_matrix.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ops/op_def/op_enum.h"

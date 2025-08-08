@@ -33,7 +33,7 @@
 #include "include/common/utils/pyobj_manager.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/op_executor.h"
-#include "pipeline/jit/trace/trace_recorder.h"
+#include "frontend/jit/trace/trace_recorder.h"
 #include "pybind_api/storage_py.h"
 
 namespace mindspore {

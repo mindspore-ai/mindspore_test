@@ -32,7 +32,7 @@
 #include "ir/manager.h"
 #include "ir/meta_tensor.h"
 #include "ir/tensor_new.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/convert_utils.h"

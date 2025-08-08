@@ -26,7 +26,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/common/debug/draw.h"
 #include "frontend/operator/ops.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/parallel/auto_parallel/stage_compute.h"
 #include "utils/ms_context.h"

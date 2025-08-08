@@ -19,7 +19,7 @@
 #include "ir/manager.h"
 #include "ir/func_graph.h"
 #include "ir/graph_utils.h"
-#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"

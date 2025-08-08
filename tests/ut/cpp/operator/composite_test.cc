@@ -24,8 +24,8 @@
 #include "frontend/operator/ops.h"
 #include "ir/anf.h"
 #include "ir/value.h"
-#include "pipeline/jit/ps/debug/trace.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/debug/trace.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 

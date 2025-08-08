@@ -23,7 +23,7 @@
 #include "common/common_test.h"
 #include "utils/ms_context.h"
 #include "common/py_func_graph_fetcher.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "symbolic_shape/symbol_info.h"
 
 namespace mindspore::symshape::test {

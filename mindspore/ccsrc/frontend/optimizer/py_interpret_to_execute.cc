@@ -29,8 +29,8 @@
 #include "utils/anf_utils.h"
 #include "utils/interpret_node_recorder.h"
 #include "utils/symbolic.h"
-#include "pipeline/jit/ps/parse/resolve.h"
-#include "pipeline/jit/ps/fallback.h"
+#include "frontend/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/fallback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 

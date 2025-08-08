@@ -51,7 +51,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "pipeline/jit/ps/pipeline_split.h"
+#include "frontend/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/ms_context.h"

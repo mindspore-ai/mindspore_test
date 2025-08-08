@@ -23,7 +23,7 @@
 #include "frontend/ir/tensor_py.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
-#include "pipeline/jit/ps/parse/parse_base.h"
+#include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 

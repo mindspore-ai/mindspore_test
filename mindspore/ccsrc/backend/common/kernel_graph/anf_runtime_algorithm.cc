@@ -44,7 +44,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/convert_tensor_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

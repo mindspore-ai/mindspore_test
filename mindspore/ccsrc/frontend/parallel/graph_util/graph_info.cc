@@ -20,8 +20,8 @@
 #include "include/common/debug/draw.h"
 #include "utils/ms_context.h"
 #include "ir/graph_utils.h"
-#include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 
 namespace mindspore {

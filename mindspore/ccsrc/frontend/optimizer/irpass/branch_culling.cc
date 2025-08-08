@@ -34,7 +34,7 @@
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/pattern_matcher.h"
-#include "pipeline/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

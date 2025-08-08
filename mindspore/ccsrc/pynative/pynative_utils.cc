@@ -32,7 +32,7 @@
 #include "include/common/utils/primfunc_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/pynative/common_utils.h"
-#include "pipeline/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "include/common/utils/stub_tensor.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "pynative/grad/jit/jit_grad.h"

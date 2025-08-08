@@ -24,7 +24,7 @@
 #include <functional>
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
-#include "pipeline/jit/ps/parse/parse_base.h"
+#include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "pynative/pynative_execute.h"

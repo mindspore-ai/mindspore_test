@@ -19,7 +19,7 @@
 #include "common/common_test.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "utils/log_adapter.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "ir/primitive.h"
 #include "frontend/operator/ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "pybind11/pybind11.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "include/common/pybind_api/api_register.h"
 
 namespace mindspore {

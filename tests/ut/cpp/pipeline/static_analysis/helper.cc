@@ -16,7 +16,7 @@
 
 #include "pipeline/static_analysis/helper.h"
 
-#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 
 namespace mindspore {
 namespace abstract {

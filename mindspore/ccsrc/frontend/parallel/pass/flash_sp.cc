@@ -55,7 +55,7 @@
 #include "op_def/nn_ops.h"
 #include "op_def/other_ops.h"
 #include "op_def/sequence_ops.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 #include "utils/anf_utils.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

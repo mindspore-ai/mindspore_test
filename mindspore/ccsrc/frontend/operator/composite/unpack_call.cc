@@ -27,7 +27,7 @@
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pipeline/jit/ps/fallback.h"
+#include "frontend/jit/ps/fallback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

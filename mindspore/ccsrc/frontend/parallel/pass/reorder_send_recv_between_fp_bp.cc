@@ -22,7 +22,7 @@
 #include <queue>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel.h"
-#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
 
 namespace mindspore {
 namespace parallel {

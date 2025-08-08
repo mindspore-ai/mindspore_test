@@ -26,7 +26,7 @@
 #include "symbolic_shape/symbol.h"
 #include "symbolic_shape/int_symbol.h"
 #include "symbolic_shape/symbol_info.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"

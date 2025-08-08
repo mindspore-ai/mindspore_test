@@ -35,10 +35,10 @@
 #include "mindspore/ccsrc/include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/include/common/utils/python_fallback_running.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
 namespace mindspore {

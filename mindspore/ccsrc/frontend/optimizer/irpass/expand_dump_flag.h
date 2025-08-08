@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/anf_visitor.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "utils/anf_utils.h"
 #include "ir/func_graph_flag.h"
 

@@ -38,7 +38,7 @@
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/comm_manager.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "pipeline/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "utils/trace_info.h"
 #include "utils/tensor_construct_utils.h"

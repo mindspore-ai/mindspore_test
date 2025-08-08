@@ -20,7 +20,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/operator/ops.h"
 #include "pynative/pynative_execute.h"
 #include "pynative/forward/do_infer.h"

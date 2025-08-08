@@ -28,9 +28,9 @@
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "frontend/optimizer/opt.h"
-#include "pipeline/jit/ps/resource.h"
-#include "pipeline/jit/ps/action.h"
-#include "pipeline/jit/ps/pass_config.h"
+#include "frontend/jit/ps/resource.h"
+#include "frontend/jit/ps/action.h"
+#include "frontend/jit/ps/pass_config.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

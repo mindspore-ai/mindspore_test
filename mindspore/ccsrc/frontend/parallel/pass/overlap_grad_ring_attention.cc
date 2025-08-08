@@ -50,7 +50,7 @@
 #include "frontend/parallel/pass/pass_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 #include "mindspore/ccsrc/frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"

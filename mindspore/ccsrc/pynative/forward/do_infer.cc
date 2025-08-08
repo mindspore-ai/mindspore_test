@@ -25,7 +25,7 @@
 #include "ops/infer_info/infer_info_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/jit/ps/static_analysis/prim_utils.h"
+#include "frontend/jit/ps/static_analysis/prim_utils.h"
 
 namespace mindspore {
 namespace pynative {

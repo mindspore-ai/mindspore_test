@@ -25,7 +25,7 @@
 #include "mindspore/core/include/ir/func_graph_cloner.h"
 #include "mindspore/core/include/ir/anf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/pass.h"
+#include "mindspore/ccsrc/frontend/jit/ps/pass.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {

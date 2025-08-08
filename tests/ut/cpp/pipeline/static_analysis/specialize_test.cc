@@ -21,8 +21,8 @@
 #include "common/py_func_graph_fetcher.h"
 
 #include "ir/manager.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
-#include "pipeline/jit/ps/static_analysis/program_specialize.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/program_specialize.h"
 #include "pipeline/static_analysis/helper.h"
 #include "utils/log_adapter.h"
 #include "ir/graph_utils.h"

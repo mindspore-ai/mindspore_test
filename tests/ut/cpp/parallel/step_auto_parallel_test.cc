@@ -22,7 +22,7 @@
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/operator/ops.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {

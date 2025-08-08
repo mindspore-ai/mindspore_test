@@ -55,7 +55,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
-#include "pipeline/jit/ps/base.h"
+#include "frontend/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

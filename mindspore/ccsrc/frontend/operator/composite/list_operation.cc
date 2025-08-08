@@ -22,7 +22,7 @@
 #include "frontend/optimizer/opt.h"
 #include "include/common/pybind_api/api_register.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "pipeline/jit/ps/fallback.h"
+#include "frontend/jit/ps/fallback.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

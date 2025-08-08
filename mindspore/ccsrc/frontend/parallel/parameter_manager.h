@@ -27,7 +27,7 @@
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/came_parallel_handler.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;

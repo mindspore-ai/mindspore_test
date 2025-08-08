@@ -25,7 +25,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_utils.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 
 #include "common/common_test.h"
 #include "common/resource.h"

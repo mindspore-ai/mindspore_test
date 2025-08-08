@@ -34,7 +34,7 @@
 #include "frontend/ir/base_ref_py.h"
 #include "ir/anf.h"
 #include "frontend/operator/composite/composite.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "pynative/base.h"
 #include "utils/ms_context.h"
 #include "include/common/pynative/variable.h"

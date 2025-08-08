@@ -41,9 +41,9 @@ set(SUB_COMP
         frontend/expander
         frontend/ir
         frontend/np_dtypes
-        pipeline/jit/ps
-        pipeline/jit/pi
-        pipeline/jit/trace
+        frontend/jit/ps
+        frontend/jit/pi
+        frontend/jit/trace
         pipeline/llm_boost
         )
 

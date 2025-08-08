@@ -23,9 +23,9 @@
 #include "ir/primitive.h"
 #include "ir/manager.h"
 #include "ir/func_graph.h"
-#include "pipeline/jit/ps/parse/parse_base.h"
-#include "pipeline/jit/ps/parse/parse.h"
-#include "pipeline/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/parse/parse_base.h"
+#include "frontend/jit/ps/parse/parse.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "gtest/gtest.h"
 
 namespace UT {
