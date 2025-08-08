@@ -68,6 +68,7 @@ dtype_size = {
     "F64": 8,
 }
 np_dtype_size = {
+    "bool": 1,
     "bool_": 1,
     "uint8": 1,
     "int8": 1,
@@ -978,7 +979,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
 def _cal_param_size(shape, dtype):
     """cal param size by dtype and shape"""
     num_elements = math.prod(shape)
-    element_size = np_dtype_size.get(dtype, 4)
+    element_size = np_dtype_size.get(str(dtype), 4)
     total_bytes = num_elements * element_size
     return total_bytes
 
@@ -1179,11 +1180,6 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         with _fast_safe_open(file_name, framework="np") as f:
             for k in f.keys():
                 if k in name_list:
-                    py_slice = f.get_tensor(k)
-                    param_total_size += _cal_param_size(py_slice.shape, py_slice.dtype)
-                    param_dst_shape = _get_dst_shape(k, py_slice.shape, origin_src_strategy_list)
-                    # Convert the shape of np.int32 type to int type to prevent overflow in subsequent calculations.
-                    param_dst_shape = [int(item) for item in param_dst_shape]
                     if choice_func is not None:
                         choice_out = choice_func(k)
                         if isinstance(choice_out, bool):
@@ -1191,7 +1187,13 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
                                 name_list.remove(k)
                                 continue
                     if k not in param_size_dict:
-                        param_size_dict[k] = _cal_param_size(param_dst_shape, py_slice.dtype)
+                        py_slice = f.get_tensor(k)
+                        param_dst_shape = _get_dst_shape(k, py_slice.shape, origin_src_strategy_list)
+                        # Convert the shape of np.int32 type to int type to prevent overflow in subsequent calculations.
+                        param_dst_shape = [int(item) for item in param_dst_shape]
+                        param_size = _cal_param_size(param_dst_shape, py_slice.dtype)
+                        param_total_size += param_size
+                        param_size_dict[k] = param_size
     split_num = math.ceil(sum(param_size_dict.values()) / 1024 / 1024 / 1024 / 3)
     split_num = min(split_num, len(name_list))
     split_list = _split_weight_dict(param_size_dict, split_num)
