@@ -200,7 +200,6 @@ class FRONTEND_EXPORT StrategyLayout {
   mindspore::HashMap<std::string, bool> network_state_map_;
   bool save_strategy_online_ = false;
   inline static std::shared_ptr<StrategyLayout> layout_instance_{nullptr};
-  mutable std::shared_mutex mutex_;
 };
 
 class StrategyCheckpoint {

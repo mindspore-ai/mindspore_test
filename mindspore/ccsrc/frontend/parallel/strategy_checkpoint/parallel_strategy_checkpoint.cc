@@ -172,19 +172,16 @@ std::shared_ptr<StrategyLayout> StrategyLayout::GetInstance() {
 
 void StrategyLayout::SetParamStageIdRanks(const std::string &param_name, const int64_t &stage_id,
                                           const std::vector<int64_t> &rank_list) {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
   auto &pair = parameter_stage_ranks_map_[param_name];
   pair.first = stage_id;
   pair.second = rank_list;
 }
 
 mindspore::HashMap<std::string, std::pair<int64_t, std::vector<int64_t>>> StrategyLayout::ParamStageIdRankId() const {
-  std::shared_lock<std::shared_mutex> lock(mutex_);
   return parameter_stage_ranks_map_;
 }
 
 void StrategyLayout::SetParamGlobalShape(const AnfNodePtr &parameter) {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
   std::string param_name = parameter->ToString();
   const auto &param_shape = parameter->Shape();
   if (param_shape == nullptr) {
@@ -201,7 +198,6 @@ void StrategyLayout::SetParamGlobalShape(const AnfNodePtr &parameter) {
 }
 
 std::vector<int64_t> StrategyLayout::ParamGlobalShape(const std::string &param_name) const {
-  std::shared_lock<std::shared_mutex> lock(mutex_);
   const auto &it = param_shape_map_.find(param_name);
   if (it == param_shape_map_.end()) {
     MS_LOG(EXCEPTION) << "Param shape not found for: " << param_name;
@@ -210,7 +206,6 @@ std::vector<int64_t> StrategyLayout::ParamGlobalShape(const std::string &param_n
 }
 
 void StrategyLayout::SetParamType(const AnfNodePtr &parameter) {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
   std::string param_name = parameter->ToString();
   auto type = parameter->Type();
   if (type == nullptr) {
@@ -228,7 +223,6 @@ void StrategyLayout::SetParamType(const AnfNodePtr &parameter) {
 }
 
 std::string StrategyLayout::ParamType(const std::string &param_name) const {
-  std::shared_lock<std::shared_mutex> lock(mutex_);
   const auto &it = param_type_map_.find(param_name);
   if (it == param_type_map_.end()) {
     MS_LOG(EXCEPTION) << "Param type not found for: " << param_name;
@@ -236,13 +230,9 @@ std::string StrategyLayout::ParamType(const std::string &param_name) const {
   return it->second;
 }
 
-void StrategyLayout::SetNetworkLayoutSaved(const std::string &name) {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
-  network_state_map_[name] = true;
-}
+void StrategyLayout::SetNetworkLayoutSaved(const std::string &name) { network_state_map_[name] = true; }
 
 bool StrategyLayout::NetworkLayoutSaved(const std::string &name) const {
-  std::shared_lock<std::shared_mutex> lock(mutex_);
   const auto &it = network_state_map_.find(name);
   if (it == network_state_map_.end()) {
     MS_LOG(INFO) << "Strategy has not been saved: " << name;
@@ -252,7 +242,6 @@ bool StrategyLayout::NetworkLayoutSaved(const std::string &name) const {
 }
 
 void StrategyLayout::SaveParamStraInfo(uint32_t rank_id, const ParamStrategyMap &param_map) {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
   auto &entry = global_rank_stra_map_[rank_id];
   for (const auto &kv : param_map) {
     entry[kv.first] = kv.second;
@@ -297,7 +286,6 @@ SortedParamVec StrategyLayout::SortParamStrategy(const ParamStrategyMap &param_s
 }
 
 void StrategyLayout::SortCurNetGlobalLayout() {
-  std::unique_lock<std::shared_mutex> lock(mutex_);
   if (layout_sorted_ == true) {
     return;
   }
@@ -324,7 +312,6 @@ void StrategyLayout::SortCurNetGlobalLayout() {
 }
 
 void StrategyLayout::ClearCurNet() {
-  std::unique_lock<std::shared_mutex> write_lock(mutex_);
   parameter_stage_ranks_map_.clear();
   param_shape_map_.clear();
   param_type_map_.clear();
@@ -337,22 +324,10 @@ void StrategyLayout::ClearCurNet() {
 
 void StrategyLayout::SaveNetworkGlobalLayout() {
   SortCurNetGlobalLayout();
-
-  std::string phase;
-  SortedRankParamVec global_layout;
-  SortedRankParamVec local_layout;
-  {
-    std::shared_lock<std::shared_mutex> read_lock(mutex_);
-    phase = CellPhase();
-    global_layout = global_layout_list_;
-    local_layout = local_layout_list_;
-  }
-  {
-    std::unique_lock<std::shared_mutex> write_lock(mutex_);
-    if (!phase.empty()) {
-      (void)global_network_rank_stra_list_.emplace_back(phase, global_layout);
-      (void)local_network_rank_stra_list_.emplace_back(phase, local_layout);
-    }
+  std::string phase = CellPhase();
+  if (!phase.empty()) {
+    (void)global_network_rank_stra_list_.emplace_back(phase, global_layout_list_);
+    (void)local_network_rank_stra_list_.emplace_back(phase, local_layout_list_);
   }
   SetNetworkLayoutSaved(phase);
   MS_LOG(INFO) << "Successfully saved strategy information of " << phase;
@@ -366,7 +341,6 @@ void StrategyLayout::EnsureSorted() const {
 }
 
 std::string StrategyLayout::DebugString(const SortedRankParamVec &layout) const {
-  std::shared_lock<std::shared_mutex> lock(mutex_);
   std::stringstream ss;
   ss << "\n";
   for (size_t i = 0; i < layout.size(); ++i) {
@@ -410,18 +384,13 @@ py::dict StrategyLayout::ConvertNetStraToPyDict(const SortedNetRankParamVec &lay
 }
 
 py::dict StrategyLayout::global_network_layout() const {
-  std::shared_lock<std::shared_mutex> read_lock(mutex_);
   return ConvertNetStraToPyDict(global_network_rank_stra_list_);
 }
 
-py::dict StrategyLayout::local_network_layout() const {
-  std::shared_lock<std::shared_mutex> read_lock(mutex_);
-  return ConvertNetStraToPyDict(local_network_rank_stra_list_);
-}
+py::dict StrategyLayout::local_network_layout() const { return ConvertNetStraToPyDict(local_network_rank_stra_list_); }
 
 void StrategyLayout::clear_strategy_metadata() {
   ClearCurNet();
-  std::unique_lock<std::shared_mutex> write_lock(mutex_);
   global_network_rank_stra_list_.clear();
   local_network_rank_stra_list_.clear();
   network_state_map_.clear();
