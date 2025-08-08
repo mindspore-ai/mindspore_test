@@ -746,8 +746,8 @@ static void DLPackDestructor(PyObject *data) {
 
 py::object TensorPybind::ToDLPack(const py::object &src) {
   TensorPtr tensor;
-  tensor = py::cast<TensorPtr>(src);
-  DLManagedTensor *dlpack = DLPackUtils::ToDLPack(*tensor);
+  tensor = tensor::ConvertToTensor(src);
+  DLManagedTensor *dlpack = DLPackUtils::ToDLPack(tensor);
   return py::reinterpret_steal<py::object>(PyCapsule_New(dlpack, "dltensor", DLPackDestructor));
 }
 

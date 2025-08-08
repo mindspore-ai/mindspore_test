@@ -25,6 +25,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace tensor {
@@ -55,9 +56,10 @@ std::pair<ShapeVector, std::vector<int64_t>> GetOriShapeAndStrides(const ShapeVe
                                                                    const std::vector<int64_t> &strides) {
   MS_EXCEPTION_IF_CHECK_FAIL(shape.size() == strides.size(), "shape size should be equal to strides size");
   ShapeVector ori_shape;
-  int64_t max_loc = 0;
+  int64_t max_loc = 1;
   for (size_t i = 0; i < shape.size(); i++) {
-    max_loc += strides[i] * shape[i];
+    auto strided_size = strides[i] * (shape[i] - 1);
+    max_loc += strided_size;
   }
   ori_shape.push_back(max_loc);
   std::vector<int64_t> ori_strides;
@@ -272,7 +274,7 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
 
 namespace {
 struct DLMTensor {
-  PointerRefCountPtr handle;
+  TensorPtr handle;
   DLManagedTensor tensor{};
   std::vector<int64_t> shape;
   std::vector<int64_t> strides;
@@ -281,24 +283,25 @@ struct DLMTensor {
 
 static void deleter(DLManagedTensor *arg) { delete static_cast<DLMTensor *>(arg->manager_ctx); }
 
-DLManagedTensor *DLPackUtils::ToDLPack(const Tensor &src) {
+DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
   DLMTensor *dlm_tensor = new DLMTensor();
-  dlm_tensor->shape = src.shape();
-  dlm_tensor->strides = src.stride();
+  dlm_tensor->shape = src->shape();
+  dlm_tensor->strides = src->stride();
   // normalized strides
   for (size_t i = 0; i < dlm_tensor->shape.size(); i++) {
     if (dlm_tensor->shape[i] < 2) {
       dlm_tensor->strides[i] = 1;
     }
   }
-
+  auto view = kernel::pyboost::as_strided(src, dlm_tensor->shape, dlm_tensor->strides, src->storage_offset());
+  runtime::Pipeline::Get().WaitFrontend();
   dlm_tensor->tensor.manager_ctx = dlm_tensor;
   dlm_tensor->tensor.deleter = &deleter;
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(src.device_address());
-  if (device_address == nullptr) {
+  auto view_address = std::dynamic_pointer_cast<device::DeviceAddress>(view->device_address());
+  if (view_address == nullptr) {
     MS_LOG(EXCEPTION) << "Device address is nullptr";
   }
-  dlm_tensor->handle = device_address->pointer_ref_count();
+  dlm_tensor->handle = view;
   const auto &ms_device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (ms_device != kAscendDevice) {
     MS_LOG(EXCEPTION) << "Only support Ascend device now, but got " << ms_device;
@@ -306,12 +309,12 @@ DLManagedTensor *DLPackUtils::ToDLPack(const Tensor &src) {
   const auto &ms_device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   dlm_tensor->tensor.dl_tensor.device = GetDLDevice(ms_device_id);
   dlm_tensor->tensor.dl_tensor.ndim = static_cast<int32_t>(dlm_tensor->shape.size());
-  dlm_tensor->tensor.dl_tensor.dtype = GetDLDataType(src.data_type());
-  dlm_tensor->tensor.dl_tensor.shape = dlm_tensor->shape.data();
-  dlm_tensor->tensor.dl_tensor.strides = dlm_tensor->strides.data();
+  dlm_tensor->tensor.dl_tensor.dtype = GetDLDataType(src->data_type());
+  dlm_tensor->tensor.dl_tensor.shape = view->storage_info()->shape.data();
+  dlm_tensor->tensor.dl_tensor.strides = view->storage_info()->strides.data();
   dlm_tensor->tensor.dl_tensor.byte_offset = 0;
-  runtime::Pipeline::Get().WaitForward();
-  dlm_tensor->tensor.dl_tensor.data = const_cast<void *>(device_address->GetPtr());
+  auto offset = mindspore::abstract::TypeIdSize(view->data_type()) * view->storage_offset();
+  dlm_tensor->tensor.dl_tensor.data = static_cast<char *>(const_cast<void *>(view_address->GetPtr())) + offset;
   if (dlm_tensor->tensor.dl_tensor.data == nullptr) {
     MS_LOG(EXCEPTION) << "Data is nullptr";
   }
