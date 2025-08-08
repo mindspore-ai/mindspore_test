@@ -28,6 +28,7 @@
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
+#include "debug/profiler/profiler.h"
 
 #include "tensor/tensor.h"
 #include "backend/ms_infer_backend/ms_kernel_lib.h"
@@ -157,19 +158,6 @@ MsKernel::MsKernel(da::tensor::DATensor *tensor_node) : da::runtime::DAKernel(te
   MS_EXCEPTION_IF_NULL(stream_);
 }
 
-MsKernel::~MsKernel() {
-  // Destroy kernel tensors
-  auto destroy_tensors = [](std::vector<kernel::KernelTensor *> &kernel_tensors) {
-    for (auto &tensor : kernel_tensors) {
-      MS_EXCEPTION_IF_NULL(tensor);
-      delete tensor;
-    }
-    kernel_tensors.clear();
-  };
-  destroy_tensors(outputs_);
-  destroy_tensors(workspaces_);
-}
-
 void MsKernel::Init() {
   MS_EXCEPTION_IF_NULL(tensorNode_);
 
@@ -195,6 +183,7 @@ void MsKernel::CreateInputKernelTensors() {
     MS_EXCEPTION_IF_NULL(input_tensor);
     (void)abs_inputs_.emplace_back(input_tensor);
     (void)inputs_.emplace_back(input_tensor.get());
+    (void)input_kernel_tensors_.emplace_back(input_tensor);
     MS_LOG(DEBUG) << "input kernel tensors: " << input_tensor->ToString();
   }
   MS_LOG(INFO) << "End create input DAKernelTensors";
@@ -207,15 +196,17 @@ void MsKernel::CreateOutputKernelTensors() {
     auto **da_tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensorNode_->data);
     MS_EXCEPTION_IF_NULL(da_tensor_list);
     for (size_t i = 0; i < tensorNode_->shape[0]; ++i) {
-      auto output_tensor = new DAKernelTensor(da_tensor_list[i]);
+      auto output_tensor = std::make_shared<DAKernelTensor>(da_tensor_list[i]);
       MS_EXCEPTION_IF_NULL(output_tensor);
-      (void)outputs_.emplace_back(output_tensor);
+      (void)outputs_.emplace_back(output_tensor.get());
+      (void)output_kernel_tensors_.emplace_back(output_tensor);
       MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString() << ", index: " << i;
     }
   } else {
-    auto output_tensor = new DAKernelTensor(tensorNode_);
+    auto output_tensor = std::make_shared<DAKernelTensor>(tensorNode_);
     MS_EXCEPTION_IF_NULL(output_tensor);
-    (void)outputs_.emplace_back(output_tensor);
+    (void)outputs_.emplace_back(output_tensor.get());
+    (void)output_kernel_tensors_.emplace_back(output_tensor);
     MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString();
   }
   MS_LOG(INFO) << "End create output DAKernelTensors";
@@ -223,6 +214,8 @@ void MsKernel::CreateOutputKernelTensors() {
 
 void MsKernel::InferShape() {
   MS_EXCEPTION_IF_NULL(kernel_mod_);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInfer,
+                                     kernel_mod_->kernel_name());
   // 1. Infer operator's output's Shape.
   MS_LOG(INFO) << "Begin InferShape for kernel: " << kernel_mod_->primitive() << ", inputs: " << abs_inputs_;
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), abs_inputs_);
@@ -235,17 +228,21 @@ void MsKernel::InferShape() {
 
 void MsKernel::Resize() {
   MS_EXCEPTION_IF_NULL(kernel_mod_);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelResize,
+                                     kernel_mod_->kernel_name());
   if (kernel_mod_->Resize(inputs_, outputs_) == kernel::KRET_RESIZE_FAILED) {
     MS_LOG(EXCEPTION) << "KernelMod Resize failed";
   }
 }
 
 void MsKernel::Launch() {
+  MS_EXCEPTION_IF_NULL(kernel_mod_);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
+                                     kernel_mod_->kernel_name());
   MS_EXCEPTION_IF_NULL(device_context_);
   device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
   AllocateOutputDeviceMemory();
   AllocateWorkSpaceDeviceMemory();
-  MS_EXCEPTION_IF_NULL(kernel_mod_);
   MS_EXCEPTION_IF_NULL(stream_);
   MS_LOG(INFO) << "Launch kernel " << kernel_mod_->kernel_name() << " start.";
   MS_LOG(INFO) << "inputs_: " << inputs_;
@@ -278,25 +275,33 @@ void MsKernel::AllocateOutputDeviceMemory() {
 void MsKernel::AllocateWorkSpaceDeviceMemory() {
   MS_EXCEPTION_IF_NULL(kernel_mod_);
   MS_EXCEPTION_IF_NULL(device_context_);
-  for (auto &size : kernel_mod_->GetWorkspaceSizeList()) {
-    auto ktensor = new kernel::KernelTensor();
-    MS_EXCEPTION_IF_NULL(ktensor);
-    auto data = device_context_->device_res_manager_->AllocateMemory(size, kDefaultStreamIndex);
-    if (!data) {
+  if (workspaces_.empty()) {
+    for (size_t i = 0; i < kernel_mod_->GetWorkspaceSizeList().size(); ++i) {
+      auto ws_kernel_tensor = std::make_shared<kernel::KernelTensor>();
+      MS_EXCEPTION_IF_NULL(ws_kernel_tensor);
+      (void)workspaces_.emplace_back(ws_kernel_tensor.get());
+      (void)workspace_kernel_tensors_.emplace_back(ws_kernel_tensor);
+    }
+  }
+
+  auto &workspace_size_list = kernel_mod_->GetWorkspaceSizeList();
+  for (size_t i = 0; i < workspace_size_list.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(workspace_kernel_tensors_[i]);
+    auto device_ptr = device_context_->device_res_manager_->AllocateMemory(workspace_size_list[i], kDefaultStreamIndex);
+    if (!device_ptr) {
       MS_LOG(EXCEPTION) << "Allocate workspace memory failed";
     }
-    ktensor->set_size(size);
-    ktensor->set_device_ptr(data);
-    (void)workspaces_.emplace_back(ktensor);
+    workspace_kernel_tensors_[i]->set_size(workspace_size_list[i]);
+    workspace_kernel_tensors_[i]->set_device_ptr(device_ptr);
   }
 }
 
 void MsKernel::FreeWorkSpaceDeviceMemory() {
   MS_EXCEPTION_IF_NULL(device_context_);
-  for (auto &ws : workspaces_) {
-    device_context_->device_res_manager_->FreeMemory(ws->device_ptr());
+  for (auto &ws_kernel_tensor : workspace_kernel_tensors_) {
+    device_context_->device_res_manager_->FreeMemory(ws_kernel_tensor->device_ptr());
+    ws_kernel_tensor->set_device_ptr(nullptr);
   }
-  workspaces_.clear();
 }
 
 MsKernelLib::MsKernelLib() : da::runtime::KernelLib(std::move(kMindsporeKernelLibName)) {

@@ -21,10 +21,10 @@
 #include <string>
 #include <unordered_map>
 
+#include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "backend/backend_manager/backend_base.h"
 #include "backend/backend_manager/backend_jit_config.h"
-#include "ir/tensor.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
 
@@ -42,6 +42,8 @@ class BACKEND_EXPORT MSInferBackend : public BackendBase {
 
   // The backend graph Run interface by the graph_id which are generated through the graph Build interface above.
   RunningStatus Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) override;
+
+  void BindCoreForMainThread();
 
   std::string ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file,
                        IRFormat ir_format) override;

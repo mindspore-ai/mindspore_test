@@ -23,16 +23,17 @@
 #include "ir/core_ops_name.h"
 #include "ir/tensor_new.h"
 #include "ir/device_address_maker.h"
+#include "ir/device_sync.h"
 #include "utils/shape_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/llm_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/pipeline/pipeline.h"
+#include "debug/profiler/profiler.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
 #include "backend/ms_infer_backend/host_value_store.h"
-#include "backend/ms_infer_backend/device_tensor_store.h"
 #include "backend/ms_infer_backend/utils.h"
 
 namespace mindspore {
@@ -155,6 +156,11 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
 
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
+  if (device_address->GetSize() == 0) {
+    MS_LOG(DEBUG) << "input tensor size is 0, skip prepare, tensor: " << tensor->ToString();
+    return nullptr;
+  }
+
   if (device_address->GetDeviceType() != device_context_->GetDeviceType()) {
     MS_LOG(INFO) << "need sync data to device, device type: "
                  << device::GetDeviceNameByType(device_context_->GetDeviceType());
@@ -162,15 +168,16 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
     device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
     auto device_ptr = device_context_->device_res_manager_->AllocateMemory(tensor->Size(), kDefaultStreamIndex);
     MS_EXCEPTION_IF_NULL(device_ptr);
-    // copy tensor data to device
-    if (!device_context_->device_res_manager_->Copy(device_ptr, tensor->data_c(), static_cast<uint64_t>(tensor->Size()),
-                                                    device::CopyType::kH2D, kDefaultStreamIndex)) {
-      MS_LOG(EXCEPTION) << "Copy tensor data failed for tensor: " << tensor->ToString();
-    }
     // create new device address for tensor
     auto new_device_address = GetDeviceAddressMaker(device_context_->GetDeviceType())(
       tensor->data_type(), tensor->shape(), device_ptr, nullptr);
     MS_EXCEPTION_IF_NULL(new_device_address);
+    // async H2D copy
+    if (!AsyncCopy(new_device_address, device_address, kDefaultStreamIndex)) {
+      MS_LOG(EXCEPTION) << "Failed async copy H2D for tensor: " << tensor->ToString()
+                        << ", dst: " << new_device_address->ToString() << ", src: " << device_address->ToString();
+    }
+    // set the new device address to tensor
     tensor->set_device_address(new_device_address);
     return device_ptr;
   }
@@ -216,7 +223,7 @@ da::tensor::DATensor *GraphAdapter::GetNodeDATensor(const AnfNodePtr &node) {
 void GraphAdapter::ConvertGraph() {
   MS_LOG(INFO) << "Convert graph: " << func_graph_->ToString();
 
-  runtime::Pipeline::Get().WaitAll();
+  WaitTaskFinish();
 
   SetupFrontendParameterMapping();
 
@@ -229,6 +236,11 @@ void GraphAdapter::ConvertGraph() {
   graph_executor_.EndGraph();
   graph_executor_.BuildKernels();
   graph_executor_.RecordTensorRefCount();
+  graph_executor_.SetFreeFunc([this](void *data) {
+    MS_EXCEPTION_IF_NULL(device_context_);
+    MS_EXCEPTION_IF_NULL(data);
+    device_context_->device_res_manager_->FreeMemory(data);
+  });
 
   graph_executor_.DumpGraph();
 }
@@ -242,21 +254,25 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
     return;
   }
 
-  runtime::Pipeline::Get().WaitAll();
+  WaitTaskFinish();
 
   ConvertInputs(inputs);
-  graph_executor_.SetFreeFunc([this](void *data) {
-    MS_EXCEPTION_IF_NULL(device_context_);
-    MS_EXCEPTION_IF_NULL(data);
-    device_context_->device_res_manager_->FreeMemory(data);
-  });
   MS_LOG(INFO) << "Begin run DAGraph, is_dynamic_shape: " << is_dynamic_shape_;
   graph_executor_.RunGraph(is_dynamic_shape_);
+  uint64_t start_time = 0;
+  PROFILER_START(start_time);
   ConvertOutputs(outputs);
-  graph_executor_.FreeGraphOutputs();
 
   auto &llm_manger = LLMManager::GetInstance();
   llm_manger.reset_graph_inputs();
+  PROFILER_END(start_time, runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+               func_graph_->ToString(), false);
+}
+
+void GraphAdapter::WaitTaskFinish() const {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWaitTaskFinish,
+                                     runtime::kDefaultOpName);
+  runtime::Pipeline::Get().WaitAll();
 }
 
 void GraphAdapter::SetupFrontendParameterMapping() {
@@ -280,17 +296,29 @@ void GraphAdapter::SetupFrontendParameterMapping() {
 }
 
 void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
+  MS_EXCEPTION_IF_NULL(func_graph_);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kInputProcess,
+                                     func_graph_->ToString());
   const auto &frontend_params = func_graph_->GetFuncGraph()->parameters();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == frontend_params.size(),
                              "The inputs size is not equal to graph frontend params size.");
   MS_LOG(DEBUG) << "Graph inputs size: " << inputs.size();
-  std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> graph_input_tensors;
-  graph_input_tensors.resize(inputs.size());
-  ordinary_input_tensors_shape_.resize(inputs.size());
+  // front node index to input tensors
+  std::map<size_t, std::vector<tensor::TensorPtr>> infer_input_tensors;
 
-  auto &llm_manger = LLMManager::GetInstance();
-  llm_manger.Clear();
+  if (is_first_step_) {
+    PrepareAllInputs(inputs, frontend_params, &infer_input_tensors);
+    is_first_step_ = false;
+  } else {
+    PrepareNonWeightInputs(inputs, frontend_params, &infer_input_tensors);
+  }
 
+  RecordInputTensorShapes(infer_input_tensors);
+}
+
+void GraphAdapter::PrepareAllInputs(const VectorRef &inputs, const AnfNodePtrList &frontend_params,
+                                    std::map<size_t, std::vector<tensor::TensorPtr>> *infer_input_tensors) {
+  MS_EXCEPTION_IF_NULL(infer_input_tensors);
   for (size_t i = 0; i < inputs.size(); ++i) {
     // flatten input tensors
     std::vector<tensor::TensorPtr> flatten_input_tensors;
@@ -320,60 +348,97 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
                                    << ", tensors size: " << flatten_input_tensors.size()
                                    << ", parameter: " << frontend_param->fullname_with_scope();
       }
+
+      auto backend_param = frontend_index_to_backend_param.second;
       auto input_tensor = flatten_input_tensors[input_tensor_index];
+      if (!common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>())) {
+        (void)(*infer_input_tensors)[i].emplace_back(input_tensor);
+        (void)front_node_index_to_backend_nodes_with_index_[i].emplace_back(
+          std::make_pair(backend_param, input_tensor_index));
+        auto &llm_manger = LLMManager::GetInstance();
+        llm_manger.add_graph_input(backend_param->fullname_with_scope(),
+                                   std::make_shared<tensor::Tensor>(*input_tensor));
+        MS_LOG(DEBUG) << "Record input tensor: " << input_tensor->ToString()
+                      << "for parameter: " << backend_param->fullname_with_scope();
+      }
 
       // get da_param from parameter_map_
-      auto backend_param = frontend_index_to_backend_param.second;
       auto iter2 = parameter_map_.find(backend_param);
       if (iter2 == parameter_map_.end()) {
         MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
       }
       auto da_param = iter2->second;
       PrepareData(da_param, input_tensor);
-
-      auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
-      graph_input_tensors[i].emplace_back(std::make_pair(input_tensor, is_weight));
-      if (!is_weight) {
-        llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor);
-        MS_LOG(DEBUG) << "Record input tensor: " << input_tensor->ToString()
-                      << "for parameter: " << backend_param->fullname_with_scope();
-      }
     }
   }
-  RecordInputTensorShapes(graph_input_tensors);
 }
 
-void GraphAdapter::RecordInputTensorShapes(
-  const std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> &input_tensors) {
-  MS_EXCEPTION_IF_CHECK_FAIL(input_tensors.size() == ordinary_input_tensors_shape_.size(),
+void GraphAdapter::PrepareNonWeightInputs(const VectorRef &inputs, const AnfNodePtrList &frontend_params,
+                                          std::map<size_t, std::vector<tensor::TensorPtr>> *infer_input_tensors) {
+  MS_EXCEPTION_IF_NULL(infer_input_tensors);
+  for (auto &front_node_to_backend_nodes : front_node_index_to_backend_nodes_with_index_) {
+    auto front_index = front_node_to_backend_nodes.first;
+    auto &backend_nodes_with_index = front_node_to_backend_nodes.second;
+    if (front_index < 0 || front_index >= inputs.size()) {
+      MS_LOG(EXCEPTION) << "Invalid front node index: " << front_index;
+    }
+    // flatten input tensors
+    std::vector<tensor::TensorPtr> flatten_input_tensors;
+    AnfAlgo::FlattenInputArg(inputs[front_index], frontend_params[front_index], &flatten_input_tensors);
+    for (auto &backend_node_with_index : backend_nodes_with_index) {
+      auto backend_param = backend_node_with_index.first;
+      auto input_tensor_index = backend_node_with_index.second;
+      if (input_tensor_index < 0 || input_tensor_index >= flatten_input_tensors.size()) {
+        MS_LOG(EXCEPTION) << "Invalid input_tensor_index: " << input_tensor_index;
+        return;
+      }
+      (void)(*infer_input_tensors)[front_index].emplace_back(flatten_input_tensors[input_tensor_index]);
+      auto &llm_manger = LLMManager::GetInstance();
+      llm_manger.add_graph_input(backend_param->fullname_with_scope(),
+                                 std::make_shared<tensor::Tensor>(*flatten_input_tensors[input_tensor_index]));
+      MS_LOG(DEBUG) << "Record input tensor: " << flatten_input_tensors[input_tensor_index]->ToString()
+                    << "for parameter: " << backend_param->fullname_with_scope();
+      // get da_param from parameter_map_
+      auto iter = parameter_map_.find(backend_param);
+      if (iter == parameter_map_.end()) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
+      }
+      auto da_param = iter->second;
+      PrepareData(da_param, flatten_input_tensors[input_tensor_index]);
+    }
+  }
+}
+
+void GraphAdapter::RecordInputTensorShapes(const std::map<size_t, std::vector<tensor::TensorPtr>> &input_tensors) {
+  MS_EXCEPTION_IF_CHECK_FAIL(input_tensors.size() == infer_input_tensors_shape_.size(),
                              "args size is not equal to ordinary_input_tensors_shape_ size");
   is_dynamic_shape_ = false;
-  for (size_t i = 0; i < input_tensors.size(); ++i) {
-    if (input_tensors[i].size() != 1) {
+  size_t index = kIndex0;
+  for (auto &frontend_index_to_input_tensors : input_tensors) {
+    auto infer_input_tensors = frontend_index_to_input_tensors.second;
+    if (infer_input_tensors.size() != 1) {
       MS_LOG(DEBUG) << "Skip record list tensor input";
+      index++;
       continue;
     }
-    auto input_tensor = input_tensors[i][0].first;
-    auto is_weight = input_tensors[i][0].second;
-    if (is_weight) {
-      MS_LOG(DEBUG) << "Skip record weight's shape";
-      continue;
-    }
+    auto input_tensor = infer_input_tensors[kIndex0];
     if (input_tensor == nullptr) {
-      MS_LOG(DEBUG) << "Input tensor is nullptr, outer index: " << i;
+      MS_LOG(DEBUG) << "Input tensor is nullptr";
+      index++;
       continue;
     }
     if (!is_dynamic_shape_) {
-      if (ordinary_input_tensors_shape_[i] != input_tensor->shape() || input_tensor->shape().empty()) {
+      if (infer_input_tensors_shape_[index] != input_tensor->shape() || input_tensor->shape().empty()) {
         is_dynamic_shape_ = true;
       }
     }
-    ordinary_input_tensors_shape_[i] = input_tensor->shape();
+    infer_input_tensors_shape_[index++] = input_tensor->shape();
   }
 }
 
 void GraphAdapter::ConvertOutputs(VectorRef *outputs) {
   MS_EXCEPTION_IF_NULL(outputs);
+  MS_EXCEPTION_IF_NULL(device_context_);
   MS_LOG(INFO) << "start convert outputs";
 
   MS_LOG(INFO) << "start get DA output node, ms node: " << func_graph_->get_return()->fullname_with_scope();
@@ -400,19 +465,12 @@ void GraphAdapter::ConvertOutputs(VectorRef *outputs) {
     auto dtype = ConvertDataType(da_tensor->type);
     MS_LOG(INFO) << "start construct output tensor, shape: " << shape << ", dtye: " << dtype;
     MS_EXCEPTION_IF_NULL(da_tensor->data);
-
-    size_t tensor_size = GetTypeByte(TypeIdToType(dtype)) * SizeOf(shape);
-    char *buffer = new char[tensor_size];
-    // copy tensor data from device to host
-    device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
-    if (!device_context_->device_res_manager_->Copy(buffer, da_tensor->data, static_cast<uint64_t>(tensor_size),
-                                                    device::CopyType::kD2H, kDefaultStreamIndex)) {
-      MS_LOG(EXCEPTION) << "Copy da_tensor data failed, tensor_size: " << tensor_size;
-    }
-    auto output = tensor::from_buffer(dtype, shape, buffer, tensor_size);
+    auto device_address =
+      GetDeviceAddressMaker(device_context_->GetDeviceType())(dtype, shape, da_tensor->data, nullptr);
+    MS_EXCEPTION_IF_NULL(device_address);
+    auto output = std::make_shared<tensor::Tensor>(dtype, shape, device_address);
     MS_EXCEPTION_IF_NULL(output);
     MS_LOG(INFO) << "converted output tensor: " << output->ToString();
-    delete[] buffer;
     (void)outputs->emplace_back(output);
   }
 
@@ -420,6 +478,9 @@ void GraphAdapter::ConvertOutputs(VectorRef *outputs) {
 }
 
 void GraphAdapter::ConvertParameters() {
+  auto root_graph = func_graph_->GetFuncGraph();
+  MS_EXCEPTION_IF_NULL(root_graph);
+  infer_input_tensors_shape_.resize(root_graph->get_inputs().size());
   for (auto &param : func_graph_->parameters()) {
     const ParameterPtr param_ptr = dyn_cast<Parameter>(param);
     MS_EXCEPTION_IF_NULL(param_ptr);

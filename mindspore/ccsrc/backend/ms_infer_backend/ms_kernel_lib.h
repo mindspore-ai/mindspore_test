@@ -44,7 +44,7 @@ const char kMindsporeKernelLibName[] = "Mindspore";
 class MsKernel : public da::runtime::DAKernel {
  public:
   explicit MsKernel(da::tensor::DATensor *tensor_node);
-  ~MsKernel() override;
+  ~MsKernel() override = default;
 
   void Init() override;
   void InferShape() override;
@@ -63,6 +63,9 @@ class MsKernel : public da::runtime::DAKernel {
   std::vector<kernel::KernelTensor *> inputs_;
   std::vector<kernel::KernelTensor *> outputs_;
   std::vector<kernel::KernelTensor *> workspaces_;
+  std::vector<kernel::KernelTensorPtr> input_kernel_tensors_;
+  std::vector<kernel::KernelTensorPtr> output_kernel_tensors_;
+  std::vector<kernel::KernelTensorPtr> workspace_kernel_tensors_;
   void *stream_{nullptr};
   device::DeviceContext *device_context_{nullptr};
 };

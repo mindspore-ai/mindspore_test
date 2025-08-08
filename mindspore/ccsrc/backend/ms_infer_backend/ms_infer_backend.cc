@@ -26,10 +26,11 @@
 #include "backend/common/session/session_factory.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/kernel_graph.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
+#include "debug/profiler/profiler.h"
 
 #include "backend/ms_infer_backend/ms_infer_backend.h"
 #include "backend/ms_infer_backend/host_value_store.h"
-#include "backend/ms_infer_backend/device_tensor_store.h"
 
 namespace mindspore {
 namespace backend {
@@ -82,6 +83,10 @@ BackendGraphId MSInferBackend::Build(const FuncGraphPtr &func_graph, const Backe
 }
 
 RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
+                                     std::to_string(graph_id), true);
+  BindCoreForMainThread();
+
   auto graph_adapter_iter = graph_adapter_map_.find(graph_id);
   if (graph_adapter_iter == graph_adapter_map_.end()) {
     MS_LOG(EXCEPTION) << "Can not find graph id " << graph_id;
@@ -100,6 +105,25 @@ RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inpu
   return RunningStatus::kRunningSuccess;
 }
 
+void MSInferBackend::BindCoreForMainThread() {
+  static bool is_bind_core_ = false;
+  if (is_bind_core_) {
+    return;
+  }
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (!bind_core_manager.is_enable_thread_bind_core_) {
+    return;
+  }
+
+  const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMAIN);
+  if (core_list.empty()) {
+    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Main thread.";
+  } else {
+    bind_core_manager.bind_thread_core(core_list);
+  }
+  is_bind_core_ = true;
+}
+
 std::string MSInferBackend::ExportIR(const FuncGraphPtr &func_graph, const std::string &file_name, bool is_save_to_file,
                                      IRFormat ir_format) {
   return "";
@@ -109,10 +133,7 @@ void MSInferBackend::ConvertIR(const FuncGraphPtr &func_graph,
                                const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
                                IRFormat ir_format) {}
 
-void MSInferBackend::Clear() {
-  HostValueStore::GetInstance().Clear();
-  DeviceTensorStore::GetInstance().Clear();
-}
+void MSInferBackend::Clear() { HostValueStore::GetInstance().Clear(); }
 
 MS_REGISTER_BACKEND(kMSInferBackendName, MSInferBackend)
 

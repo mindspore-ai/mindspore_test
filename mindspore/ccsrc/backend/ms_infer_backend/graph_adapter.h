@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_
 #define MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_GRAPH_ADAPTER_H_
 
+#include <map>
 #include <vector>
 #include <memory>
 #include <string>
@@ -61,11 +62,17 @@ class GraphAdapter {
   void ConvertInputs(const VectorRef &inputs);
   void ConvertOutputs(VectorRef *outputs);
 
+  void WaitTaskFinish() const;
+
   da::tensor::DATensor *ConvertValueNode(const ValueNodePtr &value_node);
-  void RecordInputTensorShapes(const std::vector<std::vector<std::pair<tensor::TensorPtr, bool>>> &input_tensors);
+  void RecordInputTensorShapes(const std::map<size_t, std::vector<tensor::TensorPtr>> &input_tensors);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
   void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node);
 
+  void PrepareAllInputs(const VectorRef &inputs, const AnfNodePtrList &frontend_params,
+                        std::map<size_t, std::vector<tensor::TensorPtr>> *infer_input_tensors);
+  void PrepareNonWeightInputs(const VectorRef &inputs, const AnfNodePtrList &frontend_params,
+                              std::map<size_t, std::vector<tensor::TensorPtr>> *infer_input_tensors);
   void PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value);
   void *PrepareTensorDataToDevice(const tensor::TensorPtr &tensor);
 
@@ -75,8 +82,12 @@ class GraphAdapter {
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> const_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> parameter_map_;
   std::unordered_map<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> frontend_params_to_backend_params_;
-  std::vector<ShapeVector> ordinary_input_tensors_shape_;
+  // shape of inference input tensors for recording dynamic shape, excluding tuple input
+  std::vector<ShapeVector> infer_input_tensors_shape_;
   bool is_dynamic_shape_{false};
+  bool is_first_step_{true};
+  // frontend node index to backend nodes with corresponding input tensor indexes
+  std::unordered_map<size_t, std::vector<std::pair<AnfNodePtr, size_t>>> front_node_index_to_backend_nodes_with_index_;
   std::unordered_set<ValuePtr> converted_values_;
   device::DeviceContext *device_context_{nullptr};
 };
