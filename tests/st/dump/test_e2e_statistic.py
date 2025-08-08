@@ -23,7 +23,7 @@ import json
 import hashlib
 import mindspore
 
-from mindspore import Tensor, nn
+from mindspore import Tensor, nn, ops
 from pathlib import Path
 from tests.mark_utils import arg_mark
 
@@ -31,6 +31,12 @@ from tests.mark_utils import arg_mark
 class Net(nn.Cell):
     def construct(self, x, y):
         return x + y
+
+class MoveToNet(nn.Cell):
+    def construct(self, x):
+        cpu_x = ops.move_to(x, "CPU")
+        npu_x = ops.move_to(cpu_x, "Ascend")
+        return npu_x
 
 
 def generate_e2edump_json(dump_path, json_file_name, extra_settings_func=None, assign_dump_path=True):
@@ -92,6 +98,13 @@ def get_dumped_stat_list(dump_file_path):
         for stat in stats_list:
             stat.pop(None, None)
         return stats_list
+
+
+def check_moveto_dump(dump_path):
+    stat_list = get_dumped_stat_list(Path(dump_path) / "rank_0" / "Net" / "0" / "0")
+    for data in stat_list:
+        if data['Op Name'] == 'Default_MoveTo-op0':
+            assert data['IO'] == 'input'
 
 
 def compare_single_data(x, y, data_len, net, dump_path, precision_mode="high"):
@@ -294,5 +307,34 @@ def test_e2e_statistic_massive_data():
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
             compare_massive_data(net, dump_path)
+        finally:
+            del os.environ['MINDSPORE_DUMP_CONFIG']
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_e2e_statistic_moveto():
+    """
+    Feature: test kernel mindspore.ops.move_to
+    Description: If tensor's target device is different from running device, skip this tensor while dumping.
+    Expectation: The statistics result meet the requirement.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
+
+    def extra_json_settings(data):
+        data["e2e_dump_settings"]["stat_calc_mode"] = "device"
+        data["e2e_dump_settings"]["enable"] = True
+
+    with tempfile.TemporaryDirectory() as test_dir:
+        path = Path(test_dir)
+        dump_path = str(path / "debug_dump")
+        dump_config_path = str(path / "config.json")
+        generate_e2edump_json(dump_path, dump_config_path, extra_json_settings)
+
+        try:
+            os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+            net = MoveToNet()
+            x = Tensor([1, 2, 3])
+            y = net(x)
+            assert (x.numpy() == y.numpy()).all()
+            check_moveto_dump(dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
