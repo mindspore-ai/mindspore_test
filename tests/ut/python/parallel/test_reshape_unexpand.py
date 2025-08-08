@@ -16,8 +16,8 @@ import numpy as np
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore import context
+from mindspore import Tensor, context
+from mindspore.parallel import Layout
 from mindspore.common.api import _cell_graph_executor
 from mindspore.common.parameter import Parameter
 from mindspore.ops import composite as C
@@ -323,3 +323,61 @@ def test_reshape_unexpand_8():
     x = Tensor(np.ones([128, 96]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(Net()))
     compile_net(net, x, parallel_mode="auto_parallel", search_mode="sharding_propagation")
+
+
+def test_reshape_depend_reshape_redistribution():
+    """
+    Feature: test consecutive reshape redistribution.
+    Description: redistribution for reshape_op_info.
+    Expectation: compile done without error.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reshape = P.Reshape()
+            self.relu = P.ReLU().shard(((1, 1, 1, 1),))
+            self.gelu = P.GeLU().shard(((1, 1, 1, 1),))
+            self.add = P.Add().shard(((1, 1, 2, 1), (1, 1, 2, 1)))
+            self.depend = P.Depend()
+
+        def construct(self, x):
+            x = self.relu(x)
+            y = self.gelu(x)
+            x = self.reshape(x, (128, 2, 2, 64))
+            x = self.depend(x, y)
+            x = self.reshape(x, (128, 2, 8, 16))
+            return self.add(x, y)
+
+    x = Tensor(np.ones([128, 2, 8, 16]))
+    net = GradWrap(NetWithLoss(Net()))
+    compile_net(net, x)
+
+
+def test_reshape_depend_reshape_redistribution_with_layout():
+    """
+    Feature: test consecutive reshape redistribution with layout.
+    Description: redistribution for reshape_op_info.
+    Expectation: compile done without error.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reshape = P.Reshape()
+            layout = Layout((2, 2, 2), ("d1", "d2", "d3"))
+            self.relu = P.ReLU().shard((layout("None", "None", ("d1", "d2"), "None"),))
+            self.gelu = P.GeLU().shard((layout("None", "None", ("d1", "d2"), "None"),))
+            self.add = P.Add().shard((layout("None", "None", ("d1", "d2", "d3"), "None"),
+                                      layout("None", "None", ("d1", "d2", "d3"), "None")))
+            self.depend = P.Depend()
+
+        def construct(self, x):
+            x = self.relu(x)
+            y = self.gelu(x)
+            x = self.reshape(x, (128, 2, 2, 64))
+            x = self.depend(x, y)
+            x = self.reshape(x, (128, 2, 8, 16))
+            return self.add(x, y)
+
+    x = Tensor(np.ones([128, 2, 8, 16]))
+    net = GradWrap(NetWithLoss(Net()))
+    compile_net(net, x)
