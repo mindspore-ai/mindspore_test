@@ -3,12 +3,13 @@ range:
         Returns a tensor with a step length of `step` in the interval [ `start` , `end` ).
 
         .. note::
-            The types of all 3 inputs must be all integers or floating-point numbers.
+            - The types of all 3 inputs must be all integers or floating-point numbers.
+            - When the input is a tensor, the tensor must contain only one element, whose dtype is Number.
 
         Args:
-            start (number): The start value of the interval.
-            end (number): The end value of the interval.
-            step (number): The interval between each value.
+            start (Union[Number, Tensor]): The start value of the interval.
+            end (Union[Number, Tensor]): The end value of the interval.
+            step (Union[Number, Tensor]): The interval between each value.
             maxlen (int, optional): Memory that can fit `maxlen` many elements
                 will be allocated for the output. Optional, must be positive. Default: 1000000.
                 If the output has more than `maxlen` elements, a runtime error will occur.
