@@ -19,7 +19,6 @@
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #include "distributed/cluster/topology/meta_server_node.h"
 #include "distributed/persistent/storage/file_io_utils.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "utils/ms_utils.h"
 #include "common/common_test.h"
 
@@ -184,89 +183,6 @@ TEST_F(TestDynamicNetworking, RetrieveMessageFromMSN) {
   msn.Finalize();
 }
 
-/// Feature: test the recovery of meta server node.
-/// Description: construct a cluster and restart the meta server node under recovery mode.
-/// Expectation: the meta server node is restarted successfully and all the metadata is restored.
-TEST_F(TestDynamicNetworking, MetaServerNodeRecovery) {
-  // Prepare the environment.
-  std::string local_file = "recovery.dat";
-  char *dir = getcwd(nullptr, 0);
-  EXPECT_NE(nullptr, dir);
-
-  std::string path = dir;
-  free(dir);
-  dir = nullptr;
-
-  std::string full_file_path = path + "/" + local_file;
-  if (storage::FileIOUtils::IsFileOrDirExist(full_file_path)) {
-    remove(full_file_path.c_str());
-  }
-  MsContext::GetInstance()->set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
-  EXPECT_TRUE(!storage::FileIOUtils::IsFileOrDirExist(full_file_path));
-  common::SetEnv(recovery::kEnvEnableRecovery, "1");
-  common::SetEnv(recovery::kEnvRecoveryPath, path.c_str());
-
-  // Construct the cluster(meta server node and compute graph node).
-  std::string server_host = "127.0.0.1";
-  std::string server_port = "8090";
-  common::SetEnv(kEnvMetaServerHost, server_host.c_str());
-  common::SetEnv(kEnvMetaServerPort, server_port.c_str());
-
-  constexpr char kEnvMSRole[] = "MS_ROLE";
-  common::SetEnv(kEnvMSRole, "MS_SCHED");
-  size_t total_node_num = 2;
-  common::SetEnv(kEnvWorkerNum, std::to_string(total_node_num).c_str());
-  MetaServerNode msn("meta_server_node", "MS_SCHED", total_node_num);
-  ASSERT_TRUE(msn.Initialize());
-
-  common::SetEnv(kEnvMSRole, "MS_WORKER");
-  std::vector<std::shared_ptr<ComputeGraphNode>> cgns;
-  for (size_t i = 0; i < total_node_num; ++i) {
-    auto cgn = std::make_shared<ComputeGraphNode>("compute_graph_node_" + std::to_string(i + 1), "MS_WORKER");
-    ASSERT_TRUE(cgn->Initialize());
-    cgns.push_back(cgn);
-  }
-
-  size_t interval = 1;
-  size_t retry = 30;
-  while (((msn.GetAliveNodeNum() != total_node_num) || (msn.TopologyState() != TopoState::kInitialized)) &&
-         (retry-- > 0)) {
-    sleep(interval);
-  }
-
-  ASSERT_EQ(total_node_num, msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kInitialized, msn.TopologyState());
-
-  for (int i = 0; i < total_node_num; ++i) {
-    ASSERT_EQ(i, cgns[i]->rank_id());
-  }
-  ASSERT_EQ(-1, msn.rank_id());
-
-  for (auto &cgn : cgns) {
-    cgn->Finalize();
-  }
-
-  retry = 30;
-  while ((msn.GetAliveNodeNum() > 0 || msn.TopologyState() != TopoState::kFinished) && retry-- > 0) {
-    sleep(interval);
-  }
-  ASSERT_EQ(0, msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kFinished, msn.TopologyState());
-
-  msn.Finalize();
-
-  // Restart the meta server node and check if the node is restored successfully.
-  common::SetEnv(kEnvMSRole, "MS_SCHED");
-  MetaServerNode restored_msn("meta_server_node", "MS_SCHED", total_node_num);
-  ASSERT_TRUE(restored_msn.Initialize());
-
-  ASSERT_EQ(total_node_num, restored_msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kInitialized, restored_msn.TopologyState());
-
-  restored_msn.Finalize(true);
-  remove(full_file_path.c_str());
-}
-
 /// Feature: test heartbeat from compute graph node to meta server node is timed out.
 /// Description: start a cluster with one meta server node and three compute graph nodes, and then kill one of the
 /// compute graph node.
@@ -392,92 +308,6 @@ TEST_F(TestDynamicNetworking, ReconnectToMetaServerDuringReg) {
   msn.Finalize(true);
 }
 
-/// Feature: test reconnect to meta server node if needed during node unregistration period.
-/// Description: start the meta server node and several compute graph nodes, then restart the meta server node after the
-/// cluster is initialized successfully.
-/// Expectation: the cluster topology is shutdown finally.
-TEST_F(TestDynamicNetworking, ReconnectToMetaServerDuringUnreg) {
-  // Init the environment variables.
-  std::string local_file = "recovery.dat";
-  char *dir = getcwd(nullptr, 0);
-  EXPECT_NE(nullptr, dir);
-
-  std::string path = dir;
-  free(dir);
-  dir = nullptr;
-
-  std::string full_file_path = path + "/" + local_file;
-  if (storage::FileIOUtils::IsFileOrDirExist(full_file_path)) {
-    remove(full_file_path.c_str());
-  }
-  MsContext::GetInstance()->set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
-  EXPECT_TRUE(!storage::FileIOUtils::IsFileOrDirExist(full_file_path));
-  common::SetEnv(recovery::kEnvEnableRecovery, "1");
-  common::SetEnv(recovery::kEnvRecoveryPath, path.c_str());
-
-  std::string server_host = "127.0.0.1";
-  std::string server_port = "8090";
-  common::SetEnv(kEnvMetaServerHost, server_host.c_str());
-  common::SetEnv(kEnvMetaServerPort, server_port.c_str());
-
-  // Start the meta server node.
-  constexpr char kEnvMSRole[] = "MS_ROLE";
-  common::SetEnv(kEnvMSRole, "MS_SCHED");
-  size_t total_node_num = 1;
-  common::SetEnv(kEnvWorkerNum, std::to_string(total_node_num).c_str());
-  MetaServerNode msn("meta_server_node", "MS_SCHED", total_node_num);
-  ASSERT_TRUE(msn.Initialize());
-
-  // Start the compute graph nodes.
-  common::SetEnv(kEnvMSRole, "MS_WORKER");
-  std::vector<std::shared_ptr<ComputeGraphNode>> cgns;
-  for (size_t i = 0; i < total_node_num; ++i) {
-    auto cgn = std::make_shared<ComputeGraphNode>("compute_graph_node_" + std::to_string(i + 1), "MS_WORKER");
-    ASSERT_TRUE(cgn->Initialize());
-    cgns.push_back(cgn);
-  }
-
-  // Wait for the cluster to be initialized.
-  size_t interval = 1;
-  size_t retry = 30;
-  while (((msn.GetAliveNodeNum() != total_node_num) || (msn.TopologyState() != TopoState::kInitialized)) &&
-         (retry-- > 0)) {
-    sleep(interval);
-  }
-  ASSERT_EQ(total_node_num, msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kInitialized, msn.TopologyState());
-
-  // Stop the meta server node.
-  msn.Finalize(true);
-
-  // Restart the meta server node.
-  common::SetEnv(kEnvMSRole, "MS_SCHED");
-  MetaServerNode restarted_msn("meta_server_node", "MS_SCHED", total_node_num);
-  ASSERT_TRUE(restarted_msn.Initialize());
-
-  // Check if the cluster is recovered successfully.
-  while (((restarted_msn.GetAliveNodeNum() != total_node_num) ||
-          (restarted_msn.TopologyState() != TopoState::kInitialized)) &&
-         (retry-- > 0)) {
-    sleep(interval);
-  }
-  ASSERT_EQ(total_node_num, restarted_msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kInitialized, restarted_msn.TopologyState());
-
-  // Destroy the cluster peacefully.
-  for (auto &cgn : cgns) {
-    cgn->Finalize();
-  }
-  retry = 30;
-  while ((restarted_msn.GetAliveNodeNum() > 0 || restarted_msn.TopologyState() != TopoState::kFinished) &&
-         retry-- > 0) {
-    sleep(interval);
-  }
-  ASSERT_EQ(0, restarted_msn.GetAliveNodeNum());
-  ASSERT_EQ(TopoState::kFinished, restarted_msn.TopologyState());
-  restarted_msn.Finalize();
-}
-
 /// Feature: test get hostnames from meta server node from compute graph node.
 /// Description: build a cluster and call the gethostname of compute graph node.
 /// Expectation: the hostnames of specified compute graph node are returned.
@@ -486,7 +316,7 @@ TEST_F(TestDynamicNetworking, GetHostNames) {
   std::string server_port = "8090";
   common::SetEnv(kEnvMetaServerHost, server_host.c_str());
   common::SetEnv(kEnvMetaServerPort, server_port.c_str());
-  common::SetEnv(recovery::kEnvEnableRecovery, "0");
+  common::SetEnv("MS_ENABLE_RECOVERY", "0");
 
   size_t total_node_num = 3;
   size_t total_node_group_0_num = 2;

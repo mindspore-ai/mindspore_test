@@ -22,7 +22,6 @@
 #include <memory>
 
 #include "include/backend/distributed/cluster/topology/common.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #include "distributed/cluster/topology/meta_server_node.h"
 #include "distributed/cluster/actor_route_table_proxy.h"

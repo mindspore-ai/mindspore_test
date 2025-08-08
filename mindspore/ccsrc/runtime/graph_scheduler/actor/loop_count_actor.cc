@@ -26,8 +26,6 @@
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "runtime/device/stream_synchronizer.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "runtime/graph_scheduler/rpc_node_scheduler.h"
@@ -36,7 +34,6 @@
 namespace mindspore {
 namespace runtime {
 using distributed::collective::CollectiveManager;
-using distributed::recovery::RecoveryContext;
 
 void LoopCountActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
@@ -93,16 +90,11 @@ void LoopCountActor::RealRun(OpContext<KernelTensor> *const context) {
     for (auto &device_context : device_contexts_) {
       MS_EXCEPTION_IF_NULL(device_context);
       if ((sync_stream_device_contexts.count(device_context) == 0) &&
-          (!device::StreamSynchronizer::GetInstance()->SyncStream(device_context->device_context_key().device_name_))) {
+          (!device_context->device_res_manager_->SyncAllStreams())) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context),
                                           ("Sync stream failed:" + device_context->device_context_key().ToString()));
       }
       (void)sync_stream_device_contexts.insert(device_context);
-
-      // Trigger disaster recovery and exit loop early.
-      if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
-        current_count_ = loop_count_;
-      }
     }
     MS_LOG(INFO) << "Sync stream success.";
   }

@@ -34,7 +34,6 @@
 #include "utils/ms_context.h"
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/common/runtime_conf/runtime_env.h"
 #include "distributed/persistent/storage/json_utils.h"
 #include "runtime/collective/collective_communication_lib.h"
@@ -50,7 +49,6 @@ const size_t kSizeFour = 4;
 const char kPlatFormMccl[] = "mccl";
 const char kPipelineGroupNamePrefix[] = "pp-";
 }  // namespace
-using recovery::RecoveryContext;
 
 CollectiveManager::CollectiveManager()
     : inited_(false),
@@ -138,34 +136,6 @@ bool ExecuteFuncInThread(const std::function<bool()> &func, const int64_t timeou
 #endif
   }
   return execute_success;
-}
-
-// In a disaster recovery scenario, the comparison between the current unique id and the last generated unique id
-// ensures that the acquired unique id is newly generated, and the latest unique id will be persisted.
-bool CheckUniqueIDLatest(const std::string &group_name, size_t root_info_size, const void *root_info) {
-  MS_EXCEPTION_IF_NULL(root_info);
-  auto persistent_json = RecoveryContext::GetInstance()->persistent_json();
-  MS_EXCEPTION_IF_NULL(persistent_json);
-
-  std::string new_unique_id(static_cast<const char *>(root_info), root_info_size);
-  std::vector<int> new_unique_id_integer_seq;
-  (void)std::transform(new_unique_id.begin(), new_unique_id.end(), std::back_inserter(new_unique_id_integer_seq),
-                       [](char c) { return static_cast<int>(c); });
-
-  const char unique_id_str[] = "_unique_id";
-  std::string unique_id_key = group_name + unique_id_str;
-  if (!persistent_json->Exists(unique_id_key)) {
-    persistent_json->Insert(unique_id_key, new_unique_id_integer_seq);
-    return true;
-  }
-
-  std::vector<int> old_unique_id_integer_seq = persistent_json->Get<std::vector<int>>(unique_id_key);
-  if (new_unique_id_integer_seq == old_unique_id_integer_seq) {
-    return false;
-  }
-
-  persistent_json->Insert(unique_id_key, new_unique_id_integer_seq);
-  return true;
 }
 }  // namespace
 
@@ -809,8 +779,6 @@ bool CollectiveManager::AssignLocalRank() {
   MS_LOG(INFO) << "Successfully get all nodes' hostname.";
 
   // Accumulate rank id.
-  // In disaster recovery scenario, this function will enter multiple times when the network is reconfigured, so old
-  // local rank id need to be cleaned.
   std::vector<uint32_t> world_ranks(global_rank_size_);
   std::iota(world_ranks.begin(), world_ranks.end(), 0);
   uint32_t local_group_size = 0;
@@ -986,16 +954,6 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
       RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
                                "Broadcast for device root info failed on the host side.");
       ret = true;
-      // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
-      // newly generated one.
-      if (RecoveryContext::GetInstance()->enable_recovery()) {
-        ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
-        if (!ret) {
-          // The time interval for querying latest unique id from scheduler: 3 second.
-          constexpr uint32_t kWaitDuration = 3;
-          std::this_thread::sleep_for(std::chrono::seconds(kWaitDuration));
-        }
-      }
       MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
     }
     PROF_END(BroadcastUniqueID);
@@ -1023,7 +981,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 }
 
 void CollectiveManager::ClearUniqueID(const std::string &group_name) {
-  if (!RecoveryContext::GetInstance()->enable_repeat_register()) {
+  if (common::GetEnv("MS_ENABLE_RECOVERY") != "1") {
     return;
   }
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);

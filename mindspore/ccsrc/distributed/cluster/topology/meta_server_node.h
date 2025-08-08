@@ -25,7 +25,6 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
-#include "distributed/recovery/configuration.h"
 #include "include/backend/distributed/cluster/topology/node_base.h"
 
 namespace mindspore {
@@ -198,9 +197,6 @@ class MetaServerNode : public NodeBase {
   // Try to transition the state of cluster to be initialized.
   bool TransitionToInitialized();
 
-  // Recover metadata from the configuration if recovery is enabled.
-  bool Recovery();
-
   // Allocate a new valid rank id for new registered compute graph node.
   uint32_t AllocateRankId(const std::string &role);
 
@@ -215,9 +211,6 @@ class MetaServerNode : public NodeBase {
   // Reassign node ranks. This method should be called only after cluster is successfully built. It sorts all nodes with
   // their node ip and node id, then assign their rank ids.
   void ReassignNodeRank();
-
-  // Persist the required metadata of cluster into storage through configuration.
-  bool Persist();
 
   // The meta server address used to manage the tcp server.
   MetaServerAddress meta_server_addr_;
@@ -258,9 +251,6 @@ class MetaServerNode : public NodeBase {
   std::map<std::string, std::string> metadata_;
 
   mutable std::shared_mutex meta_mutex_;
-
-  // A key-value pairs metadata config used for failover recovery if enabled.
-  std::unique_ptr<recovery::Configuration> configuration_;
 
   // The next valid rank id for compute graph nodes.
   // Note that each role(group) has it's own rank id.

@@ -20,7 +20,6 @@ from mindspore import context
 from mindspore import log as logger
 from mindspore.common import set_seed
 from mindspore.ops import operations as P
-from mindspore.parallel._recovery_context import _get_recovery_context_func_map
 from mindspore.train import Model, Callback
 from tests.mark_utils import arg_mark
 
@@ -84,12 +83,7 @@ def test_dataset_reset_sink(fast_recovery, num_parallel_workers, python_multipro
     Description: Test Dataset recovery when GPU (and sink mode) is used.
     Expectation: Training completes successfully
     """
-    def enable_recovery():
-        """Get whether enable recovery"""
-        return True
-
     context.set_context(mode=context.GRAPH_MODE)
-    _get_recovery_context_func_map["enable_recovery"] = enable_recovery
     original_fast_recovery = ds.config.get_fast_recovery()
     ds.config.set_fast_recovery(fast_recovery)
     data = create_np_dataset(20, num_parallel_workers, python_multiprocessing)

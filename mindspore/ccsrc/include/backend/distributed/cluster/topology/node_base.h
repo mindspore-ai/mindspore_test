@@ -56,6 +56,11 @@ class NodeBase {
       MS_LOG(WARNING)
         << "The heartbeat feature between cluster nodes is disabled! The scheduler won't detect timeout nodes.";
     }
+
+    enable_recovery_ = (common::GetEnv("MS_ENABLE_RECOVERY") == "1");
+    if (enable_recovery_) {
+      MS_LOG(WARNING) << "The repeated registration feature between cluster nodes is enabled!";
+    }
   }
   virtual ~NodeBase() = default;
 
@@ -72,6 +77,8 @@ class NodeBase {
 
   // Set the callback which will be called when the state of the cluster is abnormal.
   virtual void set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) {}
+
+  bool enable_recovery() const { return enable_recovery_; }
 
   std::string node_id() const { return node_id_; }
 
@@ -113,6 +120,9 @@ class NodeBase {
   // Whether heartbeat is disabled. If it is, the scheduler won't detect timed out node. It's caller's job to handle the
   // exception in this cluster.
   bool disable_heartbeat_;
+
+  // Compute graph nodes support repeated registration to the meta server node.
+  bool enable_recovery_;
 };
 }  // namespace topology
 }  // namespace cluster

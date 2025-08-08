@@ -21,14 +21,12 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "ir/tensor_new.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
 namespace runtime {
 using distributed::collective::CollectiveManager;
-using distributed::recovery::RecoveryContext;
 
 void UpdateOutputTensorShape(const std::vector<TensorPtr> &output_tensors,
                              const std::vector<KernelWithIndex> &output_nodes) {
@@ -296,13 +294,6 @@ void OutputActor::RunOpControl(AID *const, OpContext<KernelTensor> *const contex
   MS_EXCEPTION_IF_NULL(context);
   ++current_count_;
   MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op control and current count:" << current_count_;
-
-  // Trigger disaster recovery and return empty output.
-  if (RecoveryContext::GetInstance()->enable_recovery() && CollectiveManager::instance()->need_reinit()) {
-    FreeOutputNodeMem();
-    ClearOutputCache();
-    SET_OPCONTEXT_SUCCESS_RET((*context));
-  }
 
   // The last loop.
   if (loop_count_ == current_count_) {

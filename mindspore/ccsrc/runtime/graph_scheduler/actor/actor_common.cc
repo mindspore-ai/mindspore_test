@@ -29,7 +29,6 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/graph_scheduler/parameter_store.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
@@ -361,10 +360,6 @@ bool EnableRuntimePipeline() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
-    return false;
-  }
-
-  if (distributed::recovery::RecoveryContext::GetInstance()->enable_recovery()) {
     return false;
   }
 

@@ -20,7 +20,6 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "include/backend/distributed/cluster/topology/common.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/constants.h"
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -123,7 +122,7 @@ bool ComputeGraphNode::Finalize(bool force) {
                                      "Failed to unregister and try to reconnect to the meta server.", kNoRetry);
     if (!success) {
       MS_LOG(ERROR) << "Failed to unregister from the meta server node.";
-      if (recovery::IsEnableRepeatRegister()) {
+      if (enable_recovery_) {
         continue;
       } else {
         break;
@@ -286,7 +285,7 @@ bool ComputeGraphNode::Heartbeat() {
         MS_LOG(ERROR)
           << "Failed to send heartbeat message to meta server node and try to reconnect to the meta server.";
         if (!Reconnect()) {
-          if (!recovery::IsEnableRepeatRegister() && topo_state_ != TopoState::kInitializing) {
+          if (!enable_recovery_ && topo_state_ != TopoState::kInitializing) {
             topo_state_ = TopoState::kFailed;
             if (abnormal_callback_ != nullptr) {
               (*abnormal_callback_)();
@@ -311,7 +310,7 @@ bool ComputeGraphNode::Heartbeat() {
 
         auto nodes_num = resp_msg.nodes_num();
         auto abnormal_nodes_num = resp_msg.abnormal_nodes_num();
-        if (abnormal_nodes_num > 0 && !recovery::IsEnableRepeatRegister()) {
+        if (abnormal_nodes_num > 0 && !enable_recovery_) {
           topo_state_ = TopoState::kFailed;
           if (abnormal_callback_ != nullptr) {
             (*abnormal_callback_)();

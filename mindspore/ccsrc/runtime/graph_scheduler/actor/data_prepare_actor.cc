@@ -35,7 +35,6 @@
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "runtime/graph_scheduler/rpc_node_scheduler.h"
@@ -44,7 +43,6 @@
 
 namespace mindspore {
 namespace runtime {
-using distributed::recovery::RecoveryContext;
 namespace {
 constexpr size_t kNormalTensorNum = 1;
 constexpr size_t kMapTensorNum = 3;
@@ -240,15 +238,6 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
                                  "The device type of ref node is not equal.");
     }
   }
-}
-
-bool IsNeedSync(const TensorPtr &tensor) {
-  if (RecoveryContext::GetInstance()->enable_recovery() &&
-      RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
-    return true;
-  }
-
-  return false;
 }
 
 void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor,
@@ -735,11 +724,6 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
   if (UCEException::GetInstance().get_uce_flag()) {
     MS_LOG(INFO) << "Clear UCE state.";
     UCEException::GetInstance().clear_uce_error();
-  }
-
-  if (RecoveryContext::GetInstance()->enable_recovery() &&
-      RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
-    RecoveryContext::GetInstance()->set_need_sync_weight_to_device(false);
   }
 
   std::vector<TensorPtr> control_input = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors.back();
@@ -1297,11 +1281,6 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
   }
 }
 
-bool NeedSync() {
-  return RecoveryContext::GetInstance()->enable_recovery() &&
-         RecoveryContext::GetInstance()->need_sync_weight_to_device();
-}
-
 // Prepare the device data for persistent device tensor of weight node from host tensor.
 void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node,
                                                 const TensorPtr &tensor, const DeviceContext *device_context,
@@ -1337,7 +1316,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();
   auto skip_h2d = UCEException::GetInstance().is_reboot_node();
   // Use the device address of host tensor to set device tensor.
-  bool is_need_sync = IsNeedSync(tensor);
+  bool is_need_sync = false;
   if (host_tensor_address != device_tensor) {
     if (host_tensor_address->GetDeviceType() != device_context->GetDeviceType()) {
       if (device_tensor->GetDeviceType() != device_context->GetDeviceType()) {
@@ -1399,10 +1378,6 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   host_tensor_address->SetNodeIndex(backend_node, 0);
   host_kernel_tensor->set_device_address(host_tensor_address);
   DeviceTensorStore::GetInstance().Insert(front_node.get(), host_kernel_tensor);
-
-  if (NeedSync()) {
-    is_need_sync = true;
-  }
 
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (is_need_sync || (!host_tensor_address->IsPtrValid())) {

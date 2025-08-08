@@ -49,7 +49,6 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/device/stream_synchronizer.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
 #include "debug/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -135,10 +134,6 @@ void ClearResPart1() {
   MemTrackerInstanceClear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
-
-  MS_LOG(INFO) << "Start Finalize StreamSynchronizer...";
-  device::StreamSynchronizer::GetInstance()->Finalize();
-  MS_LOG(INFO) << "End Finalize StreamSynchronizer...";
 
   PrimitivePy::ClearHookRes();
   ad::g_k_prims.clear();
