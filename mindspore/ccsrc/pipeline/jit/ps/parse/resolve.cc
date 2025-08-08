@@ -33,6 +33,7 @@
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/fallback.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/utils/python_adapter.h"
@@ -1250,6 +1251,9 @@ AnfNodePtr Resolver::ResolveParameterObj(const FuncGraphPtr &func_graph, const p
     if (context != nullptr && para_node->has_default()) {
       auto param_abs = pipeline::GetDefaultValueAbstract(para_node);
       context->ParallelParameterContextRestoreShape(top_func_graph_, para_node, param_abs);
+      if (remote_memory::IsEnableGradOffload(obj)) {
+        remote_memory::SetEnableGradOffloadToAbstract(param_abs);
+      }
       para_node->set_abstract(param_abs);
     }
   }

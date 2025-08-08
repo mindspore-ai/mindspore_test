@@ -192,6 +192,7 @@ constexpr auto kCommExecuteOrderFileName = "execute_order/comm_execute_order.csv
 // compile cache
 constexpr auto kUniqueCacheName = "UniqueCacheName";
 constexpr auto kDistributedSplit = "distribtued_split";
+constexpr auto kRemoteAdjust = "remote_adjust";
 constexpr auto kValidate = "validate";
 constexpr auto kGraphId = "graph_id";
 constexpr auto kBackendFrontAnf = "backend_front_anf";

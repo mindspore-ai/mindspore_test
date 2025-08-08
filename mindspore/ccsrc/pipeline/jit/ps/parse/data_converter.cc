@@ -26,6 +26,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
@@ -555,6 +556,14 @@ ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &ar
     MS_LOG(ERROR) << "Parse resolve function error.";
     return nullptr;
   }
+
+  if (py::hasattr(obj, "_remote_memory_info")) {
+    MS_LOG(INFO) << "Attach _remote_memory_info to function graph " << func_graph->ToString();
+    auto remote_memory_info =
+      std::make_shared<parse::PyObjectWrapper>(py::getattr(obj, "_remote_memory_info"), "remote_memory_info");
+    func_graph->set_attr("remote_memory_info", remote_memory_info);
+  }
+
   // if the cell object has specified bprop, it has user-defined bprop function parse and record it
   if (py::hasattr(obj, CUSTOM_BPROP_NAME)) {
     bool enable_bprop_debug = py::cast<bool>(py::getattr(obj, "bprop_debug"));

@@ -43,6 +43,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
 #include "pipeline/jit/ps/parse/resolve.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
@@ -196,6 +197,8 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
   } else {
     inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
   }
+  AnfNodePtr prev_result = nullptr;
+  PrimitivePtr getitem_prim = (type_id == kObjectTypeList) ? prim::kPrimListGetItem : prim::kPrimTupleGetItem;
   for (size_t i = 0; i < size; i++) {
     MS_LOG(DEBUG) << "FullMakeList or FullMakeTuple for the " << i
                   << "th element of the target, reverse_: " << reverse_;
@@ -204,18 +207,24 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
     if (fn_arg != nullptr) {
       inputs2.push_back(fn_arg);
     }
+    // todo: need to handle reverse.
     size_t pos = (reverse_ ? (size - 1 - i) : i);
     (void)std::transform(arg_map.begin(), arg_map.end(), std::back_inserter(inputs2),
-                         [&func_graph, &pos, &type_id](const std::pair<AnfNodePtr, Any> &item) {
-                           if (type_id == kObjectTypeList) {
-                             return func_graph->NewCNodeInOrder(
-                               {NewValueNode(prim::kPrimListGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                         [&func_graph, &pos, &getitem_prim, &prev_result](const std::pair<AnfNodePtr, Any> &item) {
+                           AnfNodePtr cur_element = func_graph->NewCNodeInOrder(
+                             {NewValueNode(getitem_prim), item.first, NewValueNode(SizeToLong(pos))});
+                           if (prev_result != nullptr) {
+                             AnfNodePtr depend_element =
+                               func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), cur_element, prev_result});
+                             return depend_element;
                            }
-                           return func_graph->NewCNodeInOrder(
-                             {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                           return cur_element;
                          });
 
     auto call_node = func_graph->NewCNodeInOrder(inputs2);
+    if (enforce_order_) {
+      prev_result = call_node;
+    }
     if (reverse_) {
       (void)inputs.insert(inputs.cbegin() + 1, call_node);
     } else {
@@ -448,6 +457,9 @@ FuncGraphPtr HyperMap::GenerateFromTypes(const TypePtrList &args_abs_list) {
   if (fn_leaf_ == nullptr) {
     fn_param = res_fg->add_parameter();
     i = 1;
+    // todo: Handle fn_leaf_ nullptr scene.
+  } else {
+    enforce_order_ = fn_leaf_->enable_remote_memory();
   }
 
   std::size_t size = args_abs_list.size();
@@ -1160,6 +1172,50 @@ CNodePtr GradOperation::SetNodeByParameter(const CNodePtr &grad, const FuncGraph
   return fv_bprop;
 }
 
+CNodePtr GradOperation::FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr &fg) const {
+  CNodePtr fv_bprop;
+  if (!weight_value_->isa<AbstractTuple>()) {
+    auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(weight_value_);
+    if (weight_ref == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
+                                 << weight_value_->ToString();
+    }
+    if (!remote_memory::IsEnableGradOffloadAbstract(weight_ref)) {
+      return grad;
+    }
+    auto fv_bprop_to_remote = remote_memory::CreateToRemoteNode(fg, grad, NewValueNode(kNone), NewValueNode(false));
+    fv_bprop = remote_memory::CreateDetachNode(fg, fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false));
+  } else {
+    std::vector<AnfNodePtr> params;
+    AbstractTuplePtr weight_tuple = weight_value_->cast<AbstractTuplePtr>();
+    const AbstractBasePtrList &elements = weight_tuple->elements();
+    params.push_back(NewValueNode(prim::kPrimMakeTuple));
+    for (size_t i = 0; i < weight_tuple->size(); i++) {
+      auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(elements[i]);
+      if (weight_ref != nullptr) {
+        auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+        MS_EXCEPTION_IF_NULL(weight_key);
+        auto param_name = weight_key->value();
+        auto grad_value =
+          fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), grad, NewValueNode(static_cast<int64_t>(i))});
+        if (!remote_memory::IsEnableGradOffloadAbstract(weight_ref)) {
+          params.push_back(grad_value);
+          continue;
+        }
+        auto fv_bprop_to_remote =
+          remote_memory::CreateToRemoteNode(fg, grad_value, NewValueNode(kNone), NewValueNode(false));
+        fv_bprop = remote_memory::CreateDetachNode(fg, fv_bprop_to_remote, NewValueNode(kNone), NewValueNode(false));
+        params.push_back(fv_bprop);
+      } else {
+        MS_LOG(INTERNAL_EXCEPTION) << "Abstract of parameter should be AbstractRefTensor, but got "
+                                   << weight_value_->ToString();
+      }
+    }
+    fv_bprop = fg->NewCNodeInOrder(params);
+  }
+  return fv_bprop;
+}
+
 // Do grad by the parameter of GradOperation.
 void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePtr &f_app, const AnfNodePtr &bprop,
                                     const AnfNodePtr &weights, const AnfNodePtr &position,
@@ -1191,6 +1247,10 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
         k_child->NewCNodeInOrder({NewValueNode(prim::kPrimPartial), NewValueNode(prim::GetPythonOps("env_get")), env});
       MetaFuncGraphPtr hyper_map = std::make_shared<HyperMap>();
       fv_bprop = k_child->NewCNodeInOrder({NewValueNode(hyper_map), partial_env_get, weights});
+      static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+      if (enable_remote_memory) {
+        fv_bprop = FvBpropToRemote(fv_bprop, k_child);
+      }
       if (return_ids_) {
         fv_bprop = SetNodeByParameter(fv_bprop, k_child);
       }
@@ -2810,6 +2870,45 @@ FuncGraphPtr GetDependDoutTuple::GenerateFuncGraph(const AbstractBasePtrList &ar
   }
   fg->set_output(fg_dout_tuple);
   return fg;
+}
+
+FuncGraphPtr BpropInputPrefetch::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  constexpr size_t required_size = 1;
+  if (args_abs_list.size() != required_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << name_ << ", the input length should be " << required_size << " but got "
+                               << args_abs_list.size();
+  }
+  auto input_abstract = args_abs_list[0];
+  MS_EXCEPTION_IF_NULL(input_abstract);
+  auto input_parameter = fg->add_parameter();
+  auto output = InsertPrefetchRecursively(fg, input_parameter, input_abstract);
+  fg->set_output(output);
+  return fg;
+}
+
+AnfNodePtr BpropInputPrefetch::InsertPrefetchRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                                         const AbstractBasePtr &node_abstract) const {
+  MS_EXCEPTION_IF_NULL(node_abstract);
+  if (node_abstract->isa<abstract::AbstractSequence>()) {
+    auto getitem_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+    auto make_sequence_prim =
+      node_abstract->isa<abstract::AbstractTuple>() ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+    auto node_seq_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
+    const auto &elements_abs = node_seq_abstract->elements();
+    size_t len = node_seq_abstract->size();
+    AnfNodePtrList make_sequence_inputs{NewValueNode(make_sequence_prim)};
+    for (size_t i = 0; i < len; ++i) {
+      auto cur_node = fg->NewCNode({NewValueNode(getitem_prim), node, NewValueNode(MakeValue<int64_t>(i))});
+      auto new_node = InsertPrefetchRecursively(fg, cur_node, elements_abs[i]);
+      (void)make_sequence_inputs.emplace_back(new_node);
+    }
+    return fg->NewCNode(make_sequence_inputs);
+  }
+  auto prefetch_node = remote_memory::CreateLoadNode(fg, node, NewValueNode(kNone), NewValueNode(false));
+  auto depend_node = fg->NewCNode({NewValueNode(prim::kPrimDepend), node, prefetch_node});
+  return depend_node;
 }
 }  // namespace prim
 }  // namespace mindspore

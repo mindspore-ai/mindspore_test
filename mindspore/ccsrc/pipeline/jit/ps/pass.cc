@@ -16,6 +16,7 @@
 
 #include "pipeline/jit/ps/pass.h"
 
+#include <set>
 #include <memory>
 #include <vector>
 #include <string>
@@ -29,6 +30,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/validator.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/cse_pass.h"
@@ -116,6 +118,7 @@
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
+#include "frontend/optimizer/irpass/insert_remote_ops_before_grad.h"
 #include "pipeline/jit/ps/pass_config.h"
 #include "pipeline/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -787,6 +790,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
      {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
+     {"insert_remote_ops_before_grad", opt::OptPassConfig(opt::irpass::InsertRemoteOpsBeforeGrad())},
      {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
      {"specialize_transform", opt::OptPassConfig({irpass.specialize_transform_})},
      {"updatestate_useless_node_eliminater", opt::OptPassConfig({irpass.updatestate_useless_node_eliminater_})},
@@ -1755,6 +1759,16 @@ bool EliminateUnusedParamsPass(const ResourcePtr &resource) {
     }
   }
   func_graph->set_parameters(parameters);
+  return true;
+}
+
+// Add this pass for future used.
+bool RemoteAdjustPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto mng = resource->manager();
+  MS_EXCEPTION_IF_NULL(mng);
   return true;
 }
 

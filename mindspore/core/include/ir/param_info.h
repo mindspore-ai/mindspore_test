@@ -159,6 +159,9 @@ class ParamInfo {
   bool is_in_pynative_shard() const { return is_in_pynative_shard_; }
   void set_is_in_pynative_shard(bool is_in_pynative_shard) { is_in_pynative_shard_ = is_in_pynative_shard; }
 
+  bool is_remote_memory() const { return is_remote_memory_; }
+  void set_is_remote_memory(bool is_remote_memory) { is_remote_memory_ = is_remote_memory; }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -205,6 +208,8 @@ class ParamInfo {
   bool is_pipeline_shared_param_{false};
   // Used to indicate is auto_parallel mode and parameter is inited.
   bool is_param_init_{false};
+  // Used to indicate whether remote memory is used.
+  bool is_remote_memory_{false};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_PARAM_INFO_H_

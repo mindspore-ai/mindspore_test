@@ -457,11 +457,30 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   std::shared_ptr<AddressAllocator> allocator() const { return pointer_ref_count_->allocator(); }
 
+  // sync/async copy between remote memory and device.
+  virtual bool UpdateRemoteToDevice(int32_t device_id, void *addr, size_t size, void *stream_ptr, size_t offset = 0,
+                                    bool sync = false) const {
+    return true;
+  }
+
+  virtual bool UpdateDeviceToRemote(int32_t device_id, void *addr, size_t size, void *stream_ptr, size_t offset = 0,
+                                    bool sync = false) const {
+    return true;
+  }
+
+  // Detach device address for a UVM.
+  virtual bool DetachDevice(int32_t device_id, void *addr, bool sync = false, bool free_device = true) const {
+    return true;
+  }
+
   void set_data(tensor::TensorDataPtr &&data) override;
   const tensor::TensorDataPtr &data() const override;
   bool has_data() const override;
 
   void ClearDeviceMemory() override;
+
+  bool remote() const { return remote_; }
+  void set_remote(bool remote) { remote_ = remote; }
 
  protected:
   // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
@@ -532,6 +551,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // this Tuple is {2}.
   ShapeVector shape_vector_{};
   bool managed_by_somas_{false};
+  bool remote_{false};
 
   friend class KernelRuntime;
   friend class MemoryManager;

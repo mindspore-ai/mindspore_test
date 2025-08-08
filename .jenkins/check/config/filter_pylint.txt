@@ -154,6 +154,8 @@
 "mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "pointless-string-statement"
 "mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "no-else-return"
 "mindspore/mindspore/python/mindspore/mint/nn/layer/_functions.py"                                                       "missing-docstring"
+"mindspore/mindspore/python/mindspore/nn/layer/container.py"                                                             "access-member-before-definition"
+"mindspore/mindspore/python/mindspore/nn/layer/container.py"                                                             "protected-access"
 
 # MindData
 "mindspore/mindspore/python/mindspore/dataset/__init__.py"                                                               "redefined-builtin"

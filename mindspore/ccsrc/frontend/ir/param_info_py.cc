@@ -53,6 +53,7 @@ void RegParamInfo(const py::module *m) {
                   &ParamInfo::set_is_pipeline_shared_param)
     .def_property("is_param_init", &ParamInfo::is_param_init, &ParamInfo::set_is_param_init)
     .def_property("is_in_pynative_shard", &ParamInfo::is_in_pynative_shard, &ParamInfo::set_is_in_pynative_shard)
+    .def_property("is_remote_memory", &ParamInfo::is_remote_memory, &ParamInfo::set_is_remote_memory)
     .def(py::pickle(
       [](const ParamInfo &p) {  // __getstate__
         return py::make_tuple(p.name(), p.requires_grad(), p.layerwise_parallel());

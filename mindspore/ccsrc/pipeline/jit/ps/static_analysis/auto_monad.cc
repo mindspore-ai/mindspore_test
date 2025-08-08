@@ -54,6 +54,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
@@ -1786,6 +1787,12 @@ class AutoMonadConverter {
 
   std::vector<AnfNodePtr> MakeLoads(const CNodePtr &cnode, const RefInputs &ref_inputs, const AnfNodePtr &u) {
     std::vector<AnfNodePtr> loads;
+    PrimitiveSet skip_loads_prim{prim::kPrimToRemote,         prim::kPrimDetach,       prim::kPrimPrefetch,
+                                 prim::kPrimGradLoad,         prim::kPrimCopyToDevice, prim::kPrimCopyToRemote,
+                                 prim::kPrimGradientToDevice, prim::kPrimFreeDevice};
+    if (IsOneOfPrimitiveCNode(cnode, skip_loads_prim)) {
+      return loads;
+    }
     for (auto &ref_input : ref_inputs) {
       // Make a Load cnode for ref input.
       auto &ref = ref_input.first;

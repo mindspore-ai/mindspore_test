@@ -1,0 +1,15 @@
+#operator detach
+detach:
+  args:
+    x:
+      dtype: tensor
+    depend_nodes:
+      dtype: tuple[tensor]
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+      inplace: x

@@ -59,6 +59,7 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/static_analysis/program_specialize.h"
+#include "pipeline/jit/ps/remote_memory.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
@@ -1067,6 +1068,21 @@ bool AutoMonadAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool InsertRemoteMemoryOps(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto mng = resource->manager();
+  if (mng == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertRemoteMemoryOps failed, manager is null";
+  }
+  auto func_graph = resource->func_graph();
+  if (func_graph == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "InsertRemoteMemoryOps failed, graph is null";
+  }
+  remote_memory::AddRemoteOpsToGraphs(mng, func_graph);
+  remote_memory::InsertPrefetchForLoad(mng, func_graph);
+  return true;
+}
+
 bool OrderEnforceAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->manager() == nullptr) {
@@ -1975,6 +1991,8 @@ bool AutoParallelAction(const ResourcePtr &resource) { return AutoParallelPass(r
 
 bool SilentCheckAction(const ResourcePtr &resource) { return SilentCheckPass(resource); }
 
+bool RemoteAdjustAction(const ResourcePtr &resource) { return RemoteAdjustPass(resource); }
+
 bool ValidateAction(const ResourcePtr &resource) {
   auto res = ValidatePass(resource);
 #ifdef DEBUG
@@ -2092,6 +2110,11 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
+  const bool enable_remote_memory = common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1";
+  if (enable_remote_memory) {
+    (void)actions.emplace_back(std::make_pair("insert_remote_memory_ops", InsertRemoteMemoryOps));
+  }
+
   (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
 
   // Do data structure simplifications and inline.
@@ -2163,6 +2186,11 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     }
 #endif
 
+    static const bool enable_remote_memory = (common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1");
+    if (enable_remote_memory) {
+      (void)actions.emplace_back(std::make_pair(kRemoteAdjust, RemoteAdjustAction));
+    }
+
     // Mind Compiler finish.
     (void)actions.emplace_back(std::make_pair(kValidate, ValidateAction));
   }
@@ -2223,6 +2251,10 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     }
     (void)jit_passes.emplace_back(kTypeInference, TypeInferenceAction);
     (void)jit_passes.emplace_back(kAutoMonad, AutoMonadAction);
+    const bool enable_remote_memory = common::GetEnv("MS_DEV_ENABLE_REMOTE_MEMORY") == "1";
+    if (enable_remote_memory) {
+      (void)jit_passes.emplace_back(std::make_pair("insert_remote_memory_ops", InsertRemoteMemoryOps));
+    }
     (void)jit_passes.emplace_back(kGraphReusing, GraphReusingAction);
     (void)jit_passes.emplace_back(kPreAutoParallel, SetTrainingFlagPass);
     (void)jit_passes.emplace_back(kPyInterpretToExecute, PyInterpretToExecutePass);
@@ -2251,6 +2283,9 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     (void)jit_passes.emplace_back(kOptAfterJitGrad, OptAfterJitGrad);
     if (IsEnableSilentCheck()) {
       (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
+    }
+    if (enable_remote_memory) {
+      (void)jit_passes.emplace_back(std::make_pair(kRemoteAdjust, RemoteAdjustAction));
     }
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }

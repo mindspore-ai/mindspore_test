@@ -28,6 +28,7 @@
 #include "ir/signature.h"
 #include "ir/dtype.h"
 #include "pipeline/jit/ps/debug/trace.h"
+#include "pipeline/jit/ps/remote_memory.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -286,7 +287,17 @@ bool CheckContainsAny(const TypePtrList &types) {
 }
 
 FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
-  auto [py_fn, has_extra_u_monad, match_max_idx] = SignMatch(types);
+  TypePtrList search_types;
+  if (enable_remote_memory_) {
+    for (size_t i = 0; i < types.size() - 1; ++i) {
+      (void)search_types.emplace_back(types[i]);
+    }
+  } else {
+    search_types = types;
+  }
+
+  auto [py_fn, has_extra_u_monad, match_max_idx] = SignMatch(search_types);
+
   std::ostringstream buffer;
   buffer << types;
   bool need_convert = false;
@@ -304,11 +315,15 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
       MS_LOG(INTERNAL_EXCEPTION) << "Fail to parse overload function " << buffer.str() << ".";
     }
     MS_LOG(DEBUG) << "Find overload function " << buffer.str() << ", function: " << func_graph->ToString() << ".";
+
+    auto wrapped_fg =
+      enable_remote_memory_ ? remote_memory::GenerateMultitypeFGWithRemoteOps(func_graph, types) : func_graph;
+
     if (has_extra_u_monad) {
       MS_LOG(DEBUG) << "Add extra UMoand type for func_graph: " << func_graph->ToString() << ".";
-      func_graph->add_parameter();
+      wrapped_fg->add_parameter();
     }
-    return func_graph;
+    return wrapped_fg;
   }
 
   auto stub = GenerateStubFunc(types);

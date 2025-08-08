@@ -47,6 +47,7 @@
 #include "ir/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
@@ -123,6 +124,27 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
   } else {
     MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
   }
+}
+
+bool IsRemoteParameter(const mindspore::AnfNodePtr &node) {
+  if (!node->isa<Parameter>()) {
+    return false;
+  }
+  const auto &parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return false;
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return false;
+  }
+  const auto &param_info = meta_tensor->param_info();
+  if (param_info == nullptr) {
+    return false;
+  }
+  return param_info->is_remote_memory();
 }
 }  // namespace
 
@@ -296,6 +318,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
     auto real_device_context = device::FetchRealDeviceContext(item, device_context);
     auto origin_device_context = real_device_context;
     real_device_context = GetDeviceContextForOffloadedParameter(real_device_context, item);
+    bool is_remote = IsRemoteParameter(item);
     MS_EXCEPTION_IF_NULL(real_device_context);
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
     for (size_t index = 0; index < output_size; index++) {
@@ -314,7 +337,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {item, index}, nullptr, tensor_size, AnfAlgo::GetOutputFormat(item, index), output_type_id,
         AnfAlgo::GetRuntimePaddingShape(item, index), real_device_context->device_context_key().device_name_,
-        real_device_context->device_context_key().device_id_);
+        real_device_context->device_context_key().device_id_, nullptr, 0, is_remote);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       AnfAlgo::SetOutputKernelTensor(kernel_tensor, index, item.get());
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(item));
@@ -559,6 +582,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
 
     auto output_size = AnfAlgo::GetOutputAddressNum(kernel);
     const bool is_move_to = IsPrimitiveCNode(kernel, prim::kPrimMoveTo);
+    const bool is_copy_to_remote = IsPrimitiveCNode(kernel, prim::kPrimCopyToRemote);
     std::string move_to;
     if (is_move_to) {
       move_to = common::AnfAlgo::GetMoveToDstStr(kernel);
@@ -578,6 +602,11 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         } else if (move_to != kToNpu) {
           MS_LOG(EXCEPTION) << R"(Destination for MoveTo is supposed to be "CPU" or "Ascend", but got )" << move_to;
         }
+      }
+      if (real_device_context != nullptr && is_copy_to_remote) {
+        real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+          {kToCpu, real_device_context->device_context_key().device_id_});
+        MS_LOG(INFO) << "Use " << kToCpu << " DeviceContext for CopyToRemote node: " << kernel->DebugString();
       }
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(kernel, i);
@@ -1046,6 +1075,8 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
+  bool is_remote = (tensor->param_info() != nullptr) && (tensor->param_info()->is_remote_memory());
+  device_address->set_remote(is_remote);
 
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_host_shape(tensor->shape());

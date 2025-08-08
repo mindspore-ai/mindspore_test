@@ -1,0 +1,17 @@
+#operator gradient_to_device
+gradient_to_device:
+  args:
+    x:
+      dtype: tensor
+    data:
+      dtype: tensor
+    depend_nodes:
+      dtype: Any
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+      inplace: x

@@ -1,0 +1,17 @@
+#operator grad_load
+grad_load:
+  args:
+    x:
+      dtype: tensor
+    data:
+      dtype: tensor
+    depend_nodes:
+      dtype: tuple[tensor]
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+      inplace: x

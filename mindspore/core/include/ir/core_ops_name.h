@@ -36,5 +36,9 @@ constexpr auto kMakeListNewOpName = "make_list";
 constexpr auto kPrimConditionSwitchOpName = "ConditionSwitch";
 constexpr auto kPrimConditionGatherOpName = "ConditionGather";
 constexpr auto kRpcRecvOpName = "RpcRecv";
+constexpr auto kPrefetchOpName = "Prefetch";
+constexpr auto kToRemote = "ToRemote";
+constexpr auto kDetach = "Detach";
+constexpr auto kGradLoad = "GradLoad";
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_INCLUDE_IR_CORE_OPS_NAME_H

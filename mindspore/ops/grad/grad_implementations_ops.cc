@@ -41,5 +41,70 @@ REG_BPROP_BUILDER("TensorMove").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i2);
   return {dout};
 });
+
+REG_BPROP_BUILDER("Prefetch").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("CopyToDevice").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("CopyToRemote").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("ToRemote").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("Detach").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("FreeDevice").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto depend_nodes = ib->GetInput(i1);
+  auto sync = ib->GetInput(i2);
+  auto dout = ib->GetInput(i4);
+  return {dout, ib->OutZeros(depend_nodes), ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("GradLoad").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto data = ib->GetInput(i1);
+  auto out = ib->GetInput(i4);
+  auto sync = ib->GetInput(i3);
+  auto data_prefetch = ib->Emit("Prefetch", {data, ib->MakeTuple({out}), sync});
+  auto depend_nodes = ib->GetInput(i2);
+  auto dout = ib->GetInput(i5);
+  return {ib->Emit("Depend", {dout, data_prefetch}), ib->OutZeros(data), ib->OutZeros(depend_nodes),
+          ib->OutZeros(sync)};
+});
+
+REG_BPROP_BUILDER("GradientToDevice").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto data = ib->GetInput(i1);
+  auto out = ib->GetInput(i4);
+  auto sync = ib->GetInput(i3);
+  auto data_to_device = ib->Emit("CopyToDevice", {data, ib->MakeTuple({out}), sync});
+  auto depend_nodes = ib->GetInput(i2);
+  auto dout = ib->GetInput(i5);
+  return {ib->Emit("Depend", {dout, data_to_device}), ib->OutZeros(data), ib->OutZeros(depend_nodes),
+          ib->OutZeros(sync)};
+});
+
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

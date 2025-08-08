@@ -101,6 +101,7 @@ class HyperMap : public MetaFuncGraph {
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;
   std::set<TypeId> nonleaf_;
+  bool enforce_order_{false};
 };
 using HyperMapPtr = std::shared_ptr<HyperMap>;
 
@@ -221,6 +222,7 @@ class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
                        const AnfNodePtr &weights, const AnfNodePtr &position, const FuncGraphPtr &forward_graph,
                        bool is_weights_none) const;
   CNodePtr SetNodeByParameter(const CNodePtr &grad, const FuncGraphPtr &fg) const;
+  CNodePtr FvBpropToRemote(const CNodePtr &grad, const FuncGraphPtr &fg) const;
 
   AbstractBasePtr weight_value_;
 };
@@ -524,6 +526,21 @@ class GetDependDoutTuple : public MetaFuncGraph {
   friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
     return lhs.name_ == rhs.name_;
   }
+};
+
+class BpropInputPrefetch : public MetaFuncGraph {
+ public:
+  explicit BpropInputPrefetch(const std::string &name) : MetaFuncGraph(name) {}
+  ~BpropInputPrefetch() override = default;
+  MS_DECLARE_PARENT(BpropInputPrefetch, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const BpropInputPrefetch &lhs, const BpropInputPrefetch &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
+
+ private:
+  AnfNodePtr InsertPrefetchRecursively(const FuncGraphPtr &fg, const AnfNodePtr &node,
+                                       const AbstractBasePtr &node_abstract) const;
 };
 }  // namespace prim
 }  // namespace mindspore

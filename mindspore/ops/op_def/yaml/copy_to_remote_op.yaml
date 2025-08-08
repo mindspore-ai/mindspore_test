@@ -1,0 +1,14 @@
+#operator copy_to_remote
+copy_to_remote:
+  args:
+    x:
+      dtype: tensor
+    depend_nodes:
+      dtype: Any
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

@@ -47,6 +47,7 @@
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
@@ -54,6 +55,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace device {
@@ -691,10 +693,13 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
 
   // for backend inline
   if (IsOneOfPrimitiveCNode(
-        node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimMoveTo,
-               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimExpandDims,
-               prim::kPrimSqueeze, prim::kPrimFlatten, prim::kPrimFlattenGrad, prim::kPrimReformat})) {
+        node,
+        {prim::kPrimCallInline,      prim::kPrimSwitch,       prim::kPrimPartialInline,    prim::kPrimConditionSwitch,
+         prim::kPrimConditionGather, prim::kPrimReshapeExt,   prim::kPrimReshape,          prim::kPrimMoveTo,
+         prim::kPrimMoveAssign,      prim::kPrimStreamSend,   prim::kPrimStreamRecv,       prim::kPrimExpandDims,
+         prim::kPrimSqueeze,         prim::kPrimFlatten,      prim::kPrimFlattenGrad,      prim::kPrimReformat,
+         prim::kPrimPrefetch,        prim::kPrimToRemote,     prim::kPrimDetach,           prim::kPrimGradLoad,
+         prim::kPrimCopyToDevice,    prim::kPrimCopyToRemote, prim::kPrimGradientToDevice, prim::kPrimFreeDevice})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }

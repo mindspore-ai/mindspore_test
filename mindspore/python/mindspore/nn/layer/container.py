@@ -322,6 +322,24 @@ class SequentialCell(Cell):
         self._is_dynamic_name.insert(index, True)
 
 
+class _CellRemoteMemoryInfo:
+    """
+    An interface to store all information for cell to prefetch and detach data.
+
+    prefetch: All data to prefetch before cell execution.
+    detach: All data to detach after cell execution.
+    index: Cell index in cell list.
+    cell_list_info: Information for cell list belongs to.
+    update: Whether to update data before detach. Default: False.
+    """
+    def __init__(self, prefetch, detach, index, cell_list_info, update=False):
+        self.prefetch = prefetch
+        self.detach = detach
+        self.index = index
+        self.cell_list_info = cell_list_info
+        self.update = update
+
+
 class CellList(_CellListBase, Cell):
     """
     Holds Cells in a list. For more details about Cell, please refer to
@@ -488,6 +506,26 @@ class CellList(_CellListBase, Cell):
 
     def construct(self, *inputs):
         raise NotImplementedError
+
+
+    def set_weight_prefetch(self, offset=1):
+        """
+        Enable CellList to prefetch weights.
+
+        Args:
+            offset(Int): The step offset to prefetch weights.
+        """
+        if offset <= 0 or not isinstance(offset, int):
+            raise ValueError(f"offset for weight should positive integer but got '{offset}'.")
+        cells = tuple(self._cells.values())
+        for i in range(len(cells)):
+            detach_list = cells[i].trainable_params()
+            prefetch_cells = cells[i * offset + 1 : (i+1) * offset + 1]
+            prefetch_list = []
+            for prefetch_cell in prefetch_cells:
+                prefetch_list.extend(prefetch_cell.trainable_params())
+            cells[i]._remote_memory_info = _CellRemoteMemoryInfo(prefetch_list, detach_list, i, str(id(self)))
+
 
 
 class _CellDictBase:

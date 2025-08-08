@@ -28,7 +28,6 @@ from mindspore import log as logger
 from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
-from mindspore import context
 from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor, _TensorMeta
 from mindspore.common.hook_handle import _update_hook_version
@@ -314,9 +313,12 @@ class Parameter(Tensor_):
         self.param_info.parameter_shape = self.shape
         self.param_info.storage_format = storage_format
         if device is not None:
-            if device != "CPU":
-                raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
-            self._set_user_data("parameter_device", device)
+            if device == "CPU":
+                self._set_user_data("parameter_device", device)
+            elif device == "Remote":
+                self.param_info.is_remote_memory = True
+            else:
+                raise ValueError(f"Only 'CPU' and 'Remote' is supported for device, but got ${device}.")
 
         import mindspore.ops.operations.other_ops as other_ops
         self.load = other_ops.Load()
@@ -1005,6 +1007,20 @@ class Parameter(Tensor_):
             >>> x._load()
         """
         return Tensor_._load(self)
+
+    def enable_grad_offload(self):
+        r"""
+       Enable the grad of the parameter offload to remote
+
+       Supported Platforms:
+           ``Ascend``
+
+       Examples:
+           >>> from mindspore import Parameter, Tensor
+           >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+           >>> x.enable_grad_offload()
+       """
+        self._enable_grad_offload = True
 
 
 # Metaclass to combine _TensorMeta and the instance check override for Buffer.

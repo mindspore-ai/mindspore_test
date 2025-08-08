@@ -1,0 +1,14 @@
+#operator free_device
+free_device:
+  args:
+    x:
+      dtype: tensor
+    depend_nodes:
+      dtype: Any
+      default: None
+    sync:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: bool
