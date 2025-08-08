@@ -978,7 +978,7 @@ def _check_option_backend(option, backend):
         'ge_options': ['GE'],
         'infer_boost': ['ms_backend'],
     }
-    if option in option_backend_cfgs and backend not in option_backend_cfgs[option]:
+    if option in option_backend_cfgs and backend != '' and backend not in option_backend_cfgs[option]:
         logger.warning(f"For 'jit(options)', the option '{option}' is only support backend in "
                        f"'{option_backend_cfgs[option]}', but got '{backend}', ignore it.")
 
