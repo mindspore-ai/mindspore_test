@@ -23,7 +23,7 @@ add_library(mindspore_ms_infer_backend SHARED ${_MS_INFER_BACKEND_SRC_LIST})
 target_link_libraries(mindspore_ms_infer_backend PRIVATE inferrt)
 target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops mindspore_ms_backend
-        mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_profiler
+        mindspore_common mindspore_backend_manager proto_input mindspore_hardware_abstract mindspore_profiler
         mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -35,7 +35,7 @@ endif()
 
 if(ENABLE_CPU)
     target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::dnnl mindspore::mkldnn nnacl
-            mindspore_cpu_res_manager mindspore_ops_host)
+            mindspore_ops_host)
 endif()
 
 if(ENABLE_D)

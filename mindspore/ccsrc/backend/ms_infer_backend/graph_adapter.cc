@@ -29,6 +29,7 @@
 #include "utils/llm_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ccsrc/include/common/utils/convert_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "debug/profiler/profiler.h"
 
@@ -418,13 +419,13 @@ void GraphAdapter::RecordInputTensorShapes(const std::map<size_t, std::vector<te
     auto infer_input_tensors = frontend_index_to_input_tensors.second;
     if (infer_input_tensors.size() != 1) {
       MS_LOG(DEBUG) << "Skip record list tensor input";
-      index++;
+      ++index;
       continue;
     }
     auto input_tensor = infer_input_tensors[kIndex0];
     if (input_tensor == nullptr) {
       MS_LOG(DEBUG) << "Input tensor is nullptr";
-      index++;
+      ++index;
       continue;
     }
     if (!is_dynamic_shape_) {

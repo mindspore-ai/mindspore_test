@@ -22,7 +22,7 @@
 #include <utility>
 #include <unordered_map>
 
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"

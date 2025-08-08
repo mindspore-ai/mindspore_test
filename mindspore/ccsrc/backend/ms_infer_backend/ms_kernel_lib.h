@@ -24,13 +24,10 @@
 
 #include "ir/anf.h"
 #include "ir/dtype.h"
-#include "common/kernel.h"
-#include "common/kernel_tensor.h"
-#include "common/format_utils.h"
-#include "runtime/hardware/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 #include "tensor/tensor.h"
-#include "runtime/kernel.h"
 #include "runtime/kernel_lib.h"
 #include "backend/ms_infer_backend/utils.h"
 #include "backend/ms_infer_backend/host_value_store.h"
