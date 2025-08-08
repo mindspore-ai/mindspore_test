@@ -43,6 +43,12 @@ def set_parallel_mode(obj, parallel_config=None):
         net.load_param_strategy_file(parallel_config["load_strategy_file"])
     if parallel_config.get("enable_parallel_optimizer", None) is True:
         net.hsdp()
+    if parallel_config.get("parallel_optimizer_config", None) is not None:
+        opt_config = parallel_config["parallel_optimizer_config"]
+        shard_size = opt_config.get("optimizer_weight_shard_size", -1)
+        threshold = opt_config.get("parallel_optimizer_threshold", 64)
+        optimizer_level = opt_config.get("optimizer_level", "level1")
+        net.hsdp(shard_size, threshold, optimizer_level)
     if parallel_config.get("ascend_config", None) is not None:
         net.transformer_opt(parallel_config["ascend_config"])
     return net
@@ -62,7 +68,7 @@ def clean_all_ckpt_files(folder_path):
 # clean file in directory_path
 def clear_files_in_directory(directory_path):
     if not os.path.exists(directory_path) or not os.path.isdir(directory_path):
-        print(f"The path {directory_path} does not exist or is not a directory.")
+        logger.info(f"The path {directory_path} does not exist or is not a directory.")
         return
 
     for filename in os.listdir(directory_path):
@@ -92,7 +98,12 @@ def find_newest_ckpt_file_by_name(folder_path):
 def parallel_mode_get_ckpt_path_with_strategy(strategy_file=None, cpkt_path=None):
     ckpt_file = find_newest_ckpt_file(cpkt_path)
     ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, strategy_file)
-    print(f"Find checkpoint file: {ckpt_file_new}")
+    logger.info(f"Find checkpoint file: {ckpt_file_new}")
+
+
+def save_ir_graphs(file_path):
+    os.environ['MS_DEV_SAVE_GRAPHS'] = "2"
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = file_path
 
 
 # compare accuracy

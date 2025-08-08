@@ -914,6 +914,8 @@ def test_pipeline_split_stage1_lazy_inline_2():
     Description: net with pipeline parallel in auto parallel mode using 8 devices, stage0 with lazy inline.
     Expectation: success.
     """
+    from mindspore.parallel.strategy import get_current_strategy_metadata, get_strategy_metadata, \
+        enable_save_strategy_online
     context.set_auto_parallel_context(
         device_num=8, global_rank=4, pipeline_stages=2)
     context.set_auto_parallel_context(
@@ -928,4 +930,12 @@ def test_pipeline_split_stage1_lazy_inline_2():
     net = StageSimpleWithLazyInlineNet(w_l, 2)
     pipeline_net = PipelineCell(net, 2)
     data = Tensor(np.ones([16, 16]), dtype=ms.float32)
+    enable_save_strategy_online()
     pipeline_net(data)
+
+    # predict does not support save strategies
+    local_info = get_current_strategy_metadata(network=pipeline_net)
+    assert local_info is None
+
+    global_layout = get_strategy_metadata(network=pipeline_net)
+    assert global_layout is None

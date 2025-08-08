@@ -38,6 +38,7 @@
 #include "frontend/parallel/parallel_postprocessor.h"
 #include "frontend/parallel/parallel_processor.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "pipeline/jit/ps/parse/parse_base.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
@@ -117,12 +118,21 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     root->set_flag(kTraining, true);
   }
 
+  if (root->has_attr(mindspore::parse::CELL_COMPILE_PHASE)) {
+    const auto &compile_phase = GetValue<std::string>(root->get_attr(mindspore::parse::CELL_COMPILE_PHASE));
+    MS_LOG(DEBUG) << "Current compile_phase is " << compile_phase;
+    StrategyLayout::GetInstance()->SetCellPhase(compile_phase);
+  }
+
   // control whether use model_parallel mode
   if (!IsAutoParallelCareGraph(root)) {
     if (!root->has_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY)) {
       MS_LOG(INFO) << "Strategies would be ignored in " << processor_context->parallel_mode
                    << ", shard() only valid in [semi_]auto_parallel.";
       root->set_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY, true);
+      MS_EXCEPTION_IF_NULL(processor_context);
+      const auto &all_nodes = processor_context->all_nodes;
+      CheckpointStrategy(all_nodes, root);
     }
     return false;
   }

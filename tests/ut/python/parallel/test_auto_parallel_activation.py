@@ -57,9 +57,18 @@ def test_auto_parallel_activation():
     Description: auto parallel
     Expectation: compile success
     """
+    from mindspore.parallel.strategy import get_current_strategy_metadata, enable_save_strategy_online
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16,
                                       global_rank=0)
     strategy1 = ((4, 4), (4, 4))
     strategy2 = None
     net = Net(_w1, strategy1, strategy2)
+    enable_save_strategy_online()
     compile_net(net)
+
+    # Sharding_propagation supports saving strategies
+    local_info = get_current_strategy_metadata(network=net)
+    print("local_info", local_info, flush=True)
+    param_list = local_info[0]["w1"]
+    param_layout = param_list[0].to_dict()
+    assert param_layout['tensor_map'] == (1, 0)

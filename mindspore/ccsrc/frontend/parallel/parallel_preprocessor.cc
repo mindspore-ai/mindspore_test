@@ -1010,6 +1010,9 @@ static void SetParameterSliceShape(const FuncGraphPtr &root) {
     }
     auto param_sub_set = param_sub_map.at(parameter);
     MS_EXCEPTION_IF_NULL(parameter->Shape());
+    parallel::StrategyLayout::GetInstance()->SetParamGlobalShape(parameter);
+    parallel::StrategyLayout::GetInstance()->SetParamType(parameter);
+
     auto iter = g_RefMap.find(parameter);
     if (iter != g_RefMap.cend()) {
       std::string group = SetParallelShape(parameter, g_RefMap[parameter], root);

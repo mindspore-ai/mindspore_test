@@ -2077,6 +2077,8 @@ class _CellGraphExecutor:
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
+        obj._add_attr("compile_phase", phase)
+        obj.compile_phase = phase
         if phase in obj.compile_cache and self.has_compiled(phase):
             logger.debug("%r graph has existed.", phase)
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_

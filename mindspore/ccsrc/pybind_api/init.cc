@@ -34,6 +34,7 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
+#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/parallel/costmodel_context.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32))
@@ -76,6 +77,8 @@ using MetaFuncGraph = mindspore::MetaFuncGraph;
 using EventWriter = mindspore::summary::EventWriter;
 using OpLib = mindspore::kernel::OpLib;
 using ParallelContext = mindspore::parallel::ParallelContext;
+using StrategyInfo = mindspore::parallel::StrategyInfo;
+using StrategyLayout = mindspore::parallel::StrategyLayout;
 using CostModelContext = mindspore::parallel::CostModelContext;
 using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
@@ -522,6 +525,30 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_auto_parallel_new_interface", &ParallelContext::set_auto_parallel_new_interface, "Set interface flag.")
     .def("get_auto_parallel_new_interface", &ParallelContext::auto_parallel_new_interface, "Get interface flag.")
     .def("reset", &ParallelContext::Reset, "Reset auto parallel context.");
+  MS_LOG(INFO) << "Start StrategyInfo...";
+  (void)py::class_<StrategyInfo, std::shared_ptr<StrategyInfo>>(m, "StrategyInfo")
+    .def(py::init<>())
+    .def("__str__", &StrategyInfo::ToString)
+    .def_property_readonly("dev_matrix", &StrategyInfo::dev_matrix)
+    .def_property_readonly("tensor_map", &StrategyInfo::tensor_map)
+    .def_property_readonly("tensor_shape", &StrategyInfo::tensor_shape)
+    .def_property_readonly("tensor_type", &StrategyInfo::tensor_type)
+    .def_property_readonly("field", &StrategyInfo::field)
+    .def_property_readonly("opt_weight_shard_step", &StrategyInfo::opt_weight_shard_step)
+    .def_property_readonly("opt_weight_shard_size", &StrategyInfo::opt_weight_shard_size)
+    .def_property_readonly("param_split_shape", &StrategyInfo::param_split_shape)
+    .def_property_readonly("indices_offset", &StrategyInfo::indices_offset)
+    .def_property_readonly("stage_id", &StrategyInfo::stage_id)
+    .def_property_readonly("pipeline_stages", &StrategyInfo::pipeline_stages)
+    .def_property_readonly("rank_list", &StrategyInfo::rank_list);
+  MS_LOG(INFO) << "Start StrategyLayout...";
+  (void)py::class_<StrategyLayout, std::shared_ptr<StrategyLayout>>(m, "StrategyLayout")
+    .def_static("get_instance", &StrategyLayout::GetInstance, "Get global_strategy_layout instance.")
+    .def("enable_save_strategy_online", &StrategyLayout::enable_save_strategy_online,
+         "Set save_strategy_online of global network.")
+    .def("global_network_layout", &StrategyLayout::global_network_layout, "Get global network rank param strategy.")
+    .def("local_network_layout", &StrategyLayout::local_network_layout, "Get local network rank param strategy.")
+    .def("clear_strategy_metadata", &StrategyLayout::clear_strategy_metadata, "Clear global network strategy info.");
   MS_LOG(INFO) << "Start CostModelContext...";
   (void)py::class_<CostModelContext, std::shared_ptr<CostModelContext>>(m, "CostModelContext")
     .def_static("get_instance", &CostModelContext::GetInstance, "Get cost_model context instance.")
