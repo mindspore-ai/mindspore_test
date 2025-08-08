@@ -42,7 +42,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
-from ._custom_ops_utils import ExtensionBuilder, create_custom_prim, CustomCodeGenerator, CustomInfoGenerator
+from ._custom_ops_utils import ExtensionBuilder, CustomCodeGenerator, CustomInfoGenerator
 
 if platform.system() != "Windows":
     import fcntl
@@ -1233,47 +1233,52 @@ class Custom(ops.PrimitiveWithInfer):
         return ops.primitive._run_op(self, self.name, args)
 
 
-class ModuleWrapper:
+class _MultiSoProxy:
     """
-    A thin wrapper around an imported module that intercepts attribute access
-    and automatically wraps each retrieved callable with a custom primitive.
+    A thin wrapper that transparently multiplexes attribute access between a
+    pure-Python fallback module and an optional compiled shared-object (SO)
+    module, honoring MindSpore’s current execution mode (GRAPH vs. PYNATIVE).
     """
 
-    def __init__(self, mod_name: str, module):
+    def __init__(self, func_module, so_module):
         """
         Args:
-            mod_name (str): Human-readable name of the wrapped module (used only
-                            for error messages).
-            module: The actual module object to be wrapped (e.g. the `custom_ops`
-                    module after `import custom_ops`).
+            func_module (module or None): Python module to serve as the fallback implementation source.
+                May be ``None`` if no Python fallback is available.
+            so_module (module): Compiled shared-object module that provides
+                optimized kernels accessible only in ``PYNATIVE_MODE``.
         """
-        self.mod_name = mod_name
-        self.module = module
+        self.func_module = func_module
+        self.so_module = so_module
 
-    def __getattr__(self, op_name: str):
+    def __getattr__(self, name: str):
         """
-        Intercepts every attribute lookup on this wrapper.
+        Intercepts every attribute lookup and resolves it against the wrapped
+        modules according to the documented precedence rules.
 
         Args:
-            op_name (str): Name of the attribute being accessed.
+            name (str): Name of the custom operation being requested.
 
         Returns:
-            A callable produced by `create_custom_prim(...)` that behaves like the
-            original operation but carries the custom primitive metadata.
+            Any: The requested callable or attribute from either ``func_module`` or ``so_module``.
 
         Raises:
-            AttributeError: If the wrapped module does not expose `op_name`.
+            AttributeError: If the attribute is not found in any applicable module or
+            is incompatible with the current execution mode.
         """
-        try:
-            op_func = getattr(self.module, op_name)
-            return create_custom_prim("Custom_" + op_name, op_func)
-        except AttributeError:
+        if self.func_module is not None and hasattr(self.func_module, name):
+            return getattr(self.func_module, name)
+        if context.get_context("mode") == ms.PYNATIVE_MODE:
+            if hasattr(self.so_module, name):
+                return getattr(self.so_module, name)
             raise AttributeError(
-                f"Module '{self.mod_name}' has no attribute '{op_name}'"
+                f"Custom op '{name}' is neither in func_module nor in so_module."
             )
 
-
-setattr(ModuleWrapper, '__ms_class__', True)
+        raise AttributeError(
+            f"Custom op '{name}' does not support GRAPH mode. "
+            f"Please register it for GRAPH mode or switch to PYNATIVE mode."
+        )
 
 
 class CustomOpBuilder:
@@ -1541,11 +1546,14 @@ class CustomOpBuilder:
             return CustomOpBuilder._loaded_ops[self.name]
 
         module_path = self.build()
+        so_module = self._import_module(module_path)
+        func_module = None
         if self.yaml is not None:
             module_path = os.path.join(self.build_dir, "auto_generate/gen_ops_def.py")
             sys.path.append(os.path.join(self.build_dir, "auto_generate"))
             sys.path.append(os.path.join(self.build_dir))
-        mod = self._import_module(module_path, is_yaml_build=(self.yaml is not None))
+            func_module = self._import_module(module_path, True)
+        mod = _MultiSoProxy(func_module, so_module)
         CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
 

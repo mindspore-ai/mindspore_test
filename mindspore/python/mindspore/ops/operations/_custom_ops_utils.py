@@ -24,7 +24,6 @@ import time
 import stat
 import json
 from mindspore import log as logger
-from mindspore import ops
 from mindspore.ops import CustomRegOp
 from mindspore._c_expression import MSContext
 
@@ -258,27 +257,6 @@ class ExtensionBuilder:
         src = [sources] if isinstance(sources, str) else sources
         self._compile(module_name, src, extra_cflags, extra_ldflags, extra_include_paths)
         return os.path.join(self.build_dir, f"{module_name}.so")
-
-
-def create_custom_prim(op_name, op_func):
-    """Create a primitive class for custom op"""
-
-    def __init__(self, op_func):
-        super(self.__class__, self).__init__(op_name)
-        self.custom_op_func = op_func
-
-    def __call__(self, *args, **kwargs):
-        return self.custom_op_func(*args, **kwargs)
-
-    dynamic_class = type(
-        op_name,
-        (ops.Primitive,),
-        {
-            "__init__": __init__,
-            "__call__": __call__,
-        }
-    )
-    return dynamic_class(op_func)
 
 
 class CustomCodeGenerator:
