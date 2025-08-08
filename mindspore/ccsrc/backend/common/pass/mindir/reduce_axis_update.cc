@@ -40,6 +40,10 @@ constexpr auto m_reduce = "m_reduce";
 constexpr auto kXs = "Xs";
 constexpr auto kV = "V";
 constexpr auto v_axis = "axis";
+const PrimitiveSet kReducePrimSet = {prim::kPrimReduceMin, prim::kPrimReduceMax,  prim::kPrimReduceMean,
+                                     prim::kPrimReduceSum, prim::kPrimReduceProd, prim::kPrimReduceAll,
+                                     prim::kPrimReduceAny};
+const PrimitiveSet kReduceExtPrimSet = {prim::kPrimMeanExt, prim::kPrimSumExt, prim::kPrimProdExt};
 
 tensor::TensorPtr CreateTensor(const std::vector<int64_t> &values) {
   auto type_ptr = kInt64;
@@ -67,16 +71,10 @@ bool ReduceAxisUpdate::IsReduce(const BaseRef &ref) {
   if (utils::isa<AnfNodePtr>(ref)) {
     AnfNodePtr node = utils::cast<AnfNodePtr>(ref);
     MS_EXCEPTION_IF_NULL(node);
-    if (IsPrimitive(node, prim::kPrimReduceMin) || IsPrimitive(node, prim::kPrimReduceMax) ||
-        IsPrimitive(node, prim::kPrimReduceMean) || IsPrimitive(node, prim::kPrimReduceSum) ||
-        IsPrimitive(node, prim::kPrimReduceProd) || IsPrimitive(node, prim::kPrimReduceAll) ||
-        IsPrimitive(node, prim::kPrimReduceAny)) {
+    if (IsOneOfPrimitive(node, kReducePrimSet)) {
       return true;
     }
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    if (AnfAlgo::IsBackendGe() && (IsPrimitive(node, prim::kPrimMeanExt) || IsPrimitive(node, prim::kPrimSumExt) ||
-                                   IsPrimitive(node, prim::kPrimProdExt))) {
+    if (IsOneOfPrimitive(node, kReduceExtPrimSet)) {
       return true;
     }
   }
@@ -162,6 +160,9 @@ bool IsAxisEmptySequence(const AnfNodePtr &node) {
 
 bool ReduceAxisUpdate::CheckMatchedDAG(const PatternMap &, const FuncGraphPtr &graph, const AnfNodePtr &node) const {
   MS_EXCEPTION_IF_NULL(node);
+  if (IsOneOfPrimitiveCNode(node, kReduceExtPrimSet) && AnfAlgo::GetBackend(graph) != kBackendGE) {
+    return false;
+  }
   MS_LOG(INFO) << "Reduce node is " << node->DebugString() << ".";
 
   // In control flow, empty tuples are sometimes set to dynamic len which are considered dynamic shapes, but they

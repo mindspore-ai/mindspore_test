@@ -499,7 +499,11 @@ std::string MsContext::GetJitLevel() const {
   static bool first_call = true;
   std::string jit_level = "";
   if (jit_status_ != JitStatus::kNotJit) {
-    jit_level = PhaseManager::GetInstance().GetJitLevel();
+    auto backend = PhaseManager::GetInstance().GetJitBackend();
+    auto jit_level_for_jit = PhaseManager::GetInstance().GetJitLevel();
+    if (!backend.empty() || jit_level_for_jit != kAttrJitLevelO0) {
+      jit_level = jit_level_for_jit;
+    }
   }
 
   auto global_jit_level = get_param<std::string>(MS_CTX_JIT_LEVEL);
