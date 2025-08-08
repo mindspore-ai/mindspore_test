@@ -956,7 +956,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
   }
   UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
   graph_parameter_store->ResetAddrRefCount(outer_index, inner_index);
-  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
     device_tensor->IncreaseNewRefCount(from_aid.Name());
     MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
                   << ", inner index: " << inner_index << ", address: " << device_tensor
@@ -1069,7 +1069,6 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   if (device_tensor != nullptr) {
     const auto &node_with_index = device_tensor->GetNodeIndex();
     tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
-    tensor_address->set_flag(device_tensor->flag());
   } else {
     auto old_addr_info_ret = graph_parameter_store->GetReleasePositionInfo({outer_index, inner_index});
     if (old_addr_info_ret.first) {

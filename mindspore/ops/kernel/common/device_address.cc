@@ -154,10 +154,9 @@ std::string DeviceAddress::ToString() const {
   if (node_index.first != nullptr) {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
-  ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
-      << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_
-      << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
-      << " padding type:" << padding_type_ << " status:" << status_;
+  ofs << " device address deleter:" << (deleter_ != nullptr) << " need sync user data:" << need_sync_user_data_
+      << " user data:" << user_data_ << " is view:" << is_view_ << " from persist mem:" << from_persistent_mem_
+      << " need recycle:" << need_recycle_ << " padding type:" << padding_type_ << " status:" << status_;
   return ofs.str();
 }
 
@@ -333,14 +332,6 @@ bool DeviceAddress::IsPtrValid() const {
   return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
 }
 
-bool DeviceAddress::IsNotNeedAlloc() const {
-  return IsPtrValid() || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
-}
-
-bool DeviceAddress::IsNotNeedAllocWOLock() const {
-  return (GetDevicePtr() != nullptr) || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
-}
-
 // Return the valid device ptr.
 void *DeviceAddress::GetValidPtr(size_t) {
   if (user_data() == nullptr || (!need_sync_user_data_)) {
@@ -387,14 +378,6 @@ void DeviceAddress::set_host_shape(const ShapeVector &host_shape) { host_shape_ 
 HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return hete_info_; }
 
 void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
-
-size_t DeviceAddress::flag() const { return flag_; }
-
-void DeviceAddress::set_flag(size_t flag) { flag_ = flag; }
-
-void DeviceAddress::UpdateFlag(size_t flag) { SET_FLAG(flag_, flag); }
-
-void DeviceAddress::ClearFlag(size_t flag) { CLEAR_FLAG(flag_, flag); }
 
 std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return node_index_; }
 

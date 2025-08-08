@@ -115,7 +115,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
   MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
                 << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
-  kernel_tensor->device_address()->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   UpdateRefCount(kernel_tensor->device_address().get(), true);
 }
 
@@ -199,11 +199,13 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
     return;
   }
   // Update the reference count of from_kernel.
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel, from_output_index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, from_output_index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // The superkernel actor is linked by input parameter, maybe the not used parameter.
   if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
-    device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // The device address of super kernel actor can't be changed, so set the max reference count.
   if (IsControlFlowActor(to_actor->type()) || (from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
@@ -236,9 +238,11 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
       << "#dmsg#Runtime error info:#dmsg#" << from_kernel->DebugString() << " index:" << from_output_index
       << " device address does not exist";
   }
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel, from_output_index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, from_output_index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   // The output actor need use the relevant information of node to create output tensor.
   device_tensor->SetNodeIndex(from_kernel, from_output_index);
   // The device tensor of graph out need be taken over by host tensor, so set the max reference count.

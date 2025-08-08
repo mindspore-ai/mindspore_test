@@ -369,7 +369,6 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
     return;
   }
 
-  tensor_address->set_flag(device_address->flag());
   AnfAlgo::SetOutputAddr(tensor_address, 0, input_node);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
                                                << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
@@ -677,16 +676,16 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
         MS_LOG(DEBUG) << "Prepare data for value node:" << value_node->fullname_with_scope()
                       << ", debug name:" << value_node->DebugString() << ", front node:" << front_node->DebugString()
                       << " for graph:" << graph->ToString();
-        const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
-        const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(value_node, 0, false);
-        MS_EXCEPTION_IF_NULL(device_tensor);
+        const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
+        const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, 0, false);
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
         // If front_node has more than one device tensor, it means the node may used in multi graphs.
         // so we will clear the deviceaddress flag of ignore.
-        if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr) && device_tensors.size() > 1) {
-          device_tensor->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+        if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr) && kernel_tensors.size() > 1) {
+          kernel_tensor->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
         }
         // If node address has flag ignore, we will not prepare device data for it.
-        if (!TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+        if (!TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
           PrepareDataForValueNode(value_node, front_node, device_context, context);
         }
       }
@@ -1367,7 +1366,6 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         host_tensor_address = device_tensor;
       } else {
         (void)address_modified_input_nodes_.insert(backend_node.get());
-        host_tensor_address->set_flag(device_tensor->flag());
         AnfAlgo::SetOutputAddr(host_tensor_address, 0, backend_node);
       }
     }

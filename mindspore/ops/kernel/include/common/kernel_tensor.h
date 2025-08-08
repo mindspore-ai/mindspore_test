@@ -140,6 +140,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     ofs << this << " shape:" << (GetShape() == nullptr ? "null" : GetShape()->ToString())
         << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString())
         << " value:" << (value_ == nullptr ? "null" : value_->ToString());
+    ofs << " flag:" << flag_;
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->ToString();
     }
@@ -450,10 +451,12 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   }
 
   // The interface of flag.
-  size_t flag() const {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->flag();
-  }
+  size_t flag() const;
+  void set_flag(size_t flag);
+  void UpdateFlag(size_t flag);
+  void ClearFlag(size_t flag);
+  bool IsNotNeedAlloc() const;
+  bool IsNotNeedAllocWOLock() const;
   size_t original_ref_count() const { return device_address_->original_ref_count(); }
   size_t ref_count() const { return device_address_->ref_count(); }
   int32_t dynamic_ref_count() const { return device_address_->dynamic_ref_count(); }
@@ -544,6 +547,8 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   // device address info
   DeviceAddressPtr device_address_{nullptr};
   ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
+  // The kernel tensor flag.
+  size_t flag_{0};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 

@@ -1217,10 +1217,12 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
     std::vector<tensor::TensorPtr> flatten_tensors;
     auto params = common::AnfAlgo::GetAllOutput(inputs[i]);
     for (size_t j = 0; j < params.size(); ++j) {
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(params[j], 0, false);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(params[j], 0, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       // skip const input
-      if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+      if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
         MS_LOG(INFO) << "The input[" << i << "] is convert to const op, skip.";
         continue;
       }
