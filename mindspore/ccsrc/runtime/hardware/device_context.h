@@ -87,14 +87,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContext {
   void SetKernelExecutor(const std::shared_ptr<KernelExecutor> &kernel_executor) { kernel_executor_ = kernel_executor; }
 
   // Return whether this device context is initialized.
-  bool initialized() const {
-#ifdef __APPLE__
-    std::lock_guard<SpinLock> spin_lock(init_lock_);
-#else
-    std::lock_guard<std::mutex> lock(init_mutex_);
-#endif
-    return initialized_;
-  }
+  bool initialized() const;
 
   DeviceContextKey device_context_key_;
   std::unique_ptr<DeviceResManager> device_res_manager_;
