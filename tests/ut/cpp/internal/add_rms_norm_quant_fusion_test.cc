@@ -18,7 +18,7 @@
 #include "common/common_test.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "utils/phase.h"
 #include "ir/tensor.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"

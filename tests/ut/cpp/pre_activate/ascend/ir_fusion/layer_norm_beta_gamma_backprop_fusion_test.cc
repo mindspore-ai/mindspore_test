@@ -17,7 +17,7 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 #define private public
 #define protected public

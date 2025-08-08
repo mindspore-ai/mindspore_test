@@ -27,7 +27,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "kernel/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"

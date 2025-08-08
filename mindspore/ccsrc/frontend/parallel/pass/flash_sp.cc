@@ -35,7 +35,7 @@
 #include "frontend/optimizer/optimizer.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/parallel_context.h"

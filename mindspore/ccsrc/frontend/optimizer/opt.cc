@@ -21,8 +21,8 @@
 #include <algorithm>
 #include <utility>
 
-#include "include/common/debug/draw.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/draw.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "ir/anf.h"

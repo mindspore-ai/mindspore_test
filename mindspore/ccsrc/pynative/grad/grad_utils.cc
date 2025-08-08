@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_op_name.h"
-#include "frontend/ir/primitive_py.h"
+#include "frontend/operator/primitive_py.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/grad/hook_py.h"
 #include "utils/ms_context.h"

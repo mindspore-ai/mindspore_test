@@ -22,7 +22,7 @@
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "ir/tensor_new.h"

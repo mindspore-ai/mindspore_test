@@ -43,7 +43,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/symbol_resolver.h"
 #include "include/common/fallback.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/common/utils/hook.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_info.h"

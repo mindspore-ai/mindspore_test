@@ -38,7 +38,7 @@
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/ps/parse/resolve.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/pynative/adapter.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/utils/parallel_context.h"

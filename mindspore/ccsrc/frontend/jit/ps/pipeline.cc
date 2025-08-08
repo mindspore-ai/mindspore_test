@@ -48,10 +48,10 @@
 #include "utils/ms_context.h"
 #include "utils/phase.h"
 #include "utils/interpret_node_recorder.h"
-#include "include/common/debug/anf_ir_dump.h"
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -66,7 +66,7 @@
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
 
-#include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
+#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 
 namespace mindspore {
 // namespace to support intermediate representation definition

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_CELL_PY_H_
-#define MINDSPORE_CCSRC_UTILS_CELL_PY_H_
+#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_CELL_PY_H_
+#define MINDSPORE_CCSRC_PYBIND_API_IR_CELL_PY_H_
 
 #include <memory>
 #include <string>
@@ -38,4 +38,4 @@ class CellPy {
 };
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_UTILS_CELL_PY_H_
+#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_CELL_PY_H_

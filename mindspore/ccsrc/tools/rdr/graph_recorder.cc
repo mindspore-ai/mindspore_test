@@ -20,9 +20,9 @@
 
 #include "base/base.h"
 #include "utils/log_adapter.h"
-#include "include/common/debug/anf_ir_dump.h"
-#include "include/common/debug/anf_dump_utils.h"
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include "include/common/debug/rdr/recorder_manager.h"
 #include "include/common/utils/utils.h"
 #include "utils/file_utils.h"

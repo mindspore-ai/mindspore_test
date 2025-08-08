@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/ir/map_tensor_py.h"
+#include "pybind_api/ir/map_tensor_py.h"
 #include <memory>
 #include <string>
 #include <utility>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "frontend/ir/export_flags.h"
+#include "frontend/jit/ps/parse/parse_flags.h"
 
 namespace mindspore {
 const char PYTHON_PRIMITIVE_FLAG[] = "__primitive_flag__";

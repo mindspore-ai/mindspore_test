@@ -19,7 +19,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/graph_utils.h"
 #include "ir/manager.h"

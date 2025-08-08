@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
-#define MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
+#ifndef MINDSPORE_CCSRC_PYNATIVE_OP_FUNCTION_ARG_HANDLER_H
+#define MINDSPORE_CCSRC_PYNATIVE_OP_FUNCTION_ARG_HANDLER_H
 
 #include <string>
 #include <memory>
@@ -57,4 +57,4 @@ FRONTEND_EXPORT std::vector<int> ToRates(const std::string &op_name, const std::
 }  // namespace pynative
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_ARG_HANDLER_H
+#endif  // MINDSPORE_CCSRC_PYNATIVE_OP_FUNCTION_ARG_HANDLER_H

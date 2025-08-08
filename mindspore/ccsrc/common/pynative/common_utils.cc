@@ -25,7 +25,7 @@
 #include "ir/manager.h"
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
 #include "include/common/pynative/variable.h"

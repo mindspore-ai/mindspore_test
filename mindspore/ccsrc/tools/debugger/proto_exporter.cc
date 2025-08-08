@@ -22,7 +22,7 @@
 #include <algorithm>
 
 #include "utils/hash_set.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/backend/debug/debugger/debugger.h"

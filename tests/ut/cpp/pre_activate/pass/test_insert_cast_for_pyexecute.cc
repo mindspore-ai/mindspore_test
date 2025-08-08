@@ -18,7 +18,7 @@
 #include "frontend/operator/ops.h"
 #include "ir/tensor.h"
 #include "ir/manager.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
 #include "plugin/device/cpu/optimizer/insert_cast_to_pyexecute.h"
 #include "include/backend/optimizer/optimizer.h"
@@ -28,7 +28,7 @@
 #include "kernel/kernel_build_info.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {

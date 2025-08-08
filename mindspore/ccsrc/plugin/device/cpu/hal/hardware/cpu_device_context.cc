@@ -61,7 +61,7 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DUMP_IR
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #endif
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/parallel_context.h"

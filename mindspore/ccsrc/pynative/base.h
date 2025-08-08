@@ -25,7 +25,7 @@
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "ir/anf.h"
-#include "frontend/ir/primitive_py.h"
+#include "frontend/operator/primitive_py.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/stub_tensor.h"
 #include "utils/simple_info.h"

@@ -25,7 +25,7 @@
 #include "frontend/jit/ps/parse/parse.h"
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #include "utils/label.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

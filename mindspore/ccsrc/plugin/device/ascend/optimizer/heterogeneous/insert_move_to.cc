@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/ir/tensor_py.h"

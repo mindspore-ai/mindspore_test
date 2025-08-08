@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_DUMP_PROTO_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_DUMP_PROTO_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_IR_DUMP_PROTO_H_
+#define MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_IR_DUMP_PROTO_H_
 
 #include <map>
 #include <memory>
@@ -270,4 +270,4 @@ class COMMON_EXPORT MindIRExporter {
 };
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_DUMP_PROTO_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_DEBUG_IR_DUMP_PROTO_H_

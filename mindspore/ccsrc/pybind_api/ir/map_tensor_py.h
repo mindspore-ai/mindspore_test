@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_MAP_TENSOR_PY_H_
-#define MINDSPORE_CCSRC_UTILS_MAP_TENSOR_PY_H_
+#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_MAP_TENSOR_PY_H_
+#define MINDSPORE_CCSRC_PYBIND_API_IR_MAP_TENSOR_PY_H_
 
 #include <tuple>
 #include "pybind11/numpy.h"
@@ -48,4 +48,4 @@ class MapTensorPy {
                                                                                         bool incremental = false);
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_UTILS_MAP_TENSOR_PY_H_
+#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_MAP_TENSOR_PY_H_

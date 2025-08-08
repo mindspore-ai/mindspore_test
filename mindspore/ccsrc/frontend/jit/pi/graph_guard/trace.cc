@@ -25,7 +25,7 @@
 #include "frontend/jit/pi/graph_guard/guard.h"
 #include "frontend/jit/pi/graph_guard/guard_utils.h"
 #include "pybind11/pybind11.h"
-#include "frontend/ir/primitive_py.h"
+#include "frontend/operator/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_guard/strategy.h"

@@ -18,7 +18,7 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/confusion_mul_grad_fusion.h"
 #include "backend/common/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace opt {

@@ -21,7 +21,7 @@
 #include "tools/dump/npy_header.h"
 #include "tools/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"

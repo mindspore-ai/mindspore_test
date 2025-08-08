@@ -23,7 +23,7 @@
 #include <set>
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "frontend/ir/primitive_py.h"
+#include "frontend/operator/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"

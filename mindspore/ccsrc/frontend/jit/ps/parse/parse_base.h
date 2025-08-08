@@ -22,7 +22,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"
-#include "frontend/ir/export_flags.h"
+#include "frontend/jit/ps/parse/parse_flags.h"
 #include "include/common/visible.h"
 
 namespace py = pybind11;

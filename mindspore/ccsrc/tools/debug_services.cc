@@ -32,7 +32,7 @@
 #include "ir/tensor_new.h"
 #include "include/common/debug/common.h"
 #include "include/backend/debug/debugger/debugger.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "tools/utils.h"
 #include "nlohmann/json.hpp"

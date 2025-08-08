@@ -40,7 +40,7 @@
 #include "utils/llm_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/interpret_node_recorder.h"
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "frontend/jit/ps/pipeline.h"
@@ -77,7 +77,7 @@
 #include "ir/cell.h"
 #endif
 
-#include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
+#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
 #include "include/common/utils/pyobj_manager.h"

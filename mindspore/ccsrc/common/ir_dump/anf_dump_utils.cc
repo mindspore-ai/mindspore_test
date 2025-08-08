@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "abstract/abstract_function.h"
 
 namespace mindspore {

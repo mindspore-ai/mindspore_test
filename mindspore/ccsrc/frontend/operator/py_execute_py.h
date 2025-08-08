@@ -16,8 +16,8 @@
 
 // NOTICE: This header file should only be included once in the whole project.
 // We change the cpp file to header file, to avoid MSVC compiler problem.
-#ifndef MINDSPORE_CCSRC_PYBINDAPI_IR_PY_EXECUTE_PY_H_
-#define MINDSPORE_CCSRC_PYBINDAPI_IR_PY_EXECUTE_PY_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_PY_EXECUTE_PY_H_
+#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_PY_EXECUTE_PY_H_
 
 #include <vector>
 #include <string>
@@ -336,4 +336,4 @@ class PyExecuteInitializer {
 
 static PyExecuteInitializer py_execute_initializer;
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PYBINDAPI_IR_PY_EXECUTE_PY_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_PY_EXECUTE_PY_H_

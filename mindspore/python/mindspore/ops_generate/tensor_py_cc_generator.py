@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Generates mindspore/ccsrc/pybind_api/ir/tensor_py.cc which includes the CPython Tensor APIs.
+Generates mindspore/ccsrc/pybind_api/ir/tensor/tensor_py.cc which includes the CPython Tensor APIs.
 """
 
 import os
@@ -26,7 +26,7 @@ from pyboost import pyboost_utils
 
 class TensorPyCppGenerator(BaseGenerator):
     """
-    This class is responsible for generating mindspore/ccsrc/pybind_api/ir/tensor_register/
+    This class is responsible for generating mindspore/ccsrc/pybind_api/ir/tensor/tensor_register/
     auto_generate/tensor_py_gen.cc
     """
     def __init__(self):

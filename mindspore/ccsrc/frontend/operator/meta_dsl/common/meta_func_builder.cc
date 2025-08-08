@@ -20,7 +20,7 @@
 #include "ir/anf.h"
 #include "ops/op_def.h"
 #include "abstract/abstract_value.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "frontend/operator/cc_implementations.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "ir/func_graph_flag.h"

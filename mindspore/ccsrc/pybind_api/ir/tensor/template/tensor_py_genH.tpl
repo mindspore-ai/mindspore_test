@@ -17,9 +17,9 @@
 #ifndef TENSOR_PY_GEN_H
 #define TENSOR_PY_GEN_H
 
-#include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
+#include "pybind_api/ir/tensor/tensor_api/auto_generate/tensor_api.h"
 #include "pybind11/pybind11.h"
-#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
+#include "pybind_api/ir/tensor/tensor_register/tensor_func_reg.h"
 
 namespace py = pybind11;
 namespace mindspore {

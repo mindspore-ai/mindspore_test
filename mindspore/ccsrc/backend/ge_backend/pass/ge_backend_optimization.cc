@@ -22,8 +22,8 @@
 #include <vector>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/debug/anf_ir_dump.h"
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/graph_optimizer.h"

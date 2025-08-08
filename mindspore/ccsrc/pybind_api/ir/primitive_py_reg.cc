@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "frontend/ir/primitive_py.h"
-#include "frontend/ir/export_flags.h"
+#include "frontend/operator/primitive_py.h"
+#include "frontend/jit/ps/parse/parse_flags.h"
 #include "pybind11/stl.h"
 
 namespace mindspore {

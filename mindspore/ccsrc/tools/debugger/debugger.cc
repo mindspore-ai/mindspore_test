@@ -31,8 +31,8 @@
 #include "include/common/debug/env_config_parser.h"
 #include "include/common/utils/comm_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/common/debug/anf_ir_dump.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "tools/debugger/proto_exporter.h"
 #endif

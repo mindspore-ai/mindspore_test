@@ -12,7 +12,7 @@
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 #include "frontend/jit/ps/action.h"
 
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
 #include "include/common/utils/cse.h"
 #include "include/common/utils/convert_utils.h"

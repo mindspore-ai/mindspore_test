@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #if defined(_WIN32) || defined(_WIN64)
 #include <stdlib.h>
 #endif
@@ -34,7 +34,7 @@
 #include "utils/trace_info.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/debug/anf_dump_utils.h"
+#include "include/common/ir_dump/anf_dump_utils.h"
 #include "utils/file_utils.h"
 #include "ir/meta_func_graph.h"
 #include "frontend/jit/ps/parse/resolve.h"

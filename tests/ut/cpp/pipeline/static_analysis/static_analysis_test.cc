@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/arithmetic_op_name.h"
 #include "common/py_func_graph_fetcher.h"
 #include "frontend/operator/ops.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #include "ir/manager.h"
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
@@ -32,7 +32,7 @@
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "pipeline/static_analysis/helper.h"
 #include "utils/log_adapter.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 

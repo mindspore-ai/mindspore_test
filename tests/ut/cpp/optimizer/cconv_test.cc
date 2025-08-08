@@ -21,7 +21,7 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/log_adapter.h"
 #include "frontend/jit/ps/parse/parse.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 
 namespace mindspore {
 void CheckNoFreeVariables(FuncGraphPtr root) {

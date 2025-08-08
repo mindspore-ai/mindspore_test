@@ -20,7 +20,7 @@
 #include "frontend/operator/ops.h"
 #include "ir/tensor.h"
 #include "ir/manager.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
 #include "plugin/device/ascend/optimizer/format_type/insert_cast.h"
 #include "backend/common/pass/eliminate_redundant_op.h"

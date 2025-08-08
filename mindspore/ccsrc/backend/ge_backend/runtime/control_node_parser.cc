@@ -29,7 +29,7 @@
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "abstract/abstract_function.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {

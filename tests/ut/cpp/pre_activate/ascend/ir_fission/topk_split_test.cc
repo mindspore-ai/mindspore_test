@@ -19,7 +19,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "backend/common/pass/convert_const_input_to_attr.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 #define private public
 #define protected public

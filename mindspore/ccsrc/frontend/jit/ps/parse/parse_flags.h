@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef PYBIND_API_EXPORT_FLAGS_H_
-#define PYBIND_API_EXPORT_FLAGS_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PS_PARSE_PARSE_FLAGS_H_
+#define MINDSPORE_CCSRC_FRONTEND_JIT_PS_PARSE_PARSE_FLAGS_H_
 
 #include "include/common/visible.h"
 
@@ -31,4 +31,4 @@ FRONTEND_EXPORT extern const char PYTHON_FUNCTION_FORBID_REUSE[];
 FRONTEND_EXPORT extern const char PYTHON_CELL_LIST_FROM_TOP[];
 }  // namespace mindspore
 
-#endif  // PYBIND_API_EXPORT_FLAGS_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PS_PARSE_PARSE_FLAGS_H_

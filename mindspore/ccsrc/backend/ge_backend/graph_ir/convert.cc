@@ -26,7 +26,7 @@
 #include "op_proto/inc/elewise_calculation_ops.h"
 #include "op_proto/inc/save_ops.h"
 #include "op_proto/inc/state_ops.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/parallel_context.h"

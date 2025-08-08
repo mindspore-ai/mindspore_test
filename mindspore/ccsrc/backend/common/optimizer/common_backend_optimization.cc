@@ -39,7 +39,7 @@
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
 #include "backend/common/pass/replace_addn_fusion.h"
 #include "utils/ms_context.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"

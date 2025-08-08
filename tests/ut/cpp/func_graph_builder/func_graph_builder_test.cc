@@ -21,7 +21,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
 #include "frontend/jit/pi/graph_capture/abstract_wrapper.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"

@@ -23,7 +23,7 @@
 #include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "frontend/operator/ops.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"

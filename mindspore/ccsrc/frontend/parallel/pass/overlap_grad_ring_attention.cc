@@ -35,7 +35,7 @@
 #include "utils/trace_base.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"

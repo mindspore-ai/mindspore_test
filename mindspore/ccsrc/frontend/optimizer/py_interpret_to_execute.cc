@@ -16,9 +16,13 @@
 
 #include "frontend/optimizer/py_interpret_to_execute.h"
 
+#include <set>
+#include <map>
+#include <vector>
 #include <memory>
 #include <string>
 #include <utility>
+#include <algorithm>
 #include <unordered_map>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
