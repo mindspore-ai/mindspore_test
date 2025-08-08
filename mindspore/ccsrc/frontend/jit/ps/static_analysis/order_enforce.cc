@@ -15,6 +15,7 @@
  */
 
 #include "frontend/jit/ps/static_analysis/order_enforce.h"
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -23,6 +24,7 @@
 #include <utility>
 #include <string>
 #include <memory>
+
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

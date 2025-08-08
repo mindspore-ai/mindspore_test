@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/pipeline_transformer/zero_bubble_v.h"
+
 #include <algorithm>
 #include <queue>
 #include <iterator>
@@ -22,6 +23,8 @@
 #include <utility>
 #include <vector>
 #include <memory>
+
+#include "include/common/utils/utils.h"
 #include "mindspore/core/include/ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 

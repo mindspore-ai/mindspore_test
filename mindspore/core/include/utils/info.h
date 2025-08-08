@@ -25,7 +25,7 @@
 
 #include "base/base.h"
 #include "mindapi/base/macros.h"
-#include "ir/scope.h"
+
 namespace mindspore {
 enum SourceLineTip {
   kSourceLineTipDiscard = 0,

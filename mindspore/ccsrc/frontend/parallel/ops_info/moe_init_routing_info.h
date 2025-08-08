@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "utils/hash_map.h"
+
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
 

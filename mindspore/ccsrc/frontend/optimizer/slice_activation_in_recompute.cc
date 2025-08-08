@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "frontend/optimizer/slice_activation_in_recompute.h"
+
 #include <memory>
 #include <queue>
 #include <utility>
@@ -22,7 +23,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/tensor_layout/construct_operator.h"
 #include "frontend/parallel/graph_util/graph_utils.h"

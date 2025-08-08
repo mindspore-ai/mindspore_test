@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 #define MINDSPORE_CORE_BASE_OTHER_OPS_H_
 
 #include <memory>
+
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/other_op_name.h"
-#include "utils/hash_map.h"
 #include "ir/core_ops_primitive.h"
 
 namespace mindspore {

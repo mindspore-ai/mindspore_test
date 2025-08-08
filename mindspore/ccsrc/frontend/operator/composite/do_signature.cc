@@ -22,7 +22,7 @@
 #include "abstract/dshape.h"
 #include "abstract/param_validator.h"
 #include "frontend/operator/cc_implementations.h"
-#include "frontend/optimizer/opt.h"
+#include "frontend/operator/ops.h"
 #include "include/common/utils/primfunc_utils.h"
 #include "include/common/amp/amp.h"
 #include "include/common/utils/convert_utils.h"

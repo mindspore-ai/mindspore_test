@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 #include <set>
+
 #include "utils/hash_map.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"

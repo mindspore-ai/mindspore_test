@@ -18,7 +18,6 @@
 #define MINDSPORE_CORE_UTILS_PHASE_H_
 
 #include <string>
-#include <memory>
 #include <map>
 #include <shared_mutex>
 #include "mindapi/base/macros.h"

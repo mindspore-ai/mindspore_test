@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <stack>
 #include <set>
 #include <algorithm>
+
 #include "utils/hash_map.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/control_flow/control_actor.h"

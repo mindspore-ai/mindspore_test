@@ -30,11 +30,11 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
+
 #include "utils/ms_utils.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
-#include "utils/compile_config.h"
 #include "utils/trace_base.h"
 #include "ir/anf.h"
 #include "ir/dtype/amp.h"
@@ -65,55 +65,7 @@ AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const F
 class AnfNodeConfig final : public Config {
  public:
   AnfNodeConfig(const AnalysisEnginePtr &engine, const AnfNodePtr &node, const AnalysisContextPtr &context,
-                const FuncGraphPtr &func_graph)
-      : Config(),
-        engine_(std::weak_ptr<AnalysisEngine>(engine)),
-        node_(node),
-        context_(nullptr),
-        func_graph_(func_graph) {
-    if (context == nullptr) {
-      return;
-    }
-    auto fg = GetValueNode<FuncGraphPtr>(node);
-    if (fg == nullptr && node != nullptr) {
-      fg = node->func_graph();
-    }
-    if (context->func_graph() == fg) {
-      // Usually `node` is CNode and not a FV, or top graph's ValueNodes.
-      context_ = context;
-    } else {
-      // If `node` is FV, FuncGraph, or other graph ValueNodes.
-      // Non-FuncGraph ValueNodes will always get a DummyContext since `fg` is null.
-      context_ = context->FindOwnOrParentContext(fg.get());
-      if (context_ == nullptr) {
-        if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
-          MS_LOG(INFO) << "Failed to find context for: " << fg->ToString() << ", use dummy context instead.";
-          context_ = AnalysisContext::DummyContext();
-          return;
-        }
-        FuncGraphPtr parent_graph = fg->parent();
-#ifdef ENABLE_DUMP_IR
-        const auto no_parent = parent_graph == nullptr;
-        DumpIR(std::string("EXCEPTION_NEW_CONTEXT_CURRENT_") + (no_parent ? "0" : "1") + "_" + fg->ToString() + ".ir",
-               fg);
-        if (!no_parent) {
-          DumpIR("EXCEPTION_NEW_CONTEXT_PARENT_" + parent_graph->ToString() + ".ir", parent_graph);
-        }
-#endif
-        // Context not found, it would be a bug in code so we raise exception.
-        std::ostringstream oss;
-        oss << "BUG: Failed to find context for: " << fg->ToString()
-            << ", parent: " << (parent_graph == nullptr ? "null" : parent_graph->ToString()) << " from contexts: ["
-            << context->ToString();
-        for (auto p = context->parent(); p != nullptr; p = p->parent()) {
-          oss << ", " << p->ToString();
-        }
-        oss << "] "
-            << ", node: " << node->DebugString() << ", " << trace::GetDebugInfoStr(fg->debug_info());
-        MS_LOG(INTERNAL_EXCEPTION) << oss.str();
-      }
-    }
-  }
+                const FuncGraphPtr &func_graph);
 
   ~AnfNodeConfig() override = default;
   MS_DECLARE_PARENT(AnfNodeConfig, Config);
@@ -289,12 +241,8 @@ using PrimitiveEvalCachePtr = std::shared_ptr<PrimitiveEvalCache>;
 
 class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
  public:
-  AnalysisEngine(const PrimEvaluatorMap &prim_evaluator_map, const FuncGraphManagerPtr &func_graph_manager)
-      : prim_constructors_(prim_evaluator_map),
-        func_graph_manager_(func_graph_manager),
-        forward_count_(0),
-        enable_recursive_eval_(common::GetCompileConfig("RECURSIVE_EVAL") == "1"),
-        check_side_effect_(false) {}
+  AnalysisEngine(const PrimEvaluatorMap &prim_evaluator_map, const FuncGraphManagerPtr &func_graph_manager);
+
   virtual ~AnalysisEngine() = default;
 
   // func_graph: The func_graph to analyze.

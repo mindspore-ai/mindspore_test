@@ -24,6 +24,7 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/node_check.h"
+#include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"

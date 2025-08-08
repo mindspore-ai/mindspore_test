@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,15 @@
 #include <string>
 #include <memory>
 
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
-#include "ir/anf.h"
-#include "frontend/operator/primitive_py.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/stub_tensor.h"
+#include "ir/anf.h"
+#include "ir/device_type.h"
+#include "utils/hash_set.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "ir/device_type.h"
 
 namespace mindspore {
 namespace pynative {

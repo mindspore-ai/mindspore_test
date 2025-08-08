@@ -22,7 +22,7 @@
 #include <string>
 #include <set>
 #include <mutex>
-#include "utils/hash_map.h"
+
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 

@@ -26,6 +26,7 @@
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
+#include "utils/ordered_map.h"
 #include "pynative/grad/hook_py.h"
 
 namespace mindspore {

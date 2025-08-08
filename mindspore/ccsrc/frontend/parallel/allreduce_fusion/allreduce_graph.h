@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include "utils/hash_map.h"
+
 #include "utils/hash_set.h"
 #include "ir/anf.h"
 #include "frontend/parallel/allreduce_fusion/allreduce_node.h"

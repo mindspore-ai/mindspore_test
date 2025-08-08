@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 
 #include "pynative/grad/function/func_grad.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/utils/hook.h"
@@ -28,6 +30,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/custom_function.h"
 #include "pynative/grad/grad_utils.h"
+#include "frontend/operator/primitive_py.h"
 #include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "pynative/grad/primitive_hook.h"
 #include "pynative/grad/function_py.h"

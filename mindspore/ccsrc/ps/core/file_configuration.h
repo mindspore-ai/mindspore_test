@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "utils/hash_map.h"
 #include "include/common/utils/json_operation_utils.h"
 #include "include/backend/distributed/ps/constants.h"
 #include "utils/log_adapter.h"

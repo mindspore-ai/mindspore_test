@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 #ifndef MINDSPORE_CCSRC_COMMON_GRAPH_KERNEL_CORE_SPLIT_SCHEMER_H_
 #define MINDSPORE_CCSRC_COMMON_GRAPH_KERNEL_CORE_SPLIT_SCHEMER_H_
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "ir/func_graph.h"
 #include "utils/hash_map.h"
 

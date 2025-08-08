@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "frontend/expander/bprop/common_utils.h"
 #include "mindspore/ops/infer/dynamic_broadcast_gradient_args.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"

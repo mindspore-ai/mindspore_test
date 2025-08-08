@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "load_mindir/load_model.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <cstring>
@@ -26,6 +27,7 @@
 #include <list>
 #include <utility>
 #include <nlohmann/json.hpp>
+
 #include "ir/core_ops_primitive.h"
 #include "utils/crypto.h"
 #include "utils/os.h"

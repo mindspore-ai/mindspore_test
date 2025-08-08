@@ -23,7 +23,6 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
-#include "utils/hash_map.h"
 
 namespace mindspore {
 namespace parallel {

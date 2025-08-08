@@ -30,9 +30,7 @@
 #include "mindapi/base/macros.h"
 #include "utils/hashing.h"
 #include "utils/log_adapter.h"
-#include "utils/ordered_map.h"
 #include "utils/ordered_set.h"
-#include "utils/compile_config.h"
 
 namespace mindspore {
 template <typename T>

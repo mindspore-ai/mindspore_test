@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include "utils/hash_map.h"
+
 #include "frontend/optimizer/irpass.h"
 #include "ir/func_graph.h"
 #include "frontend/jit/ps/resource.h"

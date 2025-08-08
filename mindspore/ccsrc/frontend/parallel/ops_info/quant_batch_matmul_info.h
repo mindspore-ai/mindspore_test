@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"

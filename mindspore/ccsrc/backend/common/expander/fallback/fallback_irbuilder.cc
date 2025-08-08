@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
+#include "ir/scope.h"
 #include "include/common/expander/core/emitter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

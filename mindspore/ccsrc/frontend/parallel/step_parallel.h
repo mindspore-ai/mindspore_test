@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,8 @@
 #include <string>
 #include <utility>
 
-#include "utils/hash_map.h"
-#include "frontend/optimizer/opt.h"
-#include "frontend/parallel/strategy.h"
+#include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/parallel/ops_info/operator_info.h"
-#include "frontend/jit/ps/pipeline.h"
-#include "frontend/parallel/ops_info/ops_utils.h"
-#include "frontend/parallel/auto_parallel/operator_costmodel.h"
-#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 
 using OperatorInfoPtr = std::shared_ptr<mindspore::parallel::OperatorInfo>;
 

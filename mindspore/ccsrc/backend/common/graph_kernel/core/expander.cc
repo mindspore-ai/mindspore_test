@@ -19,6 +19,7 @@
 #include <string>
 #include <algorithm>
 
+#include "ir/scope.h"
 #include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

@@ -26,7 +26,6 @@
 #include <map>
 #include <utility>
 
-#include "utils/hash_map.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "frontend/jit/ps/static_analysis/prim_to_function.h"
 #include "abstract/ops/primitive_infer_map.h"

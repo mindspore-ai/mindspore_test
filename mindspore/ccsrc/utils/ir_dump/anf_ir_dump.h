@@ -20,11 +20,13 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+
 #include "ir/dtype/type.h"
 #include "ir/anf.h"
 #include "include/common/debug/common.h"
-#include "utils/hash_set.h"
 #include "include/common/visible.h"
+#include "utils/hash_set.h"
+#include "utils/ordered_map.h"
 
 namespace mindspore {
 enum LocDumpMode : int { kOff = 0, kTopStack = 1, kWholeStack = 2, kInValid = 3 };

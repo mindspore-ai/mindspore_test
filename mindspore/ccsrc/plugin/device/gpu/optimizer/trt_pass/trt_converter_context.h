@@ -22,6 +22,7 @@
 #include <memory>
 #include <tuple>
 #include <map>
+
 #include <NvInfer.h>
 #include "utils/hash_map.h"
 #include "base/base.h"
