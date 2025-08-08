@@ -931,7 +931,7 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<KernelTensor> *const context) 
       }
     } else if (ActorDispatcher::enable_async_launch_kernel()) {
       auto &llm_manager = LLMManager::GetInstance();
-      if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+      if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_) {
         kernel_actor->ResizeKernelMod();
         kernel_actor->FetchOutputDeviceTensor(context);
         kernel_actor->FetchWorkspaceDeviceTensor();
@@ -1071,7 +1071,8 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
     wait_event->WaitEventWithoutReset(0);
 
     auto &llm_manager = LLMManager::GetInstance();
-    bool need_force_resize = llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name());
+    bool need_force_resize =
+      llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_;
     if (need_force_resize) {
       kernel_actor->ResizeKernelMod();
       kernel_actor->FetchOutputDeviceTensor(nullptr);
@@ -1624,7 +1625,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     }
     auto &llm_manager = LLMManager::GetInstance();
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
-    bool need_force_resize = llm_manager.need_force_resize(kernel_name);
+    bool need_force_resize = llm_manager.need_force_resize(kernel_name) || kernel_actor->is_dynamic_value_;
     if (need_force_resize || common::AnfAlgo::IsCommFusionOp(kernel_name) ||
         (kernel_actor->real_output_device_context_ != kernel_actor->device_contexts_[0])) {
       serial_launch_kernels_.push_back(kernel_actor);
