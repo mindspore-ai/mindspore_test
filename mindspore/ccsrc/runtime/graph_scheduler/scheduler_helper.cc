@@ -116,14 +116,6 @@ std::vector<AbstractActorPtr> SchedulerHelper::CollectActors(const ActorSet *act
     MS_EXCEPTION_IF_NULL(kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_actor));
   }
-  for (auto &kernel_infer_actor : actor_set->kernel_infer_actors_) {
-    MS_EXCEPTION_IF_NULL(kernel_infer_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_infer_actor));
-  }
-  for (auto &kernel_resize_actor : actor_set->kernel_resize_actors_) {
-    MS_EXCEPTION_IF_NULL(kernel_resize_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_resize_actor));
-  }
   for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
     MS_EXCEPTION_IF_NULL(super_kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(super_kernel_actor));

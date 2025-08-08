@@ -263,12 +263,6 @@ bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph)
   return false;
 }
 
-bool EnableAsyncInfer() {
-  static const char kEnableAsyncInferdEnv[] = "MS_ENABLE_ASYNC_INFER";
-  static bool ret = common::GetEnv(kEnableAsyncInferdEnv) == "1";
-  return ret;
-}
-
 bool EnableTraceMemory() {
   static const bool enable_mem_tracker = memory::mem_pool::IsEnableMemTrack();
   if (enable_mem_tracker) {

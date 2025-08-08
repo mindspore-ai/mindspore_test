@@ -30,7 +30,6 @@
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/optimizer/optimizer.h"
-#include "runtime/graph_scheduler/optimizer/kernel_infer_resize_actor_insert.h"
 #include "runtime/graph_scheduler/optimizer/memory_actor_insert.h"
 #include "runtime/graph_scheduler/optimizer/invalid_data_arrow_elimination.h"
 #include "runtime/graph_scheduler/optimizer/batch_data_arrow_fusion.h"
@@ -1713,14 +1712,6 @@ void GraphScheduler::LinkControlArrowForNoInputArrowActor(const ActorSet *actor_
     MS_EXCEPTION_IF_NULL(kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_actor));
   }
-  for (auto &kernel_infer_actor : actor_set->kernel_infer_actors_) {
-    MS_EXCEPTION_IF_NULL(kernel_infer_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_infer_actor));
-  }
-  for (auto &kernel_resize_actor : actor_set->kernel_resize_actors_) {
-    MS_EXCEPTION_IF_NULL(kernel_resize_actor);
-    (void)actors.emplace_back(static_cast<AbstractActorPtr>(kernel_resize_actor));
-  }
   for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
     MS_EXCEPTION_IF_NULL(super_kernel_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(super_kernel_actor));
@@ -1896,10 +1887,6 @@ void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerI
 
   auto optimizer = std::make_shared<ActorSetOptimizer>();
   MS_EXCEPTION_IF_NULL(optimizer);
-
-  if (EnableAsyncInfer()) {
-    optimizer->AddPass(std::make_shared<KernelInferResizeActorInsert>());
-  }
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
