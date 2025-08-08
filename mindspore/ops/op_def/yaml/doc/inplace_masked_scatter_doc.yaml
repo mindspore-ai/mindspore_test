@@ -1,0 +1,29 @@
+inplace_masked_scatter:
+    description: |
+        Updates the value in the `input` with the `source` value according to the `mask`, and returns a Tensor.
+        The shape of `mask` and the `input` must be the same or `mask` is broadcastable.
+
+        Args:
+            input (Tensor): Input Tensor.
+            mask (Tensor[bool]): A bool tensor with a shape broadcastable to the `input`.
+            source (Tensor): A tensor with the same data type as the `input`. The number
+                of elements must be greater than or equal to the number of True's in `mask`.
+
+        Returns:
+            Tensor, with the same type and shape as the `input`.
+
+        Supported Platforms:
+            ``Ascend``
+    
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
+            >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
+            >>> tensor = Tensor(np.array([5., 6., 7.]), mindspore.float32)
+            >>> output = ops.inplace_masked_scatter(x, mask, tensor)
+            >>> print(output)
+            [5. 6. 3. 7.]
+            >>> print(x)
+            [5. 6. 3. 7.]

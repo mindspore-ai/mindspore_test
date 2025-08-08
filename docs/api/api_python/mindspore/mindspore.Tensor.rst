@@ -234,6 +234,7 @@ mindspore.Tensor
     mindspore.Tensor.masked_fill
     mindspore.Tensor.masked_fill_
     mindspore.Tensor.masked_scatter
+    mindspore.Tensor.masked_scatter_
     mindspore.Tensor.masked_select
     mindspore.Tensor.matmul
     mindspore.Tensor.max

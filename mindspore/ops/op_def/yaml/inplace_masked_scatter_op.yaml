@@ -1,0 +1,22 @@
+#operator inplace_masked_scatter
+inplace_masked_scatter:
+    args:
+        input:
+            dtype: tensor
+        mask:
+            dtype: tensor
+        source:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        out:
+            dtype: tensor
+            inplace: input
+    function:
+        disable: true
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceMaskedScatterAscend
