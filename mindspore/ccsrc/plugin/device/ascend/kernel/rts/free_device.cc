@@ -60,7 +60,7 @@ bool FreeDeviceKernel::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(input->device_address());
   const auto input_device = input->device_address()->GetDeviceType();
   if (input_device != device::DeviceType::kAscend) {
-    MS_LOG(EXCEPTION) << "For Primitive '" << kernel_name_ << "', the device type of the first input must be CPU(1)."
+    MS_LOG(EXCEPTION) << "For Primitive '" << kernel_name_ << "', the device type of the first input must be Ascend(2)."
                       << "But got input device type: " << input_device;
   }
 
