@@ -66,8 +66,6 @@ class OrderEnforcer {
     static const bool no_insert_tensormove = common::GetEnv("MS_DEV_SIDE_EFFECT_LOAD_ELIM") == "3";
     // Do not insert TensorMove for all Load nodes
     if (no_insert_tensormove) {
-      MS_LOG(WARNING) << "Do not insert TensorMove for all Load nodes, the memory footprint is minimal, "
-                         "but there may be accuracy issues with the results.";
       return;
     }
     // After ensuring the correct control edge relationship, then insert the TensorMove operator.
@@ -748,6 +746,11 @@ class OrderEnforcer {
 void OrderEnforce(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   OrderEnforcer enforcer(func_graph);
+  static const bool no_insert_tensormove = common::GetEnv("MS_DEV_SIDE_EFFECT_LOAD_ELIM") == "3";
+  if (no_insert_tensormove) {
+    MS_LOG(WARNING) << "Do not insert TensorMove for all Load nodes, the memory footprint is minimal, "
+                       "but there may be accuracy issues with the results.";
+  }
   enforcer.Run();
   auto fg_used_total = func_graph->func_graphs_used_total();
   for (const auto &fg : fg_used_total) {
