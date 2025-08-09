@@ -14,7 +14,7 @@ list(APPEND HARDWARE_SRC_LIST ${RES_SRC_LIST})
 set_property(SOURCE ${HARDWARE_SRC_LIST} PROPERTY SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(mindspore_hardware SHARED ${HARDWARE_SRC_LIST})
 target_link_libraries(mindspore_hardware PRIVATE mindspore_core mindspore_common mindspore_ops_kernel_common
-    mindspore_memory_pool)
+    mindspore_memory_pool mindspore_runtime_pipeline)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(mindspore_hardware PRIVATE RUNTIME_HARDWARE_DLL)
 endif()

@@ -17,6 +17,7 @@
 #include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/auto_mem_offload.h"  // to delect
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace device {
@@ -25,6 +26,11 @@ DeviceResManager::DeviceResManager() {
   device_context_ = nullptr;
   // to delete
   offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
+}
+
+bool DeviceContext::initialized() const {
+  runtime::Pipeline::Get().WaitForward();
+  return initialized_;
 }
 
 void *DeviceResManager::AllocateOffloadMemory(size_t size) const { return offloaded_mem_pool_->MallocHost(size); }
