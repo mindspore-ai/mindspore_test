@@ -19,6 +19,7 @@ import mindspore.nn as nn
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load
+from mindspore._extends.parse import compile_config
 
 context.set_context(jit_config={"jit_level": "O0"})
 
@@ -31,63 +32,75 @@ class SingleWhileNet(nn.Cell):
         return y
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_while():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
-    network = SingleWhileNet()
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        context.set_context(mode=context.GRAPH_MODE)
+        network = SingleWhileNet()
 
-    x = Tensor(np.array([1]).astype(np.float32))
-    y = Tensor(np.array([2]).astype(np.float32))
-    origin_out = network(x, y)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        origin_out = network(x, y)
 
-    file_name = "while_net"
-    export(network, x, y, file_name=file_name, file_format='MINDIR')
-    mindir_name = file_name + ".mindir"
-    assert os.path.exists(mindir_name)
+        file_name = "while_net"
+        export(network, x, y, file_name=file_name, file_format='MINDIR')
+        mindir_name = file_name + ".mindir"
+        assert os.path.exists(mindir_name)
 
-    graph = load(mindir_name)
-    loaded_net = nn.GraphCell(graph)
-    outputs_after_load = loaded_net(x, y)
-    assert origin_out == outputs_after_load
+        graph = load(mindir_name)
+        loaded_net = nn.GraphCell(graph)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        outputs_after_load = loaded_net(x, y)
+        assert origin_out == outputs_after_load
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_jit_function_while():
     """
     Features: Control flow.
     Description: Test while in @jit decorated function.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
-    network = SingleWhileNet()
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        context.set_context(mode=context.GRAPH_MODE)
+        network = SingleWhileNet()
 
-    x = Tensor(np.array([1]).astype(np.float32))
-    y = Tensor(np.array([2]).astype(np.float32))
-    origin_out = network(x, y)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        origin_out = network(x, y)
 
-    file_name = "while_net"
-    export(network, x, y, file_name=file_name, file_format='MINDIR')
-    mindir_name = file_name + ".mindir"
-    assert os.path.exists(mindir_name)
+        file_name = "while_net"
+        export(network, x, y, file_name=file_name, file_format='MINDIR')
+        mindir_name = file_name + ".mindir"
+        assert os.path.exists(mindir_name)
 
-    graph = load(mindir_name)
-    loaded_net = nn.GraphCell(graph)
-    context.set_context(mode=context.PYNATIVE_MODE)
+        graph = load(mindir_name)
+        loaded_net = nn.GraphCell(graph)
+        context.set_context(mode=context.PYNATIVE_MODE)
 
-    @jit(backend="ms_backend")
-    def run_graph(x, y):
-        outputs = loaded_net(x, y)
-        return outputs
+        @jit(backend="ms_backend")
+        def run_graph(x, y):
+            outputs = loaded_net(x, y)
+            return outputs
 
-    outputs_after_load = run_graph(x, y)
-    assert origin_out == outputs_after_load
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        outputs_after_load = run_graph(x, y)
+        assert origin_out == outputs_after_load
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 class SingleWhileInlineNet(nn.Cell):
@@ -140,27 +153,33 @@ def test_single_while_inline_load():
     load(mindir_name)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_while_inline():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
-    network = SingleWhileInlineNet()
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        context.set_context(mode=context.GRAPH_MODE)
+        network = SingleWhileInlineNet()
 
-    x = Tensor(np.array([1]).astype(np.float32))
-    y = Tensor(np.array([2]).astype(np.float32))
-    origin_out = network(x, y)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        origin_out = network(x, y)
 
-    file_name = "while_inline_net"
-    export(network, x, y, file_name=file_name, file_format='MINDIR')
-    mindir_name = file_name + ".mindir"
-    assert os.path.exists(mindir_name)
+        file_name = "while_inline_net"
+        export(network, x, y, file_name=file_name, file_format='MINDIR')
+        mindir_name = file_name + ".mindir"
+        assert os.path.exists(mindir_name)
 
-    graph = load(mindir_name)
-    loaded_net = nn.GraphCell(graph)
-    outputs_after_load = loaded_net(x, y)
-    assert origin_out == outputs_after_load
+        graph = load(mindir_name)
+        loaded_net = nn.GraphCell(graph)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        outputs_after_load = loaded_net(x, y)
+        assert origin_out == outputs_after_load
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
