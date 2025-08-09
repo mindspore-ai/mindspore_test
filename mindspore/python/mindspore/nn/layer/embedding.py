@@ -17,12 +17,10 @@ from __future__ import absolute_import
 
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
-from mindspore import log as logger
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
-from mindspore.common.parameter import _get_unique_parameter_key
 from mindspore.common.initializer import initializer, Normal
-from mindspore.communication.management import get_group_size, get_rank
+from mindspore.communication.management import get_group_size
 from mindspore.context import ParallelMode
 from mindspore.parallel._utils import _get_parallel_mode, _get_full_batch
 from mindspore import _checkparam as Validator
