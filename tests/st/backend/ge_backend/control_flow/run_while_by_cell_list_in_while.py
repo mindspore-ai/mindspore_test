@@ -15,6 +15,7 @@
 import mindspore.context as context
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
+from mindspore._extends.parse import compile_config
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
@@ -52,7 +53,7 @@ def while_by_cell_list_in_while():
     net = WhileByCellListInWhile()
     n = Tensor(10, mstype.int32)
     x = Tensor(0, mstype.int32)
-    y = Tensor(0, mstype.int32)
+    y = 0
     out = net(n, x, y)
     return out
 
@@ -63,8 +64,12 @@ def test_while_by_cell_list_in_while_ge():
     Description: run the while by case in while with ge backend
     Expectation: success
     """
-    out = while_by_cell_list_in_while()
-    assert out == Tensor(172, mstype.int32)
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        out = while_by_cell_list_in_while()
+        assert out == Tensor(352, mstype.int32)
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 if __name__ == "__main__":
     test_while_by_cell_list_in_while_ge()

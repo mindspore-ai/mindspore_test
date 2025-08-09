@@ -24,6 +24,7 @@ from mindspore.common.parameter import ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.train.serialization import export, load
+from mindspore._extends.parse import compile_config
 
 context.set_context(jit_config={"jit_level": "O0"})
 
@@ -158,30 +159,36 @@ def test_load_mindir_and_run():
     assert np.allclose(outputs0.asnumpy(), outputs_after_load.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_single_if():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
-    network = SingleIfNet()
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        context.set_context(mode=context.GRAPH_MODE)
+        network = SingleIfNet()
 
-    x = Tensor(np.array([1]).astype(np.float32))
-    y = Tensor(np.array([2]).astype(np.float32))
-    origin_out = network(x, y)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        origin_out = network(x, y)
 
-    file_name = "if_net"
-    export(network, x, y, file_name=file_name, file_format='MINDIR')
-    mindir_name = file_name + ".mindir"
-    assert os.path.exists(mindir_name)
+        file_name = "if_net"
+        export(network, x, y, file_name=file_name, file_format='MINDIR')
+        mindir_name = file_name + ".mindir"
+        assert os.path.exists(mindir_name)
 
-    graph = load(mindir_name)
-    loaded_net = nn.GraphCell(graph)
-    outputs_after_load = loaded_net(x, y)
-    assert origin_out == outputs_after_load
+        graph = load(mindir_name)
+        loaded_net = nn.GraphCell(graph)
+        x = Tensor(np.array([1]).astype(np.float32))
+        y = Tensor(np.array([2]).astype(np.float32))
+        outputs_after_load = loaded_net(x, y)
+        assert origin_out == outputs_after_load
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
