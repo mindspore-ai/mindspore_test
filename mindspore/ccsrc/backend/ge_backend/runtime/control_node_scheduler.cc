@@ -196,9 +196,6 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
 
     MS_EXCEPTION_IF_NULL(node_with_index.first);
     MS_LOG(DEBUG) << "Control node parameter front node:" << parameter_with_index.first->DebugString()

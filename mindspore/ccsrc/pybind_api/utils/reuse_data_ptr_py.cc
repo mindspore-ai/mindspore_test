@@ -16,6 +16,7 @@
 #include "ir/tensor.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/tensor_py.h"
+#include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
@@ -56,10 +57,14 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(device_ptr) << ", size:" << src->Size()
                   << ", shape:" << src->shape() << ", data_type:" << TypeIdToString(src->data_type());
     MS_EXCEPTION_IF_NULL(src_device_address);
-    device::ResKey res_key{src_device_address->GetDeviceType(), src_device_address->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    if (!res_manager->SyncAllStreams()) {
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(src_device_address->GetDeviceType()),
+                                         src_device_address->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+    if (!host_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(ERROR) << "Sync stream failed.";
     }
     SyncCopy(src_device_address, src->device_address(), src_device_address->stream_id());

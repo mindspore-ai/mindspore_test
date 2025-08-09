@@ -28,7 +28,7 @@
 
 #include "async/spinlock.h"
 #include "ir/device_event.h"
-#include "runtime/device/res_manager/hal_res_base.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "runtime/hardware/visible.h"
 
 namespace mindspore {
@@ -41,7 +41,7 @@ using EventPoolPtr = std::shared_ptr<EventPool>;
 
 class RUNTIME_HARDWARE_EXPORT MultiStreamController {
  public:
-  explicit MultiStreamController(HalResBase *device_res_base);
+  explicit MultiStreamController(DeviceResManager *device_res_base);
 
   MultiStreamController(const MultiStreamController &) = delete;
   MultiStreamController &operator=(const MultiStreamController &) = delete;
@@ -79,7 +79,7 @@ class RUNTIME_HARDWARE_EXPORT MultiStreamController {
   std::unordered_map<uint32_t, std::mutex> stream_mutexes_;
   EventPoolPtr event_pool_;
 
-  HalResBase *device_res_base_;
+  DeviceResManager *device_res_base_;
   SpinLock lock_;
 };
 using MultiStreamControllerPtr = std::shared_ptr<MultiStreamController>;

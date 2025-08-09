@@ -210,8 +210,8 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
   if (stream_id != kDefaultStreamIndex) {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-    auto &multi_stream_controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+    auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+      device_context->device_context_key().device_name_);
     MS_EXCEPTION_IF_NULL(multi_stream_controller);
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -1530,7 +1530,7 @@ bool KernelRunner::LaunchKernel(OpContext<KernelTensor> *const context, bool is_
     return ret;
   }
 
-  auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+  auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
     device_contexts_[0]->device_context_key().device_name_);
   bool ret = false;
   if (!ActorDispatcher::enable_async_launch_kernel()) {
@@ -1588,7 +1588,7 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
       ret = kernel_mod_->Launch(input_launch_tensors_, workspace_launch_tensors_, output_launch_tensors_, stream_);
     }
   } else {
-    auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+    auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
       device_contexts_[0]->device_context_key().device_name_);
     if (!ActorDispatcher::enable_async_launch_kernel()) {
       std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
@@ -1616,8 +1616,8 @@ void KernelRunner::ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> 
   auto device_context = device_contexts_[0];
   auto stream_id = kernel_info_->stream_id();
   // Update output_kernel_tensors_ with task id on stream.
-  auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+  auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+    device_context->device_context_key().device_name_);
   auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(stream_id);
   // Adapter for mc2 kernel, need more process later.
   if (is_mc2_kernel_) {
@@ -1748,7 +1748,7 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
                     << ", addresses size : " << cross_stream_addresses_.size() << ".";
       // Record event on stream.
       auto device_context = device_contexts_[0];
-      auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+      auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
         device_context->device_context_key().device_name_);
       multi_stream_controller->RecordEvent(*task_id_on_stream_, stream_id, cross_stream_addresses_);
     }

@@ -24,7 +24,8 @@
 #include "debug/data_dump/device_statistic/mem_manager.h"
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "ir/tensor_new.h"
 
 namespace mindspore {
@@ -43,10 +44,13 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
 
   mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(dtype_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor->device_address());
-  device::ResKey res_key{device_addr->GetDeviceType(), device_addr->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  if (!res_manager->SyncAllStreams() ||
+
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_addr->GetDeviceType()),
+                                       device_addr->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  if (!host_context->device_res_manager_->SyncAllStreams() ||
       !SyncCopy(out_tensor->device_address(), device_addr, device_addr->stream_id())) {
     const auto &dst_address = dynamic_cast<device::DeviceAddress *>(out_tensor->device_address().get());
     MS_EXCEPTION_IF_NULL(dst_address);

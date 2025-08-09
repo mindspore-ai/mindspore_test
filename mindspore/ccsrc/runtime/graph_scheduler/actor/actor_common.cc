@@ -419,10 +419,13 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
 
 bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
-    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
-  MS_EXCEPTION_IF_NULL(res_manager);
-  return res_manager->SyncAllStreams();
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                       device_tensor->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+  return host_context->device_res_manager_->SyncAllStreams();
 }
 
 bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,

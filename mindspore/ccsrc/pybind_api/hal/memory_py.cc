@@ -18,22 +18,25 @@
 #include <vector>
 #include <map>
 #include "runtime/pipeline/pipeline.h"
+#include "common/device_address.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 
 namespace mindspore {
 namespace hal {
 namespace {
-device::HalResBase *GetResManager() {
+device::DeviceResManager *GetResManager() {
   auto ms_context = MsContext::GetInstance();
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  if (!res_manager) {
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  if (!host_context->device_res_manager_) {
     MS_LOG(WARNING) << "Device  " << device_name << " is not created yet.";
   }
+  auto res_manager = dynamic_cast<device::DeviceResManager *>(host_context->device_res_manager_.get());
   return res_manager;
 }
 
@@ -203,10 +206,10 @@ struct MemoryReplayProcesser {
   MemoryReplayProcesser() {
     auto ms_context = MsContext::GetInstance();
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-    res_manager_ = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
+    MS_EXCEPTION_IF_NULL(device_context_);
+    res_manager_ = device_context_->device_res_manager_.get();
+    MS_EXCEPTION_IF_NULL(res_manager_);
   }
 
   ~MemoryReplayProcesser() = default;
@@ -264,7 +267,7 @@ struct MemoryReplayProcesser {
   }
 
  private:
-  device::HalResBase *res_manager_;
+  device::DeviceResManager *res_manager_;
   device::DeviceContext *device_context_;
   std::map<size_t, std::vector<void *>> to_free_mems_;
 };

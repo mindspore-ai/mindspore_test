@@ -191,6 +191,7 @@ std::optional<std::vector<int64_t>> ConvertIntVector(const py::object &obj) {
   return convert;
 }
 }  // namespace
+namespace py = pybind11;
 
 Converter::Converter(ops::OpDef *op_def)
     : op_def_(op_def), source_type_(std::vector<ops::OP_DTYPE>(op_def->args_.size())) {}

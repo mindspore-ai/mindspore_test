@@ -1258,7 +1258,7 @@ void MSBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_info
   for (auto device_context : graph_compiler_info.device_contexts_) {
     MS_EXCEPTION_IF_NULL(device_context);
     if (device_context->device_res_manager_->single_op_multi_stream_enable()) {
-      device::HalResManager::GetInstance()
+      device::DeviceContextManager::GetInstance()
         .GetMultiStreamController(device_context->device_context_key().device_name_)
         ->WaitMultiStream(kDefaultStreamIndex);
     }
@@ -1804,7 +1804,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
-    device::HalResManager::GetInstance()
+    device::DeviceContextManager::GetInstance()
       .GetMultiStreamController(context->device_context_key().device_name_)
       ->Refresh();
   }

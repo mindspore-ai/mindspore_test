@@ -28,10 +28,12 @@
 #include "frontend/ir/tensor_py.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/res_manager/utils/utils.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/ms_context.h"
+#include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -43,10 +45,7 @@ KernelTensorPtr CreateKernelTensorForScalarAndString(const ValueNodePtr &value_n
   MS_EXCEPTION_IF_NULL(ms_context);
   auto node_target = AnfAlgo::FetchDeviceTarget(value_node, graph.get());
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-
+  device::DeviceAddressPtr address = nullptr;
   KernelTensorPtr kernel_tensor = nullptr;
   const auto &node_value = value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
@@ -133,9 +132,6 @@ device::DeviceAddressPtr CreateDeviceAddressForTypeValue(const ValueNodePtr &val
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(value_node->func_graph());
   auto node_target = AnfAlgo::FetchDeviceTarget(value_node, kernel_graph.get());
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
 
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kMetaTypeTypeType, {}, node_target, device_id);
@@ -194,9 +190,6 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const AnfNodePtr &no
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(node->func_graph());
   auto node_target = AnfAlgo::FetchDeviceTarget(node, kernel_graph.get());
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
 
   // Create device for map tensor node and the ptr size is 1 byte.
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
@@ -248,9 +241,6 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
     MS_EXCEPTION_IF_NULL(item);
     auto node_target = AnfAlgo::FetchDeviceTarget(item, graph.get());
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
 
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
     for (size_t index = 0; index < output_size; index++) {
@@ -341,10 +331,6 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValu
   std::string output_format = AnfAlgo::GetOutputFormat(value_node, output_idx);
 
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::GetDeviceTypeByName(node_target), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-
   auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, output_idx}, nullptr, tensor_size, output_format, output_type_id, {}, node_target, device_id);
   kernel_tensor->set_host_shape(kernel_tensor->GetShapeVector());
@@ -423,10 +409,11 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto new_device_address = res_manager->CreateDeviceAddress(
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
     old_device_address->pointer_ref_count()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
     old_kernel_tensor->format(), old_device_address->type_id(), device_name, device_id, old_device_address->stream_id(),
     old_kernel_tensor->user_data());

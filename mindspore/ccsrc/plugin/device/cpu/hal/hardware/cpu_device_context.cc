@@ -294,6 +294,16 @@ DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size
                                                stream_id, user_data);
 }
 
+bool CPUDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                   size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
+  return cpu_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+}
+bool CPUDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                    size_t stream_id, bool keep_src) const {
+  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
+  return cpu_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+}
 bool CPUDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(cpu_res_manager_);
   return cpu_res_manager_->Copy(dst, src, size, kind, stream_id);

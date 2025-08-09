@@ -19,7 +19,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -449,9 +450,10 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   auto new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
@@ -472,7 +474,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
     new_device_tensor->set_stream_id(data_stream_id);
   }
   if ((new_device_tensor->GetPtr() == nullptr) &&
-      (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex))) {
+      (!host_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex))) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, node->DebugString(),
                                                 new_device_tensor->GetSize());
   }
@@ -701,9 +703,11 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &shape = addr_list[0]->device_address()->host_shape();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
 
-  device::ResKey res_key{addr_list[0]->GetDeviceType(), addr_list[0]->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key{device::GetDeviceNameByType(addr_list[0]->GetDeviceType()),
+                                    addr_list[0]->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   abstract::BaseShapePtrList shape_list(addr_list.size(), addr_list[0]->GetShape());
   auto tuple_shape = std::make_shared<abstract::TupleShape>(shape_list);
@@ -721,7 +725,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   MS_EXCEPTION_IF_NULL(new_device_tensor);
 
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor->ToString();
-  if (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
+  if (!host_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                 new_device_tensor->GetSize());
   }
@@ -799,9 +803,10 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key{device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   auto tuple_shape = std::make_shared<abstract::TupleShape>();
   auto tuple_type = std::make_shared<Tuple>();
@@ -813,7 +818,7 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   new_device_tensor->set_dynamic_ref_count(0);
   new_device_tensor->set_original_ref_count(SIZE_MAX);
   new_device_tensor->ResetRefCount();
-  if (!res_manager->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
+  if (!host_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                 new_device_tensor->GetSize());
   }

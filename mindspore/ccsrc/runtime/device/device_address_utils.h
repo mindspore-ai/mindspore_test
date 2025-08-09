@@ -24,6 +24,7 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
 #include "common/kernel.h"
 #include "mindapi/base/type_traits.h"
@@ -172,8 +173,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    auto &controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+    auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+      device_context->device_context_key().device_name_);
     controller->Refresh();
     auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name
@@ -191,8 +192,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
       return;
     }
 
-    auto &controller =
-      device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+    auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+      device_context->device_context_key().device_name_);
     controller->Refresh();
     auto task_id_on_stream = controller->LaunchTaskIdOnStream(op_stream_id);
     MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name

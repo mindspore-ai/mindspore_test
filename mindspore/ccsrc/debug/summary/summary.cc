@@ -26,7 +26,8 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -116,11 +117,14 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     if (!address->GetPtr()) {
       continue;
     }
-    device::ResKey res_key{address->GetDeviceType(), address->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(address->GetDeviceType()), address->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    if (!res_manager->SyncAllStreams() || !SyncCopy(tensor->device_address(), address, address->stream_id())) {
+    if (!host_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(tensor->device_address(), address, address->stream_id())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }
     tensor->set_sync_status(kNoNeedSync);

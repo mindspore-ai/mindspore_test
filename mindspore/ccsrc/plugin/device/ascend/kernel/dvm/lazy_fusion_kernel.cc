@@ -321,7 +321,7 @@ void LazyFusionKernelAscend::Flush() {
       ClearGraph();
       runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
       if (!cross_stream_addrs_.empty()) {
-        auto &ms = device::HalResManager::GetInstance().GetMultiStreamController(
+        auto &ms = device::DeviceContextManager::GetInstance().GetMultiStreamController(
           device_context_->device_context_key().device_name_);
         ms->Refresh();
         auto task_id_on_stream = ms->LaunchTaskIdOnStream(stream_id_);

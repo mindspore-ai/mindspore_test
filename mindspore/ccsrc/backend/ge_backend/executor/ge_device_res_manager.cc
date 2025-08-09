@@ -23,6 +23,8 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_type.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -35,11 +37,12 @@ void GeDeviceResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::DeviceType::kAscend, device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  res_manager->Initialize();
-  mem_manager_ = res_manager->mem_manager();
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device::DeviceType::kAscend), device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->Initialize();
+  mem_manager_ = host_context->device_res_manager_->mem_manager();
   MS_EXCEPTION_IF_NULL(mem_manager_);
   initialized_ = true;
 }

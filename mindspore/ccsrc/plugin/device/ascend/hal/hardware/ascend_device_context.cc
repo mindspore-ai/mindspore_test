@@ -82,10 +82,12 @@ void AscendDeviceContext::InitializeForAclop() const {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::ResKey res_key{device::DeviceType::kAscend, device_id};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    auto ascend_res_manager = static_cast<AscendResManager *>(res_manager);
-    MS_EXCEPTION_IF_NULL(ascend_res_manager);
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device::DeviceType::kAscend), device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    auto ascend_res_manager = dynamic_cast<device::ascend::AscendResManager *>(host_context->device_res_manager_.get());
     ascend_res_manager->InitializeForGe();
   }
   // should be called after ge initialize.

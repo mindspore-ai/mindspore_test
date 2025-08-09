@@ -21,6 +21,8 @@
 #include "ir/tensor_new.h"
 #include "debug/checksum/checksum_kernel.h"
 #include "debug/checksum/checksum_mgr.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
@@ -50,10 +52,13 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
     return out_tensor;
   }
 
-  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  if (!res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H)) {
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                       device_tensor->device_id()};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  if (!host_context->device_res_manager_->CopyDirectly(out_tensor->data_c(), host_size, src, host_size,
+                                                       device::CopyType::kD2H)) {
     MS_LOG(EXCEPTION) << "Copy D2H failed";
   }
   return out_tensor;
@@ -70,8 +75,8 @@ void CheckSumViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
 
   // multi stream protect
   auto stream_id = AnfAlgo::GetStreamId(cnode);
-  auto &multi_stream_controller =
-    device::HalResManager::GetInstance().GetMultiStreamController(device_context->device_context_key().device_name_);
+  auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+    device_context->device_context_key().device_name_);
   if (stream_id != kDefaultStreamIndex) {
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -101,10 +106,11 @@ void CheckSumViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, stream_id);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, stream_id);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async check sum callback launch fail.";
   }

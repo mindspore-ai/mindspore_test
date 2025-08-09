@@ -19,7 +19,8 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "async/async.h"
 #include "utils/ms_context.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -56,11 +57,13 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
       MS_EXCEPTION_IF_NULL(ms_context);
       auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
       const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-      device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-      MS_EXCEPTION_IF_NULL(res_manager);
+      device::DeviceContextKey host_key = {device_name, device_id};
+      device::DeviceContext *host_context =
+        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+      MS_EXCEPTION_IF_NULL(host_context);
+      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
       // Allocate memory through the device context.
-      bool success = res_manager->AllocateMemory(device_tensor, kDefaultStreamIndex);
+      bool success = host_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
       if (!success) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
         return;
@@ -91,9 +94,10 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> 
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   for (size_t i = 0; i < (*alloc_list).size(); ++i) {
     auto &kernel_tensor = (*alloc_list)[i];
@@ -110,7 +114,7 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> 
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "BatchMemory", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         AddMemInfo, from_aid.Name(), memory::mem_pool::MemType::kBatchMemory, device_tensor->GetSize(), device_tensor);
-      if (!res_manager->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+      if (!host_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_tensor->GetSize(), op_context);
         return;
       }

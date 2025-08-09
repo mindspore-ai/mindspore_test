@@ -191,7 +191,7 @@ class EventPool {
 };
 using EventPoolPtr = std::shared_ptr<EventPool>;
 
-MultiStreamController::MultiStreamController(HalResBase *device_res_base) : device_res_base_(device_res_base) {
+MultiStreamController::MultiStreamController(DeviceResManager *device_res_base) : device_res_base_(device_res_base) {
   MS_EXCEPTION_IF_NULL(device_res_base_);
   task_id_on_stream_manager_ = std::make_shared<TaskIdOnStreamManager>();
 }

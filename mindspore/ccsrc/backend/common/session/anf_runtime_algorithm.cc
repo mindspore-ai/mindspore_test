@@ -1140,12 +1140,14 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
                                                         const std::string &format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto device_address =
-    res_manager->CreateDeviceAddress(device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id,
-                                     device_name, device_id, 0, user_data);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
+    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0,
+    user_data);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
@@ -1157,11 +1159,12 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
 KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  MS_EXCEPTION_IF_NULL(res_manager);
-  auto device_address = res_manager->CreateDeviceAddress(device_ptr, size, host_shape, format, dtype_id, device_name,
-                                                         device_id, 0, user_data);
+  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
+    device_ptr, size, host_shape, format, dtype_id, device_name, device_id, 0, user_data);
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape);
   return kernel_tensor;
 }
@@ -2851,10 +2854,14 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
   }
   if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
-    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
-    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-    MS_EXCEPTION_IF_NULL(res_manager);
-    res_manager->Copy(buf, device_address->GetMutablePtr(), size, device::CopyType::kD2H, device_address->stream_id());
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_address->GetDeviceType()),
+                                         device_address->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    host_context->device_res_manager_->Copy(buf, device_address->GetMutablePtr(), size, device::CopyType::kD2H,
+                                            device_address->stream_id());
   }
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;

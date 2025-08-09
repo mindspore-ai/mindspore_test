@@ -106,6 +106,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContext {
 };
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 class SwapManager;
+class MemoryManager;
 class CollectiveCommunicationLib;
 class OffloadedMemPool;
 using DeviceMemPtr = void *;
@@ -153,6 +154,35 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
+  virtual bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+  virtual bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                        size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+  virtual bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         bool keep_src) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+
+  // Interface for multi stream event control.
+  virtual bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                           const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                           const DeviceEventPtr &input_event) {
+    return false;
+  }
+
+  virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
+    return false;
+  }
+
+  virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id) { return false; }
+
+  virtual bool SyncAllEvents() { return false; }
+
+  virtual std::shared_ptr<AddressAllocator> GetPinMemAllocator() { return nullptr; }
+
   // Relevant function to allocate and free device memory of DeviceAddress.
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
   virtual void FreeMemory(DeviceAddress *const &address) const;
@@ -258,7 +288,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // "SyncAllStreams" interfaces are implemented by subclasses.
   virtual bool SyncStream(size_t stream_id) const { return true; }
 
-  virtual bool SyncAllStreams() const { return true; }
+  virtual bool SyncAllStreams(bool sync_device = true) const { return true; }
 
   virtual bool SyncNotDefaultStreams() const { return true; }
 
@@ -305,6 +335,8 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // Return collective communication object for caller to access
   virtual CollectiveCommunicationLib *collective_comm_lib() const = 0;
 
+  virtual std::shared_ptr<MemoryManager> mem_manager() const { return nullptr; }
+
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
   virtual std::shared_ptr<AddressAllocator> pin_mem_allocator() const { return nullptr; }
@@ -331,6 +363,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
   virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
   virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; };
+  virtual bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const {
+    callback_func();
+    return true;
+  }
 
  protected:
   // The collective communication library.
