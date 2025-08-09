@@ -182,7 +182,8 @@ void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
 }
 
 void CalculateParameterUsedTimes(const std::map<std::pair<size_t, size_t>, size_t> &parameter_used_times) {
-  if (!EnableInputOptimize() || !EnableParallelDispatchKernel()) {
+  auto enable_graph_capture = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
+  if (!EnableInputOptimize() || (!EnableParallelDispatchKernel() && !enable_graph_capture)) {
     return;
   }
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
@@ -190,6 +191,11 @@ void CalculateParameterUsedTimes(const std::map<std::pair<size_t, size_t>, size_
     auto outer_index = used_times_iter.first.first;
     auto inner_index = used_times_iter.first.second;
     auto times = used_times_iter.second;
+    // After enabling the capture graph feature, the value here is 2, which can force the locked process to be used
+    // during fetch parameter, ensuring no conflicts occur in concurrent calls.
+    if (enable_graph_capture) {
+      times = kIndex2;
+    }
     // If the parameter only used in this graph, but used by multiple actors when parallel dispatch.
     // Correct the parameter use times.
     // If not parallel dispatch and only used in this graph, there is no concurrently used.
@@ -763,11 +769,11 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
     auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id,
                                         enable_parallel_dispatch_);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
       << ", kernel tensor info: " << kernel_tensor->ToString()
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
-    kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
+    kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
     if (is_first_user) {
       if (ActorDispatcher::enable_use_trace_memory()) {
         if (kernel_actor->input_kernel_tensors_[kernel_input_index]->new_ref_count() != SIZE_MAX) {
@@ -780,8 +786,8 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
       }
     }
 
-    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[parameter_index.first],
-                                        parameter_index.first, context, enable_infer_boost_);
+    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
+                                        context, enable_infer_boost_);
   }
 }
 
