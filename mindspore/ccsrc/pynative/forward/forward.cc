@@ -46,6 +46,7 @@ using mindspore::profiler::ProfilerManager;
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
+#include "pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -345,6 +346,8 @@ tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor) {
   GilReleaseWithCheck release_gil;
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
   const auto &contiguous_tensor = contiguous_op->Call(tensor);
+  // Need to wait contiguous finish in heterogeneous scenarios.
+  runtime::Pipeline::Get().WaitForward();
   return contiguous_tensor;
 }
 
@@ -601,6 +604,7 @@ ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_
     auto cur_op_stub_output = (i + 1 == slice_op_infos.size() ? stub_output : nullptr);
     auto op_run_info =
       GenerateSliceOpRunInfo(slice_op_info->slice_op_name, requires_grad, cur_op_stub_output, stream_id);
+    kernel::pyboost::OpRunStatus::Get().HeterBarrier(op_run_info->base_op_run_info.device_target);
     if (slice_op_info->slice_op_name == kCastOpName) {
       // slice_index_inputs of Cast op is type
       MS_EXCEPTION_IF_CHECK_FAIL(slice_op_info->slice_index_inputs.size() == 1, "Size of cast type input should be 1");
@@ -632,6 +636,7 @@ ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_
 void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_LOG(DEBUG) << "RunOp name: " << op_run_info->base_op_run_info.op_name;
+  kernel::pyboost::OpRunStatus::Get().HeterBarrier(op_run_info->base_op_run_info.device_target);
 #ifndef ENABLE_TEST
   auto strides_calc_info =
     ops::ViewStridesCalcFactory::GetInstance().GetStridesCalcFunc(op_run_info->base_op_run_info.op_name);
