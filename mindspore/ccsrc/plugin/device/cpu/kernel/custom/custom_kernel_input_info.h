@@ -28,11 +28,14 @@ class CustomKernelData {
   virtual ~CustomKernelData() = default;
 };
 
+// KernelInputInfo is an interface class.
+// There is also a copy of the same code in the ms_op_plugin repository.
+// Both sides should be consistent and neither side's code should be modified separately.
 class KernelInputInfo {
  public:
   KernelInputInfo() = default;
   virtual ~KernelInputInfo() = default;
-  virtual bool IsScalarKernelInput(size_t idx) = 0;
+  virtual bool IsScalarInput(size_t idx) = 0;
 
   template <typename T>
   inline T GetKernelInput(size_t) const {
@@ -51,7 +54,6 @@ class KernelInputInfo {
   }
   virtual size_t GetInputSize() = 0;
 
- private:
   virtual bool GetBoolInput(size_t idx) = 0;
   virtual int64_t GetIntInput(size_t idx) = 0;
   virtual float GetFloatInput(size_t idx) = 0;
@@ -64,6 +66,7 @@ class KernelInputInfo {
   virtual int GetInputTypeId(size_t idx) = 0;
   std::vector<size_t> workspace_;
 
+ private:
   CustomKernelData *kernel_data_{nullptr};
 };
 
@@ -73,9 +76,8 @@ class KernelInputInfoImpl : public KernelInputInfo {
   virtual ~KernelInputInfoImpl() = default;
   void SetKernelInput(const std::vector<kernel::KernelTensor *> &inputs) { inputs_ = inputs; }
   size_t GetInputSize() { return inputs_.size(); }
-  bool IsScalarKernelInput(size_t idx) final { return inputs_[idx]->type_id() != TypeId::kObjectTypeTensorType; }
+  bool IsScalarInput(size_t idx) final { return inputs_[idx]->type_id() != TypeId::kObjectTypeTensorType; }
 
- private:
   bool GetBoolInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<bool>(); }
 
   int64_t GetIntInput(size_t idx) { return inputs_[idx]->GetValueWithCheck<int64_t>(); }
@@ -98,6 +100,7 @@ class KernelInputInfoImpl : public KernelInputInfo {
 
   int GetInputTypeId(size_t idx) { return static_cast<int>(inputs_[idx]->dtype_id()); }
 
+ private:
   std::vector<kernel::KernelTensor *> inputs_;
 };
 }  // namespace mindspore
