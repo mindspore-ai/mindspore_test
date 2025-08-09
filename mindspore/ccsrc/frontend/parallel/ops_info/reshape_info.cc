@@ -483,6 +483,26 @@ Status ReshapeInfo::ComputeReplaceOp() {
     replace_op_ = redistribution_oplist_ptr->first;
     replace_op_info_ = redistribution_oplist_ptr->second;
   }
+
+  if (!replace_op_.empty() && replace_op_.front().first != RESHAPE) {
+    // In the Reshape->Reshape scenario, the shapes of in_shape and in_layout may be different, causing problems with
+    // rearrangement. If in_shape != in_layout.shape, need insert reshape op at the beginning of redistribute op list.
+    auto in_shape = inputs_shape_.at(kIndex0);
+    auto in_layout_shape = input_layout_.tensor_shape_origin().array();
+    if (in_shape != in_layout_shape) {
+      auto in_layout_slice_shape = input_layout_.slice_shape().array();
+      ValuePtr param_value = MakeValue(in_layout_slice_shape);
+      Attr param = std::make_pair(SHAPE, param_value);
+      OperatorParams params = {std::make_pair(param, 2)};
+      OperatorAttrs attrs;
+      OperatorArgs args = std::make_pair(attrs, params);
+      replace_op_.insert(replace_op_.begin(), std::make_pair(RESHAPE, args));
+      replace_op_info_.insert(replace_op_info_.begin(), std::pair<bool, uint64_t>{false, 0});
+      MS_LOG(DEBUG) << name_ << "Input shape(" << in_shape << ") is not equal to in_layout_shape(" << in_layout_shape
+                    << "). Insert reshape op at the beginning of transform operator list.";
+    }
+  }
+
   MS_LOG(DEBUG) << name_ << ": replace op size = " << replace_op_.size();
   if (replace_op_.size() == 1 && replace_op_.front().first == RESHAPE) {
     ChangeDstShape();
