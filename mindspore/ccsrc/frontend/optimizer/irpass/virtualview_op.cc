@@ -149,12 +149,17 @@ AnfNodePtr VirtualViewInsertProcesser::CreateVirtualViewNode(const AnfNodePtr &v
   AnfNodePtrList new_inputs(inputs.begin(), inputs.end() - 1);
   auto &input = new_inputs[1];
   input = ReplaceWithParameter(input);
-  new_inputs.push_back(*last_umonad);
+  if (last_umonad != nullptr) {
+    new_inputs.push_back(*last_umonad);
+  }
 
   auto virtual_view_node = func_graph_->NewCNodeInOrder(new_inputs);
   virtual_view_node->set_abstract(view_node->abstract());
   virtual_view_node->AddAttr(kIsVirtualViewOp, MakeValue(true));
   virtual_view_node->set_user_data<AnfNode>(kIsVirtualViewOp, view_output);
+  if (last_umonad == nullptr) {
+    return virtual_view_node;
+  }
 
   auto new_umonad =
     func_graph_->NewCNodeInOrder({NewValueNode(prim::kPrimUpdateState), *last_umonad, virtual_view_node});
@@ -189,8 +194,18 @@ void VirtualViewInsertProcesser::VirtualViewInsertAction(const CNodePtr &cnode, 
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(view_node);
 
-  AnfNodePtr umonad = cnode->inputs().back();
-  (void)CheckUMonad(umonad);
+  const auto &cnode_inputs = cnode->inputs();
+  AnfNodePtr umonad = cnode_inputs.back();
+  if (!HasAbstractUMonad(umonad)) {
+    constexpr size_t min_size = 2;
+    size_t possible_umonad_index = cnode_inputs.size() - min_size;
+    if (possible_umonad_index > 0 && HasAbstractUMonad(cnode_inputs[possible_umonad_index])) {
+      umonad = cnode_inputs[possible_umonad_index];
+    } else {
+      MS_LOG(DEBUG) << "Insert virtual view op for a cnode without umonad: " << cnode->DebugString();
+      umonad = nullptr;
+    }
+  }
 
   auto view_chain_it = view_chains_.find(view_node);
   if (view_chain_it == view_chains_.end()) {
@@ -202,13 +217,22 @@ void VirtualViewInsertProcesser::VirtualViewInsertAction(const CNodePtr &cnode, 
   AnfNodePtr last_umonad = umonad;
 
   for (auto view_output : view_chain_it->second) {
-    auto virtual_view_node = CreateVirtualViewNode(view_output, &last_umonad);
+    AnfNodePtr virtual_view_node;
+    if (last_umonad != nullptr) {
+      virtual_view_node = CreateVirtualViewNode(view_output, &last_umonad);
+    } else {
+      virtual_view_node = CreateVirtualViewNode(view_output, nullptr);
+    }
     if (first_virtual_view_node == nullptr) {
       first_virtual_view_node = virtual_view_node;
       first_new_umonad = last_umonad;
     }
 
     ResetViewModificationStatus(view_output);
+  }
+
+  if (umonad == nullptr) {
+    return;
   }
 
   // SetEdge for original umonad users to last_umonad
@@ -298,32 +322,14 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
   std::unordered_map<AnfNodePtr, AnfNodePtr> virtual_view_input;
   auto manager = func_graph_->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  for (auto node : TopoSort(func_graph_->return_node())) {
+  auto output_node = func_graph_->output();
+  for (auto node : TopoSort(output_node)) {
     if (!irpass::IsCNode(node) || node->func_graph() != func_graph_) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
 
-    for (size_t i = 1; i < cnode->size(); i++) {
-      auto original_input = cnode->input(i);
-      if (virtual_view_input.count(original_input) == 0) {
-        continue;
-      }
-      // Find the final virtual view cnode to replace
-      // For example:
-      // %1 = View(%0)
-      // %2 = VirtualView(%1)
-      // ...
-      // %3 = VirtualView(%1)
-      // %4 Depend(%1, U)==> %4 = Depend(%3, U)
-      AnfNodePtr repalced_node = virtual_view_input[original_input];
-      while (virtual_view_input.count(repalced_node) != 0) {
-        repalced_node = virtual_view_input[repalced_node];
-      }
-      MS_LOG(INFO) << "Replace cnode : " << cnode->DebugString() << " input from: " << original_input->DebugString()
-                   << " to: " << repalced_node->DebugString() << " for VirtualView ops replacement.";
-      manager->SetEdge(cnode, i, repalced_node);
-    }
+    ReplaceInplaceNodeForCNode(cnode, virtual_view_input, manager, func_graph_);
 
     if (cnode->HasAttr(kIsVirtualViewOp)) {
       auto view_op = cnode->user_data<AnfNode>(kIsVirtualViewOp);
@@ -348,13 +354,30 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
       // ...
       // %3 = VirtualView(%1)
       // {%1: %2, %2: %3}
-      auto *replaced_node = &entry;
-      while (virtual_view_input.count(*replaced_node)) {
-        replaced_node = &virtual_view_input[*replaced_node];
+      AnfNodePtr replaced_node = entry;
+      auto it = virtual_view_input.find(replaced_node);
+      while (it != virtual_view_input.end()) {
+        replaced_node = it->second;
+        it = virtual_view_input.find(replaced_node);
       }
-      virtual_view_input[*replaced_node] = cnode;
+      virtual_view_input[replaced_node] = cnode;
       MS_LOG(INFO) << "Record cnode as virtual view node: " << cnode->DebugString();
     }
+  }
+  // Reprocess return node separately, avoid leaving any isolated nodes unreplaced
+  if (!IsPrimitiveCNode(output_node, prim::kPrimDepend)) {
+    return;
+  }
+  AnfNodePtr real_output = output_node;
+  while (IsPrimitiveCNode(real_output, prim::kPrimDepend)) {
+    real_output = real_output->cast<CNodePtr>()->input(kIndex1);
+  }
+  // real_output = {prim::kPrimMakeTuple, inplace_input, ...}
+  // Isolated inplace nodes
+  // Return {prim::kPrimDepend, real_output, ...}
+  auto real_output_cnode = real_output->cast<CNodePtr>();
+  if (real_output_cnode != nullptr && !IsMonad(real_output_cnode->inputs().back())) {
+    ReplaceInplaceNodeForCNode(real_output_cnode, virtual_view_input, manager, func_graph_);
   }
 }
 

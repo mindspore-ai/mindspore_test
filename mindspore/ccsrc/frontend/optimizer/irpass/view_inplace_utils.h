@@ -19,8 +19,10 @@
 
 #include <utility>
 #include <string>
+#include <unordered_map>
 
 #include "ir/anf.h"
+#include "mindspore/core/include/ir/manager.h"
 
 namespace mindspore {
 namespace opt {
@@ -43,6 +45,9 @@ bool IsViewNode(const AnfNodePtr &node);
 bool IsVirtualViewCNode(const AnfNodePtr &node);
 AnfNodePtr CheckUMonad(const AnfNodePtr &node);
 std::string GetRefKey(const AnfNodePtr &node);
+void ReplaceInplaceNodeForCNode(const CNodePtr &cnode, const std::unordered_map<AnfNodePtr, AnfNodePtr> &inplace_input,
+                                const FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph,
+                                bool need_ignore_fv = false);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

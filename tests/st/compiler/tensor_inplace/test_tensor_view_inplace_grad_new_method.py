@@ -663,17 +663,6 @@ def test_muti_output_view_inplace_grad():
             "outputs.") in str(err.value)
 
 
-def func(x):
-    x = ops.abs(x)
-    view_obj1 = BroadcastToView()(x, (1, 4, 2))
-    view_obj2 = ExpandDimsView()(view_obj1, 0)
-    if x[0][0] > 0:
-        view_obj2.mul_(2)
-    else:
-        view_obj2.mul_(3)
-    return view_obj2, x
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_view_and_inplace_fallback_pyinterpret():
     """
@@ -682,6 +671,15 @@ def test_view_and_inplace_fallback_pyinterpret():
     Description: view inplace operation in grad.
     Expectation: no exception
     """
+    def func(x):
+        x = ops.abs(x)
+        view_obj1 = BroadcastToView()(x, (1, 4, 2))
+        view_obj2 = ExpandDimsView()(view_obj1, 0)
+        if x[0][0] > 0:
+            view_obj2.mul_(2)
+        else:
+            view_obj2.mul_(3)
+        return view_obj2, x
 
     def func_pyinterpret(x):
         x = TransposeView()(Tensor(np.ones([2, 4]).astype(np.float32)), (1, 0))
@@ -699,3 +697,85 @@ def test_view_and_inplace_fallback_pyinterpret():
     out_back_jit = grad(func18_jit)(input_x)
     assert np.allclose(out_forword_expect.asnumpy(), out_forword_jit.asnumpy())
     assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_with_tuple_output_case2():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.narrowview = NarrowView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj = self.narrowview(x, 1, 0, 4)
+            x.add_(y)
+            view_obj.add_(y)
+            return view_obj, x
+
+    x_np = np.ones([2, 4]).astype(np.float32)
+    input_x = Tensor(x_np)
+    y_np = 2 * np.ones([2, 4]).astype(np.float32)
+    input_y = Tensor(y_np)
+    net = Net()
+    out_back_expect = grad(net, grad_position=(0, 1))(input_x, input_y)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_back_jit = grad(net, grad_position=(0, 1))(input_x, input_y)
+    assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())
+    assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_view_inplace_grad_with_tuple_output_case3():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.expanddimsview = ExpandDimsView()
+            self.unstackview = UnstackExtView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj1 = self.expanddimsview(x, 1)
+            view_obj2 = self.expanddimsview(y, 1)
+            for _ in range(10):
+                if ops.ReduceSum()(y) < ops.ReduceSum()(x) * 2:
+                    y.div_(2)
+                else:
+                    y.add_(2)
+            if ops.ReduceSum()(x) < 50:
+                if ops.ReduceSum()(x) > 40:
+                    view_obj2.add_(view_obj1)
+                    print("Add print op in branch 1")
+                else:
+                    print("Add print op in branch 2")
+                    view_obj2.add_(view_obj1)
+            else:
+                print("Add print op in branch 3")
+                view_obj2.sub_(view_obj1)
+            view_obj1.mul_(y[0])
+            return view_obj1, view_obj2
+
+    x_np = np.ones([4, 8]).astype(np.float32)
+    input_x = Tensor(x_np)
+
+    y_np = 2 * np.ones([4, 8]).astype(np.float32)
+    input_y = Tensor(y_np)
+
+    net = Net()
+    out_back_expect = grad(net, grad_position=(0, 1))(input_x, input_y)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_back_jit = grad(net, grad_position=(0, 1))(input_x, input_y)
+    assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())
+    assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
