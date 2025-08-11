@@ -19,7 +19,7 @@
 #include <utility>
 #include <string>
 #include "ops/base_operator.h"
-#include "kernel/ascend/opapi/aclnn_kernel_mod.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {

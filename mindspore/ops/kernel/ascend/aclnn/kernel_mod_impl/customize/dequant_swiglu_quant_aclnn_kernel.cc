@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/opapi/aclnn/dequant_swiglu_quant_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/dequant_swiglu_quant_aclnn_kernel.h"
 #include <vector>
 #include <string>
 #include "ir/tensor.h"

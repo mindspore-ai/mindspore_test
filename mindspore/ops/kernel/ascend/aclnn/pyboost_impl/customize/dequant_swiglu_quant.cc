@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/dequant_swiglu_quant.h"
+#include "kernel/ascend/aclnn/pyboost_impl/customize/dequant_swiglu_quant.h"
 #include <memory>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "pyboost/op_register.h"
 #include "pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
