@@ -21,6 +21,9 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
+constexpr auto kOutputSameWithParamIndex = "output_same_with_param_index";
+constexpr auto kIsCheckOutputSameWithParamIndex = "is_check_output_same_with_param_index";
+
 bool IsViewOutput(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abs = node->abstract();
@@ -133,6 +136,102 @@ void ReplaceInplaceNodeForCNode(const CNodePtr &cnode, const std::unordered_map<
                  << " to: " << replaced_node->DebugString() << " for inplace ops replacement.";
     manager->SetEdge(cnode, i, replaced_node);
   }
+}
+
+std::vector<bool> GetInplaceChangedParamIndex(const FuncGraphPtr &fg) {
+  // CallNode: {fg, param1, param2, param3}
+  // Return whether each param is changed by inplace op in this funcgraph
+  std::unordered_map<std::string, size_t> params_map;
+  const auto &params = fg->parameters();
+  std::vector<bool> inplace_modified_param(params.size(), false);
+  for (size_t i = 0; i < params.size(); ++i) {
+    auto ref_key = GetRefKey(params[i]);
+    if (!ref_key.empty()) {
+      params_map[ref_key] = i;
+    }
+  }
+  for (auto node : TopoSort(fg->get_return())) {
+    if (!IsCNode(node)) {
+      continue;
+    }
+    if (IsInplaceNode(node)) {
+      auto iter = params_map.find(GetRefKey(node));
+      if (iter != params_map.end()) {
+        inplace_modified_param[iter->second] = true;
+      }
+    }
+    // Sub func and view_output of param changed need to be checked later
+  }
+  return inplace_modified_param;
+}
+
+int IsFuncOutputSameWithParamNode(const FuncGraphPtr &fg) {
+  // Is being checked, return directly to avoid loop
+  if (fg == nullptr || fg->has_attr(kIsCheckOutputSameWithParamIndex)) {
+    return -1;
+  }
+  if (fg->has_attr(kOutputSameWithParamIndex)) {
+    return GetValue<int>(fg->get_attr(kOutputSameWithParamIndex));
+  }
+  fg->set_flag(kIsCheckOutputSameWithParamIndex, true);
+  const auto &params = fg->parameters();
+  // Scene1 [Unsupported]:
+  // If output of func is maketuple
+  // %1 = func(param1, param2) [return maketuple(param1, param2)]
+  // %2 = TupleGetItem(%1, 0) ==> %2 equal to param1
+  // Scene2 [This func supported]:
+  // If output of func is normal tensor, same as param1
+  // %1 = func(param1, param2) [return param1]
+  // %2 = Op(param1, param2)
+  // ==> Same as: %2 = Op(%1, param2)
+  auto current_node = fg->output();
+  while (!current_node->isa<Parameter>()) {
+    if (!IsCNode(current_node)) {
+      break;
+    }
+    auto cnode = current_node->cast<CNodePtr>();
+    const auto &prim = GetCNodePrimitive(cnode);
+    if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
+      current_node = cnode->input(kIndex1);
+    } else if (IsInplaceNode(current_node)) {
+      const auto &indexes = prim->inplace_input_indexes();
+      if (indexes.size() != 1) {
+        break;
+      }
+      current_node = cnode->input(indexes[0] + 1);
+    } else {
+      if (IsPrimitiveCNode(cnode->input(kIndex0), prim::kPrimSwitch)) {
+        auto switch_cnode = cnode->input(kIndex0)->cast<CNodePtr>();
+        auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
+        auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
+        auto true_index = IsFuncOutputSameWithParamNode(true_fg);
+        if (true_index == -1) {
+          break;
+        }
+        auto false_index = IsFuncOutputSameWithParamNode(false_fg);
+        if (true_index != false_index) {
+          break;
+        }
+        current_node = cnode->input(true_index + 1);
+      } else if (auto fg = GetValueNode<FuncGraphPtr>(cnode->input(kIndex0)); fg != nullptr) {
+        auto index = IsFuncOutputSameWithParamNode(fg);
+        if (index == -1) {
+          break;
+        }
+        current_node = cnode->input(index + 1);
+      } else {
+        break;
+      }
+    }
+  }
+  auto it = std::find(params.begin(), params.end(), current_node);
+  auto index = -1;
+  if (it != params.end()) {
+    index = static_cast<int>(std::distance(params.begin(), it));
+  }
+  fg->erase_flag(kIsCheckOutputSameWithParamIndex);
+  fg->set_attr(kOutputSameWithParamIndex, MakeValue(index));
+  return index;
 }
 
 }  // namespace irpass

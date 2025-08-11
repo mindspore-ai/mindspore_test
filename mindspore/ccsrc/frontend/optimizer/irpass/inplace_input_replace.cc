@@ -102,10 +102,28 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
 
     // Record nodes need to be replaced later
     const auto &prim = GetCNodePrimitive(cnode);
+    const auto &inputs = cnode->inputs();
     if (prim == nullptr) {
-      continue;
-    }
-    if (prim->inplace_prim()) {
+      if (IsPrimitiveCNode(inputs[kIndex0], prim::kPrimSwitch)) {
+        auto switch_cnode = inputs[kIndex0]->cast<CNodePtr>();
+        auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
+        auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
+        auto true_index = IsFuncOutputSameWithParamNode(true_fg);
+        if (true_index != -1) {
+          auto false_index = IsFuncOutputSameWithParamNode(false_fg);
+          if (true_index == false_index) {
+            inplace_input[cnode->input(true_index + 1)] = cnode;
+            MS_LOG(INFO) << "Record inplace switch call cnode as inplace node: " << cnode->DebugString();
+          }
+        }
+      } else {
+        auto fg = GetValueNode<FuncGraphPtr>(inputs[kIndex0]);
+        if (auto index = IsFuncOutputSameWithParamNode(fg); index != -1) {
+          inplace_input[cnode->input(index + 1)] = cnode;
+          MS_LOG(INFO) << "Record inplace call cnode as inplace node: " << cnode->DebugString();
+        }
+      }
+    } else if (prim->inplace_prim()) {
       const auto &indexes = prim->inplace_input_indexes();
       if (indexes.size() != 1) {
         continue;

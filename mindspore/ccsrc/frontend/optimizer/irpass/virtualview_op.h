@@ -54,6 +54,7 @@ class VirtualViewInsertProcesser {
   void UpdateViewModificationStatus(const AnfNodePtr &input_node);
   void ProcessViewNode(const CNodePtr &cnode);
   void ProcessInplaceNode(const CNodePtr &cnode);
+  void CheckAndProcessInplaceFuncCallNode(const CNodePtr &node);
   void CheckAndInsertVirtualViewOp(const CNodePtr &cnode);
   void ChangeVirtualViewInputInner();
   void DoVirtualViewInputReplace();

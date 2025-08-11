@@ -779,3 +779,36 @@ def test_tensor_view_inplace_grad_with_tuple_output_case3():
     out_back_jit = grad(net, grad_position=(0, 1))(input_x, input_y)
     assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())
     assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_and_inplace_with_inplace_func_call():
+    """
+    Feature: view inplace operation in grad.
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj1 = x[Tensor(1)]
+            view_obj2 = y[0:2]
+            for _ in range(2):
+                if ops.ReduceSum()(x) < ops.ReduceSum()(y) * 2:
+                    y[...] = ops.add(y, x)
+            view_obj2[1, 0:2] = ops.mul(x[0, 0:2], view_obj1[0:2])
+            return view_obj1, view_obj2
+
+    try:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+        x_np = np.ones([4, 8]).astype(np.float32)
+        y_np = 2 * np.ones([4, 8]).astype(np.float32)
+        net = Net()
+        out_back_expect = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
+        net.construct = ms.jit(net.construct, backend="ms_backend")
+        out_back_jit = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
+        assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())
+        assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
+    finally:
+        del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]

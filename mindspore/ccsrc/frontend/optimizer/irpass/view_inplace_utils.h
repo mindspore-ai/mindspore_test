@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIEW_INPLACE_OP_UTILS_H_
 
 #include <utility>
+#include <vector>
 #include <string>
 #include <unordered_map>
 
@@ -48,6 +49,8 @@ std::string GetRefKey(const AnfNodePtr &node);
 void ReplaceInplaceNodeForCNode(const CNodePtr &cnode, const std::unordered_map<AnfNodePtr, AnfNodePtr> &inplace_input,
                                 const FuncGraphManagerPtr &manager, const FuncGraphPtr &func_graph,
                                 bool need_ignore_fv = false);
+std::vector<bool> GetInplaceChangedParamIndex(const FuncGraphPtr &fg);
+int IsFuncOutputSameWithParamNode(const FuncGraphPtr &fg);
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

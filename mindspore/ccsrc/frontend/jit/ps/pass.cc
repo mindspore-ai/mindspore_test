@@ -1048,8 +1048,8 @@ OptPassGroupMap GetViewInplaceProcessMap(opt::irpass::ViewInplacePassType type) 
   } else if (type == opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove) {
     OptPassGroupMap view_inplace_map(
       {{"virtual_view_insert", opt::OptPassConfig(opt::irpass::VirtualViewInsert)},
-       {"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
        {"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)},
+       {"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
        {"remove_redundant_virtual_ops", opt::OptPassConfig(opt::irpass::RemoveRedundantVirtualOps)},
        {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())}});
     return view_inplace_map;

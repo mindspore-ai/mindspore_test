@@ -16,6 +16,7 @@
 
 #include "frontend/optimizer/irpass/virtualview_op.h"
 
+#include <vector>
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 
@@ -40,6 +41,8 @@ void VirtualViewInsertProcesser::Run() {
       ProcessViewNode(cnode);
     } else if (IsInplaceNode(cnode)) {
       ProcessInplaceNode(cnode);
+    } else {
+      CheckAndProcessInplaceFuncCallNode(cnode);
     }
   }
 
@@ -253,6 +256,8 @@ void VirtualViewInsertProcesser::UpdateViewModificationStatus(const AnfNodePtr &
   // view_dependencies: {m: y, n: y, ...}
   // view_modifications: {y: {m: false, n: false, ...}, ...}
   // Update view_modifications: {y: {m: true, n: true, ...}, ...} if y or one of y viewed node changed
+  MS_EXCEPTION_IF_NULL(input_node);
+  MS_LOG(INFO) << "Update view maps by this inplace node: " << input_node->DebugString();
   auto mod_it = view_modifications_.find(input_node);
   if (mod_it == view_modifications_.end()) {
     // input_node is y viewed node like m, n
@@ -266,6 +271,7 @@ void VirtualViewInsertProcesser::UpdateViewModificationStatus(const AnfNodePtr &
     }
   }
   auto &view_status_map = mod_it->second;
+  MS_LOG(INFO) << "Update view maps from this root inplace node: " << mod_it->first->DebugString();
   for (auto &view_status : view_status_map) {
     view_status.second = true;
   }
@@ -292,6 +298,35 @@ void VirtualViewInsertProcesser::ProcessInplaceNode(const CNodePtr &cnode) {
   for (size_t index = 0; index < inplace_indexes.size(); ++index) {
     auto input_node = cnode->input(inplace_indexes[index] + 1);
     UpdateViewModificationStatus(input_node);
+  }
+}
+
+void VirtualViewInsertProcesser::CheckAndProcessInplaceFuncCallNode(const CNodePtr &node) {
+  const auto &inputs = node->cast<CNodePtr>()->inputs();
+  // Get CallNode and its args: {Inplace_func, input_args}
+  std::vector<std::pair<FuncGraphPtr, AnfNodePtrList>> call_nodes_vector;
+  if (auto fg = GetValueNode<FuncGraphPtr>(inputs[0]); fg != nullptr) {
+    (void)call_nodes_vector.emplace_back(fg, AnfNodePtrList{inputs.begin() + 1, inputs.end()});
+  } else if (IsPrimitiveCNode(inputs[kIndex0], prim::kPrimSwitch)) {
+    auto switch_cnode = inputs[kIndex0]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(switch_cnode);
+    const auto &switch_cnode_inputs = switch_cnode->inputs();
+    auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode_inputs[kIndex2]);
+    MS_EXCEPTION_IF_NULL(true_fg);
+    auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode_inputs[kIndex3]);
+    MS_EXCEPTION_IF_NULL(false_fg);
+    (void)call_nodes_vector.emplace_back(true_fg, AnfNodePtrList{inputs.begin() + 1, inputs.end()});
+    (void)call_nodes_vector.emplace_back(false_fg, AnfNodePtrList{inputs.begin() + 1, inputs.end()});
+  }
+
+  // If funcgraph change input_args by inplace ops, update viewmaps
+  for (auto &item : call_nodes_vector) {
+    auto indexes = GetInplaceChangedParamIndex(item.first);
+    for (size_t i = 0; i < indexes.size(); ++i) {
+      if (indexes[i]) {
+        UpdateViewModificationStatus(item.second[i]);
+      }
+    }
   }
 }
 

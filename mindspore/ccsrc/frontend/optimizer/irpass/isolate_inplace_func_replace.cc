@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/core/include/utils/trace_base.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
 
 namespace mindspore {
 namespace opt {
@@ -381,7 +382,11 @@ bool IsolateInplaceFuncReplace(const FuncGraphPtr &func_graph, const OptimizerPt
   auto manager = optimizer->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto func_processor = std::make_shared<IsolatedInplaceFuncGraphProcesser>(func_graph, manager);
-  return func_processor->Process();
+  auto need_process = func_processor->Process();
+  if (need_process) {
+    (void)DoInplaceInputReplace(func_graph, optimizer);
+  }
+  return need_process;
 }
 }  // namespace irpass
 }  // namespace opt
