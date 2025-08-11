@@ -37,6 +37,7 @@
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
+#include "include/common/utils/tensor_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -723,20 +724,21 @@ LoopConditionInfo TraceLoopConditionInfo(const CNodePtr &start_node, const CNode
   auto counter = GetNodeInput<Parameter>(cond_node, kOneNum);
   auto end_tensor = GetNodeInputValue<tensor::Tensor>(cond_node, kTwoNum);
   MS_EXCEPTION_IF_CHECK_FAIL(end_tensor->shape_c().empty(), "Expected a scalar tensor");
-  auto end = *reinterpret_cast<const int32_t *>(end_tensor->data_c());
+
+  auto end = tensor::GetTensorData<int32_t>(end_tensor);
 
   const auto &subgraph_args = control_subgraph->parameters();
   auto counter_input_pos = std::find(subgraph_args.begin(), subgraph_args.end(), counter) - subgraph_args.begin();
 
   auto begin_tensor = GetNodeInputValue<tensor::Tensor>(start_node, 1UL + static_cast<size_t>(counter_input_pos));
   MS_EXCEPTION_IF_CHECK_FAIL(begin_tensor->shape_c().empty(), "Expected a scalar tensor");
-  auto begin = *reinterpret_cast<const int32_t *>(begin_tensor->data_c());
+  auto begin = tensor::GetTensorData<int32_t>(begin_tensor);
 
   auto increment_node = GetNodeInput<CNode>(loop_repeat_node, 1UL + static_cast<size_t>(counter_input_pos));
   MS_EXCEPTION_IF_CHECK_FAIL(increment_node->IsApply(prim::kPrimAdd), "Expected Add node");
   auto step_tensor = GetNodeInputValue<tensor::Tensor>(increment_node, kTwoNum);
   MS_EXCEPTION_IF_CHECK_FAIL(step_tensor->shape_c().empty(), "Expected a scalar tensor");
-  auto step = *reinterpret_cast<const int32_t *>(step_tensor->data_c());
+  auto step = tensor::GetTensorData<int32_t>(step_tensor);
 
   return LoopConditionInfo{begin, end, step};
 }
@@ -6321,7 +6323,7 @@ void OnnxExporter::SetTensorData(const ValuePtr &value, onnx::TensorProto *tenso
     tensor_proto->set_data_type(onnx::TensorProto_DataType_INT64);
     tensor_proto->add_int64_data(attr_value);
   } else if (value->isa<tensor::Tensor>()) {
-    auto data = dyn_cast<tensor::Tensor>(value);
+    auto data = dyn_cast<tensor::Tensor>(value)->cpu();
     tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
     auto dtype = data->data_type();
     auto shape = data->shape_c();
