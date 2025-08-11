@@ -62,6 +62,7 @@ from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._register_for_recompute import recompute_registry
 from mindspore.common.jit_config import JitConfig
 
+
 _global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
 _EXTRA_STATE_KEY_SUFFIX = "_extra_state"
 
@@ -247,6 +248,8 @@ class Cell(Cell_):
         super().__setattr__("has_bprop", False)
         if hasattr(self, "bprop"):
             super().__setattr__("has_bprop", True)
+        super().__setattr__("in_layout", None)
+        super().__setattr__("out_layout", None)
 
     def __getstate__(self):
         base = Cell_.__getstate__(self)
@@ -1287,26 +1290,28 @@ class Cell(Cell_):
         """
         if ms.communication.management.get_group_size() == 1:
             return
+        if context._get_mode() == context.GRAPH_MODE:
+            shard_fn = Shard()
+            self._shard_fn = shard_fn(self, in_strategy, out_strategy, parameter_plan)
 
-        shard_fn = Shard()
-        self._shard_fn = shard_fn(self, in_strategy, out_strategy, parameter_plan)
-
-        if self._in_strategy is not None:  # pylint: disable=E0203
-            msg = (
-                "For '%s', 'Shard' has been configured more than once. "
-                "The existing in_strategy is %s and the existing out_strategy is %s. "
-                "The new in_strategy %s and out_strategy %s may not take effect. "
-                "It is recommended to configure 'Shard' only once."
-            ) % (
-                self._cell_tag,
-                self._in_strategy,  # pylint: disable=E0203
-                self._out_strategy,  # pylint: disable=E0203
-                shard_fn.in_strategy,
-                shard_fn.out_strategy,
-            )
-            logger.warning(msg)
-        self._in_strategy = shard_fn.in_strategy
-        self._out_strategy = shard_fn.out_strategy
+            if self._in_strategy is not None:  # pylint: disable=E0203
+                msg = (
+                    "For '%s', 'Shard' has been configured more than once. "
+                    "The existing in_strategy is %s and the existing out_strategy is %s. "
+                    "The new in_strategy %s and out_strategy %s may not take effect. "
+                    "It is recommended to configure 'Shard' only once."
+                ) % (
+                    self._cell_tag,
+                    self._in_strategy,  # pylint: disable=E0203
+                    self._out_strategy,  # pylint: disable=E0203
+                    shard_fn.in_strategy,
+                    shard_fn.out_strategy,
+                )
+                logger.warning(msg)
+            self._in_strategy = shard_fn.in_strategy
+            self._out_strategy = shard_fn.out_strategy
+        self.in_layout = in_strategy
+        self.out_layout = out_strategy
 
     def _init_check(self):
         for param in self.get_parameters(expand=False):
@@ -1339,6 +1344,42 @@ class Cell(Cell_):
             return True, res
         return False, None
 
+    def _parallel_in_args(self, *args):
+        """_parallel_in_args"""
+        # redistribution for inputs
+        # 1. layout -> (dev_matrix, tensor_map, tensor_slice_shape)
+        # 2. get transform operator list
+        # 3. convert op list to actual op and execute it
+        if self.in_layout is not None:
+            if len(self.in_layout) != len(args):
+                raise ValueError(f"The size of in_layout must be equal to inputs num, but got {len(self.in_layout)} "
+                                 f"and {len(args)}")
+            # TODO: 支持kwargs
+            new_args = []
+            for i, _ in enumerate(args):
+                to_layout = self.in_layout[i]
+                new_args.append(args[i].redistribute(to_layout))
+            args = new_args
+        return args
+
+    def _parallel_out_args(self, outputs):
+        """_parallel_out_args"""
+        if self.out_layout is None:
+            return outputs
+        if isinstance(outputs, (tuple, list)):
+            if len(outputs) != len(self.out_layout):
+                raise ValueError(f"The size of outputs and out_layout must be equal, but got {len(outputs)} and "
+                                 f"{len(self.out_layout)}")
+            new_outputs = []
+            for i, _ in enumerate(outputs):
+                to_layout = self.out_layout[i]
+                new_outputs.append(outputs[i].redistribute(to_layout))
+            return tuple(new_outputs)
+        if len(self.out_layout) != 1:
+            raise ValueError(f"The size of outputs and out_layout must be equal, but got 1 and "
+                             f"{len(self.out_layout)}")
+        return outputs.redistribute(self.out_layout[0])
+
     def __call__(self, *args, **kwargs):
         # Run in Graph mode.
         if context._get_mode() == context.GRAPH_MODE and os.getenv("MS_JIT") != '0':
@@ -1363,14 +1404,20 @@ class Cell(Cell_):
             self._init_check()
             self._self_check()
 
+        args = self._parallel_in_args(*args)
         if not (self.requires_grad or self._dynamic_shape_inputs or self.mixed_precision_type):
             if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
                     self._shard_fn or self._recompute_cell or (self.has_bprop and _pynative_executor.requires_grad())):
-                return self.construct(*args, **kwargs)
+                outputs = self.construct(*args, **kwargs)
+            else:
+                outputs = self._run_construct(*args, **kwargs)
+        else:
+            outputs = self._complex_call(*args, **kwargs)
 
-            return self._run_construct(*args, **kwargs)
+        return self._parallel_out_args(outputs)
 
-        return self._complex_call(*args, **kwargs)
+    def _check_layout(self):
+        pass
 
     def _complex_call(self, *args, **kwargs):
         """
