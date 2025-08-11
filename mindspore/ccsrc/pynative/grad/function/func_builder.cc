@@ -256,6 +256,14 @@ NodePtr FuncBuilder::Shape(const NodePtr &node, bool tensor) {
   }
 }
 
+void FuncBuilder::MarkSharedGradTensor(const NodePtr &lhs, const NodePtr &rhs) {
+  if (lhs.get() == rhs.get()) {
+    auto tensor = lhs->Value()->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    tensor->set_user_data("kSharedGradTensor", std::make_shared<bool>(true));
+  }
+}
+
 NodePtrList FuncBuilder::ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs) {
   size_t input_size = inputs.size();
   ShapeArray const_args;

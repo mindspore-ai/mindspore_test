@@ -40,7 +40,6 @@
 namespace mindspore::pynative::autograd {
 namespace {
 constexpr char kInput[] = "input";
-
 ValuePtr Add(const ValuePtr &input, const ValuePtr &other, const FuncBuilderPtr &func_impl) {
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(other);
@@ -654,6 +653,14 @@ void UpdateRetainGradHook(BackwardNodePtr old_node, BackwardNodePtr new_node, si
                           size_t new_output_idx) {
   auto retain_grad_hook = old_node->PopRetainGradHook(old_output_idx);
   new_node->AddRetainGradHook(new_output_idx, std::move(retain_grad_hook));
+}
+
+tensor::TensorPtr GenerateUniqueGradTensor(const tensor::TensorPtr &grad_tensor) {
+  auto unique_tensor = grad_tensor;
+  if (grad_tensor->has_user_data("kSharedGradTensor")) {
+    unique_tensor = AutoGradUtil::Clone(grad_tensor);
+  }
+  return unique_tensor;
 }
 }  // namespace
 
@@ -1318,8 +1325,10 @@ ValuePtrList LeafNode::CallBackward(const ValuePtrList &grads) {
   auto grad_meta = leaf_tensor->auto_grad_meta_data();
   MS_EXCEPTION_IF_NULL(grad_meta);
   const auto &grad = grad_meta->grad();
+  auto grad_tensor = grads[0]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(grad_tensor);
   if (grad == nullptr) {
-    grad_meta->set_grad(grads[0]->cast<tensor::TensorPtr>());
+    grad_meta->set_grad(GenerateUniqueGradTensor(grad_tensor));
     return {};
   }
   grad_meta->set_grad(AutoGradUtil::Add(grad, grads[0]->cast<tensor::TensorPtr>()));
