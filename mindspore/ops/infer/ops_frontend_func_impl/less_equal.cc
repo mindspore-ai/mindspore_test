@@ -39,7 +39,7 @@ void ImplLessEqual(const void *x1, const void *x2, void *result, size_t size) {
   }
 }
 
-using Handler = std::function<void(void *x1, void *x2, void *result, size_t size)>;
+using Handler = std::function<void(const void *x1, const void *x2, void *result, size_t size)>;
 std::map<TypeId, Handler> less_equal_impl_list = {
   {kNumberTypeBool, ImplLessEqual<bool>},        {kNumberTypeInt8, ImplLessEqual<int8_t>},
   {kNumberTypeInt16, ImplLessEqual<int16_t>},    {kNumberTypeInt32, ImplLessEqual<int32_t>},
