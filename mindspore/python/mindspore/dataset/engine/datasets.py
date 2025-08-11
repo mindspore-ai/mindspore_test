@@ -819,8 +819,7 @@ class Dataset:
         return dataset
 
     @check_map
-    def map(self, operations, input_columns=None, output_columns=None, column_order=None,
-            num_parallel_workers=None, **kwargs):
+    def map(self, operations, input_columns=None, output_columns=None, num_parallel_workers=None, **kwargs):
         """
         Apply each operation in operations to this dataset.
 

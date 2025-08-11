@@ -667,35 +667,6 @@ def test_no_input_columns_02():
     assert np.array_equal(res["col_x2"], [[1], [4], [9]]) and np.array_equal(res["col_y2"], [[-1], [-4], [-9]])
 
 
-def test_batch_exception_18():
-    """
-    Feature: Batch op
-    Description: Test batch with parameter column_order
-    Expectation: Output is equal to the expected output
-    """
-
-    def gen(num):
-        for i in range(num):
-            if i % 2 == 0:
-                yield (np.array([i]), np.array([i + (1 + i) * 0.01]))
-            else:
-                yield (np.array([(i + 1) * 0.01 + i]), np.array([i]))
-
-    def swap_col(col1, col2, batch_info):
-        return ([np.copy(a) for a in col2], [np.copy(b) for b in col1])
-
-    logger.info("test_batch_exception_18")
-
-    batch_size = 4
-    input_columns = ["num1", "num2"]
-    data1 = ds.GeneratorDataset((lambda: gen(20)), input_columns)
-    with pytest.raises(TypeError) as raise_info:
-        result = data1.batch(batch_size=batch_size, per_batch_map=swap_col, column_order=input_columns)
-        for _ in result.create_dict_iterator(num_epochs=1, output_numpy=True):
-            pass
-    assert "got an unexpected keyword argument 'column_order'" in str(raise_info.value)
-
-
 def test_batch_exception_19():
     """
     Feature: Batch op

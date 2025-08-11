@@ -1,7 +1,7 @@
 mindspore.dataset.Dataset.map
 ===============================
 
-.. py:method:: mindspore.dataset.Dataset.map(operations, input_columns=None, output_columns=None, column_order=None, num_parallel_workers=None, **kwargs)
+.. py:method:: mindspore.dataset.Dataset.map(operations, input_columns=None, output_columns=None, num_parallel_workers=None, **kwargs)
 
     给定一组数据增强列表，按顺序将数据增强作用在数据集对象上。
 
