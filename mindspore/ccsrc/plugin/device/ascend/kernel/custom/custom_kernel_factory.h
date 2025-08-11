@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <vector>
 #include "common/kernel.h"
 #include "kernel/ascend/visible.h"
 
@@ -29,12 +30,46 @@ namespace kernel {
 using KernelModPtr = std::shared_ptr<KernelMod>;
 using KernelCreator = std::function<KernelModPtr()>;
 
+struct KernelFormatMapping {
+  std::vector<std::string> input_formats;
+  std::vector<std::string> output_formats;
+
+  KernelFormatMapping() = default;
+  KernelFormatMapping(const std::vector<std::string> &inputs, const std::vector<std::string> &outputs)
+      : input_formats(inputs), output_formats(outputs) {}
+};
+
+struct HardwareFormatMapping {
+  std::string hardware;
+  std::unordered_map<std::string, KernelFormatMapping> format_mappings;
+
+  HardwareFormatMapping() = default;
+  HardwareFormatMapping(const std::string &hw, const std::vector<KernelFormatMapping> &mappings) : hardware(hw) {
+    for (const auto &mapping : mappings) {
+      std::string key = "";
+      for (size_t i = 0; i < mapping.input_formats.size(); ++i) {
+        if (i > 0) key += ",";
+        key += mapping.input_formats[i];
+      }
+      format_mappings[key] = mapping;
+    }
+  }
+};
+
 class OPS_ASCEND_API CustomKernelFactory {
  public:
   static CustomKernelFactory &Instance();
   bool Register(const std::string &op_name, const KernelCreator &creator);
   KernelModPtr Create(const std::string &op_name);
   bool IsRegistered(const std::string &op_name);
+
+  bool RegisterHardwareFormatMapping(const std::string &op_name, const HardwareFormatMapping &hardware_mapping);
+  bool HasFormatMapping(const std::string &op_name) const;
+  const std::unordered_map<std::string, std::vector<HardwareFormatMapping>> &GetAllHardwareFormatMappings() const;
+
+  // Find matching format mapping and return whether a match was found
+  bool FindMatchingFormatMapping(const std::string &op_name, const std::vector<std::string> &input_formats,
+                                 const std::string &hardware, KernelFormatMapping *result) const;
 
  private:
   CustomKernelFactory() = default;
@@ -43,6 +78,7 @@ class OPS_ASCEND_API CustomKernelFactory {
   CustomKernelFactory &operator=(const CustomKernelFactory &) = delete;
 
   std::unordered_map<std::string, KernelCreator> creators_;
+  std::unordered_map<std::string, std::vector<HardwareFormatMapping>> hardware_format_mappings_;
 };
 
 #define MS_CUSTOM_KERNEL_FACTORY_REG(NAME, CLASS)       \

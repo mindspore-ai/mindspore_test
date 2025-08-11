@@ -34,6 +34,7 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_factory.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "common/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
@@ -459,46 +460,50 @@ inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType
     return kernel_type == KernelType::INTERNAL_KERNEL ||
            IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
   } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
-    return true;
+    return kernel_type != KernelType::CUSTOM_KERNEL;
   }
 
   return false;
 }
 
-void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type) {
-  MS_EXCEPTION_IF_NULL(kernel);
-  std::vector<std::string> input_formats;
-  std::vector<std::string> output_formats;
-  std::vector<std::string> input_reshape_types;
-  std::vector<std::string> output_reshape_types;
-  auto input_num = common::AnfAlgo::GetInputTensorNum(kernel);
-  auto output_num = AnfUtils::GetOutputTensorNum(kernel);
-  auto output_object_type = kernel::KernelObjectType::TENSOR;
-
-  auto process_tuple_output = [&output_num, &output_object_type, &output_formats, &output_reshape_types](
-                                const CNodePtr &kernel, bool is_acl, size_t cur_output_number) {
+namespace {
+auto CreateProcessTupleOutputLambda(size_t *output_num, kernel::KernelObjectType *output_object_type,
+                                    std::vector<std::string> *output_formats,
+                                    std::vector<std::string> *output_reshape_types) {
+  return [output_num, output_object_type, output_formats, output_reshape_types](const CNodePtr &kernel, bool is_acl,
+                                                                                size_t cur_output_number) {
     auto cnode_output_object_type =
       kernel::TypeIdToKernelObjectType(AnfAlgo::GetAbstractObjectType(kernel->abstract()));
     if (IsDynamicTuple(kernel, is_acl, cur_output_number)) {
       MS_LOG(INFO) << "Node " << kernel->fullname_with_scope() << " output is real tuple";
-      output_object_type = cnode_output_object_type;
-      output_num = 1;
-      auto output_format = output_formats.at(kFirstItem);
-      auto output_reshape_type = output_reshape_types.at(kFirstItem);
-      output_formats.clear();
-      output_reshape_types.clear();
-      output_formats.emplace_back(output_format);
-      output_reshape_types.emplace_back(output_reshape_type);
+      *output_object_type = cnode_output_object_type;
+      *output_num = 1;
+      auto output_format = output_formats->at(kFirstItem);
+      auto output_reshape_type = output_reshape_types->at(kFirstItem);
+      output_formats->clear();
+      output_reshape_types->clear();
+      output_formats->emplace_back(output_format);
+      output_reshape_types->emplace_back(output_reshape_type);
     } else if (cnode_output_object_type == kernel::KernelObjectType::SCALAR) {
-      output_object_type = cnode_output_object_type;
+      *output_object_type = cnode_output_object_type;
     }
   };
+}
+
+void GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_type, size_t input_num,
+                               size_t output_num, std::vector<std::string> *input_formats,
+                               std::vector<std::string> *output_formats, std::vector<std::string> *input_reshape_types,
+                               std::vector<std::string> *output_reshape_types,
+                               kernel::KernelObjectType *output_object_type) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 
+  auto process_tuple_output =
+    CreateProcessTupleOutputLambda(&output_num, output_object_type, output_formats, output_reshape_types);
+
   if (kernel_type == KernelType::ACL_KERNEL) {
-    device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                       &output_reshape_types);
+    device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, input_formats, output_formats, input_reshape_types,
+                                                       output_reshape_types);
     // NOTE: acl default output objecttype is tensor, here are 2 special case:
     // case 1: when cnode output is tuple, and ge ops prototype output num is 1, the real output objecttype is tuple;
     // case 2: when cnode output is scalar, the real output objecttype is scalar
@@ -508,42 +513,64 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
   } else if (context_ptr->IsEnableInferBoost() && NeedTransDataWhenInferBoost(kernel, kernel_type)) {
-    input_formats.clear();
-    output_formats.clear();
-    input_reshape_types.clear();
-    output_reshape_types.clear();
-    input_formats.assign(input_num, kOpFormat_DEFAULT);
-    output_formats.assign(output_num, kOpFormat_DEFAULT);
-    input_reshape_types.assign(input_num, "");
-    output_reshape_types.assign(output_num, "");
+    input_formats->clear();
+    output_formats->clear();
+    input_reshape_types->clear();
+    output_reshape_types->clear();
+    input_formats->assign(input_num, kOpFormat_DEFAULT);
+    output_formats->assign(output_num, kOpFormat_DEFAULT);
+    input_reshape_types->assign(input_num, "");
+    output_reshape_types->assign(output_num, "");
 
-    kernel::GetValidKernelBuildInfoWithInternalFormat(kernel, &input_formats, &output_formats);
+    kernel::GetValidKernelBuildInfoWithInternalFormat(kernel, input_formats, output_formats);
+  } else if (kernel_type == KernelType::CUSTOM_KERNEL) {
+    input_formats->clear();
+    output_formats->clear();
+    input_reshape_types->clear();
+    output_reshape_types->clear();
+    input_formats->assign(input_num, kOpFormat_DEFAULT);
+    output_formats->assign(output_num, kOpFormat_DEFAULT);
+    input_reshape_types->assign(input_num, "");
+    output_reshape_types->assign(output_num, "");
+
+    kernel::ProcessCustomKernelFormatMapping(kernel, input_formats, output_formats);
   } else {
-    device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                       &output_reshape_types, kernel_type);
+    device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, input_formats, output_formats, input_reshape_types,
+                                                       output_reshape_types, kernel_type);
     process_tuple_output(kernel, false, 1);
   }
+}
 
-  std::vector<TypeId> input_types;
-  input_types.reserve(input_num);
-  std::vector<TypeId> output_types;
-  output_types.reserve(output_num);
-  std::vector<kernel::KernelObjectType> output_object_types;
-  output_object_types.reserve(output_num);
-  auto input_object_types = kernel::TypeIdToKernelObjectType(AnfAlgo::GetAllInputObjectType(kernel));
+void BuildTypeInfo(const CNodePtr &kernel, const KernelType &kernel_type, size_t input_num, size_t output_num,
+                   kernel::KernelObjectType output_object_type, std::vector<TypeId> *input_types,
+                   std::vector<TypeId> *output_types, std::vector<kernel::KernelObjectType> *output_object_types,
+                   std::vector<kernel::KernelObjectType> *input_object_types) {
+  input_types->reserve(input_num);
+  output_types->reserve(output_num);
+  output_object_types->reserve(output_num);
+  *input_object_types = kernel::TypeIdToKernelObjectType(AnfAlgo::GetAllInputObjectType(kernel));
 
   for (size_t i = 0; i < input_num; i++) {
     auto cur_input_type = GetInputDeviceType(kernel, i);
     if (kernel_type != RT_KERNEL && IsEmptyTupleInput(kernel, i, cur_input_type)) {
       cur_input_type = TypeId::kNumberTypeInt64;
     }
-    (void)input_types.emplace_back(cur_input_type);
+    (void)input_types->emplace_back(cur_input_type);
   }
   for (size_t i = 0; i < output_num; i++) {
-    (void)output_types.emplace_back(common::AnfAlgo::GetOutputInferDataType(kernel, i));
+    (void)output_types->emplace_back(common::AnfAlgo::GetOutputInferDataType(kernel, i));
     // no tuple in PyNative dynamic shape
-    (void)output_object_types.emplace_back(output_object_type);
+    (void)output_object_types->emplace_back(output_object_type);
   }
+}
+
+void BuildKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type,
+                          const std::vector<std::string> &input_formats, const std::vector<std::string> &output_formats,
+                          const std::vector<std::string> &input_reshape_types,
+                          const std::vector<std::string> &output_reshape_types, const std::vector<TypeId> &input_types,
+                          const std::vector<TypeId> &output_types,
+                          const std::vector<kernel::KernelObjectType> &output_object_types,
+                          const std::vector<kernel::KernelObjectType> &input_object_types) {
   auto builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
   MS_EXCEPTION_IF_NULL(builder);
   builder->SetKernelType(kernel_type);
@@ -555,6 +582,7 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
   builder->SetOutputsKernelObjectType(output_object_types);
   builder->SetInputsReshapeType(input_reshape_types);
   builder->SetOutputsReshapeType(output_reshape_types);
+
   if (input_formats.size() != input_types.size() || input_formats.size() != input_object_types.size()) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel) << "The input buildInfo size kernel: " << kernel->fullname_with_scope()
                                         << "is not equal, input_formats size: " << input_formats.size()
@@ -567,7 +595,35 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
                                         << ", output_types size: " << output_types.size()
                                         << ", output_object_types size: " << output_object_types.size();
   }
+
   AnfAlgo::SetSelectKernelBuildInfo(builder->Build(), kernel.get());
+}
+}  // namespace
+
+void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type) {
+  MS_EXCEPTION_IF_NULL(kernel);
+
+  std::vector<std::string> input_formats;
+  std::vector<std::string> output_formats;
+  std::vector<std::string> input_reshape_types;
+  std::vector<std::string> output_reshape_types;
+  auto input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+  auto output_num = AnfUtils::GetOutputTensorNum(kernel);
+  MS_LOG(INFO) << kernel->fullname_with_scope() << " input_num: " << input_num << ", output_num: " << output_num;
+  auto output_object_type = kernel::KernelObjectType::TENSOR;
+
+  GetFormatInfoByKernelType(kernel, kernel_type, input_num, output_num, &input_formats, &output_formats,
+                            &input_reshape_types, &output_reshape_types, &output_object_type);
+
+  std::vector<TypeId> input_types;
+  std::vector<TypeId> output_types;
+  std::vector<kernel::KernelObjectType> output_object_types;
+  std::vector<kernel::KernelObjectType> input_object_types;
+  BuildTypeInfo(kernel, kernel_type, input_num, output_num, output_object_type, &input_types, &output_types,
+                &output_object_types, &input_object_types);
+
+  BuildKernelBuildInfo(kernel, kernel_type, input_formats, output_formats, input_reshape_types, output_reshape_types,
+                       input_types, output_types, output_object_types, input_object_types);
 }
 
 void GenerateKernelPacketBuildInfo(const CNodePtr &node) {
