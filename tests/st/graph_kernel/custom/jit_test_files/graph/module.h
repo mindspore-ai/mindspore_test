@@ -66,7 +66,7 @@ class ModuleRegistry {
 };
 
 #define REG_GRAPH_MODE_OP(op, OpFuncImplClass, KernelClass)                                            \
-  MS_CUSTOM_ACLNN_OPS_REGISTER(op, OpFuncImplClass, KernelClass);                                      \
+  MS_CUSTOM_OPS_REGISTER(op, OpFuncImplClass, KernelClass);                                            \
   static void op##_func(pybind11::args args, pybind11::kwargs kwargs) {                                \
     MS_LOG(EXCEPTION) << "Custom [" << #op                                                             \
                       << "] does not support PyNative mode. Please implement PyboostRunner to enable " \

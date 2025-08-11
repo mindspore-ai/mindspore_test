@@ -41,9 +41,12 @@ def generate_custom_op_def(module_name, input_path, doc_path, output_path):
     """Automatically generate all necessary files for custom operators."""
     resource_mgr = ResourceManager()
     resource_mgr.register_resource(CustomOpProtoLoader(input_path))
-    resource_mgr.register_resource(CustomOpDocYamlLoader(doc_path))
     op_protos = resource_mgr.get_resource(ResourceType.OP_PROTO)
-    doc_dict = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
+    doc_dict = dict()
+    if doc_path != "":
+        resource_mgr.register_resource(CustomOpDocYamlLoader(doc_path))
+        doc_dict = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
+
     generator = CustomOpsDefCcGenerator()
     generator.generate(output_path, op_protos)
     generator = CustomOpPrimPyGenerator()

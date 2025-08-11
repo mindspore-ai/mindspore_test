@@ -280,6 +280,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override;
   bool IsNeedUpdateOutputShapeAndSize() override { return false; }
   std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in aclnn."; }
+  void set_fullname(const std::string &fullname) override { fullname_ = fullname; }
 
   template <typename... Args>
   void UpdateWorkspace(const std::tuple<Args...> &args) {
@@ -325,6 +326,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
   std::list<CacheTuple> hash_cache_;
   size_t capacity_{1024};
+  std::string fullname_;
 
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;

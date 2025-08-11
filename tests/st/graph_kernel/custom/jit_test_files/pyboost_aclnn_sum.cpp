@@ -17,7 +17,7 @@
 #include <set>
 #include <optional>
 #include "ms_extension/api.h"
-#include "module.h"
+#include "graph/module.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 
 namespace custom {
