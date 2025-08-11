@@ -927,10 +927,7 @@ extern PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
 }
 
 extern py::object TensorGetItemImpl(const py::object &self, const py::object &py_index) {
-  // Data sync will be triggered per operation if mode is graph mode and async_for_graph is false
-  bool is_data_sync_per_op = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode &&
-                             !runtime::OpExecutor::GetInstance().async_for_graph();
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice || is_data_sync_per_op) {
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     return self.attr("_getitem_origin")(py_index);
   }
   return self.attr("_getitem")(py_index);
@@ -953,10 +950,7 @@ extern PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
 }
 
 extern py::object TensorSetItemImpl(const py::object &self, const py::object &py_index, const py::object &py_value) {
-  // Data sync will be triggered per operation if mode is graph mode and async_for_graph is false
-  bool is_data_sync_per_op = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode &&
-                             !runtime::OpExecutor::GetInstance().async_for_graph();
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice || is_data_sync_per_op) {
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     return self.attr("_setitem_origin")(py_index, py_value);
   }
   return self.attr("_setitem")(py_index, py_value);
