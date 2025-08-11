@@ -30,10 +30,10 @@ namespace mindspore {
 namespace ops {
 namespace {
 template <typename T>
-void ImpleSqrt(void *origin, void *target, size_t size) {
+void ImpleSqrt(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = static_cast<T *>(origin);
+  auto origin_data = static_cast<const T *>(origin);
   auto target_data = static_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<T>(sqrt(static_cast<double>(origin_data[i])));
@@ -41,10 +41,10 @@ void ImpleSqrt(void *origin, void *target, size_t size) {
 }
 
 template <typename T>
-void ImpleComplexSqrt(void *origin, void *target, size_t size) {
+void ImpleComplexSqrt(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = static_cast<T *>(origin);
+  auto origin_data = static_cast<const T *>(origin);
   auto target_data = static_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<T>(sqrt(origin_data[i]));
@@ -52,10 +52,10 @@ void ImpleComplexSqrt(void *origin, void *target, size_t size) {
 }
 
 template <typename T>
-void ImpleSqrtInteger(void *origin, void *target, size_t size) {
+void ImpleSqrtInteger(const void *origin, void *target, size_t size) {
   MS_EXCEPTION_IF_NULL(origin);
   MS_EXCEPTION_IF_NULL(target);
-  auto origin_data = static_cast<T *>(origin);
+  auto origin_data = static_cast<const T *>(origin);
   auto target_data = static_cast<float *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = static_cast<float>(sqrt(static_cast<double>(origin_data[i])));
@@ -72,7 +72,7 @@ TypeId GetOutputTypeId(const TypeId &input_type_id) {
 }
 }  // namespace
 
-using SqrtHandler = std::function<void(void *origin, void *target, size_t size)>;
+using SqrtHandler = std::function<void(const void *origin, void *target, size_t size)>;
 std::map<TypeId, SqrtHandler> sqrt_impl_list = {{kNumberTypeBool, ImpleSqrtInteger<bool>},
                                                 {kNumberTypeInt8, ImpleSqrtInteger<int8_t>},
                                                 {kNumberTypeInt16, ImpleSqrtInteger<int16_t>},
@@ -115,7 +115,8 @@ class OPS_API SqrtFrontendFuncImpl : public OpFrontendFuncImpl {
                     << ", the type is not supported.";
       return nullptr;
     }
-    iter->second(x_tensor->data_c(), result_tensor->data_c(), data_size);
+    auto x_tensor_cpu = x_tensor->cpu();
+    iter->second(x_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
     return result_tensor;
   }
 };

@@ -162,7 +162,8 @@ AbstractBasePtr InferImplLinSpace(const AnalysisEnginePtr &, const PrimitivePtr 
     MS_EXCEPTION_IF_NULL(num_value_ptr);
     auto num_tensor = num_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(num_tensor);
-    num_val = *static_cast<int64_t *>(num_tensor->data_c());
+    auto num_tensor_cpu = num_tensor->cpu();
+    num_val = *static_cast<int64_t *>(num_tensor_cpu->data_c());
   } else if (abs_num->isa<AbstractScalar>()) {
     auto num = abs_num->cast<AbstractScalarPtr>();
     num_val = GetValue<int64_t>(num->BuildValue());

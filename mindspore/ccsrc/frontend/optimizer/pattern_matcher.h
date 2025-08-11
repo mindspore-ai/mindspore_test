@@ -510,9 +510,10 @@ class PConstant : public PBase<PConstant<T> > {
       return false;
     }
     auto tensor_ptr = dyn_cast<tensor::Tensor>(value);
+    auto tensor_cpu = tensor_ptr->cpu();
     TypeId tensor_type = tensor_ptr->Dtype()->type_id();
     if ((tensor_type == TypeId::kNumberTypeFloat32) || (tensor_type == TypeId::kNumberTypeFloat)) {
-      float *data2 = static_cast<float *>(tensor_ptr->data_c());
+      float *data2 = static_cast<float *>(tensor_cpu->data_c());
       auto threshold = FLT_MIN;
       for (size_t i = 0; i < tensor_ptr->DataSize(); i++) {
         if (fabs(data2[i] - check_value_) > threshold) {
@@ -521,7 +522,7 @@ class PConstant : public PBase<PConstant<T> > {
       }
       return true;
     } else if (tensor_type == TypeId::kNumberTypeFloat64) {
-      double *data2 = static_cast<double *>(tensor_ptr->data_c());
+      double *data2 = static_cast<double *>(tensor_cpu->data_c());
       auto threshold = DBL_MIN;
       for (size_t i = 0; i < tensor_ptr->DataSize(); i++) {
         if (fabs(data2[i] - check_value_) > threshold) {
@@ -530,7 +531,7 @@ class PConstant : public PBase<PConstant<T> > {
       }
       return true;
     } else if ((tensor_type == TypeId::kNumberTypeInt32) || (tensor_type == TypeId::kNumberTypeInt)) {
-      int *data2 = static_cast<int *>(tensor_ptr->data_c());
+      int *data2 = static_cast<int *>(tensor_cpu->data_c());
       for (size_t i = 0; i < tensor_ptr->DataSize(); i++) {
         if (data2[i] != check_value_) {
           return false;
@@ -551,19 +552,6 @@ class PConstant : public PBase<PConstant<T> > {
       return false;
     }
     return IsTensorConstant(value);
-  }
-
-  void *GetPointerToTensorData(const AnfNodePtr &node) const {
-    if (!node->isa<ValueNode>()) {
-      return nullptr;
-    }
-    auto value = node->cast<ValueNodePtr>()->value();
-    if (!value->isa<tensor::Tensor>()) {
-      return nullptr;
-    }
-
-    tensor::TensorPtr tensor_ptr = dyn_cast<tensor::Tensor>(value);
-    return tensor_ptr->data_c();
   }
 
   // Make a new tensor (when possible) with the same shape as of `node`
@@ -614,7 +602,8 @@ class PConstant : public PBase<PConstant<T> > {
       return nullptr;
     }
     int ret = 0;
-    char *source_data = static_cast<char *>(GetPointerToTensorData(x));
+    auto tensor_cpu = x_tensor_ptr->cpu();
+    char *source_data = static_cast<char *>(tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(source_data);
     if (x_tensor_ptr->DataSize() == 1) {
       auto tensor_type_byte = GetTypeByte(tensor_type_ptr);
@@ -743,6 +732,8 @@ class PConstant : public PBase<PConstant<T> > {
     if (tensor_ptr_1 == nullptr || tensor_ptr_2 == nullptr || node_3->abstract() == nullptr) {
       return nullptr;
     }
+    auto tensor1_cpu = tensor_ptr_1->cpu();
+    auto tensor2_cpu = tensor_ptr_2->cpu();
     tensor::TensorPtr new_tensor_ptr = GetNewTensor(vnode_1, vnode_2, node_3);
     if (new_tensor_ptr == nullptr) {
       return nullptr;
@@ -756,20 +747,20 @@ class PConstant : public PBase<PConstant<T> > {
     void *data_out = nullptr;
     if ((new_tensor_ptr->data_type() == TypeId::kNumberTypeFloat32) ||
         (new_tensor_ptr->data_type() == TypeId::kNumberTypeFloat)) {
-      CalcByOperator<float>(tensor_ptr_1->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor_ptr_2->data_c(),
+      CalcByOperator<float>(tensor1_cpu->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor2_cpu->data_c(),
                             SizeToInt(tensor_ptr_2->DataSize()), &data_out, data_out_size, bin_operator);
       ret = memcpy_s(data, mem_size, data_out, mem_size);
       delete[] static_cast<float *>(data_out);
     } else {
       if (new_tensor_ptr->data_type() == TypeId::kNumberTypeFloat64) {
-        CalcByOperator<double>(tensor_ptr_1->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor_ptr_2->data_c(),
+        CalcByOperator<double>(tensor1_cpu->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor2_cpu->data_c(),
                                SizeToInt(tensor_ptr_2->DataSize()), &data_out, data_out_size, bin_operator);
         ret = memcpy_s(data, mem_size, data_out, mem_size);
         delete[] static_cast<double *>(data_out);
       } else {
         if ((new_tensor_ptr->data_type() == TypeId::kNumberTypeInt32) ||
             (new_tensor_ptr->data_type() == TypeId::kNumberTypeInt)) {
-          CalcByOperator<int>(tensor_ptr_1->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor_ptr_2->data_c(),
+          CalcByOperator<int>(tensor1_cpu->data_c(), SizeToInt(tensor_ptr_1->DataSize()), tensor2_cpu->data_c(),
                               SizeToInt(tensor_ptr_2->DataSize()), &data_out, data_out_size, bin_operator);
           ret = memcpy_s(data, mem_size, data_out, mem_size);
           delete[] static_cast<int *>(data_out);

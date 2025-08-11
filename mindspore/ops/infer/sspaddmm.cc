@@ -294,14 +294,16 @@ void CheckIndices(const std::vector<AbstractBasePtr> &input_args) {
     MS_EXCEPTION_IF_NULL(x1_shape_value_ptr);
     auto x1_shape_tensor = x1_shape_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(x1_shape_tensor);
+    auto x1_indices_tensor_cpu = x1_indices_tensor->cpu();
+    auto x1_shape_tensor_cpu = x1_shape_tensor->cpu();
     if (TypeId(x1_indices_tensor->data_type_c()) == kNumberTypeInt32) {
-      IndicesBoundCheck<int32_t>(reinterpret_cast<int32_t *>(x1_indices_tensor->data_c()),
-                                 x1_indices_tensor->DataSize(), reinterpret_cast<int32_t *>(x1_shape_tensor->data_c()),
-                                 "x1");
+      IndicesBoundCheck<int32_t>(reinterpret_cast<int32_t *>(x1_indices_tensor_cpu->data_c()),
+                                 x1_indices_tensor->DataSize(),
+                                 reinterpret_cast<int32_t *>(x1_shape_tensor_cpu->data_c()), "x1");
     } else {
-      IndicesBoundCheck<int64_t>(reinterpret_cast<int64_t *>(x1_indices_tensor->data_c()),
-                                 x1_indices_tensor->DataSize(), reinterpret_cast<int64_t *>(x1_shape_tensor->data_c()),
-                                 "x1");
+      IndicesBoundCheck<int64_t>(reinterpret_cast<int64_t *>(x1_indices_tensor_cpu->data_c()),
+                                 x1_indices_tensor->DataSize(),
+                                 reinterpret_cast<int64_t *>(x1_shape_tensor_cpu->data_c()), "x1");
     }
   }
   if ((input_args[kInputIndex3]->isa<abstract::AbstractTensor>() &&
@@ -320,14 +322,16 @@ void CheckIndices(const std::vector<AbstractBasePtr> &input_args) {
     MS_EXCEPTION_IF_NULL(x2_shape_value_ptr);
     auto x2_shape_tensor = x2_shape_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(x2_shape_tensor);
+    auto x2_indices_tensor_cpu = x2_indices_tensor->cpu();
+    auto x2_shape_tensor_cpu = x2_shape_tensor->cpu();
     if (TypeId(x2_indices_tensor->data_type_c()) == kNumberTypeInt32) {
-      IndicesBoundCheck<int32_t>(reinterpret_cast<int32_t *>(x2_indices_tensor->data_c()),
-                                 x2_indices_tensor->DataSize(), reinterpret_cast<int32_t *>(x2_shape_tensor->data_c()),
-                                 "x2");
+      IndicesBoundCheck<int32_t>(reinterpret_cast<int32_t *>(x2_indices_tensor_cpu->data_c()),
+                                 x2_indices_tensor->DataSize(),
+                                 reinterpret_cast<int32_t *>(x2_shape_tensor_cpu->data_c()), "x2");
     } else {
-      IndicesBoundCheck<int64_t>(reinterpret_cast<int64_t *>(x2_indices_tensor->data_c()),
-                                 x2_indices_tensor->DataSize(), reinterpret_cast<int64_t *>(x2_shape_tensor->data_c()),
-                                 "x2");
+      IndicesBoundCheck<int64_t>(reinterpret_cast<int64_t *>(x2_indices_tensor_cpu->data_c()),
+                                 x2_indices_tensor->DataSize(),
+                                 reinterpret_cast<int64_t *>(x2_shape_tensor_cpu->data_c()), "x2");
     }
   }
 }
@@ -427,6 +431,7 @@ abstract::TupleShapePtr SspaddmmInferShape(const PrimitivePtr &primitive,
     MS_EXCEPTION_IF_NULL(alpha_value_ptr);
     auto alpha_tensor = alpha_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(alpha_tensor);
+    auto alpha_tensor_cpu = alpha_tensor->cpu();
     auto alpha_dtype = input_args[kInputIndex7]->GetType();
     MS_EXCEPTION_IF_NULL(alpha_dtype);
     auto alpha_type_id = alpha_dtype->cast<TensorTypePtr>();
@@ -436,11 +441,11 @@ abstract::TupleShapePtr SspaddmmInferShape(const PrimitivePtr &primitive,
     float real = 0;
     int32_t imag = 0;
     if (alpha_type_element->type_id() == kNumberTypeComplex64) {
-      auto value = reinterpret_cast<std::complex<float> *>(alpha_tensor->data_c());
+      auto value = reinterpret_cast<std::complex<float> *>(alpha_tensor_cpu->data_c());
       real = value[0].real();
       imag = value[0].imag();
     } else if (alpha_type_element->type_id() == kNumberTypeComplex128) {
-      auto value = reinterpret_cast<std::complex<double> *>(alpha_tensor->data_c());
+      auto value = reinterpret_cast<std::complex<double> *>(alpha_tensor_cpu->data_c());
       real = value[0].real();
       imag = value[0].imag();
     }
@@ -451,7 +456,7 @@ abstract::TupleShapePtr SspaddmmInferShape(const PrimitivePtr &primitive,
     }
     if (!(expect_dtype->type_id() == kNumberTypeFloat32 || expect_dtype->type_id() == kNumberTypeFloat64)) {
       int64_t compute_val =
-        GetInt64AlphaData(alpha_tensor->data_c(), alpha_type_element->type_id(), expect_dtype, real);
+        GetInt64AlphaData(alpha_tensor_cpu->data_c(), alpha_type_element->type_id(), expect_dtype, real);
       if (GetDtypeMinAndMaxAndCheckOverFlow(expect_dtype, compute_val)) {
         PrintAlphaValueError(alpha_type_element->type_id(), expect_dtype, compute_val, real, imag);
       }

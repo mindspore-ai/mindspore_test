@@ -27,6 +27,7 @@
 #include "ir/map_tensor.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_utils.h"
 #include "pynative/base.h"
 
 namespace py = pybind11;
@@ -84,7 +85,7 @@ class Slice final {
       if (step_tensor->data_type() == kMetaTypeNone) {
         step_ = 1;
       } else {
-        step_ = GetTensorData(step_tensor);
+        step_ = Slice::GetTensorData(step_tensor);
       }
     } else if (py::isinstance<py::none>(step_index)) {
       step_ = 1;
@@ -129,19 +130,14 @@ class Slice final {
 
   static inline int64_t GetTensorData(const TensorPtr &tensor) {
     MS_EXCEPTION_IF_NULL(tensor);
-    const auto &device_address = tensor->device_address();
-    TensorPtr cpu_tensor = tensor;
-    if (device_address != nullptr) {
-      cpu_tensor = tensor->cpu();
-    }
-    if (!cpu_tensor->shape().empty()) {
+    if (!tensor->shape().empty()) {
       MS_EXCEPTION(TypeError) << "Only integer scalar tensors can be converted to a scalar index";
     }
     int64_t tensor_value = 0;
-    if (cpu_tensor->data_type() == kNumberTypeInt32) {
-      tensor_value = *static_cast<const int32_t *>(cpu_tensor->data_c());
-    } else if (cpu_tensor->data_type() == kNumberTypeInt64) {
-      tensor_value = *static_cast<const int64_t *>(cpu_tensor->data_c());
+    if (tensor->data_type() == kNumberTypeInt32) {
+      tensor_value = tensor::GetTensorData<int32_t>(tensor);
+    } else if (tensor->data_type() == kNumberTypeInt64) {
+      tensor_value = tensor::GetTensorData<int64_t>(tensor);
     }
     return tensor_value;
   }
@@ -182,7 +178,7 @@ class Slice final {
     if (index->data_type() == kMetaTypeNone) {
       return step > 0 ? 0 : dim_size;
     }
-    int64_t new_index = GetTensorData(index);
+    int64_t new_index = Slice::GetTensorData(index);
     if (dim_size == kIndexMax) {
       return new_index;
     }

@@ -84,7 +84,8 @@ class OPS_API AllSwapInfer : public abstract::OpInferBase {
     MS_EXCEPTION_IF_NULL(recv_size_value_ptr);
     auto recv_size_tensor = recv_size_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(recv_size_tensor);
-    auto data_pos = static_cast<int64_t *>(recv_size_tensor->data_c());
+    auto recv_size_tensor_cpu = recv_size_tensor->cpu();
+    auto data_pos = static_cast<int64_t *>(recv_size_tensor_cpu->data_c());
     MS_EXCEPTION_IF_NULL(data_pos);
 
     ShapeVector tensor_out_shape = {abstract::Shape::kShapeDimAny, tensor_in_shape[1]};

@@ -63,7 +63,8 @@ bool IsNodeScalarTrueWith(const AnfNodePtr &node, const ScalarCheckingMode &chec
 
   TypeId tensor_type = tensor_ptr->Dtype()->type_id();
   if ((tensor_type == TypeId::kNumberTypeFloat32) || (tensor_type == TypeId::kNumberTypeFloat)) {
-    float *data = reinterpret_cast<float *>(tensor_ptr->data_c());
+    auto tensor_cpu = tensor_ptr->cpu();
+    float *data = reinterpret_cast<float *>(tensor_cpu->data_c());
     if (checking_mode == ScalarCheckingMode::GREATER_EQUAL) {
       return data[0] >= check_value;
     }

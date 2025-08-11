@@ -550,10 +550,11 @@ void TensorIndexGetitem::ConstGetStrideInfoFromTuple(const AnfNodePtr &data_node
       auto tensor_abs = index_abs->BuildValue()->cast<mindspore::tensor::TensorPtr>();
       int64_t start = 0;
       MS_EXCEPTION_IF_NULL(tensor_abs);
+      auto tensor_abs_cpu = tensor_abs->cpu();
       if (tensor_abs->data_type() == kNumberTypeInt64) {
-        start = *static_cast<int64_t *>(tensor_abs->data_c());
+        start = *static_cast<int64_t *>(tensor_abs_cpu->data_c());
       } else if (tensor_abs->data_type() == kNumberTypeInt32) {
-        start = *static_cast<int32_t *>(tensor_abs->data_c());
+        start = *static_cast<int32_t *>(tensor_abs_cpu->data_c());
       } else {
         MS_EXCEPTION(IndexError) << "Basic index in tuple must be int64/int32";
       }

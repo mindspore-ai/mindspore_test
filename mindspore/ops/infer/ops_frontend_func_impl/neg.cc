@@ -28,15 +28,15 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void ImpleNeg(void *origin, void *target, size_t size) {
-  auto origin_data = reinterpret_cast<T *>(origin);
+void ImpleNeg(const void *origin, void *target, size_t size) {
+  auto origin_data = reinterpret_cast<const T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {
     target_data[i] = -origin_data[i];
   }
 }
 
-using NegHandler = std::function<void(void *origin, void *target, size_t size)>;
+using NegHandler = std::function<void(const void *origin, void *target, size_t size)>;
 std::map<TypeId, NegHandler> neg_impl_list = {{kNumberTypeInt8, ImpleNeg<int8_t>},
                                               {kNumberTypeInt16, ImpleNeg<int16_t>},
                                               {kNumberTypeInt32, ImpleNeg<int32_t>},
@@ -79,7 +79,8 @@ class NegFrontendFuncImpl : public OpFrontendFuncImpl {
         << x_tensor->ToString() << ".";
       return nullptr;
     }
-    auto x_datac = x_tensor->data_c();
+    auto x_tensor_cpu = x_tensor->cpu();
+    auto x_datac = x_tensor_cpu->data_c();
     auto result_datac = result_tensor->data_c();
     iter->second(x_datac, result_datac, data_size);
     return result_tensor;

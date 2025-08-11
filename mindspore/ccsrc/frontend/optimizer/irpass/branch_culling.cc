@@ -703,8 +703,10 @@ AnfNodePtr CompareSwitchSimplify::operator()(const OptimizerPtr &, const AnfNode
     MS_EXCEPTION_IF_NULL(compare_cnode);
     auto cond_tensor1 = GetValue<tensor::TensorPtr>(GetValueNode(compare_cnode->input(kIndex1)));
     auto cond_tensor2 = GetValue<tensor::TensorPtr>(GetValueNode(compare_cnode->input(kIndex2)));
-    auto cond_value1 = reinterpret_cast<float *>(cond_tensor1->data_c());
-    auto cond_value2 = reinterpret_cast<float *>(cond_tensor2->data_c());
+    auto cond_tensor1_cpu = cond_tensor1->cpu();
+    auto cond_tensor2_cpu = cond_tensor2->cpu();
+    auto cond_value1 = reinterpret_cast<float *>(cond_tensor1_cpu->data_c());
+    auto cond_value2 = reinterpret_cast<float *>(cond_tensor2_cpu->data_c());
     bool flag = false;
     if (IsPrimitiveCNode(compare_cnode, prim::kPrimLess) && (*cond_value1 < *cond_value2)) {
       flag = true;

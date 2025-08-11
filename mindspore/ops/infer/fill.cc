@@ -222,11 +222,13 @@ class FillInfer : public abstract::OpInferBase {
     } else if (input_value_type_id == kNumberTypeInt64) {
       infer_result = CreateValuedTensor<int64_t>(infered_type, infered_shape, GetValue<int64_t>(input_value_ptr));
     } else if (input_value_type_id == kNumberTypeComplex64) {
+      auto input_value_tensor_cpu = input_value_tensor->cpu();
       infer_result = CreateComplexTensor<std::complex<float>>(
-        infered_type, infered_shape, static_cast<std::complex<float> *>(input_value_tensor->data_c())[0]);
+        infered_type, infered_shape, static_cast<std::complex<float> *>(input_value_tensor_cpu->data_c())[0]);
     } else if (input_value_type_id == kNumberTypeComplex128) {
+      auto input_value_tensor_cpu = input_value_tensor->cpu();
       infer_result = CreateComplexTensor<std::complex<double>>(
-        infered_type, infered_shape, static_cast<std::complex<double> *>(input_value_tensor->data_c())[0]);
+        infered_type, infered_shape, static_cast<std::complex<double> *>(input_value_tensor_cpu->data_c())[0]);
     }
     return infer_result;
   }

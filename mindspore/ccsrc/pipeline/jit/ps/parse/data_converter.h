@@ -88,12 +88,6 @@ inline int32_t CombineTypesForTypeCast(const mindspore::ops::OP_DTYPE &src, cons
   return (static_cast<int32_t>(src) << kTypeShiftBits) | static_cast<int32_t>(dst);
 }
 
-template <typename T>
-T GetTensorDataValue(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  auto cpu_tensor = tensor->cpu();
-  return static_cast<T *>(cpu_tensor->data_c())[0];
-}
 // using OpDefConvertFunc = std::function<ValuePtr(const py::object &obj)>;
 typedef ValuePtr (*OpDefConvertFunc)(const py::object &);
 FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);

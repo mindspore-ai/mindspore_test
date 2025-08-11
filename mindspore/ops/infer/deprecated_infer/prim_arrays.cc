@@ -265,7 +265,8 @@ AbstractBasePtr InferImplSequenceMask(const AnalysisEnginePtr &, const Primitive
     MS_EXCEPTION_IF_NULL(maxlen_value_ptr);
     auto maxlen_tensor = maxlen_value_ptr->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(maxlen_tensor);
-    maxlen_value = *static_cast<int64_t *>(maxlen_tensor->data_c());
+    auto maxlen_tensor_cpu = maxlen_tensor->cpu();
+    maxlen_value = *static_cast<int64_t *>(maxlen_tensor_cpu->data_c());
   }
 
   if (maxlen_value <= 0) {

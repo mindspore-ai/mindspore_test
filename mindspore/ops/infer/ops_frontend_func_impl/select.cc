@@ -31,13 +31,13 @@ namespace ops {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
 template <typename T>
-void SelectImpl(const bool *conds, void *x, void *y, void *result, size_t size) {
+void SelectImpl(const bool *conds, const void *x, const void *y, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x);
   MS_EXCEPTION_IF_NULL(y);
   MS_EXCEPTION_IF_NULL(result);
   MS_EXCEPTION_IF_NULL(conds);
-  T *x_data = reinterpret_cast<T *>(x);
-  T *y_data = reinterpret_cast<T *>(y);
+  const T *x_data = reinterpret_cast<const T *>(x);
+  const T *y_data = reinterpret_cast<const T *>(y);
   auto result_data = reinterpret_cast<T *>(result);
   MS_EXCEPTION_IF_NULL(x_data);
   MS_EXCEPTION_IF_NULL(y_data);
@@ -48,7 +48,7 @@ void SelectImpl(const bool *conds, void *x, void *y, void *result, size_t size) 
   }
 }
 
-using SelectHandler = std::function<void(const bool *conds, void *x, void *y, void *result, size_t size)>;
+using SelectHandler = std::function<void(const bool *conds, const void *x, const void *y, void *result, size_t size)>;
 std::map<TypeId, SelectHandler> select_impl_list = {
   {kNumberTypeBool, SelectImpl<bool>},
   {kNumberTypeInt8, SelectImpl<int8_t>},
@@ -117,7 +117,11 @@ class SelectFrontendFuncImpl : public OpFrontendFuncImpl {
     auto type_id = x_tensor->data_type();
     auto result_tensor = tensor::from_spec(type_id, x_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
-    SelectInnerInferValue(primitive, cond_tensor, x_tensor, y_tensor, result_tensor);
+
+    auto cond_tensor_cpu = cond_tensor->cpu();
+    auto x_tensor_cpu = x_tensor->cpu();
+    auto y_tensor_cpu = y_tensor->cpu();
+    SelectInnerInferValue(primitive, cond_tensor_cpu, x_tensor_cpu, y_tensor_cpu, result_tensor);
     return result_tensor;
   }
 };

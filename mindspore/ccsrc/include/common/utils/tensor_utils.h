@@ -154,6 +154,14 @@ template <typename... T1>
 void SetException(const std::tuple<T1...> &t1) {
   SetExceptionImpl(t1, std::index_sequence_for<T1...>{});
 }
+
+template <typename T>
+inline T GetTensorData(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto cpu_tensor = tensor->cpu();
+  return *(static_cast<T *>(cpu_tensor->data_c()));
+}
+
 }  // namespace tensor
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_UTILS_H_

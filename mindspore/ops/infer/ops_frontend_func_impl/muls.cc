@@ -27,10 +27,10 @@
 namespace mindspore {
 namespace ops {
 template <typename T, typename U>
-void ImplMulsHelp(void *x1, float x2, void *result, size_t size) {
+void ImplMulsHelp(const void *x1, float x2, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(result);
-  U *x1_data = static_cast<U *>(x1);
+  const U *x1_data = static_cast<const U *>(x1);
   T x2_data = static_cast<T>(x2);
   auto result_data = static_cast<T *>(result);
   for (size_t i = 0; i < size; ++i) {
@@ -40,10 +40,10 @@ void ImplMulsHelp(void *x1, float x2, void *result, size_t size) {
 }
 
 template <typename T>
-void ImplMulsBoolHelp(void *x1, float x2, void *result, size_t size) {
+void ImplMulsBoolHelp(const void *x1, float x2, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(result);
-  T *x1_data = static_cast<T *>(x1);
+  const T *x1_data = static_cast<const T *>(x1);
   T x2_data = static_cast<T>(x2);
   auto result_data = static_cast<T *>(result);
   for (size_t i = 0; i < size; ++i) {
@@ -52,7 +52,7 @@ void ImplMulsBoolHelp(void *x1, float x2, void *result, size_t size) {
 }
 
 template <typename T>
-void ImplMuls(void *x1, TypeId x1_type, float x2, void *result, size_t size) {
+void ImplMuls(const void *x1, TypeId x1_type, float x2, void *result, size_t size) {
   switch (x1_type) {
     case kNumberTypeBool:
       ImplMulsHelp<T, bool>(x1, x2, result, size);
@@ -99,7 +99,7 @@ void ImplMuls(void *x1, TypeId x1_type, float x2, void *result, size_t size) {
 }
 
 template <typename T>
-void ImplMulsComplex(void *x1, TypeId x1_type, float x2, void *result, size_t size) {
+void ImplMulsComplex(const void *x1, TypeId x1_type, float x2, void *result, size_t size) {
   switch (x1_type) {
     case kNumberTypeComplex64:
       ImplMulsHelp<T, std::complex<float>>(x1, x2, result, size);
@@ -113,7 +113,7 @@ void ImplMulsComplex(void *x1, TypeId x1_type, float x2, void *result, size_t si
 }
 
 template <typename T>
-void ImplMulsBool(void *x1, TypeId x1_type, float x2, void *result, size_t size) {
+void ImplMulsBool(const void *x1, TypeId x1_type, float x2, void *result, size_t size) {
   switch (x1_type) {
     case kNumberTypeBool:
       ImplMulsBoolHelp<bool>(x1, x2, result, size);
@@ -123,7 +123,7 @@ void ImplMulsBool(void *x1, TypeId x1_type, float x2, void *result, size_t size)
   }
 }
 
-using HandlerMuls = std::function<void(void *x1, TypeId x1_type, float x2, void *result, size_t size)>;
+using HandlerMuls = std::function<void(const void *x1, TypeId x1_type, float x2, void *result, size_t size)>;
 std::map<TypeId, HandlerMuls> muls_impl_list = {{kNumberTypeBool, ImplMulsBool<bool>},
                                                 {kNumberTypeInt8, ImplMuls<int8_t>},
                                                 {kNumberTypeInt16, ImplMuls<int16_t>},
@@ -177,7 +177,8 @@ class MulsFrontendFuncImpl : public OpFrontendFuncImpl {
                     << x2_number << ", the type is not supported.";
       return nullptr;
     }
-    iter->second(x1_tensor->data_c(), x1_type, x2_number, result_tensor->data_c(), data_size);
+    auto x1_tensor_cpu = x1_tensor->cpu();
+    iter->second(x1_tensor_cpu->data_c(), x1_type, x2_number, result_tensor->data_c(), data_size);
     return result_tensor;
   }
 };

@@ -27,19 +27,19 @@
 namespace mindspore {
 namespace ops {
 template <typename T>
-void ImplMinimum(void *x1, void *x2, void *result, size_t size) {
+void ImplMinimum(const void *x1, const void *x2, void *result, size_t size) {
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(x2);
   MS_EXCEPTION_IF_NULL(result);
-  T *x1_data = static_cast<T *>(x1);
-  T *x2_data = static_cast<T *>(x2);
+  const T *x1_data = static_cast<const T *>(x1);
+  const T *x2_data = static_cast<const T *>(x2);
   auto result_data = static_cast<T *>(result);
   for (size_t i = 0; i < size; ++i) {
     result_data[i] = x1_data[i] < x2_data[i] ? x1_data[i] : x2_data[i];
   }
 }
 
-using Handler = std::function<void(void *x1, void *x2, void *result, size_t size)>;
+using Handler = std::function<void(const void *x1, const void *x2, void *result, size_t size)>;
 std::map<TypeId, Handler> minimum_impl_list = {
   {kNumberTypeInt8, ImplMinimum<int8_t>},     {kNumberTypeInt16, ImplMinimum<int16_t>},
   {kNumberTypeInt32, ImplMinimum<int32_t>},   {kNumberTypeInt64, ImplMinimum<int64_t>},
@@ -77,7 +77,9 @@ class MinimumFrontendFuncImpl : public OpFrontendFuncImpl {
                     << ", the type is not supported.";
       return nullptr;
     }
-    iter->second(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);
+    auto x1_tensor_cpu = x1_tensor->cpu();
+    auto x2_tensor_cpu = x2_tensor->cpu();
+    iter->second(x1_tensor_cpu->data_c(), x2_tensor_cpu->data_c(), result_tensor->data_c(), data_size);
     return result_tensor;
   }
 };

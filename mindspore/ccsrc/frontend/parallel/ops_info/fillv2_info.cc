@@ -176,7 +176,8 @@ Shape FillV2Info::GetShapeFromTensor(const tensor::TensorPtr &shape_tensor) {
                                         << size;
   }
   auto dtype = shape_tensor->data_type();
-  auto data = shape_tensor->data_c();
+  auto shape_tensor_cpu = shape_tensor->cpu();
+  auto data = shape_tensor_cpu->data_c();
   MS_EXCEPTION_IF_NULL(data);
   if (dtype == kNumberTypeInt32) {
     auto shape_data = static_cast<int32_t *>(data);
