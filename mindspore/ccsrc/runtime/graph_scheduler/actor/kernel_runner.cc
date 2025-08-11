@@ -855,9 +855,7 @@ void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) 
     for (const auto &out_in : kernel_info_->out_in_ref_map()) {
       const auto &input_kernel_tensor = input_kernel_tensors_[out_in.second];
       MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-      const auto &input_device_tensor = input_kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(input_device_tensor);
-      const auto &ptr = input_device_tensor->GetValidPtr(kDefaultStreamIndex);
+      const auto &ptr = input_kernel_tensor->GetValidPtr(kDefaultStreamIndex);
       MS_EXCEPTION_IF_NULL(output_kernel_tensors_[out_in.first]);
       const auto &output_device_tensor = output_kernel_tensors_[out_in.first]->device_address();
       if (ptr == nullptr || output_device_tensor == nullptr || output_device_tensor->GetPtr() != nullptr) {
@@ -984,7 +982,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
       pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
       real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
       real_input_info->shape_, device_contexts_[0]->device_context_key().device_name_,
-      device_contexts_[0]->device_context_key().device_id_, device_tensor->user_data());
+      device_contexts_[0]->device_context_key().device_id_, kernel_tensor->user_data());
     auto pre_stream_id = pre_kernel_tensor->stream_id();
     if (pre_stream_id == UINT32_MAX) {
       auto stream_id = kernel_info_->stream_id();
@@ -1005,7 +1003,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
-  new_device_tensor->set_need_sync_user_data(device_tensor->need_sync_user_data());
+  new_kernel_tensor->set_need_sync_user_data(kernel_tensor->need_sync_user_data());
   MS_LOG(DEBUG) << "Prev stream id : " << input_kernel_tensors_[input_index]->device_address()->stream_id()
                 << " new stream id : " << new_device_tensor->stream_id() << ".";
   // Update the input kernel tensor.
@@ -1763,7 +1761,7 @@ void KernelRunner::PreLaunchKernel(OpContext<KernelTensor> *) {
       continue;
     }
     auto &input_device_tensor = input_kernel_tensors_[i]->device_address();
-    if (input_device_tensor == nullptr || !input_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
+    if (input_device_tensor == nullptr || !input_kernel_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "For kernel: " << kernel_->fullname_with_scope() << ", input device tensor " << input_device_tensor
         << " has no device ptr.";
@@ -1775,7 +1773,7 @@ void KernelRunner::PreLaunchKernel(OpContext<KernelTensor> *) {
       continue;
     }
     auto &output_device_tensor = output_kernel_tensors_[i]->device_address();
-    if (!output_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
+    if (!output_kernel_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "For kernel: " << kernel_->fullname_with_scope() << ", output device tensor " << output_device_tensor
         << " has no device ptr.";
@@ -1787,7 +1785,7 @@ void KernelRunner::PreLaunchKernel(OpContext<KernelTensor> *) {
       continue;
     }
     auto workspace_device_tensor = workspace_kernel_tensors_[i]->device_address().get();
-    if (!workspace_device_tensor->GetValidPtr(kernel_info_->stream_id())) {
+    if (!workspace_kernel_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "For kernel: " << kernel_->fullname_with_scope() << ", workspace device tensor " << workspace_device_tensor
         << " has no device ptr.";

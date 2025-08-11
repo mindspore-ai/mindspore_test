@@ -195,13 +195,8 @@ kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res)
   if (tensor::IsTensorPy(res)) {
     auto res_tensor = tensor::ConvertToTensor(res);
     MS_EXCEPTION_IF_NULL(res_tensor);
-    if (res_tensor->device_address() != nullptr) {
-      auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(res_tensor->device_address());
-      MS_LOG(DEBUG) << "res tensor_address:" << tensor_address;
-      MS_EXCEPTION_IF_NULL(tensor_address);
-      if (tensor_address->user_data() != nullptr) {
-        return tensor_address->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
-      }
+    if (res_tensor->has_user_data(kernel::PyExecuteOutputUserData::key)) {
+      return res_tensor->GetUserData().get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
     }
   }
   return nullptr;

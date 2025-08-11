@@ -76,7 +76,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
+                                       uint32_t stream_id) const override;
 
   bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                 size_t stream_id) const override;

@@ -394,31 +394,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // Return whether DeviceAddress has a valid ptr.
   bool IsPtrValid() const;
 
-  using SyncUserDataHandler = void (*)(DeviceAddress *const device_address);
-  // Return the valid device ptr.
-  void *GetValidPtr(size_t);
-
-  inline void TouchSyncHandler() {
-    if (!need_sync_user_data_ || user_data() == nullptr) {
-      return;
-    }
-    std::lock_guard<std::mutex> lock(ptr_mutex_);
-    auto sync_handler = user_data()->get<SyncUserDataHandler>(kSyncUserDataHandler);
-    if (sync_handler == nullptr) {
-      MS_LOG(WARNING) << "For device address:" << this << ", the sync user data handler is null.";
-      return;
-    }
-    (*sync_handler)(this);
-    need_sync_user_data_ = false;
-  }
-
   void Swap(DeviceAddress *other);
-
-  // Get user data maintained by the DeviceAddress.
-  const UserDataPtr &user_data() const override;
-
-  // Set user data to the DeviceAddress.
-  void set_user_data(const UserDataPtr &user_data);
 
   HeterogeneousInfoPtr heterogeneous_info() const;
   void set_heterogeneous_info(HeterogeneousInfoPtr hete_info);
@@ -430,11 +406,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
   void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
   std::function<void(uint8_t *)> deleter() const;
-
-  // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
-  // user data to device ptr.
-  bool need_sync_user_data();
-  void set_need_sync_user_data(bool need_sync_user_data);
 
   const PointerRefCountPtr &pointer_ref_count() const;
   void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt);
@@ -468,8 +439,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
   // We need to release the device memory when the reference count of the device address in bprop graph is 0.
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
-  // Thread lock for ptr_.
-  mutable std::mutex ptr_mutex_;
 
   bool from_persistent_mem_{false};
   bool need_recycle_{false};
@@ -483,11 +452,8 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   // The flag identify where data is stored
   mutable DeviceAddressStatus status_{DeviceAddressStatus::kInDevice};
-  // Handler for sync data from user data.
-  bool need_sync_user_data_{false};
   // The specified deleter to release memory
   std::function<void(uint8_t *)> deleter_;
-
   // Move to kernel tensor later.
   // host_shape_/hete_info_/user_data_ will be removed from device address later.
   // The flatten shape(maybe after padding) vector.
@@ -495,7 +461,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   ShapeVector host_shape_{};
   // heterogeneous info
   HeterogeneousInfoPtr hete_info_{nullptr};
-  UserDataPtr user_data_{nullptr};
 
   // the data for numpy object.
   tensor::TensorDataPtr data_;

@@ -154,9 +154,9 @@ std::string DeviceAddress::ToString() const {
   if (node_index.first != nullptr) {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
-  ofs << " device address deleter:" << (deleter_ != nullptr) << " need sync user data:" << need_sync_user_data_
-      << " user data:" << user_data_ << " is view:" << is_view_ << " from persist mem:" << from_persistent_mem_
-      << " need recycle:" << need_recycle_ << " padding type:" << padding_type_ << " status:" << status_;
+  ofs << " device address deleter:" << (deleter_ != nullptr) << " is view:" << is_view_
+      << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
+      << " padding type:" << padding_type_ << " status:" << status_;
   return ofs.str();
 }
 
@@ -332,25 +332,6 @@ bool DeviceAddress::IsPtrValid() const {
   return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
 }
 
-// Return the valid device ptr.
-void *DeviceAddress::GetValidPtr(size_t) {
-  if (user_data() == nullptr || (!need_sync_user_data_)) {
-    return GetDevicePtr();
-  }
-  std::lock_guard<std::mutex> lock(ptr_mutex_);
-  if (!need_sync_user_data_) {
-    return GetDevicePtr();
-  }
-  auto sync_handler = user_data()->get<SyncUserDataHandler>(kSyncUserDataHandler);
-  if (sync_handler == nullptr) {
-    MS_LOG(WARNING) << "For device address:" << this << ", the sync user data handler is null.";
-    return GetDevicePtr();
-  }
-  (*sync_handler)(this);
-  need_sync_user_data_ = false;
-  return GetDevicePtr();
-}
-
 void DeviceAddress::Swap(DeviceAddress *other) {
   MS_EXCEPTION_IF_NULL(other);
   if (other == this) {
@@ -360,16 +341,11 @@ void DeviceAddress::Swap(DeviceAddress *other) {
 
   other->set_from_mem_pool(this->from_mem_pool());
   other->set_deleter(deleter());
-  other->set_need_sync_user_data(need_sync_user_data_);
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
   deleter_ = nullptr;
   set_managed_by_somas(other->managed_by_somas());
 }
-
-const UserDataPtr &DeviceAddress::user_data() const { return user_data_; }
-
-void DeviceAddress::set_user_data(const UserDataPtr &user_data) { user_data_ = user_data; }
 
 const ShapeVector &DeviceAddress::host_shape() const { return host_shape_; }
 
@@ -388,10 +364,6 @@ void DeviceAddress::SetPointerRefCountDeleter(std::function<void(void *, bool)> 
 }
 
 std::function<void(uint8_t *)> DeviceAddress::deleter() const { return deleter_; }
-
-bool DeviceAddress::need_sync_user_data() { return need_sync_user_data_; }
-
-void DeviceAddress::set_need_sync_user_data(bool need_sync_user_data) { need_sync_user_data_ = need_sync_user_data; }
 
 const PointerRefCountPtr &DeviceAddress::pointer_ref_count() const { return pointer_ref_count_; }
 

@@ -494,7 +494,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
                     << " device type:" << tensor_device_address->GetDeviceType();
       // Move the device ptr from device_tensor to tensor_device_address.
       device_tensor->Swap(tensor_device_address.get());
-      tensor_device_address->set_user_data(device_tensor->user_data());
+      if (output_kernel_tensors_[i]->user_data()) {
+        tensor->CloneUserData(*(output_kernel_tensors_[i]->user_data()));
+      }
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, GetAID().Name(), device::GetDeviceNameByType(device_tensor->GetDeviceType()),

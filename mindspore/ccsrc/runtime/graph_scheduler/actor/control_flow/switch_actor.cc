@@ -84,10 +84,10 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
   int64_t index = 0;
   char buf[kMaxSwitchCondSize] = {0};
   ShapeVector host_shape;
-  if (device_tensor->user_data() != nullptr && device_tensor->need_sync_user_data() &&
-      device_tensor->user_data()->has(kernel::PyExecuteOutputUserData::key)) {
+  if (input_kernel_tensors_[0]->user_data() != nullptr && input_kernel_tensors_[0]->need_sync_user_data() &&
+      input_kernel_tensors_[0]->user_data()->has(kernel::PyExecuteOutputUserData::key)) {
     const auto &user_data_obj =
-      device_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+      input_kernel_tensors_[0]->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
     MS_EXCEPTION_IF_NULL(user_data_obj);
     const auto &obj = user_data_obj->obj;
     py::gil_scoped_acquire gil_acquire;

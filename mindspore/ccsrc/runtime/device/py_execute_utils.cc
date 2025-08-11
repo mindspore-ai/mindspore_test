@@ -326,13 +326,15 @@ abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
   return std::make_shared<abstract::AbstractTensor>(TypeIdToType(TypeId::kNumberTypeFloat64), shape);
 }
 
-void UserDataToRawMemory(DeviceAddress *const device_address) {
+void UserDataToRawMemory(KernelTensor *const kernel_tensor) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_address = kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(device_address);
-  MS_EXCEPTION_IF_NULL(device_address->user_data());
+  MS_EXCEPTION_IF_NULL(kernel_tensor->user_data());
   MS_LOG(DEBUG) << "Start sync data from device address:" << device_address
-                << " user data:" << device_address->user_data();
+                << " user data:" << kernel_tensor->user_data();
   const auto &user_data_obj =
-    device_address->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+    kernel_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
   MS_EXCEPTION_IF_NULL(user_data_obj);
   const auto &obj = user_data_obj->obj;
   if (!IsValidObj(obj)) {

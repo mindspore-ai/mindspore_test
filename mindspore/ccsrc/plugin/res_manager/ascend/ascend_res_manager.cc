@@ -696,7 +696,7 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
-                                                       uint32_t stream_id, const UserDataPtr &user_data) const {
+                                                       uint32_t stream_id) const {
   auto real_device_id = device_id;
   if (device_name.empty()) {
     auto ms_context = MsContext::GetInstance();
@@ -706,9 +706,6 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
   }
   auto device_address =
     std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kAscendDevice, real_device_id, stream_id);
-  if (user_data) {
-    device_address->set_user_data(user_data);
-  }
   return device_address;
 }
 

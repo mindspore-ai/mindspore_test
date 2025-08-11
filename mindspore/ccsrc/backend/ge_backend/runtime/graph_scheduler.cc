@@ -1567,7 +1567,9 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
         << "#dmsg#Runtime error info:#dmsg#Device tensor store does not support tuple type, node:"
         << backend_node->DebugString() << " index:" << index;
     }
-    auto sub_device_tensor = AnfAlgo::GetMutableOutputAddr(backend_node, index, false);
+    auto sub_kernel_tensor = AnfAlgo::GetOutputKernelTensor(backend_node, index, false);
+    MS_EXCEPTION_IF_NULL(sub_kernel_tensor);
+    auto sub_device_tensor = sub_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(sub_device_tensor);
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
@@ -1579,7 +1581,7 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     new_device_tensor->SetNodeIndex(backend_node, index);
     new_device_tensor->set_is_ptr_persisted(sub_device_tensor->is_ptr_persisted());
     new_device_tensor->set_from_persistent_mem(true);
-    new_device_tensor->set_user_data(sub_device_tensor->user_data());
+    kernel_tensor->set_user_data(sub_kernel_tensor->user_data());
 
     SchedulerHelper::AddDeviceTensorStore(root_graph_parameter, kernel_tensor);
     MS_LOG(INFO) << "Add device tensor store by root graph parameter:" << root_graph_parameter->fullname_with_scope()

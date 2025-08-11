@@ -539,7 +539,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       if (kernel_info->kernel_mod() != nullptr && kernel_info->kernel_mod()->need_user_data()) {
         user_data = std::make_shared<UserData>();
         user_data->set(kSyncUserDataHandler,
-                       std::make_shared<device::DeviceAddress::SyncUserDataHandler>(pyexecute::UserDataToRawMemory));
+                       std::make_shared<kernel::KernelTensor::SyncUserDataHandler>(pyexecute::UserDataToRawMemory));
         user_data->set(kGetValueByUserDataHandler,
                        std::make_shared<ValuePtr (*)(const UserDataPtr &)>(pyexecute::GetValueFromUserData));
         graph->set_has_kernel_need_user_data(true);

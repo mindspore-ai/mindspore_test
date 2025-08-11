@@ -78,7 +78,7 @@ inline bool InputDataNoNeedCopy(const AnfNodePtr &input_node, const KernelTensor
   }
 
   if (input_device_tensor == node_device_tensor) {
-    (void)input_device_tensor->TouchSyncHandler();
+    (void)input_kernel_tensor->TouchSyncHandler();
     return true;
   }
 
@@ -1405,11 +1405,11 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
     if (type_ != KernelTransformType::kSuperKernelActor) {
       node_device_tensor->set_ptr(input_device_tensor->GetMutablePtr());
     } else {
-      node_device_tensor->set_ptr(input_device_tensor->GetValidPtr(input_device_tensor->stream_id()));
+      node_device_tensor->set_ptr(input_kernel_tensor->GetValidPtr(input_device_tensor->stream_id()));
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor:" << GetAID() << "set need sync flag from:" << input_device_tensor << " to:" << node_device_tensor
-      << " sync user data handler:" << node_device_tensor->need_sync_user_data();
+      << " sync user data handler:" << node_kernel_tensor->need_sync_user_data();
     node_device_tensor->set_from_mem_pool(false);
     // continue
     return true;
@@ -1435,8 +1435,8 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   MS_EXCEPTION_IF_NULL(copy_kernel_tensor);
   auto &copy_device_tensor = copy_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(copy_device_tensor);
-  copy_device_tensor->set_user_data(node_device_tensor->user_data());
-  copy_device_tensor->set_need_sync_user_data(node_device_tensor->need_sync_user_data());
+  copy_kernel_tensor->set_user_data(node_kernel_tensor->user_data());
+  copy_kernel_tensor->set_need_sync_user_data(node_kernel_tensor->need_sync_user_data());
   if ((copy_device_tensor->GetPtr() == nullptr) &&
       (!device_context->device_res_manager_->AllocateMemory(copy_device_tensor.get()))) {
     MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
@@ -1450,7 +1450,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   if (type_ != KernelTransformType::kSuperKernelActor) {
     node_device_tensor->set_ptr(copy_device_tensor->GetMutablePtr());
   } else {
-    node_device_tensor->set_ptr(copy_device_tensor->GetValidPtr(copy_device_tensor->stream_id()));
+    node_device_tensor->set_ptr(copy_kernel_tensor->GetValidPtr(copy_device_tensor->stream_id()));
   }
   node_device_tensor->set_from_mem_pool(false);
   return false;
@@ -1488,8 +1488,8 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     auto input_device_tensor = input_kernel_tensors_[i]->device_address();
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     UpdateShape(input_nodes[i], node_device_kernel_tensor, input_kernel_tensor, type_);
-    node_device_tensor->set_user_data(input_device_tensor->user_data());
-    node_device_tensor->set_need_sync_user_data(input_device_tensor->need_sync_user_data());
+    node_device_kernel_tensor->set_user_data(input_kernel_tensors_[i]->user_data());
+    node_device_kernel_tensor->set_need_sync_user_data(input_kernel_tensors_[i]->need_sync_user_data());
     if (type_ != KernelTransformType::kSuperKernelActor) {
       node_device_kernel_tensor->SetValue(input_kernel_tensor->GetValueTrack());
     }
