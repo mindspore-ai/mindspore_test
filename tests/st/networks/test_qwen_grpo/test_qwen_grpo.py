@@ -19,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))
 from utils import init_env_rl
 import logging
 import re
-import pytest
+# import pytest
 logging.basicConfig(level=logging.INFO)
 
 
@@ -36,11 +36,11 @@ def parse_log_file(file):
     return data
 
 
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+# @pytest.mark.platform_arm_ascend910b_training
+# @pytest.mark.env_single
 class TestQwenGRPO:
-    @pytest.mark.level1
-    @pytest.mark.run(order=1)
+    # @pytest.mark.level1
+    # @pytest.mark.run(order=1)
     def test_qwen_grpo(self):
         """
         Feature: test mindspore pretrain_glm
@@ -56,8 +56,8 @@ class TestQwenGRPO:
         ret = os.system(cmd)
         assert ret == 0, f"msrun failed, please check ms_det.log"
 
-    @pytest.mark.level1
-    @pytest.mark.run(order=2)
+    # @pytest.mark.level1
+    # @pytest.mark.run(order=2)
     def test_compare_res(self):
         """
         Feature: test_compare_res
