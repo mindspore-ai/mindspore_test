@@ -710,6 +710,7 @@ bool IrExportBuilder::SetTensorToAttributeProto(const ValuePtr &value, mind_ir::
   tensor_proto->set_name("value0");
   auto data = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(data);
+  data = data->cpu();
   tensor_proto->set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
   auto dtype = data->data_type();
   auto shape = data->shape_c();
@@ -1978,6 +1979,8 @@ bool MindIRExporter::SaveMindIRTogether() {
       continue;
     }
     auto data = para->default_param()->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(data);
+    data = data->cpu();
     param_proto.clear_raw_data();
     param_proto.set_raw_data(data->data_c(), static_cast<size_t>(data->DataNBytes()));
   }
@@ -2085,6 +2088,7 @@ bool MindIRExporter::SplitSave() {
     param_proto.mutable_external_data()->set_length(data_length);
     param_proto.mutable_external_data()->set_offset(offset);
 
+    data = data->cpu();
     data_fs_->write(static_cast<const char *>(data->data_c()), data_length);
     auto append_data = new char[append_size];
     if (append_data == nullptr) {

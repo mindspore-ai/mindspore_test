@@ -116,6 +116,7 @@ bool TrtConverterContext::InitInputTable() {
       MS_EXCEPTION_IF_NULL(param_value);
       auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(param_value);
       MS_EXCEPTION_IF_NULL(tensor);
+      tensor = tensor->cpu();
 
       nvinfer1::Weights weight;
       weight.values = tensor->data_c();
