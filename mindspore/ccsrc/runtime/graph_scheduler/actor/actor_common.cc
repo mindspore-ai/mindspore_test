@@ -1076,6 +1076,7 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
     MS_EXCEPTION_IF_NULL(tensor);
     auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
     if (!graph_parameter_store->IsPositionDynamic(outer_index, inner_index) &&
+        kernel_tensor->device_address() != nullptr &&
         (kernel_tensor->format() == DEFAULT_FORMAT || kernel_tensor->format() == ND)) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Outer index: " << outer_index << ", inner index: " << inner_index << ", dynamic is "
