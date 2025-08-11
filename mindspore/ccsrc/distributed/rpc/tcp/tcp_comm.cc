@@ -32,7 +32,7 @@ void DoDisconnect(int fd, Connection *conn, uint32_t error, int soError) {
     return;
   }
   if (LOG_CHECK_EVERY_N()) {
-    MS_LOG(INFO) << "Failed to call connect, fd: " << fd << "from : " << conn->source << " to: " << conn->destination
+    MS_LOG(INFO) << "Failed to call connect, fd: " << fd << " from : " << conn->source << " to: " << conn->destination
                  << ", events: " << error << ", errno: " << soError << " " << strerror(soError);
   }
 
@@ -482,20 +482,24 @@ bool TCPComm::Connect(const std::string &dst_url, const MemFreeCallback &free_cb
     conn->source = SocketOperation::GetIP(sock_fd) + ":" + std::to_string(SocketOperation::GetPort(sock_fd));
     conn->destination = dst_url;
     dst_url_to_src_ip_[dst_url] = SocketOperation::GetIP(sock_fd);
-    MS_LOG(WARNING) << "Connection " << sock_fd << " source: " << conn->source
-                    << ", destination: " << conn->destination;
+    MS_LOG(INFO) << "Connection " << sock_fd << " source: " << conn->source << ", destination: " << conn->destination;
 
     // Check the state of this new created connection.
     uint32_t interval = 1;
+    // Check the state of for small-scale cluster.
+    uint32_t interval_ms = 10;
     size_t retry = 3;
     // Record total retry number to avoid duplicated log.
     static size_t total_retry_count = 0;
     while (conn->state < ConnectionState::kConnected && retry-- > 0) {
-      MS_LOG(WARNING) << "Waiting for the state of the connection to " << dst_url
-                      << " to be connected...Retry number: " << ++total_retry_count;
-      SleepBasedOnScale(interval);
+      MS_LOG(INFO) << "Waiting for the state of the connection to " << dst_url
+                   << " to be connected...Retry number: " << ++total_retry_count;
+      SleepBasedOnScale(interval, interval_ms);
     }
     if (conn->state != ConnectionState::kConnected) {
+      if (sock_fd > 0 && close(sock_fd) != 0) {
+        MS_LOG(WARNING) << "Failed to close fd: " << sock_fd;
+      }
       return false;
     }
     conn_pool_->AddConnection(conn);

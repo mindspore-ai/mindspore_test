@@ -157,6 +157,35 @@ std::string CommUtil::GenerateUUID() {
   return ss.str();
 }
 
+std::string CommUtil::GenerateVariableUUID() {
+  std::random_device rand_num;
+  std::mt19937_64 gen_rand_num(rand_num());
+  std::stringstream ss;
+  int i;
+  ss << std::hex;
+  for (i = 0; i < kGroup1RandomLength; i++) {
+    ss << dis(gen_rand_num);
+  }
+  ss << "-";
+  for (i = 0; i < kGroup2RandomLength; i++) {
+    ss << dis(gen_rand_num);
+  }
+  ss << "-4";
+  for (i = 0; i < kGroup3RandomLength - 1; i++) {
+    ss << dis(gen_rand_num);
+  }
+  ss << "-";
+  ss << dis2(gen_rand_num);
+  for (i = 0; i < kGroup4RandomLength - 1; i++) {
+    ss << dis(gen_rand_num);
+  }
+  ss << "-";
+  for (i = 0; i < kGroup5RandomLength; i++) {
+    ss << dis(gen_rand_num);
+  }
+  return ss.str();
+}
+
 std::string CommUtil::NodeRoleToString(const NodeRole &role) {
   switch (role) {
     case NodeRole::SCHEDULER:

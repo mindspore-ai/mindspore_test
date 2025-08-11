@@ -57,7 +57,10 @@ class RPCClientBase {
   // Send the message from the source to the destination asynchronously.
   virtual void SendAsync(std::unique_ptr<MessageBase> &&msg) {}
 
-  virtual MessageBase *ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout = 30) { return nullptr; }
+  virtual MessageBase *ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout = 30,
+                                   bool *is_send_fail = nullptr) {
+    return nullptr;
+  }
 
   // Force the data in the send buffer to be sent out.
   virtual bool Flush(const std::string &dst_url) { return true; }

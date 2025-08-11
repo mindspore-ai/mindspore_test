@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <chrono>
+#include <regex>
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "actor/msg.h"
@@ -92,6 +93,40 @@ __attribute__((unused)) static bool CheckFilePath(const std::string &path) {
   }
   return true;
 }
+
+__attribute__((unused)) static bool IsValidIP(const std::string &ip) {
+  std::regex ipPattern(
+    "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+    "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+  return std::regex_match(ip, ipPattern);
+}
+
+__attribute__((unused)) static bool IsValidPort(int port) {
+  static const int max_port = 65535;
+  return port >= 0 && port <= max_port;
+}
+
+__attribute__((unused)) static bool ParseIPPort(const std::string &str, struct MetaServerAddress *address) {
+  size_t colon_pos = str.find(':');
+  if (colon_pos != std::string::npos) {
+    std::string ip = str.substr(0, colon_pos);
+    std::string port_str = str.substr(colon_pos + 1);
+    int port = std::stoi(port_str);
+    if (!IsValidIP(ip) && !IsValidPort(port)) {
+      MS_LOG(ERROR) << "The IP or port must be legal. but got " << str;
+      return false;
+    }
+    address->ip = ip;
+    address->port = port;
+  } else {
+    MS_LOG(ERROR) << "The IP or port must be legal. but got " << str;
+    return false;
+  }
+  return true;
+}
+
 }  // namespace topology
 }  // namespace cluster
 }  // namespace distributed

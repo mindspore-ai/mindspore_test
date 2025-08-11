@@ -18,6 +18,7 @@ import hashlib
 import builtins
 import io
 import pickle
+from datetime import timedelta
 import numpy as np
 from mindspore import log as logger
 from mindspore.common import dtype as mstype
@@ -146,28 +147,26 @@ class TCPStore:
 
     Note:
         - The function is implemented by CPU and does not involve any hardware operations related to Ascend.
-        - Currently, all parameters provided by the TCPStore class constructor are not supported.
-          The master node and port number are uniformly specified by the MindSpore framework.
-          The following parameters are provided, currently not supported and settings are invalid.
+        - Currently, all parameters provided by the TCPStore class constructor are not supported
+          except for `host_name`, `port`, `world_size`, `is_master`, `timeout` and `wait_for_workers`,
+          which are reserved parameters and invalid settings.
         - The current TcpStore function is limited and only supports scenarios where the key is
           less than 4k and the value is less than 1G. Complex scenarios are to be supported.
-        - The timeout interval for message sending and receiving in the TcpStore function is controlled by
-          the `MS_RECEIVE_MSG_TIMEOUT` environment variable, in seconds, with a default value of ``15``.
-          If a timeout occurs, the user needs to increase the configuration value.
 
     Args:
-        host_name (str, invalid, optional): The hostname or IP Address the server store should run on.
-            Default is ``None``.
-        port (int, invalid, optional): The port on which the server store should listen for incoming requests.
-            Default is ``None``.
-        world_size (int, invalid, optional): The total number of store users (number of clients + 1 for the server).
-            Default is ``None`` (``None`` indicates a non-fixed number of store users).
-        is_master (bool, invalid, optional): True when initializing the server store and False for client stores.
+        host_name (str): The hostname or IP Address the server store should run on.
+            Currently only supports user input IP addresses.
+        port (int): The port on which the server store should listen for incoming requests.
+        world_size (int, optional): The total number of store users (number of clients + 1 for the server).
+            Default is ``None``, indicates a non-fixed number of store users. This parameter is
+            only valid for the server.
+        is_master (bool, optional): True when initializing the server store and False for client stores.
             Default is ``False``.
-        timeout (timedelta, invalid, optional): Timeout used by the store during initialization, Unit: seconds.
-            Default is ``300``.
-        wait_for_workers (bool, invalid, optional): Whether to wait for all the workers to connect with the server
-            store. This is only applicable when `world_size` is a fixed value. Default is ``True``.
+        timeout (timedelta, optional): Timeout used by the store during initialization. Default is
+            ``timedelta(seconds=300)``.
+        wait_for_workers (bool, optional): Whether to wait for all the workers to connect with the server
+            store. This is only applicable when `world_size` is a fixed value. Default is ``True``. This
+            parameter is only valid for the server.
         multi_tenant (bool, invalid, optional): If ``True``, all ``TCPStore`` instances in the current process with
             the same host/port will use the same underlying ``TCPServer``. Default is ``False``.
         master_listen_fd (int, invalid, optional): If specified, the underlying ``TCPServer`` will listen on this file
@@ -193,12 +192,106 @@ class TCPStore:
             for more details.
 
         >>> from mindspore.mint.distributed import TCPStore
-        >>> store = TCPStore()
+        >>> store = TCPStore("127.0.0.1", 1234)
     """
 
-    def __init__(self, host_name=None, port=None, world_size=None, is_master=False, timeout=300,
+    def __init__(self, host_name, port, world_size=None, is_master=False, timeout=timedelta(seconds=300),
                  wait_for_workers=True, multi_tenant=False, master_listen_fd=None, use_libuv=True):
-        self.instance = TCPStoreClient.get_instance()
+        if not isinstance(host_name, str):
+            raise TypeError(
+                "For 'TCPStore', the argument 'host_name' must be type of string, "
+                "but got 'host_name' type : {}.".format(type(host_name))
+            )
+        if not isinstance(port, int):
+            raise TypeError(
+                "For 'TCPStore', the argument 'port' must be type of int, "
+                "but got 'port' type : {}.".format(type(port))
+            )
+        if not isinstance(is_master, bool):
+            raise TypeError(
+                "For 'TCPStore', the argument 'is_master' must be type of bool, "
+                "but got 'is_master' type : {}.".format(type(is_master))
+            )
+        if not isinstance(timeout, timedelta):
+            raise TypeError(
+                "For 'TCPStore', the argument 'timeout' must be type of timedelta, "
+                "but got 'timeout' type : {}.".format(type(timeout))
+            )
+        if not isinstance(wait_for_workers, bool):
+            raise TypeError(
+                "For 'TCPStore', the argument 'wait_for_workers' must be type of bool, "
+                "but got 'wait_for_workers' type : {}.".format(type(wait_for_workers))
+            )
+        if world_size is None:
+            world_size = 1
+        if not isinstance(world_size, int):
+            raise TypeError(
+                "For 'TCPStore', the argument 'world_size' must be type of int, "
+                "but got 'world_size' type : {}.".format(type(world_size))
+            )
+        if port < 0 or port > 65535:
+            raise ValueError(
+                "For 'TCPStore', the argument 'port' must be legal, "
+                f"but got {port}."
+            )
+        if world_size <= 0:
+            raise ValueError(
+                "For 'TCPStore', the argument 'world_size' must be legal, "
+                f"but got {world_size}."
+            )
+        timeout_ms = int(timeout.total_seconds() * 1000)
+        self.instance = TCPStoreClient(host_name, port, is_master, timeout_ms, world_size, wait_for_workers)
+        self.host = host_name
+        self.port = port
+
+
+    def add(self, key, amount):
+        """
+        When the `add` function is called for the first time with a given key, it creates a counter in
+        the storage corresponding to that key, with the initial value set to `amount`. Subsequent calls
+        to `add` with the same key increment the counter by amount.
+
+        Args:
+            key (str): The key whose counter value will be incremented.
+            amount (int): The amount by which the counter will be incremented.
+
+        Returns:
+            int, value of counter with `key`.
+
+        Raises:
+            TypeError: If `key` is not string.
+            TypeError: If `amount` is not int.
+            RuntimeError: If the `add` and `set` pass the same `key` and the `value` passed by `set` cannot
+                be correctly converted to a numerical value, calling `add` will result in an error.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            .. note::
+                Before running the following examples, you need to configure the communication environment variables.
+
+                For Ascend devices, it is recommended to use the msrun startup method
+                without any third-party or configuration file dependencies.
+                Please see the `msrun start up
+                <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+                for more details.
+
+            >>> from mindspore.mint.distributed import TCPStore
+            >>> store = TCPStore("127.0.0.1", 1234)
+            >>> store.add("first_key", 1)
+        """
+        if not isinstance(key, str):
+            raise TypeError(
+                "For 'TCPStore.add', the argument 'key' must be type of string, "
+                "but got 'key' type : {}.".format(type(key))
+            )
+        if not isinstance(amount, int):
+            raise TypeError(
+                "For 'TCPStore.add', the argument 'amount' must be type of string or int, "
+                "but got 'amount' type : {}.".format(type(amount))
+            )
+        return self.instance.add(key, amount)
 
 
     def set(self, key, value):
@@ -229,7 +322,7 @@ class TCPStore:
                 for more details.
 
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore()
+            >>> store = TCPStore("127.0.0.1", 1234)
             >>> store.set("first_key", "first_value")
         """
         if not isinstance(key, str):
@@ -247,8 +340,9 @@ class TCPStore:
 
     def get(self, key):
         """
-        Retrieves the value associated with the given `key` in the store. If `key` is not
-        present in the store, the function will return "".
+        Retrieves the value associated with the given `key` in the store. If the `key` does not exist
+        in the storage, this function will wait for the `timeout` set by the class initialization and then
+        throw an exception.
 
         Args:
             key (str): The function will return the value associated with this key.
@@ -258,6 +352,7 @@ class TCPStore:
 
         Raises:
             TypeError: If `key` is not string.
+            RuntimeError: If `get` runs out of time.
 
         Supported Platforms:
             ``Ascend``
@@ -273,7 +368,7 @@ class TCPStore:
                 for more details.
 
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore()
+            >>> store = TCPStore("127.0.0.1", 1234)
             >>> store.set("first_key", "first_value")
             >>> data = store.get("first_key")
             >>> print(data)
@@ -301,7 +396,7 @@ class TCPStore:
             TypeError: If `key` is not string.
 
         Supported Platforms:
-            ``CPU``
+            ``Ascend``
 
         Examples:
             .. note::
@@ -314,7 +409,7 @@ class TCPStore:
                 for more details.
 
             >>> from mindspore.mint.distributed import TCPStore
-            >>> store = TCPStore()
+            >>> store = TCPStore("127.0.0.1", 1234)
             >>> store.set("first_key", "first_value")
             >>> # This should return true
             >>> store.delete_key("first_key")
