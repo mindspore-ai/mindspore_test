@@ -17,6 +17,7 @@ from mindspore import context, nn, Tensor
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common import dtype as mstype
+from mindspore.train.model import Model
 from tests.mark_utils import arg_mark
 
 class AssignSubNet(nn.Cell):
@@ -87,3 +88,56 @@ def test_single_op_graph():
     net2 = AssignSubDynamicShape(input_ref_np, input_value_np, indices_np)
     result2 = net2.impl()
     assert np.allclose(result1[0].asnumpy(), result2[0].asnumpy())
+
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_format_trans():
+    """
+    Feature: test different format between pynative and graph.
+    Description: pynative to graph mode.
+    Expectation: Not throw exception.
+    """
+    class NetConv2d(nn.Cell):
+        def __init__(self, in_channel, out_channel, kernel_size, stride_size, kernel_me):
+            super().__init__()
+            self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, stride=stride_size, padding=0, has_bias=False,
+                                  weight_init=Tensor(kernel_me), pad_mode="valid")
+
+        def construct(self, x):
+            x = self.conv(x)
+            return x
+
+    class NetBatchNorm2d(nn.Cell):
+        def __init__(self, out_channel, kernel_bn, bias_bn, eps):
+            super().__init__()
+            self.bn = nn.BatchNorm2d(num_features=out_channel, eps=eps, beta_init=Tensor(bias_bn),
+                                     gamma_init=Tensor(kernel_bn))
+
+        def construct(self, x):
+            x = self.bn(x)
+            return x
+
+    input_shape = (32, 3, 224, 224)
+    output_channel = 64
+    kernel_size = 6
+    stride_size = 1
+    n, in_channel, h, w = input_shape
+    input_np = np.random.randn(n, h, w, in_channel).astype(np.float32)
+    eps = 1e-3
+    kernel = np.random.randn(kernel_size, kernel_size, in_channel, output_channel).astype(np.float32)
+    kernel_bn = np.random.randn(output_channel).astype(np.float32)
+    bias_bn = np.random.randn(output_channel).astype(np.float32)
+    input_me = input_np.transpose(0, 3, 1, 2)
+    kernel_me = kernel.transpose(3, 2, 0, 1)
+    net_a = NetConv2d(in_channel, output_channel, kernel_size, stride_size, kernel_me)
+    output_conv2d = net_a(Tensor(input_me))
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
+    net_b = NetBatchNorm2d(output_channel, kernel_bn, bias_bn, eps)
+    model_graph = Model(net_b)
+    out_graph = model_graph.predict(Tensor(output_conv2d))
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net_b_1 = NetBatchNorm2d(output_channel, kernel_bn, bias_bn, eps)
+    model_pynative = Model(net_b_1)
+    out_pynative = model_pynative.predict(Tensor(output_conv2d))
+    assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy())

@@ -71,10 +71,10 @@ def get_empty_tensor():
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net_empty_input():
     """
-    Feature: Test empty input in GE.
-    Description: Empty input.
+    Feature: Test empty input in O0.
+    Description: ge mode for not support non-contiguous input after delete tensor data.
     Expectation: print output y.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     net = Net()
     net(get_empty_tensor())

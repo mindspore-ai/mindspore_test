@@ -1164,7 +1164,8 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   tensor_address->set_new_ref_count(SIZE_MAX);
   if (tensor_address->GetPtr() == nullptr) {
     MS_LOG(EXCEPTION) << "Device ptr of tensor address can not be nullptr, device type: "
-                      << tensor_address->GetDeviceType();
+                      << tensor_address->GetDeviceType() << " for parameter index:" << outer_index
+                      << " inner index:" << inner_index << " device address:" << tensor_address->ToString();
   }
 
   if (tensor_address == device_tensor) {

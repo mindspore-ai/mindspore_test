@@ -226,7 +226,9 @@ bool CacheFileExists(const std::string &name) {
 }
 
 void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const AnfNodePtr &output_node, size_t idx) {
-  if (output_node->isa<ValueNode>()) {
+  MS_EXCEPTION_IF_NULL(output_node);
+  if (output_node->isa<ValueNode>() ||
+      (output_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(output_node->cast<ParameterPtr>()))) {
     auto &&ge_data_uni = ge_output->ResetData();
     auto deleter = ge_data_uni.get_deleter();
     auto ge_data = ge_data_uni.release();
@@ -280,9 +282,8 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   kernel_tensor->SetShapeVector(actual_shapes);
   std::ostringstream zerocopy_log;
-  zerocopy_log << "[ZeroCopy] Update output " << output_node->DebugString() << " address to "
-               << output_addr->GetMutablePtr() << ", shape:" << actual_shapes
-               << ", type: " << TypeIdToString(output_addr->type_id()) << ", format: " << output_addr->format();
+  zerocopy_log << "[ZeroCopy] Update output " << output_node->DebugString() << " address:" << output_addr->ToString()
+               << ", shape:" << actual_shapes;
   MS_LOG(DEBUG) << zerocopy_log.str();
   MS_VLOG(VL_GE_EXECUTOR) << zerocopy_log.str();
 }
@@ -1015,8 +1016,10 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
 bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs) {
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
-  MS_LOG(INFO) << "Run graph begin, inputs size is: " << inputs.size() << ", " << graph_name;
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
+  MS_EXCEPTION_IF_NULL(kg);
+  MS_LOG(INFO) << "Run graph begin, inputs size is: " << inputs.size() << ", " << graph_name
+               << " is dynamic:" << kg->is_dynamic_shape();
   std::vector<GeTensor> ge_inputs = GenerateInputGeTensor(kg);
   std::vector<GeTensor> ge_outputs = GenerateOutputGeTensor(kg);
   auto ret = RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, ge_res_manager_->GetStream());

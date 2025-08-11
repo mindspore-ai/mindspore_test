@@ -620,6 +620,7 @@ bool KernelTensor::SetKernelTensorValue() const {
   return true;
 }
 
+void KernelTensor::set_device_ptr(void *ptr) { device_address_->pointer_ref_count()->set_ptr(ptr); }
 bool KernelTensor::IsDynamicShape() const {
   const auto &shape = this->GetShapeVector();
   return std::any_of(shape.cbegin(), shape.cend(), [](auto i) { return i < 0; });

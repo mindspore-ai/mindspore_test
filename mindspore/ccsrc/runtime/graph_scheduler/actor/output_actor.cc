@@ -646,8 +646,18 @@ void OutputActor::HandleOutput() {
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
     tensor_device_address->set_host_shape(tensor->shape());
 
+    const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+    MS_EXCEPTION_IF_NULL(real_device_context);
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {
+      // For trace memory, the new ref count will always be 0.
+      if (!ActorDispatcher::enable_use_trace_memory() || device_tensor->new_ref_count() > 0) {
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Free same kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
+        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context,
+                                                                GetAID().Name());
+      }
       continue;
     }
 
@@ -695,9 +705,6 @@ void OutputActor::HandleOutput() {
       device_tensor->Swap(tensor_device_address.get());
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
-    const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
-    MS_EXCEPTION_IF_NULL(real_device_context);
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
     // memory.
     if (need_release_mem) {

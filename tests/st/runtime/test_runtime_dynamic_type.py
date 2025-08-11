@@ -13,8 +13,12 @@
 # limitations under the License.
 import mindspore as ms
 from mindspore import nn, Tensor, ops, Parameter
+from mindspore.common import ParameterTuple
+from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
 import mindspore.context as context
+import mindspore.numpy as mnp
+import mindspore.ops.functional as F
 from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -24,7 +28,6 @@ def test_value_depend_infer():
     Description: Value depend in any type.
     Expectation: Not throw exception.
     """
-    from mindspore import numpy as np
     class ValueDependInferNet(nn.Cell):
         def __init__(self, tau=1, hard=False):
             super().__init__()
@@ -81,7 +84,7 @@ def test_value_depend_infer():
     net = EyeNet()
     input_dyn = Tensor(shape=[3, None], dtype=ms.float32)
     net.set_inputs(input_dyn)
-    x = Tensor(np.ones([3, 3]), dtype=ms.float32)
+    x = Tensor(mnp.ones([3, 3]), dtype=ms.float32)
     out = net(x).asnumpy()
     assert out.shape == (64, 64)
 
@@ -189,3 +192,186 @@ def test_cpu_optimize_fp16():
     print(var1.value())
     print(var2.value())
     assert np.allclose(var1.value().asnumpy(), var2.value().asnumpy(), 1.0e-4, 1.0e-4)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cpu_empty_tuple():
+    """
+    Feature: tensor data.
+    Description: empty value sequence.
+    Expectation: Not throw exception.
+    """
+    class _Grad(nn.Cell):
+        def __init__(self, grad, network, wrt_params=False, real_inputs_count=None):
+            super().__init__()
+            self.network = network
+            self.grad = grad
+            self.sens_param = self.grad.sens_param
+            self.wrt_params = wrt_params
+            self.real_inputs_count = real_inputs_count
+
+        def construct(self, *inputs):
+            if self.real_inputs_count is None or self.sens_param is False:
+                if self.wrt_params:
+                    return self.grad(self.network, self.params)(*inputs)
+                return self.grad(self.network)(*inputs)
+
+            real_inputs = inputs[:self.real_inputs_count]
+            sense_param_inputs = inputs[self.real_inputs_count:]
+            if self.wrt_params:
+                return self.grad(self.network, self.params)(*real_inputs, sense_param_inputs)
+            return self.grad(self.network)(*real_inputs, sense_param_inputs)
+
+    class GradOfAllInputs(_Grad):
+        def __init__(self, network, sens_param=True, real_inputs_count=None):
+            super().__init__(grad=ops.GradOperation(get_all=True, sens_param=sens_param),
+                             network=network, real_inputs_count=real_inputs_count)
+
+    def half_fn_1(cell, inputs, outputs):
+        print("inputs[0]", inputs[0])
+        print("inputs[1]", inputs[1])
+        return inputs[0], inputs[1]
+
+    class EyeLayer(nn.Cell):
+        def construct(self, *args, **kwargs):
+            return ops.eye(*args, **kwargs)
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.relu = nn.ReLU()
+            self.eye = EyeLayer()
+            self.handle = self.eye.register_forward_hook(half_fn_1)
+
+        def construct(self, x, y):
+            x = self.relu(x)
+            x = self.eye(x.shape[0], y)
+            return x, y
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    import numpy as np
+    ms_net = Net()
+    input1_np = np.array([2.0, 3.0, 4.0]).astype(np.float32)
+    input2 = None
+    input1_ms = Tensor(input1_np)
+    ms_net.set_grad()
+    out_ms = ms_net(input1_ms, input2)
+    grad_net = GradOfAllInputs(ms_net)
+    grad_net.set_train()
+    grad_net(input1_ms, input2, out_ms)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cpu_any_type_empty_tuple():
+    """
+    Feature: tensor data.
+    Description: empty value sequence.
+    Expectation: Not throw exception.
+    """
+    class Simplenet(nn.Cell):
+        def __init__(self, w, b):
+            super().__init__()
+            self.ref_x1 = Parameter(Tensor(w), name='x1')
+            self.ref_x2 = Parameter(Tensor(b), name='x2')
+
+        def construct(self, x):
+            return 2 * x + 3 * self.ref_x1 + self.ref_x2
+
+    class LossFn(nn.Cell):
+        def __init__(self, fn):
+            super().__init__()
+            self.model = fn
+
+        def construct(self, sample, target):
+            preduction = self.model(sample)
+            loss = mnp.sum(preduction) - target
+            return loss
+
+    class TrainStepNet(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.loss_fn = LossFn(net)
+            self.weight = ParameterTuple(net.trainable_params())
+            self.optim = nn.Adam(self.weight, learning_rate=0.001)
+            self.grad_op = ops.GradOperation(get_by_list=True, get_all=False)
+
+        def construct(self, batch, targets):
+            loss = self.loss_fn(batch, targets)
+            grad_weights = self.grad_op(self.loss_fn, self.weight)(batch, targets)
+            self.optim(grad_weights)
+            return loss
+
+    class VmapNet(nn.Cell):
+        def __init__(self, net_list, in_axes, out_axes):
+            super().__init__()
+            self.net_list = net_list
+            self.in_axes = in_axes
+            self.out_axes = out_axes
+
+        def construct(self, *x):
+            vmapnet = F.vmap(self.net_list, self.in_axes, self.out_axes)
+            out = vmapnet(*x)
+            return out
+
+    import numpy as np
+    class VmapFactory():
+        def __init__(self, net_num, axes):
+            self.weight = []
+            self.bias = []
+            self.in_axes = axes[0]
+            self.out_axes = axes[1]
+            for _ in range(net_num):
+                w = np.random.rand(2, 3).astype(np.float32)
+                self.weight.append(w)
+                b = np.random.rand(2, 3).astype(np.float32)
+                self.bias.append(b)
+
+        def single_net_train(self, net_class, x, y, train):
+            infer_list = []
+            net_list = []
+            for w, b in zip(self.weight, self.bias):
+                net = net_class(w, b)
+                infer_list.append(net)
+                train_net = TrainStepNet(net)
+                net_list.append(train_net)
+            loss_list = []
+            if train:
+                for i in range(2):
+                    if self.in_axes[1] == 0:
+                        label = y[i]
+                    else:
+                        label = y
+                    loss = [train_net(x, label).asnumpy() for train_net in net_list]
+                    loss_list.append(loss)
+                out_list = [net(x).asnumpy() for net in infer_list]
+                output = (np.array(out_list), np.array(loss_list))
+            return output
+
+        def vmap_net_train(self, net_class, x, y, train):
+            infer_list = []
+            net_list = []
+            for w, b in zip(self.weight, self.bias):
+                net = net_class(w, b)
+                infer_list.append(net)
+                train_net = TrainStepNet(net)
+                net_list.append(train_net)
+            net_list = nn.CellList(net_list)
+            loss_list = []
+            if train:
+                vmap_net = VmapNet(net_list, in_axes=self.in_axes, out_axes=self.out_axes)
+                for _ in range(2):
+                    loss = vmap_net(x, y)
+                    loss_list.append(loss.asnumpy())
+                out_list = []
+                for net in infer_list:
+                    out = net(x)
+                    out_list.append(out.asnumpy())
+                output = (np.array(out_list), np.array(loss_list))
+            return output
+
+    fact = VmapFactory(net_num=3, axes=((None, None), 0))
+    x = Tensor([[1, 2, 3], [2, 3, 4]], mstype.float32)
+    y = 24
+    a, b = fact.single_net_train(Simplenet, x, y, True)
+    c, d = fact.vmap_net_train(Simplenet, x, y, True)
+    print(a, b, c, d)
