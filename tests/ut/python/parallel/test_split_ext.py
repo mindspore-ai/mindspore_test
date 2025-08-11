@@ -19,6 +19,7 @@ import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Parameter, Tensor
+from mindspore.parallel import Layout
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Momentum, TrainOneStepCell
 from mindspore.ops import operations as P
@@ -120,6 +121,22 @@ def test_splitwith_size_strategy_skip_redistribution():
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     # [6, 2] / strategy_fail[0] ->  [3, 1]
     net = NetSplitWithSize(0, [6, 2], strategy_fail)
+    net.split.add_prim_attr("skip_redistribution", True)
+    compile_net(net)
+    context.reset_auto_parallel_context()
+
+
+def test_splitwith_size_strategy_skip_redistribution_with_layout():
+    """
+    Feature: test SplitWithSize parallel skip_redistribution with layout
+    Description: model parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    # [6, 2] / strategy_fail[0] ->  [3, 1]
+    layout = Layout((2, 4), ('d1', 'd2'))
+    strategy_layout = (layout('d1', 'd2', 'None'),)
+    net = NetSplitWithSize(0, [6, 2], strategy_layout)
     net.split.add_prim_attr("skip_redistribution", True)
     compile_net(net)
     context.reset_auto_parallel_context()
