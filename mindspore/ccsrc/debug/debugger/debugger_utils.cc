@@ -116,6 +116,8 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
   std::set<size_t> ignored_indexes_set(ignored_indexes.begin(), ignored_indexes.end());
   for (size_t index = 0; index < index_size; ++index) {
     if (ignored_indexes_set.find(index) != ignored_indexes_set.end()) {
+      MS_VLOG(VL_DUMP) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
+                       << " this tensor is set to be ignored, currently skipped.";
       continue;
     }
     if (index >= tensors.size()) {
@@ -135,6 +137,12 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
       MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
                       << " deviceaddress is not contiguous. Dump currently does not support non-contiguous data and is "
                          "currently skipped.";
+      continue;
+    }
+    if (tensor->GetDeviceType() != device_context->GetDeviceType()) {
+      MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
+                      << " tensor's target device(" << tensor->GetDeviceType() << ") is different from running device("
+                      << device_context->GetDeviceType() << "), currently skipped.";
       continue;
     }
     valid_indexes.push_back(index);
