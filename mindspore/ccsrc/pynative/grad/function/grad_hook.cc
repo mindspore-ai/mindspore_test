@@ -130,7 +130,7 @@ void GradHook::retain_grad(const TensorPtr &self) {
     if (!weak_tensor.expired() && grad != nullptr) {
       auto tensor = weak_tensor.lock();
       if (tensor->grad() == nullptr) {
-        tensor->set_grad(grad);
+        tensor->set_grad(AutoGradUtil::Clone(grad));
       } else {
         tensor->set_grad(AutoGradUtil::Add(tensor->grad(), grad));
       }
