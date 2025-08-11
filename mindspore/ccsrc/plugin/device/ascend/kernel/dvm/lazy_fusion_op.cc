@@ -60,10 +60,19 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-bool EnableFuse(const std::string &op, const std::vector<std::string> &enable_ops_only,
-                const std::vector<std::string> &disable_ops) {
+constexpr unsigned int OpLevel_0 = 0;
+constexpr unsigned int OpLevel_1 = 1;
+
+bool EnableFuse(const std::string &op, unsigned int op_level) {
+  const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
+  const auto &enable_ops = LazyFusionFlags::GetInstance().enable_ops;
+  const auto &enable_ops_only = LazyFusionFlags::GetInstance().enable_ops_only;
   if (!enable_ops_only.empty()) {
     return std::find(enable_ops_only.begin(), enable_ops_only.end(), op) != enable_ops_only.end();
+  }
+  if (op_level > OpLevel_0 && std::find(enable_ops.begin(), enable_ops.end(), op) == enable_ops.end()) {
+    // for ops that not fused by default
+    return false;
   }
   return std::find(disable_ops.begin(), disable_ops.end(), op) == disable_ops.end();
 }
@@ -154,17 +163,6 @@ ShapeVector GetReduceDim(const std::optional<ValueTuplePtr> &dim, size_t rank) {
     }
   }
   return dim_value;
-}
-
-template <typename... Args>
-void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const Args &... inputs) {
-  auto k = g_lazy_fusion_manager.Get(context, stream);
-  bool fuse_forward = false;
-  ((fuse_forward = fuse_forward || k->HasTensor(inputs)), ...);
-  // flush if current op has no relation with previous ops
-  if (!fuse_forward) {
-    FlushLazyFusion();
-  }
 }
 
 template <typename F, typename... Args>
@@ -294,7 +292,7 @@ bool AddExtDvmCall(const std::string &op_name, OpRunner *op, const TensorPtr &in
       auto out_obj = k->Binary(dvm::BinaryOpType::kAdd, input_obj, other_obj);
       if (inplace) {
         // update
-        k->Output(input_tensor, out_obj);
+        k->Output(input_tensor, out_obj, true);
         return input_tensor;
       }
       return k->Output(out_obj, input_type, k->GetShape(out_obj));
@@ -336,7 +334,7 @@ bool SubExtDvmCall(const std::string &op_name, OpRunner *op, const TensorPtr &in
       auto out_obj = k->Binary(dvm::BinaryOpType::kSub, input_obj, other_obj);
       if (inplace) {
         // update
-        k->Output(input_tensor, out_obj);
+        k->Output(input_tensor, out_obj, true);
         return input_tensor;
       }
       return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
@@ -404,8 +402,8 @@ struct MatMulAdapter {
     if (x_shape.size() < kDim2 || x_shape.size() > kDim4 || y_shape.size() < kDim2 || y_shape.size() > kDim4) {
       return false;
     }
-    bool check_x = (!x_tensor->is_contiguous()) && CheckTensorTranspose(x_tensor, &trans_a, &x_shape);
-    bool check_y = (!y_tensor->is_contiguous()) && CheckTensorTranspose(y_tensor, &trans_b, &y_shape);
+    bool check_x = (x_tensor->is_contiguous() || CheckTensorTranspose(x_tensor, &trans_a, &x_shape));
+    bool check_y = (y_tensor->is_contiguous() || CheckTensorTranspose(y_tensor, &trans_b, &y_shape));
     if (!CheckMatMulShape()) {
       return false;
     }
@@ -452,6 +450,14 @@ struct MatMulAdapter {
     return false;
   }
 };
+
+template <typename... Args>
+void DumpOp(const std::string &op_name, OpRunner *op, const Args &... inputs) {
+  if (LazyFusionFlags::GetInstance().dump_as_text) {
+    auto k = g_lazy_fusion_manager.Get(op->device_context(), op->stream_id());
+    k->DumpOp(op_name, op->outputs(), inputs...);
+  }
+}
 }  // namespace
 
 tensor::TensorPtr ConcatAscendDvm::Call(const ValueTuplePtr &tensors_tensor_list, const Int64ImmPtr &axis) {
@@ -544,6 +550,7 @@ tensor::TensorPtr CastAscendDvm::Call(const TensorPtr &input_tensor, const Int64
       return k->Output(obj, dst_type, input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor, dst_type);
   return outputs_.front();
 }
 
@@ -558,6 +565,7 @@ tensor::TensorPtr AbsAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -574,6 +582,7 @@ tensor::TensorPtr NegAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -588,6 +597,7 @@ tensor::TensorPtr ExpAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -602,6 +612,7 @@ tensor::TensorPtr SqrtAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -616,6 +627,7 @@ tensor::TensorPtr ReciprocalAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -630,6 +642,7 @@ tensor::TensorPtr IsFiniteAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, kNumberTypeBool, x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -644,6 +657,7 @@ tensor::TensorPtr RoundAscendDvm::Call(const TensorPtr &x_tensor, const Int64Imm
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor, decimals);
   return outputs_.front();
 }
 
@@ -658,6 +672,7 @@ tensor::TensorPtr CeilAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -672,6 +687,7 @@ tensor::TensorPtr FloorAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -686,6 +702,7 @@ tensor::TensorPtr TruncAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -694,6 +711,7 @@ tensor::TensorPtr EqualAscendDvm::Call(const TensorPtr &input_tensor, const Tens
     return EqualAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kEqual, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -702,6 +720,7 @@ tensor::TensorPtr NotEqualAscendDvm::Call(const TensorPtr &input_tensor, const T
     return NotEqualAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kNotEqual, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -710,6 +729,7 @@ tensor::TensorPtr GreaterAscendDvm::Call(const TensorPtr &input_tensor, const Te
     return GreaterAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kGreater, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -718,6 +738,7 @@ tensor::TensorPtr GreaterEqualAscendDvm::Call(const TensorPtr &input_tensor, con
     return GreaterEqualAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kGreaterEqual, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -726,6 +747,7 @@ tensor::TensorPtr LessAscendDvm::Call(const TensorPtr &input_tensor, const Tenso
     return LessAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kLess, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -734,6 +756,7 @@ tensor::TensorPtr LessEqualAscendDvm::Call(const TensorPtr &input_tensor, const 
     return LessEqualAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kLessEqual, input_tensor, other_tensor, kNumberTypeBool);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -742,6 +765,7 @@ tensor::TensorPtr AddAscendDvm::Call(const TensorPtr &input_tensor, const Tensor
     return AddAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kAdd, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -750,6 +774,7 @@ tensor::TensorPtr MulAscendDvm::Call(const TensorPtr &input_tensor, const Tensor
     return MulAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kMul, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -758,6 +783,7 @@ tensor::TensorPtr SubAscendDvm::Call(const TensorPtr &input_tensor, const Tensor
     return SubAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kSub, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -766,6 +792,7 @@ tensor::TensorPtr DivAscendDvm::Call(const TensorPtr &input_tensor, const Tensor
     return DivAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kDiv, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -774,6 +801,7 @@ tensor::TensorPtr PowAscendDvm::Call(const TensorPtr &input_tensor, const Tensor
     return PowAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kPow, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -782,6 +810,7 @@ tensor::TensorPtr MaximumAscendDvm::Call(const TensorPtr &input_tensor, const Te
     return MaximumAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kMaximum, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -790,13 +819,14 @@ tensor::TensorPtr MinimumAscendDvm::Call(const TensorPtr &input_tensor, const Te
     return MinimumAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kMinimum, input_tensor, other_tensor, input_tensor->data_type());
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
-tensor::TensorPtr MulsAscendDvm::Call(const TensorPtr &input_tensor, const ScalarPtr &other_tensor) {
-  auto [succ, scalar] = GetScalarValue<float>(other_tensor);
+tensor::TensorPtr MulsAscendDvm::Call(const TensorPtr &input_tensor, const ScalarPtr &other) {
+  auto [succ, scalar] = GetScalarValue<float>(other);
   if (!InputCheck(input_tensor) || !succ) {
-    return MulsAscend::Call(input_tensor, other_tensor);
+    return MulsAscend::Call(input_tensor, other);
   }
   DvmCall(
     op_name_, this,
@@ -805,6 +835,7 @@ tensor::TensorPtr MulsAscendDvm::Call(const TensorPtr &input_tensor, const Scala
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor, other);
   return outputs_.front();
 }
 
@@ -820,6 +851,7 @@ tensor::TensorPtr LogicalNotAscendDvm::Call(const TensorPtr &x_tensor) {
       return k->Output(obj, kNumberTypeBool, x_tensor->shape());
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor);
   return outputs_.front();
 }
 
@@ -836,6 +868,7 @@ tensor::TensorPtr LogicalAndAscendDvm::Call(const TensorPtr &input_tensor, const
       return k->Output(obj, kNumberTypeBool, k->GetShape(obj));
     },
     input_tensor, other_tensor);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -852,6 +885,7 @@ tensor::TensorPtr LogicalOrAscendDvm::Call(const TensorPtr &input_tensor, const 
       return k->Output(obj, kNumberTypeBool, k->GetShape(obj));
     },
     input_tensor, other_tensor);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return outputs_.front();
 }
 
@@ -872,6 +906,7 @@ tensor::TensorPtr SigmoidAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -892,6 +927,7 @@ tensor::TensorPtr SigmoidGradAscendDvm::Call(const TensorPtr &y_tensor, const Te
       return k->Output(obj, y_tensor->data_type(), y_tensor->shape());
     },
     y_tensor, dy_tensor);
+  DumpOp(op_name_, this, y_tensor, dy_tensor);
   return outputs_.front();
 }
 
@@ -911,6 +947,7 @@ tensor::TensorPtr SiLUAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -937,6 +974,7 @@ tensor::TensorPtr SiLUGradAscendDvm::Call(const TensorPtr &dout_tensor, const Te
       return k->Output(obj, x_tensor->data_type(), x_tensor->shape());
     },
     dout_tensor, x_tensor);
+  DumpOp(op_name_, this, dout_tensor, x_tensor);
   return outputs_.front();
 }
 
@@ -971,6 +1009,7 @@ tensor::TensorPtr GeLUAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(result, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -1031,6 +1070,7 @@ tensor::TensorPtr GeLUGradAscendDvm::Call(const TensorPtr &dy_tensor, const Tens
       return k->Output(result, x_tensor->data_type(), x_tensor->shape());
     },
     dy_tensor, x_tensor);
+  DumpOp(op_name_, this, dy_tensor, x_tensor, y_tensor);
   return outputs_.front();
 }
 
@@ -1045,6 +1085,7 @@ tensor::TensorPtr ReLUAscendDvm::Call(const TensorPtr &input_tensor) {
       return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   return outputs_.front();
 }
 
@@ -1065,6 +1106,8 @@ tensor::TensorPtr SumExtAscendDvm::Call(const TensorPtr &input_tensor, const std
       return k->Output(reduce_obj, input_type, k->GetShape(reduce_obj));
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor, dim, keepdim, dtype);
+  FlushLazyFusion();  // reduce post fusion not supported
   return outputs_.front();
 }
 
@@ -1073,6 +1116,7 @@ tensor::TensorPtr AddExtAscendDvm::Call(const TensorPtr &input_tensor, const Ten
   if (!AddExtDvmCall(op_name_, this, input_tensor, other_tensor, alpha, false)) {
     return AddExtAscend::Call(input_tensor, other_tensor, alpha);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor, alpha);
   return outputs_.front();
 }
 
@@ -1081,6 +1125,7 @@ tensor::TensorPtr SubExtAscendDvm::Call(const TensorPtr &input_tensor, const Ten
   if (!SubExtDvmCall(op_name_, this, input_tensor, other_tensor, alpha, false)) {
     return SubExtAscend::Call(input_tensor, other_tensor, alpha);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor, alpha);
   return outputs_.front();
 }
 
@@ -1104,6 +1149,7 @@ tensor::TensorPtr TileAscendDvm::Call(const TensorPtr &input_tensor, const Value
       return k->Output(out_obj, input_tensor->data_type(), output_shape);
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor, dims);
   return outputs_.front();
 }
 
@@ -1116,8 +1162,6 @@ tensor::TensorPtr LinalgVectorNormAscendDvm::Call(const TensorPtr &x_tensor, con
       (ord_value != 1.0f && ord_value != 2.0f && ord_value != 3.0f)) {
     return LinalgVectorNormAscend::Call(x_tensor, ord, dim, keepdim, dtype);
   }
-  // if current reduce not fuse with its input, flush here to avoid generating a huge dvm kernel(e.g. global norm)
-  CheckForwardFuse(device_context_, stream_id_, x_tensor);
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> TensorPtr {
@@ -1141,6 +1185,8 @@ tensor::TensorPtr LinalgVectorNormAscendDvm::Call(const TensorPtr &x_tensor, con
       return k->Output(out_obj, output_type, k->GetShape(out_obj));
     },
     x_tensor);
+  DumpOp(op_name_, this, x_tensor, ord, dim, keepdim, dtype);
+  FlushLazyFusion();
   return outputs_.front();
 }
 
@@ -1209,16 +1255,18 @@ std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendD
               k->Binary(dvm::BinaryOpType::kDiv, m_t_scale, k->Binary(dvm::BinaryOpType::kAdd, v_t_sqrt, epsilon_imm)));
   // update
   outputs_.push_back(var_tensor);
-  k->Output(outputs_[kIndex0], var_t);
+  k->Output(outputs_[kIndex0], var_t, true);
   outputs_.push_back(m_tensor);
-  k->Output(outputs_[kIndex1], m_t);
+  k->Output(outputs_[kIndex1], m_t, true);
   outputs_.push_back(v_tensor);
-  k->Output(outputs_[kIndex2], v_t);
+  k->Output(outputs_[kIndex2], v_t, true);
   for (const auto &output : outputs_) {
     output->set_need_pipeline_sync(true);
   }
   CreateOutputSimpleInfo();
   CALL_END(op_name_, k);
+  DumpOp(op_name_, this, var_tensor, m_tensor, v_tensor, max_v_tensor, gradient_tensor, step_tensor, lr, beta1, beta2,
+         decay, eps, amsgrad, maximize);
   FlushLazyFusion();
   return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1], outputs_[kIndex2]);
 }
@@ -1249,10 +1297,11 @@ tensor::TensorPtr InplaceCopyAscendDvm::Call(const TensorPtr &variable_tensor, c
     value_obj = k->Broadcast(value_obj, k->GetShapeRef(variable_tensor->shape()));
   }
   outputs_.push_back(variable_tensor);
-  k->Output(outputs_[0], value_obj);
+  k->Output(outputs_[0], value_obj, true);
   outputs_[0]->set_need_pipeline_sync(true);
   CreateOutputSimpleInfo();
   CALL_END(op_name_, k);
+  DumpOp(op_name_, this, variable_tensor, value_tensor, non_blocking);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1278,10 +1327,11 @@ tensor::TensorPtr InplaceDivAscendDvm::Call(const TensorPtr &input_tensor, const
       }
       auto out_obj = k->Binary(dvm::BinaryOpType::kDiv, input_obj, other_obj);
       // update
-      k->Output(input_tensor, out_obj);
+      k->Output(input_tensor, out_obj, true);
       return input_tensor;
     },
     input_tensor, other_tensor);
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1295,10 +1345,11 @@ tensor::TensorPtr InplaceExpAscendDvm::Call(const TensorPtr &input_tensor) {
     [&](LazyFusionKernelAscend *k) -> TensorPtr {
       auto out_obj = k->Unary(dvm::UnaryOpType::kExp, k->Input(input_tensor));
       // update
-      k->Output(input_tensor, out_obj);
+      k->Output(input_tensor, out_obj, true);
       return input_tensor;
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1308,6 +1359,7 @@ tensor::TensorPtr InplaceAddExtAscendDvm::Call(const TensorPtr &input_tensor, co
   if (!AddExtDvmCall(op_name_, this, input_tensor, other_tensor, alpha, true)) {
     return InplaceAddExtAscend::Call(input_tensor, other_tensor, alpha);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor, alpha);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1317,6 +1369,7 @@ tensor::TensorPtr InplaceSubExtAscendDvm::Call(const TensorPtr &input_tensor, co
   if (!SubExtDvmCall(op_name_, this, input_tensor, other_tensor, alpha, true)) {
     return InplaceSubExtAscend::Call(input_tensor, other_tensor, alpha);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor, alpha);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1330,10 +1383,11 @@ tensor::TensorPtr InplaceReLUAscendDvm::Call(const TensorPtr &input_tensor) {
     [&](LazyFusionKernelAscend *k) -> TensorPtr {
       auto out_obj = k->Binary(dvm::BinaryOpType::kMaximum, k->Input(input_tensor), 0.0f);
       // update
-      k->Output(input_tensor, out_obj);
+      k->Output(input_tensor, out_obj, true);
       return input_tensor;
     },
     input_tensor);
+  DumpOp(op_name_, this, input_tensor);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1354,6 +1408,7 @@ tensor::TensorPtr MaskedFillAscendDvm::Call(const mindspore::tensor::TensorPtr &
       return input_x_tensor;
     },
     input_x_tensor, mask_tensor, value_tensor);
+  DumpOp(op_name_, this, input_x_tensor, mask_tensor, value_tensor);
   FlushLazyFusion();
   return outputs_[0];
 }
@@ -1401,6 +1456,7 @@ tensor::TensorPtr DenseAscendDvm::Call(const TensorPtr &input_tensor, const Tens
       return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
     },
     info.x_tensor, info.y_tensor, bias_tensor);
+  DumpOp(op_name_, this, input_tensor, weight_tensor, bias_tensor);
   return outputs_.front();
 }
 
@@ -1452,6 +1508,7 @@ tensor::TensorPtr MatMulAscendDvm::Call(const TensorPtr &input_tensor, const Ten
   if (ret == nullptr) {
     return MatMulAscend::Call(input_tensor, mat2_tensor, transpose_a, transpose_b);
   }
+  DumpOp(op_name_, this, input_tensor, mat2_tensor, transpose_a, transpose_b);
   return ret;
 }
 
@@ -1463,6 +1520,7 @@ tensor::TensorPtr BatchMatMulAscendDvm::Call(const TensorPtr &x_tensor, const Te
   if (ret == nullptr) {
     return BatchMatMulAscend::Call(x_tensor, y_tensor, transpose_a, transpose_b);
   }
+  DumpOp(op_name_, this, x_tensor, y_tensor, transpose_a, transpose_b);
   return ret;
 }
 
@@ -1472,6 +1530,7 @@ tensor::TensorPtr MatMulExtAscendDvm::Call(const mindspore::tensor::TensorPtr &i
   if (ret == nullptr) {
     return MatMulExtAscend::Call(input_tensor, other_tensor);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return ret;
 }
 
@@ -1481,6 +1540,7 @@ tensor::TensorPtr BatchMatMulExtAscendDvm::Call(const mindspore::tensor::TensorP
   if (ret == nullptr) {
     return BatchMatMulExtAscend::Call(input_tensor, other_tensor);
   }
+  DumpOp(op_name_, this, input_tensor, other_tensor);
   return ret;
 }
 
@@ -1490,32 +1550,50 @@ std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &
   if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
     return BatchNormStatsAscend::Call(input_tensor, eps);
   }
+  const auto &input_shape = input_tensor->shape();
+  ShapeVector axis;
+  axis.reserve(input_shape.size());
+  int64_t count = 1;
+  for (int64_t i = 0; i < static_cast<int64_t>(input_shape.size()); ++i) {
+    if (i != 1) {  // reduce all axis except C channel(axis 1)
+      axis.push_back(i);
+      count *= input_shape[i];
+    }
+  }
+  if (count <= 0) {
+    return BatchNormStatsAscend::Call(input_tensor, eps);
+  }
   auto x = ToContiguous(input_tensor, stream_id_);
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
-  ShapeVector axis;
-  axis.reserve(x->shape().size());
-  for (int64_t i = 0; i < static_cast<int64_t>(x->shape().size()); ++i) {
-    if (i != 1) {  // reduce all axis except C channel(axis 1)
-      axis.push_back(i);
-    }
-  }
   auto axis_ref = k->GetShapeRef(axis);
   auto input_obj = k->Input(x);
-  auto local_sum = k->Reduce(dvm::ReduceOpType::kSum, input_obj, axis_ref, false);
-  auto local_square_sum =
-    k->Reduce(dvm::ReduceOpType::kSum, k->Binary(dvm::BinaryOpType::kMul, input_obj, input_obj), axis_ref, false);
-  auto local_sum_tensor = k->Output(local_sum, x->data_type(), k->GetShape(local_sum));
-  auto local_square_sum_tensor = k->Output(local_square_sum, x->data_type(), k->GetShape(local_square_sum));
-  outputs_.push_back(local_sum_tensor);
-  outputs_.push_back(local_square_sum_tensor);
+  float coef = 1.0f / static_cast<float>(count);
+
+  // calc mean
+  auto input_mean =
+    k->Reduce(dvm::ReduceOpType::kSum, k->Binary(dvm::BinaryOpType::kMul, input_obj, coef), axis_ref, true);
+
+  // calc invstd
+  auto input_sub_mean = k->Binary(dvm::BinaryOpType::kSub, input_obj, input_mean);
+  auto input_var = k->Binary(dvm::BinaryOpType::kMul, input_sub_mean, input_sub_mean);
+  input_var = k->Reduce(dvm::ReduceOpType::kSum, k->Binary(dvm::BinaryOpType::kMul, input_var, coef), axis_ref, false);
+  auto eps_imm = GetValue<float>(eps);
+  auto invstd = k->Unary(dvm::UnaryOpType::kReciprocal,
+                         k->Unary(dvm::UnaryOpType::kSqrt, k->Binary(dvm::BinaryOpType::kAdd, input_var, eps_imm)));
+
+  auto out1 = k->Output(input_mean, x->data_type(), k->GetShape(invstd));
+  auto out2 = k->Output(invstd, x->data_type(), k->GetShape(invstd));
+  outputs_.push_back(out1);
+  outputs_.push_back(out2);
   for (const auto &output : outputs_) {
     output->set_need_pipeline_sync(true);
   }
   CreateOutputSimpleInfo();
   CALL_END(op_name_, k);
-  FlushLazyFusion();
+  DumpOp(op_name_, this, input_tensor, eps);
+  FlushLazyFusion();  // output shape reshape to 1D, must flush here
   return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1]);
 }
 
@@ -1535,71 +1613,83 @@ std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
   // running_mean and running_var must be contiguous, otherwise the update will has precision error
   if ((running_mean_tensor != nullptr && !running_mean_tensor->is_contiguous()) ||
       (running_var_tensor != nullptr && !running_var_tensor->is_contiguous())) {
-    static bool print_log = true;
-    if (print_log) {
-      MS_LOG(ERROR) << "BatchNormStats and BatchNormGatherStatsWithCounts can not be fused, which has precision error";
-      print_log = false;
-    }
     return BatchNormGatherStatsWithCountsAscend::Call(input_tensor, mean_tensor, invstd_tensor, running_mean_tensor_opt,
                                                       running_var_tensor_opt, momentum, eps, counts_tensor_opt);
   }
   auto x = ToContiguous(input_tensor, stream_id_);
-  auto sum_all = ToContiguous(mean_tensor, stream_id_);
-  auto square_sum_all = ToContiguous(invstd_tensor, stream_id_);
+  auto mean_all = ToContiguous(mean_tensor, stream_id_);
+  auto invstd_all = ToContiguous(invstd_tensor, stream_id_);
   counts_tensor = ToContiguous(counts_tensor, stream_id_);
+  FlushLazyFusion();  // forward fusion not allowed, because inputs need reshape
   auto momentum_imm = GetValue<float>(momentum);
   auto momentum_imm_reverse = 1.0f - momentum_imm;
   auto eps_imm = GetValue<float>(eps);
-  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, sum_all, square_sum_all, running_mean_tensor,
+  PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x, mean_all, invstd_all, running_mean_tensor,
                                 running_var_tensor, counts_tensor);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
+
+  // count shape 1D -> 2D
+  ShapeVector count_shape(mean_all->shape());
+  count_shape[count_shape.size() - 1] = 1;
   ShapeVector counts_axis;
-  counts_axis.reserve(counts_tensor->shape().size());
-  for (int64_t i = 0; i < static_cast<int64_t>(counts_tensor->shape().size()); ++i) {
+  counts_axis.reserve(count_shape.size());
+  for (int64_t i = 0; i < static_cast<int64_t>(count_shape.size()); ++i) {
     counts_axis.push_back(i);
   }
   auto count_axis_ref = k->GetShapeRef(counts_axis);
-  auto x_dtype = k->TransType(input_tensor->data_type());
-  auto global_counts =
-    k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(counts_tensor), x_dtype), count_axis_ref, false);
 
   ShapeVector mean_axis;
-  mean_axis.reserve(sum_all->shape().size());
-  for (int64_t i = 0; i < static_cast<int64_t>(sum_all->shape().size()) - 1; ++i) {  // last axis is C channel
+  mean_axis.reserve(mean_all->shape().size());
+  for (int64_t i = 0; i < static_cast<int64_t>(mean_all->shape().size()) - 1; ++i) {  // last axis is C channel
     mean_axis.push_back(i);
   }
   auto mean_axis_ref = k->GetShapeRef(mean_axis);
-  auto global_sum = k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(sum_all), x_dtype), mean_axis_ref, false);
-  auto global_square_sum =
-    k->Reduce(dvm::ReduceOpType::kSum, k->Cast(k->Input(square_sum_all), x_dtype), mean_axis_ref, false);
-  auto global_mean = k->Binary(dvm::BinaryOpType::kDiv, global_sum, global_counts);
-  auto global_mean_tensor = k->Output(global_mean, x->data_type(), k->GetShape(global_mean));
-  auto global_var =
-    k->Binary(dvm::BinaryOpType::kSub, k->Binary(dvm::BinaryOpType::kDiv, global_square_sum, global_counts),
-              k->Binary(dvm::BinaryOpType::kMul, global_mean, global_mean));
+
+  auto x_data_type = x->data_type();
+  auto x_dtype = k->TransType(x_data_type);
+  auto count_all_obj = k->Cast(k->Input(counts_tensor, true, count_shape), x_dtype);
+  auto global_counts = k->Reduce(dvm::ReduceOpType::kSum, count_all_obj, count_axis_ref, false);
+
+  // calc global mean
+  auto mean_all_obj = k->Cast(k->Input(mean_all), x_dtype);
+  auto global_mean = k->Reduce(
+    dvm::ReduceOpType::kSum,
+    k->Binary(dvm::BinaryOpType::kDiv, k->Binary(dvm::BinaryOpType::kMul, mean_all_obj, count_all_obj), global_counts),
+    mean_axis_ref, false);
+  auto global_mean_tensor = k->Output(global_mean, x_data_type, k->GetShape(global_mean));
+
+  // calc global invstd
+  auto mean_sub_all = k->Binary(dvm::BinaryOpType::kSub, mean_all_obj, global_mean);
+  auto std_all = k->Unary(dvm::UnaryOpType::kReciprocal, k->Cast(k->Input(invstd_all), x_dtype));
+  auto var_all = k->Binary(dvm::BinaryOpType::kAdd, k->Binary(dvm::BinaryOpType::kMul, std_all, std_all), -eps_imm);
+  var_all = k->Binary(dvm::BinaryOpType::kAdd, var_all, k->Binary(dvm::BinaryOpType::kMul, mean_sub_all, mean_sub_all));
+  var_all = k->Binary(dvm::BinaryOpType::kMul, var_all, count_all_obj);
+  auto global_var_sum = k->Reduce(dvm::ReduceOpType::kSum, var_all, mean_axis_ref, false);
+  auto global_var = k->Binary(dvm::BinaryOpType::kDiv, global_var_sum, global_counts);
   auto global_invstd =
     k->Unary(dvm::UnaryOpType::kReciprocal,
              k->Unary(dvm::UnaryOpType::kSqrt, k->Binary(dvm::BinaryOpType::kAdd, global_var, eps_imm)));
-  auto global_invstd_tensor = k->Output(global_invstd, x->data_type(), k->GetShape(global_invstd));
+  auto global_invstd_tensor = k->Output(global_invstd, x_data_type, k->GetShape(global_invstd));
+
   // update running_mean
   if (running_mean_tensor != nullptr) {
     auto running_mean_new = k->Binary(
       dvm::BinaryOpType::kAdd,
       k->Binary(dvm::BinaryOpType::kMul, k->Cast(k->Input(running_mean_tensor), x_dtype), momentum_imm_reverse),
       k->Binary(dvm::BinaryOpType::kMul, global_mean, momentum_imm));
-    k->Output(running_mean_tensor, running_mean_new);
+    k->Output(running_mean_tensor, running_mean_new, true);
   }
+
   // update running_var
   if (running_var_tensor != nullptr) {
-    auto global_var1 = k->Binary(
-      dvm::BinaryOpType::kMul, global_var,
-      k->Binary(dvm::BinaryOpType::kDiv, global_counts, k->Binary(dvm::BinaryOpType::kSub, global_counts, 1.0f)));
+    auto unbiased_global_var =
+      k->Binary(dvm::BinaryOpType::kDiv, global_var_sum, k->Binary(dvm::BinaryOpType::kAdd, global_counts, -1.0f));
     auto running_var_new = k->Binary(
       dvm::BinaryOpType::kAdd,
       k->Binary(dvm::BinaryOpType::kMul, k->Cast(k->Input(running_var_tensor), x_dtype), momentum_imm_reverse),
-      k->Binary(dvm::BinaryOpType::kMul, global_var1, momentum_imm));
-    k->Output(running_var_tensor, running_var_new);
+      k->Binary(dvm::BinaryOpType::kMul, unbiased_global_var, momentum_imm));
+    k->Output(running_var_tensor, running_var_new, true);
   }
   outputs_.push_back(global_mean_tensor);
   outputs_.push_back(global_invstd_tensor);
@@ -1608,6 +1698,8 @@ std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
   }
   CreateOutputSimpleInfo();
   CALL_END(op_name_, k);
+  DumpOp(op_name_, this, input_tensor, mean_tensor, invstd_tensor, running_mean_tensor_opt, running_var_tensor_opt,
+         momentum, eps, counts_tensor_opt);
   FlushLazyFusion();
   return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1]);
 }
@@ -1668,6 +1760,7 @@ TensorPtr BatchNormElemtAscendDvm::Call(const TensorPtr &input_tensor,
       return k->Output(input_obj, x->data_type(), x->shape());
     },
     x, weight_tensor, bias_tensor, mean_tensor, invstd_tensor);
+  DumpOp(op_name_, this, input_tensor, weight_tensor_opt, bias_tensor_opt, mean_tensor_opt, invstd_tensor_opt, eps);
   return outputs_.front();
 }
 
@@ -1723,11 +1816,13 @@ TensorPtr BatchNormElemtGradAscendDvm::Call(const TensorPtr &dout_tensor, const 
     },
     dout_tensor_c, input_tensor_c, mean_tensor_c, invstd_tensor_c, weight_tensor_c, sumd_dy_tensor_c,
     sum_dy_xmu_tensor_c, count_tensor_c);
+  DumpOp(op_name_, this, dout_tensor, input_tensor, mean_tensor, invstd_tensor, weight_tensor, sumd_dy_tensor,
+         sum_dy_xmu_tensor, count_tensor);
   return outputs_.front();
 }
 
-#define MS_REPLACE_DVM_OP(clazz)                                                                                   \
-  if (EnableFuse(#clazz, enable_ops_only, disable_ops)) {                                                          \
+#define MS_REPLACE_DVM_OP(op_level, clazz)                                                                         \
+  if (EnableFuse(#clazz, op_level)) {                                                                              \
     MS_LOG(INFO) << "Register dvm op [" << #clazz << "]";                                                          \
     OpFactory<clazz>::Get().op_creator()[device::DeviceType::kAscend] = []() {                                     \
       return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz,                                                \
@@ -1736,64 +1831,61 @@ TensorPtr BatchNormElemtGradAscendDvm::Call(const TensorPtr &dout_tensor, const 
   }
 
 void RegisterLazyFusionOp() {
-  const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
-  const auto &enable_ops_only = LazyFusionFlags::GetInstance().enable_ops_only;
-  MS_REPLACE_DVM_OP(Concat);
-  MS_REPLACE_DVM_OP(Cast);
-  MS_REPLACE_DVM_OP(Abs);
-  MS_REPLACE_DVM_OP(Neg);
-  MS_REPLACE_DVM_OP(Exp);
-  MS_REPLACE_DVM_OP(Sqrt);
-  MS_REPLACE_DVM_OP(Reciprocal);
-  MS_REPLACE_DVM_OP(IsFinite);
-  MS_REPLACE_DVM_OP(Round);
-  MS_REPLACE_DVM_OP(Ceil);
-  MS_REPLACE_DVM_OP(Floor);
-  MS_REPLACE_DVM_OP(Trunc);
-  MS_REPLACE_DVM_OP(Equal);
-  MS_REPLACE_DVM_OP(NotEqual);
-  MS_REPLACE_DVM_OP(Greater);
-  MS_REPLACE_DVM_OP(GreaterEqual);
-  MS_REPLACE_DVM_OP(Less);
-  MS_REPLACE_DVM_OP(LessEqual);
-  MS_REPLACE_DVM_OP(Add);
-  MS_REPLACE_DVM_OP(Mul);
-  MS_REPLACE_DVM_OP(Muls);
-  MS_REPLACE_DVM_OP(Sub);
-  MS_REPLACE_DVM_OP(Div);
-  MS_REPLACE_DVM_OP(Pow);
-  MS_REPLACE_DVM_OP(Maximum);
-  MS_REPLACE_DVM_OP(Minimum);
-  MS_REPLACE_DVM_OP(LogicalNot);
-  MS_REPLACE_DVM_OP(LogicalAnd);
-  MS_REPLACE_DVM_OP(LogicalOr);
-  MS_REPLACE_DVM_OP(Sigmoid);
-  MS_REPLACE_DVM_OP(SigmoidGrad);
-  MS_REPLACE_DVM_OP(SiLU);
-  MS_REPLACE_DVM_OP(SiLUGrad);
-  MS_REPLACE_DVM_OP(GeLU);
-  MS_REPLACE_DVM_OP(GeLUGrad);
-  MS_REPLACE_DVM_OP(ReLU);
-  MS_REPLACE_DVM_OP(SumExt);
-  MS_REPLACE_DVM_OP(AddExt);
-  MS_REPLACE_DVM_OP(SubExt);
-  MS_REPLACE_DVM_OP(Tile);
-  MS_REPLACE_DVM_OP(LinalgVectorNorm);
-  MS_REPLACE_DVM_OP(InplaceDiv);
-  MS_REPLACE_DVM_OP(InplaceExp);
-  MS_REPLACE_DVM_OP(InplaceAddExt);
-  MS_REPLACE_DVM_OP(InplaceSubExt);
-  MS_REPLACE_DVM_OP(InplaceReLU);
-  MS_REPLACE_DVM_OP(Dense);
-  MS_REPLACE_DVM_OP(MatMul);
-  MS_REPLACE_DVM_OP(BatchMatMul);
-  MS_REPLACE_DVM_OP(BatchMatMulExt);
-  MS_REPLACE_DVM_OP(Baddbmm);
-  MS_REPLACE_DVM_OP(MatMulExt);
-  MS_REPLACE_DVM_OP(BatchNormStats);
-  MS_REPLACE_DVM_OP(BatchNormGatherStatsWithCounts);
-  MS_REPLACE_DVM_OP(BatchNormElemt);
-  MS_REPLACE_DVM_OP(BatchNormElemtGrad);
+  MS_REPLACE_DVM_OP(OpLevel_0, Concat);
+  MS_REPLACE_DVM_OP(OpLevel_0, Cast);
+  MS_REPLACE_DVM_OP(OpLevel_0, Abs);
+  MS_REPLACE_DVM_OP(OpLevel_0, Neg);
+  MS_REPLACE_DVM_OP(OpLevel_0, Exp);
+  MS_REPLACE_DVM_OP(OpLevel_0, Sqrt);
+  MS_REPLACE_DVM_OP(OpLevel_0, Reciprocal);
+  MS_REPLACE_DVM_OP(OpLevel_0, IsFinite);
+  MS_REPLACE_DVM_OP(OpLevel_0, Round);
+  MS_REPLACE_DVM_OP(OpLevel_0, Ceil);
+  MS_REPLACE_DVM_OP(OpLevel_0, Floor);
+  MS_REPLACE_DVM_OP(OpLevel_0, Trunc);
+  MS_REPLACE_DVM_OP(OpLevel_0, Equal);
+  MS_REPLACE_DVM_OP(OpLevel_0, NotEqual);
+  MS_REPLACE_DVM_OP(OpLevel_0, Greater);
+  MS_REPLACE_DVM_OP(OpLevel_0, GreaterEqual);
+  MS_REPLACE_DVM_OP(OpLevel_0, Less);
+  MS_REPLACE_DVM_OP(OpLevel_0, LessEqual);
+  MS_REPLACE_DVM_OP(OpLevel_0, Add);
+  MS_REPLACE_DVM_OP(OpLevel_0, Mul);
+  MS_REPLACE_DVM_OP(OpLevel_0, Muls);
+  MS_REPLACE_DVM_OP(OpLevel_0, Sub);
+  MS_REPLACE_DVM_OP(OpLevel_0, Div);
+  MS_REPLACE_DVM_OP(OpLevel_0, Pow);
+  MS_REPLACE_DVM_OP(OpLevel_0, Maximum);
+  MS_REPLACE_DVM_OP(OpLevel_0, Minimum);
+  MS_REPLACE_DVM_OP(OpLevel_0, LogicalNot);
+  MS_REPLACE_DVM_OP(OpLevel_0, LogicalAnd);
+  MS_REPLACE_DVM_OP(OpLevel_0, LogicalOr);
+  MS_REPLACE_DVM_OP(OpLevel_0, Sigmoid);
+  MS_REPLACE_DVM_OP(OpLevel_0, SigmoidGrad);
+  MS_REPLACE_DVM_OP(OpLevel_0, SiLU);
+  MS_REPLACE_DVM_OP(OpLevel_0, SiLUGrad);
+  MS_REPLACE_DVM_OP(OpLevel_0, GeLU);
+  MS_REPLACE_DVM_OP(OpLevel_0, GeLUGrad);
+  MS_REPLACE_DVM_OP(OpLevel_0, ReLU);
+  MS_REPLACE_DVM_OP(OpLevel_0, SumExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, AddExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, SubExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, Tile);
+  MS_REPLACE_DVM_OP(OpLevel_0, LinalgVectorNorm);
+  MS_REPLACE_DVM_OP(OpLevel_0, InplaceDiv);
+  MS_REPLACE_DVM_OP(OpLevel_0, InplaceExp);
+  MS_REPLACE_DVM_OP(OpLevel_0, InplaceAddExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, InplaceSubExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, InplaceReLU);
+  MS_REPLACE_DVM_OP(OpLevel_1, Dense);
+  MS_REPLACE_DVM_OP(OpLevel_1, MatMul);
+  MS_REPLACE_DVM_OP(OpLevel_1, BatchMatMul);
+  MS_REPLACE_DVM_OP(OpLevel_1, BatchMatMulExt);
+  MS_REPLACE_DVM_OP(OpLevel_1, MatMulExt);
+  MS_REPLACE_DVM_OP(OpLevel_0, BatchNormStats);
+  MS_REPLACE_DVM_OP(OpLevel_0, BatchNormGatherStatsWithCounts);
+  MS_REPLACE_DVM_OP(OpLevel_0, BatchNormElemt);
+  MS_REPLACE_DVM_OP(OpLevel_0, BatchNormElemtGrad);
 }
 
 void LazyFusionAscendInit() {
@@ -1805,9 +1897,6 @@ void LazyFusionAscendInit() {
   RegisterLazyFusionOp();
   runtime::Pipeline::Get().UpdateBackendStage(
     std::make_unique<LazyFusionQueue>("backend_queue", runtime::kThreadWaitLevel::kLevelBackend));
-  bool enable_tuning = LazyFusionFlags::GetInstance().online_tuning;
-  dvm::SetOnlineTuning(enable_tuning);
-  MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "on" : "off");
 }
 
 MS_REGISTER_LAZY_FUSION_INIT(kAscendDevice, LazyFusionAscendInit);

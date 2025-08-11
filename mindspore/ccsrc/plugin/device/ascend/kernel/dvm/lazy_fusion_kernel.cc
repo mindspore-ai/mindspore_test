@@ -15,17 +15,20 @@
  */
 
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
+#include <utility>
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "debug/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
+static constexpr uint32_t kLoadFlag = 0x10000u;
+static constexpr uint32_t kIndexFlag = 0xffffu;
+
 void *WsAllocCallback(uint64_t size, void *user_data) {
   auto kernel = static_cast<LazyFusionKernelAscend *>(user_data);
   MS_LOG(INFO) << "Alloc workspace for dvm kernel, kernel id is " << kernel->id() << " " << kernel << " size: " << size;
@@ -98,6 +101,13 @@ LazyFusionKernelAscend *LazyFusionManager::Get(const device::DeviceContext *cont
     bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
     dvm::SetDeterministic(enable_deterministic);
     MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "on" : "off");
+    bool enable_tuning = LazyFusionFlags::GetInstance().online_tuning;
+    if (enable_deterministic) {
+      enable_tuning = false;
+      MS_LOG(WARNING) << "online tuning can not be enabled if set deterministic";
+    }
+    dvm::SetOnlineTuning(enable_tuning);
+    MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "on" : "off");
     runtime_init = true;
   }
   if (current_ != nullptr) {
@@ -145,28 +155,6 @@ dvm::ShapeRef *LazyFusionKernelAscend::GetShapeRef(const ShapeVector &shape) {
   return item.second.get();
 }
 
-void LazyFusionKernelAscend::DumpToFile() {
-  const std::string dump_dir = "./lazy_fusion_dump";
-  auto dir_path = FileUtils::CreateNotExistDirs(dump_dir);
-  if (!dir_path.has_value()) {
-    MS_LOG(INFO) << "Failed to create directory: " << dump_dir;
-    return;
-  }
-  std::string file_name = "lazy_fusion_" + std::to_string(getpid()) + ".txt";
-  std::string file_path = dir_path.value() + "/" + file_name;
-  ChangeFileMode(file_path, S_IWUSR);
-  std::ofstream of(file_path, std::ios::app);
-  if (!of.is_open()) {
-    MS_LOG(INFO) << "Open dump file '" << file_path << "' failed!";
-    ChangeFileMode(file_path, S_IRUSR);
-    return;
-  }
-  of << dump_buf_.str() << "\n";
-  of.close();
-  ChangeFileMode(file_path, S_IRUSR);
-  dump_buf_.str("");
-}
-
 dvm::NDObject *LazyFusionKernelAscend::Input(const TensorPtr &x, bool enable_cast,
                                              const std::optional<ShapeVector> &shape) {
   auto input_type = TransType(x->data_type());
@@ -200,12 +188,12 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const TensorPtr &x, bool enable_cas
   return op;
 }
 
-void LazyFusionKernelAscend::Output(const TensorPtr &tensor, dvm::NDObject *obj) {
+void LazyFusionKernelAscend::Output(const TensorPtr &tensor, dvm::NDObject *obj, bool inplace) {
   auto tensor_type = TransType(tensor->data_type());
   if (GetDType(obj) != tensor_type) {
     obj = Cast(obj, tensor_type);
   }
-  auto &store = outputs_.emplace_back(obj, tensor);
+  auto &store = outputs_.emplace_back(obj, tensor, false, inplace);
   ops_map_[store.dev_addr.get()] = obj;
 }
 
@@ -219,6 +207,7 @@ bool LazyFusionKernelAscend::HasTensor(const TensorPtr &x) const {
 
 void *LazyFusionKernelAscend::AllocWorkspace(uint64_t size) {
   auto mem = std::make_shared<kernel::pyboost::MemBlock>(device_context_, size, stream_id_);
+  workspace_.push_back(mem);
   return mem->ptr_;
 }
 
@@ -272,6 +261,7 @@ void LazyFusionKernelAscend::Flush() {
       for (auto &out : outputs_) {
         auto &device_address = out.dev_addr;
         if (device_address.use_count() == 1 && device_address->pointer_ref_count().use_count() == 1) {
+          out.skip = true;
           continue;
         }
         if (device_address->GetPtr() == nullptr) {
@@ -287,8 +277,14 @@ void LazyFusionKernelAscend::Flush() {
                         ? 0
                         : storage_info->storage_offset * GetTypeByte(TypeIdToType(device_address->type_id()));
         auto dev_mem = device_address->GetMutablePtr();
-        dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset), out.op);
+        auto store = dvm::Kernel::Store(static_cast<void *>(static_cast<uint8_t *>(dev_mem) + offset), out.op);
+        if (out.inplace) {
+          dvm::Kernel::SetStoreInplace(store);
+        }
         has_store = true;
+      }
+      if (LazyFusionFlags::GetInstance().dump_as_text) {
+        DumpGraph();
       }
       if (!has_store) {
         MS_LOG(INFO) << "Skip launch task dvm kernel, kernel id is " << id() << " " << this
@@ -304,16 +300,14 @@ void LazyFusionKernelAscend::Flush() {
         runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostDeviceTask, "CodeGen", false);
         if (LazyFusionFlags::GetInstance().dump_as_text) {
-          dump_buf_ << "[lazy_fusion before split] "
-                    << "kernel id : " << id() << "\n";
+          dump_buf_ << "[lazy_fusion before split] kernel id: " << id() << "\n";
           dump_buf_ << Dump() << "\n";
-          DumpToFile();
+          LazyFusionDump::Instance().DumpKernelInfo(&dump_buf_);
           EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
-          dump_buf_ << "[lazy_fusion after split] "
-                    << "kernel id : " << id() << "\n";
+          dump_buf_ << "[lazy_fusion after split]\n";
           dump_buf_ << Dump() << "\n";
           dump_buf_ << Das() << "\n";
-          DumpToFile();
+          LazyFusionDump::Instance().DumpKernelInfo(&dump_buf_);
         } else {
           EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
         }
@@ -333,6 +327,73 @@ void LazyFusionKernelAscend::Flush() {
   });
   runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(task->task_id());
   runtime::Pipeline::Get().backend_stage()->runtime::AsyncRQueue::Push(task);  // No flush here
+}
+
+std::pair<bool, uint32_t> LazyFusionKernelAscend::GetInputIdx(const TensorPtr &tensor) {
+  if (tensor == nullptr) {
+    return std::make_pair(false, 0u);
+  }
+  for (int64_t i = SizeToLong(inputs_.size()) - 1; i >= 0; --i) {
+    if (inputs_[LongToSize(i)]->tensor == tensor) {
+      return std::make_pair(true, kLoadFlag | static_cast<uint32_t>(i));
+    }
+  }
+  return std::make_pair(false, 0u);
+}
+
+std::pair<bool, uint32_t> LazyFusionKernelAscend::GetOutputIdx(const TensorPtr &tensor) {
+  if (tensor == nullptr) {
+    return std::make_pair(false, 0u);
+  }
+  auto dev_addr = tensor->device_address();
+  for (int64_t i = SizeToLong(outputs_.size()) - 1; i >= 0; --i) {
+    if (outputs_[LongToSize(i)].dev_addr == dev_addr) {
+      return std::make_pair(true, static_cast<uint32_t>(i));
+    }
+  }
+  return std::make_pair(false, 0u);
+}
+
+void LazyFusionKernelAscend::DumpGraph() {
+  dump_buf_ << "kernel id: " << id() << " " << this << "\n";
+  for (size_t i = 0; i < input_used_; ++i) {
+    auto input_tensor = inputs_[i]->tensor;
+    dump_buf_ << "p" << i << ": " << LazyFusionDump::Instance().ToString(input_tensor) << "\n";
+  }
+  dump_buf_ << "lazy_fusion_graph() {\n";
+  for (const auto &op : dump_ops_) {
+    dump_buf_ << "  ";
+    // op outputs
+    for (size_t i = 0; i < op.outputs.size(); ++i) {
+      if (i != 0) {
+        dump_buf_ << ", ";
+      }
+      auto idx = op.outputs[i];
+      dump_buf_ << "%" << idx;
+      if (outputs_[idx].skip) {
+        dump_buf_ << "(skip)";
+      }
+    }
+    // op name
+    dump_buf_ << " = " << op.name << "(";
+    // op inputs
+    for (size_t i = 0; i < op.inputs.size(); ++i) {
+      if (i != 0) {
+        dump_buf_ << ", ";
+      }
+      auto idx = op.inputs[i].first;
+      if (idx < 0) {
+        dump_buf_ << op.inputs[i].second;
+      } else {
+        auto idx_u = static_cast<uint32_t>(idx);
+        auto real_idx = idx_u & kIndexFlag;
+        dump_buf_ << (static_cast<bool>(idx_u & kLoadFlag) ? "p" : "%") << real_idx;
+      }
+    }
+    dump_buf_ << ")\n";
+  }
+  dump_buf_ << "}\n";
+  LazyFusionDump::Instance().DumpGraphInfo(&dump_buf_);
 }
 }  // namespace kernel
 }  // namespace mindspore

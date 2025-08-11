@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +14,64 @@
 # ============================================================================
 
 import os
+import shutil
+import subprocess
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_fuse():
+def _delete_dir(dir_name):
+    if os.path.isdir(dir_name):
+        shutil.rmtree(dir_name)
+
+
+def _run_new_process(file_name, output_dir):
+    _delete_dir(output_dir)
+    os.makedirs(output_dir)
+
+    # env
+    base_env = "DVM_OUTPUT_DIR={}".format(output_dir)
+    # dvm env
+    non_default_ops = ["Dense", "MatMul", "MatMulExt", "BatchMatMul", "BatchMatMulExt"]
+    dvm_env = 'MS_DEV_PYNATIVE_FUSION_FLAGS="--opt_level=1 --enable_ops={}"'.format(",".join(non_default_ops))
+    dvm_env = dvm_env + " " + base_env
+    commands = [
+        "{} pytest -s {}".format(base_env, file_name),
+        "{} pytest -s {}".format(dvm_env, file_name)
+    ]
+    for command in commands:
+        try:
+            subprocess.run(command, shell=True, check=True, text=True)
+        except Exception as e:
+            _delete_dir(output_dir)
+            raise e
+    _delete_dir(output_dir)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_op():
     """
-    Feature: test dvm op fusion precision
+    Feature: test dvm op precision
     Description: pynative mode
     Expectation: the result match with the expected result
     """
-    os.environ["MS_DEV_LAZY_FUSION_FLAGS"] = "--opt_level=1 --dump_as_text"
-    cur_path = os.path.split(os.path.realpath(__file__))[0]
-    ret = os.system("pytest -s {}/dvm_pynative.py::test_fuse".format(cur_path))
-    os.environ.pop("MS_DEV_LAZY_FUSION_FLAGS")
-    assert ret == 0
+    _run_new_process("dvm_op_pynative.py", "./dvm_op")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_matmul():
+    """
+    Feature: test dvm matmul op precision
+    Description: pynative mode
+    Expectation: the result match with the expected result
+    """
+    _run_new_process("dvm_matmul_pynative.py", "./dvm_matmul")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_fuse():
+    """
+    Feature: test dvm fuse op precision
+    Description: pynative mode
+    Expectation: the result match with the expected result
+    """
+    _run_new_process("dvm_fuse_pynative.py", "./dvm_fuse")

@@ -313,7 +313,7 @@ class MulsAscendDvm : public MulsAscend {
   MulsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
       : MulsAscend(std::move(primitive), device_context) {}
   ~MulsAscendDvm() = default;
-  tensor::TensorPtr Call(const TensorPtr &input_tensor, const ScalarPtr &other_tensor) override;
+  tensor::TensorPtr Call(const TensorPtr &input_tensor, const ScalarPtr &other) override;
 };
 
 class SigmoidAscendDvm : public SigmoidAscend {

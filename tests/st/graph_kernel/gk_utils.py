@@ -15,7 +15,10 @@
 
 import shutil
 import os
+import numpy as np
+import mindspore
 from mindspore import context
+from mindspore import Tensor
 
 
 class AssertGKEnable:
@@ -41,3 +44,75 @@ class AssertGKEnable:
                 self._rm_dir(self.ir_path)
                 raise RuntimeError("Graph Kernel Fusion is not enabled")
             self._rm_dir(self.ir_path)
+
+
+def gen_flag(*args):
+    lst = []
+    for arg in args:
+        if isinstance(arg, (list, tuple)):
+            s = "_".join(str(a) for a in arg)
+        else:
+            s = str(arg)
+        lst.append(s)
+    flag = "_".join(lst)
+    return flag
+
+
+def trans_data_type(data_type):
+    type_map = {
+        "float32": [np.float32, mindspore.float32],
+        "float16": [np.float16, mindspore.float16],
+        "bfloat16": [np.float32, mindspore.bfloat16],
+        "int32": [np.int32, mindspore.int32],
+        "int8": [np.int8, mindspore.int8],
+        "bool": [np.bool_, mindspore.bool_],
+    }
+    return type_map[data_type]
+
+
+def gen_input(shape, data_type, is_positive=False, data_range=1.0):
+    np_type, ms_type = trans_data_type(data_type)
+    if data_type.startswith("int"):
+        x = np.random.randint(-100, 100, size=shape).astype(np_type)
+        if is_positive:
+            x = np.abs(x) + 1
+    elif data_type == "bool":
+        if is_positive:
+            x = np.full(shape, True, dtype=np_type)
+        else:
+            x = np.random.randint(2, size=shape).astype(np_type)
+    else:
+        x = np.random.normal(0, data_range, shape).astype(np_type)
+        if is_positive:
+            x = np.abs(x) + 0.01
+    x_ms = Tensor(x, ms_type)
+    return x_ms
+
+
+def get_func_name(func):
+    func_name = func.__name__ if hasattr(func, "__name__") else type(func).__name__
+    return func_name
+
+
+def compare_outputs(flag, outputs, cmp_precision=0.0):
+    enable_dvm = os.environ.get("MS_DEV_PYNATIVE_FUSION_FLAGS", "").find("--opt_level=1") != -1
+    output_dir = os.environ.get("DVM_OUTPUT_DIR", "./")
+    if not isinstance(outputs, (list, tuple)):
+        outputs = [outputs]
+    else:
+        outputs = list(outputs)
+    for i, output in enumerate(outputs):
+        if output is None:
+            continue
+        output = output.float().asnumpy() if output.dtype == mindspore.bfloat16 else output.asnumpy()
+        output_name = "{}/{}_output_{}.npy".format(output_dir, flag, i)
+        if enable_dvm:
+            expect = np.load(output_name)
+            if output.dtype != expect.dtype:
+                raise RuntimeError("{} outputs[{}]: {} vs {}".format(flag, i, expect.dtype, output.dtype))
+            if output.shape != expect.shape:
+                raise RuntimeError("{} outputs[{}]: {} vs {}".format(flag, i, expect.shape, output.shape))
+            if not np.allclose(expect, output, cmp_precision, cmp_precision, equal_nan=True):
+                raise RuntimeError("{} outputs[{}]: precision error! cmp_precision: {}".format(flag, i, cmp_precision))
+        else:
+            np.save(output_name, output)
