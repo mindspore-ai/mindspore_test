@@ -36,7 +36,6 @@
 
 namespace mindspore {
 namespace device {
-class HalResBase;
 namespace cpu {
 class CPUSimpleMemPlan;
 class CPUMemoryManager;

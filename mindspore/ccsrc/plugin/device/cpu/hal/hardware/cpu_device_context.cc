@@ -72,7 +72,6 @@
 #include "debug/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 
@@ -239,102 +238,6 @@ void CPUDeviceContext::Destroy() {
   device_res_manager_->Destroy();
   initialized_ = false;
 }
-
-void CPUDeviceResManager::Initialize() {
-  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
-  cpu_res_manager_->Initialize();
-}
-
-void CPUDeviceResManager::Destroy() {
-  if (cpu_res_manager_) {
-    cpu_res_manager_->Destroy();
-  }
-}
-
-void *CPUDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  return cpu_res_manager_->AllocateMemory(size, stream_id);
-}
-
-void CPUDeviceResManager::FreeMemory(void *ptr) const { cpu_res_manager_->FreeMemory(ptr); }
-
-void CPUDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                                          const std::vector<size_t> &keep_addr_sizes) const {
-  cpu_res_manager_->FreePartMemorys(free_addrs, keep_addrs, keep_addr_sizes);
-}
-
-std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
-                                                                  uint32_t stream_id) const {
-  return cpu_res_manager_->AllocateContinuousMemory(size_list, stream_id);
-}
-
-std::pair<std::vector<size_t>, std::vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  return cpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
-}
-
-tensor::TensorPtr CPUDeviceResManager::GetSliceByTensorListIndexHandle(
-  const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
-  const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
-  return cpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
-                                                           end);
-}
-
-tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                                    size_t end) {
-  return cpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
-}
-
-DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress() const { return cpu_res_manager_->CreateDeviceAddress(); }
-
-DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                                          const Format &format, TypeId type_id,
-                                                          const std::string &device_name, uint32_t device_id,
-                                                          uint32_t stream_id, const UserDataPtr &user_data) const {
-  return cpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                               stream_id, user_data);
-}
-
-bool CPUDeviceResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                   size_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
-  return cpu_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-}
-bool CPUDeviceResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                    size_t stream_id, bool keep_src) const {
-  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
-  return cpu_res_manager_->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
-}
-bool CPUDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
-  return cpu_res_manager_->Copy(dst, src, size, kind, stream_id);
-}
-
-bool CPUDeviceResManager::LoadCollectiveCommLib() {
-  bool using_mpi = common::UseMPI();
-  if (using_mpi) {
-    std::string mpi_comm_lib_name = "libmpi_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
-    }
-
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  } else {
-#if defined(__linux__) && defined(WITH_BACKEND)
-    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-#endif
-  }
-  return true;
-}
-
-CollectiveCommunicationLib *CPUDeviceResManager::collective_comm_lib() const { return collective_comm_lib_; }
 
 void CPUKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);

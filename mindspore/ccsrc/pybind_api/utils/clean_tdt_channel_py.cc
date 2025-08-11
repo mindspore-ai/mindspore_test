@@ -28,9 +28,9 @@ int CleanTdtChannel() {
   MS_EXCEPTION_IF_NULL(device_ctx);
   device_ctx->Initialize();
   MS_EXCEPTION_IF_NULL(device_ctx);
-  MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
+  MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());
   device::DeviceContextManager::GetInstance().SyncAllStreams();
-  return device_ctx->device_res_manager_->CleanTdtChannel();
+  return device_ctx->GetKernelExecutor()->CleanTdtChannel();
 }
 }  // namespace
 

@@ -30,12 +30,12 @@ int SendRecv(const std::vector<py::object> &params, int src_rank, int dst_rank) 
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
   MS_EXCEPTION_IF_NULL(device_ctx);
-  MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
+  MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());
   device::DeviceContextManager::GetInstance().SyncAllStreams();
   tensor::TensorPtrList params_;
   (void)std::transform(params.begin(), params.end(), std::back_inserter(params_),
                        [](const py::object &p) { return tensor::ConvertToTensor(p); });
-  return device_ctx->device_res_manager_->SendRecv(params_, src_rank, dst_rank);
+  return device_ctx->GetKernelExecutor()->SendRecv(params_, src_rank, dst_rank);
 }
 
 int ResetParams(const std::vector<py::object> &params) {

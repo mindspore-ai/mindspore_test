@@ -43,7 +43,9 @@
 #include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "utils/ms_context.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 

@@ -28,7 +28,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "common/device_address.h"

@@ -20,12 +20,12 @@
 #include <string>
 #include <unordered_map>
 #include "runtime/device/res_manager/memory_manager.h"
-#include "plugin/res_manager/gpu/visible.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace gpu {
-class GPU_RES_MANAGER_EXPORT GPUMemoryManager : public MemoryManager {
+class GPU_EXPORT GPUMemoryManager : public MemoryManager {
  public:
   GPUMemoryManager() = default;
   virtual ~GPUMemoryManager() = default;

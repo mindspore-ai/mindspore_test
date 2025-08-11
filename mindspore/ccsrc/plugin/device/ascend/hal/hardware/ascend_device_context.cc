@@ -48,6 +48,7 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tdt_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "acl/acl_dump.h"
 #include "debug/dump/tensordump_control.h"
 
@@ -165,6 +166,7 @@ void AscendDeviceContext::Destroy() {
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   // for ge, has destropy in graph_executor->finalize
   device_res_manager_->Destroy();
+  device::ascend::AclnnFinalize();
 
   if (hccl::HcclAdapter::GetInstance().Inited()) {
     (void)hccl::HcclAdapter::GetInstance().FinalizeHccl();

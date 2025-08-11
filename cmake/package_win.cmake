@@ -183,11 +183,6 @@ if(ENABLE_CPU)
     COMPONENT mindspore
   )
   install(
-    TARGETS mindspore_cpu_res_manager
-    DESTINATION ${INSTALL_PLUGIN_DIR}
-    COMPONENT mindspore
-  )
-  install(
     TARGETS mindspore_ops_host
     DESTINATION ${INSTALL_PLUGIN_DIR}
     COMPONENT mindspore
@@ -220,11 +215,6 @@ if(ENABLE_GPU)
   install(
     TARGETS cuda_ops
     DESTINATION ${INSTALL_LIB_DIR}
-    COMPONENT mindspore
-  )
-  install(
-    TARGETS mindspore_gpu mindspore_gpu_res_manager
-    DESTINATION ${INSTALL_PLUGIN_DIR}
     COMPONENT mindspore
   )
 endif()

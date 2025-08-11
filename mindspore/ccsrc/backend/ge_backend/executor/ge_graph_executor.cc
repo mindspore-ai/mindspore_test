@@ -37,7 +37,6 @@
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"
 #include "backend/ge_backend/executor/ge_utils.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
@@ -51,6 +50,8 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "mindspore/core/include/ir/tensor_new.h"
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {
@@ -1400,9 +1401,9 @@ void GeGraphExecutor::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::ResKey res_key{device::DeviceType::kAscend, device_id};
-  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
-  auto ascend_res_manager = static_cast<device::ascend::AscendResManager *>(res_manager);
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device::DeviceType::kAscend), device_id};
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  auto ascend_res_manager = static_cast<device::ascend::AscendResManager *>(device_context->device_res_manager_.get());
   MS_EXCEPTION_IF_NULL(ascend_res_manager);
   ascend_res_manager->InitializeForGe();
 

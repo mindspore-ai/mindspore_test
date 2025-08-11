@@ -19,16 +19,16 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "runtime/device/res_manager/hal_res_base.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/device/res_manager/swap_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
+
 namespace mindspore {
 namespace device {
 namespace cpu {
-class CPUResManager : public HalResBase {
+class CPUResManager : public DeviceResManager {
  public:
-  explicit CPUResManager(const ResKey &res_key) : HalResBase(res_key) {}
+  CPUResManager() = default;
   ~CPUResManager() override = default;
 
   void Initialize() override;
@@ -63,6 +63,8 @@ class CPUResManager : public HalResBase {
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;
+  bool LoadCollectiveCommLib() override;
+  CollectiveCommunicationLib *collective_comm_lib() const override;
 
  private:
   std::shared_ptr<CPUMemoryManager> mem_manager_{nullptr};

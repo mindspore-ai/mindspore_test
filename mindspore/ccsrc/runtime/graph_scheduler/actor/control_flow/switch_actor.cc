@@ -19,10 +19,10 @@
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "abstract/utils.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/core/include/ir/tensor_new.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {

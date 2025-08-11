@@ -20,9 +20,9 @@
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "runtime/hardware/device_context.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace hal {

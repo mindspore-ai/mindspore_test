@@ -106,7 +106,7 @@ void ParamReplication::Init() {
 }
 
 struct ExchangeDevAddr {
-  explicit ExchangeDevAddr(const AscendDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
+  explicit ExchangeDevAddr(const AscendResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ExchangeDevAddr() {
     if (send_dev_addr != nullptr && res_mgr_ != nullptr) {
       res_mgr_->FreeMemory(send_dev_addr);
@@ -117,7 +117,7 @@ struct ExchangeDevAddr {
   }
   void *send_dev_addr = nullptr;
   void *recv_dev_addr = nullptr;
-  const AscendDeviceResManager *res_mgr_;
+  const AscendResManager *res_mgr_;
 };
 
 int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExchangeInfo *remote_info, int src_rank,

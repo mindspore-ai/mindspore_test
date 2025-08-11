@@ -20,7 +20,6 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_type.h"
 #include "runtime/hardware/device_context.h"

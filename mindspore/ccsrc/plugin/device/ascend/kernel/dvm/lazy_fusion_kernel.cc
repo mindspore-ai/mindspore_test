@@ -21,6 +21,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace kernel {

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <set>
+#include "common/kernel_tensor.h"
 #include "include/backend/kernel_graph.h"
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/executor/ge_device_res_manager.h"

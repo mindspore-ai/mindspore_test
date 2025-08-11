@@ -37,6 +37,7 @@
 #include "runtime/pynative/op_runner.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/pynative/op_executor.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

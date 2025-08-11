@@ -23,7 +23,6 @@
 #include <utility>
 #include "runtime/hardware/device_context.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
 #include "common/kernel.h"

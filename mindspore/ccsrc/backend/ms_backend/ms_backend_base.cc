@@ -46,6 +46,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/pre_launch_comm.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/pynative/graph_adapter.h"

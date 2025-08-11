@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include "common/kernel.h"
+#include "common/kernel_tensor.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #ifdef ENABLE_AKG
@@ -30,6 +31,7 @@
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/cuda_env_checker.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

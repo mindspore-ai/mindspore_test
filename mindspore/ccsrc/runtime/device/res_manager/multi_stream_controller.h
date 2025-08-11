@@ -28,7 +28,7 @@
 
 #include "async/spinlock.h"
 #include "ir/device_event.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware/device_context.h"
 #include "runtime/hardware/visible.h"
 
 namespace mindspore {

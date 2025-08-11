@@ -32,6 +32,13 @@
 #include "ir/tensor_new.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
+#include "utils/dlopen_macro.h"
+#include "runtime/collective/collective_comm_lib_loader.h"
+#ifdef ENABLE_MPI
+#include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
+#endif
+
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -50,16 +57,17 @@ std::string GetCurrentDir() {
 }
 
 void GPUResManager::Initialize() {
+  uint32_t device_id;
   // Set device id
   if (distributed::collective::CollectiveManager::instance()->initialized()) {
-    res_key_.device_id_ = distributed::collective::CollectiveManager::instance()->local_rank_id();
+    device_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
 
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    ms_context->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, res_key_.device_id_);
+    ms_context->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, device_id);
   }
 
-  MS_LOG(INFO) << "Set GPU device id index " << res_key_.device_id_;
+  MS_LOG(INFO) << "Set GPU device id index " << device_id;
   // Set device id and initialize device resource.
   if (!InitDevice()) {
     MS_LOG(EXCEPTION) << "GPU InitDevice failed.";
@@ -97,14 +105,17 @@ bool GPUResManager::InitDevice() {
     return false;
   }
 
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   if (!GPUDeviceManager::GetInstance().is_device_id_init()) {
-    if (!GPUDeviceManager::GetInstance().set_cur_device_id(res_key_.device_id_)) {
-      MS_LOG(ERROR) << "Failed to set current device id: " << SizeToInt(res_key_.device_id_);
+    if (!GPUDeviceManager::GetInstance().set_cur_device_id(device_id)) {
+      MS_LOG(ERROR) << "Failed to set current device id: " << SizeToInt(device_id);
       return false;
     }
   }
   // Check the Cuda capability
-  const float cuda_cap = GetCudaCap(res_key_.device_id_);
+  const float cuda_cap = GetCudaCap(device_id);
   if (cuda_cap < SUPPORTED_CAP) {
     MS_LOG(WARNING) << "The device with Cuda compute capability " << cuda_cap
                     << " is lower than the minimum required capability " << SUPPORTED_CAP
@@ -170,9 +181,9 @@ bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t strea
     device_ptr = allocator->Alloc(address->GetSize(), stream_id);
   } else {
     auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
-    if (device_name_in_address != GetDeviceNameByType(res_key_.device_name_)) {
+    if (device_name_in_address != "GPU") {
       MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
-                        << ", type name in context:" << GetDeviceNameByType(res_key_.device_name_);
+                        << ", type name in context: GPU";
     }
 
     if (address->GetPtr() != nullptr) {
@@ -391,9 +402,12 @@ void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
 }  // namespace
 
 DeviceAddressPtr GPUResManager::CreateDeviceAddress() const {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kGPUDevice);
-  device_address->SetDeviceType(res_key_.device_name_);
-  device_address->set_device_id(res_key_.device_id_);
+  device_address->SetDeviceType(device::GetDeviceTypeByName("GPU"));
+  device_address->set_device_id(device_id);
   return device_address;
 }
 
@@ -403,7 +417,10 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
                                                     uint32_t stream_id, const UserDataPtr &user_data) const {
   auto real_device_id = device_id;
   if (device_name.empty()) {
-    real_device_id = res_key_.device_id_;
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    real_device_id = device_id;
     MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
   }
   auto device_address =
@@ -732,9 +749,11 @@ bool GPUResManager::BindDeviceToCurrentThread(bool force_bind) const {
   if (cur_thread_device_inited && !force_bind) {
     return true;
   }
-
-  if (!CudaDriver::SetDevice(UintToInt(res_key_.device_id_))) {
-    MS_LOG(ERROR) << "Failed to set device id: " << res_key_.device_id_;
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  if (!CudaDriver::SetDevice(UintToInt(device_id))) {
+    MS_LOG(ERROR) << "Failed to set device id: " << device_id;
     return false;
   }
 
@@ -790,7 +809,6 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     return host_context->device_res_manager_->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
-MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);
 
 REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kGPU, ([](void *ptr, bool from_mem_pool) {
                                     if (ptr != nullptr && from_mem_pool) {

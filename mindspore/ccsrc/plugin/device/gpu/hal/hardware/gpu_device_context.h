@@ -31,109 +31,6 @@
 namespace mindspore {
 namespace device {
 namespace gpu {
-class GPUKernelExecutor;
-class GPUDeviceResManager : public DeviceResManager {
- public:
-  GPUDeviceResManager() {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    ResKey res_key = {DeviceType::kGPU, device_id};
-    gpu_res_manager_ = static_cast<GPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
-  }
-  ~GPUDeviceResManager() override = default;
-
-  // Set device id and initialize device resource, such as stream, cudnn and cublas handle.
-  void Initialize() override;
-
-  // Release device memory, stream, cudnn and cublas handle, etc.
-  void Destroy() override;
-
-  bool BindDeviceToCurrentThread(bool force_bind) const override;
-
-  std::shared_ptr<void> AllocateHostMemory(size_t size) const override;
-
-  std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
-                                               uint32_t stream_id = kDefaultStreamIndex) const override;
-
-  DeviceAddressPtr CreateDeviceAddress() const override;
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                 bool keep_src) const override;
-  bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
-  bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
-  std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
-    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
-  tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                    const std::vector<size_t> &before_padding_size,
-                                                    const std::vector<size_t> &after_padding_size, size_t start,
-                                                    size_t end) override;
-  tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                 size_t end) override;
-
-  bool CreateStream(size_t *stream_id) const override;
-  bool CreateStreamWithPriority(size_t *stream_id, int32_t priority) const override;
-  size_t QueryStreamSize() const override;
-  std::vector<uint32_t> GetStreamIds() const override;
-  void *GetStream(size_t stream_id) const;
-  size_t GetCommunicationStreamID() const override;
-  bool DestroyStream(size_t stream_id) const override;
-  void SetCurrentStreamId(size_t stream_id) override;
-  size_t GetCurrentStreamId() const override;
-  bool QueryStream(size_t stream_id) const override;
-  bool SyncStream(size_t stream_id) const override;
-  bool SyncAllStreams(bool sync_device) const override;
-  bool SyncNotDefaultStreams() const override;
-  size_t DefaultStream() const override;
-
-  // Create device event for runtime.
-  DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) override;
-
-  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
-  bool DestroyEvent(const DeviceEventPtr &event) override;
-  bool DestroyAllEvents() override;
-
-  bool LoadCollectiveCommLib() override;
-  mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override;
-
-  bool single_op_multi_stream_enable() const override;
-  void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
-
- protected:
-  // Relevant function to allocate and free device memory of raw ptr.
-  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
-  void FreeMemory(void *ptr) const override;
-  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                       const std::vector<size_t> &keep_addr_sizes) const override;
-
-  bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
-
-  // Relevant function to manage memory statistics
-  size_t GetTotalMemStatistics() const override;
-  size_t GetTotalUsedMemStatistics() const override;
-  size_t GetTotalIdleMemStatistics() const override;
-  size_t GetTotalEagerFreeMemStatistics() const override;
-  size_t GetUsedMemPeakStatistics() const override;
-  size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
-  void ResetMaxMemoryReserved() override;
-  void ResetMaxMemoryAllocated() override;
-
- private:
-  friend class GPUKernelExecutor;
-  bool InitDevice();
-  GPUResManager *gpu_res_manager_{nullptr};
-};
-
 class GPUKernelExecutor : public KernelExecutor {
  public:
   GPUKernelExecutor() = default;
@@ -199,11 +96,11 @@ class GPUKernelExecutor : public KernelExecutor {
   // The cublas handle is not thread safety specifically, it is not recommended that multiple threads access the same
   // cublas handle at the same time, so need the launch mutex when multiple threads launch the cublas kernels.
   mutable std::mutex launch_mutex_;
-  GPUDeviceResManager *res_manager_{nullptr};
+  GPUResManager *res_manager_{nullptr};
   bool initialized_ = false;
 };
 
-class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUDeviceResManager> {
+class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUResManager> {
  public:
   explicit GPUDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~GPUDeviceContext() override = default;
