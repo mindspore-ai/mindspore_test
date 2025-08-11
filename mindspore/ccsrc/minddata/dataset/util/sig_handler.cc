@@ -65,41 +65,47 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
+void DoReleaseShmAndMsg(const std::string &key) {
+  // release the shm
+  if (g_shm_id[key] != -1) {
+    if (shmctl(g_shm_id[key], IPC_RMID, NULL) == -1 && errno != EINVAL) {
+      MS_LOG(ERROR) << "shmctl delete shm_id: " << std::to_string(g_shm_id[key])
+                    << " error. Errno: " << std::to_string(errno);
+    } else {
+      MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(g_shm_id[key]) << " successfully.";
+    }
+  }
+
+  // release the msg
+  if (g_msg_id[key] != -1) {
+    if (msgctl(g_msg_id[key], IPC_RMID, 0) == -1 && errno != EINVAL) {
+      MS_LOG(ERROR) << "msgctl delete msg_id: " << std::to_string(g_msg_id[key])
+                    << " error. Errno: " << std::to_string(errno);
+    } else {
+      MS_LOG(INFO) << "Delete message queue with msg_id: " << std::to_string(g_msg_id[key]) << " successfully.";
+    }
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
+    g_shm_id[key] = -1;
+    g_msg_id[key] = -1;
+  }
+}
+
 /// \brief Release the shared memory and message queue by process ids
 /// \param[in] pids The map / batch worker process ids
 void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
   std::string current_pid = std::to_string(getpid());
-  {
-    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
-    for (auto &sub_pid : pids) {
-      std::string key_prefix = current_pid + "_" + std::to_string(sub_pid);
-      for (auto &item : g_shm_id) {
-        if (item.first.find(key_prefix) != 0) {
-          continue;
-        }
-
-        // release the shm
-        if (g_shm_id[item.first] != -1) {
-          if (shmctl(g_shm_id[item.first], IPC_RMID, NULL) == -1 && errno != EINVAL) {
-            MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(g_shm_id[item.first])
-                          << " error. Errno: " << std::to_string(errno);
-          } else {
-            MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(g_shm_id[item.first])
-                         << " successfully.";
-          }
-          g_shm_id[item.first] = -1;
-        }
-
-        // release the msg
-        if (g_msg_id[item.first] != -1) {
-          if (msgctl(g_msg_id[item.first], IPC_RMID, 0) == -1 && errno != EINVAL) {
-            MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " failed.";
-          } else {
-            MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " successfully.";
-          }
-          g_msg_id[item.first] = -1;
-        }
+  for (auto &sub_pid : pids) {
+    std::string key_prefix = current_pid + "_" + std::to_string(sub_pid);
+    for (auto &item : g_shm_id) {
+      if (item.first.find(key_prefix) != 0) {
+        continue;
       }
+
+      // release the shm and msg
+      DoReleaseShmAndMsg(item.first);
     }
   }
   return;
@@ -110,86 +116,74 @@ void ReleaseShmAndMsg() {
   std::string current_pid = std::to_string(getpid());
   std::string ppid = std::to_string(getppid());
 
-  {
-    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
-    // release the shm & msg used by the current process when the main process is killed
-    for (auto &item : g_shm_id) {
-      // so just release the shm used by the current process
-      // scenario 1: for the map / batch in process mode,
-      //     the map / batch thread in main process, the item.first is MainProcessPID_WorkerPID_"PyFuncOp" /
-      //                                                               MainProcessPID_WorkerPID_"BatchOp"
-      //     the map / batch worker, the item.first is WorkerPID_MainProcessPID_"MapOp" /
-      //                                               WorkerPID_MainProcessPID_"BatchOp"
-      // scenario 2: for the independent dataset mode
-      //     main process, the item.first is MainProcessPID_IndependentProcessPID_"ReceiveBridgeOp"
-      //     independent process, the item.first is IndependentProcessPID_ParentPID_"SendBridgeOp"
-      if (item.first.find(current_pid) != 0) {
-        continue;
-      }
+  // release the shm & msg used by the current process when the main process is killed
+  for (auto &item : g_shm_id) {
+    // so just release the shm used by the current process
+    // scenario 1: for the map / batch in process mode,
+    //     the map / batch thread in main process, the item.first is MainProcessPID_WorkerPID_"PyFuncOp" /
+    //                                                               MainProcessPID_WorkerPID_"BatchOp"
+    //     the map / batch worker, the item.first is WorkerPID_MainProcessPID_"MapOp" /
+    //                                               WorkerPID_MainProcessPID_"BatchOp"
+    // scenario 2: for the independent dataset mode
+    //     main process, the item.first is MainProcessPID_IndependentProcessPID_"ReceiveBridgeOp"
+    //     independent process, the item.first is IndependentProcessPID_ParentPID_"SendBridgeOp"
+    if (item.first.find(current_pid) != 0) {
+      continue;
+    }
 
+    // no need to release the shm & msg in the map worker / batch worker / independent process when the main process
+    // is still alive
+    auto first_underline_char = item.first.find("_");
+    if (first_underline_char == std::string::npos || first_underline_char <= 0) {
+      MS_LOG(ERROR) << "Couldn't find first char '_' in the key which is " << item.first;
+      return;
+    }
+    auto second_underline_char = item.first.find("_", first_underline_char + 1);
+    if (second_underline_char == std::string::npos) {
+      MS_LOG(ERROR) << "Couldn't find second char '_' in the key which is " << item.first;
+      return;
+    }
+
+    auto substr_ppid = item.first.substr(first_underline_char + 1, second_underline_char - first_underline_char - 1);
+    // parent process is still alive, but the msg queue is not used
+    // Scenario 1: when the independet dataset exit and the main process is still alive, not need to release shm & msg
+    // Scenario 2: when the tree_adapter launch Python Workers success, but launch C++ op failed, the status.msg_stime
+    //             is not changed. Should release the shm & msg
+    if (ppid == substr_ppid && kill(std::stoi(ppid), 0) == 0) {
       // get the msg queue status
-      msqid_ds status;
-      if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &status) != 0) {
+      msqid_ds msg_status;
+      if (g_msg_id[item.first] != -1 && msgctl(g_msg_id[item.first], IPC_STAT, &msg_status) != 0) {
         // it may have already been released yet
         MS_LOG(INFO) << "Get msg queue: " << g_msg_id[item.first] << " status failed.";
-        continue;
       }
 
-      // no need to release the shm & msg in the map worker / batch worker / independent process when the main process
-      // is still alive
-      auto first_underline_char = item.first.find("_");
-      if (first_underline_char == std::string::npos || first_underline_char <= 0) {
-        MS_LOG(ERROR) << "Couldn't find first char '_' in the key which is " << item.first;
-        return;
-      }
-      auto second_underline_char = item.first.find("_", first_underline_char + 1);
-      if (second_underline_char == std::string::npos) {
-        MS_LOG(ERROR) << "Couldn't find second char '_' in the key which is " << item.first;
-        return;
+      // get the shm queue status
+      shmid_ds shm_status;
+      if (g_shm_id[item.first] != -1 && shmctl(g_shm_id[item.first], IPC_STAT, &shm_status) != 0) {
+        // it may have already been released yet
+        MS_LOG(INFO) << "Get shm queue: " << g_shm_id[item.first] << " status failed.";
       }
 
-      auto substr_ppid = item.first.substr(first_underline_char + 1, second_underline_char - first_underline_char - 1);
-      // parent process is still alive, but the msg queue is not used
-      // Scenario 1: when the independet dataset exit and the main process is still alive, not need to release shm & msg
-      // Scenario 2: when the tree_adapter launch Python Workers success, but launch C++ op failed, the status.msg_stime
-      //             is not changed. Should release the shm & msg
-      if (ppid == substr_ppid && kill(std::stoi(ppid), 0) == 0) {
-        if (status.msg_stime != 0) {
-          // Scenario 1
-          MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                       << " is still alive. And the msg send time is not 0. No need to release the shm & msg.";
-          continue;
-        } else {
-          // Scenario 2
-          MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                       << " is still alive. But the msg send time is 0. Need to release the shm & msg.";
-        }
-      } else {
+      // the msg & shm already be used by current process and parent process, it will be released by parent process
+      if (msg_status.msg_stime != 0 && shm_status.shm_ctime != 0) {
+        // Scenario 1
         MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
-                     << " is not alive. Need to release the shm & msg.";
+                     << " is still alive. And the msg & shm are used by current and parent process."
+                     << " No need to release the shm & msg by current process.";
+        continue;
+      } else {  // the msg & shm just be used by current process, it will be released by current process
+        // Scenario 2
+        MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
+                     << " is still alive. But the msg & shm is not used by parent process yet."
+                     << " Need to release the shm & msg by current process.";
       }
-
-      // release the shm
-      if (item.second != -1) {
-        if (shmctl(item.second, IPC_RMID, NULL) == -1 && errno != EINVAL) {
-          MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(item.second)
-                        << " error. Errno: " << std::to_string(errno);
-        } else {
-          MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(item.second) << " successfully.";
-        }
-        g_shm_id[item.first] = -1;
-      }
-
-      // release the msg
-      if (g_msg_id[item.first] != -1) {
-        if (msgctl(g_msg_id[item.first], IPC_RMID, 0) == -1 && errno != EINVAL) {
-          MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " failed.";
-        } else {
-          MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " successfully.";
-        }
-        g_msg_id[item.first] = -1;
-      }
+    } else {
+      MS_LOG(INFO) << "Current process: " << current_pid << ", parent process: " << ppid
+                   << " is not alive. Need to release the shm & msg by current process.";
     }
+
+    // release the shm & msg
+    DoReleaseShmAndMsg(item.first);
   }
 }
 
@@ -309,6 +303,11 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
           continue;
         }
       }
+
+      // Start killing other child processes, ignoring the SIGCHLD signal to avoid being triggered repeatedly.
+      // Scenario: kill -15 multi workers which may cause multi SIGCHLD
+      ::signal(SIGCHLD, SIG_IGN);
+
       auto pids_to_kill = pids;
       pids.clear();  // Clear the monitoring status of the process group before performing a termination.
       for (const auto &pid_to_kill : pids_to_kill) {
