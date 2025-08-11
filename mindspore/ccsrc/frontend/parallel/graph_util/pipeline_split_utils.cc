@@ -1500,6 +1500,17 @@ int64_t InferStage() {
 }
 
 bool IsFreezedGradGraph(const AnfNodePtr &node) {
+  if (node->isa<Parameter>()) {
+    auto param_ptr = node->cast<ParameterPtr>();
+    if (param_ptr == nullptr) {
+      return false;
+    }
+    auto param_info = param_ptr->param_info();
+    if (param_info == nullptr) {
+      return false;
+    }
+    return param_info->requires_grad() == false;
+  }
   if (!node->isa<CNode>()) {
     return false;
   }

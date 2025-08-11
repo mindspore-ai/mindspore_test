@@ -441,17 +441,18 @@ std::queue<BorderPair> ZeroBubbleV::GetTargetBorder(const std::vector<BorderPair
 }
 
 void ZeroBubbleV::ReorderShardedParam(const BorderVecPtr &exec_order) {
-  if (fwd_params_.empty()) {
-    return;
+  if (!fwd_params_.empty()) {
+    std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
+    auto prior = fwd_params_.back();
+    auto last = exec_order->front().first;
+    ControlOrder(prior, last);
   }
-  std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
-  std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
-  auto prior = fwd_params_.back();
-  auto last = exec_order->front().first;
-  ControlOrder(prior, last);
-  auto prior2 = exec_order->back().second;
-  auto last2 = bwd_params_.front();
-  ControlOrder(prior2, last2);
+  if (!bwd_params_.empty()) {
+    std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
+    auto prior2 = exec_order->back().second;
+    auto last2 = bwd_params_.front();
+    ControlOrder(prior2, last2);
+  }
 }
 
 void ZeroBubbleV::ProcessStep1(const PipelineState &state, BorderVecPtr exec_order) {

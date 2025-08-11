@@ -758,6 +758,7 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   recv->AddPrimalAttr(CHUNK, MakeValue(chunk));
   recv->AddPrimalAttr(STAGE, MakeValue(dst_stage));
   recv->AddPrimalAttr(ORDER, MakeValue(order));
+  recv->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
   manager_->SetEdge(node, index, recv);
 }
 
@@ -990,7 +991,7 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   send->AddPrimalAttr(ORDER, MakeValue(order));
   send->AddPrimalAttr(V_SHAPE, MakeValue(is_v_shape));
 
-  auto is_freeze = IsFreezedGradGraph(node);
+  auto is_freeze = IsFreezedGradGraph(node) || IsFreezedGradGraph(user_node);
   send->AddPrimalAttr(FREEZE, MakeValue(is_freeze));
 
   attr_rank = std::make_pair(SRC_RANK, MakeValue(node_stage));
