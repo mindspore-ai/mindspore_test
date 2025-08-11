@@ -31,7 +31,6 @@
 
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
-#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/hardware/visible.h"
