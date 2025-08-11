@@ -82,11 +82,14 @@ const std::set<std::string> kHostStatisticCategory = {"max",
                                                       "positive inf count",
                                                       "zero count",
                                                       "md5",
-                                                      "l2norm"};
+                                                      "l2norm",
+                                                      "hash",
+                                                      "hash:sha1",
+                                                      "hash:md5"};
 constexpr auto kDeviceStatisticsategory = "['max', 'min', 'avg', 'l2norm']";
 constexpr auto kSupportedStatisticsategory =
   "['max', 'min', 'avg', 'count', 'negative zero count', 'positive zero count', 'nan count', 'negative inf count', "
-  "'positive inf count', 'zero count', 'md5', 'l2norm']";
+  "'positive inf count', 'zero count', 'md5', 'l2norm', 'hash', 'hash:sha1', 'hash:md5']";
 }  // namespace
 
 namespace mindspore {
@@ -200,40 +203,9 @@ void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
     CheckJsonArrayType(*user_statistics, kStatisticCategory);
     std::string unsupported_items = "";
     if (IsDeviceCalcStats()) {
-      std::string device_unsupported_items = "";
-      for (const auto &statistic_item_json : *user_statistics) {
-        std::string statistic_item = statistic_item_json;
-        auto rt_find = kDeviceStatisticCategory.find(statistic_item);
-        if (rt_find == kDeviceStatisticCategory.end()) {
-          auto in_host_category = kHostStatisticCategory.find(statistic_item);
-          if (in_host_category == kHostStatisticCategory.end()) {
-            unsupported_items += statistic_item + ", ";
-          } else {
-            device_unsupported_items += statistic_item + ", ";
-          }
-        } else {
-          statistic_category_.push_back(statistic_item);
-          MS_VLOG(VL_DUMP) << "The item: " << statistic_item
-                           << " is a valid statistic category, it will be computed on device.";
-        }
-      }
-      if (!device_unsupported_items.empty()) {
-        MS_LOG(WARNING) << "The following statistic_category only support to be compute on host:"
-                        << device_unsupported_items
-                        << "the valid statistic_category on device are as follows:" << kDeviceStatisticsategory;
-      }
+      HandleDeviceStatisticCategory(user_statistics, &unsupported_items);
     } else {
-      for (const auto &statistic_item_json : *user_statistics) {
-        std::string statistic_item = statistic_item_json;
-        auto rt_find = kHostStatisticCategory.find(statistic_item);
-        if (rt_find == kHostStatisticCategory.end()) {
-          unsupported_items += statistic_item + ", ";
-        } else {
-          statistic_category_.push_back(statistic_item);
-          MS_VLOG(VL_DUMP) << "The item: " << statistic_item
-                           << " is a valid statistic category, it will be computed on host.";
-        }
-      }
+      HandleHostStatisticCategory(user_statistics, &unsupported_items);
     }
     if (!unsupported_items.empty()) {
       MS_LOG(EXCEPTION) << "The following statistic_category is invalid:" << unsupported_items
@@ -247,6 +219,55 @@ void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
     }
   }
   CsvHeaderUtil::GetInstance().SetStatCsvHeader(statistic_category_);
+}
+
+void DumpJsonParser::HandleHostStatisticCategory(const nlohmann::json::const_iterator user_statistics,
+                                                 std::string *unsupported_items) {
+  std::unordered_set<std::string> categorySet;
+  for (const auto &statistic_item_json : *user_statistics) {
+    std::string statistic_item = statistic_item_json;
+    auto rt_find = kHostStatisticCategory.find(statistic_item);
+    if (rt_find == kHostStatisticCategory.end()) {
+      *unsupported_items += statistic_item + ", ";
+    } else {
+      if (statistic_item == "hash:md5") {
+        statistic_item = "md5";
+      } else if (statistic_item == "hash" || statistic_item == "hash:sha1") {
+        statistic_item = "sha1";
+      }
+      if (categorySet.insert(statistic_item).second) {
+        statistic_category_.push_back(statistic_item);
+      }
+      MS_VLOG(VL_DUMP) << "The item: " << statistic_item
+                       << " is a valid statistic category, it will be computed on host.";
+    }
+  }
+}
+
+void DumpJsonParser::HandleDeviceStatisticCategory(const nlohmann::json::const_iterator user_statistics,
+                                                   std::string *unsupported_items) {
+  std::string device_unsupported_items = "";
+  for (const auto &statistic_item_json : *user_statistics) {
+    std::string statistic_item = statistic_item_json;
+    auto rt_find = kDeviceStatisticCategory.find(statistic_item);
+    if (rt_find == kDeviceStatisticCategory.end()) {
+      auto in_host_category = kHostStatisticCategory.find(statistic_item);
+      if (in_host_category == kHostStatisticCategory.end()) {
+        *unsupported_items += statistic_item + ", ";
+      } else {
+        device_unsupported_items += statistic_item + ", ";
+      }
+    } else {
+      statistic_category_.push_back(statistic_item);
+      MS_VLOG(VL_DUMP) << "The item: " << statistic_item
+                       << " is a valid statistic category, it will be computed on device.";
+    }
+  }
+  if (!device_unsupported_items.empty()) {
+    MS_LOG(WARNING) << "The following statistic_category only support to be compute on host:"
+                    << device_unsupported_items
+                    << "the valid statistic_category on device are as follows:" << kDeviceStatisticsategory;
+  }
 }
 
 void WriteJsonFile(const std::string &file_path, const std::ifstream &json_file) {

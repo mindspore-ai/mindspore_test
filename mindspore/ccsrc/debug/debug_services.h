@@ -57,7 +57,7 @@ class DebugServices {
     TensorStat(uint64_t data_size, int dtype, const std::vector<int64_t> &shape, bool is_bool, double max_value,
                double min_value, double avg_value, uint64_t count, uint64_t neg_zero_count, uint64_t pos_zero_count,
                uint64_t nan_count, uint64_t neg_inf_count, uint64_t pos_inf_count, uint64_t zero_count, double l2_value,
-               std::string md5 = "")
+               std::string sha1, std::string md5 = "")
         : data_size(data_size),
           dtype(dtype),
           shape(shape),
@@ -73,6 +73,7 @@ class DebugServices {
           pos_inf_count(pos_inf_count),
           zero_count(zero_count),
           l2_value(l2_value),
+          sha1(sha1),
           md5(md5) {}
 
     TensorStat() = default;
@@ -92,6 +93,7 @@ class DebugServices {
     uint64_t pos_inf_count = 0;
     uint64_t zero_count = 0;
     double l2_value = 0.0;
+    std::string sha1 = "";
     std::string md5 = "";
     std::map<std::string, std::string> header_item_map;
     std::string DoubleToString(double value) {
@@ -111,6 +113,7 @@ class DebugServices {
                          {"positive inf count", std::to_string(pos_inf_count)},
                          {"zero count", std::to_string(zero_count)},
                          {"l2norm", DoubleToString(l2_value)},
+                         {"sha1", sha1},
                          {"md5", md5}};
     }
   };

@@ -22,6 +22,7 @@ import time
 import json
 import hashlib
 import mindspore
+import math
 
 from mindspore import Tensor, nn, ops
 from pathlib import Path
@@ -135,6 +136,61 @@ def compare_single_data(x, y, data_len, net, dump_path, precision_mode="high"):
     assert len(stat_list) == 3
     check_statistic_result(stat_list, target_list)
 
+def cal_sha1(value):
+    sha1hash = hashlib.sha1(value)
+    return sha1hash.hexdigest()
+
+def compare_sha1_data(net, dump_path):
+    for i, (x, y) in enumerate(TEST_CASES):
+        out = x + y
+        case = (cal_sha1(x), cal_sha1(y), cal_sha1(out))
+        stat_list = get_dumped_stat_list(Path(dump_path) / "rank_0" / "Net" / "0" / str(i))
+        for (data, case_data) in zip(stat_list, case):
+            assert case_data == dict(to_comparable_pairs(data))['SHA1']
+
+def cal_parallel_sha1(value):
+    num_per_piece = 20480
+    length = len(value)
+    piece_num = math.floor((length - 1) / num_per_piece) + 1
+    print("parallel_sha1_piece_num:", piece_num)
+    if piece_num == 1:
+        return cal_sha1(value)
+    sha1_combine = ""
+    for i in range(piece_num):
+        one_piece = value[(num_per_piece * i) : num_per_piece * (i + 1)]
+        sha1_combine += cal_sha1(one_piece)
+    return cal_sha1(sha1_combine.encode('utf-8'))
+
+def compare_parallel_hash(x, y, data_len, net, dump_path, precision_mode="high"):
+    t_x, t_y = x, y
+    t_out = x + y
+    if precision_mode == "high":
+        t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(np.float32), t_out.astype(np.float32)
+
+    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
+                  'Shape': "(" + str(data_len) + ")"}
+    target_list = []
+    for idx, tensor in enumerate([t_x, t_y]):
+        target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}
+        target.update({
+            'Max Value': format(tensor.max(), '.6g'), 'Min Value': format(tensor.min(), '.6g'),
+            'Avg Value': format(tensor.mean(), '.6g'), 'L2Norm Value': format(np.linalg.norm(tensor), '.6g'),
+            'SHA1': cal_parallel_sha1(tensor)
+        })
+        target_list.append(target)
+
+    target_output = {**common_res, **{'IO': 'output', 'Slot': '0', 'Max Value': format(t_out.max(), '.6g'),
+                                      'Min Value': format(t_out.min(), '.6g'),
+                                      'Avg Value': format(t_out.mean(), '.6g'),
+                                      'L2Norm Value': format(np.linalg.norm(t_out), '.6g'),
+                                      'SHA1': cal_parallel_sha1(t_out)}}
+    target_list.append(target_output)
+    net(Tensor(x), Tensor(y))
+    time.sleep(1)
+    stat_list = get_dumped_stat_list(dump_path)
+    assert len(stat_list) == 3
+    check_statistic_result(stat_list, target_list)
+
 TEST_CASES = [
         (np.array([40000, 40000, 40000], np.float16),
          np.array([40000, 40000, 40000], np.float16)),
@@ -165,12 +221,12 @@ def compare_md5_data(net, dump_path):
             assert case_data == dict(to_comparable_pairs(data))['MD5']
 
 def compare_massive_data(net, dump_path):
-    data_len = 11000
+    data_len = 42000
     case_data = mindspore.ops.rand((2, data_len), dtype=mindspore.float32)
     case_data[0][0] = float('inf')
     case_data[1][0] = float('inf')
-    compare_single_data(case_data[0].asnumpy(), case_data[1].asnumpy(), data_len, net,
-                        Path(dump_path) / "rank_0" / "Net" / "0" / "0")
+    compare_parallel_hash(case_data[0].asnumpy(), case_data[1].asnumpy(), data_len, net,
+                          Path(dump_path) / "rank_0" / "Net" / "0" / "0")
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_e2e_statistic_async_device_high_precision():
@@ -269,6 +325,8 @@ def test_e2e_statistic_sync_host():
         data["e2e_dump_settings"]["stat_calc_mode"] = "host"
         data["e2e_dump_settings"]["enable"] = True
         data["common_dump_settings"]["statistic_category"].append("md5")
+        data["common_dump_settings"]["statistic_category"].append("hash:sha1")
+        data["common_dump_settings"]["statistic_category"].append("hash")
 
     with tempfile.TemporaryDirectory() as test_dir:
         path = Path(test_dir)
@@ -281,6 +339,7 @@ def test_e2e_statistic_sync_host():
             net = Net()
             compare_multi_data(net, dump_path)
             compare_md5_data(net, dump_path)
+            compare_sha1_data(net, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
@@ -296,6 +355,7 @@ def test_e2e_statistic_massive_data():
     def extra_json_settings(data):
         data["e2e_dump_settings"]["stat_calc_mode"] = "host"
         data["e2e_dump_settings"]["enable"] = True
+        data["common_dump_settings"]["statistic_category"].append("hash:sha1")
 
     with tempfile.TemporaryDirectory() as test_dir:
         path = Path(test_dir)

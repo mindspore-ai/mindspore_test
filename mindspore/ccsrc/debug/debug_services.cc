@@ -30,7 +30,6 @@
 #include <iomanip>
 
 #include "ir/tensor_new.h"
-#include "openssl/md5.h"
 #include "include/common/debug/common.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/common/debug/anf_dump_utils.h"
@@ -44,27 +43,6 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
 namespace mindspore {
-namespace {
-constexpr int md5_bit_wide = 2;
-constexpr int md5_len = 32;
-}  // namespace
-
-void openssl_md5(char *input, char *output, int64_t len) {
-  unsigned char digest[MD5_DIGEST_LENGTH];
-  MD5(reinterpret_cast<unsigned char *>(input), len, reinterpret_cast<unsigned char *>(digest));
-  for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
-    int rest_len = md5_len + 1 - i * md5_bit_wide;
-    auto ret =
-      snprintf_s(&output[i * md5_bit_wide], rest_len, md5_bit_wide, "%02x", static_cast<unsigned int>(digest[i]));
-    if (ret < 0) {
-      MS_LOG(ERROR) << "snprintf_s encountered an error when record md5, which may lead to incorrect MD5 value in the "
-                       "statistic.csv file.";
-    } else if (ret >= rest_len) {
-      MS_LOG(ERROR) << "snprintf_s output is truncated when record md5, which may lead to incorrect MD5 value in the "
-                       "statistic.csv file.";
-    }
-  }
-}
 
 DebugServices::DebugServices() { tensor_loader_ = std::make_shared<TensorLoader>(); }
 
@@ -187,30 +165,30 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
     MS_LOG(WARNING) << "base_summary_ptr is nullptr, returning empty tensor statistics.";
     return empty_tensor_stat_data;
   }
-  std::string md5 = "";
+
   MSLogTime msTime;
   auto statistic_category = DumpJsonParser::GetInstance().statistic_category();
+  // calc md5 value
+  std::string md5 = "";
   if (std::find(statistic_category.begin(), statistic_category.end(), "md5") != statistic_category.end()) {
     msTime.Start();
-    char md5str[33];
-    auto ret = memset_s(md5str, sizeof(md5str), '\0', sizeof(md5str));
-    if (ret != EOK) {
-      MS_LOG(ERROR) << "Failed to call memset_s, skip record MD5.";
-    } else {
-      openssl_md5(const_cast<char *>(tensor->GetDataPtr()), md5str, tensor->GetByteSize());
-      md5 = std::string(md5str);
-    }
+    TensorHashValue("md5", reinterpret_cast<unsigned char *>(const_cast<char *>(tensor->GetDataPtr())),
+                    tensor->GetByteSize(), &md5);
     msTime.End();
     MS_LOG(DEBUG) << "Calc md5 costs time : " << msTime.GetRunTimeUS() << " microseconds.";
   }
+
+  // calc statistic,sha1 values
+  bool calc_hash =
+    (std::find(statistic_category.begin(), statistic_category.end(), "sha1") != statistic_category.end());
   msTime.Start();
-  if (tensor->GetType() == DbgDataType::DT_INT4) {
-    base_summary_ptr->TensorStatistics(DbgDataType::DT_INT8);
-  } else if (tensor->GetType() == DbgDataType::DT_UINT1) {
-    base_summary_ptr->TensorStatistics(DbgDataType::DT_UINT8);
-  } else {
-    base_summary_ptr->TensorStatistics(tensor->GetType());
+  DbgDataType dataType = tensor->GetType();
+  if (dataType == DbgDataType::DT_INT4) {
+    dataType = DbgDataType::DT_INT8;
+  } else if (dataType == DbgDataType::DT_UINT1) {
+    dataType = DbgDataType::DT_UINT8;
   }
+  base_summary_ptr->TensorStatistics(dataType, calc_hash);
   msTime.End();
   MS_LOG(DEBUG) << "Calc statistic costs time : " << msTime.GetRunTimeUS() << " microseconds.";
   TensorStat tensor_stat_data(
@@ -218,7 +196,7 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
     base_summary_ptr->max_value(), base_summary_ptr->min_value(), base_summary_ptr->avg_value(),
     base_summary_ptr->count(), base_summary_ptr->neg_zero_count(), base_summary_ptr->pos_zero_count(),
     base_summary_ptr->nan_count(), base_summary_ptr->neg_inf_count(), base_summary_ptr->pos_inf_count(),
-    base_summary_ptr->zero_count(), base_summary_ptr->l2_value(), md5);
+    base_summary_ptr->zero_count(), base_summary_ptr->l2_value(), base_summary_ptr->sha1_string(), md5);
 
   return tensor_stat_data;
 }
