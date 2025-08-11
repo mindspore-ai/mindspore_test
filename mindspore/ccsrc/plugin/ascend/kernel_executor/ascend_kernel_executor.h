@@ -51,7 +51,7 @@ class AscendKernelExecutor : public KernelExecutor {
   // Note: Only support generate aclnn kernel mod current.
   kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const override;
 
-  int StressDetect() const override;
+  int StressDetect(const std::string &detect_type) const override;
   int CleanTdtChannel() const override;
   int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
   // Adjust kernel graph before run graph, used in Graph Mode.

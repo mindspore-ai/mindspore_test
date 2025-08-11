@@ -28,6 +28,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
+typedef struct AmlP2PDetectAttr {
+  void *workspace;
+  uint64_t workspaceSize;
+  uint8_t reserve[64];
+} AmlP2PDetectAttr;
+
 typedef enum AmlDetectRunMode {
   AML_DETECT_RUN_MODE_ONLINE = 0,
   AML_DETECT_RUN_MODE_OFFLINE = 1,
@@ -83,9 +89,13 @@ class AmlAicoreDetectTask : public runtime::AsyncTask {
   std::promise<int> p_;
 };
 
-int StressDetectKernel();
+int StressDetectKernel(const std::string &detect_type);
 inline std::string GetLibAscendMLName() { return "/lib64/libascend_ml.so"; }
 constexpr const char *kNameAmlAicoreDetectOnline = "AmlAicoreDetectOnline";
+constexpr const char *kNameAmlP2PDetectOnline = "AmlP2PDetectOnline";
+constexpr int kDetectSucceeded = 0;
+constexpr int kDetectFailed = 1;
+constexpr int kDetectFailedWithHardwareFailure = 2;
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
