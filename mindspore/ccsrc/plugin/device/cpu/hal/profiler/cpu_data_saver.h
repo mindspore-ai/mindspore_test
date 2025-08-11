@@ -22,7 +22,7 @@
 #include <string>
 #include <memory>
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
-#include "debug/profiler/data_saver.h"
+#include "tools/profiler/data_saver.h"
 namespace mindspore {
 namespace profiler {
 namespace cpu {

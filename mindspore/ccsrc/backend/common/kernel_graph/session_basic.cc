@@ -54,14 +54,14 @@
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/debug/debugger/proto_exporter.h"
 #ifdef ENABLE_DUMP_IR
-#include "debug/rdr/graph_exec_order_recorder.h"
+#include "tools/rdr/graph_exec_order_recorder.h"
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "debug/rdr/graph_recorder.h"
+#include "tools/rdr/graph_recorder.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#include "mindspore/ccsrc/debug/summary/summary.h"
+#include "mindspore/ccsrc/tools/summary/summary.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 

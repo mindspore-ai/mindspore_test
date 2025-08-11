@@ -53,7 +53,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "debug/rdr/mem_address_recorder.h"
+#include "tools/rdr/mem_address_recorder.h"
 #endif
 #include "include/common/utils/comm_manager.h"
 #ifdef ENABLE_DEBUGGER
@@ -66,14 +66,14 @@
 #include "backend/common/pass/value_graph_binder.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "runtime/device/move_to.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/parallel_context.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/common/backend_common_callback.h"

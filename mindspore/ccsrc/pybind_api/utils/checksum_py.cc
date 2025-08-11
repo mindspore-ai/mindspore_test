@@ -17,7 +17,7 @@
 #include <string>
 
 #include "include/common/pybind_api/api_register.h"
-#include "debug/checksum/checksum_mgr.h"
+#include "tools/checksum/checksum_mgr.h"
 
 namespace py = pybind11;
 namespace mindspore {

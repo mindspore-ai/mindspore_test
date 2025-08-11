@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "debug/profiler/mstx/mstx_impl.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace kernel {

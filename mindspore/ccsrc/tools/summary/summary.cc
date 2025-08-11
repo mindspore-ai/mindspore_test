@@ -1,0 +1,177 @@
+/**
+ * Copyright 2023 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "mindspore/ccsrc/tools/summary/summary.h"
+#include <memory>
+#include <map>
+#include <string>
+#include <utility>
+#include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/common/utils/callbacks.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
+#include "utils/ms_context.h"
+#include "utils/trace_base.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_new.h"
+
+namespace mindspore::debug {
+constexpr int kSummaryGetItem = 2;
+
+namespace {
+string GetSummaryNameWithTag(CNodePtr cnode) {
+  std::string tag = GetValue<std::string>(GetValueNode(cnode->input(1)));
+  std::string name;
+  if (cnode->IsApply(prim::kPrimScalarSummary)) {
+    name = tag + "[:Scalar]";
+  } else if (cnode->IsApply(prim::kPrimImageSummary)) {
+    name = tag + "[:Image]";
+  } else if (cnode->IsApply(prim::kPrimHistogramSummary)) {
+    name = tag + "[:Histogram]";
+  } else {
+    name = tag + "[:Tensor]";
+  }
+  return name;
+}
+}  // namespace
+
+Summary &Summary::GetInstance() {
+  static Summary instance;
+  return instance;
+}
+
+void Summary::RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_LOG(INFO) << "Recurse set summary nodes for all graphs in graph: " << graph->graph_id() << " start";
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string backend = ms_context->backend_policy();
+  if (backend == "ge") {
+    MS_LOG(INFO) << "This function should be skipped on GE backend.";
+    return;
+  }
+  SetSummaryNodes(graph);
+  auto &summary_nodes = graph->summary_nodes();
+  std::map<std::string, std::pair<AnfNodePtr, int>> summary;
+  summary.insert(summary_nodes.cbegin(), summary_nodes.cend());
+  auto &child_graphs = graph->child_graph_order();
+  for (auto &child_graph : child_graphs) {
+    SetSummaryNodes(child_graph.lock().get());
+    auto &child_graph_summary = child_graph.lock()->summary_nodes();
+    summary.insert(child_graph_summary.cbegin(), child_graph_summary.cend());
+    RecurseSetSummaryNodesForAllGraphs(child_graph.lock().get());
+  }
+  graph->set_summary_nodes(summary);
+  MS_LOG(INFO) << "The total summary nodes is: " << summary.size() << " for graph: " << graph->graph_id();
+}
+
+void Summary::SummaryTensor(KernelGraph *graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string backend = ms_context->backend_policy();
+  if (backend == "ge") {
+    MS_LOG(INFO) << "This function should be skipped on GE backend.";
+    return;
+  }
+
+  if (summary_callback_ == nullptr) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(graph);
+  bool exist_summary = graph->summary_node_exist();
+  if (!exist_summary) {
+    return;
+  }
+
+  auto summary_outputs = graph->summary_nodes();
+  std::map<std::string, tensor::TensorPtr> params_list;
+  // fetch outputs apply kernel in session & run callback functions
+  for (const auto &output_item : summary_outputs) {
+    auto node = output_item.second.first;
+    size_t index = IntToSize(output_item.second.second);
+    auto address = AnfAlgo::GetMutableOutputAddr(node, index, false);
+    auto kt = AnfAlgo::GetOutputKernelTensor(node, index, false);
+    auto shape = kt->GetShapeVector();
+    TypeId type_id = kt->dtype_id();
+    tensor::TensorPtr tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
+    MS_EXCEPTION_IF_NULL(address);
+    if (!address->GetPtr()) {
+      continue;
+    }
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(address->GetDeviceType()), address->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    if (!host_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(tensor->device_address(), address, address->stream_id())) {
+      MS_LOG(ERROR) << "Failed to sync output from device to host.";
+    }
+    tensor->set_sync_status(kNoNeedSync);
+    params_list[output_item.first] = tensor;
+  }
+  // call callback function here
+  summary_callback_(0, params_list);
+}
+
+void Summary::RegisterSummaryCallBackFunc() { summary_callback_ = mindspore::callbacks::SummarySaveCallback; }
+
+void Summary::SetSummaryNodes(KernelGraph *graph) {
+  MS_LOG(DEBUG) << "Update summary Start";
+  MS_EXCEPTION_IF_NULL(graph);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string backend = ms_context->backend_policy();
+  if (backend == "ge") {
+    MS_LOG(INFO) << "This function should be skipped on GE backend.";
+    return;
+  }
+  if (!graph->summary_node_exist()) {
+    return;
+  }
+  auto summary = graph->summary_nodes();
+  auto apply_list = TopoSort(graph->get_return());
+  for (auto &n : apply_list) {
+    MS_EXCEPTION_IF_NULL(n);
+    if (common::AnfAlgo::IsSummaryNode(n)) {
+      auto cnode = n->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      if (cnode->size() <= kSummaryGetItem) {
+        MS_LOG(EXCEPTION) << "The node Summary should have 2 inputs at least, but got " << (cnode->size() - 1) << "."
+                          << trace::DumpSourceLines(cnode);
+      }
+      auto node = cnode->input(kSummaryGetItem);
+      MS_EXCEPTION_IF_NULL(node);
+      auto item_with_index = common::AnfAlgo::VisitKernelWithReturnType(node, 0, false);
+      MS_EXCEPTION_IF_NULL(item_with_index.first);
+      if (!AnfUtils::IsRealKernel(item_with_index.first)) {
+        MS_LOG(EXCEPTION) << "Unexpected node:" << item_with_index.first->DebugString();
+      }
+      summary[GetSummaryNameWithTag(cnode)] = item_with_index;
+    }
+  }
+  graph->set_summary_nodes(summary);
+  MS_LOG(DEBUG) << "Update summary end size: " << summary.size();
+}
+
+}  // namespace mindspore::debug

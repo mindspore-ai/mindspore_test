@@ -20,7 +20,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/forward/forward_task.h"
 #include "runtime/pynative/task/device_task.h"

@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "pynative/pynative_utils.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "include/common/pynative/common_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 

@@ -33,7 +33,7 @@
 #include "backend/backend_manager/backend_jit_config.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 namespace mindspore {
 namespace backend {

@@ -35,7 +35,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "kernel/framework_utils.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
 #include "include/common/debug/dump_proto.h"
@@ -52,7 +52,7 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"

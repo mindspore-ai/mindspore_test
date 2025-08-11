@@ -26,7 +26,7 @@
 #include "backend/ge_backend/runtime/graph_scheduler.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
@@ -50,7 +50,7 @@
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #endif
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/file_utils.h"

@@ -27,7 +27,7 @@
 #include "acl/acl_prof.h"
 #include "hccl/hccl_types.h"
 #include "runtime/pipeline/task/task.h"
-#include "debug/profiler/mstx/mstx_impl.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 
 namespace mindspore {
 namespace profiler {

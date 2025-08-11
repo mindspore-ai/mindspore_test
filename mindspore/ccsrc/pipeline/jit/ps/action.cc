@@ -73,7 +73,7 @@
 #include "load_mindir/infer_mindir.h"
 #include "backend/ms_backend/graph_partition.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "pipeline/jit/ps/load_mindir.h"
 #include "pipeline/jit/ps/pass_config.h"
@@ -83,8 +83,8 @@
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
-#include "debug/profiler/profiling_framework_data.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiling_framework_data.h"
+#include "tools/profiler/profiler.h"
 #include "availability/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "include/common/pynative/adapter.h"

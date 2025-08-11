@@ -29,7 +29,7 @@
 #include "backend/backend_manager/backend_base.h"
 #include "backend/backend_manager/backend_manager.h"
 
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"

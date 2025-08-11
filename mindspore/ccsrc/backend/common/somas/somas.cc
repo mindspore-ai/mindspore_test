@@ -37,7 +37,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/compile_cache_context.h"
 #ifdef ENABLE_DUMP_IR
-#include "debug/rdr/string_recorder.h"
+#include "tools/rdr/string_recorder.h"
 #endif
 #include "include/common/thread_pool.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)

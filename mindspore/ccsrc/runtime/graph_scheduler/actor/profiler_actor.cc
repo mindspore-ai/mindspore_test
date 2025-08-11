@@ -21,7 +21,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 
 namespace mindspore {
 namespace runtime {

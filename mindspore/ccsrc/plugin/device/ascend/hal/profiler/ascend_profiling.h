@@ -21,8 +21,8 @@
 #include "acl/acl_prof.h"
 #include "include/backend/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "debug/profiler/profiling_data_dumper.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling_data_dumper.h"
+#include "tools/profiler/profiling.h"
 #include "plugin/device/ascend/hal/profiler/feature_mgr.h"
 
 namespace mindspore {

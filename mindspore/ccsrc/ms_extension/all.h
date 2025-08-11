@@ -27,7 +27,7 @@
 #include "runtime/pynative/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/debug/profiler/profiler.h"
+#include "mindspore/ccsrc/tools/profiler/profiler.h"
 
 // ascend files
 #ifdef CUSTOM_ASCEND_OP

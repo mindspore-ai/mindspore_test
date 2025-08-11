@@ -24,7 +24,7 @@
 #include <vector>
 #include <initializer_list>
 
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "frontend/optimizer/opt.h"

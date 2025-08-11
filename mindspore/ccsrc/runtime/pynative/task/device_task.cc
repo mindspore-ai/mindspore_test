@@ -15,7 +15,7 @@
  */
 
 #include <string>
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pipeline/pipeline.h"
 

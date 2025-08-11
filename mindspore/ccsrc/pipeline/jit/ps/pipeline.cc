@@ -58,11 +58,11 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/distributed/init.h"
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiling.h"
+#include "tools/profiler/profiler.h"
 
 #ifdef ENABLE_DUMP_IR
-#include "debug/rdr/graph_recorder.h"
+#include "tools/rdr/graph_recorder.h"
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
 

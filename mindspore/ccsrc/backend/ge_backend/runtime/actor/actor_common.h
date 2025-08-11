@@ -37,7 +37,7 @@
 #include "include/common/runtime_conf/runtime_env.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/ms_utils.h"

@@ -18,7 +18,7 @@
 
 #include <string>
 #include <memory>
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 namespace mindspore {
 namespace pynative {
