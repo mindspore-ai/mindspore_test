@@ -74,7 +74,7 @@ def test_in_strategy_numbers_check():
     Description: inconsistent input number and in_strategy number
     Expectation: throw an exception indicating inconsistent input number and in_strategy number
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ((8, 1), (1, 8), (1, 8))
     out_strategy = None
     error_log = "Input numbers: 2 is not equal to in_strategy numbers: 3"
@@ -88,7 +88,7 @@ def test_in_strategy_dimension_check():
     Description: inconsistent input dimension and in_strategy dimension
     Expectation: throw an exception indicating inconsistent input_dimension and in_strategy dimension
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ((8, 1, 1), (1, 1))
     out_strategy = ((1, 8), (8, 1))
     error_log = "Input dimension: 2 is not equal to in_strategy dimension: 3 at index 0"
@@ -101,7 +101,7 @@ def test_in_strategy_format_check():
     Description: unsupported in_strategy format
     Expectation: throw an exception indicating a supported in_strategy format
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ([8, 1], (1, 1))
     out_strategy = None
     error_log = "The 'in_strategy' should be a tuple(tuple(int)) or tuple(mindspore.parallel.Layout), but got list"
@@ -117,7 +117,7 @@ def test_parameter_plan_dimension_check():
     Description: inconsistent parameter dimension and parameter layout dimension
     Expectation: throw an exception indicating inconsistent parameter dimension and parameter layout dimension
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ((1, 8),)
     parameter_plan = {"param": (1, 1, 1)}
     error_log = "the length of param_strategy: 3, is not equal to param_shape len: 2"
@@ -133,7 +133,7 @@ def test_parameter_plan_layout_check():
     Description: layout has a value that is not divisible into shape
     Expectation: throw an exception indicating layout is invalid
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ((1, 8),)
     parameter_plan = {"param": (2, 4)}
     error_log = "For 'param', the param_shape is (8, 10) and the setting param_strategy is (2, 4). " \
@@ -150,7 +150,7 @@ def test_parameter_plan_format_check():
     Description: unsupported parameter_plan format
     Expectation: throw an exception indicating a supported parameter_plan format
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     in_strategy = ((1, 8),)
     parameter_plan = {"param": None}
     error_log = "For 'Shard', the type of each key and value in 'parameter_plan' must be str and tuple"
@@ -199,7 +199,7 @@ def test_shard_in_jit_check():
     Description: test usage of vmap nested shard
     Expectation: throw an exception indicating that vmap nested shard is invalid usage
     """
-    set_context(mode=context.PYNATIVE_MODE)
+    set_context(mode=context.GRAPH_MODE)
     x = Tensor(np.ones([16, 8]), ms.float32)
     func = ms.jit(add_one_func2)
     error_log = "Cell.shard or ms.shard not supported in jit syntax"

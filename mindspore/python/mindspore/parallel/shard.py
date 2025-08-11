@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,32 @@ import mindspore as ms
 from mindspore import log as logger
 from mindspore._c_expression import Shard_
 
+
+def _tensor_strategy(dev_mat, tensor_map):
+    """
+    Get split strategy by device arrangement and tensor map.
+
+    Args:
+        dev_mat (list): The device matrix.
+        tensor_map (list): The map relation between tensor and devices.
+
+    Returns:
+        List, the split strategy with the same size of np_tensor.
+    """
+    tensor_strategy = []
+    for dim in tensor_map:
+        if isinstance(dim, (tuple, list)):
+            acc_stra = 1
+            for i in dim:
+                if i != -1:
+                    acc_stra *= dev_mat[len(dev_mat) - i - 1]
+            tensor_strategy.append(acc_stra)
+        else:
+            if dim == -1:
+                tensor_strategy.append(1)
+            else:
+                tensor_strategy.append(dev_mat[-dim - 1])
+    return tensor_strategy
 
 class _DistributedTensorInfo:
     """
@@ -153,6 +179,9 @@ class Layout:
         self._alias_name = alias_name
         self._tensor_map = None
         self._rank_list = list(range(np.prod(np.array(self._device_shape))))
+        self._group_map = {}
+        self._global_shape_map = {}
+        self._compact_str = self._to_compact_string()
         if rank_list is not None:
             if not isinstance(rank_list, list):
                 raise TypeError(f"The rank_list should be a list, but got {type(rank_list).__name__}.")
@@ -194,6 +223,7 @@ class Layout:
                 raise ValueError(f'The axis {ele} has been set more than one in {self._alias_name}')
             self._tensor_map += (len(self._alias_name) - 1 - self._alias_name.index(ele),)
             writed_map += (ele,)
+        self._compact_str = self._to_compact_string()
         return copy.deepcopy(self)
 
     def to_dict(self):
@@ -208,6 +238,207 @@ class Layout:
         return {"device_matrix": self._device_shape, "tensor_map": self._tensor_map,
                 "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name,
                 "rank_list": self._rank_list}
+
+    @property
+    def rank_list(self):
+        """rank list"""
+        return self._rank_list
+
+    @property
+    def device_matrix(self):
+        """device matrix"""
+        return self._device_shape
+
+    @property
+    def alias_name(self):
+        """alias name"""
+        return self._alias_name
+
+    @property
+    def tensor_map(self):
+        """tensor map"""
+        return self._tensor_map
+
+    def get_global_shape(self, slice_shape):
+        """get global shape"""
+        if slice_shape in self._global_shape_map:
+            return self._global_shape_map[slice_shape]
+        if self._tensor_map is None:
+            raise ValueError("tensor_map is not set. Please configure the tensor map by calling the layout.")
+
+        if len(slice_shape) != len(self._tensor_map):
+            raise ValueError(f"Length of slice_shape ({len(slice_shape)}) must match "
+                             f"the length of tensor_map ({len(self._tensor_map)}).")
+
+        n_dims = len(self._device_shape)
+        factors = [1] * len(slice_shape)
+
+        for dev_idx, size in enumerate(self._device_shape):
+            reverse_idx = n_dims - 1 - dev_idx
+            for axis_idx, mapping in enumerate(self._tensor_map):
+                if isinstance(mapping, int):
+                    if mapping == -1:
+                        continue
+                    if mapping == reverse_idx:
+                        factors[axis_idx] *= size
+                        break
+                elif isinstance(mapping, tuple):
+                    if reverse_idx in mapping:
+                        factors[axis_idx] *= size
+                        break
+
+        global_shape = []
+        for i, dim in enumerate(slice_shape):
+            global_shape.append(dim * factors[i])
+        self._global_shape_map[slice_shape] = global_shape
+        return tuple(global_shape)
+
+    def get_devices_for_axis(self, axis, rank):
+        """
+        Get the repeat rank list when the axis is not shard.
+
+        Args:
+            layout (Layout): Layout
+            axis (str): Axis name.
+            rank (int): Global rank
+
+        Returns:
+            list: reduce rank list
+        """
+        device_matrix = self._device_shape
+        alias_name = self._alias_name
+        rank_list = self._rank_list
+
+        if axis not in alias_name:
+            raise ValueError(f"Axis '{axis}' not found in alias_name {alias_name}")
+
+        if rank not in rank_list:
+            raise ValueError(f"Rank {rank} not found in rank_list")
+
+        if rank not in rank_list:
+            raise ValueError(f"Rank {rank} not found in rank_list")
+
+        idx = rank_list.index(rank)
+        coord = [0] * len(device_matrix)
+        temp = idx
+        for i in range(len(device_matrix)-1, -1, -1):
+            coord[i] = temp % device_matrix[i]
+            temp //= device_matrix[i]
+
+        dim_index = alias_name.index(axis)
+        strides = [1] * len(device_matrix)
+        for i in range(len(device_matrix)-2, -1, -1):
+            strides[i] = strides[i+1] * device_matrix[i+1]
+
+        result_ranks = []
+        for v in range(device_matrix[dim_index]):
+            new_coord = coord.copy()
+            new_coord[dim_index] = v
+            new_idx = 0
+            for i in range(len(device_matrix)):
+                new_idx += new_coord[i] * strides[i]
+
+            result_ranks.append(rank_list[new_idx])
+
+        return result_ranks
+
+    def get_reduce_group_by_axis(self, axis, rank):
+        if (axis, rank) in self._group_map.keys():
+            return self._group_map[(axis, rank)]
+        rank_list = self.get_devices_for_axis(axis, rank)
+        group = "-".join(str(x) for x in rank_list)
+        ms.communication.create_group(group, rank_list)
+        self._group_map[(axis, rank)] = group
+        return group
+
+    def _to_compact_string(self):
+        """
+        generate dict key
+
+        Returns:
+            str: string for compact
+        """
+        device_str = '_'.join(str(d) for d in self._device_shape)
+        alias_str = '_'.join(self._alias_name)
+        def map_to_str(item):
+            if isinstance(item, tuple):
+                return '(' + '_'.join(str(i) for i in item) + ')'
+            return str(item)
+
+        tensor_str = '_'.join(map_to_str(item) for item in self._tensor_map) if self._tensor_map else "None"
+        rank_str = '_'.join(str(r) for r in self._rank_list)
+        interleaved = "T" if "interleaved_parallel" in self._alias_name else "F"
+        return f"{device_str}|{alias_str}|{tensor_str}|{interleaved}|{rank_str}"
+
+    @property
+    def compact_str(self):
+        return self._compact_str
+
+    def to_string(self):
+        """
+        layout dump
+
+        Returns:
+            str: layout string
+        """
+        device_info = f"Device Matrix: {self._device_shape}"
+        alias_info = f"Alias Names: {self._alias_name}"
+        rank_info = f"Rank List: {self._rank_list}"
+
+        if self._tensor_map is None:
+            tensor_info = "Tensor Map: Not configured"
+        else:
+            readable_map = []
+            for item in self._tensor_map:
+                if isinstance(item, tuple):
+                    # 处理嵌套元组
+                    mapped_tuple = tuple(
+                        self._alias_name[len(self._alias_name)-1-dim] if dim != -1 else "None"
+                        for dim in item
+                    )
+                    readable_map.append(mapped_tuple)
+                else:
+                    readable_map.append(
+                        self._alias_name[len(self._alias_name)-1-item] if item != -1 else "None"
+                    )
+
+            tensor_info = f"Tensor Map: {tuple(readable_map)}"
+
+        interleaved = "Yes" if "interleaved_parallel" in self._alias_name else "No"
+        interleaved_info = f"Interleaved Parallel: {interleaved}"
+
+        return (
+            f"Layout Configuration:\n"
+            f"  {device_info}\n"
+            f"  {alias_info}\n"
+            f"  {tensor_info}\n"
+            f"  {interleaved_info}\n"
+            f"  {rank_info}"
+        )
+
+    def __str__(self):
+        """__str__"""
+        return self.to_string()
+
+    def __repr__(self):
+        """__repr__"""
+        return f"<Layout at {hex(id(self))}>"
+
+    def __eq__(self, other):
+        """
+        __eq__
+        """
+        if not isinstance(other, Layout):
+            return False
+
+        if (self._device_shape != other.device_matrix or
+                self._alias_name != other.alias_name or
+                self._rank_list != other.rank_list):
+            return False
+
+        if self._tensor_map is None or other.tensor_map is None:
+            return self._tensor_map is other.tensor_map
+        return self._tensor_map == other.tensor_map
 
 
 class Shard(Shard_):

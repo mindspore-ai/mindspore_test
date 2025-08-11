@@ -36,6 +36,7 @@ from mindspore._checkparam import is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
 from mindspore._c_expression import is_reboot_node
+from mindspore.parallel.tensor_redistribution import _tensor_redistribution
 
 np_types = (np.int8, np.int16, np.int32, np.int64,
             np.uint8, np.uint16, np.uint32, np.uint64, np.float16,
@@ -545,6 +546,40 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         self._dist_tensor_info = input_dtensor_info
 
+    def local_to_global(self, layout):
+        """create global dtensor"""
+        self._layout = layout
+        return self
+
+    def to_local(self):
+        """covert global_tensor to local_tensor"""
+        self._layout = None
+        del self._layout
+        return self
+
+    @property
+    def layout(self):
+        """
+        Return the distributed layout information. For details,
+        please refer to :class:`mindspore.parallel.Layout`.
+
+        Examples:
+            >>> from mindspore import Tensor, Layout
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> x_layout = Layout((2, 4), ("dp", "mp"))("dp", "mp")
+            >>> x = x.local_to_global(x_layout)
+            >>> print(x.layout)
+        """
+        if not hasattr(self, '_layout'):
+            return None
+        return self._layout
+
+    @property
+    def local_shape(self):
+        """return local shape when tensor has layout"""
+        return self._shape
+
     @property
     def shape(self):
         """
@@ -557,7 +592,9 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(x.shape)
             (2, 2)
         """
-        return self._shape
+        if not hasattr(self, '_layout'):
+            return self._shape
+        return self._layout.get_global_shape(self._shape)
 
     @shape.setter
     def shape(self, shape_value):
@@ -3712,6 +3749,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.mint.triangular_solve`.
         """
         return tensor_operator_registry.get('triangular_solve')(self, A, upper, transpose, unitriangular)
+
+    def redistribute(self, dst_layout):
+        out = _tensor_redistribution.redistribution(self, dst_layout)
+        return out
 
 
 def _vm_compare(*args):

@@ -84,6 +84,30 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
+        self.layout_infer_ops = ["add_scalar", "add_ext", "sub_scalar", "sub_ext"]
+        self.pyboost_with_layout_infer_template = Template(
+            '${arg_handler_processor}\n'
+            'MS_LOG(INFO) << "Call Tensor${class_name} with LayoutInfer";\n'
+            '// Construct py_args including self at the correct position\n'
+            'py::list py_args;\n'
+            'for (size_t i = 0; i < parse_args.arg_list_.size(); ++i) {\n'
+            '  if (static_cast<int>(i) == parse_args.GetOvertLoadIndex()) {\n'
+            '    py_args.append(self);\n'
+            '  }\n'
+            '  py_args.append(parse_args.arg_list_[i]);\n'
+            '}\n'
+            'auto res = mindspore::pynative::WithLayoutInfer(\n'
+            '    mindspore::prim::kPrim${class_name},\n'
+            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
+            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
+            '    },\n'
+            '    py_args,\n'
+            '    mindspore::prim::kPrim${class_name}, parse_args.src_types_${convert_args_comma}\n'
+            ');\n'
+            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            'return res;\n'
+        )
+
         self.callback_python_template = Template(
             'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
             'py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
@@ -459,6 +483,26 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
             convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
             self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
+            if func_proto.op_proto.op_name in self.layout_infer_ops:
+                num_args = len(func_proto.op_proto.op_args)
+                lambda_params = ""
+                lambda_args = ""
+                if num_args > 0:
+                    lambda_params = ", " + ", ".join(
+                        [f"const auto &arg{i}" for i in range(num_args)]
+                    )
+                    lambda_args = ", " + ", ".join([f"arg{i}" for i in range(num_args)])
+
+                convert_args_comma = ", " + convert_args_str if convert_args_str else ""
+
+                return self.pyboost_with_layout_infer_template.replace(
+                    arg_handler_processor=arg_handler_processor_str,
+                    class_name=func_proto.op_proto.op_class.name,
+                    pyboost_function=op_pyboost_func_name,
+                    lambda_params=lambda_params,
+                    lambda_args=lambda_args,
+                    convert_args_comma=convert_args_comma
+                )
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
                                                         pyboost_function=op_pyboost_func_name,

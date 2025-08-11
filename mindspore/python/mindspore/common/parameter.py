@@ -411,6 +411,35 @@ class Parameter(Tensor_):
         self._param_info = param_info_
         Tensor_.set_param_info(self, param_info_)
 
+    def local_to_global(self, layout):
+        """create global dtensor"""
+        self._layout = layout
+        return self
+
+    def to_local(self):
+        """covert global_tensor to local_tensor"""
+        self._layout = None
+        del self._layout
+        return self
+
+    @property
+    def layout(self):
+        """
+        Return the distributed layout information. For details,
+        please refer to :class:`mindspore.parallel.Layout`.
+
+        Examples:
+            >>> from mindspore import Parameter, Layout
+            >>> import numpy as np
+            >>> x = Parameter(np.array([[1, 2], [3, 4]]))
+            >>> x_layout = Layout((2, 4), ("dp", "mp"))("dp", "mp")
+            >>> x = x.local_to_global(x_layout)
+            >>> print(x.layout)
+        """
+        if not hasattr(self, '_layout'):
+            return None
+        return self._layout
+
     @property
     def name(self):
         """

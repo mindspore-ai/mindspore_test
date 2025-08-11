@@ -22,6 +22,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore._c_expression import TensorTransform
 from mindspore import log as logger
+from mindspore.parallel.shard import _tensor_strategy
 
 _tensor_transform = TensorTransform.get_instance()
 COMM_TENSOR_CELL_CACHE = {}
@@ -38,20 +39,7 @@ def _get_tensor_strategy(dev_mat, tensor_map):
     Returns:
         List, the split strategy with the same size of np_tensor.
     """
-    tensor_strategy = []
-    for dim in tensor_map:
-        if isinstance(dim, (tuple, list)):
-            acc_stra = 1
-            for i in dim:
-                if i != -1:
-                    acc_stra *= dev_mat[len(dev_mat) - i - 1]
-            tensor_strategy.append(acc_stra)
-        else:
-            if dim == -1:
-                tensor_strategy.append(1)
-            else:
-                tensor_strategy.append(dev_mat[-dim - 1])
-    return tensor_strategy
+    return _tensor_strategy(dev_mat, tensor_map)
 
 
 def _get_tensor_slice_index(device_arrangement, tensor_strategy, tensor_map, rank_index):

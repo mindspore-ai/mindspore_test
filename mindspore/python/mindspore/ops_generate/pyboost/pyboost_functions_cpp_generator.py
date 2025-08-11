@@ -124,6 +124,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_api_cc_tpl = template.PYBOOST_API_CC_TEMPLATE
         pyboost_api_body_str = ''
         ops_inc_head_set = set()
+        layout_infer_ops = {"matmul_ext", "add_ext", "relu", "add_scalar"}
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
@@ -133,13 +134,38 @@ class PyboostFunctionsGenerator(BaseGenerator):
             parser_body_str = self._generate_parser_func(op_proto)
             op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
             side_effect_str = self._generate_mark_side_effect_str(op_proto)
-            pyboost_api_body_str += self.pyboost_api_body_template.replace(func_name=op_pyboost_func_name,
-                                                                           op_def_name=op_def_name_str,
-                                                                           parser_body=parser_body_str,
-                                                                           class_name=op_proto.op_class.name,
-                                                                           op_args=op_args_str,
-                                                                           mark_side_effect=side_effect_str)
 
+            if op_proto.op_name in layout_infer_ops:
+                input_args = [arg.arg_name for arg in op_proto.op_args]
+                lambda_params = []
+                lambda_args = []
+                for i, _ in enumerate(input_args):
+                    lambda_params.append(f", const auto &arg{i}")
+                    lambda_args.append(f", arg{i}")
+
+                lambda_params_str = "".join(lambda_params)
+                lambda_args_str = "".join(lambda_args)
+                forward_args_str = "".join([f", {arg}" for arg in input_args])
+
+                pyboost_api_body_str += template.PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE.replace(
+                    func_name=op_pyboost_func_name,
+                    op_def_name=op_def_name_str,
+                    parser_body=parser_body_str,
+                    class_name=op_proto.op_class.name,
+                    lambda_params=lambda_params_str,
+                    lambda_args=lambda_args_str,
+                    forward_args=forward_args_str,
+                    mark_side_effect=side_effect_str
+                )
+            else:
+                pyboost_api_body_str += self.pyboost_api_body_template.replace(
+                    func_name=op_pyboost_func_name,
+                    op_def_name=op_def_name_str,
+                    parser_body=parser_body_str,
+                    class_name=op_proto.op_class.name,
+                    op_args=op_args_str,
+                    mark_side_effect=side_effect_str
+                )
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
 
         return pyboost_api_cc_tpl.replace(pyboost_api_body=pyboost_api_body_str)
