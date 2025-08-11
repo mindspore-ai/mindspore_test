@@ -1440,6 +1440,10 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       tensor_device_address->set_need_sync_user_data(device_address->need_sync_user_data());
     } else {
       output_node_tensor_map[output_addr->pointer_ref_count()] = tensor_device_address;
+      MS_LOG(DEBUG) << "Swap from device tensor:" << output_addr->ToString()
+                    << " to: " << tensor_device_address->ToString()
+                    << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
+                    << " in funcgraph:" << func_graph->ToString();
       output_addr->Swap(tensor_device_address.get());
     }
 

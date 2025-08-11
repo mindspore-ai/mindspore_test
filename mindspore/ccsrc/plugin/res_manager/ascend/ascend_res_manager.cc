@@ -1296,7 +1296,7 @@ bool AscendResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync,
                  << "), dst(format:" << dst_device_address->format()
                  << ", type_id:" << TypeIdLabel(dst_device_address->type_id())
                  << ", use the intermediate Tensor copy instead.";
-    return SyncDeviceToDeviceWithDiffFormatType(dst_device_sync, dst_device_sync, stream_id);
+    return SyncDeviceToDeviceWithDiffFormatType(dst_device_sync, src_device_sync, stream_id);
   }
   MS_LOG(DEBUG) << "Copy device to device, src device address:" << src_device_address->ToString()
                 << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;

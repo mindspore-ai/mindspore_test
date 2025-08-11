@@ -345,7 +345,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void *device_ptr() const { return device_address_->pointer_ref_count()->ptr(); }
 
   // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void set_device_ptr(void *ptr) { device_address_->pointer_ref_count()->set_ptr(ptr); }
+  void set_device_ptr(void *ptr);
 
   // Get the memory size in byte of the KernelTensor.
   size_t size() const { return device_address_->size(); }

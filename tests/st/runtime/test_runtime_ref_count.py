@@ -23,6 +23,64 @@ from tests.mark_utils import arg_mark
 context.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_paramter_double():
+    """
+    Feature: Support tensor inplace.
+    Description: Fix the input host tensor.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            z = x + y
+            return z, z, x, x
+
+    input_x = ms.Tensor(2)
+    input_y = ms.Tensor(3)
+    net = Net()
+    print(net(input_x, input_y))
+    print(net(input_x, input_y))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_cnode_double():
+    """
+    Feature: Support tensor inplace.
+    Description: Fix the input host tensor.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            z = x + y
+            return z, z
+
+    input_x = ms.Tensor(2)
+    input_y = ms.Tensor(3)
+    net = Net()
+    print(net(input_x, input_y))
+    print(net(input_x, input_y))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_paramter_double_control_flow():
+    """
+    Feature: Support tensor inplace.
+    Description: Fix the input host tensor.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            if x > 1:
+                return x, x
+            return y, y
+
+    input_x = ms.Tensor(2)
+    input_y = ms.Tensor(3)
+    net = Net()
+    print(net(input_x, input_y))
+    print(net(input_x, input_y))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_no_used_input_from_copy_actor_to_super_kerenl_actor():
     """
     Feature: Support runtime ref count.

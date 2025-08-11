@@ -506,7 +506,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
     if (!SyncCopy(copy_device_tensor, input_device_tensor, kDefaultStreamIndex) ||
-        host_context->device_res_manager_->SyncAllStreams()) {
+        !host_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(ERROR) << "Copy data failed for actor:" << GetAID() << " input index:" << i;
       continue;
     }

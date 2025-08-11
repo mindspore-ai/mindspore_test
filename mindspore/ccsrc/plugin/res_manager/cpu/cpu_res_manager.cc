@@ -270,6 +270,9 @@ bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Device
 }
 
 bool CPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  if (size == 0) {
+    return true;
+  }
   MS_EXCEPTION_IF_NULL(dst);
   MS_EXCEPTION_IF_NULL(src);
   auto ret_code = memcpy_s(dst, size, src, size);

@@ -730,11 +730,14 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     ShapeVector shape = {1, SizeToLong(tensor_size)};
     // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
     // `device_address_utils.cc`
-    size_t string_tensor_size = tensor_size + 1;
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto string_tensor = tensor::from_buffer(kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()),
-                                             string_tensor_size);
+    auto string_tensor =
+      tensor::from_buffer(kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), tensor_size);
+    const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
+    MS_EXCEPTION_IF_NULL(host_device_address);
+    host_device_address->SetSize(tensor_size + 1);
+    MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
     device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
                                          device_tensor->device_id()};
     device::DeviceContext *host_context =

@@ -692,6 +692,8 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(from_kernel.get());
   ParameterInfo parameter_info{front_node_with_index, outer_idx};
   to_actor->InsertParameterIndexs(output_position, parameter_info);
+  MS_LOG(DEBUG) << "Set parameter user count to max for outer index:" << outer_idx
+                << " inner index:" << front_node_with_index.second;
   graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX);
 
   const auto &kernel_tensor = graph_parameter_store->Fetch(outer_idx, front_node_with_index.second);
