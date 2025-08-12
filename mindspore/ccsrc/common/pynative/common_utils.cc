@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include "abstract/abstract_value.h"
+#include "base/float8_e4m3fn.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/manager.h"
 #include "ir/tensor_new.h"
