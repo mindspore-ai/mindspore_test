@@ -151,3 +151,191 @@ class MatMulDistributedOp(DistributedOp):
                 output_layout.set_partial_by_dev_axis(x_map[x_contract_dim], 'sum')
 
         return output_layout
+
+
+class BaseBatchMatMulDistributedOp(DistributedOp):
+    """Base class for BatchMatMul distributed implementations."""
+
+    def _merge_batch_entry(self, x_dims, w_dims):
+        """
+        Merge two batch tensor_map entries with broadcasting:
+        - none vs X -> X
+        - X vs none -> X
+        - X vs X (exact same after normalization) -> X
+        - otherwise -> conflict
+        """
+        if self._is_none_entry(x_dims) and self._is_none_entry(w_dims):
+            return "None"
+        if self._is_none_entry(x_dims):
+            return w_dims
+        if self._is_none_entry(w_dims):
+            return x_dims
+        if x_dims == w_dims:
+            return x_dims
+        raise ValueError(f"Incompatible batch sharding between inputs: {x_dims} vs {w_dims}")
+
+    def _is_none_entry(self, entry):
+        """An entry is 'none' (no sharding) if it is 'None' or tuple of all 'None'."""
+        if isinstance(entry, tuple):
+            return all(i == "None" for i in entry)
+        return entry == "None"
+
+    def _merge_batches(self, x_map, w_map):
+        """Right-align and merge batch dims from x_map and w_map."""
+        x_batch = list(x_map[:-2])
+        w_batch = list(w_map[:-2])
+        max_b = max(len(x_batch), len(w_batch))
+        x_batch = ["None"] * (max_b - len(x_batch)) + x_batch
+        w_batch = ["None"] * (max_b - len(w_batch)) + w_batch
+        merged_batch = []
+        for xb, wb in zip(x_batch, w_batch):
+            merged_batch.append(self._merge_batch_entry(xb, wb))
+        return merged_batch
+
+    def _build_output_layout(self, x_layout, merged_batch, x_n, w_p, x_contract):
+        """Construct output layout from merged dims and set partial status if needed."""
+        output_map = tuple(merged_batch) + (x_n, w_p)
+
+        output_layout = Layout(
+            device_matrix=x_layout.device_matrix,
+            alias_name=x_layout.alias_name,
+            rank_list=x_layout.rank_list
+        )
+        output_layout = output_layout(*output_map)
+
+        # Set partial status
+        if x_contract != "None":
+            if isinstance(x_contract, tuple):
+                for axis in x_contract:
+                    output_layout.set_partial_by_dev_axis(axis, 'sum')
+            else:
+                output_layout.set_partial_by_dev_axis(x_contract, 'sum')
+
+        return output_layout
+
+
+class BatchMatMulExtDistributedOp(BaseBatchMatMulDistributedOp):
+    """Distributed implementation for BatchMatMulExt operator."""
+
+    def infer_layout(self, input_layouts, extra_args=None):
+        """
+        Infer output layout for BatchMatMulExt operator. Inputs shape are x=[b, n, m] and w=[b, m, p].
+
+        BatchMatMulExt: output = x @ w.
+
+        Rules:
+        - Device matrix must match.
+        - Contracting K dims must have identical layout: x[-1] == w[-2].
+        - Batch dims are right-aligned broadcast:
+            none vs shard -> shard
+            shard vs none -> shard
+            shard vs shard (different) -> error
+        - Output batch dims = merged batch dims
+        - Output N inherits x[-2], Output P inherits w[-1]
+
+        Args:
+            x_layout (Layout): Layout of input x
+            w_layout (Layout): Layout of input w
+
+        Returns:
+            tuple: Layout for output tensor
+
+        Examples:
+            layout = Layout((2, 2, 2), ("dp", "cp", "mp"))
+            x_layout = layout("dp", "cp", "mp")
+            w_layout = layout("dp", "mp", "None")
+            out_layout = layout("dp", "cp", "None")
+        """
+
+        if len(input_layouts) < 2:
+            raise ValueError("BatchMatMul requires at least two input layouts")
+        x_layout, w_layout = input_layouts[:2]
+
+        if x_layout.device_matrix != w_layout.device_matrix:
+            raise ValueError("BatchMatMul inputs must have same device_matrix")
+
+        x_map = x_layout.alias_tensor_map
+        w_map = w_layout.alias_tensor_map
+
+        # contracting dims
+        x_contract = x_map[-1]
+        w_contract = w_map[-2]
+        if x_contract != w_contract:
+            raise ValueError(f"Contracting (M) dim layouts must match, got {x_contract} (x) vs {w_contract} (w)")
+
+        merged_batch = self._merge_batches(x_map, w_map)
+        x_n = x_map[-2]
+        w_p = w_map[-1]
+
+        return self._build_output_layout(x_layout, merged_batch, x_n, w_p, x_contract)
+
+
+class BatchMatMulDistributedOp(BaseBatchMatMulDistributedOp):
+    """Distributed implementation for BatchMatMul operator."""
+
+    def infer_layout(self, input_layouts, extra_args):
+        """
+        Infer output layout for BatchMatMul operator. Inputs shape are x=[b, n, m] and w=[b, m, p].
+
+        BatchMatMul: output = x @ w, with possible transpose.
+
+        Rules:
+        - Device matrix must match.
+        - Contracting K dims must have identical layout: x[-1] == w[-2].
+        - Batch dims are right-aligned broadcast:
+            none vs shard -> shard
+            shard vs none -> shard
+            shard vs shard (different) -> error
+        - Output batch dims = merged batch dims
+        - Output N inherits x[-2], Output P inherits w[-1]
+
+        Args:
+            input_layouts (tuple): Layouts of input tensors (x_layout, w_layout)
+            extra_args (tuple): Additional arguments (transpose_a, transpose_b)
+
+        Returns:
+            tuple: Layout for output tensor
+
+        Examples:
+            ms.mint.bmm((x_layout, w_layout),(transpose_a=True, transpose_b=False))
+            layout = Layout((2, 2, 2), ("dp", "cp", "mp"))
+            x_layout = layout("dp", "mp", "cp")
+            w_layout = layout("dp", "mp", "None")
+            out_layout = layout("dp", "cp", "None")
+        """
+
+        if len(input_layouts) < 2:
+            raise ValueError("BatchMatMul requires at least two input layouts")
+        if len(extra_args) != 2:
+            raise ValueError("BatchMatMul requires two transpose input")
+
+        x_layout, w_layout = input_layouts[:2]
+        transpose_a, transpose_b = extra_args
+
+        if x_layout.device_matrix != w_layout.device_matrix:
+            raise ValueError("BatchMatMul inputs must have same device_matrix")
+
+        x_map = x_layout.alias_tensor_map
+        w_map = w_layout.alias_tensor_map
+
+        # handle transpose
+        if transpose_a:
+            x_n = x_map[-1]
+            x_contract = x_map[-2]
+        else:
+            x_n = x_map[-2]
+            x_contract = x_map[-1]
+
+        if transpose_b:
+            w_contract = w_map[-1]
+            w_p = w_map[-2]
+        else:
+            w_contract = w_map[-2]
+            w_p = w_map[-1]
+
+        if x_contract != w_contract:
+            raise ValueError(f"Contracting (M) dim layouts must match, got {x_contract} (x) vs {w_contract} (w)")
+
+        merged_batch = self._merge_batches(x_map, w_map)
+
+        return self._build_output_layout(x_layout, merged_batch, x_n, w_p, x_contract)
