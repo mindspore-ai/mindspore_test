@@ -97,13 +97,14 @@ class ProfilerInfo:
         Load time parameters from msprof profile and host start log.
         This method should be called before TimeConverter.init_parameters.
         """
+        msprof_info = MsprofCmdTool(msprof_profile_path).get_msprof_info()
         if not msprof_profile_path or not msprof_profile_host_path:
             raise ValueError(
                 "msprof_profile_path and msprof_profile_host_path must be provided"
             )
         self._read_host_start_log(msprof_profile_host_path)
         self._read_start_info(msprof_profile_host_path)
-        self._get_freq_from_msprof(msprof_profile_path)
+        self._get_freq_from_msprof(msprof_info)
 
     @property
     def time_parameters(self) -> Dict[str, Any]:
@@ -237,7 +238,7 @@ class ProfilerInfo:
             self._collection_time_begin * self.US_TO_NS - self._clock_monotonic_raw_info
         )
 
-    def _get_freq_from_msprof(self, msprof_profile_path: str) -> None:
+    def _get_freq_from_msprof(self, msprof_info: str) -> None:
         """
         Get frequency from get_msprof_info.py script
 
@@ -250,7 +251,6 @@ class ProfilerInfo:
             }
         }
         """
-        msprof_info = MsprofCmdTool(msprof_profile_path).get_msprof_info()
 
         if not isinstance(msprof_info, dict):
             raise RuntimeError("msprof_info must be a dictionary")

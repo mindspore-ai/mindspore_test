@@ -196,5 +196,19 @@ class TestFileManager(unittest.TestCase):
             mock_warning.assert_called_once_with(
                 "The source file does not exist: %s", non_existent)
 
+    @patch('os.stat')
+    @patch('os.geteuid')
+    def test_check_file_owner_should_return_true_when_file_owner_matches(self, mock_geteuid, mock_stat):
+        test_file = "file_owner.json"
+        test_path = os.path.join(self.test_dir, test_file)
+        mock_geteuid.return_value = 1000
+        mock_stat.return_value.st_uid = 0
+        self.assertTrue(FileManager.check_file_owner(test_path))
+        mock_stat.return_value.st_uid = 1000
+        self.assertTrue(FileManager.check_file_owner(test_path))
+        mock_stat.return_value.st_uid = 9999
+        self.assertFalse(FileManager.check_file_owner(test_path))
+
+
 if __name__ == "__main__":
     unittest.main()

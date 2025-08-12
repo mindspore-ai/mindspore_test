@@ -238,5 +238,34 @@ class TestPathManager(unittest.TestCase):
                         PathManager.check_path_owner_consistent(self.test_dir)
                     self.assertIn("owner[1001] does not match the current user[1000]", str(cm.exception))
 
+    def test_should_raise_exception_when_others_writable(self):
+        """Test that an exception is raised when file has others writable permissions."""
+        with patch('os.stat') as mock_stat:
+            mock_stat.return_value.st_mode = stat.S_IFREG | stat.S_IWOTH
+            with self.assertRaises(ProfilerPathErrorException) as context:
+                PathManager.check_path_is_other_writable("/test/path")
+            self.assertIn("others writable permissions", str(context.exception))
+            self.assertIn("chmod -R 755", str(context.exception))
+
+    @patch('os.stat')
+    @patch('os.getuid')
+    def test_should_return_false_when_not_owned_by_owner_or_root(self, mock_getuid, mock_stat):
+        mock_getuid.return_value = 1000
+        mock_stat.return_value.st_uid = 1000
+        self.assertTrue(PathManager.check_path_is_owner_or_root('/test/path'))
+        mock_stat.return_value.st_uid = 0
+        self.assertTrue(PathManager.check_path_is_owner_or_root('/test/path'))
+        mock_stat.return_value.st_uid = 1001
+        self.assertFalse(PathManager.check_path_is_owner_or_root('/test/path'))
+
+    @patch('os.access')
+    def test_should_pass_correct_arguments_to_os_access(self, mock_access):
+        """Test properly passes arguments to os.access"""
+        test_path = '/test/path'
+        mock_access.return_value = True
+        PathManager.check_path_is_executable(test_path)
+        mock_access.assert_called_once_with(test_path, os.X_OK)
+
+
 if __name__ == '__main__':
     unittest.main()

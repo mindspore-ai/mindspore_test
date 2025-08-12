@@ -36,6 +36,8 @@ from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 from mindspore.profiler.common.profiler_info import ProfilerInfo
 from mindspore.profiler.common.process_pool import MultiProcessPool
+from mindspore.profiler.common.constant import MsprofModeName
+from mindspore.profiler.common.util import no_exception_func
 from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.analysis.time_converter import TimeConverter
 from mindspore.profiler.analysis.parser.ascend_cann_parser import AscendMsprofParser
@@ -68,6 +70,7 @@ class NpuProfiler(BaseProfiler):
 
     def __init__(self) -> None:
         super().__init__()
+        self._is_env_not_valid = self._is_environment_not_valid()
         self._prof_ctx = ProfilerContext()
         self._prof_info = ProfilerInfo()
         self._prof_path_mgr = ProfilerPathManager()
@@ -97,6 +100,8 @@ class NpuProfiler(BaseProfiler):
 
     def start(self) -> None:
         """Start profiling."""
+        if self._is_env_not_valid:
+            return
         self._logger.info("NpuProfiler start.")
 
         Mstx.enable = self._prof_ctx.npu_profiler_params.get("mstx", False)
@@ -115,6 +120,8 @@ class NpuProfiler(BaseProfiler):
 
     def stop(self) -> None:
         """Stop profiling."""
+        if self._is_env_not_valid:
+            return
         self._logger.info("NpuProfiler stop.")
 
         Mstx.enable = False
@@ -149,15 +156,28 @@ class NpuProfiler(BaseProfiler):
 
     def analyse(self, **kwargs) -> None:
         """Analyse the profiling data."""
+        if self._is_env_not_valid:
+            return
         self._logger.info("NpuProfiler analyse.")
 
         NPUProfilerAnalysis.online_analyse(async_mode=kwargs.get('async_mode'))
 
     def finalize(self) -> None:
         """Finalize profiling data."""
+        if self._is_env_not_valid:
+            return
         self._logger.info("NpuProfiler finalize.")
         if self._profiler:
             self._profiler.finalize()
+
+    @staticmethod
+    def _is_environment_not_valid() -> bool:
+        # check msprof dynamic environment variable
+        if os.getenv(MsprofModeName.MSPROF_DYNAMIC_ENV) is not None:
+            logger.error(f"The environment variable '{MsprofModeName.MSPROF_DYNAMIC_ENV}' has been set."
+                         f"Please execute 'unset {MsprofModeName.MSPROF_DYNAMIC_ENV}'.")
+            return True
+        return False
 
 
 class NPUProfilerAnalysis:
@@ -166,6 +186,7 @@ class NPUProfilerAnalysis:
     """
 
     @classmethod
+    @no_exception_func()
     def online_analyse(cls, async_mode: bool = False):
         """
         Online analysis for NPU
@@ -179,6 +200,7 @@ class NPUProfilerAnalysis:
             cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
+    @no_exception_func()
     def offline_analyse(
             cls,
             path: str,

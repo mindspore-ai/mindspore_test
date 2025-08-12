@@ -206,3 +206,12 @@ class FileManager:
             if file_name.startswith(start_name) and file_name.endswith(".csv"):
                 file_list.append(os.path.join(source_path, file_name))
         return file_list
+
+    @classmethod
+    def check_file_owner(cls, path):
+        """Check whether the file owner is the current user or root."""
+        stat_info = os.stat(path)
+        if stat_info.st_uid == 0:
+            return True
+        current_uid = os.geteuid()
+        return current_uid == stat_info.st_uid
