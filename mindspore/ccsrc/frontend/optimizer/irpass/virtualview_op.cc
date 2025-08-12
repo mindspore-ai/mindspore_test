@@ -72,6 +72,7 @@ std::pair<AnfNodePtr, AnfNodePtrList> VirtualViewInsertProcesser::GetViewInfo(co
   AnfNodePtr current_node = param;
   AnfNodePtrList view_chain;
   CNodePtr view_node;
+  std::unordered_set<AnfNodePtr> search_view_nodes;
   while (true) {
     // m = View(y), n = View(m), u = View(n)
     // 1) param_x
@@ -87,11 +88,33 @@ std::pair<AnfNodePtr, AnfNodePtrList> VirtualViewInsertProcesser::GetViewInfo(co
     // m ---> m ---> [param, n, param_u]
     // return {y, [param, n, param_u]}
     view_node = std::get<0>(IsCreatedByViewOp(current_node));
-    if (view_node == nullptr) {
+    auto is_need_stop = [this](const AnfNodePtr &view_node, const AnfNodePtr &current_node) {
+      if (view_node == nullptr) {
+        return true;
+      }
+      auto view_func_graph = view_node->func_graph();
+      const auto &used_func_graphs = func_graph_->func_graphs_used_total();
+      if (view_func_graph != func_graph_ &&
+          std::find(used_func_graphs.begin(), used_func_graphs.end(), view_func_graph) != used_func_graphs.end()) {
+        return true;
+      }
+      return false;
+    };
+    if (is_need_stop(view_node, current_node)) {
       MS_LOG(DEBUG) << "GetViewInfo param: " << param->DebugString() << " view_chain.size(): " << view_chain.size();
       return {ReplaceWithParameter(current_node), std::move(view_chain)};
     }
 
+    if (search_view_nodes.find(view_node) != search_view_nodes.end()) {
+      MS_LOG(INFO) << "Loop search, current node: " << current_node->DebugString()
+                   << " , input node: " << param->DebugString();
+      if (param->isa<Parameter>()) {
+        return {ReplaceWithParameter(current_node), {}};
+      }
+      return {ReplaceWithParameter(current_node), std::move(view_chain)};
+    }
+
+    (void)search_view_nodes.insert(view_node);
     auto view_node_param = ReplaceWithParameter(view_node);
 
     auto it_chain = view_chains_.find(view_node_param);

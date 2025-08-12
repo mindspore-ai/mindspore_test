@@ -700,6 +700,61 @@ def test_view_and_inplace_fallback_pyinterpret():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_and_inplace_while():
+    """
+    Feature: view inplace operation in grad with while loop
+    Description: view inplace operation in grad.
+    Expectation: no exception
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.transposeview = TransposeView()
+            self.reducesum = ops.ReduceSum()
+            self.expanddimsview = ExpandDimsView()
+
+        def construct(self, x, y):
+            x = ops.Abs()(x)
+            y = ops.Abs()(y)
+            if self.reducesum(x) < 3 * self.reducesum(y):
+                x.add_(y)
+                for _ in range(2):
+                    while self.reducesum(x) < 200:
+                        x = self.transposeview(x, (1, 0))
+                        y = self.transposeview(y, (1, 0))
+                        x.add_(y)
+                        y.add_(y/2)
+            else:
+                if self.reducesum(x) < 4 * self.reducesum(y):
+                    x = self.expanddimsview(x, 1)
+                    y = self.expanddimsview(y, 1)
+                    x.add_(y)
+
+            if x.shape == (4, 8):
+                for _ in range(2):
+                    x = self.transposeview(x, (1, 0))
+                    y = self.transposeview(y, (1, 0))
+                    x.add_(y)
+                    y.add_(y/2)
+
+            else:
+                x = self.transposeview(x, (1, 0))
+                y = self.transposeview(y, (1, 0))
+                x.add_(y)
+
+            return x, y
+
+    x_np = np.ones([4, 8]).astype(np.float32)
+    y_np = 2 * np.ones([4, 8]).astype(np.float32)
+    net = Net()
+    out_back_expect = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_back_jit = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
+    assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())
+    assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_view_inplace_grad_with_tuple_output_case2():
     """
     Feature: view inplace operation in grad.

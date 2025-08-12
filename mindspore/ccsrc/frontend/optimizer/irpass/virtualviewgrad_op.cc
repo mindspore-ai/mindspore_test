@@ -77,6 +77,14 @@ void InsertVirtualViewGradAfterInplaceCNodeInner(const FuncGraphPtr &func_graph,
     if (result.first == nullptr) {
       break;
     }
+    auto view_func_graph = result.first->func_graph();
+    const auto &used_func_graphs = func_graph->func_graphs_used_total();
+    if (std::find(used_func_graphs.begin(), used_func_graphs.end(), view_func_graph) != used_func_graphs.end()) {
+      MS_LOG(INFO) << "Current_func_graph: " << func_graph->ToString()
+                   << ", view_input node: " << view_input->DebugString();
+      break;
+    }
+
     view_output = result.first;
   }
   // Set edge for original umonad users to last_umonad
