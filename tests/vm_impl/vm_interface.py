@@ -22,6 +22,7 @@ class Vm:
 
 
 vm = Vm()
+setattr(vm, 'Slice', Slice)
 setattr(vm, 'avg_pooling', avg_pooling)
 setattr(vm, 'avg_pool_grad', avg_pool_grad)
 setattr(vm, 'batch_norm', batch_norm)

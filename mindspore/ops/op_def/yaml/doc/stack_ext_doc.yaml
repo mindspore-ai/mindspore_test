@@ -9,14 +9,13 @@ stack_ext:
         :math:`(x_1, x_2, ..., x_{dim}, N, x_{dim+1}, ..., x_R)`.
 
         Args:
-            tensors (Union[tuple, list]): A Tuple or list of Tensor objects with the same shape and type.
+            tensors (Union[tuple, list]): A Tuple or list of Tensor objects with the same shape.
             dim (int, optional): Dimension to stack. The range is [-(R+1), R+1). Default: ``0`` .
 
         Returns:
-            Tensor. A stacked Tensor with the same type as `tensors`.
+            A stacked Tensor.
 
         Raises:
-            TypeError: If the data types of elements in `tensors` are not the same.
             ValueError: If `dim` is out of the range [-(R+1), R+1);
                         or if the shapes of elements in `tensors` are not the same.
 

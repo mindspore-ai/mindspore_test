@@ -616,6 +616,8 @@ NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const Shape
 
   bool is_uniform = true;
   auto input_nums = input_shapes.size();
+  auto x = ib->GetInput(kIndex0);
+  auto dout_dtype = ib->GetDtypeId(dout);
   for (size_t i = 0; i < input_nums; ++i) {
     if (input_shapes[i].size() != rank) {
       MS_EXCEPTION(ValueError) << "For gradient of 'Concat', input shapes [" << i
@@ -631,7 +633,17 @@ NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const Shape
     auto long_nums = SizeToLong(input_nums);
     auto dx = ib->Emit(kSplitOpName, {dout, ib->EmitValue(MakeValue(axis)), ib->EmitValue(MakeValue(long_nums))},
                        {{"num_split", MakeValue(long_nums)}});
-    return {dx};
+    NodePtrList res;
+    for (size_t i = 0; i < input_nums; ++i) {
+      auto dx_i = ib->TupleGetItem(dx, i);
+      auto x_i = ib->TupleGetItem(x, i);
+      auto x_i_dtype = ib->GetDtype(x_i);
+      if (x_i_dtype->type_id() != dout_dtype) {
+        dx_i = ib->Cast(dx_i, x_i_dtype);
+      }
+      res.push_back(dx_i);
+    }
+    return {ib->MakeTuple(res)};
   }
 
   NodePtrList res;
@@ -639,6 +651,11 @@ NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const Shape
   for (size_t i = 0; i < input_nums; ++i) {
     auto offset_value = ib->Value(offsets[i]);
     auto slice_out = ib->Slice(dout, offset_value, ib->Value(input_shapes[i]));
+    auto x_i = ib->TupleGetItem(x, i);
+    auto x_i_dtype = ib->GetDtype(x_i);
+    if (x_i_dtype->type_id() != dout_dtype) {
+      slice_out = ib->Cast(slice_out, x_i_dtype);
+    }
     res.push_back(slice_out);
   }
   return {ib->MakeTuple(res)};
@@ -1154,6 +1171,9 @@ REG_BPROP_BUILDER("UnstackExtView").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(i
 });
 
 REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(i0);
+  auto x_shapes = ib->GetShapes(x);
+  auto x_size = x_shapes.size();
   auto dout = ib->GetInput(i3);
   auto axis_node = ib->GetInput(i1);
   auto input_shape = ib->GetShape(dout);
@@ -1172,7 +1192,13 @@ REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUN
     axis += SizeToLong(input_shape.size());
   }
   auto ret = ib->Emit("UnstackExtView", {dout, ib->Value(axis)});
-  return {ret, ib->OutZeros(axis_node)};
+  NodePtrList res;
+  for (size_t i = 0; i < x_size; ++i) {
+    auto input = ib->TupleGetItem(x, i);
+    auto input_dtype = ib->GetDtype(input);
+    res.push_back(ib->Cast(ib->TupleGetItem(ret, i), input_dtype));
+  }
+  return {ib->MakeTuple(res), ib->OutZeros(axis_node)};
 });
 
 REG_BPROP_BUILDER("Contiguous").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
@@ -1583,8 +1609,11 @@ REG_BPROP_BUILDER("Concat").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 
     NodePtrList tuple_out;
     for (size_t i = 0; i < input_nums; ++i) {
-      auto input = ib->Shape(ib->TupleGetItem(x, i));
-      auto slice_out = ib->Slice(dout, concat_offset[i], input);
+      auto input = ib->TupleGetItem(x, i);
+      auto slice_out = ib->Slice(dout, concat_offset[i], ib->Shape(input));
+      if (ib->GetDtypeId(input) != ib->GetDtypeId(slice_out)) {
+        slice_out = ib->Cast(slice_out, ib->GetDtypeId(input));
+      }
       tuple_out.push_back(slice_out);
     }
     auto res = ib->MakeTuple(tuple_out);

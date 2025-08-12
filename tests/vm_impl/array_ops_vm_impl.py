@@ -293,8 +293,8 @@ def vm_impl_slice(self):
 
     def vm_impl(x, begin, size):
         x = x.asnumpy()
-        begin = begin.asnumpy()
-        size = size.asnumpy()
+        begin = begin
+        size = size
         out = vm.Slice(x, begin, size)
         return Tensor(out)
 
