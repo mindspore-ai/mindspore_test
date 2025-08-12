@@ -16,7 +16,7 @@
 
 #include <memory>
 #include "utils/ms_context.h"
-#include "frontend/ir/arg_handler.h"
+#include "frontend/ir/arg_handler_py.h"
 #include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "pynative/op_function/converter.h"

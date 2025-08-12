@@ -1,4 +1,4 @@
-py::object TensorMethod${cpp_func_name}(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs) {
+PyObject* TensorMethod${cpp_func_name}(PyObject* self, PyObject* py_args, PyObject* py_kwargs) {
   static mindspore::pynative::PythonArgParser parser({
     ${signatures}
   }, "${func_name}");
@@ -9,7 +9,7 @@ py::object TensorMethod${cpp_func_name}(const py::object &self, const py::args &
   auto backend = DeviceManagerConf::GetInstance()->device_type();
   #ifndef ENABLE_TEST
     ${device_dispatcher}
-    return py::none();
+    Py_RETURN_NONE;
   #else
     ${ut_body}
   #endif

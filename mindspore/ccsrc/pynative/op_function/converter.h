@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_map>
+#include <Python.h>
 #include "pynative/base.h"
 #include "pynative/pynative_execute.h"
 #include "include/common/utils/tensor_py.h"
@@ -32,6 +33,14 @@ namespace mindspore {
 namespace pynative {
 using ConvertPair = std::pair<ops::OP_DTYPE, ops::OP_DTYPE>;
 struct ParserArgs;
+
+class CPythonTuple {};
+class CPythonList {};
+
+// enum ContainerType {
+//   cpythonTuple,
+//   cpythonList,
+// };
 
 static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"int", ops::OP_DTYPE::DT_INT},
@@ -65,7 +74,7 @@ class PYNATIVE_EXPORT ParserDefaultObjects {
  public:
   static ParserDefaultObjects &GetInstance();
 
-  const py::object &Get(const std::string &default_str) {
+  PyObject *Get(const std::string &default_str) {
     auto iter = objects_.find(default_str);
     if (iter != objects_.end()) {
       return *(iter->second);
@@ -74,26 +83,35 @@ class PYNATIVE_EXPORT ParserDefaultObjects {
   }
 
   void Set(const ops::OP_DTYPE &type, const std::string &value, const std::string &kw_str) {
-    objects_.try_emplace(kw_str, std::make_unique<py::object>(StrToPyObj(type, value)));
+    objects_.try_emplace(kw_str, std::make_unique<PyObject *>(StrToPyObj(type, value)));
   }
 
-  py::object StrToPyObj(const ops::OP_DTYPE &type, const std::string &str);
+  PyObject *StrToPyObj(const ops::OP_DTYPE &type, const std::string &str);
 
-  void ClearRes() { objects_.clear(); }
+  void ClearRes() {
+    for (const auto &pair : objects_) {
+      PyObject *value = *(pair.second);
+      if (value == nullptr) {
+        continue;
+      }
+      Py_XDECREF(value);
+    }
+    objects_.clear();
+  }
 
  private:
   ParserDefaultObjects() {}
   ~ParserDefaultObjects() = default;
   DISABLE_COPY_AND_ASSIGN(ParserDefaultObjects);
-  std::unordered_map<std::string, std::unique_ptr<py::object>> objects_;
+  std::unordered_map<std::string, std::unique_ptr<PyObject *>> objects_;
 };
 
 // information of single parameter
 struct FunctionParameter {
   explicit FunctionParameter(const std::string &fmt, bool is_kw_only);
-  bool Check(const py::object &obj, ConvertPair &convert_type, int &error_idx) const;
+  bool Check(PyObject *obj, ConvertPair &convert_type, int &error_idx) const;
   void SetDefaultObj(const std::string &str);
-  const py::object &GetDefaultValue() { return ParserDefaultObjects::GetInstance().Get(default_str_); }
+  PyObject *GetDefaultValue() { return ParserDefaultObjects::GetInstance().Get(default_str_); }
 
   ops::OP_DTYPE type_{ops::OP_DTYPE::DT_END};
   std::vector<ops::OP_DTYPE> cast_types_;
@@ -109,12 +127,12 @@ struct FunctionParameter {
 // single overload
 struct PYNATIVE_EXPORT FunctionSignature {
   explicit FunctionSignature(const std::string &fmt, int index, const std::string &name);
-  bool CheckParamValid(const py::object &obj, const FunctionParameter &param, bool raise_error,
-                       std::string *out_error_msg, ConvertPair &convert_type, int &error_idx);
-  bool Parse(const py::list &args, const py::dict &kwargs, ParserArgs &parser_args, bool raise_error = false,
+  bool CheckParamValid(PyObject *obj, const FunctionParameter &param, bool raise_error, std::string *out_error_msg,
+                       ConvertPair &convert_type, int &error_idx);
+  bool Parse(PyObject *args, PyObject *kwargs, ParserArgs &parser_args, bool raise_error = false,
              std::string *out_error_msg = nullptr);
   bool RaiseParseKeywordArgsError(size_t nkwargs, bool raise_error, std::string *out_error_msg, size_t nargs,
-                                  const py::dict &kwargs);
+                                  PyObject *kwargs);
   std::string ToString();
 
   std::string name_;
@@ -136,8 +154,8 @@ struct PYNATIVE_EXPORT ParserArgs {
     dst_types_.resize(signature->params_.size());
   }
   ValuePtr ConvertByParseDtype(size_t index);
-  void InsertInputTensor(size_t index, const py::object &input);
-  void SetArg(const py::object &arg, const ConvertPair &convert_type, size_t index);
+  void InsertInputTensor(size_t index, PyObject *input);
+  void SetArg(PyObject *arg, const ConvertPair &convert_type, size_t index);
   void ClearArgs();
   const int &GetOvertLoadIndex() { return signature_->index_; }
   void PrintConvertError(size_t index);
@@ -163,15 +181,16 @@ struct PYNATIVE_EXPORT ParserArgs {
     if (index >= arg_list_.size()) {
       MS_LOG(EXCEPTION) << "Invalid index" << index << "for argument convert.";
     }
-    const py::object &obj = arg_list_[index];
-    if (py::isinstance<py::none>(obj)) {
+    // PyObject* obj = PyList_GetItem(arg_list_, index);
+    PyObject *obj = arg_list_[index];
+    if (obj == Py_None) {
       return std::nullopt;
     }
     return std::make_optional(Convert<T>(index));
   }
 
   FunctionSignaturePtr signature_;
-  std::vector<py::object> arg_list_;
+  std::vector<PyObject *> arg_list_;
   // {src_type , dst_type} for convert
   std::vector<ops::OP_DTYPE> src_types_;
   std::vector<ops::OP_DTYPE> dst_types_;
@@ -180,9 +199,9 @@ struct PYNATIVE_EXPORT ParserArgs {
 // parser util
 struct PYNATIVE_EXPORT PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
-  inline const ParserArgs Parse(const py::list &args, const py::dict &kwargs, const bool &is_method);
-  const std::vector<std::string> GetParseTypeListString(const py::list &args, const py::dict &kwargs);
-  std::string PrintParseError(const py::list &args, const py::dict &kwargs, const bool &is_method);
+  inline const ParserArgs Parse(PyObject *args, PyObject *kwargs, const bool &is_method);
+  const std::vector<std::string> GetParseTypeListString(PyObject *args, PyObject *kwargs);
+  std::string PrintParseError(PyObject *args, PyObject *kwargs, const bool &is_method);
 
  private:
   std::vector<FunctionSignaturePtr> signatures_;
@@ -190,7 +209,7 @@ struct PYNATIVE_EXPORT PythonArgParser {
   size_t max_args_;
 };
 
-inline const ParserArgs PythonArgParser::Parse(const py::list &args, const py::dict &kwargs, const bool &is_method) {
+inline const ParserArgs PythonArgParser::Parse(PyObject *args, PyObject *kwargs, const bool &is_method) {
   if (signatures_.size() == 1) {
     ParserArgs parser_args(signatures_[0]);
     signatures_[0]->Parse(args, kwargs, parser_args, true);
@@ -206,53 +225,52 @@ inline const ParserArgs PythonArgParser::Parse(const py::list &args, const py::d
   MS_EXCEPTION(TypeError) << PrintParseError(args, kwargs, is_method);
 }
 
-PYNATIVE_EXPORT ValuePtr UnpackTensor(const py::object &input, const std::string &func_name);
+PYNATIVE_EXPORT ValuePtr UnpackTensor(PyObject *input, const std::string &func_name);
 
 class PYNATIVE_EXPORT Converter {
  public:
   explicit Converter(ops::OpDef *op_def);
-  void Parse(const py::list &python_args);
-  ValuePtr ToTensor(const py::list &python_args, size_t i);
-  std::optional<ValuePtr> ToTensorOptional(const py::list &python_args, size_t i);
+  void Parse(PyObject *python_args);
+  ValuePtr ToTensor(PyObject *python_args, size_t i);
+  std::optional<ValuePtr> ToTensorOptional(PyObject *python_args, size_t i);
   template <typename T>
-  ValueTuplePtr ToTensorList(const py::list &python_args, size_t i);
+  ValueTuplePtr ToTensorList(PyObject *python_args, size_t i);
   template <typename T>
-  std::optional<ValueTuplePtr> ToTensorListOptional(const py::list &python_args, size_t i);
-  Int64ImmPtr ToInt(const py::list &python_args, size_t i);
-  std::optional<Int64ImmPtr> ToIntOptional(const py::list &python_args, size_t i);
+  std::optional<ValueTuplePtr> ToTensorListOptional(PyObject *python_args, size_t i);
+  Int64ImmPtr ToInt(PyObject *python_args, size_t i);
+  std::optional<Int64ImmPtr> ToIntOptional(PyObject *python_args, size_t i);
   template <typename T>
-  ValueTuplePtr ToIntList(const py::list &python_args, size_t i);
+  ValueTuplePtr ToIntList(PyObject *python_args, size_t i);
   template <typename T>
-  std::optional<ValueTuplePtr> ToIntListOptional(const py::list &python_args, size_t i);
-  BoolImmPtr ToBool(const py::list &python_args, size_t i);
-  std::optional<BoolImmPtr> ToBoolOptional(const py::list &python_args, size_t i);
+  std::optional<ValueTuplePtr> ToIntListOptional(PyObject *python_args, size_t i);
+  BoolImmPtr ToBool(PyObject *python_args, size_t i);
+  std::optional<BoolImmPtr> ToBoolOptional(PyObject *python_args, size_t i);
   template <typename T>
-  ValueTuplePtr ToBoolList(const py::list &python_args, size_t i);
+  ValueTuplePtr ToBoolList(PyObject *python_args, size_t i);
   template <typename T>
-  std::optional<ValueTuplePtr> ToBoolListOptional(const py::list &python_args, size_t i);
-  FP32ImmPtr ToFloat(const py::list &python_args, size_t i);
-  std::optional<FP32ImmPtr> ToFloatOptional(const py::list &python_args, size_t i);
+  std::optional<ValueTuplePtr> ToBoolListOptional(PyObject *python_args, size_t i);
+  FP32ImmPtr ToFloat(PyObject *python_args, size_t i);
+  std::optional<FP32ImmPtr> ToFloatOptional(PyObject *python_args, size_t i);
   template <typename T>
-  ValueTuplePtr ToFloatList(const py::list &python_args, size_t i);
+  ValueTuplePtr ToFloatList(PyObject *python_args, size_t i);
   template <typename T>
-  std::optional<ValueTuplePtr> ToFloatListOptional(const py::list &python_args, size_t i);
-  ScalarPtr ToScalar(const py::list &python_args, size_t i);
-  std::optional<ScalarPtr> ToScalarOptional(const py::list &python_args, size_t i);
-  StringImmPtr ToString(const py::list &python_args, size_t i);
-  std::optional<StringImmPtr> ToStringOptional(const py::list &python_args, size_t i);
-  Int64ImmPtr ToDtype(const py::list &python_args, size_t i);
-  std::optional<Int64ImmPtr> ToDtypeOptional(const py::list &python_args, size_t i);
-  ValuePtr ConvertByCastDtype(const py::object &input, const ops::OpInputArg &op_arg, size_t i);
-  ValueTuplePtr ConvertValueTupleByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg, size_t index);
-  std::vector<int64_t> ConvertIntVectorByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg,
-                                                   size_t index);
-  int64_t ConvertIntByCastDtype(const py::list &python_args, const ops::OpInputArg &op_arg, size_t index);
+  std::optional<ValueTuplePtr> ToFloatListOptional(PyObject *python_args, size_t i);
+  ScalarPtr ToScalar(PyObject *python_args, size_t i);
+  std::optional<ScalarPtr> ToScalarOptional(PyObject *python_args, size_t i);
+  StringImmPtr ToString(PyObject *python_args, size_t i);
+  std::optional<StringImmPtr> ToStringOptional(PyObject *python_args, size_t i);
+  Int64ImmPtr ToDtype(PyObject *python_args, size_t i);
+  std::optional<Int64ImmPtr> ToDtypeOptional(PyObject *python_args, size_t i);
+  ValuePtr ConvertByCastDtype(PyObject *input, const ops::OpInputArg &op_arg, size_t i);
+  ValueTuplePtr ConvertValueTupleByCastDtype(PyObject *python_args, const ops::OpInputArg &op_arg, size_t index);
+  std::vector<int64_t> ConvertIntVectorByCastDtype(PyObject *python_args, const ops::OpInputArg &op_arg, size_t index);
+  int64_t ConvertIntByCastDtype(PyObject *python_args, const ops::OpInputArg &op_arg, size_t index);
   const std::vector<ops::OP_DTYPE> &source_type() const { return source_type_; }
   // basic type
-  int64_t ToBasicInt(const py::list &python_args, size_t i);
-  std::optional<int64_t> ToBasicIntOptional(const py::list &python_args, size_t i);
-  std::vector<int64_t> ToBasicIntVector(const py::list &python_args, size_t i);
-  std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(const py::list &python_args, size_t i);
+  int64_t ToBasicInt(PyObject *python_args, size_t i);
+  std::optional<int64_t> ToBasicIntOptional(PyObject *python_args, size_t i);
+  std::vector<int64_t> ToBasicIntVector(PyObject *python_args, size_t i);
+  std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(PyObject *python_args, size_t i);
 
  private:
   ops::OpDefPtr op_def_;

@@ -1,4 +1,4 @@
-py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE>& source_type, ${input_args}) {
+PyObject* ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE>& source_type, ${input_args}) {
     MS_LOG(DEBUG) << "Run ${func_name} start";
     auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
     device::DeviceType target;
@@ -50,5 +50,5 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
         );
         MS_LOG(DEBUG) << "Run ${func_name} end";
     }
-    return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output, comm_handle_py_obj.release().ptr()));
+    return tensor::TransformOutput(py_output, comm_handle_py_obj.release().ptr());
 }

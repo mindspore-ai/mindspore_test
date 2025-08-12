@@ -23,6 +23,7 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <Python.h>
 #include "pybind11/pybind11.h"
 #include "ir/tensor.h"
 #include "include/common/visible.h"
@@ -388,6 +389,11 @@ using TensorPyPtrList = std::vector<std::shared_ptr<TensorPy>>;
 /// \return Is TensorPy or not.
 COMMON_EXPORT bool IsTensorPy(const py::handle &obj);
 
+/// \brief Check whether the object is TensorPy.
+/// \param[in] obj [PyObject] The python object.
+/// \return Is TensorPy or not.
+COMMON_EXPORT bool IsPyObjectTensorPy(PyObject *obj);
+
 /// \brief Convert the python object to TensorPy.
 /// \param[in] obj [py::handle] The python object.
 /// \return A pointer address of TensorPy.
@@ -404,7 +410,14 @@ COMMON_EXPORT TensorPtr ConvertToTensor(const py::handle &obj);
 /// \param[in] tensor_value [TensorPtr] C++ Tensor.
 COMMON_EXPORT void SetTensorValue(const py::handle &obj, const TensorPtr &tensor_value);
 
+/// \brief Convert the PyObject to C++ Tensor
+/// \param[in] obj [PyObject] The python object.
+/// \return A pointer address of C++ Tensor.
+COMMON_EXPORT TensorPtr ConvertPyObjectToTensor(PyObject *obj);
+
 COMMON_EXPORT const ValuePtr ConvertToValue(const py::handle &obj);
+COMMON_EXPORT const ValuePtr ConvertPyObjectToValue(PyObject *obj);
+
 template <typename T>
 struct PyType {
   PyObject_HEAD T value;

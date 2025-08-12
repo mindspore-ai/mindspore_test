@@ -32,9 +32,9 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
 #ifndef ENABLE_TEST
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt start";
   auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
-  static Converter converter(&ops::gCustomExt);
-  converter.Parse(args);
-  auto tensors = converter.ToTensorList<py::tuple>(args, kIndex0);
+  static pynative::Converter converter(&ops::gCustomExt);
+  converter.Parse(args.ptr());
+  auto tensors = converter.ToTensorList<pynative::CPythonTuple>(args.ptr(), kIndex0);
 
   static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::gCustomExt);
   op_run_info->source_type = converter.source_type();

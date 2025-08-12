@@ -22,5 +22,8 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore::pynative {
+using mindspore::pynative::CPythonTuple;
+using mindspore::pynative::CPythonList;
+
 ${pyboost_api_body}
 }// namespace mindspore::pynative

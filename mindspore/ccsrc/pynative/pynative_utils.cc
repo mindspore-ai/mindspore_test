@@ -1048,6 +1048,68 @@ std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
   return ss.str();
 }
 
+std::string PyParser::BuildPyObjectInputTypeString(PyObject *obj) {
+  if (tensor::IsPyObjectTensorPy(obj)) {
+    return "Tensor";
+  }
+  // bool must before int, because bool is a special int
+  if (PyBool_Check(obj)) {
+    return "bool";
+  }
+  if (PyLong_Check(obj)) {
+    return "int";
+  }
+  if (PyFloat_Check(obj)) {
+    return "float";
+  }
+  if (PyUnicode_Check(obj)) {
+    return "string";
+  }
+  if (obj == Py_None) {
+    return "None";
+  }
+  // TODO(wangjialin) 这里直接执行py::isinstance<mindspore::Type>(obj) 也可以
+  // if (py::isinstance<mindspore::Type>(obj)) {
+  //   return "mindspore.dtype";
+  // }
+  PyObject *ms_module = PyImport_ImportModule("mindspore");
+  if (ms_module && ms_module != Py_None) {
+    PyObject *type_class = PyObject_GetAttrString(ms_module, "Type");
+    Py_DECREF(ms_module);
+    if (type_class && type_class != Py_None) {
+      if (PyObject_IsInstance(obj, type_class)) {
+        Py_DECREF(type_class);
+        return "mindspore.dtype";
+      }
+    }
+    Py_DECREF(type_class);
+  }
+
+  auto is_tuple = PyTuple_Check(obj);
+  auto is_list = PyList_Check(obj);
+  if (is_tuple || is_list) {
+    std::stringstream ss;
+    ss << (is_tuple ? "Tuple<" : "List<");
+    Py_ssize_t size = is_tuple ? PyTuple_Size(obj) : PyList_Size(obj);
+    for (Py_ssize_t i = 0; i < size; ++i) {
+      PyObject *item = is_tuple ? PyTuple_GetItem(obj, i) : PyList_GetItem(obj, i);
+      if (i == 0) {
+        ss << BuildPyObjectInputTypeString(item);
+      } else {
+        ss << ", " << BuildPyObjectInputTypeString(item);
+      }
+    }
+    ss << ">";
+    return ss.str();
+  }
+
+  std::stringstream ss;
+  PyObject *obj_type = PyObject_Str(PyObject_Type(obj));
+  ss << PyUnicode_AsUTF8(obj_type);
+  Py_DECREF(obj_type);
+  return ss.str();
+}
+
 void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &op_inputs, size_t idx) {
   auto const &op_arg = op_def->args_[idx];
   bool is_suppport_tensor_cast = std::any_of(op_arg.cast_dtype_.begin(), op_arg.cast_dtype_.end(),
@@ -1077,6 +1139,44 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
   std::vector<std::string> op_type_list;
   for (size_t index = 0; index < op_inputs.size(); ++index) {
     (void)op_type_list.emplace_back(BuilidPyInputTypeString(op_inputs[index]));
+  }
+  PyNativeExecutor::GetInstance()->ClearRes();
+  MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
+}
+
+void PyParser::PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObject *op_inputs, size_t idx) {
+  // op_inputs should be py::list
+  auto const &op_arg = op_def->args_[idx];
+  bool is_suppport_tensor_cast = std::any_of(op_arg.cast_dtype_.begin(), op_arg.cast_dtype_.end(),
+                                             [](const auto &type) { return type == ops::DT_TENSOR; });
+  if (is_suppport_tensor_cast) {
+    PyObject *item = PyList_GetItem(op_inputs, idx);
+    auto tensor = parse::ConvertPyObjectTensorValue(item);
+    auto PrintVectorFunc = [](const ShapeVector &shape) -> std::string {
+      std::stringstream ss;
+      ss << "[";
+      for (size_t i = 0; i < shape.size(); i++) {
+        if (i != 0) {
+          ss << ", " << shape[i];
+        } else {
+          ss << shape[i];
+        }
+      }
+      ss << "]";
+      return ss.str();
+    };
+    if (tensor != nullptr) {
+      MS_EXCEPTION(TypeError) << "For " << op_def->name_ << ", the " << idx << "'th input is a Tensor whose shape is "
+                              << PrintVectorFunc(tensor->shape()) << " and dtype is ["
+                              << TypeIdToString(tensor->data_type()) << "], which can not be converted to "
+                              << ops::EnumToString(op_arg.arg_dtype_) << ".";
+    }
+  }
+  std::vector<std::string> op_type_list;
+  Py_ssize_t inputs_size = (op_inputs && op_inputs != Py_None) ? PyList_Size(op_inputs) : 0;
+  for (Py_ssize_t index = 0; index < inputs_size; ++index) {
+    PyObject *item = PyList_GetItem(op_inputs, index);
+    (void)op_type_list.emplace_back(BuildPyObjectInputTypeString(item));
   }
   PyNativeExecutor::GetInstance()->ClearRes();
   MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
@@ -1325,6 +1425,32 @@ PrimitivePtr PyBoost::ConvertPrimitive(const py::object &obj) {
     adapter->set_attached_primitive(prim);
 #else
     prim = std::make_shared<PrimitivePy>(obj);
+    adapter->set_attached_primitive(prim);
+#endif
+  }
+  if (!prim->HasPyObj()) {
+    MS_LOG(EXCEPTION) << "Pyobj is empty";
+  }
+  prim->EnableSharedMutex();
+  return prim;
+}
+
+PrimitivePtr PyBoost::ConvertPrimitiveForPyObject(PyObject *obj) {
+  py::object py_obj = py::reinterpret_borrow<py::object>(obj);
+  const auto &adapter = py_obj.cast<PrimitivePyAdapterPtr>();
+  MS_EXCEPTION_IF_NULL(adapter);
+
+  auto prim = adapter->attached_primitive();
+  if (prim == nullptr) {
+#ifndef ENABLE_TEST
+    // Custom operator's infer type and backpropagation are defined on the Python side.
+    if (adapter->name() != kCustomExtOpName && adapter->name() != ops::kNameCellBackwardHook) {
+      return std::make_shared<Primitive>(adapter->name(), adapter->attrs());
+    }
+    prim = std::make_shared<PrimitivePy>(py_obj);
+    adapter->set_attached_primitive(prim);
+#else
+    prim = std::make_shared<PrimitivePy>(py_obj);
     adapter->set_attached_primitive(prim);
 #endif
   }

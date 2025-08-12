@@ -1,4 +1,4 @@
-py::object TensorMethod${cpp_func_name}(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs) {
+PyObject* TensorMethod${cpp_func_name}(PyObject* self, PyObject* py_args, PyObject* py_kwargs) {
   static mindspore::pynative::PythonArgParser parser({
     ${signatures}
   }, "${func_name}");
@@ -10,7 +10,7 @@ py::object TensorMethod${cpp_func_name}(const py::object &self, const py::args &
     switch (parse_args.GetOvertLoadIndex()) {
       ${dispatch_cases}
     }
-    return py::none();
+    Py_RETURN_NONE;
   #else
     ${ut_overload_body}
   #endif

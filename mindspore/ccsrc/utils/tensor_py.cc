@@ -330,6 +330,14 @@ bool IsTensorPy(const py::handle &obj) {
   return PyObject_IsInstance(raw_ptr, str_type);
 }
 
+bool IsPyObjectTensorPy(PyObject *obj) {
+  if (TensorPy_Type == nullptr || obj == nullptr) {
+    return false;
+  }
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  return PyObject_IsInstance(obj, str_type);
+}
+
 py::object GetPythonTensor() {
   auto tensor_module = PyObjManager::Get().GetTensorModule();
   return py::reinterpret_borrow<py::object>(tensor_module);
@@ -340,6 +348,19 @@ const ValuePtr ConvertToValue(const py::handle &obj) {
   PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
   if (PyObject_IsInstance(raw_ptr, str_type)) {
     PyType<TensorPy> *tensor = (PyType<TensorPy> *)raw_ptr;
+    auto &value = tensor->value;
+    if (value.has_stub()) {
+      return value.stub();
+    }
+    return value.GetTensor();
+  }
+  MS_LOG(EXCEPTION) << "Not TensorPy object";
+}
+
+const ValuePtr ConvertPyObjectToValue(PyObject *obj) {
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(obj, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)obj;
     auto &value = tensor->value;
     if (value.has_stub()) {
       return value.stub();
@@ -370,6 +391,17 @@ void SetTensorValue(const py::handle &obj, const TensorPtr &tensor_value) {
   } else {
     MS_LOG(EXCEPTION) << "Not TensorPy object";
   }
+}
+
+TensorPtr ConvertPyObjectToTensor(PyObject *obj) {
+  PyObject *str_type = reinterpret_cast<PyObject *>(TensorPy_Type);
+  if (PyObject_IsInstance(obj, str_type)) {
+    PyType<TensorPy> *tensor = (PyType<TensorPy> *)obj;
+    auto tensor_ptr = tensor->value.GetTensor();
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
+    return tensor_ptr;
+  }
+  return nullptr;
 }
 
 PyType<TensorPy> *ConvertPyObject2TensorPyType(const py::object obj) {

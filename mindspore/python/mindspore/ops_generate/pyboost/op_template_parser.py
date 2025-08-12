@@ -47,14 +47,15 @@ class OpTemplateParser:
         self.op_proto = op_proto
         self.tensor_arg_handler_prt_template = Template(
             "parse_args.arg_list_[${idx}] = "
-            "py::cast((*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", "
+            "PyLong_FromLong((*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", "
             "parse_args.arg_list_[${idx}]))->value());\n"
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         self.function_arg_handler_prt_template = Template(
             "parse_args.arg_list_[${idx}] = "
-            "py::cast((*${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]))->value());\n"
+            "PyLong_FromLong((*${func_str}(\"${func_name}\", \"${op_arg_name}\", "
+            "parse_args.arg_list_[${idx}]))->value());\n"
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )

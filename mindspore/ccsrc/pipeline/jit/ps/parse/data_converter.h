@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <Python.h>
 #include "utils/ordered_map.h"
 #include "utils/hash_map.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -92,6 +93,8 @@ inline int32_t CombineTypesForTypeCast(const mindspore::ops::OP_DTYPE &src, cons
 typedef ValuePtr (*OpDefConvertFunc)(const py::object &);
 FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);
 FRONTEND_EXPORT ValuePtr ConvertTensor(const py::object &obj);
+FRONTEND_EXPORT ValuePtr ConvertPyObjectTensor(PyObject *obj);
+
 template <typename TS, typename TD, OpDefConvertFunc func>
 ValuePtr ConvertSequence(const py::object &obj) {
   if (!py::isinstance<TS>(obj)) {
@@ -109,6 +112,8 @@ ValuePtr ConvertSequence(const py::object &obj) {
   return std::make_shared<TD>(value_list);
 }
 FRONTEND_EXPORT tensor::TensorPtr ConvertTensorValue(const py::object &obj);
+FRONTEND_EXPORT tensor::TensorPtr ConvertPyObjectTensorValue(PyObject *obj);
+
 FRONTEND_EXPORT ValuePtr ConvertSlice(const py::object &obj);
 }  // namespace parse
 }  // namespace mindspore
