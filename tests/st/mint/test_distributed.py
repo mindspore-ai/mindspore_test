@@ -21,6 +21,7 @@ from mindspore.common.api import _pynative_executor
 from mindspore.ops import ReduceOp, cat
 from mindspore.mint.distributed.distributed import (
     init_process_group,
+    destroy_process_group,
     get_rank,
     get_world_size,
     new_group,
@@ -61,6 +62,31 @@ rank = get_rank()
 size = get_world_size()
 if size % 2 != 0:
     raise RuntimeError("Group size should be divided by 2 exactly.")
+
+
+def test_reinit():
+    """
+    Feature: test distributed management API destroy_process_group
+    Description: test distributed management API in python native
+    Expectation: success
+    """
+    group0 = new_group(ranks=list(range(size)), backend="hccl")
+    group1 = new_group(ranks=list(range(size)), backend="mccl")
+    if rank == 0:
+        group2 = new_group([0])
+
+    destroy_process_group(group0)
+    destroy_process_group(group1)
+    destroy_process_group()
+
+    init_process_group()
+    group3 = new_group(ranks=list(range(size)), backend="hccl")
+    assert group0 == group3
+    group4 = new_group(ranks=list(range(size)), backend="mccl")
+    assert group1 == group4
+    if get_rank() == 0:
+        group5 = new_group([0])
+        assert group2 == group5
 
 
 def test_hccl_new_group():

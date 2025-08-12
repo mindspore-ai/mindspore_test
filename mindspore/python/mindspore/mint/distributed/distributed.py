@@ -33,10 +33,10 @@ from mindspore.communication._comm_helper import (
     _get_group_ranks,
     _is_available,
     _is_initialized,
+    _ExistingGroup,
 )
 from mindspore.communication import (
     init,
-    release,
     get_group_size,
     get_world_rank_from_group_rank,
     create_group,
@@ -72,7 +72,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_barrier_op,
     dist_comm_batch_isend_irecv_op,
 )
-from mindspore._c_expression import TCPStoreClient, GroupOptions
+from mindspore._c_expression import TCPStoreClient, GroupOptions, _finalize_collective
 
 _pickler = pickle.Pickler
 _unpickler = pickle.Unpickler
@@ -515,7 +515,9 @@ def destroy_process_group(group=None):
     """
 
     if group == GlobalComm.WORLD_COMM_GROUP or group is None:
-        release()
+        _finalize_collective()
+        _ExistingGroup.ITEMS.clear()
+        _ExistingGroup.GROUP_RANKS.clear()
     elif not isinstance(group, str):
         raise TypeError(
             "For 'destroy_group', the argument 'group' must be type of string or None, "

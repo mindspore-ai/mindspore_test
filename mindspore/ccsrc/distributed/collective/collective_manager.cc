@@ -76,6 +76,7 @@ CollectiveManager::~CollectiveManager() {
       MS_LOG(ERROR) << "Failed to finalize collective manager.";
     }
   }
+  inited_ = false;
   finalized_ = true;
   host_ctx_ = nullptr;
   device_ctx_ = nullptr;
@@ -141,6 +142,7 @@ bool ExecuteFuncInThread(const std::function<bool()> &func, const int64_t timeou
 
 bool CollectiveManager::Initialize() {
   need_init_ = true;
+  stop_init_comm_ = false;
   if (inited_ && !need_reinit_) {
     return true;
   }
@@ -411,7 +413,9 @@ void CollectiveManager::RemoveGroupInfoForARF(const std::string &group_name) {
 }
 
 std::string CollectiveManager::GetCommName(const std::string &group_name) {
-  WaitCommInitDone(group_name);
+  if (!WaitCommInitDone(group_name)) {
+    MS_LOG(EXCEPTION) << "The communucation group " << group_name << " is not successfully initialized.";
+  }
   if (!common::GetEnv(kSimulationLevel).empty()) {
     MS_EXCEPTION_IF_NULL(dummy_comm_lib_instance_);
     return dummy_comm_lib_instance_->CommName(group_name);
@@ -506,15 +510,30 @@ bool CollectiveManager::Finalize() {
     inited_ = false;
     finalized_ = true;
     need_init_ = false;
+    host_ctx_ = nullptr;
+    device_ctx_ = nullptr;
+    host_comm_lib_instance_ = nullptr;
+    device_comm_lib_instance_ = nullptr;
+    comm_lib_instance_ = nullptr;
     stop_init_comm_ = true;
+    local_rank_id_ = 0;
+    local_rank_size_ = 1;
     task_queue_blocker_.notify_one();
+    group_name_to_result_.clear();
+    task_list_.clear();
+    group_infos_.clear();
+    inited_groups_.clear();
+    group_map_.clear();
     if (run_init_comm_task_thread_.joinable()) {
       run_init_comm_task_thread_.join();
+    }
+    while (!init_comm_task_queue_.empty()) {
+      init_comm_task_queue_.pop();
     }
     return true;
   };
 
-  MS_LOG(INFO) << "Begin finalize collective manager.";
+  MS_LOG(INFO) << "Begin finalizing collective manager.";
 
   // Timeout limit 30 seconds to wait to finish finalizing device communication group.
   const int64_t kTimeToWait = 30;
@@ -522,7 +541,7 @@ bool CollectiveManager::Finalize() {
   bool ret = ExecuteFuncInThread(finalize_comm_lib_func, kTimeToWait, "finalize_comm_lib_func",
                                  "to destroy communication groups and finalize communication lib");
 
-  MS_LOG(INFO) << "End finalize collective manager.";
+  MS_LOG(INFO) << "End finalizing collective manager.";
   return ret;
 }
 
@@ -888,7 +907,7 @@ void CollectiveManager::SetGlobalCommInfo(CommunicationGroupPtr group, const std
     return;
   }
 
-  MS_LOG(INFO) << "Begin set global communication info: " << group_name;
+  MS_LOG(INFO) << "Begin setting global communication info: " << group_name;
   std::string master_addr = common::GetEnv("MS_SCHED_HOST");
   if (master_addr.empty()) {
     MS_LOG(INFO) << "MS_SCHED_HOST is not set, will not call HcclSetGlobalCommInfo.";
@@ -929,7 +948,8 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   MS_LOG(INFO) << "Create device communicator for " << group_name;
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
-  if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0) {
+  bool is_mccl = group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0;
+  if (is_mccl) {
     group = host_comm_lib_instance_->GetGroup(group_name);
     MS_LOG(INFO) << "Begin to Create mccl group " << group_name;
   }
@@ -937,11 +957,12 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 
   SetGlobalCommInfo(group, group_name);
 
-  // Step 1: Generate device information of the root node.
-  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
+  // Step 1: Generate device information of the root node (required for NPU backend without rank table).
+  static bool use_ranktable = !common::GetEnv("RANK_TABLE_FILE").empty();
+  bool use_cross_cluster = cluster::ClusterContext::instance()->enable_cross_cluster();
   bool ret = false;
   void *root_info;
-  if (rank_table_file_path.empty() || cluster::ClusterContext::instance()->enable_cross_cluster()) {
+  if (!is_mccl && (!use_ranktable || use_cross_cluster)) {
     size_t root_info_size = 0;
     PROF_START(GenerateRootInfo);
     root_info = group->GenerateRootInfo(&root_info_size);
@@ -981,13 +1002,10 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 }
 
 void CollectiveManager::ClearUniqueID(const std::string &group_name) {
-  if (common::GetEnv("MS_ENABLE_RECOVERY") != "1") {
-    return;
-  }
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
-  MS_LOG(INFO) << "Delete unique id after build success.";
+  MS_LOG(INFO) << "Start clearing unique id for group: " << group_name;
   host_comm_lib_instance_->ClearUniqueID(group_name);
-  MS_LOG(INFO) << "Delete unique id end.";
+  MS_LOG(INFO) << "End clearing unique id for group: " << group_name;
 }
 
 bool CollectiveManager::CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
@@ -1026,7 +1044,7 @@ bool CollectiveManager::WaitAllCommInitDone() {
     MS_LOG(INFO) << "This is dry run, no need to wait for communciators init done";
     return true;
   }
-  // This is a shared lock so the cost is little, but we need to guarantee there's no threa-safe issue.
+  // This is a shared lock so the cost is little, but we need to guarantee there's no thread-safe issue.
   // Because WaitCommInitDone also acquires this lock, we just copy this task_list_ and release the lock immediately to
   // avoid dead lock.
   std::unique_lock<std::mutex> lock(task_queue_mutex_);

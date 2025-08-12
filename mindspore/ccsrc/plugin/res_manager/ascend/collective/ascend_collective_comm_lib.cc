@@ -190,6 +190,25 @@ bool AscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_r
   return true;
 }
 
+bool AscendCollectiveCommLib::Finalize() {
+  if (!initialized_ || finalized_.load()) {
+    return true;
+  }
+
+  for (const auto &group : groups_) {
+    CHECK_IF_NULL(group.second);
+    if (!group.second->Finalize()) {
+      return false;
+    }
+  }
+
+  groups_.clear();
+  group_hccl_comm_map_.clear();
+  initialized_ = false;
+  finalized_ = true;
+  return true;
+}
+
 bool AscendCollectiveCommLib::DestroyHcclComm() {
   for (auto &group : groups_) {
     CHECK_IF_NULL(group.second);

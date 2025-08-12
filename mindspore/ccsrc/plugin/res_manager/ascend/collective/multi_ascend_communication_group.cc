@@ -31,6 +31,9 @@ MultiAscendCommunicationGroup::MultiAscendCommunicationGroup(const std::string &
       lccl_group_(nullptr) {}
 
 bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
+  if (initialized_) {
+    return true;
+  }
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::AscendHalManager::GetInstance().EnableLccl() && lccl_group_ != nullptr) {
     if (!lccl_group_->Initialize(root_info)) {
@@ -58,10 +61,14 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
     return false;
   }
   MS_LOG(INFO) << "Successfully initialize HCCL group " << name_;
+  initialized_ = true;
   return true;
 }
 
 bool MultiAscendCommunicationGroup::Finalize() {
+  if (!initialized_) {
+    return true;
+  }
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::AscendHalManager::GetInstance().EnableLccl() && lccl_group_ != nullptr) {
     if (!lccl_group_->Finalize()) {
@@ -82,6 +89,7 @@ bool MultiAscendCommunicationGroup::Finalize() {
     return false;
   }
   MS_LOG(INFO) << "Successfully finalize HCCL group " << name_;
+  initialized_ = false;
   return true;
 }
 
