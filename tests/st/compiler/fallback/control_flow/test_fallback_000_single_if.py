@@ -162,3 +162,23 @@ def test_single_if_tensor_asnumpy_as_condition():
     x = Tensor(1.0, ms.float32)
     out = tensor_asnumpy_as_condition(x)
     assert out == 11
+
+
+@arg_mark(plat_marks=['platform_gpu',], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_single_if_with_numpy_join():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_for(a):
+        x = np.array([1, 2, 3, 4])
+        if a <= 15:
+            x += 1
+        else:
+            x += 2
+        return x
+    a = Tensor(0)
+    res = control_flow_for(a)
+    assert (res == [2, 3, 4, 5]).all()
