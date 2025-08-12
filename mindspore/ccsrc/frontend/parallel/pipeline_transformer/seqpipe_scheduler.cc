@@ -932,19 +932,20 @@ void SeqpipeScheduler::SchedulerOrder() {
 }
 
 void SeqpipeScheduler::ReorderShardedParam() {
-  if (fwd_params_.empty()) {
-    return;
+  if (!fwd_params_.empty()) {
+    std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
+    auto fwd_begin_info = execute_order_.front();
+    auto prior = fwd_params_.back();
+    auto last = sorted_fwd_begin_[fwd_begin_info.chunk][fwd_begin_info.micro][fwd_begin_info.seq_chunk];
+    ControlOrder(prior, last.first);
   }
-  auto fwd_begin_info = execute_order_.front();
-  auto bwd_end_info = execute_order_.back();
-  std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
-  std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
-  auto prior = fwd_params_.back();
-  auto last = sorted_fwd_begin_[fwd_begin_info.chunk][fwd_begin_info.micro][fwd_begin_info.seq_chunk];
-  ControlOrder(prior, last.first);
-  auto prior2 = sorted_bwd_end_[bwd_end_info.chunk][bwd_end_info.micro][bwd_end_info.seq_chunk];
-  auto last2 = bwd_params_.front();
-  ControlOrder(prior2.second, last2);
+  if (!bwd_params_.empty()) {
+    std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
+    auto bwd_end_info = execute_order_.back();
+    auto prior2 = sorted_bwd_end_[bwd_end_info.chunk][bwd_end_info.micro][bwd_end_info.seq_chunk];
+    auto last2 = bwd_params_.front();
+    ControlOrder(prior2.second, last2);
+  }
 }
 
 void SeqpipeScheduler::OptimizerShardCommReorder() {
