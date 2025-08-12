@@ -453,7 +453,7 @@ bool StrategyCheckpoint::PipelineNotSupported() {
 StrategyInfo StrategyCheckpoint::BuildStrategyInfo(const std::string &param_name,
                                                    const straspb::ParallelLayouts &layouts) const {
   StrategyInfo stra;
-  for (auto dev_dim : layouts.dev_matrix(0).dim()) {
+  for (const auto &dev_dim : layouts.dev_matrix(0).dim()) {
     stra.set_dev_matrix(dev_dim);
   }
 
@@ -525,7 +525,7 @@ void StrategyCheckpoint::SaveStrategyParamLayout() {
     stra.set_stage_id(stage_id);
     stra.set_pipeline_stages(ParallelContext::GetInstance()->pipeline_stage_split_num());
     stra.set_rank_list(rank_list);
-    for (auto dev_id : rank_list) {
+    for (const auto &dev_id : rank_list) {
       StrategyLayout::GetInstance()->SaveParamStraInfo(dev_id, {{param_name, stra}});
     }
     if (stra.tensor_map().size() > 1) {
