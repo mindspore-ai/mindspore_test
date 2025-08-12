@@ -24,7 +24,9 @@ from mindspore.common.tensor import Tensor
 
 class _Function(FunctionBase_):
     """
-    A Class provides the ability to custom autograd function.
+    A Class provides the ability to custom autograd function. The api refers
+    to the following files from pytorch：
+    https://github.com/pytorch/pytorch/blob/main/torch/autograd/function.py
 
     Note:
         It is only supported in pynative mode.
