@@ -182,7 +182,8 @@ class CustomMulPyboost : public Function<CustomMulPyboost> {
     auto output = std::make_shared<Tensor>(x->data_type(), BroadcastInferShape(x, y));
 
     auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
-    auto op = std::make_shared<kernel::pyboost::OpRunner>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
+    auto op =
+      std::make_shared<kernel::pyboost::OpRunner>(p, runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend));
     op->set_stream_id(CurrentStream::id());
     op->set_outputs({output});
     // No need to convert input
