@@ -79,7 +79,7 @@ TEST_F(GraphCompilerTest, CompileGraph) {
   auto segment = std::make_shared<GraphSegment>(nodes, false);
 
   auto compiler = std::make_shared<GraphCompiler>();
-  DeviceContextKey device_context_key{"CPU", 0};
+  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto graph_id =
     compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(), backend::BackendJitConfig());

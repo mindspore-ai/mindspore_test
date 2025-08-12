@@ -219,7 +219,8 @@ void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<
         auto kernel_tensor = AnfAlgo::CreateKernelTensor(
           dev_ptr_list[index], old_size, kernel::GetFormatFromStrToEnum(old_dev_addr->format()),
           old_dev_addr->type_id(), old_dev_kernel_tensor->GetShapeVector(),
-          device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+          device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+          device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(old_dev_addr->stream_id());
         auto new_dev_addr = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(new_dev_addr);

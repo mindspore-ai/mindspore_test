@@ -37,7 +37,7 @@ StreamPy::StreamPy(int priority) {
   MS_LOG(DEBUG) << "stream_id:" << stream_id_ << ", priority:" << priority;
   device_ctx_->device_res_manager_->set_single_op_multi_stream_enable(true);
   auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_ctx_->device_context_key().device_name_);
+    device_ctx_->device_context_key().device_type_);
   controller->Refresh();
 }
 
@@ -74,7 +74,7 @@ void StreamPy::Synchronize() {
   MS_LOG(DEBUG) << "stream_id:" << stream_id_;
   runtime::Pipeline::Get().WaitForward();
   auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_ctx_->device_context_key().device_name_);
+    device_ctx_->device_context_key().device_type_);
   controller->Refresh();
   (void)controller->SyncStream(stream_id_);
 }
@@ -82,7 +82,7 @@ void StreamPy::Synchronize() {
 std::string StreamPy::ToStringRepr() const {
   std::ostringstream buf;
   MS_EXCEPTION_IF_NULL(device_ctx_);
-  buf << "Stream(device_name=" << device_ctx_->device_context_key().device_name_
+  buf << "Stream(device_type=" << device_ctx_->device_context_key().device_type_
       << ", device_id:" << std::to_string(device_ctx_->device_context_key().device_id_)
       << ", stream id:" << std::to_string(stream_id_) << ")";
   return buf.str();
@@ -98,8 +98,8 @@ bool StreamPy::StreamEqual(const std::shared_ptr<StreamPy> other_stream) {
 
   MS_LOG(DEBUG) << "stream info:" << ToStringRepr() << " other_stream info:" << other_stream->ToStringRepr();
   return (stream_id_ == other_stream->stream_id()) &&
-         (device_ctx()->device_context_key().device_name_ ==
-          other_stream->device_ctx()->device_context_key().device_name_) &&
+         (device_ctx()->device_context_key().device_type_ ==
+          other_stream->device_ctx()->device_context_key().device_type_) &&
          (device_ctx()->device_context_key().device_id_ == other_stream->device_ctx()->device_context_key().device_id_);
 }
 
@@ -116,7 +116,7 @@ void Synchronize() {
   runtime::Pipeline::Get().WaitForward();
   MsException::Instance().CheckException();
   auto &controller =
-    device::DeviceContextManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
+    device::DeviceContextManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_type_);
   controller->Refresh();
   (void)controller->SyncAllStreams();
 }

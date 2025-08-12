@@ -26,7 +26,8 @@ DataQueue::DataQueue(const std::string &channel_name, const size_t capacity)
   MS_EXCEPTION_IF_NULL(ms_context);
   const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   uint32_t device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device_context_ = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
+  device_context_ = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device::GetDeviceTypeByName(device_target), device_id});
   device_context_->Initialize();
 }
 }  // namespace device

@@ -770,7 +770,7 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
                  << ", the tensor's size is : " << device_address->GetSize();
 
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()});
+      {device_address->GetDeviceType(), device_address->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->device_res_manager_->SyncAllStreams();
     auto cpu_tensor = tensor->cpu();
@@ -803,13 +803,13 @@ void TensorPybind::Load(const Tensor &tensor) {
   }
 
   auto ms_context = MsContext::GetInstance();
-  const auto &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {device_target, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
   auto new_device_address = std::static_pointer_cast<device::DeviceAddress>(
-    MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device::GetDeviceTypeByName(device_target)));
+    MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device_target));
 
   device_ctx->Initialize();
   device_ctx->device_res_manager_->AllocateMemory(new_device_address.get());
@@ -832,7 +832,8 @@ bool TensorPybind::SharedMemory(const TensorPtr &tensor) {
   // get shared mem allocator
   std::string device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device::GetDeviceTypeByName(device_name), device_id});
   auto shared_mem_allocator = device_context->device_res_manager_->shared_mem_allocator();
 
   if (!device_address) {

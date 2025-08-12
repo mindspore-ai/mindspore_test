@@ -96,8 +96,7 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
     }
   }
 
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-                                       device_tensor->device_id()};
+  device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

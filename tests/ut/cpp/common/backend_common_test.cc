@@ -133,7 +133,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   AnfNodePtrList inputs;
   AnfNodePtrList outputs;
   std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
-  runtime::test::DeviceContextKey device_context_key{kDefaultDeviceName, 0};
+  runtime::test::DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
   auto device_context = std::make_shared<runtime::test::TestDeviceContext>(device_context_key);
 
   auto compiler = std::make_shared<runtime::GraphCompiler>();

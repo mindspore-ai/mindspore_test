@@ -121,7 +121,7 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
       std::string device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
       uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
-      device::DeviceContextKey host_key = {device_name, device_id};
+      device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
       device::DeviceContext *host_context =
         device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
       MS_EXCEPTION_IF_NULL(host_context);

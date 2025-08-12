@@ -58,10 +58,10 @@ struct FreeNodeInfo {
     if (context_key.device_id_ > other.context_key.device_id_) {
       return false;
     }
-    if (context_key.device_name_ < other.context_key.device_name_) {
+    if (context_key.device_type_ < other.context_key.device_type_) {
       return true;
     }
-    if (context_key.device_name_ > other.context_key.device_name_) {
+    if (context_key.device_type_ > other.context_key.device_type_) {
       return false;
     }
     return branch_name < other.branch_name;

@@ -30,7 +30,8 @@ DeviceAddressPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shap
   MS_EXCEPTION_IF_NULL(context);
   auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({"CPU", device_id});
+  auto device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({DeviceType::kCPU, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
@@ -220,7 +221,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(DeviceType::kCPU), device_id};
+    device::DeviceContextKey host_key = {DeviceType::kCPU, device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -231,7 +232,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(DeviceType::kCPU), device_id};
+    device::DeviceContextKey host_key = {DeviceType::kCPU, device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

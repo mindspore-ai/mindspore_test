@@ -61,7 +61,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -682,7 +682,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -745,8 +745,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
     MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-                                         device_tensor->device_id()};
+    device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -771,7 +770,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -822,8 +821,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-                                         device_tensor->device_id()};
+    device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -850,7 +848,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -931,7 +929,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key = {device_name, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

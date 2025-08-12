@@ -57,8 +57,7 @@ void TensorToRawMemory(const tensor::TensorPtr &tensor, const device::DeviceAddr
   } else {
     MS_LOG(DEBUG) << "Tensor:" << tensor->ToString() << " shape:" << tensor->shape() << " type:" << tensor->data_type()
                   << " size:" << tensor->Size();
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_address->GetDeviceType()),
-                                         device_address->device_id()};
+    device::DeviceContextKey host_key = {device_address->GetDeviceType(), device_address->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -349,7 +348,7 @@ void UserDataToRawMemory(KernelTensor *const kernel_tensor) {
                 << " device id:" << device_address->device_id();
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()});
+    {device_address->GetDeviceType(), device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   if (device_address->GetPtr() != nullptr) {

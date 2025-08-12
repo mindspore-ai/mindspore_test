@@ -50,12 +50,12 @@ using mindspore::kernel::KernelTensor;
 
 struct DeviceContextKey {
   // device type name, such as 'GPU' 'Ascend' 'CPU'.
-  std::string device_name_;
+  DeviceType device_type_;
   uint32_t device_id_{0};
 
   // Use the result of ToString() as key to look up DeviceContext
   // in cache map which maintains created DeviceContext objects.
-  std::string ToString() const { return device_name_ + "_" + std::to_string(device_id_); }
+  std::string ToString() const { return GetDeviceNameByType(device_type_) + "_" + std::to_string(device_id_); }
 };
 
 class DeviceResManager;
@@ -78,7 +78,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContext {
   const DeviceContextKey &device_context_key() const { return device_context_key_; }
 
   // Get device address type according different device type, such GPU, Ascend.
-  DeviceType GetDeviceType() const { return GetDeviceTypeByName(device_context_key_.device_name_); }
+  DeviceType GetDeviceType() const { return device_context_key_.device_type_; }
 
   // Get kernel executor.
   std::shared_ptr<KernelExecutor> GetKernelExecutor() const { return kernel_executor_; }

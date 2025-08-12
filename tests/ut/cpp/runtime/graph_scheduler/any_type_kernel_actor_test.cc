@@ -109,7 +109,7 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
   ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device_name);
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
-  DeviceContextKey device_context_key{device_name, device_id};
+  DeviceContextKey device_context_key{device::GetDeviceTypeByName(device_name), device_id};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
 
   auto graph_pair = BuildAnyTypeGraph();
@@ -130,14 +130,16 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   op_context.sequential_num_ = 140429;
   op_context.results_ = &result;
 
-  auto kernel_tensor0 = AnfAlgo::CreateKernelTensor(
-    &input_0, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  auto kernel_tensor0 =
+    AnfAlgo::CreateKernelTensor(&input_0, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
+                                device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+                                device_context->device_context_key().device_id_);
   auto op_data0 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor0, 0);
 
-  auto kernel_tensor1 = AnfAlgo::CreateKernelTensor(
-    &input_1, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+  auto kernel_tensor1 =
+    AnfAlgo::CreateKernelTensor(&input_1, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
+                                device::GetDeviceNameByType(device_context->device_context_key().device_type_),
+                                device_context->device_context_key().device_id_);
   auto op_data1 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor1, 1);
 
   any_type_kernel_actor->input_datas_num_ = 2;
