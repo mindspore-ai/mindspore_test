@@ -37,7 +37,6 @@
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
-#include "include/common/utils/tensor_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -80,6 +79,15 @@ enum OpMergeMode {
   OP_MERGE_CONV2D_TRANSPOSE = 7,     // indicate `MindSpore ConvTranspose + BiasAdd` --> `ONNX ConvTranspose`
   OP_MERGE_DYNAMIC_GRU_V2 = 8,       // indicate `MindSpore DynamicGRUV2(...)[0]` --> `ONNX GRU`
 };
+
+namespace {
+template <typename T>
+inline T GetTensorData(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto cpu_tensor = tensor->cpu();
+  return *(static_cast<T *>(cpu_tensor->data_c()));
+}
+}  // namespace
 
 struct OpMergedInfo {
   OpMergeMode mode = OP_MERGE_UNDEFINED;
@@ -725,20 +733,20 @@ LoopConditionInfo TraceLoopConditionInfo(const CNodePtr &start_node, const CNode
   auto end_tensor = GetNodeInputValue<tensor::Tensor>(cond_node, kTwoNum);
   MS_EXCEPTION_IF_CHECK_FAIL(end_tensor->shape_c().empty(), "Expected a scalar tensor");
 
-  auto end = tensor::GetTensorData<int32_t>(end_tensor);
+  auto end = GetTensorData<int32_t>(end_tensor);
 
   const auto &subgraph_args = control_subgraph->parameters();
   auto counter_input_pos = std::find(subgraph_args.begin(), subgraph_args.end(), counter) - subgraph_args.begin();
 
   auto begin_tensor = GetNodeInputValue<tensor::Tensor>(start_node, 1UL + static_cast<size_t>(counter_input_pos));
   MS_EXCEPTION_IF_CHECK_FAIL(begin_tensor->shape_c().empty(), "Expected a scalar tensor");
-  auto begin = tensor::GetTensorData<int32_t>(begin_tensor);
+  auto begin = GetTensorData<int32_t>(begin_tensor);
 
   auto increment_node = GetNodeInput<CNode>(loop_repeat_node, 1UL + static_cast<size_t>(counter_input_pos));
   MS_EXCEPTION_IF_CHECK_FAIL(increment_node->IsApply(prim::kPrimAdd), "Expected Add node");
   auto step_tensor = GetNodeInputValue<tensor::Tensor>(increment_node, kTwoNum);
   MS_EXCEPTION_IF_CHECK_FAIL(step_tensor->shape_c().empty(), "Expected a scalar tensor");
-  auto step = tensor::GetTensorData<int32_t>(step_tensor);
+  auto step = GetTensorData<int32_t>(step_tensor);
 
   return LoopConditionInfo{begin, end, step};
 }
