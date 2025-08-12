@@ -17,6 +17,7 @@ file(GLOB CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "utils/*.cc"
     "map_tensor/*.cc"
     "sequence/*.cc"
+    "custom/*.cc"
 )
 
 set(IGNORE_LIST "")

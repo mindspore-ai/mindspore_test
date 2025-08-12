@@ -32,8 +32,9 @@ struct OpPluginKernelParam {
   void *stream{nullptr};
 };
 
-void *GetOpPluginHandle();
+BACKEND_EXPORT void *GetOpPluginHandle();
 BACKEND_EXPORT bool IsOpPluginKernel(const std::string &op_name);
+BACKEND_EXPORT const std::vector<std::string> &GetAllOpPluginKernelNames();
 BACKEND_EXPORT int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **params, int *ndims,
                                         int64_t **shapes, const char **type_pointer_list, void *kernel_info,
                                         void *stream = nullptr);
