@@ -101,7 +101,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
     return MapAndSplitMemBuf(candidate, size);
   }
   // 2. Try to search available buf, free and eager free buf.
-  candidate = SearchAvaliableMemBuf(size);
+  candidate = SearchAvailableMemBuf(size);
   if (MS_UNLIKELY(candidate != nullptr)) {
     return candidate;
   }
@@ -116,7 +116,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
   return nullptr;
 }
 
-inline MemBuf *MemBufAllocator::SearchAvaliableMemBuf(size_t size) {
+inline MemBuf *MemBufAllocator::SearchAvailableMemBuf(size_t size) {
   if (!enable_eager_free_) {
     return nullptr;
   }
@@ -512,7 +512,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
     }
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
-      if (IsEnableEagerFree() || enable_vmm_) {
+      if (enable_vmm_ || IsEnableEagerFree()) {
         WaitPipelineHelper();
         if (!SyncAllStreams()) {
           MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
@@ -558,7 +558,7 @@ std::vector<DeviceMemPtr> AbstractDynamicMemPool::AllocContinuousTensorMem(const
   size_t total_size = std::accumulate(size_list.begin(), size_list.end(), static_cast<size_t>(0));
   // Pre-alloc the one whole piece memory.
   auto device_addr = AbstractDynamicMemPool::AllocTensorMem(total_size, false, false, stream_id);
-  if (!device_addr) {
+  if (device_addr == nullptr) {
     return device_addr_list;
   }
 
@@ -755,7 +755,7 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
     MS_LOG(INFO) << "Malloc mem block, is enable eager free : " << IsEnableEagerFree()
                  << ", is enable vmm : " << IsEnableVmm() << ", size : " << size << ", block size : " << block_size
                  << ".";
-    if (IsEnableEagerFree() || IsEnableVmm()) {
+    if (IsEnableVmm() || IsEnableEagerFree()) {
       // Virtual address is unlimited.
       auto eager_free_size = std::max(block_size, static_cast<size_t>(total_mem_size()));
       alloc_size = AllocDeviceMemByEagerFree(eager_free_size, &addr);
@@ -791,7 +791,7 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
   };
 
   return std::make_shared<MemBufAllocator>(mem_block_expander, mem_block_cleaner, mem_mapper, mem_eager_freer,
-                                           IsEnableEagerFree() || IsEnableVmm(), is_persistent, stream_id);
+                                           IsEnableVmm() || IsEnableEagerFree(), is_persistent, stream_id);
 }
 
 // Element in vector : <memory_stream_id, addr>

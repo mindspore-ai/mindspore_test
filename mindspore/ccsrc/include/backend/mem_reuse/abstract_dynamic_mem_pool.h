@@ -250,7 +250,7 @@ class BACKEND_EXPORT MemBufAllocator {
   void ReleaseDeviceRes();
 
   MemBuf *Malloc(size_t size);
-  MemBuf *SearchAvaliableMemBuf(size_t size);
+  MemBuf *SearchAvailableMemBuf(size_t size);
   bool Free(MemBuf *mem_buf, MemBufStatus target_status = MemBufStatus::kMemBufIdle);
   MemBuf *MallocExpandBlock(size_t size);
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree();
