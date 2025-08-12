@@ -25,12 +25,14 @@ from mindspore._c_expression import StrategyInfo
 from mindspore._c_expression import StrategyLayout
 from mindspore.parallel.shard import Layout
 
+LayoutInfo = Tuple[Layout, str, str]
 StrOrTuple = Union[str, Tuple["StrOrTuple", ...], List["StrOrTuple"]]
 
 
-def get_strategy_metadata(network, rank_id=None):
+def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[LayoutInfo]]]:
     """
     Get all params strategy info or specific rank strategy info in this cell.
+    For more information on layouts, please refer to :class:'mindspore.parallel.Layout'.
 
     Args:
         network(str): The network name.
@@ -67,7 +69,7 @@ def get_strategy_metadata(network, rank_id=None):
     return _NetStrategyInfo(network, global_layout=None, local_layout=None).get_rank_layout(rank_id)
 
 
-def get_current_strategy_metadata(network):
+def get_current_strategy_metadata(network) -> Dict[int, Dict[str, List[LayoutInfo]]]:
     """
     Get parameters dictionary of cur rank of the network.
 

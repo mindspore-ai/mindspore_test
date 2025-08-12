@@ -236,12 +236,12 @@ void SaveParamStageRanksNotPP(const ResourcePtr &res) {
   for (int64_t i = 0; i < device_num; ++i) {
     rank_list.push_back(i);
   }
-  for (auto &parameter : parameters) {
-    auto param = parameter->cast<ParameterPtr>();
+  for (const auto &parameter : parameters) {
+    const auto &param = parameter->cast<ParameterPtr>();
     if (param == nullptr) {
       continue;
     }
-    const auto param_name = param->name();
+    const auto &param_name = param->name();
     parallel::StrategyLayout::GetInstance()->SetParamStageIdRanks(param_name, stage_id, rank_list);
   }
 }
