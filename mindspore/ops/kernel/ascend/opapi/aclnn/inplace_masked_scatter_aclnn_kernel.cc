@@ -27,10 +27,6 @@ namespace kernel {
 
 void InplaceMaskedScatterAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
-  auto input_dtype_id = inputs[kIndex0]->dtype_id();
-  if (input_dtype_id == kNumberTypeFloat64 || input_dtype_id == kNumberTypeInt16) {
-    MS_EXCEPTION(ValueError) << "For InplaceMaskedScatter, the type of 'input' is no support Tensor[Float64, Int16] ";
-  }
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
 }
 
