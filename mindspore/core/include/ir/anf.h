@@ -92,6 +92,13 @@ using ParamInfoPtr = std::shared_ptr<ParamInfo>;
 
 class Scope;
 using ScopePtr = std::shared_ptr<Scope>;
+using CustomInferFunction =
+  std::function<ValuePtr(const AbstractBasePtrList &inputs_abstract, const CNodePtr &input_node)>;
+using CustomInferFunctionPtr = std::shared_ptr<CustomInferFunction>;
+
+using NodeExpandFunction =
+  std::function<AnfNodePtr(const AbstractBasePtrList &inputs_abstract, const CNodePtr &input_node)>;
+using NodeExpandFunctionPtr = std::shared_ptr<NodeExpandFunction>;
 
 // AnfNode is the basic class of the IR definition derived from Base.
 // Only two types of nodes are derived: CNode and ANode.
@@ -627,6 +634,21 @@ class MS_CORE_API CNode final : public AnfNode, public EffectInfoHolder {
   /// \return New debugging information.
   void set_debug_info(const NodeDebugInfoPtr &debug_info) override;
 
+  /// \brief Set custom infer hook of this AnfNode.
+  ///
+  /// \param[in] Name of infer function and infer function.
+  void set_custom_infer_hook(std::string custom_infer_name, CustomInferFunction custom_infer_rule);
+
+  void set_node_expand_hook(NodeExpandFunction node_expand_hook);
+
+  std::pair<std::string, CustomInferFunctionPtr> get_custom_infer_hook();
+
+  NodeExpandFunctionPtr get_node_expand_hook();
+
+  void clear_custom_infer_hook();
+
+  void clear_node_expand_hook();
+
  private:
   void Init();
   void CheckCNodeWeakInput();
@@ -652,6 +674,8 @@ class MS_CORE_API CNode final : public AnfNode, public EffectInfoHolder {
   mindspore::HashMap<std::string, ValuePtr> primal_attrs_;
   NodeDebugInfoSet primal_debug_infos_;
   NodeDebugInfoSet fused_debug_infos_;
+  std::pair<std::string, CustomInferFunctionPtr> custom_infer_hook_ = std::pair("", nullptr);
+  NodeExpandFunctionPtr node_expand_hook_ = nullptr;
 
   // If the inputs or their inputs contain Depend CNode with isolated side-effect node.
   bool has_side_effect_node_{false};

@@ -28,6 +28,52 @@ namespace mindspore {
 namespace pipeline {
 using ActionItem = std::pair<std::string, std::function<bool(ResourcePtr)>>;
 
+class FRONTEND_EXPORT ActionConfigure {
+ public:
+  void Clear() {
+    jit_actions_.clear();
+    insert_before_map_.clear();
+  }
+  ~ActionConfigure() = default;
+  static ActionConfigure &Instance();
+  void RegisterPassFunc(const std::string &name, const std::function<bool(ResourcePtr)> &func,
+                        const std::string &insert_before) {
+    jit_actions_[name] = func;
+    if (insert_before == "") {
+      insert_before_map_[kValidate].emplace_back(name);
+    } else {
+      insert_before_map_[insert_before].emplace_back(name);
+    }
+  }
+  HashMap<std::string, std::vector<std::string>> jit_action_positions() { return insert_before_map_; }
+  HashMap<std::string, std::function<bool(ResourcePtr)>> jit_actions() { return jit_actions_; }
+
+ private:
+  ActionConfigure() = default;
+  HashMap<std::string, std::function<bool(ResourcePtr)>> jit_actions_;
+  HashMap<std::string, std::vector<std::string>> insert_before_map_;
+};
+
+class RegisterJitActions {
+ public:
+  RegisterJitActions(const std::string &name, const std::function<bool(ResourcePtr)> &func,
+                     const std::string &insert_before) {
+    ActionConfigure::Instance().RegisterPassFunc(name, func, insert_before);
+  }
+  RegisterJitActions() = delete;
+  ~RegisterJitActions() = default;
+};
+
+#define INSERT_ACTION_FUNC_IMPL(name, func, insert_before)                               \
+  namespace {                                                                            \
+  static auto helper_action_func_##name = RegisterJitActions(name, func, insert_before); \
+  }
+
+#define REGISTER_ACTION_FUNC_IMPL(name, func)                                 \
+  namespace {                                                                 \
+  static auto helper_action_func_##name = RegisterJitActions(name, func, ""); \
+  }
+
 bool BootstrapAction(const ResourcePtr &resource);
 bool ParseAction(const ResourcePtr &resource);
 bool SymbolResolveAction(const ResourcePtr &resource);
@@ -67,6 +113,7 @@ void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason = nullpt
 bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph);
 AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param);
 std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_graph = true);
+AnfNodePtrList AllForwardNodes(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 

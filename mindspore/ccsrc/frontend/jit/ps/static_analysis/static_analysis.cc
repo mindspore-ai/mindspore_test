@@ -1104,24 +1104,48 @@ EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConf
   });
 
   // Run evaluators.
-  EvalResultPtr eval_result = ExecuteEvaluators(evaluators, conf, args_conf_list);
-  // Check if func graph contains isolated side-effect, and sync.
-  if (check_side_effect()) {
-    func->Visit([&contains_side_effect](const AbstractFuncAtomPtr &possible_func) {
-      const auto &real_func_atom = GetRealFuncAtom(possible_func);
-      bool func_has_side_effect = CheckFuncSideEffect(real_func_atom);
-      if (func_has_side_effect) {
-        contains_side_effect = true;
+  EvalResultPtr eval_result = nullptr;
+  AbstractBasePtrList args_abs_list;
+  (void)std::transform(args_conf_list.begin(), args_conf_list.end(), std::back_inserter(args_abs_list),
+                       [](const ConfigPtr &ref) -> AbstractBasePtr {
+                         MS_EXCEPTION_IF_NULL(ref);
+                         const auto &eval_result = ref->ObtainEvalResult();
+                         MS_EXCEPTION_IF_NULL(eval_result);
+                         return eval_result->abstract();
+                       });
+  const auto &expand_node_hook = cnode->get_node_expand_hook();
+  if (expand_node_hook != nullptr) {
+    auto expanded_node = (*expand_node_hook)(args_abs_list, cnode);
+    auto eng = conf->engine();
+    auto new_conf = eng->MakeConfig(expanded_node, conf->context(), conf->func_graph());
+    cnode->clear_node_expand_hook();
+    eval_result = eng->ForwardConfig(conf, new_conf);
+  } else {
+    eval_result = ExecuteEvaluators(evaluators, conf, args_conf_list);
+    // Check if func graph contains isolated side-effect, and sync.
+    if (check_side_effect()) {
+      func->Visit([&contains_side_effect](const AbstractFuncAtomPtr &possible_func) {
+        const auto &real_func_atom = GetRealFuncAtom(possible_func);
+        bool func_has_side_effect = CheckFuncSideEffect(real_func_atom);
+        if (func_has_side_effect) {
+          contains_side_effect = true;
+        }
+      });
+      if (contains_side_effect) {
+        MS_EXCEPTION_IF_NULL(conf->func_graph());
+        MS_LOG(DEBUG) << "Found side-effect, cnode: " << cnode->DebugString()
+                      << ", func_graph: " << conf->func_graph()->ToString();
+        cnode->set_has_side_effect_node(true);
+        conf->func_graph()->set_has_side_effect_node(true);
+        eval_result->set_has_side_effect_node(true);
       }
-    });
-    if (contains_side_effect) {
-      MS_EXCEPTION_IF_NULL(conf->func_graph());
-      MS_LOG(DEBUG) << "Found side-effect, cnode: " << cnode->DebugString()
-                    << ", func_graph: " << conf->func_graph()->ToString();
-      cnode->set_has_side_effect_node(true);
-      conf->func_graph()->set_has_side_effect_node(true);
-      eval_result->set_has_side_effect_node(true);
     }
+  }
+  const auto &custom_infer_hook = cnode->get_custom_infer_hook();
+  if (custom_infer_hook.second != nullptr) {
+    auto custom_infer_result = (*custom_infer_hook.second)(args_abs_list, cnode);
+    eval_result->abstract()->set_user_data<Value>(custom_infer_hook.first, custom_infer_result);
+    cnode->clear_custom_infer_hook();
   }
   return eval_result;
 }

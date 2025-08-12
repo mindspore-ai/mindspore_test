@@ -33,6 +33,8 @@
 #include "frontend/operator/ops.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt {
@@ -80,5 +82,76 @@ TEST_F(TestRenormalize, DISABLED_TestIgnoreValueTag) {
   abstract::AnalysisResultCacheMgr::GetInstance().Clear();
   abstract::AnalysisContext::ClearContext();
 }
+
+AnfNodePtr ExpandFunc(const AbstractBasePtrList &abs_list, const CNodePtr &node) {
+  auto cnode = node->cast<CNodePtr>();
+  const auto &inputs = cnode->inputs();
+  auto fg = cnode->func_graph();
+  auto new_node = fg->NewCNodeAfter(node, {NewValueNode(prim::kPrimAdd), inputs[1], node});
+  return new_node;
+}
+
+// Feature: Apply cnode hook during static analysis..
+// Description: When a cnode hook was set on a cnode, it will be applied during static analysis.
+// Expectation: cnode hooks are not applied.
+TEST_F(TestRenormalize, TestCnodeHook) {
+  FuncGraphPtr test_graph = getPyFun.CallAndParseRet("test_renormalize", "test_cnode_hook");
+  ASSERT_TRUE(nullptr != test_graph);
+  const auto all_nodes = TopoSort(test_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
+  for (const auto &node : all_nodes) {
+    if (IsPrimitiveCNode(node, prim::kPrimPow)) {
+      auto cnode = node->cast<CNodePtr>();
+      cnode->set_node_expand_hook(ExpandFunc);
+    }
+  }
+  pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
+  std::vector<AbstractBasePtr> args_spec;
+  auto specialized_fg = pipeline::Renormalize(res, test_graph, args_spec);
+  const auto new_all_nodes = TopoSort(specialized_fg->get_return(), SuccDeeperSimple, AlwaysInclude);
+  auto exist_add = std::any_of(new_all_nodes.cbegin(), new_all_nodes.cend(),
+                               [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimAdd); });
+  if (exist_add) {
+    DumpIR("test_cnode_hook.ir", specialized_fg);
+    MS_LOG(ERROR) << "test cnode hook failed, please see the wrong graph in "
+                     "'test_cnode_hook_0000.ir'";
+  }
+  ASSERT_EQ(exist_add, false);
+  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
+  abstract::AnalysisContext::ClearContext();
+}
+
+ValuePtr CustomInferFunc(const AbstractBasePtrList &abs_list, const CNodePtr &node) {
+  return abs_list[0]->BuildValue();
+}
+
+// Feature: Apply cnode hook during static analysis..
+// Description: When a cnode hook was set on a cnode, it will be applied during static analysis.
+// Expectation: cnode hooks are not applied.
+TEST_F(TestRenormalize, TestCustomInferHook) {
+  FuncGraphPtr test_graph = getPyFun.CallAndParseRet("test_renormalize", "test_cnode_hook");
+  ASSERT_TRUE(nullptr != test_graph);
+  const auto all_nodes = TopoSort(test_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
+  for (const auto &node : all_nodes) {
+    if (IsPrimitiveCNode(node, prim::kPrimPow)) {
+      auto cnode = node->cast<CNodePtr>();
+      cnode->set_custom_infer_hook("input_shape", CustomInferFunc);
+    }
+  }
+  pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
+  std::vector<AbstractBasePtr> args_spec;
+  auto specialized_fg = pipeline::Renormalize(res, test_graph, args_spec);
+  const auto new_all_nodes = TopoSort(specialized_fg->get_return(), SuccDeeperSimple, AlwaysInclude);
+  auto exist_add = std::any_of(new_all_nodes.cbegin(), new_all_nodes.cend(), [](const AnfNodePtr &node) {
+    return IsPrimitiveCNode(node, prim::kPrimPow) && node->has_user_data("input_shape");
+  });
+  if (exist_add) {
+    DumpIR("test_cnode_hook.ir", specialized_fg);
+    MS_LOG(ERROR) << "test cnode hook failed, please see the wrong graph in "
+                     "'test_cnode_hook_0000.ir'";
+  }
+  ASSERT_EQ(exist_add, false);
+  abstract::AnalysisResultCacheMgr::GetInstance().Clear();
+  abstract::AnalysisContext::ClearContext();
+} 
 }  // namespace opt
 }  // namespace mindspore

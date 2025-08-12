@@ -642,6 +642,22 @@ bool CNode::has_side_effect_node() const { return has_side_effect_node_; }
 
 void CNode::set_has_side_effect_node(bool has_side_effect_node) { has_side_effect_node_ = has_side_effect_node; }
 
+void CNode::set_custom_infer_hook(std::string custom_infer_name, CustomInferFunction custom_infer_rule) {
+  custom_infer_hook_ = std::pair(custom_infer_name, std::make_shared<CustomInferFunction>(custom_infer_rule));
+}
+
+void CNode::set_node_expand_hook(NodeExpandFunction node_expand_hook) {
+  node_expand_hook_ = std::make_shared<NodeExpandFunction>(node_expand_hook);
+}
+
+std::pair<std::string, CustomInferFunctionPtr> CNode::get_custom_infer_hook() { return custom_infer_hook_; }
+
+NodeExpandFunctionPtr CNode::get_node_expand_hook() { return node_expand_hook_; }
+
+void CNode::clear_custom_infer_hook() { custom_infer_hook_ = std::pair("", nullptr); }
+
+void CNode::clear_node_expand_hook() { node_expand_hook_ = nullptr; }
+
 Parameter::Parameter(const FuncGraphPtr &func_graph) : ANode(func_graph) { Init(); }
 
 Parameter::Parameter(const FuncGraphPtr &func_graph, NodeDebugInfoPtr &&debug_info)
