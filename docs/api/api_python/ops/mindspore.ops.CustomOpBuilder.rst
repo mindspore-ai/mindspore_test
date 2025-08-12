@@ -21,6 +21,7 @@ mindspore.ops.CustomOpBuilder
 
           - **build_dir** (str, 可选) - 用于生成算子构建文件的目录。如果设置了该参数，将直接使用提供的路径。如果未设置，则会在环境变量 `MS_COMPILER_CACHE_PATH` 指定的路径下（默认为 ``./kernel_meta`` ），创建一个以算子的 `name` 命名的子目录，并将文件放置在该子目录中。默认值： ``None`` 。
           - **enable_atb** (bool, 可选) - 是否调用 ATB (Ascend Transformer Boost) 算子。如果设置为 ``True`` ，则 `backend` 必须为 ``Ascend`` 或留空。默认值： ``False`` 。
+          - **enable_asdsip** (bool, 可选) - 是否调用 ASDSIP (Ascend Sip Boost) 算子。如果设置为 ``True`` ，则 `backend` 必须为 ``Ascend`` 或留空。默认值： ``False`` 。
 
     .. note::
         - 如果提供了 `backend` 参数，编译和链接步骤中会自动添加支持目标后端的默认编译和链接选项。默认选项可参考 `CustomOpBuilder <https://gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/ops/operations/custom_ops.py>`_ 代码中 `get_cflags` 和 `get_ldflags` 接口的实现。

@@ -237,6 +237,13 @@ if(ENABLE_D)
                 COMPONENT mindspore
         )
     endif()
+    if(EXISTS ${ASCEND_NNAL_ASDSIP_PATH})
+        install(
+                TARGETS mindspore_extension_ascend_asdsip ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+        )
+    endif()
     if(ENABLE_MPI)
         install(
                 TARGETS ascend_collective d_collective

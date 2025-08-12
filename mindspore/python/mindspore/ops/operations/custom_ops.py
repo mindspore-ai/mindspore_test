@@ -1217,6 +1217,9 @@ class CustomOpBuilder:
             - enable_atb (bool, optional): Whether to call ATB (Ascend Transformer Boost) operator. If set to ``True``,
               the `backend` must be ``Ascend`` or left empty. Default: ``False``.
 
+            - enable_asdsip (bool, optional): Whether to call ASDSIP (Ascend SiP Boost) operator. If set to ``True``,
+              the `backend` must be ``Ascend`` or left empty. Default: ``False``.
+
     .. note::
         - If the `backend` argument is provided, additional default flags will be automatically added to
           the compilation and linking steps to support the operator's target backend. The default options
@@ -1247,11 +1250,17 @@ class CustomOpBuilder:
         self.ldflags = ldflags
         self.build_dir = kwargs.get("build_dir")
         self.enable_atb = kwargs.get("enable_atb", False)
+        self.enable_asdsip = kwargs.get("enable_asdsip", False)
         self.debug_mode = kwargs.get("debug_mode", False)
         self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
         if self.enable_atb:
             if backend is not None and backend != "Ascend":
                 raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be "
+                                 f"'Ascend' (or left implicit), but got '{backend}'")
+            self.backend = "Ascend"
+        if self.enable_asdsip:
+            if backend is not None and backend != "Ascend":
+                raise ValueError("For 'CustomOpBuilder', when 'enable_asdsip' is set to True, the 'backend' must be "
                                  f"'Ascend' (or left implicit), but got '{backend}'")
             self.backend = "Ascend"
         if self.backend == "Ascend":
@@ -1324,6 +1333,8 @@ class CustomOpBuilder:
             flags.append('-DCUSTOM_ASCEND_OP')
             if self.enable_atb:
                 flags.append('-DCUSTOM_ENABLE_ATB')
+            if self.enable_asdsip:
+                flags.append('-DCUSTOM_ENABLE_ASDSIP')
         if self.cflags is not None:
             flags.append(self.cflags)
         return flags
@@ -1356,6 +1367,9 @@ class CustomOpBuilder:
                 flags.append('-lmindspore_extension_ascend_atb')
                 flags.append(f"-L{os.path.abspath(os.path.join(self.atb_home_path, 'lib'))}")
                 flags.append('-latb')
+            if self.enable_asdsip:
+                flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin', 'ascend'))}")
+                flags.append('-lmindspore_extension_ascend_asdsip')
         if self.ldflags is not None:
             flags.append(self.ldflags)
         return flags

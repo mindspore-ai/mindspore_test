@@ -14,6 +14,7 @@
 # ============================================================================
 """ tests_custom_pyboost_ascend """
 
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.ops import CustomOpBuilder
@@ -110,6 +111,27 @@ def test_pyboost_atb_rope():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyboost_asdsip_fft():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom asdsip op.
+    Expectation: success.
+    """
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("asdsip_fftc2c", "jit_test_files/asdsip_fftc2c.cpp", enable_asdsip=True).load()
+    input_np = np.random.rand(2, 16)
+    real_np = input_np.astype(np.float32)
+    imag_np = input_np.astype(np.float32)
+    complex_np = real_np + 1j * imag_np
+
+    input_tensor = ms.Tensor(complex_np, dtype=ms.dtype.complex64)
+    output_tensor = my_ops.fft(input_tensor, 16, 2)
+    output_np = np.fft.fft(complex_np)
+    assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
+
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_pyboost_aclnn():
     """
     Feature: CustomOpBuilder.
@@ -148,3 +170,28 @@ def test_pyboost_tensor_api():
         [1.1, 2.2, 3.3], "float32").asnumpy(), np.array([1.1, 2.2, 3.3], np.float32), 1e-3, 1e-3)
     assert np.allclose(my_ops.ones([3, 4], "float16").asnumpy(), np.ones([3, 4], np.float16), 1e-3, 1e-3)
     assert np.allclose(my_ops.zeros([3, 4], "float32").asnumpy(), np.zeros([3, 4], np.float32), 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+def test_pyboost_asdsip_fft_wrong():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom asdsip op.
+    Expectation: success.
+    """
+    ms.set_device("Ascend")
+    # raise RuntimeError when enable_asdsip is False.
+    with pytest.raises(RuntimeError):
+        CustomOpBuilder("asdsip_fftc2c", "jit_test_files/asdsip_fftc2c.cpp").load()
+    # raise RuntimeError when function name is wrong.
+    with pytest.raises(RuntimeError):
+        my_ops = CustomOpBuilder("asdsip_fftc2c", "jit_test_files/asdsip_fftc2c.cpp", enable_asdsip=True).load()
+        input_np = np.random.rand(2, 16)
+        real_np = input_np.astype(np.float32)
+        imag_np = input_np.astype(np.float32)
+        complex_np = real_np + 1j * imag_np
+
+        input_tensor = ms.Tensor(complex_np, dtype=ms.dtype.complex64)
+        output_tensor = my_ops.wrong_fft(input_tensor, 16, 2)
+        output_np = np.fft.fft(complex_np)
+        assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
