@@ -23,6 +23,7 @@
 #include <vector>
 #include <set>
 #include "include/common/utils/tensor_future.h"
+#include "include/common/utils/convert_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/device/device_address_utils.h"

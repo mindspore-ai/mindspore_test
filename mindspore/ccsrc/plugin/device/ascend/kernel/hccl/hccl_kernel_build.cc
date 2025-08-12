@@ -20,6 +20,7 @@
 #include <memory>
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"
 

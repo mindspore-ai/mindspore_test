@@ -34,6 +34,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"
+#include "include/common/utils/convert_utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"

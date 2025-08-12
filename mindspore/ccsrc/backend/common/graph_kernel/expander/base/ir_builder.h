@@ -23,6 +23,7 @@
 #include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "common/common_utils.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/expander/base/node.h"
 #include "backend/common/graph_kernel/expander/base/emitter.h"

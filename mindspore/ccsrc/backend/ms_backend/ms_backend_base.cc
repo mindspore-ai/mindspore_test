@@ -35,6 +35,7 @@
 #include "backend/common/pass/switch_not_cut.h"
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/scoped_long_running.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/fallback.h"
 #include "include/common/runtime_conf/runtime_env.h"

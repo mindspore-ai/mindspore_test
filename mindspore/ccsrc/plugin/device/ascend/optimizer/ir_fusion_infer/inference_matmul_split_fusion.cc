@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

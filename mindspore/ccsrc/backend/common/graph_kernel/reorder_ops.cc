@@ -20,6 +20,7 @@
 #include <vector>
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_ops.h"

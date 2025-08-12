@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "symbolic_shape/operation_builder.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/kernel_info.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"

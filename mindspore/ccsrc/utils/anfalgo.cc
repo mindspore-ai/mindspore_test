@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <queue>
 #include <set>
 #include <complex>
 #include "mindapi/base/shape_vector.h"
@@ -38,6 +39,7 @@
 #include "ops/op_def.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
+#include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/trace_base.h"

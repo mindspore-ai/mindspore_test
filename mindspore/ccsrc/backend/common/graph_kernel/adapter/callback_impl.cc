@@ -21,7 +21,9 @@
 #include <memory>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_context.h"
+#include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "common/common_utils.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"

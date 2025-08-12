@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/framework_utils.h"
+#include "include/backend/kernel_info.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "ir/func_graph_cloner.h"

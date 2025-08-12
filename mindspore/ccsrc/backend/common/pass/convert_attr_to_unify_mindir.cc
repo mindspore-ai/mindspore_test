@@ -15,6 +15,7 @@
  */
 #include "backend/common/pass/convert_attr_to_unify_mindir.h"
 #include <string>
+#include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 

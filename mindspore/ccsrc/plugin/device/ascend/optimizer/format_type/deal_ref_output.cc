@@ -25,6 +25,7 @@
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
 #include "common/oplib/oplib.h"
+#include "include/backend/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"

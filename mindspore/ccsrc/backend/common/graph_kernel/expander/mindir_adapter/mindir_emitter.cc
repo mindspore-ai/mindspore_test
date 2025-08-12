@@ -16,6 +16,7 @@
 #include "backend/common/graph_kernel/expander/mindir_adapter/mindir_emitter.h"
 #include <algorithm>
 #include "ir/primitive.h"
+#include "include/backend/kernel_info.h"
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
 #include "backend/common/graph_kernel/model/op_register.h"
 #include "include/backend/anf_runtime_algorithm.h"
