@@ -196,6 +196,117 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   return device_address;
 }
 
+namespace {
+
+// clang-format off
+#define FOR_EACH_TYPE_BASE(M)                    \
+  M(kNumberTypeBool, bool)                       \
+  M(kNumberTypeUInt8, uint8_t)                   \
+  M(kNumberTypeInt4, int8_t)                     \
+  M(kNumberTypeInt8, int8_t)                     \
+  M(kNumberTypeInt16, int16_t)                   \
+  M(kNumberTypeInt32, int32_t)                   \
+  M(kNumberTypeInt64, int64_t)                   \
+  M(kNumberTypeUInt16, uint16_t)                 \
+  M(kNumberTypeUInt32, uint32_t)                 \
+  M(kNumberTypeUInt64, uint64_t)                 \
+  M(kNumberTypeFloat16, float16)                 \
+  M(kNumberTypeFloat32, float)                   \
+  M(kNumberTypeFloat64, double)                  \
+  M(kNumberTypeFloat8E4M3FN, float8_e4m3fn)      \
+  M(kNumberTypeFloat8E5M2, float8_e5m2)          \
+  M(kNumberTypeHiFloat8, hifloat8)               \
+  M(kNumberTypeComplex64, ComplexStorage<float>) \
+  M(kNumberTypeComplex128, ComplexStorage<double>)
+
+#ifndef KERNEL_EXECUTOR_ANDROID
+#define FOR_EACH_TYPE_EXTRA(M) M(kNumberTypeBFloat16, bfloat16)
+#else
+#define FOR_EACH_TYPE_EXTRA(M)
+#endif
+
+#define FOR_EACH_TYPE(M) \
+  FOR_EACH_TYPE_BASE(M)  \
+  FOR_EACH_TYPE_EXTRA(M)
+
+#define REGISTER_SIZE(address_type_id, address_type) { address_type_id, sizeof(address_type) },
+
+static const std::unordered_map<TypeId, size_t> kTypeSizeMap = {
+  FOR_EACH_TYPE(REGISTER_SIZE)
+};
+
+size_t GetTypeSize(TypeId tid) {
+  return kTypeSizeMap.at(tid);
+}
+
+template <typename T>
+using DstCopyFunc = void (*)(T *src_ptr, void *dst_ptr, size_t size);
+
+template <typename T>
+static const std::unordered_map<TypeId, DstCopyFunc<T>> g_dst_copy_map = {
+#define REGISTER_DST(dst_type_id, dst_type)                     \
+  {dst_type_id, +[](T *src_ptr, void *dst_ptr, size_t size) {   \
+    auto buf = static_cast<dst_type *>(dst_ptr);                \
+    return tensor::TransDataType<dst_type>(src_ptr, buf, size); \
+    }},
+  FOR_EACH_TYPE(REGISTER_DST)
+#undef REGISTER_DST
+};
+
+template <typename T>
+void CopyData(T *src_ptr, size_t size, void *dst_ptr, TypeId dst_type_id) {
+  auto &m = g_dst_copy_map<T>;
+  auto it = m.find(dst_type_id);
+  if (it == m.end()) {
+    MS_LOG(EXCEPTION) << "Cannot construct Tensor because of unsupported dst data type: " << dst_type_id << ".";
+  }
+  it->second(src_ptr, dst_ptr, size);
+}
+
+using SrcCopyFunc = std::function<void(void *src_ptr, void *dst_ptr, size_t size, TypeId dst_type_id)>;
+
+static const std::unordered_map<TypeId, SrcCopyFunc> g_src_copy_map = {
+#define REGISTER_SRC(src_type_id, src_type)                                          \
+  {src_type_id, +[](void *src_ptr, void *dst_ptr, size_t size, TypeId dst_type_id) { \
+    auto buf = static_cast<src_type *>(src_ptr);                                     \
+    return CopyData<src_type>(buf, size, dst_ptr, dst_type_id);                      \
+    }},
+  FOR_EACH_TYPE(REGISTER_SRC)
+#undef REGISTER_SRC
+};
+
+#undef FOR_EACH_TYPE
+#undef FOR_EACH_TYPE_BASE
+#undef FOR_EACH_TYPE_EXTRA
+#undef REGISTER_SIZE
+// clang-format on
+
+void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_device_address) {
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+
+  TypeId src_type_id = src_device_address->type_id();
+  TypeId dst_type_id = dst_device_address->type_id();
+  auto src_size = src_device_address->GetSize() / GetTypeSize(src_type_id);
+  auto dst_size = dst_device_address->GetSize() / GetTypeSize(dst_type_id);
+  if (src_size != dst_size) {
+    MS_LOG(EXCEPTION) << "Not same shape in device address:" << src_device_address->ToString()
+                      << " and:" << dst_device_address->ToString();
+  }
+
+  void *src_ptr = src_device_address->GetMutablePtr();
+  void *dst_ptr = dst_device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(src_ptr);
+  MS_EXCEPTION_IF_NULL(dst_ptr);
+
+  auto it = g_src_copy_map.find(src_type_id);
+  if (it == g_src_copy_map.end()) {
+    MS_LOG(EXCEPTION) << "Unsupported conversion from " << src_type_id << " to " << dst_type_id;
+  }
+  it->second(src_ptr, dst_ptr, src_size, dst_type_id);
+}
+}  // namespace
+
 bool CPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                              size_t stream_id) const {
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
@@ -262,9 +373,9 @@ bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Device
   } else if (dst_type_id == kNumberTypeInt64 && src_type_id == kNumberTypeInt32) {
     IntToLong(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(int64_t));
   } else {
-    MS_LOG(ERROR) << "Types not match. src type: " << TypeIdLabel(src_type_id)
+    MS_LOG(DEBUG) << "Types not match. src type: " << TypeIdLabel(src_type_id)
                   << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
-    return false;
+    CopyData(src_device_address, dst_device_address);
   }
   return true;
 }
