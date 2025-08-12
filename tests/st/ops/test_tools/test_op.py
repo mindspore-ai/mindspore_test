@@ -116,7 +116,7 @@ def run_op_dynamic(op, inputs, disable_dynamic_test, disable_mode, case_config, 
 def run_op_generalize(op, inputs, disable_generalize_test, disable_mode, disable_case, case_config, inplace_update,
                       dump_ir, debug_info, debug_level):
     if disable_generalize_test:
-        warning_log(f"disable_generalize_test is True, TEST_OP_DYNAMIC is skipped.")
+        warning_log(f"disable_generalize_test is True, TEST_OP_GENERALIZE is skipped.")
         return
 
     set_debug_status_info('TEST_OP_GENERALIZE')
