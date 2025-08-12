@@ -457,6 +457,9 @@ bool AclConverter::IsNeedSkipExecute(const std::string &kernel_name, const std::
       }
       MS_EXCEPTION_IF_NULL(inputs[0]);
       MS_EXCEPTION_IF_NULL(outputs[0]);
+      if (inputs[0]->size() == 0) {
+        return true;
+      }
       aclError status =
         CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                         inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
