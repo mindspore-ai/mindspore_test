@@ -1033,7 +1033,8 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
     MS_EXCEPTION_IF_NULL(kernel_tensors[0]->device_address());
     auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-    if ((kernel_tensors[0]->device_address() == host_tensor_address) || (kernel_tensors[0]->IsPtrValid())) {
+    if (host_tensor_address == nullptr || (kernel_tensors[0]->device_address() == host_tensor_address) ||
+        (kernel_tensors[0]->IsPtrValid())) {
       continue;
     }
 
@@ -1042,9 +1043,9 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     MS_LOG(INFO) << "Prepare device data for weight node by root graph parameter:"
                  << front_parameter->fullname_with_scope() << ", backend node:" << node->DebugString()
                  << ", device type:" << kernel_tensors[0]->GetDeviceType();
-    if (host_tensor_address == nullptr) {
-      tensor->set_device_address(kernel_tensors[0]->device_address());
+    if (host_tensor_address->GetDeviceType() != kernel_tensors[0]->device_address()->GetDeviceType()) {
       SyncTensorData(tensor, kernel_tensors[0]->device_address(), node, context, GraphExecutionStrategy::kPipeline);
+      tensor->set_device_address(kernel_tensors[0]->device_address());
     } else {
       if (host_tensor_address->GetSize() != kernel_tensors[0]->GetSize()) {
         MS_LOG(WARNING) << "Please check the size of parameter:" << front_parameter->fullname_with_scope()
