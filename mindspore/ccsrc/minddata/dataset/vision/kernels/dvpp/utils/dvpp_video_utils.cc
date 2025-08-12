@@ -26,7 +26,6 @@
 
 #include "acl/acl_base.h"
 #include "acl/acl_rt.h"
-#include "utils/ms_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "minddata/dataset/vision/kernels/dvpp/utils/dvpp_image_utils.h"
 
@@ -111,7 +110,8 @@ hi_s32 VideoDecoder::sys_init(void) {
       MS_EXCEPTION(RuntimeError) << "Failed to get mindspore context.";
     }
     device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      {device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
+       ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     if (device_context_ == nullptr) {
       MS_EXCEPTION(RuntimeError) << "Failed to get device context.";
     }

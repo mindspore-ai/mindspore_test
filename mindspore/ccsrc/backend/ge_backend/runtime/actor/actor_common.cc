@@ -237,11 +237,8 @@ void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_c
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

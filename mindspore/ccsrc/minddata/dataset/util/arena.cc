@@ -252,7 +252,7 @@ Status Arena::Init() {
       auto ms_context = MsContext::GetInstance();
       RETURN_UNEXPECTED_IF_NULL(ms_context);
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+        {DeviceManagerConf::GetInstance()->device_type(), DeviceManagerConf::GetInstance()->device_id()});
       RETURN_UNEXPECTED_IF_NULL(device_context);
       RETURN_UNEXPECTED_IF_NULL(device_context->device_res_manager_);
       ptr_ = device_context->device_res_manager_->AllocateHostMemory(sz);

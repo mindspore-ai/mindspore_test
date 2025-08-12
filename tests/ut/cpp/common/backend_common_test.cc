@@ -121,7 +121,6 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   new_manager->AddFuncGraph(func_graph);
   func_graph->set_manager(new_manager);
 
-  const std::string kDefaultDeviceName = "CPU";
   auto graph_partition = std::make_shared<compile::GraphPartition>(compile::GetMSNonlinearOps(), kMsConvert);
   bool multi_target = false;
   auto segments = graph_partition->Partition(func_graph, &multi_target);
@@ -133,7 +132,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   AnfNodePtrList inputs;
   AnfNodePtrList outputs;
   std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
-  runtime::test::DeviceContextKey device_context_key{kDefaultDeviceName, 0};
+  runtime::test::DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
   auto device_context = std::make_shared<runtime::test::TestDeviceContext>(device_context_key);
 
   auto compiler = std::make_shared<runtime::GraphCompiler>();

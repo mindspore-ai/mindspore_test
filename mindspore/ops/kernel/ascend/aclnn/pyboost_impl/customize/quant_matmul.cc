@@ -96,15 +96,13 @@ void QuantMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Tenso
                           pertoken_scale_dtype, scale_dtype, group_sizes);
   TensorPtr x1_val = x1;
   if (x1_dtype.has_value()) {
-    x1_val =
-      PyBoostUtils::CastTensor(x1_val, static_cast<TypeId>(x1_dtype.value()->value()),
-                               device::GetDeviceTypeByName(op->device_context()->device_context_key_.device_name_));
+    x1_val = PyBoostUtils::CastTensor(x1_val, static_cast<TypeId>(x1_dtype.value()->value()),
+                                      op->device_context()->device_context_key_.device_name_);
   }
   TensorPtr x2_val = x2;
   if (x2_dtype.has_value()) {
-    x2_val =
-      PyBoostUtils::CastTensor(x2_val, static_cast<TypeId>(x2_dtype.value()->value()),
-                               device::GetDeviceTypeByName(op->device_context()->device_context_key_.device_name_));
+    x2_val = PyBoostUtils::CastTensor(x2_val, static_cast<TypeId>(x2_dtype.value()->value()),
+                                      op->device_context()->device_context_key_.device_name_);
   }
   auto output_dtype_id = op->output_value_simple_info()->dtype_vector_[kIndex0]->type_id();
   auto y_scale = QuantMatmulFastEmpty({0}, output_dtype_id);

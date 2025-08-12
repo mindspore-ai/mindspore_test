@@ -435,9 +435,10 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensors(const std::shared_
     // Resize of workspaces, because of the dynamic size of workspace.
     if (workspace_size < workspace_sizes.size()) {
       for (size_t i = workspace_size; i < workspace_sizes.size(); ++i) {
-        auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-          nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-          device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+        auto kernel_tensor =
+          AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
+                                      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+                                      device_context->device_context_key().device_id_);
         MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(kernel)
                       << " kernel tensor:" << kernel_tensor;
         AnfAlgo::SetWorkspaceKernelTensor(kernel_tensor, i, kernel.get());  // set to kernel_info
@@ -487,9 +488,10 @@ std::vector<kernel::KernelTensor *> GetWorkspaceKernelTensorsDynamic(
   std::vector<kernel::KernelTensor *> workspaces;
   workspaces.reserve(workspace_sizes.size());
   for (size_t i = 0; i < workspace_sizes.size(); ++i) {
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown,
-                                                     ShapeVector(), device_context->device_context_key().device_name_,
-                                                     device_context->device_context_key().device_id_);
+    auto kernel_tensor =
+      AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
+                                  device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+                                  device_context->device_context_key().device_id_);
     auto device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
@@ -868,8 +870,7 @@ DeviceContext *OpRunner::GetDeviceContext(device::DeviceType device_type) {
   std::unique_lock<std::mutex> lock(*kDeviceContextMutex);
 
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceNameByType(device_type), device_id});
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
 

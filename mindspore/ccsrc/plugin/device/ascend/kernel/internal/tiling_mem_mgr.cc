@@ -210,10 +210,9 @@ void TilingMemPoolHost::FreeInner(void *addr) {
 }
 
 TilingMemMgr::TilingMemMgr() {
-  auto context_ptr = mindspore::MsContext::GetInstance();
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
+  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
+  device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
 }
 
 void TilingMemMgr::CopyAsync(void *host_ptr, void *device_ptr, size_t size) {

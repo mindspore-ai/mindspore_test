@@ -1510,7 +1510,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   }
   if (device_context->GetDeviceType() != node_device_tensor->GetDeviceType()) {
     device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(node_device_tensor->GetDeviceType()), node_device_tensor->device_id()});
+      {node_device_tensor->GetDeviceType(), node_device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   }
@@ -2484,7 +2484,6 @@ void SuperKernelActor::SetFreePositionForKernelActor() {
       MS_LOG(EXCEPTION) << "Invalid device context, context size:" << kernel_actor->device_contexts().size()
                         << " for actor:" << kernel_actor->GetAID();
     }
-    auto kernel_device_context_key = kernel_actor->device_contexts()[0]->device_context_key();
 
     SetInputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);
     SetOutputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);

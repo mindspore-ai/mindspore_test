@@ -45,8 +45,7 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(dtype_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor->device_address());
 
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_addr->GetDeviceType()),
-                                       device_addr->device_id()};
+  device::DeviceContextKey host_key = {device_addr->GetDeviceType(), device_addr->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

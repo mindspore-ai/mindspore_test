@@ -37,10 +37,8 @@ void SetThreadToDeviceId(uint32_t device_id) {
 GpuDataQueueDynamic::GpuDataQueueDynamic(const std::string &channel_name, const size_t capacity)
     : DataQueue(channel_name, capacity), node_info_(nullptr) {
   node_info_ = std::make_unique<NodeInfo[]>(capacity);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device_id_ = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
+  device_id_ = DeviceManagerConf::GetInstance()->device_id();
   device_context_ = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id_});
   device_context_->Initialize();
   stream_ = reinterpret_cast<cudaStream_t>(gpu::GPUDeviceManager::GetInstance().default_stream());

@@ -25,9 +25,9 @@
 namespace mindspore {
 namespace {
 DeviceContext *GetDeviceCtx() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {device_type, DeviceManagerConf::GetInstance()->device_id()});
   MS_EXCEPTION_IF_NULL(device_ctx);
 
   device_ctx->Initialize();

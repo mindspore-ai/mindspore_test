@@ -140,9 +140,9 @@ int StressDetectKernel(const std::string &detect_type) {
   auto ascend_path = mindspore::device::ascend::GetAscendPath();
   auto lib_path = ascend_path + GetLibAscendMLName();
   int ret;
-  auto device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  auto device_type = DeviceManagerConf::GetInstance()->device_type();
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   void *lib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
 

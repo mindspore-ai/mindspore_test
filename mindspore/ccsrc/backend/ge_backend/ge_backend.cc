@@ -454,8 +454,7 @@ void GEBackend::Init() {
 
   // ascend_res_manager init
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -492,9 +491,6 @@ void GEBackend::Clear() {
     return;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-
   auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   if (op_tuning_conf->EnableAoeOnline()) {
@@ -503,9 +499,8 @@ void GEBackend::Clear() {
 
   graph_executor_->Finalize();
 
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -604,11 +599,8 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
   uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -928,7 +920,7 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph,
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_target = device::GetDeviceTypeByName(context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   device::DeviceContextManager::GetInstance().GetMultiStreamController(device_target)->Refresh();
   return cur_backend_graph_id;
 }
@@ -946,7 +938,7 @@ void GEBackend::WaitMultiStream() {
 
   if (device::ascend::AscendStreamMng::GetInstance().single_op_multi_stream_enable()) {
     device::DeviceContextManager::GetInstance()
-      .GetMultiStreamController(device_target)
+      .GetMultiStreamController(device::GetDeviceTypeByName(device_target))
       ->WaitMultiStream(device::ascend::AscendStreamMng::GetInstance().default_stream_id());
   }
 }
@@ -1467,11 +1459,8 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
     MS_LOG(EXCEPTION) << "The graph is not found, graph: " << graph_id;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -1579,11 +1568,8 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag) {
   }
 #ifndef ENABLE_SECURITY
   MS_LOG(INFO) << "Debug on step end.";
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -1608,16 +1594,14 @@ bool GEBackend::ProfilerOnStepBegin(const KernelGraphPtr &graph) {
   }
 
   MS_EXCEPTION_IF_NULL(graph);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
+  device::DeviceContextKey host_key = {device_type, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-  if (device::GetDeviceTypeByName(device_name) != device::DeviceType::kAscend) {
-    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << device_name;
+  if (device_type != device::DeviceType::kAscend) {
+    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << device::GetDeviceNameByType(device_type);
   }
 
   host_context->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -1631,11 +1615,8 @@ void GEBackend::ProfilerOnStepEnd(bool profile_started) {
     return;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -1720,7 +1701,9 @@ BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph, const 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextManager::GetInstance().GetMultiStreamController(device_target)->Refresh();
+  device::DeviceContextManager::GetInstance()
+    .GetMultiStreamController(device::GetDeviceTypeByName(device_target))
+    ->Refresh();
   MS_LOG(INFO) << "Status record: end compile graph.";
 
   return cur_graph_id;

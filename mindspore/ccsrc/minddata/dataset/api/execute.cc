@@ -97,10 +97,8 @@ Status Execute::InitResource(MapTargetDevice device_type, uint32_t device_id) {
   } else if (device_type == MapTargetDevice::kAscend910B) {
     MS_LOG(INFO) << "InitResource for Ascend910B";
     if (device_context_ == nullptr) {
-      auto ms_context = MsContext::GetInstance();
-      RETURN_UNEXPECTED_IF_NULL(ms_context);
       device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+        {DeviceManagerConf::GetInstance()->device_type(), DeviceManagerConf::GetInstance()->device_id()});
       RETURN_UNEXPECTED_IF_NULL(device_context_);
       device_context_->Initialize();
       RETURN_UNEXPECTED_IF_NULL(device_context_->device_res_manager_);

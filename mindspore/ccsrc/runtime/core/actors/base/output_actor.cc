@@ -170,7 +170,7 @@ void OutputActor::FreeOutputNodeMem() {
       continue;
     }
     const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(output_device_tensor->GetDeviceType()), output_device_tensor->device_id()});
+      {output_device_tensor->GetDeviceType(), output_device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Free device address:" << output_device_tensor << " for actor:" << GetAID();
@@ -245,7 +245,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(device_contexts_[output_position]);
     if (device_contexts_[output_position]->GetDeviceType() != device_tensor->GetDeviceType()) {
       device_contexts_[output_position] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+        {device_tensor->GetDeviceType(), device_tensor->device_id()});
     }
     // Create the device address and put it into host tensor.
     if (old_to_new_device_address_.count(device_tensor) > 0) {
@@ -254,7 +254,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
         device_tensor->type_id(), parameter_kernel_tensor->GetShapeVector(),
-        device_contexts_[output_position]->device_context_key().device_name_,
+        device::GetDeviceNameByType(device_contexts_[output_position]->device_context_key().device_name_),
         device_contexts_[output_position]->device_context_key().device_id_);
       kernel_tensor->SetType(parameter_kernel_tensor->GetType());
       kernel_tensor->SetShape(parameter_kernel_tensor->GetShape());
@@ -539,7 +539,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   if (device_context->GetDeviceType() != device_tensor->GetDeviceType()) {
     auto old_device_context = device_context;
     device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+      {device_tensor->GetDeviceType(), device_tensor->device_id()});
     MS_LOG(INFO) << "Update device context from:" << old_device_context->GetDeviceType()
                  << " to:" << device_context->GetDeviceType();
   }
@@ -550,7 +550,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), node_kernel_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
+      device_tensor->type_id(), node_kernel_tensor->GetShapeVector(),
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
@@ -596,7 +597,7 @@ void HandleEmptySequenceOutput(KernelTensor *const kernel_tensor, const tensor::
   MS_EXCEPTION_IF_NULL(tensor);
   MS_LOG(DEBUG) << "Empty sequence shape for input tensor index:" << index;
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+    {device_tensor->GetDeviceType(), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free kernel tensor:" << kernel_tensor << " for actor:" << actor_name;
   MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_context, actor_name);
@@ -662,7 +663,7 @@ void OutputActor::HandleOutput() {
     tensor_device_address->SetShapeVector(tensor->shape());
 
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+      {device_tensor->GetDeviceType(), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(real_device_context);
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {

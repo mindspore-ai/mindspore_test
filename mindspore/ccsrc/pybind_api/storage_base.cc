@@ -32,7 +32,7 @@ namespace mindspore {
 namespace {
 device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr &device_address) {
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()});
+    {device_address->GetDeviceType(), device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
   ShapeVector shape = {static_cast<int64_t>(device_address->size())};
@@ -85,8 +85,7 @@ void StorageBase::InplaceReSize(int64_t size) {
     return;
   }
 
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_data_->GetDeviceType()),
-                                       device_data_->device_id()};
+  device::DeviceContextKey host_key = {device_data_->GetDeviceType(), device_data_->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

@@ -110,10 +110,11 @@ KernelTensorPtr DumpMemManager::CreateOutPutKernelTensor(const DeviceContext *de
   const ShapeVector shape = {};
   auto shape_ptr = std::make_shared<abstract::Shape>(shape);
   auto type = std::make_shared<TensorType>(TypeIdToType(dtype_id));
-  auto tensor = AnfAlgo::CreateKernelTensor(shape_ptr, type, nullptr, nullptr, UnitSizeInBytes(dtype_id),
-                                            kernel::GetFormatFromEnumToStr(Format::DEFAULT_FORMAT), dtype_id, shape,
-                                            device_context->device_context_key().device_name_,
-                                            device_context->device_context_key().device_id_);
+  auto tensor =
+    AnfAlgo::CreateKernelTensor(shape_ptr, type, nullptr, nullptr, UnitSizeInBytes(dtype_id),
+                                kernel::GetFormatFromEnumToStr(Format::DEFAULT_FORMAT), dtype_id, shape,
+                                device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+                                device_context->device_context_key().device_id_);
   tensor->set_stream_id(kDefaultStreamIndex);
   auto device_addr = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
@@ -133,9 +134,10 @@ KernelTensorPtr DumpMemManager::CreateWorkspaceKernelTensor(const DeviceContext 
                                                             const size_t &workspace_size) {
   MS_EXCEPTION_IF_NULL(device_context);
 
-  auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, workspace_size, Format::DEFAULT_FORMAT, kTypeUnknown,
-                                                   ShapeVector(), device_context->device_context_key().device_name_,
-                                                   device_context->device_context_key().device_id_);
+  auto kernel_tensor =
+    AnfAlgo::CreateKernelTensor(nullptr, workspace_size, Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
+                                device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+                                device_context->device_context_key().device_id_);
   kernel_tensor->set_stream_id(kDefaultStreamIndex);
 
   auto device_address = kernel_tensor->device_address();

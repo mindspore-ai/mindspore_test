@@ -20,7 +20,6 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -174,11 +173,9 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
                   << " is not equal to parameter size:" << formal_parameters_.size() << " for actor:" << GetAID();
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  auto device_id = DeviceManagerConf::GetInstance()->device_id();
+  auto device_type = DeviceManagerConf::GetInstance()->device_type();
+  device::DeviceContextKey host_key = {device_type, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -186,7 +183,7 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
   // The input device tensor may not have users and needs to free the memory.
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
-        (device::GetDeviceTypeByName(device_name) != input_kernel_tensors_[i]->GetDeviceType())) {
+        (device_type != input_kernel_tensors_[i]->GetDeviceType())) {
       MS_LOG(EXCEPTION) << "GE backend only support Ascend, but get "
                         << device::GetDeviceNameByType(input_kernel_tensors_[i]->GetDeviceType());
     }
@@ -357,11 +354,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     }
 
     // Update the real used device context by the input data.
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key{device_name, device_id};
+    device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(),
+                                         DeviceManagerConf::GetInstance()->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

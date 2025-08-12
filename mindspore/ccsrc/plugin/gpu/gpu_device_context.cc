@@ -768,7 +768,7 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
   tensor_device_address->set_ptr(vec.data());
   tensor_device_address->SetSize(device_address->GetSize());
   tensor_device_address->set_format(kOpFormat_DEFAULT);
-  DeviceContextKey host_key = {GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()};
+  DeviceContextKey host_key = {device_address->GetDeviceType(), device_address->device_id()};
   DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -792,6 +792,7 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   const auto &output_address = output_addr_list[0];
   const auto &input_storage_info = input_address->GetTensorStorageInfo();
   auto stream = device_context_->device_res_manager_->GetStream(stream_id);
+  auto device_name = device::GetDeviceNameByType(device_context_->device_context_key().device_name_);
   MS_EXCEPTION_IF_NULL(stream);
 
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
@@ -809,13 +810,13 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
 
   if (!input_storage_info->is_contiguous) {
     // No need shape_addr and strides_addr, when tensor is contiguous
-    auto shape_kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
-      device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
+    auto shape_kernel_tensor =
+      AnfAlgo::CreateKernelTensor(nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64,
+                                  ShapeVector(), device_name, device_context_->device_context_key().device_id_);
 
-    auto strides_kernel_tensor = AnfAlgo::CreateKernelTensor(
-      nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
-      device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
+    auto strides_kernel_tensor =
+      AnfAlgo::CreateKernelTensor(nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64,
+                                  ShapeVector(), device_name, device_context_->device_context_key().device_id_);
 
     shape_dev_addr = shape_kernel_tensor->device_address();
     strides_dev_addr = strides_kernel_tensor->device_address();

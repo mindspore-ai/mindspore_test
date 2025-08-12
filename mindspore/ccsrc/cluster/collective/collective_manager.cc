@@ -559,7 +559,7 @@ uint32_t CollectiveManager::local_rank_id() const { return local_rank_id_; }
 uint32_t CollectiveManager::local_rank_size() const { return local_rank_size_; }
 
 bool CollectiveManager::InitHostCommlib() {
-  device::DeviceContextKey host_key = {"CPU", 0};
+  device::DeviceContextKey host_key = {device::DeviceType::kCPU, 0};
   host_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_ctx_);
   MS_EXCEPTION_IF_NULL(host_ctx_->device_res_manager_);
@@ -598,11 +598,11 @@ bool CollectiveManager::InitHostCommlib() {
 }
 
 bool CollectiveManager::InitDeviceCommLib() {
-  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_type = DeviceManagerConf::GetInstance()->device_type();
+  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
   // If library on device side is not supported, replace it with host library.
   if (!device_lib_supported_) {
-    device_type = kCPUDevice;
+    device_type = device::DeviceType::kCPU;
   }
   device::DeviceContextKey device_key = {device_type, device_id};
   device_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);

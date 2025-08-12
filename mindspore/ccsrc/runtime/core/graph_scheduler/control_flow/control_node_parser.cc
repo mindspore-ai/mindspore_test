@@ -404,7 +404,8 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
 
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+    device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+    device_context->device_context_key().device_id_);
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, front_node.get());
   kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
   address = kernel_tensor->device_address();
@@ -484,6 +485,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   // the value node is a multi-level tuple.
   size_t size = FetchOutputSizeByNode(node, front_node_with_index.second, type_id);
   device::DeviceAddressPtr address = nullptr;
+  const auto &device_name = device::GetDeviceNameByType(device_context->device_context_key().device_name_);
   if (node->isa<ValueNode>()) {
     const auto &node_value = node->cast<ValueNodePtr>()->value();
     MS_EXCEPTION_IF_NULL(node_value);
@@ -492,8 +494,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
     MS_EXCEPTION_IF_NULL(sub_abstract);
     const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
       sub_abstract->BuildShape(), sub_abstract->BuildType(), sub_abstract->BuildValue(), nullptr, size,
-      kOpFormat_DEFAULT, type_id, ShapeVector(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      kOpFormat_DEFAULT, type_id, ShapeVector(), device_name, device_context->device_context_key().device_id_);
     AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
     address = kernel_tensor->device_address();
@@ -506,8 +507,8 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   } else {
     // Create device tensor.
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(), device_name,
+      device_context->device_context_key().device_id_);
     AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
     address = kernel_tensor->device_address();
@@ -1024,13 +1025,11 @@ void ControlNodeParser::Parse(
   MS_LOG(INFO) << "Control node parse start.";
 
   // Fetch default device context.
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
+  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
   DeviceContext *default_context = nullptr;
   if (device_contexts.empty()) {
-    default_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+    default_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
   } else {
     default_context = device_contexts[0];
   }
