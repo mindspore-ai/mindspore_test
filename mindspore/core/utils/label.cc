@@ -18,6 +18,7 @@
 
 #include <vector>
 #include "utils/info.h"
+#include "utils/trace_info.h"
 #include "utils/compile_config.h"
 
 namespace {

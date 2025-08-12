@@ -36,6 +36,7 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "utils/hash_set.h"
 #include "utils/info.h"
+#include "utils/trace_info.h"
 #include "utils/compile_config.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

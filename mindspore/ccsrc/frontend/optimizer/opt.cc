@@ -32,6 +32,7 @@
 #include "pipeline/jit/ps/pass_config.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
+#include "utils/trace_info.h"
 
 namespace mindspore {
 /* namespace to support opt */

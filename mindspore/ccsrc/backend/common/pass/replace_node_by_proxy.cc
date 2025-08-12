@@ -22,6 +22,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "common/kernel_build_info.h"
+#include "utils/trace_info.h"
 
 namespace mindspore {
 namespace opt {

@@ -30,6 +30,7 @@
 #include "ir/manager.h"
 #include "ir/dtype.h"
 #include "utils/anf_utils.h"
+#include "utils/trace_info.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/debug/trace.h"

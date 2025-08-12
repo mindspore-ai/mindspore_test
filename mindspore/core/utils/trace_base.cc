@@ -22,6 +22,7 @@
 #include <algorithm>
 
 #include "ir/graph_utils.h"
+#include "utils/trace_info.h"
 
 namespace mindspore {
 namespace trace {

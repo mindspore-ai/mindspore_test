@@ -51,6 +51,7 @@
 #include "utils/compile_config.h"
 #include "utils/check_convert_utils.h"
 #include "utils/tensor_construct_utils.h"
+#include "utils/trace_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"

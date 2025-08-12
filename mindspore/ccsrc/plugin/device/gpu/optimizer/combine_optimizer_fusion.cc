@@ -26,6 +26,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "utils/ms_context.h"
+#include "utils/trace_info.h"
 
 namespace mindspore {
 namespace opt {

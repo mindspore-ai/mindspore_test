@@ -41,6 +41,7 @@
 #include "utils/compile_config.h"
 #include "utils/interpret_node_recorder.h"
 #include "utils/profile.h"
+#include "utils/trace_info.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "ir/cell.h"
 #include "include/common/amp/amp.h"

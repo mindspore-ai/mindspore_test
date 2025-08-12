@@ -31,6 +31,7 @@
 #include "ir/graph_utils.h"
 #include "ir/value.h"
 #include "utils/trace_base.h"
+#include "utils/trace_info.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"

@@ -27,6 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "utils/ordered_set.h"
+#include "utils/trace_info.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"

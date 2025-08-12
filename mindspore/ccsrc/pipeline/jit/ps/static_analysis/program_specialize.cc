@@ -31,6 +31,7 @@
 #include "ir/graph_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
+#include "utils/trace_info.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "include/common/fallback.h"

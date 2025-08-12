@@ -40,6 +40,7 @@
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"
 #include "utils/info.h"
+#include "utils/trace_info.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/anf_utils.h"
 #include "frontend/expander/utils.h"

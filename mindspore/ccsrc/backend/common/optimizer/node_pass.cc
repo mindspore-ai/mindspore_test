@@ -27,6 +27,7 @@
 #include "ir/manager.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
+#include "utils/trace_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

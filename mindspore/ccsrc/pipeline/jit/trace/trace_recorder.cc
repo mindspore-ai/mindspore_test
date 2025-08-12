@@ -23,6 +23,7 @@
 
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
+#include "utils/trace_info.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
