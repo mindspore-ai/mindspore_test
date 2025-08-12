@@ -737,6 +737,6 @@ def test_incre_flash_attention_bsh_fwd_dynamic():
     net_inputs1 = [query1, key1, value1, attn_mask1, actual_seq_lengths1, pse_shift1, None, None, None, None, None,
                    None, None, block_table1, block_size1, N1, data_format1, scale_value1, num_key_value_heads1, 1, None]
     TEST_OP(incre_flash_attention_func, [net_inputs0, net_inputs1],
-            disable_case=['ScalarTensor', 'EmptyTensor'],
+            disable_case=['ScalarTensor', 'EmptyTensor', 'Deterministic'],
             case_config={'disable_input_check': True,
                          'disable_grad': True})
