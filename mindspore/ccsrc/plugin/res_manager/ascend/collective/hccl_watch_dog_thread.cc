@@ -17,9 +17,9 @@
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 #include <signal.h>
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -144,16 +144,12 @@ void HcclWatchDogHandler::DoProcess() {
 
 void HcclWatchDogHandler::WatchDogProcess() {
   MS_LOG(INFO) << "WatchDogProcess start, rank id: " << rank_id_ << ", group name: " << group_name_;
-  if (!(common::GetEnv(kSimulationLevel).empty() && common::UseHostCollective() &&
-        !hccl::HcclAdapter::GetInstance().UseHcclCM())) {
-    MS_LOG(INFO) << "No need watch dog, return!";
-    return;
-  }
   try {
     DoProcess();
   } catch (const std::exception &e) {
     auto msg = e.what();
-    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg << ".Try to kill this process by SIGTERM.";
+    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg
+                  << ".Try to kill this process by SIGTERM. Node:" << common::GetEnv(distributed::kEnvWorkerIp);
     (void)killpg(getpid(), SIGTERM);
   }
   exit_.store(true, std::memory_order_acq_rel);

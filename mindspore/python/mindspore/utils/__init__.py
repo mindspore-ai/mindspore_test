@@ -15,11 +15,12 @@
 """Utils module."""
 from __future__ import absolute_import
 from mindspore._c_expression import stress_detect, _reuse_data_ptr
-from .utils import ExitByRequest, _tft_handler
+from .utils import ExitByRequest, RSCPluginHandle, TFTCommValue, _tft_handler
 from .runtime_execution_order_check import runtime_execution_order_check, comm_exec_order_check
 from .sdc_detect import sdc_detect_start, sdc_detect_stop, get_sdc_detect_result
 from . import dryrun
 
 # Symbols from utils module.
 __all__ = ["stress_detect", "ExitByRequest", "runtime_execution_order_check", "dryrun", "_reuse_data_ptr",
-           "_tft_handler", "comm_exec_order_check", "sdc_detect_start", "sdc_detect_stop", "get_sdc_detect_result"]
+           "_tft_handler", "comm_exec_order_check", "sdc_detect_start", "sdc_detect_stop", "get_sdc_detect_result",
+           "RSCPluginHandle", "TFTCommValue"]
