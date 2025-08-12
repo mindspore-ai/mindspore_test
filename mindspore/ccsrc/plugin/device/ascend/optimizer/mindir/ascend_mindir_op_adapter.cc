@@ -28,7 +28,7 @@ AnfNodePtr CreateNodeWithCheck(const AnfNodePtr &node, const KernelGraphPtr kern
     return node;
   }
   auto op_name = common::AnfAlgo::GetCNodeName(node);
-  auto op_adaptation_info = OpAdaptationInfoRegister::GetOpAdaptationInfo(op_name, kAscendDevice, true);
+  auto op_adaptation_info = OpAdaptationInfoRegister::GetOpAdaptationInfo(op_name, device::DeviceType::kAscend, true);
   if (!op_adaptation_info || op_adaptation_info->is_ascend_mindir() != is_ascend_mindir) {
     return node;
   }

@@ -32,6 +32,7 @@
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
 #include "backend/ms_backend/op_backend.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace pynative {
@@ -61,7 +62,6 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void DispatchSilceOpFrontendTask(const std::vector<ValuePtr> &input_values,
                                    const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
                                    const stub::StubNodePtr &stub_output, size_t stream_id);
-  size_t GetStreamId() const;
   void set_grad_executor(const GradExecutorPtr &grad_executor) { grad_executor_ = GradExecutorWeakPtr(grad_executor); }
   void RefreshForwardCallback();
   void ClearNodeAbsMap() const;
@@ -71,7 +71,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void ClearRes();
   bool EnablePipeline(const std::string &op_name) const;
   bool enable_async() const;
-  const std::string &device_target() const { return device_target_; }
+  device::DeviceType device_target() const { return device_target_; }
   void set_mix_precision_type(const MixedPrecisionType mix_precision_type, bool is_push) {
     is_push ? mix_precision_type_stack_.push(mix_precision_type) : mix_precision_type_stack_.pop();
     MS_LOG(DEBUG) << "Set mix precision type " << mix_precision_type << ", is push " << is_push;
@@ -89,7 +89,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   bool is_jit_compiling() const { return is_jit_compiling_; }
 
   void WaitForwardTask();
-  std::string GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
+  device::DeviceType GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
   void ReInit();
   void ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const;
   GradExecutorPtr grad() const;
@@ -151,7 +151,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   bool enable_async_{true};
   bool is_jit_compiling_{false};
   std::stack<MixedPrecisionType> mix_precision_type_stack_;
-  std::string device_target_;
+  device::DeviceType device_target_{device::DeviceType::kUnknown};
   std::string last_target_{"Unknown"};
   GradExecutorWeakPtr grad_executor_;
   CastOperationPtr cast_operation_;

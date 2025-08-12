@@ -184,9 +184,10 @@ bool ParseCond(const NodePtr &cond) {
 }
 }  // namespace
 
-FuncBuilder::FuncBuilder(const std::string &name, std::string device_target, const expander::ExpanderInferPtr &infer)
+FuncBuilder::FuncBuilder(const std::string &name, device::DeviceType device_target,
+                         const expander::ExpanderInferPtr &infer)
     : BpropBuilder(name, infer), device_target_(device_target) {
-  pass_forward_ = std::make_shared<bprop_pass::FuncPassForward>(this, std::move(device_target));
+  pass_forward_ = std::make_shared<bprop_pass::FuncPassForward>(this, device_target);
   NativeFunc::set_device_target(device_target_);
 }
 

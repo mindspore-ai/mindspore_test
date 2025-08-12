@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <memory>
+#include "ir/device_type.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 
@@ -31,15 +32,15 @@ using OpPtr = std::shared_ptr<OpRunner>;
 struct PYBOOST_API OpStatus {
   OpStatus();
   OpStatus(bool _disable_mix_precision, bool _is_jit_compiling, size_t _custom_bprop_cell_count,
-           std::string device_target)
+           device::DeviceType device_target)
       : disable_mix_precision(_disable_mix_precision),
         is_jit_compiling(_is_jit_compiling),
         custom_bprop_cell_count(_custom_bprop_cell_count),
-        device_target(std::move(device_target)) {}
+        device_target(device_target) {}
   bool disable_mix_precision{false};
   bool is_jit_compiling{false};
   size_t custom_bprop_cell_count{0};
-  std::string device_target{};
+  device::DeviceType device_target{};
 };
 
 class PYBOOST_API OpRunStatus {
@@ -51,7 +52,7 @@ class PYBOOST_API OpRunStatus {
 
   bool RequireGrad() const { return require_grad_; }
   void SetRequireGrad(bool require_grad) { require_grad_ = require_grad; }
-  const std::string &device_target() const { return status_.device_target; }
+  device::DeviceType device_target() const { return status_.device_target; }
 
   void ResetRequireGrad(bool require_grad) { require_grad_ = require_grad; }
 
@@ -59,7 +60,7 @@ class PYBOOST_API OpRunStatus {
 
   OpPtr GetLastOp() { return std::move(last_op_); }
 
-  void HeterBarrier(const std::string &device);
+  void HeterBarrier(device::DeviceType device);
 
  private:
   OpRunStatus();
@@ -70,7 +71,7 @@ class PYBOOST_API OpRunStatus {
   bool require_grad_{false};
   OpPtr last_op_{nullptr};
   // Change device name to device type latter.
-  std::string cur_device_;
+  device::DeviceType cur_device_;
 };
 
 class PYBOOST_API RequireGradGuard {

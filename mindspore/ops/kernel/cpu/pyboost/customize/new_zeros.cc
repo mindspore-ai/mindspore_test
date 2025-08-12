@@ -23,10 +23,6 @@ namespace pyboost {
 void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValueTuplePtr &size,
                           const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "NewZeros Call start";
-
-  auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
-
   std::optional<Int64ImmPtr> use_dtype;
   if (dtype.has_value()) {
     use_dtype.emplace(dtype.value());
@@ -35,7 +31,7 @@ void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &
     use_dtype.emplace(std::make_shared<Int64Imm>(tensor_type));
   }
 
-  auto zeros_op = CREATE_PYBOOST_OP(Zeros, device_name);
+  auto zeros_op = CREATE_PYBOOST_OP(Zeros, device::DeviceType::kCPU);
   auto zeros_out = zeros_op->Call(size, use_dtype);
   op->set_outputs({zeros_out});
 

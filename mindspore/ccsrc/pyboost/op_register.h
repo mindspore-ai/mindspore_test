@@ -26,6 +26,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,7 +36,7 @@ class PYBOOST_API OpFactory {
  public:
   using OpCreator = std::function<std::shared_ptr<T>()>;
   static OpFactory<T> &Get();
-  void Register(const std::string &device, OpCreator &&func) {
+  void Register(device::DeviceType device, OpCreator &&func) {
     MS_LOG(DEBUG) << "Reg for op " << typeid(T).name() << " on device " << device;
     auto ret = op_creator_.try_emplace(device, func);
     if (!ret.second) {
@@ -43,30 +44,31 @@ class PYBOOST_API OpFactory {
     }
   }
 
-  std::shared_ptr<T> Create(const std::string &device, uint32_t stream_id);
+  std::shared_ptr<T> Create(device::DeviceType device, uint32_t stream_id);
 
-  bool IsRegistered(const std::string &device) const { return op_creator_.find(device) != op_creator_.end(); }
-  std::map<std::string, OpCreator> &op_creator() { return op_creator_; }
+  bool IsRegistered(device::DeviceType device) const { return op_creator_.find(device) != op_creator_.end(); }
+  std::map<device::DeviceType, OpCreator> &op_creator() { return op_creator_; }
 
  private:
   OpFactory() = default;
   ~OpFactory() = default;
   DISABLE_COPY_AND_ASSIGN(OpFactory);
-  std::map<std::string, OpCreator> op_creator_;
+  std::map<device::DeviceType, OpCreator> op_creator_;
 };
 
 template <typename T>
 class OpRegister {
  public:
   using OpCreator = std::function<std::shared_ptr<T>()>;
-  OpRegister(const std::string &device, OpCreator &&fun) { OpFactory<T>::Get().Register(device, std::move(fun)); }
+  OpRegister(device::DeviceType device, OpCreator &&fun) { OpFactory<T>::Get().Register(device, std::move(fun)); }
   ~OpRegister() = default;
 };
 
-#define MS_REG_PYBOOST_OP(DEVICE, clazz)                                                                      \
-  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");                        \
-  static const OpRegister<clazz> g_##clazz##DEVICE##_##_PyBoost_reg(#DEVICE, []() {                           \
-    return std::make_shared<clazz##DEVICE>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext(#DEVICE)); \
+#define MS_REG_PYBOOST_OP(DEVICE, clazz)                                                                        \
+  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");                          \
+  static const OpRegister<clazz> g_##clazz##DEVICE##_##_PyBoost_reg(device::DeviceType::k##DEVICE, []() {       \
+    return std::make_shared<clazz##DEVICE>(prim::kPrim##clazz,                                                  \
+                                           runtime::OpRunner::GetDeviceContext(device::DeviceType::k##DEVICE)); \
   });
 
 #define CREATE_PYBOOST_OP(NAME, DEVICE) \
@@ -79,7 +81,7 @@ class PYBOOST_API InternalOpFactory {
   using OpCreator = std::function<std::shared_ptr<T>()>;
   static InternalOpFactory<T> &Get();
 
-  void Register(const std::string &device, OpCreator &&func) {
+  void Register(device::DeviceType device, OpCreator &&func) {
     MS_LOG(DEBUG) << "Reg for internal op " << typeid(T).name() << " on device " << device;
     auto ret = op_creator_.try_emplace(device, func);
     if (!ret.second) {
@@ -87,34 +89,35 @@ class PYBOOST_API InternalOpFactory {
     }
   }
 
-  std::shared_ptr<T> Create(const std::string &device, uint32_t stream_id);
+  std::shared_ptr<T> Create(device::DeviceType device, uint32_t stream_id);
 
-  bool IsRegistered(const std::string &device) const { return op_creator_.find(device) != op_creator_.end(); }
-  std::map<std::string, OpCreator> &op_creator() { return op_creator_; }
+  bool IsRegistered(device::DeviceType device) const { return op_creator_.find(device) != op_creator_.end(); }
+  std::map<device::DeviceType, OpCreator> &op_creator() { return op_creator_; }
 
  private:
   InternalOpFactory() = default;
   ~InternalOpFactory() = default;
   DISABLE_COPY_AND_ASSIGN(InternalOpFactory);
-  std::map<std::string, OpCreator> op_creator_;
+  std::map<device::DeviceType, OpCreator> op_creator_;
 };
 
 template <typename T>
 class InternalOpRegister {
  public:
   using OpCreator = std::function<std::shared_ptr<T>()>;
-  InternalOpRegister(const std::string &device, OpCreator &&fun) {
+  InternalOpRegister(device::DeviceType device, OpCreator &&fun) {
     InternalOpFactory<T>::Get().Register(device, std::move(fun));
   }
   ~InternalOpRegister() = default;
 };
 
-#define MS_REG_PYBOOST_INTERNAL_OP(DEVICE, clazz)                                                   \
-  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");              \
-  static const InternalOpRegister<clazz> g_internal##clazz##DEVICE##_##_PyBoost_reg(#DEVICE, []() { \
-    return std::make_shared<Internal##clazz##DEVICE>(prim::kPrim##clazz,                            \
-                                                     runtime::OpRunner::GetDeviceContext(#DEVICE)); \
-  });
+#define MS_REG_PYBOOST_INTERNAL_OP(DEVICE, clazz)                                                \
+  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");           \
+  static const InternalOpRegister<clazz> g_internal##clazz##DEVICE##_##_PyBoost_reg(             \
+    device::DeviceType::k##DEVICE, []() {                                                        \
+      return std::make_shared<Internal##clazz##DEVICE>(                                          \
+        prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext(device::DeviceType::k##DEVICE)); \
+    });
 
 #define CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE)                                                        \
   mindspore::kernel::pyboost::InternalOpFactory<mindspore::kernel::pyboost::NAME>::Get().Create(DEVICE, \

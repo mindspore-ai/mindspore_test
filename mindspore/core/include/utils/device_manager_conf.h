@@ -21,11 +21,11 @@
 #include <map>
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 const char kDeterministic[] = "deterministic";
 const char kDeviceTargetType[] = "device_target";
-enum class DeviceTargetType { kUnknown = 0, kCPU = 1, kAscend = 2, kGPU = 3 };
 
 class MS_CORE_API DeviceManagerConf {
  public:
@@ -45,13 +45,7 @@ class MS_CORE_API DeviceManagerConf {
     MS_LOG(INFO) << "Refresh device id to " << device_id << " for distributed.";
     device_id_ = device_id;
   }
-  const std::string &GetDeviceTarget() {
-    auto it = device_type_to_name_map_.find(device_type_);
-    if (it == device_type_to_name_map_.end()) {
-      MS_EXCEPTION(RuntimeError) << "Can't get the device target. Current wrong device type: " << device_type_;
-    }
-    return it->second;
-  }
+  const std::string &GetDeviceTarget() { return device::GetDeviceNameByType(device_type_); }
   const uint32_t &device_id() { return device_id_; }
   bool is_default_device_id() { return is_default_device_id_; }
   bool IsDeviceEnable() { return conf_status_.count(kDeviceTargetType); }
@@ -63,23 +57,21 @@ class MS_CORE_API DeviceManagerConf {
   const std::string &deterministic() { return deterministic_; }
   bool IsDeterministicConfigured() { return conf_status_.count(kDeterministic); }
 
-  const DeviceTargetType device_type() const { return device_type_; }
+  device::DeviceType device_type() const { return device_type_; }
   void SetDeviceType(const std::string &device_target) {
     if (IsDeviceEnable()) {
       return;
     }
-    auto it = device_name_to_type_map_.find(device_target);
-    if (it != device_name_to_type_map_.end()) {
-      device_type_ = it->second;
+    auto iter = device::device_name_to_type_map.find(device_target);
+    if (iter != device::device_name_to_type_map.end()) {
+      device_type_ = iter->second;
     }
   }
 
  private:
   static std::shared_ptr<DeviceManagerConf> instance_;
-  static std::map<std::string, DeviceTargetType> device_name_to_type_map_;
-  static std::map<DeviceTargetType, std::string> device_type_to_name_map_;
 
-  DeviceTargetType device_type_{DeviceTargetType::kUnknown};
+  device::DeviceType device_type_{device::DeviceType::kUnknown};
   uint32_t device_id_{0};
   bool is_default_device_id_{true};
 

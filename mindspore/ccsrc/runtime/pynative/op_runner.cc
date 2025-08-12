@@ -51,9 +51,9 @@ using EdgePtr = mindspore::pynative::EdgePtr;
 
 namespace mindspore::runtime {
 namespace {
-constexpr size_t kContextSize = 4;
+constexpr size_t kContextSize = 5;
 std::unique_ptr<std::mutex> kDeviceContextMutex = std::make_unique<std::mutex>();
-std::array<DeviceContext *, kContextSize> kDeviceContexts = {nullptr, nullptr, nullptr, nullptr};
+std::array<DeviceContext *, kContextSize> kDeviceContexts = {nullptr, nullptr, nullptr, nullptr, nullptr};
 
 // 1. Device type is different in heterogeneous scenes.
 // 2. The device address format is different.
@@ -852,13 +852,8 @@ void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, Device
   MS_LOG(DEBUG) << "End";
 }
 
-DeviceContext *OpRunner::GetDeviceContext(const std::string &device_type) {
-  auto type_iter = device::device_name_to_type_map.find(device_type);
-  if (type_iter == device::device_name_to_type_map.end()) {
-    MS_LOG(EXCEPTION) << "Invalid device_type " << device_type;
-  }
-
-  auto index = static_cast<size_t>(type_iter->second);
+DeviceContext *OpRunner::GetDeviceContext(device::DeviceType device_type) {
+  auto index = static_cast<size_t>(device_type);
   auto cached_device_context = kDeviceContexts[index];
 
   if (cached_device_context != nullptr) {
@@ -869,7 +864,8 @@ DeviceContext *OpRunner::GetDeviceContext(const std::string &device_type) {
   std::unique_lock<std::mutex> lock(*kDeviceContextMutex);
 
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device::GetDeviceNameByType(device_type), device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
 

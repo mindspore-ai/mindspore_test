@@ -97,7 +97,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin CustomBackwardNode CallBackward ";
   auto gradient = PyNativeAlgo::DataConvert::ValueListToValue(grads, out_abstract_);
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   // Python grad func can not process None, we need to convert None to zero tensor.
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
@@ -160,7 +160,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_EXCEPTION_IF_NULL(ctx);
   py::object py_tensor_grad;
   if (ctx->materialize_grads()) {
-    const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
     // Python grad func can not process None, we need to convert None to zero tensor.
     auto func_builder = FuncBuilder(name_, device_target, nullptr);
     auto filled_zeros_grad = func_builder.FillZeros(gradients, out_abstract_);

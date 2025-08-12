@@ -9,7 +9,7 @@ class ${class_name}Functional : public Functional {
     auto parse_args = parser.Parse(args, kwargs, false);
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    std::string backend = ms_context->get_param < std::string > (MS_CTX_DEVICE_TARGET);
+    auto backend = DeviceManagerConf::GetInstance()->device_type();
     ${device_dispatcher}
     return py::none();
   }

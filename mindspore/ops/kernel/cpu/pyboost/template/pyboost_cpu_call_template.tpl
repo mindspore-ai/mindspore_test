@@ -47,13 +47,13 @@ if (kernel_attr_pair.first || op_name() == "Cast") {
   return ${return_values};
 }
 ${cast_input_code}
-const auto &op = CREATE_PYBOOST_OP(${op_name_str}, "CPU");
+const auto &op = CREATE_PYBOOST_OP(${op_name_str}, device::DeviceType::kCPU);
 (void)op->Call(${real_call_args_tensor});
 std::vector<TypeId> output_types;
 for (auto &tensor : outputs()) {
   (void)output_types.emplace_back(tensor->data_type());
 }
-const auto &real_output = PyBoostUtils::CastTensor(op->outputs(), output_types, "CPU");
+const auto &real_output = PyBoostUtils::CastTensor(op->outputs(), output_types, device::DeviceType::kCPU);
 set_outputs(real_output);
 get_op()->CreateOutputSimpleInfo();
 return ${return_values};

@@ -39,7 +39,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
         self.function_interface_template = Template("${return_type} BACKEND_EXPORT ${op_name}(${input_args});")
         self.function_interface_template_comm = Template(
             "${return_type} BACKEND_EXPORT ${op_name}_inner(${input_args}," \
-            "CommHandlePtr comm_handle, const std::string& target);"
+            "CommHandlePtr comm_handle, device::DeviceType target);"
         )
         self.function_interface_template_comm_return_handle = Template(
             "${return_type_with_handle} BACKEND_EXPORT ${op_name}(${input_args});"

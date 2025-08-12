@@ -79,7 +79,7 @@ void MeanExtGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &i
   if (input_tensor->data_type() != out_dtype) {
     MS_LOG(DEBUG) << "Call Cast gpu kernel, src dtype: " << TypeIdToString(input_tensor->data_type())
                   << ", dst dtype: " << TypeIdToString(out_dtype);
-    const auto &cast_op = CREATE_PYBOOST_OP(Cast, op->device_context()->device_context_key_.device_name_);
+    const auto &cast_op = CREATE_PYBOOST_OP(Cast, device::DeviceType::kGPU);
     cast_op->set_primitive(prim::kPrimCast);
     act_tensor = cast_op->Call(input_tensor, std::make_shared<Int64Imm>(out_dtype));
   }

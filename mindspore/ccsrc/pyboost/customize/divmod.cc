@@ -86,12 +86,12 @@ tensor::TensorPtr DivModCustomize(const std::shared_ptr<OpRunner> &op, const Ten
   if (mode == ops::RoundingMode::FLOOR) {
     FloorDivCall(op, x_tensor, y_tensor);
   } else {
-    const auto &div_op = CREATE_PYBOOST_OP(Div, op->device_context()->device_context_key_.device_name_);
+    const auto &div_op = CREATE_PYBOOST_OP(Div, op->device_context()->GetDeviceType());
     div_op->Call(x_tensor, y_tensor);
 
     if (mode == ops::RoundingMode::TRUNC) {
       auto act_tensor = PyBoostUtils::CastTensor(div_op->outputs()[0], x_tensor->Dtype()->type_id(),
-                                                 op->device_context()->device_context_key_.device_name_);
+                                                 op->device_context()->GetDeviceType());
       TruncCall(op, act_tensor);
     } else {
       op->set_outputs(div_op->outputs());

@@ -46,7 +46,7 @@ tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, co
   }
 
   MS_LOG(DEBUG) << "View Reshape Call start";
-  return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
+  return ReshapeCustomize(op, input_tensor, shape, device::DeviceType::kAscend);
 }
 tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                          const std::vector<int64_t> &shape) {
@@ -73,7 +73,7 @@ tensor::TensorPtr ReshapeAscendCustomize(const std::shared_ptr<OpRunner> &op, co
   }
 
   MS_LOG(DEBUG) << "View Reshape Call start";
-  return ReshapeCustomize(op, input_tensor, shape, op->device_context()->device_context_key_.device_name_);
+  return ReshapeCustomize(op, input_tensor, shape, device::DeviceType::kAscend);
 }
 }  // namespace pyboost
 }  // namespace kernel

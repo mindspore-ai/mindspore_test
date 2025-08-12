@@ -154,11 +154,11 @@ void PyBoostUtils::CreateOutputTensor(const ValueSimpleInfoPtr &output_value_sim
   }
 }
 
-bool PyBoostUtils::IsKernelModRegistered(const std::string &device_name, const std::string &op_name) {
+bool PyBoostUtils::IsKernelModRegistered(device::DeviceType device_name, const std::string &op_name) {
   return PyboostKernelExtraFuncFactory::GetInstance().IsKernelModRegistered(device_name, op_name);
 }
 
-bool PyBoostUtils::IsPyBoostCustomRegistered(const std::string &device_name, const std::string &op_name) {
+bool PyBoostUtils::IsPyBoostCustomRegistered(device::DeviceType device_name, const std::string &op_name) {
   return PyboostKernelExtraFuncFactory::GetInstance().IsPyBoostCustomRegistered(device_name, op_name);
 }
 
@@ -190,7 +190,7 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
       MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
     }
     cache_helper.SetCache(key, kernel_mod);
-    PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
+    PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
   }
 
   return kernel_mod;
@@ -440,7 +440,7 @@ void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceConte
     }
   };
 
-  const auto &device_name = device_context->device_context_key().device_name_;
+  const auto &device_name = device_context->GetDeviceType();
   if (!PyboostKernelExtraFuncFactory::GetInstance().IsEnableProfiler(device_name)) {
     launch_kernel_func();
   } else {
@@ -456,7 +456,7 @@ void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceConte
 }
 
 void PyBoostUtils::GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
-                                       const std::string &device_target, bool is_dynamic_shape,
+                                       device::DeviceType device_type, bool is_dynamic_shape,
                                        mindspore::HashSet<size_t> *input_to_attr_index) {
   if (op_name == prim::kPrimCustom->name()) {
     // Custom op needs to set reg dynamically
@@ -467,12 +467,12 @@ void PyBoostUtils::GetConstInputToAttr(const PrimitivePtr &op_prim, const std::s
   }
 
   // Ascend const input to attr move to AscendVmOpAdapter
-  if (device_target == kAscendDevice) {
+  if (device_type == device::DeviceType::kAscend) {
     return;
   }
 
   auto reg_info =
-    opt::OpAdaptationInfoRegister::GetInstance().GetOpAdaptationInfo(op_name, device_target, is_dynamic_shape);
+    opt::OpAdaptationInfoRegister::GetInstance().GetOpAdaptationInfo(op_name, device_type, is_dynamic_shape);
   if (reg_info == nullptr) {
     return;
   }
@@ -649,7 +649,7 @@ std::pair<bool, KernelAttr> PyBoostUtils::SelectKernel(const std::vector<Abstrac
 }
 
 std::optional<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::optional<tensor::TensorPtr> &tensor,
-                                                          const TypeId &type_id, const std::string &device_target) {
+                                                          const TypeId &type_id, device::DeviceType device_type) {
   if (!tensor.has_value()) {
     return tensor;
   }
@@ -657,41 +657,41 @@ std::optional<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::optional<te
     return tensor;
   }
   auto type_id64 = std::make_shared<Int64Imm>(static_cast<int64_t>(type_id));
-  const auto &cast_op = CREATE_PYBOOST_OP(Cast, device_target);
+  const auto &cast_op = CREATE_PYBOOST_OP(Cast, device_type);
   cast_op->set_primitive(prim::kPrimCast);
   return cast_op->Call(tensor.value(), type_id64);
 }
 
 tensor::TensorPtr PyBoostUtils::CastTensor(const tensor::TensorPtr &tensor, const TypeId &type_id,
-                                           const std::string &device_target) {
+                                           device::DeviceType device_type) {
   if (tensor->Dtype()->type_id() == type_id) {
     return tensor;
   }
   auto type_id64 = std::make_shared<Int64Imm>(static_cast<int64_t>(type_id));
-  const auto &cast_op = CREATE_PYBOOST_OP(Cast, device_target);
+  const auto &cast_op = CREATE_PYBOOST_OP(Cast, device_type);
   return cast_op->Call(tensor, type_id64);
 }
 
 std::vector<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::TensorPtr> &tensors,
                                                         const std::vector<TypeId> &type_id_list,
-                                                        const std::string &device_target) {
+                                                        device::DeviceType device_type) {
   if (tensors.size() != type_id_list.size()) {
     MS_LOG(EXCEPTION) << "before cast tensor output size is not equal after cast";
   }
   std::vector<tensor::TensorPtr> output_tensors;
   for (size_t i = 0; i < tensors.size(); ++i) {
-    const auto &output = CastTensor(tensors[i], type_id_list[i], device_target);
+    const auto &output = CastTensor(tensors[i], type_id_list[i], device_type);
     (void)output_tensors.emplace_back(output);
   }
   return output_tensors;
 }
 
 std::vector<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor::TensorPtr> &tensors, TypeId type_id,
-                                                        const std::string &device_target) {
+                                                        device::DeviceType device_type) {
   // tuple input
   std::vector<tensor::TensorPtr> output_tensors;
   for (size_t i = 0; i < tensors.size(); ++i) {
-    const auto &output = CastTensor(tensors[i], type_id, device_target);
+    const auto &output = CastTensor(tensors[i], type_id, device_type);
     (void)output_tensors.emplace_back(output);
   }
   return output_tensors;

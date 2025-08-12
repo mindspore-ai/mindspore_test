@@ -29,7 +29,7 @@ tensor::TensorPtr ArgSortAscendCustomize(const std::shared_ptr<OpRunner> &op, co
                                          const Int64ImmPtr &dim, const BoolImmPtr &descending,
                                          const BoolImmPtr &stable) {
   MS_LOG(DEBUG) << "ArgSort call start";
-  const auto sort_op = CREATE_PYBOOST_OP(SortExt, op->device_context()->device_context_key().device_name_);
+  const auto sort_op = CREATE_PYBOOST_OP(SortExt, device::DeviceType::kAscend);
   sort_op->Call(input_x, dim, descending, stable);
   auto indices = sort_op->output(kIndex1);
   op->set_outputs({indices});

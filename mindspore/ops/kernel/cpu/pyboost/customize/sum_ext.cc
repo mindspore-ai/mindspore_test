@@ -74,18 +74,17 @@ void SumExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &in
   if (input_tensor->data_type() != out_dtype) {
     MS_LOG(DEBUG) << "Call Cast cpu kernel, src dtype: " << TypeIdToString(input_tensor->data_type())
                   << ", dst dtype: " << TypeIdToString(out_dtype);
-    act_tensor =
-      PyBoostUtils::CastTensor(input_tensor, out_dtype, op->device_context()->device_context_key_.device_name_);
+    act_tensor = PyBoostUtils::CastTensor(input_tensor, out_dtype, device::DeviceType::kCPU);
   }
 
   if (act_tensor->data_type() == kNumberTypeFloat16) {
-    const auto &device_name = op->device_context()->device_context_key_.device_name_;
     // Increase the precision to float32 for calculation
-    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device_name);
-    const auto &sum_ext_op = CREATE_PYBOOST_OP(SumExt, device_name);
+    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
+    const auto &sum_ext_op = CREATE_PYBOOST_OP(SumExt, device::DeviceType::kCPU);
     const auto &cast_output_tensor = sum_ext_op->Call(cast_input_tensor, axis, keep_dims, std::nullopt);
     // After calculation, reduce the precision to float16
-    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    const auto &output_tensor =
+      PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device::DeviceType::kCPU);
     op->set_outputs({output_tensor});
   } else {
     const auto skip_mode = std::make_shared<BoolImm>(false);

@@ -52,8 +52,7 @@ tensor::TensorPtr LogSoftmaxExtAscendCustomize(const std::shared_ptr<OpRunner> &
   auto new_tensor = input_tensor;
   if (dtype.has_value()) {
     auto dtype_value = static_cast<TypeId>(GetValue<int64_t>(*dtype));
-    new_tensor =
-      PyBoostUtils::CastTensor(input_tensor, dtype_value, op->device_context()->device_context_key_.device_name_);
+    new_tensor = PyBoostUtils::CastTensor(input_tensor, dtype_value, device::DeviceType::kAscend);
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), new_tensor);

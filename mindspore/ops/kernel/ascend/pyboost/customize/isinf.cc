@@ -38,7 +38,7 @@ tensor::TensorPtr IsInfAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
 
   TensorPtr abs_out = input_tensor;
   if (!is_int_type) {
-    const auto abs_op = CREATE_PYBOOST_OP(Abs, op->device_context()->device_context_key().device_name_);
+    const auto abs_op = CREATE_PYBOOST_OP(Abs, device::DeviceType::kAscend);
     abs_out = abs_op->Call(input_tensor);
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), abs_out);
   }

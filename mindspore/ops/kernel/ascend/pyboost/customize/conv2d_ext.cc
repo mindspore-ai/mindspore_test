@@ -54,7 +54,7 @@ tensor::TensorPtr Conv2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   ValueTuplePtr output_padding_vector_2d_imm =
     std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(0), std::make_shared<Int64Imm>(0)}));
 
-  auto convolution_op = CREATE_PYBOOST_OP(Convolution, op->device_context()->device_context_key_.device_name_);
+  auto convolution_op = CREATE_PYBOOST_OP(Convolution, device::DeviceType::kAscend);
   if (is_batchify) {
     auto output_imm = convolution_op->Call(input_tensor, weight_tensor, bias_tensor, stride, pad, dilation,
                                            transposed_imm, output_padding_vector_2d_imm, group);
@@ -66,7 +66,7 @@ tensor::TensorPtr Conv2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
     std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(expand_input_shape),
                    [](int64_t e) { return e; });
 
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     auto expand_input_x_imm = reshape_op->Call(input_tensor, expand_input_shape);
 
     auto output_imm = convolution_op->Call(expand_input_x_imm, weight_tensor, bias_tensor, stride, pad, dilation,

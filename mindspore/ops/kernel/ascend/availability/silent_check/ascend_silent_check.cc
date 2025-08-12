@@ -207,13 +207,13 @@ bool IsCheckTypeSupported(const TensorPtr &input_tensor) {
 bool DynamicSilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
 
 CheckObject::CheckObject() {
-  norm_op_ = CREATE_PYBOOST_OP(Norm, kAscendDevice);
+  norm_op_ = CREATE_PYBOOST_OP(Norm, device::DeviceType::kAscend);
   if (HasApiSilentCheckV3()) {
-    square_op_ = CREATE_PYBOOST_OP(Square, kAscendDevice);
-    inplace_copy_op_ = CREATE_PYBOOST_OP(InplaceCopy, kAscendDevice);
-    silent_check_v3_op_ = CREATE_PYBOOST_OP(SilentCheckV3, kAscendDevice);
+    square_op_ = CREATE_PYBOOST_OP(Square, device::DeviceType::kAscend);
+    inplace_copy_op_ = CREATE_PYBOOST_OP(InplaceCopy, device::DeviceType::kAscend);
+    silent_check_v3_op_ = CREATE_PYBOOST_OP(SilentCheckV3, device::DeviceType::kAscend);
   } else {
-    silent_check_op_ = CREATE_PYBOOST_OP(SilentCheckV2, kAscendDevice);
+    silent_check_op_ = CREATE_PYBOOST_OP(SilentCheckV2, device::DeviceType::kAscend);
   }
 }
 

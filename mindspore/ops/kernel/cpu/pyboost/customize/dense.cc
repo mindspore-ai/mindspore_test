@@ -47,17 +47,15 @@ void DenseCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &inp
                        const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor) {
   MS_LOG(DEBUG) << "Dense Launch start";
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor);
-  auto device_context = op->device_context();
-  const auto &device_name = device_context->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kCPU);
+  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device::DeviceType::kCPU);
   auto perm = GetTransposePerm(weight_tensor);
-  auto matmul_op = CREATE_PYBOOST_OP(MatMulExt, device_name);
+  auto matmul_op = CREATE_PYBOOST_OP(MatMulExt, device::DeviceType::kCPU);
 
   auto output = matmul_op->Call(input_tensor, contiguous_op->Call(transpose_op->Call(weight_tensor, perm)));
 
   if (bias_tensor.has_value()) {
-    auto add_op = CREATE_PYBOOST_OP(Add, device_name);
+    auto add_op = CREATE_PYBOOST_OP(Add, device::DeviceType::kCPU);
     output = add_op->Call(output, bias_tensor.value());
   }
   op->set_outputs({output});

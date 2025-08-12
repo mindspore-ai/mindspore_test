@@ -108,7 +108,7 @@ class CustomAclnnOp : public OpRunner {
 void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &inputs,
                            const tensor::TensorPtrList &outputs) {
   auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
-  auto op = std::make_shared<CustomAclnnOp>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
+  auto op = std::make_shared<CustomAclnnOp>(p, runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend));
   op->set_stream_id(CurrentStream::id());
 
   tensor::TensorPtrList input_tensors;

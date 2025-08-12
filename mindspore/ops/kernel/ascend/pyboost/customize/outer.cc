@@ -27,7 +27,7 @@ tensor::TensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
                                        const TensorPtr &vec2) {
   OpRunner::InferOpOutput(op, input, vec2);
 
-  auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+  auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
   auto real_input = reshape_op->Call(input, {-1, 1});
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), real_input, vec2);

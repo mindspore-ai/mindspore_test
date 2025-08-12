@@ -2,7 +2,7 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kNativeFunc, "${func_name}",
                                      false);
   MS_LOG(DEBUG) << "Begin execute native func" << " ${func_name}";
-  if (device_target_.empty()) {
+  if (device_target_ == device::DeviceType::kUnknown) {
     MS_LOG(EXCEPTION) << "Device target is empty!";
   }
 #ifndef ENABLE_TEST

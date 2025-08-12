@@ -246,7 +246,7 @@ tensor::TensorPtr InplaceCopyH2H(const std::shared_ptr<OpRunner> &op, const Tens
     }
   }
 
-  auto cpu_copy_op = CREATE_PYBOOST_OP(InplaceCopy, "CPU");
+  auto cpu_copy_op = CREATE_PYBOOST_OP(InplaceCopy, device::DeviceType::kCPU);
   (void)cpu_copy_op->Call(dst, src, std::make_shared<BoolImm>(false));
   op->set_outputs(cpu_copy_op->outputs());
   return op->output(0);

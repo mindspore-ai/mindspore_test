@@ -37,11 +37,11 @@ tensor::TensorPtr PYBOOST_API ContiguousTensorOpProcess(const std::shared_ptr<Op
 tensor::TensorPtr PYBOOST_API ClampTensorCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                                        const std::optional<TensorPtr> &min,
                                                        const std::optional<TensorPtr> &max,
-                                                       const std::string &device_target);
+                                                       device::DeviceType device_target);
 tensor::TensorPtr PYBOOST_API ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                                        const std::optional<ScalarPtr> &min,
                                                        const std::optional<ScalarPtr> &max,
-                                                       const std::string &device_target);
+                                                       device::DeviceType device_target);
 
 void PYBOOST_API CommonCommFunc(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                 const std::function<void(void)> &pre_func, std::function<void()> launch_func);

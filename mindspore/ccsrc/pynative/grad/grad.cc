@@ -407,7 +407,7 @@ void GradExecutor::Init() {
 #endif
   init_ = true;
 
-  auto func = [](const std::string &device_target, const std::string &op_name) {
+  auto func = [](device::DeviceType device_target, const std::string &op_name) {
     return runtime::PyBoostOpExecute::GetInstance().IsPyBoostOpRegistered(op_name) &&
            (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target, op_name) ||
             kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target, op_name));

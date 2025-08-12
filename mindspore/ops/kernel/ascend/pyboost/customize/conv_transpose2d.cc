@@ -52,7 +52,7 @@ tensor::TensorPtr ConvTranspose2DAscendCustomize(const std::shared_ptr<OpRunner>
   auto is_batchify = ConvNDBatchify(input_shape, 2, op->primitive()->name());
 
   static BoolImmPtr transposed = std::make_shared<BoolImm>(true);
-  auto convolution_op = CREATE_PYBOOST_OP(Convolution, op->device_context()->device_context_key_.device_name_);
+  auto convolution_op = CREATE_PYBOOST_OP(Convolution, device::DeviceType::kAscend);
   if (is_batchify) {
     auto output_convolution = convolution_op->Call(input_tensor, weight_tensor, bias_tensor, stride, padding, dilation,
                                                    transposed, output_padding, groups);
@@ -61,14 +61,14 @@ tensor::TensorPtr ConvTranspose2DAscendCustomize(const std::shared_ptr<OpRunner>
   } else {
     // unsqueeze dim 0
     static auto dim = 0;
-    auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDims, op->device_context()->device_context_key_.device_name_);
+    auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDims, device::DeviceType::kAscend);
     auto expand_input = expand_dims_op->Call(input_tensor, dim);
     // call convolution
     auto output_convolution = convolution_op->Call(expand_input, weight_tensor, bias_tensor, stride, padding, dilation,
                                                    transposed, output_padding, groups);
     // squeeze dim 0
     static std::vector<int64_t> squeeze_dims{dim};
-    auto squeeze_op = CREATE_PYBOOST_OP(Squeeze, op->device_context()->device_context_key_.device_name_);
+    auto squeeze_op = CREATE_PYBOOST_OP(Squeeze, device::DeviceType::kAscend);
     auto squeeze_output_tensor = squeeze_op->Call(output_convolution, squeeze_dims);
     op->set_outputs(squeeze_op->outputs());
     return squeeze_output_tensor;

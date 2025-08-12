@@ -58,12 +58,12 @@ tensor::TensorPtr MultiScaleDeformableAttnAscendCustomize(const std::shared_ptr<
     MS_LOG(EXCEPTION) << "For MSDA, weight tensor type " << type << " is illegal";
   }
 
-  const auto &device_name = op->device_context()->device_context_key_.device_name_;
-  auto value_tensor_cp = PyBoostUtils::CastTensor(value_tensor, kNumberTypeFloat32, device_name);
-  auto shape_tensor_cp = PyBoostUtils::CastTensor(shape_tensor, kNumberTypeInt32, device_name);
-  auto offset_tensor_cp = PyBoostUtils::CastTensor(offset_tensor, kNumberTypeInt32, device_name);
-  auto locations_tensor_cp = PyBoostUtils::CastTensor(locations_tensor, kNumberTypeFloat32, device_name);
-  auto weight_tensor_cp = PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device_name);
+  auto value_tensor_cp = PyBoostUtils::CastTensor(value_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
+  auto shape_tensor_cp = PyBoostUtils::CastTensor(shape_tensor, kNumberTypeInt32, device::DeviceType::kAscend);
+  auto offset_tensor_cp = PyBoostUtils::CastTensor(offset_tensor, kNumberTypeInt32, device::DeviceType::kAscend);
+  auto locations_tensor_cp =
+    PyBoostUtils::CastTensor(locations_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
+  auto weight_tensor_cp = PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device::DeviceType::kAscend);
 
   OpRunner::InferOpOutput(op, value_tensor_cp, shape_tensor_cp, offset_tensor_cp, locations_tensor_cp,
                           weight_tensor_cp);
@@ -89,11 +89,9 @@ tensor::TensorPtr MultiScaleDeformableAttnAscendCustomize(const std::shared_ptr<
   op->CreateOutputSimpleInfo();
 
   if (ori_type == kFloat32) {
-    return PyBoostUtils::CastTensor(op->output(0), kNumberTypeFloat32,
-                                    op->device_context()->device_context_key_.device_name_);
+    return PyBoostUtils::CastTensor(op->output(0), kNumberTypeFloat32, device::DeviceType::kAscend);
   }
-  return PyBoostUtils::CastTensor(op->output(0), kNumberTypeFloat16,
-                                  op->device_context()->device_context_key_.device_name_);
+  return PyBoostUtils::CastTensor(op->output(0), kNumberTypeFloat16, device::DeviceType::kAscend);
 }
 }  // namespace pyboost
 }  // namespace kernel

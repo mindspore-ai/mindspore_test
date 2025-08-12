@@ -32,6 +32,7 @@
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace pynative {
@@ -48,7 +49,7 @@ struct BaseOpRunInfo {
   size_t stream_id{kDefaultStreamIndex};
   std::string op_name;
   std::string next_op_name;
-  std::string device_target = "Unknown";
+  device::DeviceType device_target = device::DeviceType::kUnknown;
 #if defined(__APPLE__)
   int next_input_index = 0;
 #else
@@ -170,7 +171,7 @@ struct PyboostOpRunInfo {
   stub::StubNodePtr stub_output{nullptr};
   ValueSimpleInfoPtr output_value_simple_info{nullptr};
   AsyncStatus async_status;
-  std::string device_target = "Unknown";
+  device::DeviceType device_target = device::DeviceType::kUnknown;
   size_t stream_id{kDefaultStreamIndex};
   int mix_type{0};
   bool requires_grad = false;

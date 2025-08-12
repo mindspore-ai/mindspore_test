@@ -65,15 +65,16 @@ OpAdaptationInfoRegister &OpAdaptationInfoRegister::GetInstance() {
   return inst;
 }
 
-std::string OpAdaptationInfoRegister::GenerateKey(const std::string &me_op_name, const std::string &device_name,
+std::string OpAdaptationInfoRegister::GenerateKey(const std::string &me_op_name, device::DeviceType device_type,
                                                   bool flag) {
-  if (device_name != kCPUDevice && device_name != kGPUDevice && device_name != kAscendDevice) {
+  if (device_type != device::DeviceType::kCPU && device_type != device::DeviceType::kGPU &&
+      device_type != device::DeviceType::kAscend) {
     MS_LOG(EXCEPTION) << "Backend type is invalid, should be one of [" << kCPUDevice << ", " << kGPUDevice << ", "
-                      << kAscendDevice << "], but got " << device_name;
+                      << kAscendDevice << "], but got " << device::GetDeviceNameByType(device_type);
   }
 
   std::string flag_str = flag ? "true" : "false";
-  return std::string(me_op_name + device_name + flag_str);
+  return std::string(me_op_name + device::GetDeviceNameByType(device_type) + flag_str);
 }
 
 std::set<std::string> &OpAdaptationInfoRegister::GetOpName() {
@@ -89,7 +90,8 @@ std::map<std::string, OpAdaptationInfo *> &OpAdaptationInfoRegister::GetOpInfoMa
 void OpAdaptationInfoRegister::RegOpAdaptationInfo(OpAdaptationInfo *reg_info) {
   MS_EXCEPTION_IF_NULL(reg_info);
   (void)GetOpName().insert(reg_info->me_op_name());
-  auto key = GenerateKey(reg_info->me_op_name(), reg_info->device_name(), reg_info->flag());
+  auto key =
+    GenerateKey(reg_info->me_op_name(), device::GetDeviceTypeByName(reg_info->device_name()), reg_info->flag());
   auto find = GetOpInfoMap().find(key);
   if (find != GetOpInfoMap().end()) {
     MS_LOG(DEBUG) << "This key (" << key << ") has been registered in me op info map.";
@@ -100,7 +102,7 @@ void OpAdaptationInfoRegister::RegOpAdaptationInfo(OpAdaptationInfo *reg_info) {
 }
 
 OpAdaptationInfo *OpAdaptationInfoRegister::GetOpAdaptationInfo(const std::string &me_op_name,
-                                                                const std::string &device_name, bool flag) {
+                                                                device::DeviceType device_name, bool flag) {
   auto name_iter = GetOpName().find(me_op_name);
   if (name_iter == GetOpName().end()) {
     return nullptr;

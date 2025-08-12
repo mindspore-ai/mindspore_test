@@ -123,7 +123,7 @@ py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_v
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kRunOp);
 
   forward_executor()->Init();
-  auto stream_id = forward_executor()->GetStreamId();
+  auto stream_id = CurrentStream::id();
   SetCallbackForInputTensor(input_values);
   auto requires_grad = GradState::Get().RequiresGrad();
   forward_executor()->WaitForwardTask();

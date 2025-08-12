@@ -33,9 +33,9 @@ void InplaceEmbeddingRenormCall(const std::shared_ptr<OpRunner> &op, const Tenso
     return;
   }
   TensorPtr copy_input = nullptr;
-  auto copy_op = CREATE_PYBOOST_OP(Copy, op->device_context()->device_context_key_.device_name_);
+  auto copy_op = CREATE_PYBOOST_OP(Copy, device::DeviceType::kAscend);
   copy_input = copy_op->Call(input);
-  auto view_op = CREATE_PYBOOST_OP(View, op->device_context()->device_context_key_.device_name_);
+  auto view_op = CREATE_PYBOOST_OP(View, device::DeviceType::kAscend);
   copy_input = view_op->Call(copy_input, {-1});
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), copy_input, weight);

@@ -372,11 +372,11 @@ bool SameTensor(const TensorPtr &tensor1, const TensorPtr &tensor2) {
   return true;
 }
 
-tensor::TensorPtr ToContiguous(const TensorPtr &tensor, const std::string &device_target, size_t stream_id) {
+tensor::TensorPtr ToContiguous(const TensorPtr &tensor, size_t stream_id) {
   if (tensor->is_contiguous()) {
     return tensor;
   }
-  auto copy_op = CREATE_PYBOOST_OP(Copy, device_target);
+  auto copy_op = CREATE_PYBOOST_OP(Copy, device::DeviceType::kAscend);
   copy_op->set_stream_id(stream_id);
   return copy_op->Call(tensor);
 }
@@ -410,10 +410,10 @@ struct MatMulAdapter {
       return false;
     }
     if (!check_x) {
-      x_tensor = ToContiguous(x_tensor, op->device_context()->device_context_key_.device_name_, op->stream_id());
+      x_tensor = ToContiguous(x_tensor, op->stream_id());
     }
     if (!check_y) {
-      y_tensor = ToContiguous(y_tensor, op->device_context()->device_context_key_.device_name_, op->stream_id());
+      y_tensor = ToContiguous(y_tensor, op->stream_id());
     }
     return true;
   }
@@ -1490,7 +1490,7 @@ std::tuple<TensorPtr, TensorPtr> BatchNormStatsAscendDvm::Call(const TensorPtr &
   if (NeedSync() || input_tensor->data_type() != kNumberTypeFloat32) {
     return BatchNormStatsAscend::Call(input_tensor, eps);
   }
-  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto x = ToContiguous(input_tensor, stream_id_);
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, x);
   auto k = g_lazy_fusion_manager.Get(device_context_, stream_id_);
   CALL_START(op_name_, k);
@@ -1543,10 +1543,10 @@ std::tuple<TensorPtr, TensorPtr> BatchNormGatherStatsWithCountsAscendDvm::Call(
     return BatchNormGatherStatsWithCountsAscend::Call(input_tensor, mean_tensor, invstd_tensor, running_mean_tensor_opt,
                                                       running_var_tensor_opt, momentum, eps, counts_tensor_opt);
   }
-  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto sum_all = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto square_sum_all = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  counts_tensor = ToContiguous(counts_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto x = ToContiguous(input_tensor, stream_id_);
+  auto sum_all = ToContiguous(mean_tensor, stream_id_);
+  auto square_sum_all = ToContiguous(invstd_tensor, stream_id_);
+  counts_tensor = ToContiguous(counts_tensor, stream_id_);
   auto momentum_imm = GetValue<float>(momentum);
   auto momentum_imm_reverse = 1.0f - momentum_imm;
   auto eps_imm = GetValue<float>(eps);
@@ -1627,18 +1627,18 @@ TensorPtr BatchNormElemtAscendDvm::Call(const TensorPtr &input_tensor,
     return BatchNormElemtAscend::Call(input_tensor, weight_tensor_opt, bias_tensor_opt, mean_tensor_opt,
                                       invstd_tensor_opt, eps);
   }
-  auto x = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto x = ToContiguous(input_tensor, stream_id_);
   if (weight_tensor != nullptr) {
-    weight_tensor = ToContiguous(weight_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+    weight_tensor = ToContiguous(weight_tensor, stream_id_);
   }
   if (bias_tensor != nullptr) {
-    bias_tensor = ToContiguous(bias_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+    bias_tensor = ToContiguous(bias_tensor, stream_id_);
   }
   if (mean_tensor != nullptr) {
-    mean_tensor = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+    mean_tensor = ToContiguous(mean_tensor, stream_id_);
   }
   if (invstd_tensor != nullptr) {
-    invstd_tensor = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+    invstd_tensor = ToContiguous(invstd_tensor, stream_id_);
   }
   FlushLazyFusion();  // forward fusion not allowed, because inputs need reshape
   DvmCall(
@@ -1680,15 +1680,14 @@ TensorPtr BatchNormElemtGradAscendDvm::Call(const TensorPtr &dout_tensor, const 
     return BatchNormElemtGradAscend::Call(dout_tensor, input_tensor, mean_tensor, invstd_tensor, weight_tensor,
                                           sumd_dy_tensor, sum_dy_xmu_tensor, count_tensor);
   }
-  auto dout_tensor_c = ToContiguous(dout_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto input_tensor_c = ToContiguous(input_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto mean_tensor_c = ToContiguous(mean_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto invstd_tensor_c = ToContiguous(invstd_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto weight_tensor_c = ToContiguous(weight_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto sumd_dy_tensor_c = ToContiguous(sumd_dy_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto sum_dy_xmu_tensor_c =
-    ToContiguous(sum_dy_xmu_tensor, device_context_->device_context_key_.device_name_, stream_id_);
-  auto count_tensor_c = ToContiguous(count_tensor, device_context_->device_context_key_.device_name_, stream_id_);
+  auto dout_tensor_c = ToContiguous(dout_tensor, stream_id_);
+  auto input_tensor_c = ToContiguous(input_tensor, stream_id_);
+  auto mean_tensor_c = ToContiguous(mean_tensor, stream_id_);
+  auto invstd_tensor_c = ToContiguous(invstd_tensor, stream_id_);
+  auto weight_tensor_c = ToContiguous(weight_tensor, stream_id_);
+  auto sumd_dy_tensor_c = ToContiguous(sumd_dy_tensor, stream_id_);
+  auto sum_dy_xmu_tensor_c = ToContiguous(sum_dy_xmu_tensor, stream_id_);
+  auto count_tensor_c = ToContiguous(count_tensor, stream_id_);
   FlushLazyFusion();  // forward fusion not allowed, because inputs need reshape
   DvmCall(
     op_name_, this,
@@ -1727,13 +1726,13 @@ TensorPtr BatchNormElemtGradAscendDvm::Call(const TensorPtr &dout_tensor, const 
   return outputs_.front();
 }
 
-#define MS_REPLACE_DVM_OP(clazz)                                                                     \
-  if (EnableFuse(#clazz, enable_ops_only, disable_ops)) {                                            \
-    MS_LOG(INFO) << "Register dvm op [" << #clazz << "]";                                            \
-    OpFactory<clazz>::Get().op_creator()[kAscendDevice] = []() {                                     \
-      return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz,                                  \
-                                                runtime::OpRunner::GetDeviceContext(kAscendDevice)); \
-    };                                                                                               \
+#define MS_REPLACE_DVM_OP(clazz)                                                                                   \
+  if (EnableFuse(#clazz, enable_ops_only, disable_ops)) {                                                          \
+    MS_LOG(INFO) << "Register dvm op [" << #clazz << "]";                                                          \
+    OpFactory<clazz>::Get().op_creator()[device::DeviceType::kAscend] = []() {                                     \
+      return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz,                                                \
+                                                runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend)); \
+    };                                                                                                             \
   }
 
 void RegisterLazyFusionOp() {

@@ -40,7 +40,7 @@ tensor::TensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, con
     real_keepdim = GetValue<bool>(keepdim);
     real_input = input_tensor;
   } else {
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
     real_input = reshape_op->Call(input_tensor, {-1});
   }
 

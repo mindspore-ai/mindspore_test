@@ -22,7 +22,7 @@
 
 namespace mindspore::runtime {
 namespace {
-tensor::TensorPtr GetContiguousTensor(const std::string &device_target, const tensor::TensorPtr &tensor) {
+tensor::TensorPtr GetContiguousTensor(device::DeviceType device_target, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto device_address = tensor->device_address();
   if (device_address == nullptr || device_address->GetTensorStorageInfo() == nullptr) {
@@ -96,18 +96,18 @@ std::optional<int64_t> ValueConverter::ToBasicIntOptional(const ValuePtr &input)
   return ConvertBasicOptional<Int64ImmPtr, int64_t>(input);
 }
 
-tensor::TensorPtr ValueConverter::ContiguousTensorValue(const std::string &device_target,
+tensor::TensorPtr ValueConverter::ContiguousTensorValue(device::DeviceType device_target,
                                                         const tensor::TensorPtr &tensor) {
-  if (device_target == kAscendDevice) {
+  if (device_target == device::DeviceType::kAscend) {
     return tensor;
   }
 
   return GetContiguousTensor(device_target, tensor);
 }
 
-ValueTuplePtr ValueConverter::ContiguousTensorValue(const std::string &device_target, const ValueTuplePtr &tuple) {
+ValueTuplePtr ValueConverter::ContiguousTensorValue(device::DeviceType device_target, const ValueTuplePtr &tuple) {
   MS_EXCEPTION_IF_NULL(tuple);
-  if (device_target == kAscendDevice) {
+  if (device_target == device::DeviceType::kAscend) {
     return tuple;
   }
 

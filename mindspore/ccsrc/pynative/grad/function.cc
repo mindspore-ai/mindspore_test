@@ -165,7 +165,7 @@ TensorPtrList GradPreProcess(const ValuePtrList &grads, const AbstractBasePtrLis
   TensorPtrList outputs;
   outputs.reserve(grads.size());
 
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
   auto func_builder = FuncBuilder(function_name, device_target, nullptr);
 
   for (size_t i = 0; i < grads.size(); ++i) {

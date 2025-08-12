@@ -29,7 +29,7 @@ namespace pyboost {
 using TensorPtr = std::shared_ptr<tensor::Tensor>;
 class OpRunner;
 using OpPtr = std::shared_ptr<OpRunner>;
-using CloneFunc = void (*)(const OpPtr &inplace_op, const PrimitivePtr &prim, const std::string &device_target,
+using CloneFunc = void (*)(const OpPtr &inplace_op, const PrimitivePtr &prim, device::DeviceType device_target,
                            ValuePtrList &&inputs);
 
 void PYNATIVE_EXPORT RegisterCloneFunc(const CloneFunc &clone_func);

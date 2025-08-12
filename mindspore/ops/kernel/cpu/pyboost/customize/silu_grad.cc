@@ -29,11 +29,11 @@ namespace {
 OpPtr SiLUGradCPUCall(const device::DeviceContext *device_context, const TensorPtr &dout_tensor,
                       const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Call start";
-  const auto &sigmoid = CREATE_PYBOOST_OP(Sigmoid, device_context->device_context_key_.device_name_);
-  const auto &mul_a = CREATE_PYBOOST_OP(Mul, device_context->device_context_key_.device_name_);
-  const auto &mul_b = CREATE_PYBOOST_OP(Mul, device_context->device_context_key_.device_name_);
-  const auto &sigmoid_grad = CREATE_PYBOOST_OP(SigmoidGrad, device_context->device_context_key_.device_name_);
-  const auto &add = CREATE_PYBOOST_OP(AddExt, device_context->device_context_key_.device_name_);
+  const auto &sigmoid = CREATE_PYBOOST_OP(Sigmoid, device::DeviceType::kCPU);
+  const auto &mul_a = CREATE_PYBOOST_OP(Mul, device::DeviceType::kCPU);
+  const auto &mul_b = CREATE_PYBOOST_OP(Mul, device::DeviceType::kCPU);
+  const auto &sigmoid_grad = CREATE_PYBOOST_OP(SigmoidGrad, device::DeviceType::kCPU);
+  const auto &add = CREATE_PYBOOST_OP(AddExt, device::DeviceType::kCPU);
 
   auto alpha = std::make_shared<FP32Imm>(1.0);
 

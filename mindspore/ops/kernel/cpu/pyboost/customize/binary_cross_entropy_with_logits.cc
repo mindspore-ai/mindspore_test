@@ -34,15 +34,16 @@ void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &o
                                 posWeight_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  const auto &device_name = op->device_context()->device_context_key_.device_name_;
-
-  const auto &real_input_tensor = PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device_name);
-  const auto &real_target_tensor = PyBoostUtils::CastTensor(target_tensor, kNumberTypeFloat32, device_name);
-  const auto &real_weight_tensor = PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device_name);
-  const auto &real_posWeight_tensor = PyBoostUtils::CastTensor(posWeight_tensor, kNumberTypeFloat32, device_name);
+  const auto &real_input_tensor = PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
+  const auto &real_target_tensor =
+    PyBoostUtils::CastTensor(target_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
+  const auto &real_weight_tensor =
+    PyBoostUtils::CastTensor(weight_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
+  const auto &real_posWeight_tensor =
+    PyBoostUtils::CastTensor(posWeight_tensor, kNumberTypeFloat32, device::DeviceType::kCPU);
 
   const auto &outputs = op->outputs();
-  const auto &real_outputs = PyBoostUtils::CastTensor(outputs[0], kNumberTypeFloat32, device_name);
+  const auto &real_outputs = PyBoostUtils::CastTensor(outputs[0], kNumberTypeFloat32, device::DeviceType::kCPU);
 
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
     [op, real_input_tensor, real_target_tensor, real_weight_tensor, real_posWeight_tensor, reduction, real_outputs]() {
@@ -62,7 +63,8 @@ void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &o
       MS_LOG(DEBUG) << "For 'binary_cross_entropy_with_logits', the cpu task end";
     }));
 
-  const auto &real_output_tensor = PyBoostUtils::CastTensor(real_outputs, outputs[0]->data_type(), device_name);
+  const auto &real_output_tensor =
+    PyBoostUtils::CastTensor(real_outputs, outputs[0]->data_type(), device::DeviceType::kCPU);
 
   op->set_outputs({real_output_tensor});
 }

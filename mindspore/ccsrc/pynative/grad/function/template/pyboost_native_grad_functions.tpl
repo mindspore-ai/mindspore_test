@@ -31,7 +31,7 @@ ${include_op_header}
 
 namespace mindspore {
 namespace pynative {
-std::string NativeFunc::device_target_ = "";
+device::DeviceType NativeFunc::device_target_ = device::DeviceType::kUnknown;
 
 NodePtr NativeFunc::RunOpInVm(const PrimitivePtr &prim, const NodePtrList &inputs) {
   VectorRef args;

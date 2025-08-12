@@ -90,10 +90,10 @@ class PYBOOST_API ValueConverter {
   static std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(const ValuePtr &input);
   static std::optional<int64_t> ToBasicIntOptional(const ValuePtr &input);
 
-  static tensor::TensorPtr ContiguousTensorValue(const std::string &device_target, const tensor::TensorPtr &tensor);
-  static ValueTuplePtr ContiguousTensorValue(const std::string &device_target, const ValueTuplePtr &tuple);
+  static tensor::TensorPtr ContiguousTensorValue(device::DeviceType device_target, const tensor::TensorPtr &tensor);
+  static ValueTuplePtr ContiguousTensorValue(device::DeviceType device_target, const ValueTuplePtr &tuple);
   template <typename T>
-  static std::optional<T> ContiguousTensorValue(const std::string &device_target, const std::optional<T> &val) {
+  static std::optional<T> ContiguousTensorValue(device::DeviceType device_target, const std::optional<T> &val) {
     if (!val.has_value()) {
       return val;
     }

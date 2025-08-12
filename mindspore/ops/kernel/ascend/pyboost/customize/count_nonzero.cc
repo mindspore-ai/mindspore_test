@@ -37,14 +37,11 @@ tensor::TensorPtr CountNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &o
   }
   BoolImmPtr keep_dims = std::make_shared<BoolImm>(false);
   Int64ImmPtr out_dtype = std::make_shared<Int64Imm>(kNumberTypeInt64);
-  auto device_context = op->device_context();
 
-  const auto &device_name = device_context->device_context_key_.device_name_;
-
-  auto nescalar_op = CREATE_PYBOOST_OP(NeScalar, device_name);
+  auto nescalar_op = CREATE_PYBOOST_OP(NeScalar, device::DeviceType::kAscend);
   auto ne_tensor = nescalar_op->Call(input_tensor, other);
 
-  auto reducesum_op = CREATE_PYBOOST_OP(SumExt, device_name);
+  auto reducesum_op = CREATE_PYBOOST_OP(SumExt, device::DeviceType::kAscend);
   auto output_tensor = reducesum_op->Call(ne_tensor, dims, keep_dims, out_dtype);
   op->set_outputs({output_tensor});
   return op->output(0);

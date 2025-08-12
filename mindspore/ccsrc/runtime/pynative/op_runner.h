@@ -40,7 +40,7 @@ class OpRunner {
   static void LaunchKernelTask(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
                                const device::DeviceAddressPtrList &input_addr_list,
                                const device::DeviceAddressPtrList &output_addr_list, size_t stream_id);
-  BACKEND_EXPORT static DeviceContext *GetDeviceContext(const std::string &device_type);
+  BACKEND_EXPORT static DeviceContext *GetDeviceContext(device::DeviceType device_type);
   BACKEND_EXPORT static void ChildAfterFork();
 };
 

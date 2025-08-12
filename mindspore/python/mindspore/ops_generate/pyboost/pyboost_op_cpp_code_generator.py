@@ -636,11 +636,11 @@ class AclnnOpCppCodeGenerator:
             is_tensor = real_call_args_tensor[i] in call_tensors
             if is_tensor:
                 cast_input += f'const auto &real_{tensor} = PyBoostUtils::CastTensor({tensor}, ' \
-                              f'select_kernel.input_type()[{i}].dtype, "CPU");\n'
+                              f'select_kernel.input_type()[{i}].dtype, device::DeviceType::kCPU);\n'
                 real_call_args_tensor[i] = "real_" + real_call_args_tensor[i]
             if is_tuple_tensor:
                 cast_input += f'const auto &real_{tensor} = PyBoostUtils::CastTensor({tensor}, ' \
-                              f'select_kernel.input_type()[{i}].dtype, "CPU");\n'
+                              f'select_kernel.input_type()[{i}].dtype, device::DeviceType::kCPU);\n'
                 real_call_args_tensor[i] = "PyBoostUtils::ConvertTensorVectorToTuple(real_" + real_call_args_tensor[
                     i] + ")"
         if cast_input != "":

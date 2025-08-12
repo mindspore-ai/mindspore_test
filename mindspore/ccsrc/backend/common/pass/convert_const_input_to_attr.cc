@@ -51,7 +51,8 @@ const AnfNodePtr ConvertConstInputToAttr::Process(const FuncGraphPtr &, const An
 
   auto is_dynamic_shape = common::AnfAlgo::IsDynamicShape(node);
   mindspore::HashSet<size_t> input_to_attr = {};
-  auto reg_info = opt::OpAdaptationInfoRegister::GetInstance().GetOpAdaptationInfo(name, backend, is_dynamic_shape);
+  auto reg_info = opt::OpAdaptationInfoRegister::GetInstance().GetOpAdaptationInfo(
+    name, device::GetDeviceTypeByName(backend), is_dynamic_shape);
   if (reg_info == nullptr) {
     return nullptr;
   } else {

@@ -59,9 +59,9 @@ tensor::TensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op
 
   // Check if null tensor
   if (!(input_tensor->DataDim() == 1 && input_tensor->DataSize() == 0)) {
-    auto min_op = CREATE_PYBOOST_OP(Min, op->device_context()->device_context_key_.device_name_);
+    auto min_op = CREATE_PYBOOST_OP(Min, device::DeviceType::kAscend);
     auto min_tensor = min_op->Call(input_tensor);
-    auto max_op = CREATE_PYBOOST_OP(Max, op->device_context()->device_context_key_.device_name_);
+    auto max_op = CREATE_PYBOOST_OP(Max, device::DeviceType::kAscend);
     auto max_tensor = max_op->Call(input_tensor);
 
     // Get min value in input tensors

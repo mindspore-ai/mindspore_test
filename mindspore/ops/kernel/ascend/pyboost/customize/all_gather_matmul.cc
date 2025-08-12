@@ -59,8 +59,7 @@ std::vector<tensor::TensorPtr> AllGatherMatmulAscendCustomize(
   mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_imm, world_size_imm, op->primitive()->name());
   TensorPtr input_ = input;
   TensorPtr x2_ = x2;
-  const auto &device_name = op->device_context()->device_context_key_.device_name_;
-  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+  auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
   if (trans_input_imm) {
     input_ = transpose_op->Call(input, all_gather_matmul::GetTransposePerm(input));
   }

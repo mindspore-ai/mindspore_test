@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                   const ValueTuplePtr &shape_ptr, const std::string &device_target) {
+                                   const ValueTuplePtr &shape_ptr, device::DeviceType device_target) {
   MS_LOG(DEBUG) << "Call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto shape = GetValue<std::vector<int64_t>>(shape_ptr);
@@ -49,7 +49,7 @@ tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const Te
 }
 
 tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
-                                   const std::vector<int64_t> &shape, const std::string &device_target) {
+                                   const std::vector<int64_t> &shape, device::DeviceType device_target) {
   MS_LOG(DEBUG) << "Call start";
   auto old_storage_info = input_tensor->storage_info();
   TensorStorageInfoPtrList storage_info_list;
@@ -60,7 +60,7 @@ tensor::TensorPtr ReshapeCustomize(const std::shared_ptr<OpRunner> &op, const Te
     real_tensor = input_tensor;
   } else {
     // Tensor is not contiguous, need call copy first
-    auto copy_op = CREATE_PYBOOST_OP(Copy, op->device_context()->device_context_key_.device_name_);
+    auto copy_op = CREATE_PYBOOST_OP(Copy, device_target);
     copy_op->set_stream_id(op->stream_id());
     const auto copy_tensor = copy_op->Call(input_tensor);
     real_tensor = copy_tensor;

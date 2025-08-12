@@ -53,18 +53,15 @@ tensor::TensorPtr BatchMatMulAscendCustomize(const std::shared_ptr<OpRunner> &op
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mat2_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  auto device_context = op->device_context();
   TensorPtr input_tensor_ = input_tensor;
   if (transpose_a_imm) {
-    const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
     input_tensor_ = transpose_op->Call(input_tensor, batch_matmul::GetTransposePerm(input_tensor));
   }
 
   TensorPtr mat2_tensor_ = mat2_tensor;
   if (transpose_b_imm) {
-    const auto &device_name = device_context->device_context_key_.device_name_;
-    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
+    auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
     mat2_tensor_ = transpose_op->Call(mat2_tensor, batch_matmul::GetTransposePerm(mat2_tensor));
   }
   // Async
