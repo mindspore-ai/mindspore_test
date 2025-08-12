@@ -102,7 +102,8 @@
 "mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/custom_op_infer.cc"              "runtime/references"
 "mindspore/mindspore/ops/kernel/cpu/grid_sampler_2d_grad_cpu_kernel.h"                           "legal/copyright"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                          "build/include"
-
+"mindspore/mindspore/ccsrc/backend/ms_infer_backend/dart/dalang/dair/ops/ops_name.cc"            "build/include"
+"mindspore/mindspore/ccsrc/backend/ms_infer_backend/dart/dalang/common/common.h"                 "whitespace/semicolon"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"
