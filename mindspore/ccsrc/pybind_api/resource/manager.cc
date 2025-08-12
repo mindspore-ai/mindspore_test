@@ -128,6 +128,7 @@ void ClearResPart1() {
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();
+  pipeline::ActionConfigure::Instance().Clear();
 }
 
 void ClearResPart2() {
