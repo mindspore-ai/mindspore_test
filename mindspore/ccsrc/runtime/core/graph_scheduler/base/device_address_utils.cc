@@ -919,14 +919,11 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
 }
 
 void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor) {
-  auto addr = tensor->device_address();
-  if (addr == nullptr) {
-    if (device_context->GetDeviceType() == device::DeviceType::kCPU ||
-        tensor->source_type() != ops::OP_DTYPE::DT_BEGIN) {
-      return;
-    }
-    MS_LOG(EXCEPTION) << "The tensor " << tensor->ToString() << " device address is null! Need to call Tensor.to first";
+  if (tensor->source_type() != ops::OP_DTYPE::DT_BEGIN) {
+    MS_LOG(DEBUG) << "Input tensor source_type is " << tensor->source_type();
+    return;
   }
+  auto addr = tensor->device_address();
   auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
     MS_LOG(EXCEPTION) << "The tensor device address type is " << device_address->GetDeviceType()
@@ -965,11 +962,6 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     return;
   }
 
-  static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
-  if (need_check) {
-    CheckAutoH2D(device_context, tensor);
-  }
-
   auto addr = tensor->device_address();
   if (addr == nullptr) {
     MS_LOG(EXCEPTION) << "The " << tensor->ToString() << " is uninitialized. "
@@ -978,6 +970,12 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
                       << "For more detail with 'Tensor', Please refer to "
                       << "https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html";
   }
+
+  static bool need_check = common::GetEnv("MS_DEV_DISABLE_AUTO_H2D") == "1";
+  if (need_check) {
+    CheckAutoH2D(device_context, tensor);
+  }
+
   auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
   if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
     MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();

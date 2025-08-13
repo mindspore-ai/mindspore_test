@@ -31,7 +31,7 @@ class EnvContext:
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_disable_auto_h2d():
@@ -63,3 +63,10 @@ def test_pynative_disable_auto_h2d():
 
         y = ops.assign(x, 2)
         assert y == 2
+
+    x = Tensor(2)
+    with EnvContext(set_env, unset_env):
+        context.set_context(device_target="Ascend")
+        x = x.move_to("Ascend")
+        y = x * 2
+        assert y == 4

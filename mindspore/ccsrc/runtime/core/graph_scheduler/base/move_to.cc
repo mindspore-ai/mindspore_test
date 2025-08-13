@@ -91,12 +91,6 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   MS_EXCEPTION_IF_NULL(dst_tensor);
   MS_EXCEPTION_IF_NULL(return_self);
 
-  const auto &device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (to != "CPU" && to != device) {
-    MS_LOG(EXCEPTION) << "The value of arg 'to' of method 'move_to' should be same with device target, bug got to:"
-                      << to << ", device target: " << device;
-  }
-
   auto src_addr = src_tensor->device_address();
   device::DeviceAddressPtr src_device_ptr = nullptr;
   if (src_addr != nullptr) {
