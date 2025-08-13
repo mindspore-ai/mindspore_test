@@ -127,6 +127,7 @@ class PyObjectWrapper : public Named {
   std::size_t hash() const override { return tid(); }
 
   virtual bool operator==(const PyObjectWrapper &other) const {
+    py::gil_scoped_acquire acquire_gil;
     if (obj().get_type() != other.obj().get_type()) {
       return false;
     }
