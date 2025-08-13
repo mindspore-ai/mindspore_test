@@ -74,6 +74,8 @@ struct MemBlockInfo {
   DeviceMemPtr device_addr;
   std::weak_ptr<MemInfo> mem_info;
   bool is_bind;
+  bool is_persistent;
+  bool is_small;
   uint32_t stream_id;
   size_t actual_peak_memory;
   size_t size;
@@ -127,7 +129,8 @@ class BACKEND_EXPORT MemTracker {
   virtual void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr,
                                      MemType mem_type, const std::string &file_name, size_t line_num) = 0;
   virtual void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name,
-                             size_t actual_peak_memory, size_t in_used_size, size_t total_size, uint32_t stream_id) = 0;
+                             size_t actual_peak_memory, size_t in_used_size, size_t total_size, uint32_t stream_id,
+                             bool is_persistent, bool is_small_pool) = 0;
   virtual void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) = 0;
   virtual void UseMemBlock(const std::string &task_name, DeviceMemPtr device_addr, const std::string &file_name,
                            size_t line_num) = 0;
@@ -173,7 +176,8 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
                              const std::string &file_name, size_t line_num) override;
   void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name, size_t actual_peak_memory,
-                     size_t in_used_size, size_t total_size, uint32_t stream_id) override;
+                     size_t in_used_size, size_t total_size, uint32_t stream_id, bool is_persistent,
+                     bool is_small_pool) override;
   void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) override;
   void UseMemBlock(const std::string &task_name, DeviceMemPtr device_addr, const std::string &file_name,
                    size_t line_num) override;
@@ -252,7 +256,8 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
                              const std::string &file_name, size_t line_num) override {}
   void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name, size_t actual_peak_memory,
-                     size_t in_used_size, size_t total_size, uint32_t stream_id) override {}
+                     size_t in_used_size, size_t total_size, uint32_t stream_id, bool is_persistent,
+                     bool is_small_pool) override {}
   void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) override {}
   void UseMemBlock(const std::string &task_name, DeviceMemPtr device_addr, const std::string &file_name,
                    size_t line_num) override {}

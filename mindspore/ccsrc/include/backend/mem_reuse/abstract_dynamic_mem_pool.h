@@ -35,6 +35,8 @@
 namespace mindspore {
 namespace device {
 constexpr size_t kDecimalPrecision = 3;
+// largest allocation size for small pool is 1 MB
+constexpr size_t kSmallSize = 1048576;
 
 struct BACKEND_EXPORT MemBlock;
 
@@ -221,6 +223,32 @@ struct BACKEND_EXPORT MemStat {
   size_t iter_alloc_peak_size_;
 };
 
+struct AllocatorInfo {
+  uint32_t stream_id = 0;
+  bool from_persistent_mem = false;
+  bool use_small_pool = false;
+
+  bool operator<(const AllocatorInfo &other) const {
+    if (stream_id != other.stream_id) {
+      return stream_id < other.stream_id;
+    }
+    if (from_persistent_mem != other.from_persistent_mem) {
+      return other.from_persistent_mem;
+    }
+    if (use_small_pool != other.use_small_pool) {
+      return other.use_small_pool;
+    }
+    return false;
+  }
+
+  std::string ToString() const {
+    std::ostringstream oss;
+    oss << "stream id: " << stream_id << ", is persistent: " << from_persistent_mem
+        << ", use small pool: " << use_small_pool;
+    return oss.str();
+  }
+};
+
 class AbstractDynamicMemPool;
 
 class BACKEND_EXPORT MemBufAllocator {
@@ -229,14 +257,15 @@ class BACKEND_EXPORT MemBufAllocator {
                            std::function<bool(MemBlock *)> mem_block_cleaner,
                            std::function<size_t(size_t size, void *addr)> mem_mapper,
                            std::function<size_t(void *addr, size_t size)> mem_eager_freer, bool enable_eager_free,
-                           bool is_persistent, uint32_t stream_id)
+                           bool is_persistent, uint32_t stream_id, bool is_small)
       : mem_block_expander_(mem_block_expander),
         mem_block_cleaner_(mem_block_cleaner),
         mem_mapper_(mem_mapper),
         mem_eager_freer_(mem_eager_freer),
         enable_eager_free_(enable_eager_free),
         stream_id_(stream_id),
-        is_persistent_(is_persistent) {
+        is_persistent_(is_persistent),
+        is_small_(is_small) {
     search_key_ = new MemBuf(0, nullptr, 0, nullptr, MemBufStatus::kMemBufIdle);
   }
 
@@ -270,13 +299,14 @@ class BACKEND_EXPORT MemBufAllocator {
 
   std::string BriefInfo() const {
     std::stringstream ss;
-    ss << "Mem buf allocator, is persistent : " << is_persistent_ << ", stream id : " << stream_id_ << ".";
+    ss << "Mem buf allocator, is persistent : " << is_persistent_ << ", stream id : " << stream_id_
+       << ", is small: " << is_small_ << ".";
     return ss.str();
   }
 
-  uint32_t stream_id() { return stream_id_; }
-
-  bool is_persistent() { return is_persistent_; }
+  uint32_t stream_id() const { return stream_id_; }
+  bool is_persistent() const { return is_persistent_; }
+  bool is_small() const { return is_small_; }
 #ifndef ENABLE_TEST
 
  protected:
@@ -300,6 +330,7 @@ class BACKEND_EXPORT MemBufAllocator {
 
   uint32_t stream_id_;
   bool is_persistent_;
+  bool is_small_;
 
   friend AbstractDynamicMemPool;
 };
@@ -401,10 +432,27 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
 
   Lock &lock() { return lock_; }
 
+  /// @brief Check whether to use a small memory pool.
+  ///
+  /// Since the persistent memory pool does not release memory frequently,
+  /// using a small memory pool will not bring significant benefits. Use small
+  /// pool only if the allocate size is less than kSmallSize and the memory pool
+  /// is not persistent.
+  ///
+  /// @param size Size to allocate.
+  /// @param is_persistent True if the memory is persistent, false otherwise.
+  /// @return True if the size is small enough to use small pool, false otherwise.
+  bool UseSmallPool(size_t size, bool is_persistent) {
+    if (!memory::mem_pool::IsEnableSmallPool()) {
+      return false;
+    }
+    return is_persistent ? false : size <= kSmallSize;
+  }
+
  protected:
   void WaitPipelineHelper();
 
-  MemBufAllocatorPtr GenerateAllocator(bool is_persistent, uint32_t stream_id);
+  MemBufAllocatorPtr GenerateAllocator(const AllocatorInfo &allocator_key);
   inline MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
 #ifndef ENABLE_TEST
 
@@ -413,7 +461,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
 
  public:
 #endif
-  std::map<std::pair<bool, uint32_t>, MemBufAllocatorPtr> stream_id_allocators_;
+  std::map<AllocatorInfo, MemBufAllocatorPtr> stream_id_allocators_;
   std::unordered_map<void *, std::pair<MemBuf *, MemBufAllocator *>> addr_mem_buf_allocators_;
   std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<MemBuf *>, pair_hash> stream_pair_mem_bufs_;
   MemStat mem_stat_;

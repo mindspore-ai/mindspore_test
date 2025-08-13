@@ -293,7 +293,7 @@ void MemoryTrackerEnabled::BindDevicePtr(DeviceAddress *device_address, DeviceMe
 
 void MemoryTrackerEnabled::AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name,
                                          size_t actual_peak_memory, size_t in_used_size, size_t total_size,
-                                         uint32_t stream_id) {
+                                         uint32_t stream_id, bool is_persistent, bool is_small_pool) {
   std::lock_guard lock(mutex_);
   time_stamp_++;
   auto mem_block = std::make_shared<MemBlockInfo>();
@@ -304,6 +304,8 @@ void MemoryTrackerEnabled::AllocMemBlock(DeviceMemPtr device_addr, size_t size, 
   mem_block->size = size;
   mem_block->pool_name = pool_name;
   mem_block->stream_id = stream_id;
+  mem_block->is_persistent = is_persistent;
+  mem_block->is_small = is_small_pool;
   device_mem_block_map[device_addr] = mem_block;
   mem_block_list_.emplace_back(mem_block);
   // mem_block need to dump again, after mem_block_list_ changed
@@ -474,6 +476,8 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
        oss << mem_info->producer_task->python_stack;
      }
    }},
+  {"is_persistent", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->is_persistent; }},
+  {"is_small", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->is_small; }},
 };
 
 const std::vector<std::pair<std::string, std::function<void(const TaskInfoPtr &, std::ofstream &)>>> task_csv = {

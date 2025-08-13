@@ -22,6 +22,7 @@
 
 #include "memory/mem_pool/mem_env.h"
 #include "include/backend/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace memory {
@@ -168,6 +169,14 @@ class PooledAllocator : private ObjectPool<T> {
 
   void destroy(pointer p) { p->~T(); }
 };
+
+/// @brief Check if small pool environment variable is enabled.
+///
+/// @return True if small pool is enabled, false otherwise.
+inline bool IsEnableSmallPool() {
+  static const bool is_enable_small_pool = [] { return IsEnableAllocConfig(kAllocEnableSmallPool); }();
+  return is_enable_small_pool;
+}
 }  // namespace mem_pool
 }  // namespace memory
 }  // namespace mindspore
