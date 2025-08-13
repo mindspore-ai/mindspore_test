@@ -24,7 +24,7 @@
 #include <map>
 #include <utility>
 #include <tuple>
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"

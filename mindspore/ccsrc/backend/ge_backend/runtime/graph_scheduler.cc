@@ -29,7 +29,7 @@
 #include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -40,7 +40,7 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "utils/phase.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif

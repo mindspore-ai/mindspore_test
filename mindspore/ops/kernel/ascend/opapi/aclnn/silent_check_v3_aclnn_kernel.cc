@@ -22,7 +22,7 @@
 #include <functional>
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"

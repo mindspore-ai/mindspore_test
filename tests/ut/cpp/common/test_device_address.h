@@ -29,12 +29,12 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
-#include "common/device_address.h"
-#include "common/kernel_tensor.h"
-#include "common/kernel_utils.h"
-#include "common/common_utils.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {

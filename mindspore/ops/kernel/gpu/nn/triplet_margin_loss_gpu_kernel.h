@@ -28,7 +28,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/triplet_margin_loss_helper.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 namespace mindspore {
 namespace kernel {
 template <typename T>

@@ -23,7 +23,7 @@
 #include "utils/stream_guard.h"
 #include "ms_extension/common/tensor.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
-#include "mindspore/ccsrc/runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/runtime/pynative/op_runner.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "mindspore/ccsrc/runtime/device/device_address_utils.h"

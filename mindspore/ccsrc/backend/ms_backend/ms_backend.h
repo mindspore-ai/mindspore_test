@@ -31,7 +31,7 @@
 #include "backend/ms_backend/graph_partition.h"
 #include "backend/ms_backend/op_backend.h"
 #include "backend/common/session/session_basic.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_compiler.h"

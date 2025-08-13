@@ -30,8 +30,8 @@
 #include "backend/common/backend_common_callback.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
-#include "common/oplib/oplib.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "ir/func_graph_flag.h"
 

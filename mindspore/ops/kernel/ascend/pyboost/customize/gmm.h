@@ -22,7 +22,7 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {

@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/memcpy_cpu_kernel.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

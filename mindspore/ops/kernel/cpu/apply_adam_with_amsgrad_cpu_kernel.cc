@@ -17,7 +17,7 @@
 #include <map>
 #include <functional>
 #include <algorithm>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/cpu/apply_adam_with_amsgrad_cpu_kernel.h"
 
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"

@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

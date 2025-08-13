@@ -16,7 +16,7 @@
 
 #include <memory>
 #include "kernel/ascend/pyboost/customize/inplace_scatter_value_reduce.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"

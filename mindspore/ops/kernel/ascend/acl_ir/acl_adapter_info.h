@@ -25,7 +25,7 @@
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
 #include "mindapi/base/shape_vector.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore::device::ascend {
 using AclFormatSelector = std::function<std::string(TypeId, const std::vector<ShapeVector> &shape)>;

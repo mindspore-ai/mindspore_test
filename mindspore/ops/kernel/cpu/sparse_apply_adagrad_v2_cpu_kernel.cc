@@ -19,7 +19,7 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "infer/sparse_apply_adagrad_v2.h"
 #include "ops_utils/op_utils.h"

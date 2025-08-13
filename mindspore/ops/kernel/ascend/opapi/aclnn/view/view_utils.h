@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UTILS_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UTILS_H_
 #include <vector>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/tensor_storage_info.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 

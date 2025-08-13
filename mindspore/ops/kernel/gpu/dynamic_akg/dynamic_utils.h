@@ -24,9 +24,9 @@
 #include <map>
 #include <memory>
 #include <utility>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

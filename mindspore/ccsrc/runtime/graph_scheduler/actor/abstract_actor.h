@@ -27,10 +27,10 @@
 #include <map>
 #include "actor/op_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "common/device_tensor_store.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace runtime {

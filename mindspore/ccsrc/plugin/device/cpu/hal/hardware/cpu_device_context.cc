@@ -27,9 +27,9 @@
 #ifdef ENABLE_AKG
 #include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/trace_base.h"
@@ -68,7 +68,7 @@
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "runtime/device/move_to.h"
 #include "debug/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"

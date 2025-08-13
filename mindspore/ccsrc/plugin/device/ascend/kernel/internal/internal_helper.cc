@@ -24,7 +24,7 @@
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "mindapi/base/type_id.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

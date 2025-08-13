@@ -31,8 +31,8 @@
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace ge_backend {

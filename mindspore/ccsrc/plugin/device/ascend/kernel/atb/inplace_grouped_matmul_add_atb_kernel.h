@@ -22,7 +22,7 @@
 
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/device/ascend/kernel/atb/atb_kernel_mod.h"
 
 namespace mindspore {

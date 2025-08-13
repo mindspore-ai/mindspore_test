@@ -15,7 +15,7 @@
  */
 #include "runtime/device/res_manager/tensor_array.h"
 #include <unordered_set>
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 
 namespace mindspore {
 namespace device {

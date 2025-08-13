@@ -17,7 +17,7 @@
 #include "kernel/cpu/group_norm_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "include/common/thread_pool.h"
 

@@ -60,11 +60,11 @@
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/device/res_manager/utils/utils.h"
-#include "common/kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace device {

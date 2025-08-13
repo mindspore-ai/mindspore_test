@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ccsrc/runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

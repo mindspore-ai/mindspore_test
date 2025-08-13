@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -37,7 +37,7 @@
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
 #include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

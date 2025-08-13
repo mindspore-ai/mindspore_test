@@ -15,9 +15,9 @@
  */
 
 #include "ir/device_type.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "ir/device_address_maker.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace device {

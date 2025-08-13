@@ -23,10 +23,10 @@
 #include <vector>
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "runtime/device/res_manager/utils/io_handle.h"
 #include "runtime/device/res_manager/utils/pin_mem_pool.h"
-#include "runtime/hardware/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace device {

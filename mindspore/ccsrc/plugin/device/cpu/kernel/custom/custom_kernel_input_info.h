@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-#include "common/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 
 namespace mindspore {
 class CustomKernelData {

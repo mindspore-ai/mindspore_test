@@ -17,7 +17,7 @@
 #include "kernel/gpu/math/cum_minmax_gpu_kernel.h"
 #include <functional>
 #include <algorithm>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

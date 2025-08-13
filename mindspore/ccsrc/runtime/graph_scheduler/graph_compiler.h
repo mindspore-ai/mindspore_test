@@ -24,7 +24,7 @@
 #include <map>
 #include <set>
 #include "utils/hash_map.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "backend/common/session/session_basic.h"

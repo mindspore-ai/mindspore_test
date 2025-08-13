@@ -28,7 +28,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "debug/profiler/profiler.h"
 #include "include/common/pynative/adapter.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"

@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/infer/resize_v2.h"
 
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore::kernel {
 namespace resize_v2_cpu {

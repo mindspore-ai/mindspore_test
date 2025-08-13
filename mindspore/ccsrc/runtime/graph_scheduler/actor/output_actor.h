@@ -25,10 +25,10 @@
 #include <map>
 #include "utils/hash_map.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
-#include "common/device_tensor_store.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/abstract_actor.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/stub_tensor.h"

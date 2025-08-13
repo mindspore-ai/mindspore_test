@@ -17,13 +17,13 @@
 #include <complex>
 #include <vector>
 #include <algorithm>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "nnacl/errorcode.h"
 #include "include/common/thread_pool.h"
 #include "kernel/cpu/transpose_cpu_kernel.h"
 
 #include "utils/check_convert_utils.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

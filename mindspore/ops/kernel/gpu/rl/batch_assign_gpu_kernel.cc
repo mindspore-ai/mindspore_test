@@ -16,7 +16,7 @@
 #include <memory>
 #include <shared_mutex>
 #include "kernel/gpu/rl/batch_assign_gpu_kernel.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

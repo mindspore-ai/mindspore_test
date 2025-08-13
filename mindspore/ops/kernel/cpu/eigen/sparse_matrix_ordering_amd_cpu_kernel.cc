@@ -23,7 +23,7 @@
 #include "Eigen/OrderingMethods"
 #include "unsupported/Eigen/CXX11/Tensor"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/sparse_matrix_ordering_amd.h"
 
 namespace mindspore {

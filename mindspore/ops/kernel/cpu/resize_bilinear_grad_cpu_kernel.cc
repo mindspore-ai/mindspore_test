@@ -17,7 +17,7 @@
 #include "kernel/cpu/resize_bilinear_grad_cpu_kernel.h"
 #include <functional>
 #include <utility>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

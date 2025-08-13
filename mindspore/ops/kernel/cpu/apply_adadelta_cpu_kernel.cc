@@ -16,7 +16,7 @@
 
 #include <algorithm>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/cpu/apply_adadelta_cpu_kernel.h"
 #include "kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h"
 #include "kernel/cpu/nnacl/op_base.h"

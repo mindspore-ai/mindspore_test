@@ -23,7 +23,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/kernel_info.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

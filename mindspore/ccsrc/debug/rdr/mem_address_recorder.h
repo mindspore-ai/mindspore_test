@@ -23,7 +23,7 @@
 
 #include "include/common/debug/rdr/base_recorder.h"
 #include "include/backend/visible.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 using mindspore::kernel::KernelLaunchAddr;

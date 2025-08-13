@@ -27,12 +27,12 @@
 #include <map>
 #include <set>
 
-#include "common/kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ir/anf.h"
 #include "actor/actormgr.h"
 #include "include/common/thread_pool.h"

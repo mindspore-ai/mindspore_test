@@ -20,7 +20,7 @@
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/ms_context.h"
 #include "utils/llm_manager.h"

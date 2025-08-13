@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 #include "ops/base_operator.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "include/common/utils/anfalgo.h"

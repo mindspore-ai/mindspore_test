@@ -19,7 +19,7 @@
 #include <deque>
 #include <map>
 #include <utility>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 

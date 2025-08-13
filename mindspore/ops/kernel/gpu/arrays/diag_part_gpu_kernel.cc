@@ -21,7 +21,7 @@
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/diag_part_impl.cuh"
 #include "kernel/gpu/arrays/diag_part_gpu_kernel.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

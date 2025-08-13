@@ -19,7 +19,7 @@
 #include <limits>
 #include <functional>
 #include <cmath>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 #include "nnacl/fp32/softmax_fp32.h"
 #include "nnacl/fp32/mul_fp32.h"

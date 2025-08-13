@@ -24,7 +24,7 @@
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/philox_random.h"
 #include "mindspore/ops/infer/parameterized_truncated_normal.h"
 

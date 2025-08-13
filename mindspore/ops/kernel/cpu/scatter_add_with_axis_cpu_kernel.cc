@@ -19,7 +19,7 @@
 #include <atomic>
 #include <complex>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/scatter_add_with_axis.h"
 
 namespace mindspore {

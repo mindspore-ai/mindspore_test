@@ -22,7 +22,7 @@
 #include <limits>
 #include <utility>
 #include <memory>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic.h"
 
 namespace mindspore {

@@ -27,7 +27,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/resize_area_helper.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 namespace mindspore {
 namespace kernel {
 class ResizeAreaGpuKernelMod : public NativeGpuKernelMod {

@@ -17,7 +17,7 @@
 
 #include <algorithm>
 
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "op_def/op_enum.h"
 #include "ops_utils/op_utils.h"
 

@@ -34,7 +34,7 @@
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include "debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

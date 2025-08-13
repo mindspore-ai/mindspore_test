@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <utility>
 #include "ir/anf.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "hccl/hcom.h"
 #include "hccl/hccl_types.h"

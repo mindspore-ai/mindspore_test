@@ -28,7 +28,7 @@
 #include "backend/ge_backend/executor/ge_summary.h"
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace backend {

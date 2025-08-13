@@ -25,7 +25,7 @@
 
 #include "include/securec.h"
 #include "mindspore/ops/infer/ops_func_impl/generator.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

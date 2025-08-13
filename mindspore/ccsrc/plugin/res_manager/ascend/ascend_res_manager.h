@@ -27,7 +27,7 @@
 #include "ir/tensor.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace device {

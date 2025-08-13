@@ -26,8 +26,8 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "ops/op_def.h"
-#include "common/kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/common/utils/utils.h"
 #include "debug/profiler/profiler.h"
 #include "runtime/pynative/op_runtime_info.h"
@@ -37,7 +37,7 @@
 #include "utils/ms_utils.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 #include "kernel/ascend/visible.h"
 

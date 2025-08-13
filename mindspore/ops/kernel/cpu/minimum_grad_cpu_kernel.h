@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/common/utils/convert_utils.h"
 
 namespace mindspore {

@@ -19,8 +19,8 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/runtime_conf/runtime_conf.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore::device::ascend {

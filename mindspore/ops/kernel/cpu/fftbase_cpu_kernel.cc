@@ -17,7 +17,7 @@
 #include "kernel/cpu/fftbase_cpu_kernel.h"
 #include "mindapi/base/type_id.h"
 #include "ops_utils/op_utils.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/fft_helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"

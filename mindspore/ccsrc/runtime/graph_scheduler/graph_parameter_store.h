@@ -26,7 +26,7 @@
 #include <shared_mutex>
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 namespace mindspore {
 namespace runtime {

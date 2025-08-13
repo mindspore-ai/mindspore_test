@@ -21,7 +21,7 @@
 #include <utility>
 #include <complex>
 #include <vector>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindapi/base/type_id.h"
 
 #include "base/user_data.h"

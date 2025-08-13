@@ -19,7 +19,7 @@
 #include <functional>
 #include <unordered_map>
 #include "utils/profile.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "nnacl/fp32_grad/maxpool_grad_grad.h"
 #include "nnacl/errorcode.h"
 

@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <utility>
 #include "ir/anf.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

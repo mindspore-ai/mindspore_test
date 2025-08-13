@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "common/common_test.h"
 
 namespace mindspore {

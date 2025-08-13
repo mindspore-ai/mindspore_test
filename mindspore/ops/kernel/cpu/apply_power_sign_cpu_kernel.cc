@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 
 #include "ops_utils/op_utils.h"

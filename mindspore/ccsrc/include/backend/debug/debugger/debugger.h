@@ -26,9 +26,9 @@
 #include "google/protobuf/repeated_field.h"
 #include "include/backend/debug/tensor_data.h"
 #include "include/backend/kernel_graph.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/backend/visible.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace debugger {
 class Chunk;

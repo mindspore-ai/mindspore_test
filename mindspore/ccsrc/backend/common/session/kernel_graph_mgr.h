@@ -28,7 +28,7 @@
 #include "ir/tensor.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

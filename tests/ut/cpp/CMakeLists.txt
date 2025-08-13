@@ -134,7 +134,7 @@ list(REMOVE_ITEM UT_SRCS ${REPEATED_DEFINED_FILE})
 set(TEST_DEVICE_ADDRESS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/common/test_device_address.cc)
 add_library(_test_device_address_static STATIC ${TEST_DEVICE_ADDRESS_SRC})
 list(REMOVE_ITEM UT_SRCS ${TEST_DEVICE_ADDRESS_SRC})
-target_link_libraries(mindspore_hardware PRIVATE
+target_link_libraries(mindspore_hardware_abstract PRIVATE
         -Wl,--whole-archive
         _test_device_address_static
         -Wl,--no-whole-archive)
@@ -255,12 +255,12 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
 target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_ms_backend mindspore_core _c_dataengine proto_input
-        mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_hardware
-        mindspore_profiler mindspore_backend_common)
+        mindspore_common mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler
+        mindspore_backend_common)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_ms_backend mindspore_core
-        _c_dataengine mindspore_common mindspore_ops_kernel_common mindspore_backend_manager mindspore_hardware
+        _c_dataengine mindspore_common mindspore_backend_manager mindspore_hardware_abstract
         mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
@@ -273,8 +273,7 @@ include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
-                      mindspore_hardware mindspore_profiler mindspore_backend_common mindspore_ops_kernel_common
-                      mindspore::protobuf)
+                      mindspore_hardware_abstract mindspore_profiler mindspore_backend_common mindspore::protobuf)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 

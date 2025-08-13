@@ -20,7 +20,7 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "infer/fused_sparse_ftrl.h"
 #include "infer/sparse_apply_ftrl.h"

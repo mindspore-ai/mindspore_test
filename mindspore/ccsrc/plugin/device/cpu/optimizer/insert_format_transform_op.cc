@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/hash_set.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"

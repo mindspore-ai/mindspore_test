@@ -20,7 +20,7 @@
 #include <tuple>
 #include <memory>
 #include <algorithm>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {

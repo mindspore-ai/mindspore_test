@@ -235,7 +235,7 @@ target_link_libraries(_c_dataengine PUBLIC mindspore::jpeg_turbo mindspore::turb
                                           mindspore::sentencepiece_train ${ICU_LIB})
 
 target_link_libraries(_c_dataengine PRIVATE mindspore_ms_backend mindspore_profiler mindspore_backend_common
-    mindspore_hardware)
+    mindspore_hardware_abstract)
 
 target_link_libraries(_c_dataengine PRIVATE mindspore_common)
 add_dependencies(_c_dataengine _c_mindrecord)

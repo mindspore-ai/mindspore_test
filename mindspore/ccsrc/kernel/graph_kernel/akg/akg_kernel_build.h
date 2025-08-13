@@ -20,8 +20,8 @@
 #include <vector>
 #include <string>
 #include "nlohmann/json.hpp"
-#include "common/kernel.h"
-#include "common/kernel_build_client.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_client.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/graph_kernel/graph_kernel_builder.h"
 

@@ -21,7 +21,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 

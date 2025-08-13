@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include "include/backend/debug/debugger/debugger.h"
-#include "common/kernel.h"
-#include "runtime/hardware/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"
 
 using mindspore::device::DeviceContext;

@@ -15,7 +15,7 @@
  */
 #include <algorithm>
 #include "abstract/utils.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/math/non_deterministic_ints_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/non_deterministic_ints_impl.cuh"
 namespace mindspore {

@@ -17,7 +17,7 @@
 #include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/collective/leaper_trans.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {
 namespace device {

@@ -22,7 +22,7 @@
 #include <utility>
 #include "mindspore/ops/infer/grad/max_pool_grad_with_argmax.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

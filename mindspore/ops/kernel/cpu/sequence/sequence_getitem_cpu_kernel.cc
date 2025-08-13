@@ -17,7 +17,7 @@
 #include "kernel/cpu/sequence/sequence_getitem_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ops_utils/op_utils.h"
 
 #include "utils/convert_utils_base.h"

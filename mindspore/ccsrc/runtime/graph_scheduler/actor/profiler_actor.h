@@ -22,8 +22,8 @@
 #include <mutex>
 #include <string>
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "common/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace runtime {

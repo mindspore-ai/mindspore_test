@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/anf.h"
 #include "utils/ms_context.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "symbolic_shape/utils.h"
@@ -32,8 +32,8 @@
 #include "abstract/abstract_value.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore::kernel {
 bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const KernelModPtr &real_kernel_mod,

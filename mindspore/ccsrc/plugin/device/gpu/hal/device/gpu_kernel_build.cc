@@ -17,14 +17,14 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "common/kernel.h"
-#include "common/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #ifdef ENABLE_AKG
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #endif
-#include "common/kernel_build_client.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_client.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_info.h"

@@ -21,7 +21,7 @@
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

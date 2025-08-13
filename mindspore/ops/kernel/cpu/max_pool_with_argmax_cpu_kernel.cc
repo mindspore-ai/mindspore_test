@@ -19,8 +19,8 @@
 #include <string>
 
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
-#include "common/common_utils.h"
-#include "common/format_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
 
 namespace mindspore {
 namespace kernel {

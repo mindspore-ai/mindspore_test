@@ -24,7 +24,7 @@
 #include "acl/acl_base.h"
 #include "acl/acl_rt.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.h"
 
 namespace mindspore {

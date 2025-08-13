@@ -23,7 +23,7 @@
 #include <utility>
 #include "mindspore/ops/infer/grad/resize_v2_grad.h"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

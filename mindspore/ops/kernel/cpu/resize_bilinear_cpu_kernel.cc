@@ -17,7 +17,7 @@
 #include "kernel/cpu/resize_bilinear_cpu_kernel.h"
 #include <functional>
 #include <map>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
 
 namespace mindspore {

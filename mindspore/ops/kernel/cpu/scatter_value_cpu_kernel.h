@@ -24,7 +24,7 @@
 #include <utility>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindapi/base/types.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore::kernel {

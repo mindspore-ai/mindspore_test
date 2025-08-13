@@ -22,7 +22,7 @@
 #include <complex>
 #include "include/common/thread_pool.h"
 
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

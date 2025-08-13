@@ -20,7 +20,7 @@
 #include <string>
 #include <set>
 #include <vector>
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

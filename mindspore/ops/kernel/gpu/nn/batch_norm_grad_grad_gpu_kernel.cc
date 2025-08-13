@@ -17,7 +17,7 @@
 #include "kernel/gpu/nn/batch_norm_grad_grad_gpu_kernel.h"
 
 #include <algorithm>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

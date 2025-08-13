@@ -25,4 +25,4 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif()
 set_target_properties(mindspore_memory_pool PROPERTIES INSTALL_RPATH $ORIGIN)
 
-target_link_libraries(mindspore_memory_pool PRIVATE mindspore_core mindspore_common mindspore_ops_kernel_common)
+target_link_libraries(mindspore_memory_pool PRIVATE mindspore_core mindspore_common)

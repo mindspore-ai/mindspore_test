@@ -16,7 +16,7 @@
 #include "plugin/device/cpu/kernel/rl/batch_assign_cpu_kernel.h"
 #include <memory>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 namespace mindspore {
 namespace kernel {
 constexpr size_t kHalf = 2;

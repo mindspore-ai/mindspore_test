@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/fast_gelu.h"
 
 #include <memory>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 

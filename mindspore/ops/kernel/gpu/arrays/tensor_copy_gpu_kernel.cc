@@ -17,7 +17,7 @@
 #include "kernel/gpu/arrays/tensor_copy_gpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

@@ -25,7 +25,7 @@
 #include <mutex>
 #include "ir/anf.h"
 #include "hccl/hccl_types.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/res_manager/ascend/visible.h"
 
 using mindspore::kernel::KernelTensor;

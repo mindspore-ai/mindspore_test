@@ -18,7 +18,7 @@
 #include <numeric>
 #include <limits>
 #include <functional>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

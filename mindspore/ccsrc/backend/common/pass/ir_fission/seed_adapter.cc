@@ -22,13 +22,13 @@
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "include/backend/optimizer/helper.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "utils/trace_base.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "ir/tensor_new.h"
 
 namespace mindspore::opt {

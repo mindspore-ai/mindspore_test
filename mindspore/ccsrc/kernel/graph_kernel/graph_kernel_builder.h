@@ -25,7 +25,7 @@
 #include <set>
 #include "nlohmann/json.hpp"
 #include "kernel/kash/kernel_pack.h"
-#include "common/kernel_build_client.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_client.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 
 namespace mindspore {
