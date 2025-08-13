@@ -982,10 +982,13 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
     return;
   }
+
+  // Not type_cast from python scalar or tuple.
+  if (tensor->source_type() == ops::OP_DTYPE::DT_BEGIN) {
+    runtime::Pipeline::Get().WaitForward();
+  }
   MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
                 << " but current device context is " << device_context->GetDeviceType();
-  // Avoid multithread
-  // runtime::Pipeline::Get().WaitForward();
 
   auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());

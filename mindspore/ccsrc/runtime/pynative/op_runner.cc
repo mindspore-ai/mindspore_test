@@ -78,6 +78,7 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
     if (tensor_address != nullptr) {
       if (tensor_address->GetDeviceType() != device_context->GetDeviceType() ||
           tensor_address->format() != node_address->format()) {
+        runtime::Pipeline::Get().WaitForward();
         // malloc memory in a contiguous block.
         node_address->set_from_persistent_mem(tensor->is_parameter());
         node_address->SetNodeIndex(input_node, 0);
@@ -1022,6 +1023,7 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
 
     const auto &new_device_address = input_edge->kernel_tensor_->device_address();
     if (device_address->GetDeviceType() != new_device_address->GetDeviceType()) {
+      runtime::Pipeline::Get().WaitForward();
       MS_LOG(DEBUG) << "Input tensor device address type:"
                     << device::GetDeviceNameByType(device_address->GetDeviceType()) << " but ir device address type:"
                     << device::GetDeviceNameByType(new_device_address->GetDeviceType());
