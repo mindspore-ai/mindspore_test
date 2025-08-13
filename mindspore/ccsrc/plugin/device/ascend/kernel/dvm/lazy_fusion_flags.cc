@@ -166,9 +166,8 @@ const LazyFusionFlags &LazyFusionFlags::GetInstance() {
 }
 
 LazyFusionFlags::LazyFusionFlags() {
-  std::string str_flags = common::EnvHelper::GetInstance()->GetEnv("MS_DEV_LAZY_FUSION_FLAGS") == nullptr
-                            ? ""
-                            : std::string(common::EnvHelper::GetInstance()->GetEnv("MS_DEV_LAZY_FUSION_FLAGS"));
+  auto env = common::EnvHelper::GetInstance()->GetEnv("MS_DEV_PYNATIVE_FUSION_FLAGS");
+  std::string str_flags = env == nullptr ? "" : std::string(env);
   std::map<std::string, std::string> flag_map = ParseFlags(str_flags);
   RegisterFlags(&flag_map);
   MS_LOG(INFO) << "lazy_fusion_flags :" << DumpAllFlags();
@@ -178,19 +177,30 @@ void LazyFusionFlags::RegisterFlags(std::map<std::string, std::string> *flag_map
   FlagRegister reg(flag_map);
 
   reg.AddFlag("dump_as_text", &dump_as_text);
+  reg.AddFlag("dump_dir", &dump_dir);
   reg.AddFlag("synchronize", &synchronize);
   reg.AddFlag("flush_threshold", &flush_threshold);
   reg.AddFlag("opt_level", &opt_level);
   reg.AddFlag("online_tuning", &online_tuning);
   reg.AddFlag("disable_ops", &disable_ops);
+  reg.AddFlag("enable_ops", &enable_ops);
   reg.AddFlag("enable_ops_only", &enable_ops_only);
+  for (const auto &item : *flag_map) {
+    MS_LOG(WARNING) << "Unknown flag: " << item.first;
+  }
+  if (!flag_map->empty()) {
+    MS_LOG(WARNING) << "The flags listed above are invalid. Valid flags include: opt_level, enable_ops. For more "
+                       "details, please refer to 'MS_DEV_PYNATIVE_FUSION_FLAGS' at https://www.mindspore.cn";
+  }
 }
 
 std::string LazyFusionFlags::DumpAllFlags() const {
   nlohmann::json j;
   j["dump_as_text"] = dump_as_text;
+  j["dump_dir"] = dump_dir;
   j["synchronize"] = synchronize;
   j["disable_ops"] = disable_ops;
+  j["enable_ops"] = enable_ops;
   j["enable_ops_only"] = enable_ops_only;
   j["opt_level"] = opt_level;
   j["online_tuning"] = online_tuning;

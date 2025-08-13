@@ -52,11 +52,16 @@ class BACKEND_EXPORT LazyFusionFlags {
   /**
    * @brief Dump info as human-readable text.
    *
-   * A directory "lazy_fusion_dump" will be created, and all information will be dumped in this directory.
-   *
    * Default value: false.
    */
   bool dump_as_text{false};
+
+  /**
+   * @brief All information will be dumped in this directory if dump_as_text is True.
+   *
+   * Default value: "./lazy_fusion_dump".
+   */
+  std::string dump_dir{"./lazy_fusion_dump"};
 
   /**
    * @brief Enables or disables synchronization mechanisms.
@@ -84,6 +89,15 @@ class BACKEND_EXPORT LazyFusionFlags {
    * Default value: Empty vector (no operations are disabled by default).
    */
   std::vector<std::string> disable_ops;
+
+  /**
+   * @brief List of operation names that are enabled for lazy fusion.
+   *
+   * Operations operators listed here can be fused.
+   *
+   * Default value: Empty vector.
+   */
+  std::vector<std::string> enable_ops;
 
   /**
    * @brief List of operation names that are enabled for lazy fusion.

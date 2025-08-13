@@ -27,7 +27,9 @@
 #include "plugin/res_manager/ascend/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pynative/lazy_fusion.h"
+#include "plugin/device/ascend/kernel/dvm/lazy_fusion_dump.h"
 
 namespace mindspore {
 namespace kernel {
@@ -90,7 +92,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
 
   dvm::NDObject *Input(const TensorPtr &x, bool enable_cast = true,
                        const std::optional<ShapeVector> &shape = std::nullopt);
-  void Output(const TensorPtr &tensor, dvm::NDObject *obj);
+  void Output(const TensorPtr &tensor, dvm::NDObject *obj, bool inplace = false);
 
   TensorPtr Output(dvm::NDObject *obj, TypeId dtype, const ShapeVector &shape) {
     auto tensor = tensor::from_spec(dtype, shape, device::DeviceType::kNone);
@@ -106,7 +108,6 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   }
 
   dvm::ShapeRef *GetShapeRef(const ShapeVector &shape);
-  void DumpToFile();
 
   dvm::DType TransType(TypeId type) {
     switch (type) {
@@ -129,6 +130,71 @@ class LazyFusionKernelAscend : public dvm::Kernel {
 
   bool HasTensor(const TensorPtr &x) const;
 
+  struct Op {
+    std::string name;
+    std::vector<std::pair<int64_t, std::string>> inputs;
+    std::vector<uint32_t> outputs;
+  };
+
+  template <typename T>
+  std::pair<bool, uint32_t> GetInputIdx(const T &) {
+    return std::make_pair(false, 0u);
+  }
+
+  template <typename T>
+  std::pair<bool, uint32_t> GetOutputIdx(const T &) {
+    return std::make_pair(false, 0u);
+  }
+
+  std::pair<bool, uint32_t> GetInputIdx(const TensorPtr &tensor);
+  std::pair<bool, uint32_t> GetOutputIdx(const TensorPtr &tensor);
+
+  template <typename T>
+  void DumpOpInput(Op *op, const T &t) {
+    MS_EXCEPTION_IF_NULL(op);
+    auto [found, idx] = GetInputIdx(t);
+    if (!found) {
+      auto res = GetOutputIdx(t);
+      found = res.first;
+      idx = res.second;
+    }
+    if (found) {
+      op->inputs.emplace_back(static_cast<int64_t>(idx), "");
+    } else {
+      op->inputs.emplace_back(-1, LazyFusionDump::Instance().ToString(t));
+    }
+  }
+
+  template <typename T>
+  void DumpOpInput(Op *op, const std::optional<T> &t) {
+    MS_EXCEPTION_IF_NULL(op);
+    if (!t.has_value()) {
+      op->inputs.emplace_back(-1, "None");
+    } else {
+      DumpOpInput(op, t.value());
+    }
+  }
+
+  template <typename... Args>
+  void DumpOp(const std::string &op_name, const std::vector<TensorPtr> &outputs, const Args &... inputs) {
+    auto &op = dump_ops_.emplace_back();
+    op.name = op_name;
+    // record outputs
+    op.outputs.reserve(outputs.size());
+    for (size_t i = 0; i < outputs.size(); ++i) {
+      auto [found, idx] = GetOutputIdx(outputs[i]);
+      if (!found) {
+        MS_LOG(ERROR) << "For op [" << op.name << "], output[" << i << "] not found! kernel id is " << id();
+        continue;
+      }
+      op.outputs.push_back(idx);
+    }
+    // record inputs
+    (DumpOpInput(&op, inputs), ...);
+  }
+
+  void DumpGraph();
+
  private:
   void Launch();
 
@@ -140,7 +206,9 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     input_used_ = 0;
     outputs_.clear();
     reloc_entry_.clear();
+    workspace_.clear();
     cached_shape_.clear();
+    dump_ops_.clear();
   }
 
   void ClearKernel() {
@@ -163,18 +231,22 @@ class LazyFusionKernelAscend : public dvm::Kernel {
 
   struct Store {
     Store() = default;
-    Store(dvm::NDObject *p, const TensorPtr &t) : op(p) {
+    Store(dvm::NDObject *p, const TensorPtr &t, bool is_skip, bool is_inplace)
+        : op(p), skip(is_skip), inplace(is_inplace) {
       dev_addr = std::static_pointer_cast<device::DeviceAddress>(t->device_address());
       MS_EXCEPTION_IF_NULL(dev_addr);
     }
     dvm::NDObject *op;
     device::DeviceAddressPtr dev_addr;
+    bool skip{false};
+    bool inplace{false};
   };
 
   std::unordered_map<void *, dvm::NDObject *> ops_map_;
   std::vector<Load *> inputs_;
   std::vector<Store> outputs_;
   std::vector<dvm::RelocEntry> reloc_entry_;
+  std::vector<kernel::pyboost::MemBlockPtr> workspace_;
   std::vector<std::pair<uint32_t, void *>> cross_stream_addrs_;
   std::vector<std::pair<ShapeVector, ShapeRefPtr>> cached_shape_;
   size_t input_used_{0};
@@ -182,6 +254,7 @@ class LazyFusionKernelAscend : public dvm::Kernel {
   const device::DeviceContext *device_context_;
   size_t stream_id_;
   size_t id_{0};
+  std::vector<Op> dump_ops_;
 };
 
 static inline void FlushLazyFusion() { g_lazy_fusion_manager.Flush(); }
