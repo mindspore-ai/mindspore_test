@@ -338,16 +338,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return The display information in repr form.
   std::string ToStringRepr() const;
 
-  /// \brief Check if this Tensor is forward output.
-  ///
-  /// \return Whether this Tensor is forward output.
-  bool is_forward_output() const { return is_forward_output_; }
-
-  /// \brief Set the forward output flag of this Tensor.
-  ///
-  /// \param[in] is_forward_output Whether this Tensor is forward output.
-  void set_is_forward_output(bool is_forward_output) { is_forward_output_ = is_forward_output; }
-
   /// \brief Check if this Tensor is used in bprop graph.
   ///
   /// \return Whether this Tensor is used in bprop graph.
@@ -717,7 +707,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   TensorCompressionType compression_type_{kNoCompression};
 
   // bool size 1
-  bool is_forward_output_{false};
   bool used_in_bprop_graph_{true};
   bool need_pipeline_sync_{false};
   bool init_flag_{false};

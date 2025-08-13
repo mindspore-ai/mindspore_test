@@ -66,7 +66,6 @@ Tensor::Tensor(const Tensor &tensor)
       pin_mem_register_(tensor.pin_mem_register_),
       sync_status_(tensor.sync_status_),
       compression_type_(tensor.compression_type_),
-      is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
@@ -90,7 +89,6 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       pin_mem_register_(tensor.pin_mem_register_),
       sync_status_(tensor.sync_status_),
       compression_type_(tensor.compression_type_),
-      is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
       init_flag_(tensor.init_flag_),
       cache_enable_(tensor.cache_enable_),
@@ -102,7 +100,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   if (this == &tensor) {
     return *this;
   }
-  is_forward_output_ = tensor.is_forward_output_;
   id_ = tensor.id_;
   sync_status_ = tensor.sync_status_;
   version_ = tensor.version_;
@@ -168,7 +165,6 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
     MetaTensor::operator=(tensor);
     device_sync_ = tensor.device_address();
     need_pipeline_sync_ = tensor.need_pipeline_sync_;
-    is_forward_output_ = tensor.is_forward_output_;
     sync_status_ = tensor.sync_status_;
     version_ = tensor.version_;
     if (this->auto_grad_meta_data() != nullptr && this->auto_grad_meta_data()->input_type() == InputType::kInput) {

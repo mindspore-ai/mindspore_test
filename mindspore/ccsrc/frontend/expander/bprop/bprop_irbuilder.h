@@ -64,7 +64,6 @@ class FRONTEND_EXPORT PynativeCallback {
 };
 using FreeUselessValueFunc = std::function<void(const PynativeCallback &)>;
 using CloneInplaceInputFunc = std::function<bool(const PynativeCallback &)>;
-#define FREE_FUNC(cb) [](const PynativeCallback &cb) -> void
 
 struct COMMON_EXPORT BpropHandle {
   BpropBuilderFunc func = nullptr;

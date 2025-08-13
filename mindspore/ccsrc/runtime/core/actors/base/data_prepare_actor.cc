@@ -927,9 +927,6 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
 
   auto tensor = node_value->cast<TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
-  if (tensor->is_forward_output()) {
-    return;
-  }
 
   if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
     return;

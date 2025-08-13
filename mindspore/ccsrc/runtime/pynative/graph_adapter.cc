@@ -175,62 +175,17 @@ void GraphAdapter::RemoveUnusedValueNodes(const KernelGraphPtr &graph) {
   }
 }
 
-void GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(const KernelGraphPtr &graph,
-                                                            const device::DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(graph);
-  for (auto &value_node : graph->graph_value_nodes()) {
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto value = value_node->value();
-    MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<tensor::Tensor>()) {
-      auto tensor = value->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      if (!tensor->is_forward_output()) {
-        continue;
-      }
-
-      if (!AnfAlgo::OutputAddrExist(value_node, 0)) {
-        MS_LOG(DEBUG) << "Output addr is not exist for ValueNode " << value_node->ToString();
-        continue;
-      }
-      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, 0, false);
-      auto new_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(kernel_tensor, device_context);
-      AnfAlgo::SetOutputAddr(new_kernel_tensor->device_address(), 0, value_node);
-    }
-  }
-}
-
 // The device address of graph value node need to release
 // if the value node is output of forward_graph in PyNative mode.
 void GraphAdapter::GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   HashMap<std::string, size_t> tensor_counts;
-  HashMap<ValueNodePtr, size_t> value_node_ref_counts = GetGraphValueNodeRefCounts(graph);
-
   std::vector<size_t> value_node_ref_count_list;
   std::vector<bool> value_node_forward_output_flags;
   for (auto &value_node : graph->graph_value_nodes()) {
     MS_EXCEPTION_IF_NULL(value_node);
-    auto tensor = GetTensorFromValueNode(value_node);
-    if (tensor == nullptr || !tensor->is_forward_output()) {
-      (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
-      (void)value_node_forward_output_flags.emplace_back(false);
-      continue;
-    }
-
-    auto iter = value_node_ref_counts.find(value_node);
-    if (iter == value_node_ref_counts.end()) {
-      // The value_node is in bp graph but not used.
-      // e.g. %1-MakeTuple(T1, T2) -> TupleGetItem(%1, 0). T2 is not used.
-      MS_LOG(DEBUG) << "ValueNode " << value_node->ToString() << " is not used in graph";
-      (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
-      (void)value_node_forward_output_flags.emplace_back(false);
-      continue;
-    }
-
-    (void)value_node_ref_count_list.emplace_back(iter->second);
-    (void)value_node_forward_output_flags.emplace_back(true);
-    MS_LOG(DEBUG) << "ValueNode " << value_node->DebugString() << " ref_count " << iter->second;
+    (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
+    (void)value_node_forward_output_flags.emplace_back(false);
   }
   graph->set_attr(kAttrBpropValueNodeRefCount, MakeValue(value_node_ref_count_list));
   graph->set_attr(kAttrValueNodeForwardOuputFlags, MakeValue(value_node_forward_output_flags));
@@ -446,27 +401,6 @@ void UpdateValueNodeAbstractFromTensor(const ValueNodePtr &value_node, const ten
                                                             std::make_shared<abstract::Shape>(real_shape));
   value_node->set_abstract(new_abs);
   MS_LOG(DEBUG) << "Change bprop ValueNode abstract from " << old_abs->ToString() << " to " << new_abs->ToString();
-}
-
-void GraphAdapter::UpdateDynamicValueNodeAbstract(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  if (!graph->is_dynamic_shape()) {
-    return;
-  }
-  MS_LOG(INFO) << "Update dynamic shape value node for graph " << graph->graph_id();
-  const auto &value_nodes = graph->graph_value_nodes();
-  for (auto &value_node : value_nodes) {
-    MS_EXCEPTION_IF_NULL(value_node);
-    const auto &value = value_node->value();
-    MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<tensor::Tensor>()) {
-      auto tensor = value->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      if (tensor->is_forward_output()) {
-        UpdateValueNodeAbstractFromTensor(value_node, tensor);
-      }
-    }
-  }
 }
 
 void GraphAdapter::SensTensorToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context) {

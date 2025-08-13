@@ -144,7 +144,5 @@ bool ConvertPrimToPrimPy(const FuncGraphPtr &graph) {
   PrimpyConverter c;
   return c.Run(graph);
 }
-
-void ClearAllCache() { bprop::ClearBpropOpGraphMap(); }
 }  // namespace expander
 }  // namespace mindspore
