@@ -35,6 +35,7 @@
 #include "ps/core/comm_util.h"
 #include "ps/core/cluster_config.h"
 #include "include/common/debug/common.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {

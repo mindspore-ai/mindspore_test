@@ -33,6 +33,7 @@
 #include "common/oplib/oplib.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttr;

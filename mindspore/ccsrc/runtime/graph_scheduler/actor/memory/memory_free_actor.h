@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include "runtime/graph_scheduler/actor/memory_aware_actor.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace runtime {

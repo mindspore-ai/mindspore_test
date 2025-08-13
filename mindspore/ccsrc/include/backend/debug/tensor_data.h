@@ -21,7 +21,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "base/float16.h"
 #include "base/bfloat16.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/type_id.h"

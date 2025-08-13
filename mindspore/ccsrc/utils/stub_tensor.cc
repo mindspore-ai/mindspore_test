@@ -20,6 +20,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "debug/profiler/profiler.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace stub {

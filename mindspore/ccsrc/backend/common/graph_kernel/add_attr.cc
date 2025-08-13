@@ -20,6 +20,7 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
+#include "include/common/utils/utils.h"
 
 namespace mindspore::graphkernel {
 bool AddAttr::Process(const AnfNodePtr &graph_kernel_node) const {

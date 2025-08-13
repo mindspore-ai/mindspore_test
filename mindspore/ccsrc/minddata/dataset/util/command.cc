@@ -15,6 +15,7 @@
  */
 #include "minddata/dataset/util/command.h"
 #include "minddata/dataset/util/log_adapter.h"
+#include "utils/os.h"
 
 #include <fstream>
 #include <iostream>

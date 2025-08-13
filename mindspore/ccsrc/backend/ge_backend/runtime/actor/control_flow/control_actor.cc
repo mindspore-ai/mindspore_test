@@ -23,6 +23,7 @@
 #include "utils/ms_context.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace ge_backend {

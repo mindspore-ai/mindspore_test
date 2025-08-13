@@ -24,6 +24,7 @@
 #include "utils/ms_context.h"
 #include "include/common/visible.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace runtime {

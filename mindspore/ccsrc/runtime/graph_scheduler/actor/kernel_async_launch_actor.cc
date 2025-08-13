@@ -18,6 +18,7 @@
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "pipeline/jit/ps/debug/trace.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace runtime {

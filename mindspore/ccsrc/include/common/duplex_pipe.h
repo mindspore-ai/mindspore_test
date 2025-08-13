@@ -25,6 +25,7 @@
 
 #include "utils/log_adapter.h"
 #include "include/common/visible.h"
+#include "utils/os.h"
 
 #define DP_INFO MS_LOG(INFO) << "[DuplexPipe] "
 #define DP_WARNING MS_LOG(WARNING) << "[DuplexPipe] "

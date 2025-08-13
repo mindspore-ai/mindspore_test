@@ -36,6 +36,8 @@
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
 #include "utils/stream_guard.h"
+#include "base/float16.h"
+#include "ir/dtype/type_id.h"
 
 namespace mindspore {
 namespace tensor {
@@ -550,6 +552,23 @@ void Tensor::UnPinMemory() {
   pin_mem_register_->UnRegisterPinnedMem(data_c());
 }
 
+const ShapeVector &Tensor::shape_c() const { return shape(); }
+
+ssize_t Tensor::DataItemSize() const {
+  if (device_sync_ != nullptr && device_sync_->has_data()) {
+    return device_sync_->data()->itemsize();
+  }
+  return static_cast<ssize_t>(abstract::TypeIdSize(data_type_));
+}
+
+bool Tensor::operator==(const Value &other) const {
+  if (other.isa<Tensor>()) {
+    auto &other_ = static_cast<const Tensor &>(other);
+    return *this == other_;
+  }
+  return false;
+}
+
 CSRTensor::CSRTensor(const TensorPtr indptr, const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
     : MetaSparseTensor(values->data_type(), shape), indptr_(indptr), indices_(indices), values_(values) {}
 
@@ -619,6 +638,17 @@ TensorPtr CSRTensor::GetTensorAt(size_t index) const {
   MS_LOG(EXCEPTION) << "Invalid index: " << index << " for CSRTensor: " << ToString();
 }
 
+bool CSRTensor::operator==(const Value &other) const {
+  if (other.isa<CSRTensor>()) {
+    auto &other_ = static_cast<const CSRTensor &>(other);
+    return *this == other_;
+  }
+  return false;
+}
+
+COOTensor::COOTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
+    : MetaSparseTensor(values->data_type(), shape), indices_(indices), values_(values) {}
+
 TensorPtr COOTensor::GetTensorAt(size_t index) const {
   if (index == kIndicesIdx) {
     MS_EXCEPTION_IF_NULL(indices_);
@@ -665,6 +695,17 @@ abstract::AbstractBasePtr COOTensor::ToAbstract() {
   return std::make_shared<abstract::AbstractCOOTensor>(element_list);
 }
 
+bool COOTensor::operator==(const Value &other) const {
+  if (other.isa<COOTensor>()) {
+    auto &other_ = static_cast<const COOTensor &>(other);
+    return *this == other_;
+  }
+  return false;
+}
+
+RowTensor::RowTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
+    : MetaSparseTensor(values->data_type(), shape), indices_(indices), values_(values) {}
+
 std::string RowTensor::ToString() const {
   std::ostringstream buf;
   MS_EXCEPTION_IF_NULL(indices_);
@@ -694,6 +735,14 @@ abstract::AbstractBasePtr RowTensor::ToAbstract() {
   abs_sparse_tensor->set_dense_shape(std::make_shared<abstract::AbstractTuple>(abstract_shape));
 
   return abs_sparse_tensor;
+}
+
+bool RowTensor::operator==(const Value &other) const {
+  if (other.isa<RowTensor>()) {
+    auto &other_ = static_cast<const RowTensor &>(other);
+    return *this == other_;
+  }
+  return false;
 }
 
 std::string ShapeToString(const ShapeVector &shape) {

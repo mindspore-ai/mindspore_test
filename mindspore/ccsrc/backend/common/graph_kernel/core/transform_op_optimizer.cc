@@ -29,6 +29,7 @@
 #include "backend/common/graph_kernel/model/op_register.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 constexpr const size_t num2 = 2;

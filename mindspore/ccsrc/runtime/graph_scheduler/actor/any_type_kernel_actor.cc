@@ -26,6 +26,7 @@
 #include "include/backend/py_execute_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "runtime/device/res_manager/utils/utils.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace runtime {

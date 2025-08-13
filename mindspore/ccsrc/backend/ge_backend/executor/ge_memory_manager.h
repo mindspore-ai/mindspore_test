@@ -21,6 +21,7 @@
 #include <set>
 #include <map>
 #include "backend/ge_backend/graph_ir/types.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace backend {

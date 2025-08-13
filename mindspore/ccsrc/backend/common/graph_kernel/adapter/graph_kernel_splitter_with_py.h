@@ -20,6 +20,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include "backend/common/graph_kernel/core/graph_kernel_splitter.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 class SplitByJsonSchemer : public SplitSchemer {

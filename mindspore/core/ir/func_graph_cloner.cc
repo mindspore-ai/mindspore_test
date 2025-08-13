@@ -28,6 +28,7 @@
 #include "utils/profile.h"
 #include "utils/trace_base.h"
 #include "utils/tensor_hook_map.h"
+#include "ir/func_graph_flag.h"
 
 // namespace to support intermediate representation definition
 namespace mindspore {

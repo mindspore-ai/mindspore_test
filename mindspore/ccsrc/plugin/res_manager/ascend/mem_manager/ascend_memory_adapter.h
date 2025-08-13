@@ -26,6 +26,7 @@
 
 #include "ir/anf.h"
 #include "plugin/res_manager/ascend/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {

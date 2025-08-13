@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "ir/tensor_data.h"
+#include "base/float16.h"
+#include "utils/temp_file_manager.h"
 
 namespace mindspore::tensor {
 std::string GetTensorDataString(TypeId data_type, const ShapeVector &shape, void *data, size_t size, size_t ndim,

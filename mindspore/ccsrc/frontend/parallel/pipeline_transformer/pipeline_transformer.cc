@@ -62,6 +62,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace parallel {

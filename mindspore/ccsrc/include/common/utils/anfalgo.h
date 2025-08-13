@@ -29,7 +29,6 @@
 #include <vector>
 #include "base/base.h"
 #include "include/common/utils/contract.h"
-#include "include/common/utils/utils.h"
 #include "include/common/visible.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
@@ -276,19 +275,14 @@ class COMMON_EXPORT AnfAlgo {
 
   static inline bool IsAllgather(const CNodePtr &cnode) { return GetCNodeName(cnode) == kAllGatherOpName; }
 
-  static inline bool IsFusion(const CNodePtr &cnode) {
-    return HasNodeAttr(kAttrFusion, cnode) && GetNodeAttr<int64_t>(cnode, kAttrFusion) > 0;
-  }
+  static bool IsFusion(const CNodePtr &cnode);
 
   static inline bool IsFromParallelOptimizer(const CNodePtr &cnode) {
     auto primitive = GetCNodePrimitive(cnode);
     return (primitive != nullptr) && primitive->instance_name().find("parallel_optimizer") != std::string::npos;
   }
 
-  static inline bool IsRecompute(const CNodePtr &cnode) {
-    auto attr_dup = cnode->GetAttr(kAttrDuplicated);
-    return attr_dup != nullptr && GetValue<bool>(attr_dup);
-  }
+  static bool IsRecompute(const CNodePtr &cnode);
 
   // Check whether the node has Ref abstract.
   static inline bool HasAbstractRef(const AnfNodePtr &node) {

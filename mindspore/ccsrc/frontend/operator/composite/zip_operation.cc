@@ -32,6 +32,7 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

@@ -31,22 +31,15 @@
 #include "ir/meta_tensor.h"
 #include "ir/device_type.h"
 #include "utils/log_adapter.h"
-#include "base/float16.h"
 #include "base/bfloat16.h"
 #include "base/float8_e5m2.h"
 #include "base/float8_e4m3fn.h"
 #include "base/hifloat8.h"
-#include "utils/shape_utils.h"
-#include "utils/ms_exception.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
-#include "utils/ms_utils_secure.h"
 #include "base/complex_storage.h"
-#include "utils/temp_file_manager.h"
-#include "utils/system/env.h"
 #include "ir/quantization_param.h"
 #include "ir/dtype/op_dtype.h"
-#include "ir/dtype/type_id.h"
 
 // brief mindspore namespace.
 //
@@ -71,6 +64,11 @@ enum TensorCompressionType {
   kFSEInt = 5,
   kFSEInfer = 6
 };
+
+using ShapeValueDType = int64_t;
+using ShapeVector = std::vector<ShapeValueDType>;
+using ShapeArray = std::vector<ShapeVector>;
+
 // Pinned memory register interface.
 class MS_CORE_API PinnedMemRegister {
  public:
@@ -241,13 +239,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return Tensor with new value.
   Tensor &AssignValue(const Tensor &tensor);
 
-  bool operator==(const Value &other) const override {
-    if (other.isa<Tensor>()) {
-      auto &other_ = static_cast<const Tensor &>(other);
-      return *this == other_;
-    }
-    return false;
-  }
+  bool operator==(const Value &other) const override;
 
   /// \brief Gets tensor's dimension.
   ///
@@ -262,7 +254,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the tensor's shape for C++
   ///
   /// \return [ShapeVector]
-  const ShapeVector &shape_c() const { return shape(); }
+  const ShapeVector &shape_c() const;
 
   /// \brief Get Tensor data pointer for c++ type
   ///
@@ -287,12 +279,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get byte size of a single element.
   ///
   /// \return Byte size of a single element.
-  ssize_t DataItemSize() const {
-    if (device_sync_ != nullptr && device_sync_->has_data()) {
-      return device_sync_->data()->itemsize();
-    }
-    return static_cast<ssize_t>(abstract::TypeIdSize(data_type_));
-  }
+  ssize_t DataItemSize() const;
 
   /// \brief Get total number of bytes.
   ///
@@ -780,13 +767,7 @@ class MS_CORE_API CSRTensor : public MetaSparseTensor {
   /// \return True if having same data address, otherwise false.
   bool operator==(const CSRTensor &csr_tensor) const { return &csr_tensor == this; }
 
-  bool operator==(const Value &other) const override {
-    if (other.isa<CSRTensor>()) {
-      auto &other_ = static_cast<const CSRTensor &>(other);
-      return *this == other_;
-    }
-    return false;
-  }
+  bool operator==(const Value &other) const override;
 
   const size_t GetSizeAt(size_t index) const;
 
@@ -821,8 +802,7 @@ class MS_CORE_API COOTensor : public MetaSparseTensor {
   /// \param[in] indices [Tensor] The indices.
   /// \param[in] values [Tensor] The values.
   /// \param[in] shape The shape represented by ShapeVector of the COOTensor.
-  COOTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
-      : MetaSparseTensor(values->data_type(), shape), indices_(indices), values_(values) {}
+  COOTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape);
 
   /// Destructor of COOTensor.
   ~COOTensor() override = default;
@@ -849,13 +829,7 @@ class MS_CORE_API COOTensor : public MetaSparseTensor {
   /// \return True if having same data address, otherwise false.
   bool operator==(const COOTensor &coo_tensor) const { return &coo_tensor == this; }
 
-  bool operator==(const Value &other) const override {
-    if (other.isa<COOTensor>()) {
-      auto &other_ = static_cast<const COOTensor &>(other);
-      return *this == other_;
-    }
-    return false;
-  }
+  bool operator==(const Value &other) const override;
 
   /// \brief Get display information of this Tensor.
   ///
@@ -882,8 +856,7 @@ class MS_CORE_API RowTensor : public MetaSparseTensor {
   /// \param[in] indices [Tensor] The indices.
   /// \param[in] values [Tensor] The values.
   /// \param[in] shape The shape represented by ShapeVector of the RowTensor.
-  RowTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape)
-      : MetaSparseTensor(values->data_type(), shape), indices_(indices), values_(values) {}
+  RowTensor(const TensorPtr indices, const TensorPtr values, const ShapeVector &shape);
 
   /// Destructor of RowTensor.
   ~RowTensor() override = default;
@@ -904,13 +877,7 @@ class MS_CORE_API RowTensor : public MetaSparseTensor {
   /// \return True if having same data address, otherwise false.
   bool operator==(const RowTensor &row_tensor) const { return &row_tensor == this; }
 
-  bool operator==(const Value &other) const override {
-    if (other.isa<RowTensor>()) {
-      auto &other_ = static_cast<const RowTensor &>(other);
-      return *this == other_;
-    }
-    return false;
-  }
+  bool operator==(const Value &other) const override;
 
   /// \brief Get display information of this Tensor.
   ///

@@ -31,6 +31,7 @@
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/operator/ops.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

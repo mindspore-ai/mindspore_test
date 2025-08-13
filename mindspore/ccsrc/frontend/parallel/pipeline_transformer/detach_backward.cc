@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace parallel {

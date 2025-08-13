@@ -48,6 +48,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "utils/ms_context.h"
 #include "ops/scalar_graph_holder.h"
+#include "ir/func_graph_flag.h"
 
 using std::string;
 using std::vector;

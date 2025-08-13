@@ -25,6 +25,7 @@
 #include <functional>
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/pipeline/pipeline.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {

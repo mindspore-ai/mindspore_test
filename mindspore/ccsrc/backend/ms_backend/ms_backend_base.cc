@@ -77,6 +77,7 @@
 #include "include/common/runtime_conf/thread_bind_core.h"
 
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace backend {

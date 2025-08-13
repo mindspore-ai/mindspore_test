@@ -25,6 +25,7 @@
 #include "frontend/optimizer/anf_visitor.h"
 #include "ir/anf.h"
 #include "ir/value.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

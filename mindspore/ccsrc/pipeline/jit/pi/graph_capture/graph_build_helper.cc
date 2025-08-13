@@ -31,6 +31,7 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace pijit {

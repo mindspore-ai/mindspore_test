@@ -39,6 +39,7 @@
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {

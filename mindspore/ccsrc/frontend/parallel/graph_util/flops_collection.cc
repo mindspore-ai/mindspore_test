@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

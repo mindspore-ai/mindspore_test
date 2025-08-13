@@ -21,6 +21,7 @@
 #include "backend/ge_backend/runtime/scheduler_helper.h"
 #include "backend/ge_backend/runtime/actor/actor_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace ge_backend {

@@ -30,6 +30,7 @@
 #include "ir/manager.h"
 #include "ir/func_graph.h"
 #include "frontend/operator/ops.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {

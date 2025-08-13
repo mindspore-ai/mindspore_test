@@ -23,6 +23,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "frontend/operator/cc_implementations.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::prim {
 void MetaFuncBuilder::BeginFunc() {

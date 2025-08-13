@@ -36,6 +36,7 @@
 #include "backend/common/graph_kernel/model/op_node.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore::graphkernel {
 // operator which follows commutative rules

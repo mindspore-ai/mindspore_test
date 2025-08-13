@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace runtime {

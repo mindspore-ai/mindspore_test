@@ -23,6 +23,7 @@
 #include "ir/func_graph.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition

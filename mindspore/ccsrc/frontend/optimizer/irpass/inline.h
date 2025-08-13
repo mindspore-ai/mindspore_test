@@ -35,6 +35,7 @@
 #include "abstract/abstract_value.h"
 #include "include/common/utils/utils.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace opt {
