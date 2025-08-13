@@ -588,6 +588,17 @@ void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
     }
     auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
     MS_EXCEPTION_IF_NULL(kernel_info);
+    if (op_def->is_graph_view_) {
+      auto build_info = kernel_info->select_kernel_build_info();
+      if (build_info != nullptr) {
+        const auto output_size = build_info->GetOutputNum();
+        for (size_t i = 0; i < output_size; ++i) {
+          kernel_info->AddRefMap(i, 0);
+        }
+        MS_LOG(DEBUG) << "Add ref pair: " << output_size
+                      << " output to the first input for kernel: " << kernel->fullname_with_scope();
+      }
+    }
     for (size_t i = 0; i < op_def->returns_.size(); ++i) {
       if (op_def->returns_[i].inplace_input_index_ != -1) {
         MS_LOG(DEBUG) << "Add ref pair:" << i << ", " << op_def->returns_[i].inplace_input_index_
