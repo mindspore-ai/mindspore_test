@@ -405,9 +405,19 @@ std::string DeviceManager::GenerateGroupNameByRanks(RankList ranks) {
   std::sort(ranks.begin(), ranks.end());  // sorted in increasing order
   std::string rank_list_name = RankListName(ranks);
 
-  // hash rank-list-name and add ranks' size as prefix
-  std::string group_hash_name = HashName(rank_list_name);
-  std::string group_name = std::to_string(ranks.size()) + "-" + group_hash_name;
+  // replace group name
+  std::string group_name;
+  std::vector<uint32_t> rank_list;
+  rank_list.reserve(ranks.size());
+  (void)std::transform(ranks.begin(), ranks.end(), std::back_inserter(rank_list),
+                       [](int64_t r) { return static_cast<uint32_t>(r); });
+  const auto &pair = ParallelCommManager::GetInstance()->HcclGroups(rank_list);
+  if (pair.has_value()) {
+    group_name = pair.value().first;
+  } else {
+    std::string group_hash_name = HashName(rank_list_name);  // hash rank-list-name and add ranks' size as prefix
+    group_name = std::to_string(ranks.size()) + "-" + group_hash_name;
+  }
 
   if (rank_to_group_.find(rank_list_name) == rank_to_group_.end()) {
     if (group_to_rank_.find(group_name) == group_to_rank_.end()) {
@@ -462,6 +472,54 @@ void DeviceManager::Clear() {
   devices_.clear();
   stage_devices_.clear();
   gm_.Clear();
+}
+
+std::shared_ptr<ParallelCommManager> ParallelCommManager::GetInstance() {
+  static std::once_flag flag;
+  std::call_once(flag, []() {
+    if (group_instance_ == nullptr) {
+      MS_LOG(INFO) << "Create ParallelCommManager.";
+      group_instance_ = std::make_shared<ParallelCommManager>();
+    }
+  });
+  return group_instance_;
+}
+
+std::string ParallelCommManager::RankListName(const std::vector<uint32_t> &ranks) const {
+  std::vector<uint32_t> sorted_ranks = ranks;
+  std::sort(sorted_ranks.begin(), sorted_ranks.end());
+  std::string rank_list_name;
+  for (auto it = sorted_ranks.begin(); it != sorted_ranks.end(); ++it) {
+    if (it == sorted_ranks.begin()) {
+      rank_list_name = std::to_string(*it);
+    } else {
+      rank_list_name += "-" + std::to_string(*it);
+    }
+  }
+  return rank_list_name;
+}
+
+std::string ParallelCommManager::HashName(const std::string &origin_name) const {
+  return std::to_string(std::hash<string>{}(origin_name));
+}
+
+void ParallelCommManager::SetHcclGroups(const std::vector<uint32_t> &ranks, std::string name, bool flag) {
+  std::string rank_list_name = RankListName(ranks);
+  std::string hash_name = HashName(rank_list_name);
+  auto &pair = hccl_groups_map_[hash_name];
+  pair.first = name;
+  pair.second = flag;
+}
+
+std::optional<std::pair<std::string, bool>> ParallelCommManager::HcclGroups(const std::vector<uint32_t> &ranks) const {
+  std::string rank_list_name = RankListName(ranks);
+  std::string hash_name = HashName(rank_list_name);
+  const auto &it = hccl_groups_map_.find(hash_name);
+  if (it == hccl_groups_map_.end()) {
+    MS_LOG(DEBUG) << "Hccl groups has not been created: " << rank_list_name;
+    return std::nullopt;
+  }
+  return it->second;
 }
 }  // namespace parallel
 }  // namespace mindspore
