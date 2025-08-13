@@ -508,18 +508,18 @@ std::string MsContext::GetJitLevel() const {
 
   auto global_jit_level = get_param<std::string>(MS_CTX_JIT_LEVEL);
   auto device_target = get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto mode = get_param<int>(MS_CTX_EXECUTION_MODE);
+  auto is_jit = jit_status_ != JitStatus::kNotJit;
   if (jit_level.empty()) {
     if (!global_jit_level.empty()) {
       jit_level = global_jit_level;
-    } else if (device_target == kAscendDevice && mode == kGraphMode) {
+    } else if (device_target == kAscendDevice && is_jit) {
       jit_level = ascend_soc_version() == kAscendVersion910 ? kAttrJitLevelO2 : kAttrJitLevelO0;
     } else {
       jit_level = kAttrJitLevelO0;
     }
   }
 
-  if (mode == kPynativeMode && jit_level == kAttrJitLevelO2) {
+  if (!is_jit && jit_level == kAttrJitLevelO2) {
     if (first_call) {
       MS_LOG(WARNING) << "Pynative without jit can not set jit_level to O2, use O0 instead.";
     }

@@ -347,6 +347,9 @@ class COMMON_EXPORT AnfAlgo {
                                  std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter);
   static bool IsNeededShape(const CNodePtr &cnode);
   static bool IsMonadType(const TypeId &type_id);
+  // if graph output is valuenode or parameter, used to skip run and construct output
+  static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
+                                                VectorRef *outputs);
 };
 }  // namespace common
 }  // namespace mindspore

@@ -800,11 +800,17 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
           g->set_flag(kFlagJitCallGraph, false);
         }
       }
+      pipeline::JitCompilingScope jit_compiling_scope;
       (void)TaskEmitAction(resource);
       (void)ExecuteAction(resource);
       resource->SetResult(kNeedCompile, false);
     }
     MS_LOG(DEBUG) << "Start execute action for graph " << resource->func_graph()->ToString();
+    pipeline::JitRunningScope jit_running_scope;
+    VectorRef outputs;
+    if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(resource->func_graph()->output(), arg_list, &outputs)) {
+      return outputs;
+    }
     BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
     return utils::cast<VectorRef>((*run)(arg_list));
   };
