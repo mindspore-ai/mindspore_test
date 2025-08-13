@@ -33,7 +33,7 @@
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "debug/profiler/profiling.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"

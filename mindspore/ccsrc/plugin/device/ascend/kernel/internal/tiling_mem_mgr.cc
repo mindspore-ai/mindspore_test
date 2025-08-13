@@ -18,7 +18,7 @@
 
 #include <algorithm>
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"

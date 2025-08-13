@@ -21,7 +21,7 @@
 #include <memory>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "nnacl/fp32/strided_slice_fp32.h"
 
 namespace mindspore {

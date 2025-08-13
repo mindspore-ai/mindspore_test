@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 using KernelTensor = kernel::KernelTensor;

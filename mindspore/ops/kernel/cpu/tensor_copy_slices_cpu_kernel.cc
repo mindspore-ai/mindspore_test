@@ -19,7 +19,7 @@
 #include <functional>
 #include <unordered_map>
 #include "abstract/utils.h"
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {

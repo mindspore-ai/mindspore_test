@@ -30,7 +30,7 @@
 #include "pipeline/jit/ps/pipeline.h"
 #include "include/common/thread_pool.h"
 #include "include/common/pybind_api/api_register.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 

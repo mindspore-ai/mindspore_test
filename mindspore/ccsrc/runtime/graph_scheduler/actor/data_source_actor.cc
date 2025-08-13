@@ -23,7 +23,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/phase.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/ms_exception.h"

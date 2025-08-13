@@ -16,7 +16,7 @@
 #include <string>
 #include <algorithm>
 #include "include/curand.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/arrays/extract_glimpse_gpu_kernel.h"
 #include "mindspore/ops/infer/extract_glimpse.h"
 namespace mindspore {

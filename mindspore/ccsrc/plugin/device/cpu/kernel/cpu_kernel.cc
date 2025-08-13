@@ -22,9 +22,9 @@
 #include <map>
 #include <set>
 #include <numeric>
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "utils/profile.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "include/common/runtime_conf/runtime_conf.h"
 

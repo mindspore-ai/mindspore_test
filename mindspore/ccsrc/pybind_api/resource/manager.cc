@@ -46,7 +46,7 @@
 #include "pipeline/jit/ps/pipeline.h"
 #include "backend/common/session/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"

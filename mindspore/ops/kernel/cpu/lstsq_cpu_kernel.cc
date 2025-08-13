@@ -17,7 +17,7 @@
 #include "kernel/cpu/lstsq_cpu_kernel.h"
 #include <Eigen/Dense>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

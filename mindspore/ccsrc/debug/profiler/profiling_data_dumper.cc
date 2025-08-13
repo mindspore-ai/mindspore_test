@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <mutex>
 #include <utility>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/utils.h"
 

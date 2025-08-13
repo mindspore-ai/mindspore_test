@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

@@ -26,7 +26,7 @@
 #include "utils/hash_map.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
-#include "common/device_tensor_store.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
 
 namespace mindspore {

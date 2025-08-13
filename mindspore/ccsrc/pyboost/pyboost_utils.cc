@@ -19,8 +19,8 @@
 #include <utility>
 #include <unordered_map>
 #include "ir/tensor_new.h"
-#include "common/common_utils.h"
-#include "common/kernel_mod_cache.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
 #include "runtime/device/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"

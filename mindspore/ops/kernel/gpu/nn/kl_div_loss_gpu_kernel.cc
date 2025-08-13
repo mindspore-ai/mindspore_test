@@ -18,7 +18,7 @@
 #include <string>
 #include <algorithm>
 #include "kernel/gpu/cuda_impl/cuda_ops/loss_with_reduction_impl.cuh"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "infer/kl_div_loss.h"
 
 namespace mindspore {

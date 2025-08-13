@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/thread_pool.h"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/profile.h"
 #include "Eigen/Eigen"
 #include "unsupported/Eigen/CXX11/Tensor"

@@ -22,8 +22,8 @@
 #include <map>
 #include <utility>
 #include "kernel/gpu/gpu_kernel.h"
-#include "common/ms_factory.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/loss_with_reduction_impl.cuh"
 
 namespace mindspore {

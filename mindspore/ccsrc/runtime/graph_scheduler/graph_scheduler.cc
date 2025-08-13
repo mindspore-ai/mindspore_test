@@ -38,7 +38,7 @@
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/common/runtime_conf/thread_bind_core.h"
 #include "runtime/pipeline/pipeline.h"
@@ -46,7 +46,7 @@
 #include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -58,7 +58,7 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "utils/phase.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #endif

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 

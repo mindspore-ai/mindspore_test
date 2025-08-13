@@ -23,11 +23,11 @@
 #include <utility>
 #include <unordered_map>
 
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/value.h"
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "debug/profiler/profiler.h"
 #include "debug/profiler/profiling.h"
 

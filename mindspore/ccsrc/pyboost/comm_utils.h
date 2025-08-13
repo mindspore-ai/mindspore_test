@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <utility>
 #include "ir/device_event.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

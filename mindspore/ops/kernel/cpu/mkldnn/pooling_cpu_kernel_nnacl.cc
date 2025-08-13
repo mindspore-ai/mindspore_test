@@ -19,8 +19,8 @@
 #include <algorithm>
 #include <functional>
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "common/common_utils.h"
-#include "common/format_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
 #include "nnacl/fp32/pack_fp32.h"
 #include "nnacl/fp32/pooling_fp32.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"

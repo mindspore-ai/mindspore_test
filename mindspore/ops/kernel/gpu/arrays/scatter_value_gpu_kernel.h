@@ -26,7 +26,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/scatter_value.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {

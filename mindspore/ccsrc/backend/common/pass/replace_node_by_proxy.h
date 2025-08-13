@@ -20,7 +20,7 @@
 #include "include/backend/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 
 namespace mindspore {
 namespace opt {

@@ -21,7 +21,7 @@
 #include <set>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
-#include "common/kernel_tensor.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 
 namespace mindspore {
 namespace runtime {

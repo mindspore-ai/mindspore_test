@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "unsupported/Eigen/CXX11/Tensor"

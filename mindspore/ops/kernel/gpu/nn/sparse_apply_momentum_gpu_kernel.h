@@ -25,7 +25,7 @@
 #include <functional>
 #include <map>
 #include "kernel/gpu/gpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_apply_momentum_impl.cuh"
 
 namespace mindspore {

@@ -20,7 +20,7 @@
 #include "plugin/device/cpu/kernel/rl/batch_assign_cpu_base.h"
 #include <string>
 #include <vector>
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

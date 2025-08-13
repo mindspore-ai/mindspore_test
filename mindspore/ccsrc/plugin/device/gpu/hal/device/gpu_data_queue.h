@@ -23,7 +23,7 @@
 #include <functional>
 #include <string>
 #include "include/backend/data_queue/data_queue.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

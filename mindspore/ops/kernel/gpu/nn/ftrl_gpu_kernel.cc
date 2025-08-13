@@ -17,7 +17,7 @@
 #include "kernel/gpu/nn/ftrl_gpu_kernel.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

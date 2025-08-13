@@ -17,7 +17,7 @@
 #include "kernel/cpu/sparse_segment_sum_cpu_kernel.h"
 #include "functional"
 #include "abstract/utils.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

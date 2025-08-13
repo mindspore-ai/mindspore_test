@@ -21,7 +21,7 @@
 #include <memory>
 #include <map>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 
 namespace mindspore {

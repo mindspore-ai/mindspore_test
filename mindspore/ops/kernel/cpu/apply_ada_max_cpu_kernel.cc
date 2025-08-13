@@ -20,7 +20,7 @@
 #include "kernel/cpu/apply_ada_max_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {

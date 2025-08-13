@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "ir/anf.h"
 #include "utils/log_adapter.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/cuda_fp16.h"
 
 namespace mindspore {

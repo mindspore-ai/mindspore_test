@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/device/ascend/kernel/atb/atb_adapter.h"
 #include "acl/acl.h"
 #include "atb/atb_infer.h"

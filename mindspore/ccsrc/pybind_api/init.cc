@@ -18,7 +18,7 @@
 #include <stack>
 #include <memory>
 #include <string>
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/executor/jit_executor_py.h"
@@ -43,7 +43,7 @@
 #include "include/backend/distributed/init.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/cluster/tcp_store.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"

@@ -18,8 +18,8 @@
 #include "pipeline/llm_boost/utils.h"
 #include "mindapi/base/format.h"
 #include "include/common/utils/utils.h"
-#include "runtime/hardware/device_context_manager.h"
-#include "common/device_address.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
 

@@ -24,7 +24,7 @@
 #include <map>
 #include <functional>
 #include <queue>
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/data_queue/data_queue.h"
 #include "include/backend/data_queue/blocking_queue.h"
 #include "runtime/rt.h"

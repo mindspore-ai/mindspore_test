@@ -22,7 +22,7 @@
 #include <queue>
 #include <string>
 #include <utility>
-#include "runtime/hardware/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace device {

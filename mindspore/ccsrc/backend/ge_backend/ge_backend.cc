@@ -31,7 +31,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "debug/profiler/profiling.h"
 #include "debug/profiler/profiler.h"
-#include "common/device_address.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "utils/file_utils.h"
 #include "utils/info.h"
 #include "utils/trace_info.h"

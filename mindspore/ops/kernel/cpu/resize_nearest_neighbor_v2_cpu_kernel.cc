@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/resize_nearest_neighbor_v2_cpu_kernel.h"
 #include <string>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_nearest_neighbor_v2.h"
 
 #include "kernel/cpu/eigen/eigen_common_utils.h"

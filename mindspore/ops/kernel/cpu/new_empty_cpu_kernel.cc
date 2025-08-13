@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/new_empty_cpu_kernel.h"
 #include <algorithm>
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {

@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
 
 namespace mindspore {

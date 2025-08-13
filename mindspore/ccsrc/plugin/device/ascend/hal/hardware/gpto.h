@@ -30,7 +30,7 @@
 #include <tuple>
 
 #include "ir/anf.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/backend/common/somas/somas_solver_pre.h"
 
 namespace mindspore {

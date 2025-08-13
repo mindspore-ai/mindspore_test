@@ -20,9 +20,9 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "runtime/hardware/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace device {

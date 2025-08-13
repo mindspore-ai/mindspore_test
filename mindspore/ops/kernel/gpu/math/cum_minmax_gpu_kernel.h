@@ -24,7 +24,7 @@
 #include <map>
 #include "kernel/gpu/cuda_impl/cuda_ops/cum_minmax_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -21,7 +21,7 @@
 #include <map>
 #include "include/backend/visible.h"
 #include "mindspore/ccsrc/backend/operator/boost_base_model.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "plugin/device/ascend/llm_boost/atb/workspace.h"
 
 #include "atb_speed/base/model.h"

@@ -29,8 +29,8 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/data_source_actor.h"
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
-#include "common/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace runtime {

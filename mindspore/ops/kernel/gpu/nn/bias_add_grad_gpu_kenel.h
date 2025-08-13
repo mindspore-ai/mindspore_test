@@ -23,7 +23,7 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 
 namespace mindspore {

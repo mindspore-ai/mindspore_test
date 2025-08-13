@@ -43,7 +43,7 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "ir/tensor_new.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "mindapi/base/shape_vector.h"
 #include "op_def/framework_ops.h"
 #include "op_def/structure_ops.h"

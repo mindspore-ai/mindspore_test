@@ -30,7 +30,7 @@
 #include <random>
 
 #include "mindspore/ops/infer/bernoulli.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_utils.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 

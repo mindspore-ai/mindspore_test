@@ -19,7 +19,7 @@
 #include <utility>
 #include <complex>
 #include <functional>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 #include "kernel/cpu/nnacl/fp32/add_fp32.h"
 #include "utils/log_adapter.h"

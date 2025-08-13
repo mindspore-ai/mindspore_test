@@ -18,8 +18,8 @@
 #include <memory>
 #include <string>
 #include "op_def/array_op_name.h"
-#include "common/oplib/oplib.h"
-#include "common/common_utils.h"
+#include "include/common/kernel_base/oplib/oplib.h"
+#include "include/common/kernel_base/common_utils.h"
 #include "kernel/framework_utils.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "include/backend/anf_runtime_algorithm.h"

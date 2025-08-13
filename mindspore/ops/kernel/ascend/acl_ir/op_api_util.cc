@@ -32,7 +32,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
-#include "common/kernel_callback.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 

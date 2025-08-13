@@ -36,9 +36,9 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
-#include "common/device_tensor_store.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/file_utils.h"
 #include "runtime/device/res_manager/utils/utils.h"
 

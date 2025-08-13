@@ -26,7 +26,7 @@
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/llm_boost/ascend_native_boost_builder.h"
 #include <memory>
 #include <string>
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "utils/dlopen_macro.h"
 #include "utils/ms_utils.h"
 #include "mindspore/ccsrc/backend/operator/boost_base_model.h"

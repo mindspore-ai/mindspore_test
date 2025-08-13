@@ -22,8 +22,8 @@
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_type.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace backend {

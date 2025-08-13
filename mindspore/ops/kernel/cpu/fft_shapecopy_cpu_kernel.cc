@@ -17,7 +17,7 @@
 #include "kernel/cpu/fft_shapecopy_cpu_kernel.h"
 #include <algorithm>
 #include "ops_utils/op_utils.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/fft_helper.h"
 
 namespace mindspore {

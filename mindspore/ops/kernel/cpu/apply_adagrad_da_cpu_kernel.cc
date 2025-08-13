@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/cpu/apply_adagrad_da_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 

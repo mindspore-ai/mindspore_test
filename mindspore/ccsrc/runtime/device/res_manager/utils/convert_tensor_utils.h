@@ -20,7 +20,7 @@
 #include <iostream>
 #include <vector>
 #include "ir/tensor.h"
-#include "runtime/hardware/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace device {

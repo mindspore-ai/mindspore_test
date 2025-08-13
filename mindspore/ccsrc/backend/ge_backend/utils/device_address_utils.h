@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include <utility>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/device_type.h"
 #include "include/backend/kernel_graph.h"
 

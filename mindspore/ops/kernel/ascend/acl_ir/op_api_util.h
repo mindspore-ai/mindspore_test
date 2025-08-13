@@ -23,7 +23,7 @@
 #include "acl/acl_rt.h"
 #include "hccl/hccl.h"
 #include "acl/acl_op_compiler.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/anf.h"
 #if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
 #include "mindspore/ccsrc/include/backend/distributed/collective/collective_manager.h"

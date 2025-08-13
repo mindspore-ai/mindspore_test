@@ -17,7 +17,7 @@
 #include "kernel/cpu/upsample_trilinear_3d_cpu_kernel.h"
 #include <string>
 #include <utility>
-#include "common/kernel_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindapi/base/type_id.h"
 
 namespace mindspore {

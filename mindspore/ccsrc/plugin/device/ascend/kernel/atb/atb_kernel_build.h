@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ATB_KERNEL_BUILD_H_
 #include <memory>
 #include <string>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {

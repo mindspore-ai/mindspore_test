@@ -49,7 +49,7 @@
 #include "utils/ms_context.h"
 #include "frontend/ir/primitive_py.h"
 #include "frontend/ir/tensor_py.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

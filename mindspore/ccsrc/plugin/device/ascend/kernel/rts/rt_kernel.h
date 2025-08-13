@@ -22,7 +22,7 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "acl/acl.h"
 #include "acl/acl_rt.h"
 

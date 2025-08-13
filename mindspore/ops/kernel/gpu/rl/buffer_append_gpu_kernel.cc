@@ -18,7 +18,7 @@
 #include <memory>
 #include <algorithm>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/rl/rl_buffer_impl.cuh"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 

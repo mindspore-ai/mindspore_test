@@ -23,9 +23,9 @@
 #include <unordered_map>
 #include <utility>
 #include "kernel/gpu/gpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/loss_with_reduction_impl.cuh"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {

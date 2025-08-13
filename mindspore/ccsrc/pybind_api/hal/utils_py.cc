@@ -16,12 +16,12 @@
 #include "pybind_api/hal/utils_py.h"
 #include <string>
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {

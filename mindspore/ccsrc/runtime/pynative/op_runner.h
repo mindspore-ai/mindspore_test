@@ -22,7 +22,7 @@
 #include "include/common/pynative/op_runner_info.h"
 #include "include/backend/kernel_graph.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore::runtime {
 class OpRunner {

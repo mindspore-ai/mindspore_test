@@ -18,7 +18,7 @@
 #include <memory>
 #include <chrono>
 #include <functional>
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_tensor_array.h"
 #include "runtime/device/tensor_array_manager.h"
 

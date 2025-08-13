@@ -25,7 +25,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"

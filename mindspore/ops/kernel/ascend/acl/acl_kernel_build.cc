@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"
 #include "utils/trace_base.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

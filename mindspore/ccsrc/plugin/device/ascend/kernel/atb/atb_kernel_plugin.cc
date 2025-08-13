@@ -23,7 +23,7 @@
 
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/framework_utils.h"
 #include "ops/op_def.h"
 #include "plugin/device/ascend/kernel/atb/atb_kernel_mod.h"

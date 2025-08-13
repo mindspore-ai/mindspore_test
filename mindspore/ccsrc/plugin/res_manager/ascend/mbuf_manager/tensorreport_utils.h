@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 #include "ir/anf.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
 #include "utils/dlopen_macro.h"
 #include "utils/ms_utils.h"

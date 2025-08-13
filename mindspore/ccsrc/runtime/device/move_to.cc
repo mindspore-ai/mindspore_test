@@ -17,12 +17,12 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "common/device_address.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace device {

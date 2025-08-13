@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 #ifdef _MSC_VER
 #undef OPAQUE

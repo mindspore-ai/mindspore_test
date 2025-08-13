@@ -15,7 +15,7 @@
  */
 
 #include "runtime/graph_scheduler/actor/control_flow/control_actor.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"

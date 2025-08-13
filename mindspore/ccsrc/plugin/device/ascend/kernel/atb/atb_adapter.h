@@ -24,7 +24,7 @@
 #include "atb/types.h"
 #include "atb/operation.h"
 #include "atb/utils.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore::device::ascend {
 atb::Context *GetAtbContext(const aclrtStream &stream);

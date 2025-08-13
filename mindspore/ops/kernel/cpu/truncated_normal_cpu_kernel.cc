@@ -24,7 +24,7 @@
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "mindspore/ops/infer/truncated_normal.h"
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/philox_random.h"
 
 namespace mindspore {

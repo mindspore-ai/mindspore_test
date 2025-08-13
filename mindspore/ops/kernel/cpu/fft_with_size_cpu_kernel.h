@@ -24,7 +24,7 @@
 #include <string>
 #include <map>
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace mindspore {

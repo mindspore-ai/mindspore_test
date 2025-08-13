@@ -21,8 +21,8 @@
 #include <unordered_set>
 
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "common/oplib/opinfo.h"
-#include "common/oplib/oplib.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 

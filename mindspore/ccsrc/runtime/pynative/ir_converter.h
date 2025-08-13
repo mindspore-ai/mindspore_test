@@ -26,9 +26,9 @@
 #include "nlohmann/json.hpp"
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/hardware/device_context.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace pynative {

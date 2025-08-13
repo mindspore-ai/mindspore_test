@@ -18,7 +18,7 @@
 
 #include <memory>
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {

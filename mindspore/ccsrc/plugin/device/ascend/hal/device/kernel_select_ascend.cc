@@ -34,7 +34,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
-#include "common/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"

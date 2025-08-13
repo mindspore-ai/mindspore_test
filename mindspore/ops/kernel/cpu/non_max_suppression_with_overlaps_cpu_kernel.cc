@@ -18,7 +18,7 @@
 #include <deque>
 #include <queue>
 #include "Eigen/Core"
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "unsupported/Eigen/CXX11/Tensor"
 

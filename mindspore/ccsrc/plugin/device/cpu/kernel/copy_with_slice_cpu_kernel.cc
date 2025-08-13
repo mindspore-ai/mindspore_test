@@ -18,7 +18,7 @@
 #include "plugin/device/cpu/kernel/copy_with_slice_cpu_kernel.h"
 
 #include "utils/log_adapter.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {

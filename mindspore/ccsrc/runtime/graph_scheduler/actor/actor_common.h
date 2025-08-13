@@ -27,7 +27,7 @@
 #include <memory>
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
@@ -35,7 +35,7 @@
 #include "ir/tensor.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/runtime_conf/runtime_env.h"
-#include "runtime/hardware/device_context_manager.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "debug/profiler/profiler.h"

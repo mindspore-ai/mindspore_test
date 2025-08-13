@@ -29,9 +29,9 @@
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
-#include "runtime/hardware/device_context.h"
-#include "common/device_tensor_store.h"
-#include "common/kernel.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 

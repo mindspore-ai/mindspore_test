@@ -29,7 +29,7 @@
 #include "include/backend/visible.h"
 #include "include/backend/data_queue/data_queue.h"
 #include "ir/anf.h"
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace device {

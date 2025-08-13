@@ -20,7 +20,7 @@
 #include <functional>
 #include <algorithm>
 
-#include "common/common_utils.h"
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 #include "mindspore/ops/infer/apply_adam_with_amsgradv2.h"
