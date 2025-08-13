@@ -52,6 +52,8 @@ const AnfNodePtr QuantDTypeCastAdjust::Process(const FuncGraphPtr &func_graph, c
   if (!cnode_output_format.empty() && cnode_output_format.at(0) == "FRACTAL_NZ") {
     auto param_node = cnode->input(1)->cast<ParameterPtr>();
     auto tensor_info = param_node->default_param()->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor_info);
+    tensor_info = tensor_info->cpu();
     auto host_shape = tensor_info->shape_c();
     auto size = tensor_info->Size();
     auto host_ptr = tensor_info->data_c();

@@ -134,7 +134,8 @@ inline bool BinaryExtCheck(const TensorPtr &input_tensor, const TensorPtr &other
 }
 
 bool IsScalar(const TensorPtr &x) {
-  return x->shape().empty() && (x->device_address() == nullptr) && (x->DataSize() == 1);
+  return x->shape().empty() && (x->device_address()->GetDeviceType() == device::DeviceType::kCPU) &&
+         (x->DataSize() == 1);
 }
 
 template <typename T>

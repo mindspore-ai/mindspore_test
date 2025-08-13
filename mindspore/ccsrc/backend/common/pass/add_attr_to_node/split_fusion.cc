@@ -16,6 +16,7 @@
 
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/tensor_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -46,7 +47,8 @@ const AnfNodePtr SplitFusionProcess(const FuncGraphPtr &graph, const AnfNodePtr 
   auto axis_value = axis_node->cast<ValueNodePtr>()->value();
   MS_EXCEPTION_IF_NULL(axis_value);
   if (axis_value->isa<tensor::Tensor>()) {
-    axis = *(static_cast<int32_t *>(axis_value->cast<tensor::TensorPtr>()->data_c()));
+    auto axis_tensor = axis_value->cast<tensor::TensorPtr>();
+    axis = tensor::GetTensorData<int32_t>(axis_tensor);
   } else {
     auto axis_v = GetScalarValue<int64_t>(axis_node->cast<ValueNodePtr>()->value());
     if (!axis_v.has_value()) {

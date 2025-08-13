@@ -57,32 +57,6 @@ constexpr char kBegin[] = "Begin";
 constexpr char kEnd[] = "End";
 constexpr auto kOpNameCustom = "Custom";
 
-// Shallow Copy Value and change shape
-ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &value) {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  MS_EXCEPTION_IF_NULL(value);
-  auto tensor_abs = op_run_info->base_op_run_info.abstract;
-  MS_EXCEPTION_IF_NULL(tensor_abs);
-  if (tensor_abs->isa<abstract::AbstractRefTensor>()) {
-    tensor_abs = tensor_abs->cast<abstract::AbstractRefPtr>()->CloneAsTensor();
-  }
-  auto new_shape = tensor_abs->BuildShape()->cast<abstract::ShapePtr>();
-  MS_EXCEPTION_IF_NULL(new_shape);
-  if (value->isa<mindspore::tensor::Tensor>()) {
-    auto tensor_value = value->cast<mindspore::tensor::TensorPtr>();
-    return tensor::from_buffer(tensor_value->data_type(), new_shape->shape(), tensor_value->data_c(),
-                               tensor_value->Size());
-  }
-  if (value->isa<ValueTuple>()) {
-    std::vector<ValuePtr> values;
-    auto value_tuple = value->cast<ValueTuplePtr>();
-    (void)std::transform(value_tuple->value().begin(), value_tuple->value().end(), std::back_inserter(values),
-                         [op_run_info](const ValuePtr &elem) { return ShallowCopyValue(op_run_info, elem); });
-    return std::make_shared<ValueTuple>(values);
-  }
-  return value;
-}
-
 #ifndef ENABLE_TEST
 void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(op_run_info);
