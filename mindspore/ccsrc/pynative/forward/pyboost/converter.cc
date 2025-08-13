@@ -36,7 +36,7 @@ using mindspore::pynative::PyNativeAlgo::PyParser;
 
 bool IsPyObjNone(PyObject *obj) { return obj == NULL || obj == Py_None; }
 
-size_t GetListOrTupleSize(PyObject *args) { return PyList_Check(args) ? PyList_Size(args) : PyTuple_Size(args); }
+Py_ssize_t GetListOrTupleSize(PyObject *args) { return PyList_Check(args) ? PyList_Size(args) : PyTuple_Size(args); }
 
 #define RAISE_PARSE_ERROR(out_error_msg, raise_error, msg, func_name) \
   if (out_error_msg || raise_error) {                                 \
@@ -61,7 +61,7 @@ std::shared_ptr<U> PyCast(PyObject *obj);
 
 template <>
 std::shared_ptr<BoolImm> PyCast<bool, BoolImm>(PyObject *obj) {
-  bool value = (obj == Py_True);
+  bool value = (PyObject_IsTrue(obj) == 1);
   return std::make_shared<BoolImm>(value);
 }
 
@@ -887,7 +887,8 @@ const std::vector<std::string> PythonArgParser::GetParseTypeListString(PyObject 
   if (!kwargs || kwargs == Py_None) {
     return type_list;
   }
-  PyObject *key, *value;
+  PyObject *key;
+  PyObject *value;
   Py_ssize_t pos = 0;
   while (PyDict_Next(kwargs, &pos, &key, &value)) {
     const char *name_str = PyUnicode_AsUTF8(key);
@@ -1056,11 +1057,11 @@ bool FunctionSignature::Parse(PyObject *args, PyObject *kwargs, ParserArgs &pars
                               std::string *out_error_msg) {
   size_t nargs = 0;
   if (!IsPyObjNone(args)) {
-    nargs = GetListOrTupleSize(args);
+    nargs = (size_t)GetListOrTupleSize(args);
   }
   size_t nkwargs = 0;
   if (!IsPyObjNone(kwargs)) {
-    nkwargs = PyDict_Size(kwargs);
+    nkwargs = (size_t)PyDict_Size(kwargs);
   }
   size_t arg_pos = 0;
   size_t out_arglist_index = 0;
@@ -1127,7 +1128,8 @@ bool FunctionSignature::RaiseParseKeywordArgsError(size_t nkwargs, bool raise_er
   }
   if (raise_error || out_error_msg) {
     if (kwargs && kwargs != Py_None) {
-      PyObject *key, *value;
+      PyObject *key;
+      PyObject *value;
       Py_ssize_t kwarg_pos = 0;
       while (PyDict_Next(kwargs, &kwarg_pos, &key, &value)) {
         const char *name_str = PyUnicode_AsUTF8(key);
@@ -1598,7 +1600,7 @@ PyObject *ParserDefaultObjects::StrToPyObj(const ops::OP_DTYPE &type, const std:
 }
 
 ValuePtr ConvertSimpleBool(PyObject *obj) {
-  bool value = (obj == Py_True);
+  bool value = (PyObject_IsTrue(obj) == 1);
   return std::make_shared<BoolImm>(value);
 }
 
@@ -1776,7 +1778,8 @@ std::vector<std::string> GetInvalidKwargsName(PyObject *kwargs, const std::vecto
   std::vector<std::string> invalid_names;
   Py_ssize_t kwargs_size = PyDict_Size(kwargs);
   const size_t kw_start_idx = params.size() - static_cast<size_t>(kwargs_size);
-  PyObject *key, *value;
+  PyObject *key;
+  PyObject *value;
   Py_ssize_t pos = 0;
   while (PyDict_Next(kwargs, &pos, &key, &value)) {
     bool is_vailed = true;

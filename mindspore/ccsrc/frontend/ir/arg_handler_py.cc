@@ -18,9 +18,9 @@
 #include <vector>
 #include <tuple>
 #include <string>
-#include "frontend/ir/arg_handler_py.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "frontend/ir/arg_handler_py.h"
 
 namespace mindspore {
 
@@ -46,19 +46,6 @@ Int64ImmPtr ConvertInt(PyObject *obj) {
   }
   return PyCast<int64_t, Int64Imm>(obj);
 }
-
-// TODO(wangjialin) ToDtype() is also available
-// Int64ImmPtr ToDtype(const PyObject* obj) {
-//   auto convert = ConvertInt(obj);
-//   if (convert != nullptr) {
-//     return convert;
-//   }
-//   if (py::isinstance<mindspore::Type>(obj)) {
-//     TypePtr type = py::cast<mindspore::TypePtr>(obj);
-//     return std::make_shared<Int64Imm>(static_cast<int>(type->type_id()));
-//   }
-//   return nullptr;
-// }
 
 Int64ImmPtr ToDtypePy(const py::object &obj) {
   auto convert = ConvertInt(obj.ptr());
@@ -166,12 +153,14 @@ std::vector<int> ToVector(const std::string &op_name, const std::string &arg_nam
     int value = static_cast<int>(PyLong_AsLong(arg));
     return {value, value};
   }
+  // compatible with input format like (N,C,H,W), only choose H and W
+  int channels_num = 4;
   if (PyList_Check(arg)) {
     Py_ssize_t arg_size = PyList_Size(arg);
-    if (arg_size == 4) {
+    if (arg_size == channels_num) {
       PyObject *item2 = PyList_GetItem(arg, 2);
-      PyObject *item4 = PyList_GetItem(arg, 4);
-      return {static_cast<int>(PyLong_AsLong(item2)), static_cast<int>(PyLong_AsLong(item4))};
+      PyObject *item3 = PyList_GetItem(arg, 3);
+      return {static_cast<int>(PyLong_AsLong(item2)), static_cast<int>(PyLong_AsLong(item3))};
     }
     std::vector<int> values;
     for (Py_ssize_t i = 0; i < arg_size; ++i) {
@@ -181,10 +170,10 @@ std::vector<int> ToVector(const std::string &op_name, const std::string &arg_nam
     return values;
   } else if (PyTuple_Check(arg)) {
     Py_ssize_t arg_size = PyTuple_Size(arg);
-    if (arg_size == 4) {
+    if (arg_size == channels_num) {
       PyObject *item2 = PyTuple_GetItem(arg, 2);
-      PyObject *item4 = PyTuple_GetItem(arg, 4);
-      return {static_cast<int>(PyLong_AsLong(item2)), static_cast<int>(PyLong_AsLong(item4))};
+      PyObject *item3 = PyTuple_GetItem(arg, 3);
+      return {static_cast<int>(PyLong_AsLong(item2)), static_cast<int>(PyLong_AsLong(item3))};
     }
     std::vector<int> values;
     for (Py_ssize_t i = 0; i < arg_size; ++i) {
