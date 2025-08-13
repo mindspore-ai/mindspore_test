@@ -26,10 +26,6 @@ namespace kernel {
 namespace pyboost {
 tensor::TensorPtr InplaceMaskedScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
                                                       const TensorPtr &mask, const TensorPtr &source) {
-  auto input_type_id = input->data_type();
-  if (input_type_id == kNumberTypeFloat64 || input_type_id == kNumberTypeInt16) {
-    MS_EXCEPTION(ValueError) << "For InplaceMaskedScatter, the type of 'input' is no support Tensor[Float64, Int16] ";
-  }
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input, mask, source);
   op->set_outputs({input});
   // source
