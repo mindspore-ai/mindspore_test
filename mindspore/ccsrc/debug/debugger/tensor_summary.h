@@ -21,6 +21,14 @@
 #include <memory>
 #include <string>
 
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <atomic>
+#include <future>
+
 #include "utils/hash_map.h"
 #include "debug/debug_services.h"
 
@@ -51,10 +59,12 @@ class L2Calculator {
   double squre_sum;
 };
 
+class HashThreadPool;
+
 class ITensorSummary {
  public:
   virtual ~ITensorSummary() = default;
-  virtual void TensorStatistics(DbgDataType dtype_value) = 0;
+  virtual void TensorStatistics(DbgDataType dtype_value, bool calc_hash) = 0;
   virtual const bool is_bool() const = 0;
   virtual const double max_value() const = 0;
   virtual const double min_value() const = 0;
@@ -68,6 +78,7 @@ class ITensorSummary {
   virtual const uint64_t neg_inf_count() const = 0;
   virtual const uint64_t pos_inf_count() const = 0;
   virtual const uint64_t zero_count() const = 0;
+  virtual const std::string sha1_string() const = 0;
 };
 
 template <typename T>
@@ -77,7 +88,7 @@ class TensorSummary : public ITensorSummary {
   ~TensorSummary() override = default;
   TensorSummary(const void *current_tensor_ptr, const void *const previous_tensor_ptr, uint64_t num_elements,
                 uint64_t prev_num_elements);
-  void TensorStatistics(DbgDataType dtype_value) override;
+  void TensorStatistics(DbgDataType dtype_value, bool calc_hash) override;
   const bool is_bool() const override { return is_bool_; }
   const double max_value() const override { return max_; }
   const double min_value() const override { return min_; }
@@ -90,6 +101,8 @@ class TensorSummary : public ITensorSummary {
   const uint64_t pos_inf_count() const override { return pos_inf_count_; }
   const uint64_t zero_count() const override { return zero_count_; }
   const double l2_value() const override { return l2_calc_.GetL2Value(); }
+  const std::string sha1_string() const override { return sha1_; }
+  void TensorStatisticsSingleThread(bool calc_hash);
 
  private:
   const T *current_tensor_ptr_;
@@ -108,7 +121,30 @@ class TensorSummary : public ITensorSummary {
   uint64_t nan_count_;
   uint64_t zero_count_;
   L2Calculator l2_calc_;
-  void TensorStatisticsSingleThread();
+  std::string sha1_;
+};
+
+void TensorHashValue(std::string hash_type, const unsigned char *data, size_t len, std::string *output);
+
+class HashThreadPool {
+ public:
+  HashThreadPool(const HashThreadPool &) = delete;
+  HashThreadPool &operator=(const HashThreadPool &) = delete;
+  static HashThreadPool &GetInstance() {
+    static HashThreadPool instance;
+    return instance;
+  }
+  template <typename T>
+  auto add_task(TensorSummary<T> *single_thread_task, bool calc_hash);
+  ~HashThreadPool();
+
+ private:
+  HashThreadPool();
+  std::vector<std::thread> threads_;
+  std::queue<std::function<void()>> tasks_;
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  std::atomic<bool> running_;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_TENSOR_SUMMARY_H

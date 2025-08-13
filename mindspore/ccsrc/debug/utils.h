@@ -33,7 +33,8 @@ const std::unordered_map<std::string, std::string> header_map = {{"max", "Max Va
                                                                  {"positive inf count", "Positive Inf Count"},
                                                                  {"zero count", "Zero Count"},
                                                                  {"l2norm", "L2Norm Value"},
-                                                                 {"md5", "MD5"}};
+                                                                 {"md5", "MD5"},
+                                                                 {"sha1", "SHA1"}};
 
 class CsvHeaderUtil {
  public:
