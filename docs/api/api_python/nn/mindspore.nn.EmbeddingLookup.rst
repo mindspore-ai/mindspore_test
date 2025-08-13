@@ -1,7 +1,7 @@
 mindspore.nn.EmbeddingLookup
 =============================
 
-.. py:class:: mindspore.nn.EmbeddingLookup(vocab_size, embedding_size, param_init='normal', target='CPU', slice_mode='batch_slice', manual_shapes=None, max_norm=None, sparse=True, vocab_cache_size=0, dtype=mstype.float32)
+.. py:class:: mindspore.nn.EmbeddingLookup(vocab_size, embedding_size, param_init='normal', target='CPU', slice_mode='batch_slice', manual_shapes=None, max_norm=None, sparse=True, dtype=mstype.float32)
 
     嵌入查找层。
 
@@ -28,7 +28,6 @@ mindspore.nn.EmbeddingLookup
         - **manual_shapes** (tuple) - 字段切片模式下的伴随数组（accompaniment array），默认值： ``None`` 。
         - **max_norm** (Union[float, None]) - 最大剪切值。数据类型必须为float16、float32或None。默认值： ``None`` 。
         - **sparse** (bool) - 使用稀疏模式。当'target'设置为'CPU'时，'sparse'必须为True。默认值： ``True`` 。
-        - **vocab_cache_size** (int) - 嵌入字典的缓存大小。默认值： ``0`` 。仅在训练模式和'DEVICE'目标中有效。 相应优化器的力矩参数也将设置为缓存大小。此外需注意，它还会消耗'DEVICE'内存，因此建议合理设置参数值，避免内存不足。
         - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``mstype.float32`` 。
 
     输入：
@@ -38,10 +37,9 @@ mindspore.nn.EmbeddingLookup
         Tensor，shape为 :math:`(z_1, z_2, ..., z_N)` 的Tensor。
 
     异常：
-        - **TypeError** - `vocab_size` 、 `embedding_size` 或 `vocab_cache_size` 不是整数。
+        - **TypeError** - `vocab_size` 、 `embedding_size`不是整数。
         - **TypeError** - `sparse` 不是bool或 `manual_shapes` 不是tuple。
         - **ValueError** - `vocab_size` 或 `embedding_size` 小于1。
-        - **ValueError** - `vocab_cache_size` 小于0。
         - **ValueError** - `target` 既不是'CPU'也不是'DEVICE'。
         - **ValueError** - `slice_mode` 不是'batch_slice'、'field_slice'、'table_row_slice'或'table_column_slice'。
         - **ValueError** - `sparse` 为False且 `target` 为'CPU'。
