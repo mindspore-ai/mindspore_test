@@ -106,7 +106,7 @@ def test_hccl_config():
     command = (
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
         "--master_port=10801 --join=True --log_dir=./test_hccl_config/msrun_log "
-        "pytest -s hccl_config.py"
+        "pytest -s hccl_config.py::test_hccl_config"
     )
 
     output_lines = []
@@ -123,3 +123,36 @@ def test_hccl_config():
     assert "customized hcclBufferSize: 80 MB" in full_output, "Expected buffer size not found in log."
 
     del os.environ['MS_DEV_HCCL_CONF']
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_union_hccl_create():
+    '''
+    Feature: test union hccl groups creation in auto_parallel interface.
+    Description: union hccl groups creation by python and C++ using msrun.
+    Expectation: run success.
+    '''
+    os.environ['GLOG_v'] = str(2)
+    dir_to_remove = "./test_union_hccl_groups"
+    if os.path.exists(dir_to_remove):
+        shutil.rmtree(dir_to_remove)
+
+    command = (
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10905 --join=True --log_dir=./test_union_hccl_groups/msrun_log "
+        "pytest -s hccl_config.py::test_union_hccl_groups"
+    )
+
+    output_lines = []
+    with subprocess.Popen(command, shell=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          encoding=locale.getpreferredencoding(False), errors='ignore') as proc:
+        for line in proc.stdout:
+            print(line, end='')
+            output_lines.append(line)
+
+    full_output = ''.join(output_lines)
+    assert "The group 'customed groups 0-1, 0' has been created, the ranks are: 0-1" not in full_output
+    assert "The group 'customed groups 0-1, 1' has been created, the ranks are: 0-1" in full_output
+    assert "The group 'customed groups 0-1, 2' has been created, the ranks are: 0-1" not in full_output
+    assert "The group 'customed groups 0-1, 3' has been created, the ranks are: 0-1" in full_output
