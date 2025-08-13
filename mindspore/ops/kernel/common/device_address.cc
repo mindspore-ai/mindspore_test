@@ -113,7 +113,6 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
   shape_vector_ = other.shape_vector_;
   padding_type_ = other.padding_type();
   is_view_ = other.is_view();
-  deleter_ = other.deleter();
   host_shape_ = other.host_shape();
   SetDevicePtrDeleter();
 }
@@ -123,12 +122,7 @@ DeviceAddress::~DeviceAddress() {
       pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
     MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << ToString();
   }
-  if (!from_mem_pool() && deleter_ && GetDevicePtr() != nullptr) {
-    deleter_(static_cast<uint8_t *>(GetDevicePtr()));
-    SetDevicePtr(nullptr);
-  } else {
-    pointer_ref_count_ = nullptr;
-  }
+  pointer_ref_count_ = nullptr;
 }
 
 std::string DeviceAddress::ToString() const {
@@ -154,8 +148,7 @@ std::string DeviceAddress::ToString() const {
   if (node_index.first != nullptr) {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
-  ofs << " device address deleter:" << (deleter_ != nullptr) << " is view:" << is_view_
-      << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
+  ofs << " is view:" << is_view_ << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
       << " padding type:" << padding_type_ << " status:" << status_;
   return ofs.str();
 }
@@ -340,10 +333,8 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   other->SetDevicePtr(GetDevicePtr());
 
   other->set_from_mem_pool(this->from_mem_pool());
-  other->set_deleter(deleter());
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
-  deleter_ = nullptr;
   set_managed_by_somas(other->managed_by_somas());
 }
 
@@ -357,13 +348,9 @@ void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { het
 
 std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return node_index_; }
 
-void DeviceAddress::set_deleter(const std::function<void(uint8_t *)> &deleter) { deleter_ = deleter; }
-
 void DeviceAddress::SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) {
   pointer_ref_count()->set_deleter(deleter);
 }
-
-std::function<void(uint8_t *)> DeviceAddress::deleter() const { return deleter_; }
 
 const PointerRefCountPtr &DeviceAddress::pointer_ref_count() const { return pointer_ref_count_; }
 

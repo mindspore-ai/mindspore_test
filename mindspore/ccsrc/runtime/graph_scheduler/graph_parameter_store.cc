@@ -21,6 +21,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/ms_context.h"
 #include "utils/llm_manager.h"
 
@@ -255,6 +256,11 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
   return isDyn;
 }
 
+DeviceTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, size_t inner_index) {
+  CheckIndexValid(outer_index, inner_index);
+  return released_check_addresses_[outer_index][inner_index];
+}
+
 void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_callback) {
   if (device_tensor_in_callback.empty()) {
     return;
@@ -285,6 +291,9 @@ void GraphParameterStore::ReleaseData() {
   AddCopyDataCallBack(device_tensor_in_callback_);
   device_tensor_in_callback_.clear();
 
+  static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput) ||
+                                runtime::RuntimeConf::GetInstance()->launch_blocking();
+
   for (auto index : non_weight_ref_max_inputs_) {
     std::pair<size_t, size_t> position{index.first, index.second};
     auto &kernel_tensor_with_info = parameter_kernel_tensors_[index.first][index.second];
@@ -295,6 +304,12 @@ void GraphParameterStore::ReleaseData() {
           !device_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << kernel_tensor->ToString();
+        // Record released info, so that it can check input next step.
+        if (sync_copy_input) {
+          auto new_device_tensor = device_tensor->CloneDeviceAddress();
+          new_device_tensor->set_ptr(nullptr);
+          released_check_addresses_[index.first][index.second] = new_device_tensor;
+        }
         release_data_info_[{position}] = {kernel_tensor->GetType(), device_tensor->GetNodeIndex()};
         kernel_tensor->set_device_address(nullptr);
       }

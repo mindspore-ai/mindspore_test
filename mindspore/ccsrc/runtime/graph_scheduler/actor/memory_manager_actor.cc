@@ -473,15 +473,6 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Op:" << op_name << " free memory by the new reference count, kernel tensor:" << kernel_tensor->ToString()
         << ".";
-      if (device_tensor->deleter() != nullptr) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor
-          << " op name:" << op_name;
-        device_tensor->deleter()(static_cast<uint8_t *>(device_tensor->GetMutablePtr()));
-        device_tensor->set_deleter(nullptr);
-        device_tensor->set_ptr(nullptr);
-        return;
-      }
       auto held_by_nodes = device_tensor->held_by_nodes();
       if (held_by_nodes.empty()) {
         FreeMemoryByDeviceContext(device_tensor, device_context);

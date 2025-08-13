@@ -184,13 +184,6 @@ void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor,
     if ((device_tensor->DecreaseDynamicRefCount(op_name) == 0) && (device_tensor->GetPtr() != nullptr)) {
       device_tensor->ClearUserData();
       MS_LOG(DEBUG) << "Free memory by the dynamic reference count, device address" << device_tensor->GetPtr() << ".";
-      if (device_tensor->deleter() != nullptr) {
-        MS_LOG(DEBUG) << "Free ptr:" << device_tensor->GetPtr() << " for device address:" << device_tensor;
-        device_tensor->deleter()(static_cast<uint8_t *>(device_tensor->GetMutablePtr()));
-        device_tensor->set_deleter(nullptr);
-        device_tensor->set_ptr(nullptr);
-        return;
-      }
       FreeMemoryByDeviceContext(device_tensor);
     }
   }

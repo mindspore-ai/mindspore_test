@@ -59,6 +59,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_used_times_.resize(front_parameter_size);
     parameter_device_types_.resize(front_parameter_size);
     is_offload_parameter_.resize(front_parameter_size);
+    released_check_addresses_.resize(front_parameter_size);
   }
 
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
@@ -71,6 +72,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_used_times_[outer_index].resize(tuple_unfold_length, 0);
     parameter_device_types_[outer_index].resize(tuple_unfold_length);
     is_offload_parameter_[outer_index].resize(tuple_unfold_length, false);
+    released_check_addresses_[outer_index].resize(tuple_unfold_length);
     buffer_size_ += tuple_unfold_length;
   }
 
@@ -223,6 +225,8 @@ class BACKEND_EXPORT GraphParameterStore {
 
   std::pair<bool, std::pair<TypePtr, KernelWithIndex>> GetReleasePositionInfo(const DeviceTensorPosition &position);
 
+  DeviceTensorPtr GetReleasedCheckInfo(size_t outer_index, size_t inner_index);
+
  private:
   // The input args refresh in every step.
   VectorRef *input_args_;
@@ -239,6 +243,8 @@ class BACKEND_EXPORT GraphParameterStore {
   // Record non-weight ref max input, so that do not tranverse the store when releasing data.
   std::set<std::pair<size_t, size_t>> non_weight_ref_max_inputs_;
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
+  // Record released device addresses, used for check input next step.
+  std::vector<std::vector<DeviceTensorPtr>> released_check_addresses_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
 
