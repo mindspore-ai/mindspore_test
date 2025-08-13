@@ -722,9 +722,10 @@ PYBIND11_MODULE(_c_expression, m) {
          "Switch network interface card between the primary and the secondary NIC.");
 
   (void)py::class_<TCPStoreClient, std::shared_ptr<TCPStoreClient>>(m, "TCPStoreClient")
-    .def_static("get_instance", &TCPStoreClient::instance, "Get TCPStore Client instance.")
+    .def(py::init<const std::string &, int64_t, bool, int64_t, int64_t, bool>())
     .def("get", &TCPStoreClient::GetKey, "Get key.")
     .def("set", &TCPStoreClient::SetKey, "Set key.")
+    .def("add", &TCPStoreClient::AddKey, "Add key.")
     .def("delete_key", &TCPStoreClient::DeleteKey, "Delete key.");
 
   (void)py::class_<PSContext, std::shared_ptr<PSContext>>(m, "PSContext")

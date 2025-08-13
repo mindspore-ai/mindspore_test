@@ -76,6 +76,7 @@ enum class MessageName {
   kReadMetadata,
   kDeleteMetadata,
   kGetHostNames,
+  kAddMetadata,
   kValidMetadata,
   kInvalidMetadata
 };

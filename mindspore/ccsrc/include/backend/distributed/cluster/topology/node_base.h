@@ -90,6 +90,8 @@ class NodeBase {
   size_t topo_timeout() const { return topo_timeout_; }
   size_t node_timeout() const { return node_timeout_; }
 
+  void disable_heartbeat() { disable_heartbeat_ = true; }
+
  protected:
   // Each node process has a unique node id which is immutable during the life cycle of this node.
   // The node id is used for identify authentication during networking and process recovery.

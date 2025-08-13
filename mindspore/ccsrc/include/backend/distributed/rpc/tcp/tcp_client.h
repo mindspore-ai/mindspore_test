@@ -63,7 +63,8 @@ class BACKEND_COMMON_EXPORT TCPClient : public RPCClientBase {
 
   // Retrieve a message from tcp server specified by the input message.
   // Returns nullptr after timeout.
-  MessageBase *ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout = UINT32_MAX) override;
+  MessageBase *ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout = UINT32_MAX,
+                           bool *is_send_fail = nullptr) override;
 
   // Force the data in the send buffer to be sent out.
   bool Flush(const std::string &dst_url) override;

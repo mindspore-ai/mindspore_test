@@ -23,6 +23,9 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/backend/distributed/cluster/topology/tcp_node.h"
+#include "ps/core/comm_util.h"
+#include "distributed/cluster/topology/meta_server_node.h"
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
@@ -32,19 +35,30 @@ namespace py = pybind11;
 namespace mindspore {
 namespace distributed {
 namespace cluster {
+constexpr size_t kTcpStoreDefaultTime = 300 * 1000;  // 300 Secends
 class BACKEND_EXPORT TCPStoreClient {
  public:
-  TCPStoreClient();
+  explicit TCPStoreClient(const std::string &ip, int64_t port, bool is_master, int64_t timeout = kTcpStoreDefaultTime,
+                          int64_t world_size = 1, bool wait_for_workers = true);
   ~TCPStoreClient();
-  static std::shared_ptr<TCPStoreClient> instance();
-
   // Get the rank id of this process in the specified group.
   py::bytes GetKey(const std::string &key);
 
   // Get the size of the specified group.
   void SetKey(const std::string &key, const std::string &value);
 
+  int64_t AddKey(const std::string &key, int64_t amount);
+
   bool DeleteKey(const std::string &key);
+#if defined(__linux__) && defined(WITH_BACKEND)
+  std::shared_ptr<topology::NodeBase> server_node_ = nullptr;
+  std::shared_ptr<topology::TcpNodeBase> client_node_ = nullptr;
+#endif
+ private:
+  std::string ip_;
+  int64_t port_;
+  bool is_master_;
+  int64_t timeout_;
 };
 
 }  // namespace cluster

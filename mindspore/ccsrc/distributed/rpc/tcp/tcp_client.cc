@@ -67,19 +67,22 @@ void TCPClient::Finalize() {
 }
 
 bool TCPClient::Connect(const std::string &dst_url, size_t retry_count, const MemFreeCallback &free_cb) {
+  // seconds interval for large-scale cluster.
   unsigned int interval = 2;
+  // milliseconds interval for small-scale cluster.
+  uint32_t interval_ms = 10;
   for (size_t i = 0; i < retry_count; ++i) {
     if (tcp_comm_->Connect(dst_url, free_cb)) {
       MS_LOG(INFO) << "Connected to the tcp server " << dst_url << " successfully.";
       return true;
     } else {
-      MS_LOG(WARNING) << "Failed to connect to the tcp server : " << dst_url << ", retry to reconnect(" << (i + 1)
-                      << "/" << retry_count << ")...";
+      MS_LOG(INFO) << "Failed to connect to the tcp server : " << dst_url << ", retry to reconnect(" << (i + 1) << "/"
+                   << retry_count << ")...";
       if (!tcp_comm_->Disconnect(dst_url)) {
         MS_LOG(ERROR) << "Can not disconnect from the server: " << dst_url;
         return false;
       }
-      SleepBasedOnScale(interval);
+      SleepBasedOnScale(interval, interval_ms);
     }
   }
   return false;
@@ -119,28 +122,32 @@ bool TCPClient::SendSync(std::unique_ptr<MessageBase> &&msg, size_t *const send_
 
 void TCPClient::SendAsync(std::unique_ptr<MessageBase> &&msg) { (void)tcp_comm_->Send(msg.release(), nullptr, false); }
 
-MessageBase *TCPClient::ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout) {
+MessageBase *TCPClient::ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout, bool *is_send_fail) {
   if (timeout == UINT32_MAX) {
     // This means we should use default ReceiveMsgTimeOut as timeout.
-    timeout = receive_timeout_;
+    timeout = receive_timeout_ * 1000;
   }
 
   std::unique_lock<std::mutex> lock(mutex_);
   received_message_ = nullptr;
   bool retval = tcp_comm_->Send(msg.release(), nullptr, true);
   if (retval) {
-    bool res =
-      wait_msg_cond_.wait_for(lock, std::chrono::seconds(timeout), [this] { return received_message_ != nullptr; });
+    bool res = wait_msg_cond_.wait_for(lock, std::chrono::milliseconds(timeout),
+                                       [this] { return received_message_ != nullptr; });
     if (res) {
       // Clear the address of received message before returning this address to the caller, because the next
       // `ReceiveSync` call will block on the received message's condition variable.
       MessageBase *message = received_message_;
       return message;
     } else {
-      MS_LOG(WARNING) << "Message receive timeout, Suggest configuring timeout time through MS_RECEIVE_MSG_TIMEOUT.";
+      MS_LOG(WARNING) << "Message receive timeout, Suggest configuring timeout time through MS_RECEIVE_MSG_TIMEOUT or "
+                         "TCPStore Configuration timeout.";
     }
   } else {
     MS_LOG(INFO) << "Failed to send message in ReceiveSync.";
+    if (is_send_fail) {
+      *is_send_fail = true;
+    }
   }
   return NULL_MSG;
 }

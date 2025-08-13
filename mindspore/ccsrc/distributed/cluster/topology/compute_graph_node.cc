@@ -34,7 +34,6 @@ constexpr char kStartExchangeMetaPrefix[] = "START_EXCHANGE_META_";
 constexpr char kExchangeMetaDonePrefix[] = "EXCHANGE_META_DONE_";
 constexpr char kMetaFlagValue[] = "1";
 constexpr char kMetaDeleteFlagValue[] = "";
-
 ComputeGraphNode::~ComputeGraphNode() {
   if (!finalized_) {
     try {
@@ -236,8 +235,8 @@ bool ComputeGraphNode::Unregister() {
   std::string content = unreg_msg.SerializeAsString();
   auto message = CreateMessage(meta_server_addr_.GetUrl(), MessageName::kUnregistration, content);
   MS_EXCEPTION_IF_NULL(message);
-
-  const uint32_t timeout = 10;
+  // 10000ms
+  const uint32_t timeout = 10 * 1000;
   MessageBase *response = nullptr;
   if (disable_heartbeat_) {
     response = tcp_client_->ReceiveSync(std::move(message), timeout);
@@ -395,77 +394,8 @@ bool ComputeGraphNode::Reconnect() {
   return hb_client_->IsConnected(server_url);
 }
 
-bool ComputeGraphNode::SendMessageToMSN(const std::string msg_name, const std::string &msg_body, bool sync) {
-  MS_EXCEPTION_IF_NULL(tcp_client_);
-
-  auto message = CreateMessage(meta_server_addr_.GetUrl(), msg_name, msg_body);
-  MS_EXCEPTION_IF_NULL(message);
-
-  if (sync) {
-    auto retval = tcp_client_->SendSync(std::move(message));
-    if (retval) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    (void)tcp_client_->SendSync(std::move(message));
-    return true;
-  }
-}
-
 std::shared_ptr<std::string> ComputeGraphNode::RetrieveMessageFromMSN(const std::string &msg_name, uint32_t timeout) {
   return RetrieveMessageFromMSN(msg_name, msg_name);
-}
-
-bool ComputeGraphNode::PutMetadata(const std::string &name, const std::string &value, bool sync) {
-  MetadataMessage metadata;
-  metadata.set_name(name);
-  metadata.set_value(value);
-  return SendMessageToMSN(std::to_string(static_cast<int>(MessageName::kWriteMetadata)), metadata.SerializeAsString(),
-                          sync);
-}
-
-bool ComputeGraphNode::PutMetadata(const std::string &name, const void *value, const size_t &size) {
-  MetadataMessage metadata;
-  metadata.set_name(name);
-  metadata.set_value(value, size);
-  return SendMessageToMSN(std::to_string(static_cast<int>(MessageName::kWriteMetadata)), metadata.SerializeAsString());
-}
-
-std::string ComputeGraphNode::GetMetadata(const std::string &name, uint32_t) {
-  MetadataMessage metadata;
-  metadata.set_name(name);
-
-  auto message = CreateMessage(meta_server_addr_.GetUrl(), std::to_string(static_cast<int>(MessageName::kReadMetadata)),
-                               metadata.SerializeAsString());
-  MS_EXCEPTION_IF_NULL(message);
-
-  MS_EXCEPTION_IF_NULL(tcp_client_);
-  auto retval = tcp_client_->ReceiveSync(std::move(message));
-  if (retval != rpc::NULL_MSG && (retval->name == std::to_string(static_cast<int>(MessageName::kValidMetadata)))) {
-    (void)metadata.ParseFromArray(retval->body.c_str(), SizeToInt(retval->body.length()));
-    return metadata.value();
-  }
-  return "";
-}
-
-bool ComputeGraphNode::DeleteMetadata(const std::string &name, uint32_t) {
-  MetadataMessage metadata;
-  metadata.set_name(name);
-
-  auto message =
-    CreateMessage(meta_server_addr_.GetUrl(), std::to_string(static_cast<int>(MessageName::kDeleteMetadata)),
-                  metadata.SerializeAsString());
-  MS_EXCEPTION_IF_NULL(message);
-
-  MS_EXCEPTION_IF_NULL(tcp_client_);
-  auto retval = tcp_client_->ReceiveSync(std::move(message));
-  if (retval != rpc::NULL_MSG && (retval->name == std::to_string(static_cast<int>(MessageName::kValidMetadata)))) {
-    return true;
-  } else {
-    return false;
-  }
 }
 
 // The transaction of the exchange process is as follows:

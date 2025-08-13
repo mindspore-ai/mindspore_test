@@ -26,17 +26,17 @@
 #include <limits>
 #include "include/backend/distributed/cluster/topology/common.h"
 #include "include/backend/distributed/rpc/tcp/tcp_client.h"
-#include "include/backend/distributed/cluster/topology/node_base.h"
+#include "include/backend/distributed/cluster/topology/tcp_node.h"
 
 namespace mindspore {
 namespace distributed {
 namespace cluster {
 namespace topology {
 // The ComputeGraphNode is a separate process representing a sub-graph of the distributed computation graph.
-class BACKEND_COMMON_EXPORT ComputeGraphNode : public NodeBase {
+class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
  public:
   ComputeGraphNode(const std::string &node_id, const std::string &role)
-      : NodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false) {
+      : TcpNodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false) {
     device_id_ = UINT32_MAX;
     std::string env_device_id = common::GetEnv("DEVICE_ID");
     if (!env_device_id.empty()) {
@@ -57,20 +57,9 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public NodeBase {
   // Stop the heart beat thread. This method will be invoked when exception happens.
   void StopHeartBeatThread();
 
-  // Send the specified message to the meta server node.
-  bool SendMessageToMSN(const std::string msg_name, const std::string &msg_body, bool sync = true);
-
   // Query the specified message from the meta server node according to the given message name.
   // Returns nullptr if no message returned after timeout.
   std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, uint32_t timeout = 5);
-
-  // Write and read user defined metadata to the meta server node.
-  bool PutMetadata(const std::string &name, const std::string &value, bool sync = true);
-  bool PutMetadata(const std::string &name, const void *value, const size_t &size);
-
-  std::string GetMetadata(const std::string &name, uint32_t timeout = 5);
-
-  bool DeleteMetadata(const std::string &name, uint32_t timeout = 5);
 
   // Exchange metadata(name:value) between all the compute graph nodes.
   // The transaction of the exchange process is guaranteed.
@@ -105,12 +94,6 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public NodeBase {
 
   std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, const std::string &msg_body,
                                                       uint32_t timeout = 5);
-
-  // The meta server address used to synchronize metadata with other compute graph nodes.
-  MetaServerAddress meta_server_addr_;
-
-  // The TCP client is used to send messages to meta server node.
-  std::unique_ptr<rpc::TCPClient> tcp_client_;
 
   // The TCP client used to send heartbeat to meta server.
   std::unique_ptr<rpc::TCPClient> hb_client_;

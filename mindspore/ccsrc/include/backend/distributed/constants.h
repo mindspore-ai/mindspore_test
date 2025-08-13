@@ -54,6 +54,7 @@ constexpr char kEnvRoleOfServer[] = "MS_SERVER";
 constexpr char kEnvRoleOfPServer[] = "MS_PSERVER";
 constexpr char kEnvRoleOfWorker[] = "MS_WORKER";
 constexpr char kEnvRoleOfScheduler[] = "MS_SCHED";
+constexpr char kEnvRoleOfClient[] = "MS_CLIENT";
 const std::set<std::string> kValidRoleName = {kEnvRoleOfServer, kEnvRoleOfPServer, kEnvRoleOfWorker,
                                               kEnvRoleOfScheduler};
 
@@ -161,12 +162,12 @@ static const uint32_t kExecuteInterval = 3;
 // Default retry interval 500 milliseconds.
 static const uint32_t kExecuteIntervalM = 500;
 
-// If cluster has greater than 128 workers, consider it as a large-scale cluster.
-static const uint32_t kClusterScaleBound = 128;
+// If cluster has greater than 256 workers, consider it as a large-scale cluster.
+static const uint32_t kClusterScaleBound = 256;
 
 // Sleep for a duration according to cluster scale. The input 'interval_sec' is used only when this is a
-// large-scale cluster.
-inline void SleepBasedOnScale(size_t interval_sec) {
+// large-scale cluster. The input 'interval_milli' is used for small-scale cluster, default is 500 milliseconds.
+inline void SleepBasedOnScale(size_t interval_sec, size_t interval_milli = kExecuteIntervalM) {
   // Get cluster size by MS_WORKER_NUM env. If it's not set, consider cluster has 128 workers by default.
   static uint32_t cluster_size = 0;
   if (cluster_size == 0) {
@@ -181,7 +182,7 @@ inline void SleepBasedOnScale(size_t interval_sec) {
   if (cluster_size > kClusterScaleBound) {
     std::this_thread::sleep_for(std::chrono::seconds(interval_sec));
   } else {
-    std::this_thread::sleep_for(std::chrono::milliseconds(kExecuteIntervalM));
+    std::this_thread::sleep_for(std::chrono::milliseconds(interval_milli));
   }
 }
 

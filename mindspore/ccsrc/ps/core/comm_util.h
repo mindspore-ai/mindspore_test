@@ -131,6 +131,7 @@ class CommUtil {
   static void GetAvailableInterfaceAndIP(std::string *interface, std::string *ip);
   static std::string GetLoopBackInterfaceName();
   static std::string GenerateUUID();
+  static std::string GenerateVariableUUID();
   static std::string NodeRoleToString(const NodeRole &role);
   static NodeRole StringToNodeRole(const std::string &roleStr);
   static std::string BoolToString(bool alive);

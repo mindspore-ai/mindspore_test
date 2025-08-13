@@ -55,9 +55,17 @@ bool MetaServerNode::Initialize() {
   // Init metadata for the cluster.
   SetMetaData();
 
-  // Init the address of meta server node.
-  RETURN_IF_FALSE_WITH_LOG(FillMetaServerAddress(&meta_server_addr_),
-                           "Failed to init the address of meta server node.");
+  MS_LOG(DEBUG) << "Begin to Initialize TcpNodeBase.";
+  if (address_id_.empty()) {
+    MS_LOG(DEBUG) << "MetaServerNode address_id_ is None.";
+    // Init the address of meta server node.
+    RETURN_IF_FALSE_WITH_LOG(FillMetaServerAddress(&meta_server_addr_),
+                             "Failed to init the address of meta server node.");
+  } else {
+    MS_LOG(DEBUG) << "Begin to parse address_id.";
+    // Init the address of meta server node.
+    RETURN_IF_FALSE_WITH_LOG(ParseIPPort(address_id_, &meta_server_addr_), "Failed to Parse IP or Port.");
+  }
 
   // Init the TCP server.
   RETURN_IF_FALSE_WITH_LOG(InitTCPServer(), "Failed to create the TCP server.");
@@ -140,6 +148,8 @@ bool MetaServerNode::InitTCPServer() {
     std::bind(&MetaServerNode::ProcessDeleteMetadata, this, std::placeholders::_1);
   system_msg_handlers_[MessageName::kGetHostNames] =
     std::bind(&MetaServerNode::ProcessGetHostNames, this, std::placeholders::_1);
+  system_msg_handlers_[MessageName::kAddMetadata] =
+    std::bind(&MetaServerNode::ProcessAddMetadata, this, std::placeholders::_1);
   return true;
 }
 
@@ -194,25 +204,26 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
   const auto &device_id = registration.device_id();
   std::unique_lock<std::shared_mutex> lock(nodes_mutex_);
   if (nodes_.find(node_id) == nodes_.end()) {
-    uint32_t rank_id;
-    if (common::IsStrNumeric(node_id)) {
-      // This means node id is not randomly generated. So directly convert to int.
-      rank_id = static_cast<uint32_t>(std::atoi(node_id.c_str()));
-    } else {
-      rank_id = AllocateRankId(role);
-    }
+    uint32_t rank_id = 0;
+    if (role != kEnvRoleOfClient) {
+      if (common::IsStrNumeric(node_id)) {
+        // This means node id is not randomly generated. So directly convert to int.
+        rank_id = static_cast<uint32_t>(std::atoi(node_id.c_str()));
+      } else {
+        rank_id = AllocateRankId(role);
+      }
 
-    // Check validation of this registered node.
-    std::string reject_reason = "";
-    if (!CheckRankIdValidation(node_id, role, rank_id, host_ip, &reject_reason)) {
-      RegistrationRespMessage reg_resp_msg;
-      reg_resp_msg.set_success(false);
-      reg_resp_msg.set_error_reason(reject_reason);
-      auto response =
-        CreateMessage(meta_server_addr_.GetUrl(), MessageName::kInvalidNode, reg_resp_msg.SerializeAsString());
-      return response.release();
+      // Check validation of this registered node.
+      std::string reject_reason = "";
+      if (!CheckRankIdValidation(node_id, role, rank_id, host_ip, &reject_reason)) {
+        RegistrationRespMessage reg_resp_msg;
+        reg_resp_msg.set_success(false);
+        reg_resp_msg.set_error_reason(reject_reason);
+        auto response =
+          CreateMessage(meta_server_addr_.GetUrl(), MessageName::kInvalidNode, reg_resp_msg.SerializeAsString());
+        return response.release();
+      }
     }
-
     std::shared_ptr<NodeInfo> node_info = std::make_shared<NodeInfo>(node_id);
     MS_ERROR_IF_NULL_W_RET_VAL(node_info, rpc::NULL_MSG);
     node_info->host_name = host_name;
@@ -242,7 +253,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
                     << ", expected node number: " << total_node_num_;
     return message.release();
   } else {
-    if (!enable_recovery_) {
+    if ((role != kEnvRoleOfClient) && !enable_recovery_) {
       MS_LOG(WARNING) << "Node " << node_id << " registered repeatedly. It's host ip is " << host_ip
                       << ". Reject this node.";
       RegistrationRespMessage reg_resp_msg;
@@ -398,6 +409,43 @@ MessageBase *const MetaServerNode::ProcessDeleteMetadata(MessageBase *const mess
     result = MessageName::kValidMetadata;
     (void)metadata_.erase(meta_msg.name());
   }
+  response = CreateMessage(meta_server_addr_.GetUrl(), result, meta_msg.SerializeAsString());
+  MS_EXCEPTION_IF_NULL(response);
+  return response.release();
+}
+
+MessageBase *const MetaServerNode::ProcessAddMetadata(MessageBase *const message) {
+  MS_ERROR_IF_NULL_W_RET_VAL(message, rpc::NULL_MSG);
+  const std::string &body = message->Body();
+  MetadataMessage meta_msg;
+  (void)meta_msg.ParseFromArray(body.c_str(), SizeToInt(body.length()));
+
+  std::shared_lock<std::shared_mutex> lock(meta_mutex_);
+  MessageName result = MessageName::kValidMetadata;
+  std::unique_ptr<MessageBase> response;
+  int64_t addVal = 0;
+  bool is_exception = false;
+  try {
+    addVal = std::stoll(meta_msg.value());
+  } catch (const std::exception &e) {
+    result = MessageName::kInvalidMetadata;
+    is_exception = true;
+    MS_LOG(ERROR) << "Add input value is illegal, input is " << meta_msg.value();
+  }
+  if (metadata_.find(meta_msg.name()) != metadata_.end()) {
+    std::string meta_value = metadata_.at(meta_msg.name());
+    try {
+      addVal += std::stoll(meta_value);
+    } catch (const std::exception &e) {
+      result = MessageName::kInvalidMetadata;
+      is_exception = true;
+      MS_LOG(ERROR) << "The value corresponding to the key value of Add is illegal, value is " << meta_value;
+    }
+  }
+  if (!is_exception) {
+    metadata_[meta_msg.name()] = std::to_string(addVal);
+  }
+  meta_msg.set_value(std::to_string(addVal));
   response = CreateMessage(meta_server_addr_.GetUrl(), result, meta_msg.SerializeAsString());
   MS_EXCEPTION_IF_NULL(response);
   return response.release();

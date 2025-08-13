@@ -143,8 +143,10 @@ struct NodeKey {
 class MetaServerNode : public NodeBase {
  public:
   explicit MetaServerNode(const std::string &node_id, const std::string &role, const size_t &node_num,
-                          uint64_t node_timeout = kDefaultNodeTimeout)
-      : NodeBase(node_id, role), total_node_num_(node_num), abnormal_node_num_(0), enable_monitor_(true) {}
+                          uint64_t node_timeout = kDefaultNodeTimeout, const std::string &address_id = "")
+      : NodeBase(node_id, role), total_node_num_(node_num), abnormal_node_num_(0), enable_monitor_(true) {
+    address_id_ = address_id;
+  }
   ~MetaServerNode() override;
 
   bool Initialize() override;
@@ -187,7 +189,7 @@ class MetaServerNode : public NodeBase {
   MessageBase *const ProcessWriteMetadata(MessageBase *const message);
   MessageBase *const ProcessReadMetadata(MessageBase *const message);
   MessageBase *const ProcessDeleteMetadata(MessageBase *const message);
-
+  MessageBase *const ProcessAddMetadata(MessageBase *const message);
   // Gather all the hostname of registered compute graph nodes.
   MessageBase *const ProcessGetHostNames(MessageBase *const message);
 
@@ -258,6 +260,7 @@ class MetaServerNode : public NodeBase {
   // The expected node number for each role.
   std::map<std::string, uint32_t> role_expect_num_;
   mutable std::shared_mutex rank_mutex_;
+  std::string address_id_;
 };
 }  // namespace topology
 }  // namespace cluster
