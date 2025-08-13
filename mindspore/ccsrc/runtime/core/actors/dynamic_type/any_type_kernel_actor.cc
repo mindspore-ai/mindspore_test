@@ -534,6 +534,8 @@ void AnyTypeKernelActor::ClearElements(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(model_output[i].first);
     MS_EXCEPTION_IF_NULL(real_output[i].first);
     model_to_real_outputs[model_output[i]] = real_output[i];
+    model_to_real_outputs[common::AnfAlgo::VisitKernelWithReturnType(model_output[i].first, model_output[i].second)] =
+      real_output[i];
   }
   if (model_output_data_nodes_.size() != model_output_data_arrows_.size()) {
     MS_LOG(EXCEPTION) << "Invalid output data node size:" << model_output_data_nodes_.size()
@@ -656,16 +658,19 @@ void AnyTypeKernelActor::UpdateOutputData(OpData<KernelTensor> *const output_dat
   if (!output_node->isa<CNode>()) {
     return;
   }
-  if (!AnfAlgo::OutputAddrExist(output_node, data_arrow->from_output_index_, false)) {
+  const auto &node_with_index = common::AnfAlgo::VisitKernelWithReturnType(output_node, data_arrow->from_output_index_);
+  MS_EXCEPTION_IF_NULL(node_with_index.first);
+  if (!AnfAlgo::OutputAddrExist(node_with_index.first, node_with_index.second, false)) {
     std::stringstream error_info;
-    error_info << "Failed to get output device address for:" << output_node->DebugString()
-               << " index:" << data_arrow->from_output_index_ << " for actor:" << GetAID();
+    error_info << "Failed to get output device address for:" << node_with_index.first->DebugString()
+               << " index:" << node_with_index.second << " for actor:" << GetAID();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
-  output_data->data_ = AnfAlgo::GetOutputKernelTensor(output_node, data_arrow->from_output_index_, false);
+  output_data->data_ = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Set output address:" << output_data->data_ << " to output data, output index:" << data_arrow->from_output_index_
-    << " node:" << output_node << " in actor:" << GetAID();
+    << "Set output address:" << output_data->data_ << " to output data, output node:" << output_node->DebugString()
+    << " output index:" << data_arrow->from_output_index_ << " real node:" << node_with_index.first->DebugString()
+    << " index:" << node_with_index.second << " in actor:" << GetAID();
 }
 }  // namespace runtime
 }  // namespace mindspore

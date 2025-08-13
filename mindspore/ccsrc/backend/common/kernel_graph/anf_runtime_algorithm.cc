@@ -478,9 +478,13 @@ std::string AnfRuntimeAlgorithm::GetOutputFormat(const AnfNodePtr &node, size_t 
     return AnfAlgo::GetPrevNodeOutputFormat(node, output_idx);
   }
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info);
+  if (kernel_info == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get kernel info from node:" << node->DebugString();
+  }
   auto build_info = kernel_info->select_kernel_build_info();
-  MS_EXCEPTION_IF_NULL(build_info);
+  if (kernel_info == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get build info from node:" << node->DebugString();
+  }
   std::string format;
   // If the output is TUPLE, output format list's size is 1. So we use the first element as the output format.
   // This scenario could happen before 'insert_type_transform_op' pass.
