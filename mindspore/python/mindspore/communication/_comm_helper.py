@@ -525,7 +525,7 @@ def _create_group_helper(group, rank_ids, options=None):
                                "If NCCL is used, 'export NCCL_DEBUG=INFO' "
                                "is suggested before launching jobs.".format(group, rank_ids))
         group_info = ParallelCommManager.get_instance().hccl_groups(rank_ids)
-        if group_info is None:
+        if group_info is None or not group_info[1]:
             ParallelCommManager.get_instance().set_hccl_groups(rank_ids, group, True)
 
     _ExistingGroup.ITEMS[group] = rank_ids
@@ -551,6 +551,10 @@ def _destroy_group_helper(group):
     if _hccl_test():
         hccl.create_group(group)
     else:
+        group_ranks_map = CollectiveManager.get_instance().get_group_map()
+        ranks = group_ranks_map.get(group)
+        if ranks is not None:
+            ParallelCommManager.get_instance().set_hccl_groups(ranks, group, False)
         CollectiveManager.get_instance().destroy_group(group)
 
 

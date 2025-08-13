@@ -127,7 +127,7 @@ class FRONTEND_EXPORT ParallelCommManager {
   std::optional<std::pair<std::string, bool>> HcclGroups(const std::vector<uint32_t> &ranks) const;
 
  private:
-  mindspore::HashMap<std::string, std::pair<std::string, bool>> hccl_groups_map_;  // {rank_list: <name, flag>}
+  mindspore::HashMap<std::string, std::pair<std::string, bool>> hccl_groups_map_;  // {rank_list: <group_name, flag>}
   inline static std::shared_ptr<ParallelCommManager> group_instance_{nullptr};
 };
 }  // namespace parallel

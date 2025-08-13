@@ -24,6 +24,7 @@
 #include "utils/hash_set.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace parallel {
@@ -411,9 +412,19 @@ std::string DeviceManager::GenerateGroupNameByRanks(RankList ranks) {
   rank_list.reserve(ranks.size());
   (void)std::transform(ranks.begin(), ranks.end(), std::back_inserter(rank_list),
                        [](int64_t r) { return static_cast<uint32_t>(r); });
-  const auto &pair = ParallelCommManager::GetInstance()->HcclGroups(rank_list);
-  if (pair.has_value()) {
-    group_name = pair.value().first;
+  auto group_flag_pair = ParallelCommManager::GetInstance()->HcclGroups(rank_list);
+  bool is_created = group_flag_pair && group_flag_pair->second;
+  bool initialized = distributed::collective::CollectiveManager::instance()->initialized();
+  bool in_group_map = false;
+  if (is_created && initialized) {
+    const auto &group_map = distributed::collective::CollectiveManager::instance()->get_group_map();
+    auto it = group_map.find(group_flag_pair->first);
+    in_group_map = (it != group_map.end() && !it->second.empty());
+  }
+  bool valid_group = is_created && initialized && in_group_map;
+
+  if (valid_group) {
+    group_name = group_flag_pair->first;
   } else {
     std::string group_hash_name = HashName(rank_list_name);  // hash rank-list-name and add ranks' size as prefix
     group_name = std::to_string(ranks.size()) + "-" + group_hash_name;
