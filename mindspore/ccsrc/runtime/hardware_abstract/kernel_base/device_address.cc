@@ -231,10 +231,6 @@ void DeviceAddress::set_stream_id(uint32_t stream_id) { stream_id_ = stream_id; 
 
 const uint32_t DeviceAddress::stream_id() const { return stream_id_; }
 
-bool DeviceAddress::managed_by_somas() const { return managed_by_somas_; }
-
-void DeviceAddress::set_managed_by_somas(bool managed_by_somas) { managed_by_somas_ = managed_by_somas; }
-
 void DeviceAddress::AddHeldByNode(const std::weak_ptr<ValueNode> &value_node) {
   (void)held_by_nodes_.emplace_back(value_node);
 }
@@ -335,7 +331,6 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   other->set_from_mem_pool(this->from_mem_pool());
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
-  set_managed_by_somas(other->managed_by_somas());
 }
 
 const ShapeVector &DeviceAddress::host_shape() const { return host_shape_; }
