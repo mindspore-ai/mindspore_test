@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/session/kernel_graph_mgr.h"
+#include "backend/common/kernel_graph/kernel_graph_mgr.h"
 
 #include <algorithm>
 #include <queue>
@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "backend/common/session/jit_call_graph.h"
+#include "backend/common/kernel_graph/jit_call_graph.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"
 #include "utils/trace_info.h"

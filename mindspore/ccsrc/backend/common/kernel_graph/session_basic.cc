@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 
 #include <algorithm>
 #include <set>
@@ -51,7 +51,7 @@
 #include "utils/trace_base.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "backend/common/session/session_factory.h"
+#include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/debug/debugger/proto_exporter.h"
 #ifdef ENABLE_DUMP_IR
 #include "debug/rdr/graph_exec_order_recorder.h"

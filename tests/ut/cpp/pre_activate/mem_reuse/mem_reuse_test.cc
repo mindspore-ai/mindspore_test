@@ -18,7 +18,7 @@
 #include <string>
 #include "include/backend/kernel_graph.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "include/backend/kernel_info.h"
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"

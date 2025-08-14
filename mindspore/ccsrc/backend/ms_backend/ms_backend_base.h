@@ -27,7 +27,7 @@
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "abstract/abstract_function.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_jit_config.h"

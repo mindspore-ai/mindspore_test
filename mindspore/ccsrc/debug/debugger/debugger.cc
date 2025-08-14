@@ -23,7 +23,7 @@
 #include <map>
 #include <regex>
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"

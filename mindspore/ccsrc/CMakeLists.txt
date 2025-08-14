@@ -140,7 +140,7 @@ set(BACKEND_COMMON_SUB_COMP
         runtime/collective
         backend/common/optimizer
         backend/common/pass
-        backend/common/session
+        backend/common/kernel_graph
         backend/common/graph_kernel
         backend/common/expander
         )

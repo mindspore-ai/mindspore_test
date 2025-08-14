@@ -23,7 +23,7 @@
 #include <future>
 
 #include "runtime/pipeline/task/task.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "runtime/pynative/op_compiler.h"
 
 namespace mindspore {
