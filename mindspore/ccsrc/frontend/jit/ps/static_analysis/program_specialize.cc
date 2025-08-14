@@ -1168,6 +1168,21 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input,
   return ignore_build_value;
 }
 
+void FuncGraphSpecializer::UpdatePartialAbstractClosureBoundNode(const AnfNodePtr &new_node) {
+  // Update PartialAbstractClosure's bound node.
+  if (new_node->isa<CNode>() && new_node->abstract()->isa<PartialAbstractClosure>()) {
+    auto partial_closure = dyn_cast_ptr<PartialAbstractClosure>(new_node->abstract());
+    MS_EXCEPTION_IF_NULL(partial_closure);
+    auto partial_node = partial_closure->node();
+    if (partial_node != nullptr && GetTopSpecializer(partial_node) != nullptr) {
+      auto new_partial_node = GetReplicatedNode(partial_node);
+      if (new_partial_node != partial_node) {  // Old Partial CNode was replaced. Need update.
+        partial_closure->set_node(new_partial_node);
+      }
+    }
+  }
+}
+
 void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   ScopeGuard scope_guard(node->scope());
@@ -1187,18 +1202,8 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   new_node->set_abstract(conf_eval_result->abstract());
   MS_EXCEPTION_IF_NULL(new_node->abstract());
 
-  // Update PartialAbstractClosure's bound node.
-  if (new_node->isa<CNode>() && new_node->abstract()->isa<PartialAbstractClosure>()) {
-    auto partial_closure = dyn_cast_ptr<PartialAbstractClosure>(new_node->abstract());
-    MS_EXCEPTION_IF_NULL(partial_closure);
-    auto partial_node = partial_closure->node();
-    if (partial_node != nullptr && GetTopSpecializer(partial_node) != nullptr) {
-      auto new_partial_node = GetReplicatedNode(partial_node);
-      if (new_partial_node != partial_node) {  // Old Partial CNode was replaced. Need update.
-        partial_closure->set_node(new_partial_node);
-      }
-    }
-  }
+  UpdatePartialAbstractClosureBoundNode(new_node);
+
   MS_LOG(DEBUG) << "Set new_node: " << new_node->DebugString() << ", abstract as: " << new_node->abstract()->ToString()
                 << ", func_graph_: " << func_graph_->ToString()
                 << ", specialized_func_graph_: " << specialized_func_graph_->ToString();

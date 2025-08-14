@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """debug_ops"""
+import inspect
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
 from mindspore._c_expression import TensorPy as Tensor_
@@ -25,6 +26,7 @@ from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
+from mindspore.nn.cell import Cell
 
 SUMMARY_TENSOR_CACHE = []
 
@@ -511,14 +513,15 @@ class Morph(PrimitiveWithInfer):
 
     .. note::
         - This primitive is only supported in GRAPH_MODE.
-        - `fn` must satisfy the syntax constraints of the graph mode.
-        - Users do not need to implement a custom backward function.
+        - A user-defined bprop (by argument: `bprop_fn`) is allowed for `Morph`.
+        - `fn` and `bprop_fn` must satisfy the syntax constraints of the graph mode.
         - `vararg`, `kwarg`, `kwonlyargs` and free variables are not supported in user-defined function.
 
     Args:
-        fn (Function): Mindspore's function, user-defined function.
-        infer_shape (Function): Mindspore's function, user-defined infer_shape function.
-        infer_dtype (Function): Mindspore's function, user-defined infer_dtype function.
+        fn (Function): MindSpore's function, user-defined function.
+        infer_shape (Function): MindSpore's function, user-defined infer_shape function.
+        infer_dtype (Function): MindSpore's function, user-defined infer_dtype function.
+        bprop_fn (Function): MindSpore's function, user-defined bprop function, default: ``None``.
 
     Inputs:
         The inputs of user-defined `fn`.
@@ -579,13 +582,44 @@ class Morph(PrimitiveWithInfer):
         weight1_grad [ 700. 1600. 2700.]
     """
     @prim_attr_register
-    def __init__(self, fn, infer_shape, infer_dtype):
+    def __init__(self, fn, infer_shape, infer_dtype, bprop_fn=None):
         self.add_prim_attr('side_effect_backprop', True)
         self.add_prim_attr('side_effect_mem', True)
         self.add_prim_attr('side_effect_io', True)
-        self.add_prim_attr('__metamorphosis__', fn)
         self._infer_shape = infer_shape
         self._infer_dtype = infer_dtype
+
+        if bprop_fn:
+            class InnerNet(Cell):
+                """
+                Inner net that wraps fn and bprop inside.
+                """
+                def __init__(self) -> None:
+                    super().__init__()
+
+                @wraps(fn)
+                def construct(self, *args, **kwargs):
+                    return fn(*args, **kwargs)
+
+                @wraps(bprop_fn)
+                def bprop(self, *args):
+                    return bprop_fn(*args)
+
+            self.add_prim_attr('__metamorphosis__', InnerNet())
+
+        else:
+            class InnerNet(Cell):
+                """
+                Inner net that wraps fn inside.
+                """
+                def __init__(self) -> None:
+                    super().__init__()
+
+                @wraps(fn)
+                def construct(self, *args, **kwargs):
+                    return fn(*args, **kwargs)
+
+            self.add_prim_attr('__metamorphosis__', InnerNet())
 
     def infer_shape(self, *args):
         return self._infer_shape(*args)
