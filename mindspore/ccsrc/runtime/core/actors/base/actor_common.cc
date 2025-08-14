@@ -336,10 +336,6 @@ bool EnableInputOptimize() {
     return false;
   }
 
-  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
-    return false;
-  }
-
   return true;
 }
 
@@ -983,6 +979,11 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
                         << ", inner size: " << inner_index << ", device tensor info: " << device_tensor->ToString()
                         << ", node: " << node->fullname_with_scope();
     }
+  }
+
+  auto skip_h2d = UCEException::GetInstance().is_reboot_node();
+  if (skip_h2d && graph_parameter_store->GetPositionWeight(outer_index)) {
+    return;
   }
 
   auto tensor_size = tensor->DataNBytes();

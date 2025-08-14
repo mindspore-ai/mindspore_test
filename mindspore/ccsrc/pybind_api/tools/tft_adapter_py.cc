@@ -21,7 +21,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
+#include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -31,7 +31,7 @@
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
 using DeviceContextPtr = std::shared_ptr<DeviceContext>;
-using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
+using ParameterStore = mindspore::runtime::ParameterStore;
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 namespace {
 DeviceContextPtr GetDeviceCtx() {
@@ -103,11 +103,17 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
                                         const std::vector<std::pair<device::DeviceMemPtr, size_t>> &mem_uce_addr) {
   // Judge whether weights got uce error.
   MS_LOG(INFO) << "Start to get UCE process strategy for kbk.";
-  const auto &kernel_tensors = DeviceTensorStore::GetInstance().GetAll();
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  const auto &kernel_tensors_with_info = graph_parameter_store->GetAll();
   try {
-    for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
-      auto kernel_tensor_list = iter->second;
-      for (const auto &kernel_tensor : kernel_tensor_list) {
+    for (size_t outer_idx = 0; outer_idx < kernel_tensors_with_info.size(); ++outer_idx) {
+      if (!graph_parameter_store->GetPositionWeight(outer_idx)) {
+        continue;
+      }
+      auto kernel_tensor_with_info = kernel_tensors_with_info[outer_idx];
+      for (size_t inner_idx = 0; inner_idx < kernel_tensor_with_info.size(); ++inner_idx) {
+        auto kernel_tensor = kernel_tensor_with_info[inner_idx].first;
         MS_EXCEPTION_IF_NULL(kernel_tensor);
         const auto &device_tensor = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_tensor);
