@@ -1756,6 +1756,18 @@ void AutoDiff::AddNodeToExecGraph(const BackwardNodePtr &node) {
   gradient_contexts_[node.get()] = GradientContext(true);
 }
 
+void AutoDiff::AddFinalCallback(std::function<void()> callback) {
+  (void)final_callbacks_.emplace_back(std::move(callback));
+}
+
+void AutoDiff::RunFinalCallback() const {
+  MS_LOG(DEBUG) << "Begin run final callback";
+  for (const auto &func : final_callbacks_) {
+    func();
+  }
+  MS_LOG(DEBUG) << "End run final callback";
+}
+
 void AutoDiff::Clear() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyNativeGradClearAutoGradCell,
