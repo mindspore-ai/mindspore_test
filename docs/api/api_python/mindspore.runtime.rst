@@ -25,6 +25,9 @@ mindspore.runtime
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.runtime.MemPool
+    mindspore.runtime.PluggableAllocator
+    mindspore.runtime.empty_cache
     mindspore.runtime.max_memory_allocated
     mindspore.runtime.max_memory_reserved
     mindspore.runtime.memory_allocated
@@ -35,8 +38,8 @@ mindspore.runtime
     mindspore.runtime.reset_max_memory_reserved
     mindspore.runtime.reset_max_memory_allocated
     mindspore.runtime.reset_peak_memory_stats
-    mindspore.runtime.empty_cache
     mindspore.runtime.set_memory
+    mindspore.runtime.use_mem_pool
 
 流
 ---------

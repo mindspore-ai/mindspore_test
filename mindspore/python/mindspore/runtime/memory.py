@@ -14,9 +14,15 @@
 # ============================================================================
 
 """Memory interfaces."""
+import contextlib
+import ctypes
 import os
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
     _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache, _memory_replay
+try:
+    from mindspore._c_expression import _enable_pluggable_allocator, _disable_pluggable_allocator
+except ImportError:
+    pass
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
@@ -406,3 +412,108 @@ def memory_replay(file_path):
         >>> ms.runtime.memory_replay("/data/memory_block.csv")
     """
     _memory_replay(os.path.realpath(file_path))
+
+
+class PluggableAllocator():
+    r"""
+    Receive a .so file via ctypes, and dynamically load the alloc and free functions within it.
+    It needs to be used in conjunction with :class:`mindspore.runtime.MemPool` and
+    :func:`mindspore.runtime.use_mem_pool` to take over the memory allocation and free
+    in the MindSpore memory pool.
+
+    .. warning::
+        This is currently supported only in unix OSs.
+
+    Args:
+        path_to_so_file(str): Path in the file system to the `.so` file containing
+            the allocator functions.
+        alloc_fn_name(str): Name of the function to perform the memory allocation
+            in the so file. The signature must be:
+            `void* alloc_fn(size_t size, int device, aclrtStream stream);` .
+        free_fn_name(str): Name of the function to perform the memory release
+            in the so file. The signature must be:
+            `void free_fn(void* ptr, size_t size, aclrtStream stream);` .
+
+    Supported Platforms:
+        ``Ascend``
+    """
+
+    def __init__(self, path_to_so_file: str, alloc_fn_name: str, free_fn_name: str):
+        allocator = ctypes.CDLL(path_to_so_file)
+        alloc_fn = ctypes.cast(getattr(allocator, alloc_fn_name), ctypes.c_void_p).value
+        free_fn = ctypes.cast(getattr(allocator, free_fn_name), ctypes.c_void_p).value
+        if alloc_fn is None:
+            raise ValueError(f"Cannot find allocator function {alloc_fn_name} in {path_to_so_file}")
+        if free_fn is None:
+            raise ValueError(f"Cannot find free function {free_fn_name} in {path_to_so_file}")
+        self._alloc_fn = alloc_fn
+        self._free_fn = free_fn
+
+    @property
+    def alloc_fn_ptr(self) -> int:
+        """Function pointer of the allocator function."""
+        return self._alloc_fn
+
+    @property
+    def free_fn_ptr(self) -> int:
+        """Function pointer of the free function."""
+        return self._free_fn
+
+
+class MemPool():
+    r"""
+    A MemPool warp a :class:`mindspore.runtime.PluggableAllocator`,
+    and pass it to :func:`mindspore.runtime.use_mem_pool`.
+
+    Args:
+        allocator(mindspore.runtime.PluggableAllocator): a mindspore.runtime.PluggableAllocator
+            that can be used to define how memory gets allocated and freed in the pool.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+
+    def __init__(self, allocator: PluggableAllocator):
+        self._allocator = allocator
+
+    @property
+    def allocator(self) -> PluggableAllocator:
+        """The allocator used by the pool."""
+        return self._allocator
+
+
+@contextlib.contextmanager
+def use_mem_pool(pool: MemPool):
+    r"""
+    A context manager that routes allocations and deallocations to a given pool.
+
+    Note:
+        - This context manager makes only current thread's allocations route to the given pool.
+        - If a new thread is spawned inside the context manager the allocations in that thread
+          will not route to the given pool.
+        - Only by allocating Device memory inside the context manager, the allocation operation
+          can be routed to the given pool.
+
+    Args:
+        pool(mindspore.runtime.MemPool): a MemPool object that warp a PluggableAllocator.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> path = "/path/to/allocator.so"
+        >>> allocator = ms.runtime.PluggableAllocator(path, "Alloc", "Free")
+        >>> mem_pool = ms.runtime.MemPool(allocator)
+        >>> shape = (1024, 1024)
+        >>> x = ms.ops.Ones()(shape, ms.float32)
+        >>> with ms.runtime.use_mem_pool(mem_pool):
+        >>>     y = ms.ops.Ones()(shape, ms.float32)
+        >>> output = x + y
+    """
+    allocator = pool.allocator
+    _enable_pluggable_allocator(allocator.alloc_fn_ptr, allocator.free_fn_ptr)
+    try:
+        yield
+    finally:
+        _disable_pluggable_allocator()

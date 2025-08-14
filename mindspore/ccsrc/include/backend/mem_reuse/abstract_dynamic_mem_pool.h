@@ -31,6 +31,7 @@
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/stream_util.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace device {
@@ -165,6 +166,7 @@ struct BACKEND_EXPORT MemStat {
     used_size_ = 0;
     peak_size_ = 0;
     alloc_size_ = 0;
+    custom_alloc_size_ = 0;
 
     used_by_event_size_ = 0;
     eager_free_size_ = 0;
@@ -173,15 +175,15 @@ struct BACKEND_EXPORT MemStat {
     iter_alloc_peak_size_ = 0;
   }
 
-  inline size_t IdleSize() const { return alloc_size_ - used_size_; }
+  inline size_t IdleSize() const { return alloc_size_ + custom_alloc_size_ - used_size_; }
 
   inline void UpdatePeakSize(const bool is_enable_vmm, size_t vmm_used_mem_size) {
     peak_size_ = std::max(peak_size_, used_size_);
     iter_used_peak_size_ = std::max(iter_used_peak_size_, used_size_);
     if (is_enable_vmm) {
-      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, vmm_used_mem_size);
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, vmm_used_mem_size + custom_alloc_size_);
     } else {
-      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, alloc_size_);
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, alloc_size_ + custom_alloc_size_);
     }
   }
 
@@ -215,6 +217,7 @@ struct BACKEND_EXPORT MemStat {
   size_t used_size_;
   size_t peak_size_;
   size_t alloc_size_;
+  size_t custom_alloc_size_;
 
   size_t used_by_event_size_;
   size_t eager_free_size_;
@@ -257,7 +260,7 @@ class BACKEND_EXPORT MemBufAllocator {
                            std::function<bool(MemBlock *)> mem_block_cleaner,
                            std::function<size_t(size_t size, void *addr)> mem_mapper,
                            std::function<size_t(void *addr, size_t size)> mem_eager_freer, bool enable_eager_free,
-                           bool is_persistent, uint32_t stream_id, bool is_small)
+                           bool is_persistent, uint32_t stream_id, bool is_small, bool is_customized = false)
       : mem_block_expander_(mem_block_expander),
         mem_block_cleaner_(mem_block_cleaner),
         mem_mapper_(mem_mapper),
@@ -265,7 +268,8 @@ class BACKEND_EXPORT MemBufAllocator {
         enable_eager_free_(enable_eager_free),
         stream_id_(stream_id),
         is_persistent_(is_persistent),
-        is_small_(is_small) {
+        is_small_(is_small),
+        is_customized_(is_customized) {
     search_key_ = new MemBuf(0, nullptr, 0, nullptr, MemBufStatus::kMemBufIdle);
   }
 
@@ -331,6 +335,7 @@ class BACKEND_EXPORT MemBufAllocator {
   uint32_t stream_id_;
   bool is_persistent_;
   bool is_small_;
+  bool is_customized_;
 
   friend AbstractDynamicMemPool;
 };
@@ -427,6 +432,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 
   size_t ReleaseFreeBlocks() override;
+  size_t ReleaseCustomFreeBlocks();
 
   MemStat &mem_stat() { return mem_stat_; }
 
@@ -454,6 +460,9 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
 
   MemBufAllocatorPtr GenerateAllocator(const AllocatorInfo &allocator_key);
   inline MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
+  virtual MemBufAllocatorPtr GenerateCustomAllocator(uint32_t stream_id) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
 #ifndef ENABLE_TEST
 
  protected:
@@ -464,9 +473,13 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   std::map<AllocatorInfo, MemBufAllocatorPtr> stream_id_allocators_;
   std::unordered_map<void *, std::pair<MemBuf *, MemBufAllocator *>> addr_mem_buf_allocators_;
   std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<MemBuf *>, pair_hash> stream_pair_mem_bufs_;
+  std::map<uint32_t, MemBufAllocatorPtr> customized_allocators_;
   MemStat mem_stat_;
 
   bool enable_vmm_{false};
+  bool enable_custom_allocator_{false};
+  std::function<MallocFuncType> custom_alloc_fn_;
+  std::function<FreeFuncType> custom_free_fn_;
   size_t common_unit_size_{kDynamicMemAllocUnitSize};
   size_t persist_unit_size_{kDynamicMemAllocUnitSize};
 

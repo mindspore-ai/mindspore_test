@@ -27,7 +27,6 @@
 
 #include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/common/utils/utils.h"
-#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace device {
@@ -117,7 +116,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
 }
 
 inline MemBuf *MemBufAllocator::SearchAvailableMemBuf(size_t size) {
-  if (!enable_eager_free_) {
+  if (!enable_eager_free_ || MS_UNLIKELY(is_customized_)) {
     return nullptr;
   }
   // Search from back to front, because the free mem buf is sorted by size.
@@ -232,8 +231,9 @@ MemBuf *MemBufAllocator::MallocExpandBlock(size_t size) {
   if (mem_block == nullptr) {
     return nullptr;
   }
-  MemBuf *candidate = new MemBuf(mem_block->size_, mem_block->addr_, mem_block->stream_id_, mem_block,
-                                 enable_eager_free_ ? MemBufStatus::kMemBufEagerFree : MemBufStatus::kMemBufIdle);
+  MemBuf *candidate = new MemBuf(
+    mem_block->size_, mem_block->addr_, mem_block->stream_id_, mem_block,
+    MS_LIKELY(!is_customized_) && enable_eager_free_ ? MemBufStatus::kMemBufEagerFree : MemBufStatus::kMemBufIdle);
   if (candidate->size_ < size) {
     if (candidate->status_ == MemBufStatus::kMemBufIdle) {
       (void)free_mem_bufs_.emplace(candidate);
@@ -249,7 +249,7 @@ MemBuf *MemBufAllocator::MallocExpandBlock(size_t size) {
 
 void MemBufAllocator::Initialize(size_t size) {
   MS_LOG(INFO) << "Initialize allocator : " << BriefInfo() << " with size : " << size << ".";
-  if (enable_eager_free_) {
+  if (enable_eager_free_ || MS_UNLIKELY(is_customized_)) {
     MS_LOG(INFO) << "Skip initialization of allocator, since vmm is enabled.";
     return;
   }
@@ -464,7 +464,12 @@ void AbstractDynamicMemPool::ReleaseDeviceRes() {
     const auto &allocator = stream_id_allocator.second;
     allocator->ReleaseDeviceRes();
   }
+  for (const auto &customized_allocator : customized_allocators_) {
+    const auto &allocator = customized_allocator.second;
+    allocator->ReleaseDeviceRes();
+  }
   stream_id_allocators_.clear();
+  customized_allocators_.clear();
   stream_pair_mem_bufs_.clear();
   mem_stat_.Reset();
 }
@@ -502,17 +507,18 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
 std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
                                                                            uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
+
   auto mem_buf = allocator->Malloc(align_size);
   if (MS_UNLIKELY(mem_buf == nullptr)) {
     // Enable malloc from another allocator when from_persistent_mem is true and vmm is not enabled.
-    if (!enable_vmm_ && from_persistent_mem) {
+    if (!enable_vmm_ && from_persistent_mem && MS_LIKELY(!enable_custom_allocator_)) {
       auto common_allocator = GetMemBufAllocator(align_size, false, stream_id);
       mem_buf = common_allocator->Malloc(align_size);
       allocator = common_allocator;
     }
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
-      if (enable_vmm_ || IsEnableEagerFree()) {
+      if ((enable_vmm_ || IsEnableEagerFree()) && MS_LIKELY(!enable_custom_allocator_)) {
         WaitPipelineHelper();
         if (!SyncAllStreams()) {
           MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
@@ -524,7 +530,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
       if (MS_UNLIKELY(mem_buf == nullptr)) {
         mem_buf = allocator->MallocExpandBlock(align_size);
         if (MS_UNLIKELY(mem_buf == nullptr)) {
-          if (MS_LIKELY(!from_persistent_mem)) {
+          if (MS_LIKELY(!from_persistent_mem) && MS_LIKELY(!enable_custom_allocator_)) {
             // Common pool expand block failed, try to malloc from persistent pool.
             auto persistent_allocator = GetMemBufAllocator(align_size, true, stream_id);
             mem_buf = persistent_allocator->Malloc(align_size);
@@ -636,6 +642,18 @@ MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool fr
   MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Get allocator, " << key.ToString() << ".";
 
   MemBufAllocatorPtr allocator = nullptr;
+  // Enable malloc from custom allocator when enable_custom_allocator_ is true
+  if (MS_UNLIKELY(enable_custom_allocator_)) {
+    auto &&it = customized_allocators_.find(stream_id);
+    if (it == customized_allocators_.end()) {
+      allocator = GenerateCustomAllocator(stream_id);
+      (void)customized_allocators_.emplace(stream_id, allocator);
+    } else {
+      allocator = it->second;
+    }
+    return allocator.get();
+  }
+
   auto &&it = stream_id_allocators_.find(key);
   if (it == stream_id_allocators_.end()) {
     allocator = GenerateAllocator(key);
@@ -1119,12 +1137,20 @@ size_t AbstractDynamicMemPool::ReleaseFreeBlocks() {
   return release_free_size;
 }
 
+size_t AbstractDynamicMemPool::ReleaseCustomFreeBlocks() {
+  size_t release_free_size = 0;
+  for (auto &customized_allocator : customized_allocators_) {
+    release_free_size += customized_allocator.second->ReleaseFreeBlocks();
+  }
+  return release_free_size;
+}
+
 // The statistics information.
 size_t AbstractDynamicMemPool::TotalMemStatistics() const {
   if (IsEnableVmm()) {
-    return GetVmmUsedMemSize();
+    return GetVmmUsedMemSize() + mem_stat_.custom_alloc_size_;
   }
-  return mem_stat_.alloc_size_;
+  return mem_stat_.alloc_size_ + mem_stat_.custom_alloc_size_;
 }
 
 size_t AbstractDynamicMemPool::TotalUsedMemStatistics() const { return mem_stat_.used_size_; }
@@ -1143,12 +1169,15 @@ size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const { return mem_sta
 
 size_t AbstractDynamicMemPool::ActualPeakStatistics() const {
   if (IsEnableVmm()) {
-    return GetVmmUsedMemSize();
+    return GetVmmUsedMemSize() + mem_stat_.custom_alloc_size_;
   }
 
   size_t peak_size = 0;
   for (auto &stream_id_allocator : stream_id_allocators_) {
     peak_size += stream_id_allocator.second->ActualPeakSize();
+  }
+  for (auto &customized_allocator : customized_allocators_) {
+    peak_size += customized_allocator.second->ActualPeakSize();
   }
   return peak_size;
 }
@@ -1216,7 +1245,8 @@ AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
 
 void AbstractDynamicMemPool::ResetMaxMemReserved() {
   LockGuard lock(lock_);
-  mem_stat_.iter_alloc_peak_size_ = IsEnableVmm() ? GetVmmUsedMemSize() : mem_stat_.alloc_size_;
+  mem_stat_.iter_alloc_peak_size_ = IsEnableVmm() ? GetVmmUsedMemSize() + mem_stat_.custom_alloc_size_
+                                                  : mem_stat_.alloc_size_ + mem_stat_.custom_alloc_size_;
 }
 
 void AbstractDynamicMemPool::ResetMaxMemAllocated() {

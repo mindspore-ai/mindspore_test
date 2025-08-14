@@ -56,6 +56,12 @@ class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendM
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
 
   size_t EmptyCache() override;
+
+  void EnablePluggableAllocator(std::function<MallocFuncType> alloc_fn, std::function<FreeFuncType> free_fn) override;
+  void DisablePluggableAllocator() override;
+
+ protected:
+  MemBufAllocatorPtr GenerateCustomAllocator(uint32_t stream_id) override;
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
@@ -114,6 +120,12 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
   bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) override;
 
   bool SyncAllEvents() override;
+
+  void EnablePluggableAllocator(std::function<MallocFuncType> alloc_fn, std::function<FreeFuncType> free_fn) override {
+    return instance_->EnablePluggableAllocator(alloc_fn, free_fn);
+  }
+
+  void DisablePluggableAllocator() override { return instance_->DisablePluggableAllocator(); }
 
   size_t AlignMemorySize(size_t size) const override { return instance_->AlignMemorySize(size); }
 

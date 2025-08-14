@@ -219,6 +219,7 @@ void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::Device
       continue;
     }
     auto shape = AnfAlgo::GetRuntimePaddingShape(value_node, 0);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "CopyValueNodeData", "");
     runtime::DeviceAddressUtils::CopyNoneTensorDataToDevice(device_context, kernel_tensor, shape);
   }
   MS_LOG(DEBUG) << "End";

@@ -77,13 +77,19 @@ size_t DefaultAscendMemoryPool::EmptyCache() {
   LockGuard lock(AbstractDynamicMemPool::lock());
   AbstractEnhancedDynamicMemPool::WaitPipelineHelper();
   AbstractAscendMemoryPoolSupport::SyncAllStreams();
+  size_t release_free_size = 0;
+  if (MS_UNLIKELY(!customized_allocators_.empty())) {
+    release_free_size += ReleaseCustomFreeBlocks();
+  }
   if (IsEnableVmm()) {
     AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
-    return AbstractAscendMemoryPoolSupport::EmptyCache();
+    release_free_size += AbstractAscendMemoryPoolSupport::EmptyCache();
+    return release_free_size;
   } else if (IsEnableEagerFree()) {
     auto ret = AbstractEnhancedDynamicMemPool::FreeIdleMemsByEagerFree();
     MS_LOG(INFO) << "Eager free memory size is " << ret.second << ".";
-    return ret.second;
+    release_free_size += ret.second;
+    return release_free_size;
   }
 
   MS_LOG(INFO) << "Vmm is not enabled, try to release free blocks.";
@@ -91,7 +97,63 @@ size_t DefaultAscendMemoryPool::EmptyCache() {
   if (IsDisableGeKernel()) {
     return 0L;
   }
-  return ReleaseFreeBlocks();
+  release_free_size += ReleaseFreeBlocks();
+  return release_free_size;
+}
+
+int32_t GetDeviceId() {
+  int32_t device_id = 0;
+  device_id = static_cast<int32_t>(DistributedMeta::GetInstance()->local_rank_id());
+  return device_id;
+}
+
+MemBufAllocatorPtr DefaultAscendMemoryPool::GenerateCustomAllocator(uint32_t stream_id) {
+  MS_LOG(INFO) << "GenerateCustomAllocator"
+               << ", stream id : " << stream_id << ".";
+  auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
+  std::function<MemBlock *(size_t)> mem_block_expander = [&, stream = stream](size_t size) {
+    MemBlock *mem_block = nullptr;
+    DeviceMemPtr addr = nullptr;
+    MS_LOG(INFO) << "DefaultAscendMemoryPool::Malloc mem block, is enable eager free : " << IsEnableEagerFree()
+                 << ", is enable vmm : " << IsEnableVmm() << ", size : " << size << ".";
+
+    auto device_id = GetDeviceId();
+    addr = custom_alloc_fn_(size, device_id, stream);
+    if (addr == nullptr) {
+      MS_LOG(EXCEPTION) << "Failed to alloc memory from custom allocator, the addr is nullptr! Please check the alloc "
+                           "function in the so which passed to PluggableAllocator";
+    }
+
+    mem_stat_.custom_alloc_size_ += size;
+    mem_block = new MemBlock(size, addr, stream_id);
+    return mem_block;
+  };
+
+  std::function<bool(MemBlock *)> mem_block_cleaner = [&, stream = stream](MemBlock *mem_block) {
+    mem_stat_.custom_alloc_size_ -= mem_block->size_;
+    auto device_id = GetDeviceId();
+    custom_free_fn_(mem_block->addr_, mem_block->size_, device_id, stream);
+    return true;
+  };
+  std::function<size_t(size_t size, void *addr)> mem_mapper = [](size_t size, void *addr) { return size; };
+  std::function<size_t(void *addr, const size_t size)> mem_eager_freer = [](void *addr, const size_t size) {
+    return size;
+  };
+
+  return std::make_shared<MemBufAllocator>(mem_block_expander, mem_block_cleaner, mem_mapper, mem_eager_freer,
+                                           IsEnableEagerFree() || IsEnableVmm(), false, stream_id, false, true);
+}
+
+void DefaultAscendMemoryPool::EnablePluggableAllocator(std::function<MallocFuncType> alloc_fn,
+                                                       std::function<FreeFuncType> free_fn) {
+  custom_alloc_fn_ = alloc_fn;
+  custom_free_fn_ = free_fn;
+  enable_custom_allocator_ = true;
+}
+
+void DefaultAscendMemoryPool::DisablePluggableAllocator() {
+  enable_custom_allocator_ = false;
+  return;
 }
 
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
@@ -132,12 +194,6 @@ static uint64_t GetTid() {
 static uint64_t GetPid() {
   static thread_local uint64_t pid = static_cast<uint64_t>(getpid());
   return pid;
-}
-
-int32_t GetDeviceId() {
-  int32_t device_id = 0;
-  device_id = static_cast<int32_t>(DistributedMeta::GetInstance()->local_rank_id());
-  return device_id;
 }
 
 void FillTidAndPid(const std::unique_ptr<AscendMemoryTimeEvent> &ascend_mmemory_time_event) {

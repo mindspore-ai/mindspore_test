@@ -55,6 +55,8 @@ const char kBlockMemorySize[] = "block_memory_size";
 const char kBlockStreamId[] = "block_stream_id";
 const char kCommonMemPoolType[] = "common_mem_pool";
 const char kPersistentMemPoolType[] = "persistent_mem_pool";
+using MallocFuncType = void *(size_t, int, void *);
+using FreeFuncType = void(void *, size_t, int, void *);
 
 // The status of memory buf.
 enum class BACKEND_EXPORT DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
@@ -248,6 +250,10 @@ class BACKEND_EXPORT DynamicMemPool {
   virtual bool IsEnableTimeEvent() { return false; }
 
   virtual void SetEnableTimeEvent(bool enable_time_event) {}
+
+  virtual void EnablePluggableAllocator(std::function<MallocFuncType> alloc_fn, std::function<FreeFuncType> free_fn) {}
+
+  virtual void DisablePluggableAllocator() {}
 
   // Use set method to avoid performance decrease.
   void SetMemoryProfilerCallback(const std::function<void()> &memory_profiler_callback) {
