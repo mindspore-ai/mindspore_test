@@ -39,6 +39,7 @@ from mindspore.ops import DataType
 from mindspore import log as logger
 from mindspore import ops
 from mindspore.communication.management import get_rank, GlobalComm
+from mindspore import _checkparam as validator
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
@@ -1326,19 +1327,9 @@ class CustomOpBuilder:
     _loaded_ops = {}
 
     def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
-        self.name = name
-        self.source = sources
-        self.backend = backend
-        self.include_paths = include_paths
-        self.cflags = cflags
-        self.ldflags = ldflags
-        self.build_dir = kwargs.get("build_dir")
-        self.enable_atb = kwargs.get("enable_atb", False)
-        self.debug_mode = kwargs.get("debug_mode", False)
-        self.yaml = kwargs.get("op_def")
-        self.doc = kwargs.get("op_doc")
-
+        self._check_and_get_args(name, sources, backend, include_paths, cflags, ldflags, **kwargs)
         self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
+        self.auto_generate = self.name + "_auto_generate"
         if self.enable_atb:
             if backend is not None and backend != "Ascend":
                 raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be "
@@ -1354,6 +1345,53 @@ class CustomOpBuilder:
                 self.atb_home_path = os.getenv("ATB_HOME_PATH")
                 if not self.atb_home_path:
                     raise ValueError("Environment variable 'ATB_HOME_PATH' must be set when 'enable_atb' is True.")
+
+    def _check_and_get_args(self, name, sources, backend=None, include_paths=None,
+                            cflags=None, ldflags=None, **kwargs):
+        """
+        Validate and normalize all arguments to meet custom-op build requirements.
+        """
+
+        self.name = validator.check_value_type("name", name, [str])
+
+        if isinstance(sources, str):
+            sources = [sources]
+        self.source = validator.check_value_type("sources", sources, [list])
+        validator.check_element_type_of_iterable("sources", sources, [str])
+
+        self.backend = validator.check_value_type("backend", backend, [str, type(None)])
+        if self.backend is not None and self.backend not in {"CPU", "Ascend"}:
+            raise ValueError(
+                f"For 'backend', only 'CPU' or 'Ascend' are allowed, but got '{self.backend}'.")
+
+        self.include_paths = validator.check_value_type("include_paths", include_paths,
+                                                        [list, type(None)])
+        if self.include_paths is not None:
+            validator.check_element_type_of_iterable("include_paths", self.include_paths, [str])
+
+        self.cflags = validator.check_value_type("cflags", cflags, [str, type(None)])
+        self.ldflags = validator.check_value_type("ldflags", ldflags, [str, type(None)])
+
+        self.build_dir = validator.check_value_type("build_dir",
+                                                    kwargs.get("build_dir"),
+                                                    [str, type(None)])
+
+        self.debug_mode = validator.check_bool(kwargs.get("debug_mode", False), "debug_mode")
+
+        def _check_str_or_list_str(key):
+            val = kwargs.get(key)
+            if val is None:
+                return val
+            if isinstance(val, str):
+                return val
+            val = validator.check_value_type(key, val, [list])
+            validator.check_element_type_of_iterable(key, val, [str])
+            return val
+
+        self.yaml = _check_str_or_list_str("op_def")
+        self.doc = _check_str_or_list_str("op_doc")
+
+        self.enable_atb = validator.check_bool(kwargs.get("enable_atb", False))
 
     def generate_custom_op_def(self, module: str, input_path: str, doc_path: str, output_path: str) -> None:
         """Call gen_custom_ops.py to generate custom operator definition"""
@@ -1389,17 +1427,19 @@ class CustomOpBuilder:
             return []
 
         if self.doc is None:
-            raise ValueError("Missing required 'doc': no YAML document was provided.")
+            logger.info("Missing required 'doc': no YAML document was provided.")
 
         build_path = self._get_build_directory()
         yaml_path = os.path.join(build_path, "yaml")
-        doc_path = os.path.join(build_path, "doc")
-        op_def_path = os.path.join(build_path, "auto_generate")
-        os.makedirs(yaml_path, exist_ok=True)
+        op_def_path = os.path.join(build_path, self.auto_generate)
+        if os.path.exists(op_def_path):
+            shutil.rmtree(op_def_path)
         os.makedirs(op_def_path, exist_ok=True)
-        os.makedirs(doc_path, exist_ok=True)
 
         def copy_files(yaml_files, dest_path):
+            if os.path.exists(dest_path):
+                shutil.rmtree(dest_path)
+            os.makedirs(dest_path, exist_ok=True)
             for file_path in yaml_files:
                 if not os.path.isfile(file_path):
                     raise FileNotFoundError(f"File not found: {file_path}")
@@ -1413,9 +1453,12 @@ class CustomOpBuilder:
                 shutil.copy2(file_path, _dest_path)
 
         yaml_files = [self.yaml] if isinstance(self.yaml, str) else self.yaml
-        doc_files = [self.doc] if isinstance(self.doc, str) else self.doc
         copy_files(yaml_files, yaml_path)
-        copy_files(doc_files, doc_path)
+        doc_path = ""
+        if self.doc is not None:
+            doc_path = os.path.join(build_path, "doc")
+            doc_files = [self.doc] if isinstance(self.doc, str) else self.doc
+            copy_files(doc_files, doc_path)
 
         self.generate_custom_op_def(self.name, yaml_path, doc_path, op_def_path)
         return [os.path.join(op_def_path, "gen_custom_ops_def.cc")]
@@ -1551,8 +1594,8 @@ class CustomOpBuilder:
         so_module = self._import_module(module_path)
         func_module = None
         if self.yaml is not None:
-            module_path = os.path.join(self.build_dir, "auto_generate/gen_ops_def.py")
-            sys.path.append(os.path.join(self.build_dir, "auto_generate"))
+            module_path = os.path.join(self.build_dir, self.auto_generate, "gen_ops_def.py")
+            sys.path.append(os.path.join(self.build_dir, self.auto_generate))
             sys.path.append(os.path.join(self.build_dir))
             func_module = self._import_module(module_path, True)
         mod = _MultiSoProxy(func_module, so_module)

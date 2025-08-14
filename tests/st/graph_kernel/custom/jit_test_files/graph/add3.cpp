@@ -2,40 +2,27 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/check_convert_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
-
-#include "kernel/ascend/opapi/aclnn/add_ext_aclnn_kernel.h"
-#include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
-
 #include "ops/ops_func_impl/op_func_impl.h"
-
-#include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "kernel/ascend/acl_ir/acl_convert.h"
-
 #include "ms_extension/api.h"
 #include "module.h"
 
-namespace mindspore {
-namespace ops {
+namespace my_custom_ops {
+using namespace mindspore;
+using namespace mindspore::kernel;
+using namespace mindspore::device::ascend;
+using namespace mindspore::ops;
+
 static inline bool IsIntegralBinaryType(TypeId t) {
   return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
          t == kNumberTypeUInt8 || t == kNumberTypeUInt16 || t == kNumberTypeUInt32 || t == kNumberTypeUInt64;
 }
 
-class OPS_API CustomAddOpFuncImpl : public OpFuncImpl {
+class OPS_API Add3OpFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override {
     auto output_shape = input_infos[kInputIndex0]->GetShape();
     std::vector<std::string> input_names = {"input", "other", "alpha"};
-    //  for (size_t i = 1; i < input_infos.size(); ++i) {
-    //    auto input_shape = input_infos[i]->GetShape();
-    //    output_shape = CalBroadCastShape(output_shape, input_shape, primitive->name(), input_names[i - 1],
-    //    input_names[i]);
-    //  }
     return {output_shape};
   }
 
@@ -67,57 +54,16 @@ class OPS_API CustomAddOpFuncImpl : public OpFuncImpl {
     }
     return {input};
   }
+
   bool GeneralInferRegistered() const override { return true; }
 };
 
-CustomAddOpFuncImpl gCustomAddFuncImpl;
-OpDef gCustomAdd = {
-  /*.name_=*/"Custom_add2",
-  /*.args_=*/
-  {
-    {/*.arg_name_=*/"input", /*.arg_dtype_=*/DT_TENSOR, /*.as_init_arg_=*/0, /*.arg_handler_=*/"",
-     /*.cast_dtype_ =*/{DT_NUMBER}, /*.is_optional_=*/false},
-    {/*.arg_name_=*/"other", /*.arg_dtype_=*/DT_TENSOR, /*.as_init_arg_=*/0, /*.arg_handler_=*/"",
-     /*.cast_dtype_ =*/{DT_NUMBER}, /*.is_optional_=*/false},
-    {/*.arg_name_=*/"alpha", /*.arg_dtype_=*/DT_NUMBER, /*.as_init_arg_=*/0, /*.arg_handler_=*/"", /*.cast_dtype_ =*/{},
-     /*.is_optional_=*/false},
-  },
-  /* .returns_ = */
-  {
-    {/*.arg_name_=*/"output", /*.arg_dtype_=*/DT_TENSOR,
-     /*.inplace_input_index_=*/-1},
-  },
-  /*.signatures_ =*/
-  {
-    Signature("input", SignatureEnumRW::kRWDefault, SignatureEnumKind::kKindPositionalKeyword, nullptr,
-              SignatureEnumDType::kDType),
-    Signature("other", SignatureEnumRW::kRWDefault, SignatureEnumKind::kKindPositionalKeyword, nullptr,
-              SignatureEnumDType::kDType),
-    Signature("alpha", SignatureEnumRW::kRWDefault, SignatureEnumKind::kKindPositionalKeyword, nullptr,
-              SignatureEnumDType::kDType1),
-  },
-  /*.indexes_ =*/
-  {
-    {"input", 0},
-    {"other", 1},
-    {"alpha", 2},
-  },
-  /*.func_impl_=*/gCustomAddFuncImpl,
-  /*.enable_dispatch_ =*/true,
-  /*.is_view_ =*/false,
-  /*.is_graph_view_ =*/false,
-};
-REGISTER_PRIMITIVE_OP_DEF(Custom_add2, &gCustomAdd);
-
-}  // namespace ops
-}  // namespace mindspore
-
-namespace mindspore {
-namespace kernel {
-class CustomAddAscend : public AclnnKernelMod {
+class Add3Ascend : public AclnnKernelMod {
  public:
-  CustomAddAscend() : AclnnKernelMod(std::move("aclnnAdd")) {}
-  ~CustomAddAscend() = default;
+  Add3Ascend() : AclnnKernelMod(std::move("aclnnAdd")) {}
+
+  ~Add3Ascend() = default;
+
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
     MS_EXCEPTION_IF_NULL(stream_ptr);
@@ -160,10 +106,6 @@ class CustomAddAscend : public AclnnKernelMod {
 
   ScalarPtr alpha_ = nullptr;
 };
+}  // namespace my_custom_ops
 
-MS_ACLNN_KERNEL_FACTORY_REG(Custom_add2, CustomAddAscend);
-
-}  // namespace kernel
-}  // namespace mindspore
-
-REG_GRAPH_MODE_OP(add2);
+REG_GRAPH_MODE_OP(add3, my_custom_ops::Add3OpFuncImpl, my_custom_ops::Add3Ascend);

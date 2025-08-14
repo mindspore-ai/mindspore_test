@@ -2,20 +2,8 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/check_convert_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
-
-#include "kernel/ascend/opapi/aclnn/add_ext_aclnn_kernel.h"
-#include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
-
 #include "ops/ops_func_impl/op_func_impl.h"
-
-#include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "kernel/ascend/acl_ir/acl_convert.h"
-
 #include "ms_extension/api.h"
 #include "module.h"
 
@@ -35,11 +23,6 @@ class OPS_API Add4OpFuncImpl : public OpFuncImpl {
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override {
     auto output_shape = input_infos[kInputIndex0]->GetShape();
     std::vector<std::string> input_names = {"input", "other", "alpha"};
-    //  for (size_t i = 1; i < input_infos.size(); ++i) {
-    //    auto input_shape = input_infos[i]->GetShape();
-    //    output_shape = CalBroadCastShape(output_shape, input_shape, primitive->name(), input_names[i - 1],
-    //    input_names[i]);
-    //  }
     return {output_shape};
   }
 
