@@ -21,8 +21,8 @@
 #include "ir/dtype/tensor_type.h"
 #include "abstract/dshape.h"
 
-#include "dalang/dair/ops/ops_name.h"
-#include "dalang/dair/tensor/tensor.h"
+#include "ops/ops_name.h"
+#include "tensor/tensor.h"
 
 namespace mindspore {
 namespace backend {

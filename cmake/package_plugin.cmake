@@ -49,7 +49,7 @@ if(ENABLE_INFERRT)
         NAMELINK_SKIP
     )
     install(
-        TARGETS dalang LIBRARY
+        TARGETS inferrt LIBRARY
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP

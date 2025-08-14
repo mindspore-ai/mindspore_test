@@ -31,8 +31,8 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 
-#include "dalang/dair/tensor/tensor.h"
-#include "dalang/dart/runtime/executor.h"
+#include "tensor/tensor.h"
+#include "runtime/executor.h"
 
 namespace mindspore {
 namespace backend {

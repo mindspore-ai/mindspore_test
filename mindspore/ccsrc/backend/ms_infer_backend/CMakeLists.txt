@@ -1,14 +1,17 @@
+set(INFERRT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/inferrt)
+
 # Include INFERRT headers
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc/ir)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc/rt)
+include_directories(${INFERRT_DIR})
+include_directories(${INFERRT_DIR}/inferrt)
+include_directories(${INFERRT_DIR}/inferrt/cc)
+include_directories(${INFERRT_DIR}/inferrt/cc/ir)
+include_directories(${INFERRT_DIR}/inferrt/cc/rt)
 
 # Add compile definitions for INFERRT
 set(ENABLE_RUN_TENSOR "on")
 
 # Add INFERRT directories
-add_subdirectory(inferrt)
+add_subdirectory(${INFERRT_DIR}/inferrt)
 
 # Include ms_infer_backend Source files
 file(GLOB _MS_INFER_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")

@@ -29,9 +29,9 @@
 #include "common/format_utils.h"
 #include "runtime/hardware/device_context.h"
 
-#include "dalang/dair/tensor/tensor.h"
-#include "dalang/dart/runtime/kernel.h"
-#include "dalang/dart/runtime/kernel_lib.h"
+#include "tensor/tensor.h"
+#include "runtime/kernel.h"
+#include "runtime/kernel_lib.h"
 #include "backend/ms_infer_backend/utils.h"
 #include "backend/ms_infer_backend/host_value_store.h"
 

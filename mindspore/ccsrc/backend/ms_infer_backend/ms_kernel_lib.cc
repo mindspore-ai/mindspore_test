@@ -29,7 +29,7 @@
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 
-#include "dalang/dair/tensor/tensor.h"
+#include "tensor/tensor.h"
 #include "backend/ms_infer_backend/ms_kernel_lib.h"
 
 namespace mindspore {

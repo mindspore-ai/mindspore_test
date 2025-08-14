@@ -23,7 +23,7 @@
 #include "ir/anf.h"
 #include "mindspore/core/include/base/base.h"
 
-#include "dalang/dair/tensor/tensor.h"
+#include "tensor/tensor.h"
 
 namespace mindspore {
 namespace backend {
