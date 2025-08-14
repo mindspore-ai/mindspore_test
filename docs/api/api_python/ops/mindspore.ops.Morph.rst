@@ -13,14 +13,15 @@ mindspore.ops.Morph
 
     .. note::
         - 本算子只支持图模式。
-        - `fn` 必须满足图模式语法约束。
-        - 用户无需实现自定义反向函数。
+        - `Morph` 允许用户使用自定义反向函数（通过参数 `bprop_fn`）。
+        - `fn` 和 `bprop_fn` 必须满足图模式语法约束。
         - 用户自定义函数不支持 `vararg`、`kwarg`、`kwonlyargs` 和自由变量。
 
     参数：
         - **fn** (Function) - MindSpore Function，用户自定义函数。
         - **infer_shape** (Function) - Mindspore Function，用户自定义 `infer_shape` 函数。
         - **infer_dtype** (Function) - Mindspore Function，用户自定义 `infer_dtype` 函数。
+        - **bprop_fn** (Function) - MindSpore Function，用户自定义的反向函数。
 
     输入：
         用户自定义 `fn` 的输入。
