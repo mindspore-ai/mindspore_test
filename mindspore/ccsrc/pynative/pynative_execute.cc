@@ -345,8 +345,7 @@ void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
 
 void PyNativeExecutor::QueueBackwardFinalCallback(const py::object &callback) const {
   MS_LOG(DEBUG) << "Begin queue backward final callback";
-  const auto top_cell = grad_executor()->top_cell();
-  top_cell->QueueFinalCallback([inner_callback = callback]() mutable {
+  grad_executor()->QueueFinalCallback([inner_callback = callback]() mutable {
     pybind11::gil_scoped_acquire gil_acquire;
     (void)inner_callback();
     inner_callback = py::object();

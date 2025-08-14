@@ -133,8 +133,7 @@ void Reducer::mark_bucket_ready(size_t bucket_index) {
     if (--buckets_pending == 0) {
       MS_LOG(DEBUG) << "all bucket are issued";
       // finalize bucket
-      const auto top_cell = PyNativeExecutor::grad_executor()->top_cell();
-      top_cell->QueueFinalCallback([this]() {
+      PyNativeExecutor::grad_executor()->QueueFinalCallback([this]() {
         runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                            "FinalizeBuckets", false);
         MS_LOG(DEBUG) << "Finalizing buckets";
