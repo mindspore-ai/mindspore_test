@@ -1967,6 +1967,44 @@ REG_BPROP_BUILDER("InplaceMaskedFillTensor").SetUnusedInputs({i0, i2, i3}).SetBo
   return {input_grad, ib->OutZeros(ib->GetInput(i1)), value_grad};
 });
 
+REG_BPROP_BUILDER("InplaceIndexCopy").SetUnusedInputs({i0, i1, i3, i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(i0);
+  auto dim = ib->GetInput(i1);
+  auto index = ib->GetInput(i2);
+  auto tensor = ib->GetInput(i3);
+  auto dout = ib->GetInput(i5);
+  NodePtr input_grad = nullptr;
+  NodePtr tensor_grad = nullptr;
+
+  if (input->need_compute_grad_out()) {
+    input_grad = ib->Emit("IndexFillScalar", {dout, dim, index, ib->Value<int64_t>(0)});
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+
+  if (tensor->need_compute_grad_out()) {
+    auto tensor_shape = ib->GetShape(tensor);
+    if (MS_UNLIKELY(IsDynamic(tensor_shape))) {
+      auto normal_tensor_branch = [&](Emitter *e) -> NodePtrList {
+        return {ib->Emit("BroadcastToView", {ib->IndexSelect(dout, dim, index), ib->Shape(tensor)})};
+      };
+      auto scalar_tensor_branch = [&](Emitter *e) -> NodePtrList {
+        return {ib->IndexSelect(dout, dim, ib->Squeeze(index, MakeValue(ShapeVector{0})))};
+      };
+      auto is_not_scalar_tensor = ib->Emit("scalar_gt", {ib->Emit("Rank", {tensor}), ib->Value<int64_t>(0)});
+      tensor_grad = ib->Conditional(is_not_scalar_tensor, normal_tensor_branch, scalar_tensor_branch);
+    } else {
+      tensor_grad = tensor_shape.size() > 0
+                      ? ib->Emit("BroadcastToView", {ib->IndexSelect(dout, dim, index), ib->Value(tensor_shape)})
+                      : ib->IndexSelect(dout, dim, ib->Squeeze(index, MakeValue(ShapeVector{0})));
+    }
+  } else {
+    tensor_grad = ib->OutZeros(tensor);
+  }
+
+  return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), tensor_grad};
+});
+
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto segment_ids = ib->GetInput(i1);
   auto num_segments = ib->GetInput(i2);

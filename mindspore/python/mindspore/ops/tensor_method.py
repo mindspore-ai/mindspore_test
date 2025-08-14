@@ -1815,6 +1815,8 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
 def tensor_index_fill_(input, dim, index, value):
     raise NotImplementedError('Tensor.index_fill_ only supports Ascend.')
 
+def tensor_index_copy_(input, dim, index, tensor):
+    raise NotImplementedError('Tensor.index_copy_ only supports Ascend.')
 
 def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
