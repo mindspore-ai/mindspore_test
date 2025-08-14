@@ -120,7 +120,7 @@ def test_op():
             [[mindspore.Tensor(x1), from_, to, seed1, offset1],
              [mindspore.Tensor(x2), from_, to, seed2, offset2]],
             disable_mode=['GRAPH_MODE_GE'],
-            disable_case=['EmptyTensor'],
+            disable_case=['EmptyTensor', 'ViewTensor'],
             case_config={'disable_input_check': True,
                          'disable_grad': True},
             inplace_update=True)

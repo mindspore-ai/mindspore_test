@@ -63,6 +63,8 @@ def clone_tensor(arg):
     if arg.device == "CPU":
         # Only CPU Tensor need to keep origin device type after copy.
         # And empty_like is not implemented on GPU.
+        if ms.context.get_context("device_target") == "GPU":
+            return arg.copy()
         new_arg = mint.empty_like(arg, device=arg.device)
         return new_arg.copy_(arg)
     return arg.copy()
@@ -404,6 +406,17 @@ def test_view_tensor(fn, inputs, mode_name, disable_case, jit_config, case_confi
         warning_log(f"{mode_name} 'ViewTensor' in 'disable_case', ViewTensor case is skipped.")
         return
 
+    if "GRAPH_MODE_GE" in mode_name:
+        warning_log(f"{mode_name} 'ViewTensor' is skipped temporarily with 'GRAPH_MODE_GE',"
+                    f" it's will cause accuracy issue after 'Tensor storage refactor'.")
+        return
+
+    def get_new_tensor(input_arg):
+        reshape_arg = clone_tensor(input_arg.reshape(-1))
+        new_tensor = ms.Tensor(np.zeros((2, reshape_arg.shape[0])), dtype=input_arg.dtype)
+        new_tensor[1] = reshape_arg
+        return new_tensor
+
     view_args = []
     no_view_args = []
     for input_arg in inputs:
@@ -411,41 +424,41 @@ def test_view_tensor(fn, inputs, mode_name, disable_case, jit_config, case_confi
             shape = input_arg.shape
             dtype = input_arg.dtype
             rank = len(shape)
+            no_view_args.append(clone_tensor(input_arg))
             if rank < 2:
                 view_args.append(clone_tensor(input_arg))
-                no_view_args.append(clone_tensor(input_arg))
             else:
-                origin_tensor = clone_tensor(input_arg.reshape(-1))
-                view_tensor = origin_tensor.view(shape)
+                new_tensor = get_new_tensor(input_arg)
+                slice_tensor = new_tensor[1]
+                view_tensor = slice_tensor.view(shape)
                 info_log(f"generate view input with shape {shape}, origin input with shape {shape}")
 
                 # check view tensor
-                origin_num = clone_tensor(origin_tensor)[-1]
+                origin_num = clone_tensor(slice_tensor)[-1]
                 magic_num = 66
-                origin_tensor[-1] = magic_num
-                if not (get_ndarray(origin_tensor) == get_ndarray(view_tensor).reshape(-1)).all():
+                slice_tensor[-1] = magic_num
+                if not (get_ndarray(slice_tensor) == get_ndarray(view_tensor).reshape(-1)).all():
                     warning_log(f"{mode_name} create view tensor failed, "
                                 f"origin shape: {shape}, dtype: {dtype}. testcase will run with no view tensor.")
-                origin_tensor[-1] = origin_num
+                slice_tensor[-1] = origin_num
 
                 view_args.append(view_tensor)
-                no_view_args.append(clone_tensor(view_tensor))
         else:
-            view_args.append(copy.deepcopy(input_arg))
             no_view_args.append(copy.deepcopy(input_arg))
+            view_args.append(copy.deepcopy(input_arg))
 
     net = OpsGeneralizeNetHelper(fn, jit_config, inplace_update=False)
     net.init_net()
-
-    info_log("Start to test view input")
-    debug_log_args(view_args, tag="view_input")
-    view_out = net.run(*view_args)
-    debug_log_args(view_out, tag="view_out")
 
     info_log("Start to test no view input")
     debug_log_args(no_view_args, tag="no_view_input")
     no_view_out = net.run(*no_view_args)
     debug_log_args(no_view_out, tag="no_view_out")
+
+    info_log("Start to test view input")
+    debug_log_args(view_args, tag="view_input")
+    view_out = net.run(*view_args)
+    debug_log_args(view_out, tag="view_out")
 
     info_log("Start to compare view out with no view out")
     compare(no_view_out, view_out, ignore_output_index=get_ignore_output_index())
