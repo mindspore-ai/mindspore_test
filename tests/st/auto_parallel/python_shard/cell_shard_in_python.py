@@ -19,6 +19,8 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
+import mindspore.ops as ops
+from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
 
 
 def setup_module():
@@ -30,6 +32,12 @@ class ReLUNet(nn.Cell):
     def construct(self, x):
         x = ms.mint.nn.functional.relu(x)
         return x
+
+
+class MatMulNet(nn.Cell):
+    """Net composed of several ReLUs"""
+    def construct(self, x, w):
+        return ops.matmul(x, w)
 
 
 class SimpleNet(nn.Cell):
@@ -287,3 +295,89 @@ def test_cell_shard_with_bprop():
         target_layout,
         strategy_list=strategy_list
     )
+
+
+def test_linear_model_parallel():
+    '''
+    Feature: Linear model parallel in python shard.
+    Description: Test linear model parallel in python shard.
+    Expectation: Run success.
+    '''
+    class Net(nn.Cell):
+        """Net composed of several ReLUs"""
+        def __init__(self):
+            super().__init__()
+            self.matmul_net = MatMulNet()
+            self.relu_net = ReLUNet()
+
+        def construct(self, x, w):
+            out = self.matmul_net(x, w)
+            out = self.relu_net(out)
+            return out
+
+    D.init()
+    np.random.seed(1)
+    m, k, n = 256, 128, 64
+    x = Tensor(np.random.randn(m, k).astype(np.float32))
+    w = Tensor(np.random.randn(k, n).astype(np.float32))
+
+    # Standalone
+    standalone_net = Net()
+    standalone_output = standalone_net(x, w)
+
+    # Parallel
+    layout = Layout(base_device_matrix, base_alias_name)
+    parallel_net = Net()
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    x_local = global_to_local(x, x_layout)
+    w_local = global_to_local(w, w_layout)
+    parallel_net.relu_net.shard(in_strategy=(layout("dp", "None"),))
+    parallel_output = parallel_net(x_local, w_local)
+
+    # Validate
+    parallel_output = local_to_global(parallel_output)
+    assert np.allclose(standalone_output.asnumpy(), parallel_output.asnumpy(), 1e-3, 1e-3)
+
+
+def test_linear_sequence_parallel():
+    '''
+    Feature: Linear sequence parallel in python shard.
+    Description: Test linear sequence parallel in python shard.
+    Expectation: Run success.
+    '''
+    class Net(nn.Cell):
+        """Net composed of several ReLUs"""
+        def __init__(self):
+            super().__init__()
+            self.matmul_net = MatMulNet()
+            self.relu_net = ReLUNet()
+
+        def construct(self, x, w):
+            out = self.matmul_net(x, w)
+            out = self.relu_net(out)
+            return out
+
+    D.init()
+    np.random.seed(1)
+    m, k, n = 256, 128, 64
+    x = Tensor(np.random.randn(m, k).astype(np.float32))
+    w = Tensor(np.random.randn(k, n).astype(np.float32))
+
+    # Standalone
+    standalone_net = Net()
+    standalone_output = standalone_net(x, w)
+
+    # Parallel
+    layout = Layout(base_device_matrix, base_alias_name)
+    parallel_net = Net()
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    x_local = global_to_local(x, x_layout)
+    w_local = global_to_local(w, w_layout)
+    parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
+    parallel_output = parallel_net(x_local, w_local)
+
+    # Validate
+    parallel_output = local_to_global(parallel_output)
+    assert np.allclose(standalone_output.asnumpy(), parallel_output.asnumpy(), 1e-3, 1e-3)

@@ -15,6 +15,7 @@
 """shard"""
 
 import copy
+from typing import Tuple, Optional
 import numpy as np
 import mindspore as ms
 from mindspore import log as logger
@@ -46,6 +47,7 @@ def _tensor_strategy(dev_mat, tensor_map):
             else:
                 tensor_strategy.append(dev_mat[-dim - 1])
     return tensor_strategy
+
 
 class _DistributedTensorInfo:
     """
@@ -107,6 +109,159 @@ class _DistributedTensorInfo:
                         sharding_strategy.append(1)
             self._sharding_strategy = sharding_strategy
         return self._sharding_strategy
+
+
+class _DeviceMatrix:
+    """
+    Topological abstraction describing cluster devices.
+    Args:
+        device_matrix:
+        alias_name:
+        rank_list:
+    """
+    def __init__(self,
+                 device_matrix: Tuple[int],
+                 alias_name: Tuple[str],
+                 rank_list: Optional[list[str]]):
+        if not isinstance(device_matrix, tuple):
+            raise TypeError(f'device_matrix must be tuple type, but got:{type(device_matrix)}')
+        if not isinstance(alias_name, tuple):
+            raise TypeError(f'alias_name must be tuple type, but got:{type(alias_name)}')
+        if len(device_matrix) != len(alias_name):
+            raise ValueError(f'device_matrix length should be equal to alias_name length')
+        for in_ele in device_matrix:
+            if not isinstance(in_ele, int):
+                raise TypeError(f'The element of device_matrix must be int type, but got:{type(in_ele)}')
+        for in_ele in alias_name:
+            if not isinstance(in_ele, str):
+                raise TypeError(f'The element of alias_name must be str type, but got:{type(in_ele)}')
+            if not in_ele:
+                raise ValueError(f"The element of alias_name can not be empty.")
+            if in_ele == "None":
+                raise ValueError(f"The element of alias_name can not set 'None', because 'None' means no sharding.")
+        if len(set(alias_name)) != len(alias_name):
+            raise ValueError(f'Each element of alias_name {alias_name} should be different')
+        inter_key = "interleaved_parallel"
+        if inter_key in alias_name and alias_name.index(inter_key) != len(alias_name) - 1:
+            raise ValueError(f"When alias_name {alias_name} contains keyword 'interleaved_parallel',"
+                             f" it should be at the last dim of alias_name, which means the virtual sharding.")
+        self._device_shape = device_matrix
+        self._alias_name = alias_name
+        self._dev_num = np.prod(np.array(self._device_shape))
+        self._group_map = {}
+        self._global_shape_map = {}
+        self._rank = ms.communication.management.get_rank()
+        self._dev_rank = len(self._device_shape)
+        self._dev_name_to_dev_id = {name: self._dev_rank - i - 1 for i, name in enumerate(self.alias_name)}
+        self._dev_name_to_index = {name: i for i, name in enumerate(self.alias_name)}
+        self._cache_rank_list_along_axis = {}
+        self._init_rank_list(rank_list) # initialize rank list
+
+    def _init_rank_list(self, rank_list):
+        """Init rank list"""
+        if rank_list is not None:
+            if not isinstance(rank_list, list):
+                raise TypeError(f"The rank_list should be a list, but got {type(rank_list).__name__}.")
+            for in_ele in rank_list:
+                if not isinstance(in_ele, int):
+                    raise TypeError(f"The element of rank_list should be int, but got {type(in_ele).__name__}.")
+            if len(np.array(rank_list).shape) != 1:
+                raise ValueError(
+                    f"The rank_list should be a 1-D list, but got {len(np.array(rank_list).shape)}-D list.")
+            if len(rank_list) != np.prod(np.array(self._device_shape)):
+                raise ValueError(f"The length of rank_list should be equal to the product of device_matrix, "
+                                 f"but got {len(rank_list)} and {np.prod(np.array(self._device_shape))}.")
+            self._rank_list = rank_list
+        else:
+            self._rank_list = list(range(np.prod(np.array(self._device_shape))))
+
+    @property
+    def rank(self):
+        return self._rank
+
+    @property
+    def device_matrix(self):
+        return self._device_shape
+
+    @property
+    def alias_name(self):
+        return self._alias_name
+
+    @property
+    def rank_list(self):
+        return self._rank_list
+
+    def axis_id(self, axis):
+        if axis == "None":
+            return -1
+        if axis not in self.alias_name:
+            raise ValueError(f"The axis name must be one of device matrix alias name {self.alias_name}), "
+                             f"but got {axis}")
+        return self._dev_name_to_dev_id[axis]
+
+    def axis_index(self, axis):
+        if axis not in self.alias_name:
+            raise ValueError(f"The axis name must be one of device matrix alias name {self.alias_name}), "
+                             f"but got {axis}")
+        return self._dev_name_to_index[axis]
+
+    def get_device_num_along_axis(self, axis):
+        """Return device num along specify device axis"""
+        if axis not in self.alias_name:
+            raise ValueError(f"The axis must be one of device alias name: {self.alias_name}, but got {axis}")
+        return self.device_matrix[self.alias_name.index(axis)]
+
+    def get_rank_list_along_axis(self, axis):
+        """
+        Get the repeat rank list when the axis is not shard.
+
+        Args:
+            layout (Layout): Layout
+            axis (str): Axis name.
+            rank (int): Global rank
+
+        Returns:
+            list: reduce rank list
+        """
+        if axis in self._cache_rank_list_along_axis:
+            # short cut, get rank list from cache
+            return self._cache_rank_list_along_axis[axis]
+
+        device_matrix = self.device_matrix
+        alias_name = self.alias_name
+        rank_list = self.rank_list
+        rank = self.rank
+
+        if axis not in alias_name:
+            raise ValueError(f"Axis '{axis}' not found in alias_name {alias_name}")
+
+        if rank not in rank_list:
+            raise ValueError(f"Rank {rank} not found in rank_list")
+
+        idx = rank_list.index(rank)
+        coord = [0] * len(device_matrix)
+        temp = idx
+        for i in range(len(device_matrix)-1, -1, -1):
+            coord[i] = temp % device_matrix[i]
+            temp //= device_matrix[i]
+
+        dim_index = alias_name.index(axis)
+        strides = [1] * len(device_matrix)
+        for i in range(len(device_matrix)-2, -1, -1):
+            strides[i] = strides[i+1] * device_matrix[i+1]
+
+        result_ranks = []
+        for v in range(device_matrix[dim_index]):
+            new_coord = coord.copy()
+            new_coord[dim_index] = v
+            new_idx = 0
+            for i in range(len(device_matrix)):
+                new_idx += new_coord[i] * strides[i]
+
+            result_ranks.append(rank_list[new_idx])
+
+        self._cache_rank_list_along_axis[axis] = result_ranks
+        return result_ranks
 
 
 class Layout:
@@ -196,35 +351,44 @@ class Layout:
                                  f"but got {len(rank_list)} and {np.prod(np.array(self._device_shape))}.")
             self._rank_list = rank_list
 
-    def __call__(self, *tensor_map):
-        self._tensor_map = ()
+        self._partial = [None] * len(self.device_matrix) # partial status for each dev dim
+        self._support_partial_op = ['sum', 'max', 'min', 'avg', None]
+
+        self._alias_tensor_map = None
+        self._mesh = _DeviceMatrix(device_matrix=device_matrix, alias_name=alias_name, rank_list=rank_list)
+
+    def __call__(self, *alias_tensor_map):
+        obj = copy.deepcopy(self)
+        obj.set_alias_tensor_map(alias_tensor_map)
+        tensor_map = ()
         writed_map = ()
-        for ele in tensor_map:
+        for ele in alias_tensor_map:
             if isinstance(ele, tuple):
                 ele_map = ()
                 for item in ele:
                     if item == "None":
                         ele_map += (-1,)
                         continue
-                    if item not in self._alias_name:
-                        raise ValueError(f'The axis {item} is not found in {self._alias_name}')
+                    if item not in obj.alias_name:
+                        raise ValueError(f'The axis {item} is not found in {obj.alias_name}')
                     if item in writed_map:
-                        raise ValueError(f'The axis {item} has been set more than one in {self._alias_name}')
-                    ele_map += (len(self._alias_name) - 1 - self._alias_name.index(item),)
+                        raise ValueError(f'The axis {item} has been set more than one in {obj.alias_name}')
+                    ele_map += (len(obj.alias_name) - 1 - obj.alias_name.index(item),)
                     writed_map += (item,)
-                self._tensor_map += (ele_map,)
+                tensor_map += (ele_map,)
                 continue
             if ele == "None":
-                self._tensor_map += (-1,)
+                tensor_map += (-1,)
                 continue
-            if ele not in self._alias_name:
-                raise ValueError(f'The axis {ele} is not found in {self._alias_name}')
+            if ele not in obj.alias_name:
+                raise ValueError(f'The axis {ele} is not found in {obj.alias_name}')
             if ele in writed_map:
-                raise ValueError(f'The axis {ele} has been set more than one in {self._alias_name}')
-            self._tensor_map += (len(self._alias_name) - 1 - self._alias_name.index(ele),)
+                raise ValueError(f'The axis {ele} has been set more than one in {obj.alias_name}')
+            tensor_map += (len(obj.alias_name) - 1 - obj.alias_name.index(ele),)
             writed_map += (ele,)
-        self._compact_str = self._to_compact_string()
-        return copy.deepcopy(self)
+        obj.set_tensor_map(tensor_map)
+        obj.update_compact_str()
+        return copy.deepcopy(obj)
 
     def to_dict(self):
         """
@@ -238,6 +402,10 @@ class Layout:
         return {"device_matrix": self._device_shape, "tensor_map": self._tensor_map,
                 "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name,
                 "rank_list": self._rank_list}
+
+    @property
+    def mesh(self):
+        return self._mesh
 
     @property
     def rank_list(self):
@@ -255,14 +423,71 @@ class Layout:
         return self._alias_name
 
     @property
+    def alias_tensor_map(self):
+        return self._alias_tensor_map
+
+    def set_alias_tensor_map(self, alias_tensor_map):
+        """Set alias_tensor_map"""
+        self._alias_tensor_map = alias_tensor_map
+
+    @property
     def tensor_map(self):
         """tensor map"""
         return self._tensor_map
 
+    def set_tensor_map(self, tensor_map):
+        """Set tensor_map."""
+        self._tensor_map = tensor_map
+
+    @property
+    def partial(self):
+        """partial status"""
+        return self._partial
+
+    def set_partial_by_dev_axis(self, axis, op):
+        """Set the partial status for the specified dev ID, means pending to do reduce by op."""
+        if op not in self._support_partial_op:
+            raise ValueError(f"Partial op must be one of {self._support_partial_op}, but got {op}")
+        if self.is_dev_axis_apply_shard(axis):
+            raise ValueError(f"Partial dim must be replicate.")
+        self._partial[self._mesh.axis_index(axis)] = op
+
+    def get_partial_by_dev_id(self, axis):
+        """Get the partial status for the specified dev id"""
+        return self.partial[self._mesh.axis_index(axis)]
+
+    def is_dev_axis_apply_shard(self, axis):
+        """Return true if device axis is applying shard"""
+        axis_id = self._mesh.axis_id(axis)
+        def flatten(input):
+            flatten_res = []
+            for item in input:
+                if isinstance(item, tuple):
+                    flatten_res.extend(flatten(item))
+                else:
+                    flatten_res.append(item)
+            return flatten_res
+        flatten_tensor_map = flatten(self.tensor_map)
+        return axis_id in flatten_tensor_map
+
+    def get_dev_axis_apply_shard_axis(self, axis):
+        """Return the axis which be split by axis. If axis not be apply to shard, return None."""
+        for dim, dim_map in enumerate(self.alias_tensor_map):
+            if (isinstance(dim_map, tuple) and axis in dim_map) or axis == dim_map:
+                return dim
+        return None
+
+    def reset_partial(self):
+        self._partial = [None] * len(self.device_matrix)
+
+    def is_partial(self):
+        """Return true if any dim in dev_matrix is partial"""
+        return any(self.partial)
+
     def get_global_shape(self, slice_shape):
         """get global shape"""
         if slice_shape in self._global_shape_map:
-            return self._global_shape_map[slice_shape]
+            return tuple(self._global_shape_map[slice_shape])
         if self._tensor_map is None:
             raise ValueError("tensor_map is not set. Please configure the tensor map by calling the layout.")
 
@@ -342,10 +567,10 @@ class Layout:
 
         return result_ranks
 
-    def get_reduce_group_by_axis(self, axis, rank):
+    def get_comm_group_by_axis(self, axis, rank):
         if (axis, rank) in self._group_map.keys():
             return self._group_map[(axis, rank)]
-        rank_list = self.get_devices_for_axis(axis, rank)
+        rank_list = self._mesh.get_rank_list_along_axis(axis=axis)
         group = "-".join(str(x) for x in rank_list)
         ms.communication.create_group(group, rank_list)
         self._group_map[(axis, rank)] = group
@@ -374,6 +599,9 @@ class Layout:
     def compact_str(self):
         return self._compact_str
 
+    def update_compact_str(self):
+        self._compact_str = self._to_compact_string()
+
     def to_string(self):
         """
         layout dump
@@ -384,6 +612,7 @@ class Layout:
         device_info = f"Device Matrix: {self._device_shape}"
         alias_info = f"Alias Names: {self._alias_name}"
         rank_info = f"Rank List: {self._rank_list}"
+        partial_info = f"Partial: {self.partial}"
 
         if self._tensor_map is None:
             tensor_info = "Tensor Map: Not configured"
@@ -411,6 +640,7 @@ class Layout:
             f"Layout Configuration:\n"
             f"  {device_info}\n"
             f"  {alias_info}\n"
+            f"  {partial_info}\n"
             f"  {tensor_info}\n"
             f"  {interleaved_info}\n"
             f"  {rank_info}"

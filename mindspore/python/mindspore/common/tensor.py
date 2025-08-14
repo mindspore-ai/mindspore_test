@@ -18,6 +18,7 @@ __all__ = ['Tensor']
 
 import abc
 import numbers
+import copy as cp
 import numpy as np
 
 from mindspore.communication.management import get_group_size
@@ -3752,6 +3753,13 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def redistribute(self, dst_layout):
         out = _tensor_redistribution.redistribution(self, dst_layout)
+        return out
+
+    def reduce_partial(self):
+        """syntax suger. Reduce all partial status, equal to call: tensor.redistribute(tensor.layout)"""
+        to_layout = cp.deepcopy(self.layout)
+        to_layout.reset_partial()
+        out = _tensor_redistribution.reduce_partial(self, to_layout)
         return out
 
 

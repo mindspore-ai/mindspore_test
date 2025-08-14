@@ -77,17 +77,15 @@ class TensorRedistribution:
         """args: (*shape)"""
         return x.view(args)
 
-
     def _construct_all_concat(self, x, *args):
         """args: (*rank_list, concat_dim)"""
         rank_list = list(args[0:-1])
         concat_dim = args[-1]
         group = _get_comm_group(rank_list)
-        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
         x = x.contiguous()
+        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
         _ = ms.mint.distributed.all_gather(empty_tensor, x, group)
         return ms.mint.concat(empty_tensor, concat_dim)
-
 
     def _construct_strided_slice(self, x, *args):
         """args: (begin, end, strides)"""
@@ -99,8 +97,8 @@ class TensorRedistribution:
         rank_list = list(args[2])
         concat_dim = args[0]
         group = _get_comm_group(rank_list)
-        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
         x = x.contiguous()
+        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
         _ = ms.mint.distributed.all_gather(empty_tensor, x, group)
         return ms.mint.concat(empty_tensor, concat_dim)
 
@@ -148,11 +146,18 @@ class TensorRedistribution:
             local_x = self._construct_op_operator[op[0]](local_x, *op[1])
         return local_x
 
-
     def redistribution(self, x, to_layout):
         """ tensor redistribution """
-        from_layout = x.layout
+        if x.layout.is_partial():
+            # Solve partial status first
+            if x.layout.device_matrix == to_layout.device_matrix:
+                x = self.reduce_partial(x, to_layout)
+            else:
+                logger.info(f"The dev_matrix is change between from_layout and to_layout, and thers is partial status "
+                            f"in from_layout, will be apply AllReduce op to resolve partial before redistribute.")
+                x = self.reduce_partial(x, x.layout)
 
+        from_layout = x.layout
         if not self.is_init:
             self.rank_id = get_rank()
             self.rank_list = from_layout.rank_list
@@ -180,6 +185,8 @@ class TensorRedistribution:
             return x
 
         if self._apply_eazy_redistribute(from_layout, to_layout):
+            if from_layout.is_partial:
+                from_layout.reset_partial()
             x = self._redistribution_without_shape(x, from_layout, to_layout, key)
         else:
             transform_operator_list = self._infer_transform_operator_list(from_layout, to_layout,
@@ -197,6 +204,96 @@ class TensorRedistribution:
             _tensor_transform.transform_tensor_sharding(from_layout_tuple, to_layout_tuple, self.rank_list,
                                                         False, self.rank_id)
         return self._transform_cache[key]
+
+    def _allreduce_along_dev_dim(self, x, op, layout, dev_dim):
+        group = layout.get_comm_group_by_axis(dev_dim, self.rank_id)
+        if op == 'mean':
+            dev_num = layout.device_metrix[layout.alias_name.index(dev_dim)]
+            _ = ms.mint.distributed.all_reduce(x, 'sum', group)
+            x = x / dev_num
+        else:
+            _ = ms.mint.distributed.all_reduce(x, op, group)
+        logger.warning(f"Do AllReduce-{op} along {dev_dim}. group: {group}")
+        return x
+
+    def _reduce_scatter_along_dev_dim_with_axis(self, x, axis, op, layout, dev_dim):
+        """Do reduce_scatter at specified axis along dev_dim."""
+        dev_num = layout.device_matrix[layout.alias_name.index(dev_dim)]
+        group = layout.get_comm_group_by_axis(dev_dim, self.rank_id)
+        if axis > 0:
+            x = ms.mint.concat(ms.mint.split(x, x.shape[axis] // dev_num, dim=axis), dim=0)
+        output_shape = (x.shape[0] // dev_num,) + x.shape[1:]
+        output_tensor = ms.mint.empty(output_shape, dtype=x.dtype)
+        if op == 'mean':
+            _ = ms.mint.distributed.reduce_scatter_tensor(output_tensor, x, 'sum', group)
+            output_tensor = output_tensor / dev_num
+        else:
+            _ = ms.mint.distributed.reduce_scatter_tensor(output_tensor, x, op, group)
+        logger.warning(f"Do ReduceScatter-{op} along dev {dev_dim} at axis {axis}. group: {group}")
+        return output_tensor
+
+    def reduce_partial(self, x, to_layout):
+        """Reduce partial status."""
+        from_layout = x.layout
+        if from_layout is None or not from_layout.is_partial:
+            return x
+
+        x = x.to_local()
+        if from_layout.device_matrix != to_layout.device_matrix:
+            raise ValueError(f"For reduce partial, device_matrix between from_layout and to_layout must be the same, "
+                             f"but got {from_layout.device_matrix} and {to_layout.device_matrix}")
+        if to_layout.is_partial():
+            raise ValueError(f"For reduce partial, to_layout must be non-partial status, but got to_layout.partial: "
+                             f"{to_layout.partial}")
+
+        dev_map_order = {}
+        for dev_axis in to_layout.alias_tensor_map:
+            if isinstance(dev_axis, tuple):
+                for i, sub_dev_axis in enumerate(dev_axis):
+                    dev_map_order[sub_dev_axis] = i
+            else:
+                dev_map_order[dev_axis] = 0
+
+        pending_reduce_op_list = [] # List[Tuple[comm_op, op, dev_dim, reduce_dim]]
+        for dev_axis_index, op in enumerate(from_layout.partial):
+            if op is None:
+                continue
+            dev_axis = from_layout.alias_name[dev_axis_index]
+            apply_shard_dim = to_layout.get_dev_axis_apply_shard_axis(dev_axis)
+            comm_op = "ReduceScatter" if apply_shard_dim else "AllReduce"
+            pending_reduce_op_list.append((comm_op, op, dev_axis, apply_shard_dim))
+
+        # sort reduce op
+        # 1. ReduceScatter is executed before AllReduce
+        # 2. If multiple split, the dev axis split outer will be execute first.
+        #    e.g ("cp", "tp"), will execute reduce_scatter along "cp" before "tp"
+        # 3. Lower dev_id execute before higher dev_id
+        sorted_pending_reduce_op_list = \
+            sorted(pending_reduce_op_list, key=lambda reduce_pair: (reduce_pair[0] != "ReduceScatter",
+                                                                    dev_map_order.get(reduce_pair[2], 0),
+                                                                    to_layout.mesh.axis_id(reduce_pair[2])))
+
+        output_alias_tensor_map = list(from_layout.alias_tensor_map)
+        for reduce_op_pair in sorted_pending_reduce_op_list:
+            comm_op = reduce_op_pair[0]
+            op = reduce_op_pair[1]
+            dev_axis = reduce_op_pair[2]
+            if comm_op == "AllReduce":
+                x = self._allreduce_along_dev_dim(x, op, from_layout, dev_axis)
+            elif comm_op == "ReduceScatter":
+                reduce_axis = reduce_op_pair[3]
+                x = self._reduce_scatter_along_dev_dim_with_axis(x, reduce_axis, op, from_layout, dev_axis)
+                if output_alias_tensor_map[reduce_axis] == "None":
+                    output_alias_tensor_map[reduce_axis] = dev_axis
+                elif isinstance(output_alias_tensor_map[reduce_axis], tuple):
+                    output_alias_tensor_map[reduce_axis] += (dev_axis,)
+                else:
+                    output_alias_tensor_map[reduce_axis] = (output_alias_tensor_map[reduce_axis], dev_axis)
+
+        output_layout = from_layout(*output_alias_tensor_map)
+        output_layout.reset_partial()
+        x.local_to_global(output_layout)
+        return x
 
 
 _tensor_redistribution = TensorRedistribution()

@@ -46,6 +46,7 @@ def print_layout_info(tensor, name):
         print(f"  device_matrix: {layout_dict['device_matrix']}")
         print(f"  tensor_map: {layout_dict['tensor_map']}")
         print(f"  alias_name: {layout_dict['alias_name']}")
+        print(f"  partial: {tensor.layout.partial}")
         print(f"  rank_list: {layout_dict['rank_list'][:8]}...")  # 只显示前8个rank
     else:
         print(f"{name} has no layout information")
@@ -152,6 +153,7 @@ def test_hybrid_parallel():
     output_layout_dict = output_layout.to_dict()
     assert output_layout_dict["tensor_map"] == (1, 0)
 
+
 def test_tensor_parallel():
     '''
     Feature: Tensor parallel in python shard.
@@ -171,10 +173,13 @@ def test_tensor_parallel():
         x_shape=(16, 256),
         w_shape=(256, 512)
     )
+    output = output.reduce_partial()
     output_layout = output.layout
     assert output_layout is not None
     output_layout_dict = output_layout.to_dict()
     assert output_layout_dict["tensor_map"] == (-1, -1)
+    assert output.shape == (16, 512)
+
 
 def test_hybrid_tensor_parallel():
     '''
@@ -199,6 +204,7 @@ def test_hybrid_tensor_parallel():
     assert output_layout is not None
     output_layout_dict = output_layout.to_dict()
     assert output_layout_dict["tensor_map"] == (1, -1)
+
 
 def test_multi_shard_tensor_parallel():
     '''
