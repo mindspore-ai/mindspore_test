@@ -18,6 +18,7 @@ import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops as ops
+import mindspore.runtime as rt
 from mindspore.communication import get_rank, init, get_group_size
 
 def infer_dtype(*args):
@@ -58,6 +59,7 @@ def init_env():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
 
 def test_semi_auto_parallel():
+    rt.launch_blocking()
     init_env()
 
     x1 = ms.Tensor(np.arange(1, 9), dtype=ms.float32)
