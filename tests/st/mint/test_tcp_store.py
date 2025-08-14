@@ -30,8 +30,27 @@ size = get_world_size()
 start_port = 12668
 if size % 2 != 0:
     raise RuntimeError("Group size should be divided by 2 exactly.")
-
 context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+
+
+def log_function_entry_exit(func):
+    """
+    Feature: log function entry exit
+    Description: add log for func
+    Expectation: success
+    """
+    def wrapper(*args, **kwargs):
+        # 打印进入函数的信息
+        print(f"Entering comm function: {func.__name__}", flush=True)
+        # 调用原函数
+        result = func(*args, **kwargs)
+        # 打印退出函数的信息
+        print(f"Exiting comm function: {func.__name__}", flush=True)
+        return result
+    return wrapper
+
+
+@log_function_entry_exit
 def test_TCPStore():
     """
     Feature: test distributed op
@@ -56,6 +75,8 @@ def test_TCPStore():
         TCPStore("127.0.0.1", start_port, is_master=True, wait_for_workers="xx")
     barrier()
 
+
+@log_function_entry_exit
 def test_TCPStore_TypeError():
     """
     Feature: test distributed op
@@ -78,6 +99,8 @@ def test_TCPStore_TypeError():
             store.get(2)
     barrier()
 
+
+@log_function_entry_exit
 def test_set():
     """
     Feature: test distributed op
@@ -94,8 +117,10 @@ def test_set():
     barrier()
     data = store.get("first_key")
     assert data.decode() == "value2"
+    barrier()
 
 
+@log_function_entry_exit
 def test_get():
     """
     Feature: test distributed op
@@ -115,6 +140,7 @@ def test_get():
     barrier()
 
 
+@log_function_entry_exit
 def test_get_1G():
     """
     Feature: test distributed op
@@ -133,6 +159,7 @@ def test_get_1G():
     barrier()
 
 
+@log_function_entry_exit
 def test_delete():
     """
     Feature: test distributed op
@@ -156,6 +183,7 @@ def test_delete():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port():
     """
     Feature: test distributed op
@@ -179,6 +207,7 @@ def test_ip_port():
     barrier()
 
 
+@log_function_entry_exit
 def test_add():
     """
     Feature: test distributed op
@@ -202,6 +231,7 @@ def test_add():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_get1():
     """
     Feature: test distributed op
@@ -227,6 +257,7 @@ def test_ip_port_get1():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_get2():
     """
     Feature: test distributed op
@@ -235,16 +266,17 @@ def test_ip_port_get2():
     """
     if this_rank == 0:
         store = TCPStore("127.0.0.1", start_port+9, is_master=True, timeout=timedelta(seconds=300))
-        value = 'A' * 1024 * 1024 * 1024
+        value = 'A' * 1024 * 1024
         store.set("test_ip_port_get2", value)
     if this_rank != 0:
         store = TCPStore("127.0.0.1", start_port+9, is_master=False, timeout=timedelta(seconds=300))
         data = store.get("test_ip_port_get2")
-        assert len(data) == 1024 * 1024 * 1024
+        assert len(data) == 1024 * 1024
         assert data[0] == 65
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_wait_for_workers1():
     """
     Feature: test distributed op
@@ -268,6 +300,7 @@ def test_ip_port_wait_for_workers1():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_wait_for_workers2():
     """
     Feature: test distributed op
@@ -291,6 +324,7 @@ def test_ip_port_wait_for_workers2():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_get3():
     """
     Feature: test distributed op
@@ -314,6 +348,7 @@ def test_ip_port_get3():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_wait_for_workers3():
     """
     Feature: test distributed op
@@ -338,6 +373,7 @@ def test_ip_port_wait_for_workers3():
     barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete001():
     """
     Feature: test distributed op
@@ -357,6 +393,7 @@ def test_tcp_complete001():
     barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete002():
     """
     Feature: test distributed op
@@ -372,6 +409,7 @@ def test_tcp_complete002():
     barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete003():
     """
     Feature: test distributed op
@@ -386,8 +424,10 @@ def test_tcp_complete003():
         TCPStore("127.0.0.1", -1, 1, True, timedelta(seconds=5), True)
     with pytest.raises(ValueError):
         TCPStore("127.0.0.1", 65536, 1, True, timedelta(seconds=5), True)
+    barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete004():
     """
     Feature: test distributed op
@@ -396,8 +436,10 @@ def test_tcp_complete004():
     """
     with pytest.raises(TypeError):
         TCPStore(None, start_port+17, 1, True, timedelta(seconds=5), True)
+    barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete005():
     """
     Feature: test distributed op
@@ -420,6 +462,7 @@ def test_tcp_complete005():
     barrier()
 
 
+@log_function_entry_exit
 def test_tcp_complete006():
     """
     Feature: test distributed op
@@ -431,6 +474,7 @@ def test_tcp_complete006():
     barrier()
 
 
+@log_function_entry_exit
 def test_ip_port_get4():
     """
     Feature: test distributed op

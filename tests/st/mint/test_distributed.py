@@ -64,6 +64,23 @@ if size % 2 != 0:
     raise RuntimeError("Group size should be divided by 2 exactly.")
 
 
+def log_function_entry_exit(func):
+    """
+    Feature: log function entry exit
+    Description: add log for func
+    Expectation: success
+    """
+    def wrapper(*args, **kwargs):
+        # 打印进入函数的信息
+        print(f"Entering comm function: {func.__name__}", flush=True)
+        # 调用原函数
+        result = func(*args, **kwargs)
+        # 打印退出函数的信息
+        print(f"Exiting comm function: {func.__name__}", flush=True)
+        return result
+    return wrapper
+
+
 def test_reinit():
     """
     Feature: test distributed management API destroy_process_group
@@ -89,6 +106,7 @@ def test_reinit():
         assert group2 == group5
 
 
+@log_function_entry_exit
 def test_hccl_new_group():
     """
     Feature: test distributed op
@@ -125,6 +143,7 @@ def test_hccl_new_group():
             new_group([0, 0, 1, 1])
 
 
+@log_function_entry_exit
 def test_hccl_get_backend():
     """
     Feature: test distributed op
@@ -144,6 +163,7 @@ def test_hccl_get_backend():
         backend = get_backend(1)
 
 
+@log_function_entry_exit
 def test_hccl_get_global_rank():
     """
     Feature: test distributed op
@@ -174,6 +194,7 @@ def test_hccl_get_global_rank():
         assert global_rank == 2
 
 
+@log_function_entry_exit
 def test_hccl_get_group_rank():
     """
     Feature: test distributed op
@@ -204,6 +225,7 @@ def test_hccl_get_group_rank():
         assert global_rank == 0
 
 
+@log_function_entry_exit
 def test_hccl_get_process_group_ranks():
     """
     Feature: test distributed op
@@ -235,6 +257,7 @@ def test_hccl_get_process_group_ranks():
         assert ranks == [2, 3]
 
 
+@log_function_entry_exit
 def test_hccl_all_reduce_type():
     """
     Feature: test distributed op
@@ -269,6 +292,7 @@ def test_hccl_all_reduce_type():
     assert np.allclose(prod_input_tensor.asnumpy(), except_prod_output.asnumpy())
 
 
+@log_function_entry_exit
 def test_hccl_all_reduce():
     """
     Feature: test distributed op
@@ -310,6 +334,7 @@ def test_hccl_all_reduce():
         all_reduce(sum_input_tensor, async_op="test")
 
 
+@log_function_entry_exit
 def test_hccl_all_gather_into_tensor():
     """
     Feature: test distributed op
@@ -366,6 +391,8 @@ def test_hccl_all_gather_into_tensor():
         all_gather_into_tensor(output_tensor, input_tensor)
         _pynative_executor.sync()
 
+
+@log_function_entry_exit
 def test_hccl_all_gather_into_tensor_uneven():
     """
     Feature: test distributed op
@@ -465,6 +492,7 @@ def test_hccl_all_gather_into_tensor_uneven():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_reduce_scatter_tensor_type():
     """
     Feature: test distributed op
@@ -497,6 +525,7 @@ def test_hccl_reduce_scatter_tensor_type():
     assert np.allclose(min_input_tensor.asnumpy(), except_min_output.asnumpy())
 
 
+@log_function_entry_exit
 def test_hccl_reduce_scatter_tensor():
     """
     Feature: test distributed op
@@ -556,7 +585,7 @@ def test_hccl_reduce_scatter_tensor():
         _pynative_executor.sync()
 
 
-
+@log_function_entry_exit
 def test_hccl_reduce_scatter_tensor_uneven():
     """
     Feature: test distributed op
@@ -648,6 +677,7 @@ def test_hccl_reduce_scatter_tensor_uneven():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_reduce_type():
     """
     Feature: test distributed op
@@ -681,6 +711,7 @@ def test_hccl_reduce_type():
         assert np.allclose(min_input_tensor.asnumpy(), except_output.asnumpy())
 
 
+@log_function_entry_exit
 def test_hccl_reduce():
     """
     Feature: test distributed op
@@ -738,6 +769,7 @@ def test_hccl_reduce():
         reduce(sum_input_tensor, dst=0, async_op="test")
 
 
+@log_function_entry_exit
 def test_hccl_batch_isend_irecv():
     """
     Feature: test distributed op
@@ -812,6 +844,7 @@ def test_hccl_batch_isend_irecv():
     barrier()
 
 
+@log_function_entry_exit
 def test_hccl_broadcast():
     """
     Feature: test distributed op
@@ -861,6 +894,7 @@ def test_hccl_broadcast():
         broadcast(tensor, src=0, async_op="test")
 
 
+@log_function_entry_exit
 def test_hccl_barrier():
     """
     Feature: test distributed op
@@ -888,6 +922,7 @@ def test_hccl_barrier():
         barrier(async_op="test")
 
 
+@log_function_entry_exit
 def test_hccl_send():
     """
     Feature: test distributed op
@@ -926,6 +961,7 @@ def test_hccl_send():
         send(input_tensor, dst=rank)
 
 
+@log_function_entry_exit
 def test_hccl_recv():
     """
     Feature: test distributed op
@@ -961,6 +997,7 @@ def test_hccl_recv():
         recv(output, group=1)
 
 
+@log_function_entry_exit
 def test_hccl_isend():
     """
     Feature: test distributed op
@@ -1003,6 +1040,7 @@ def test_hccl_isend():
         isend(input_tensor, dst=rank)
 
 
+@log_function_entry_exit
 def test_hccl_irecv():
     """
     Feature: test distributed op
@@ -1040,6 +1078,7 @@ def test_hccl_irecv():
         irecv(output, group=1)
 
 
+@log_function_entry_exit
 def test_hccl_all_to_all():
     """
     Feature: test distributed op
@@ -1127,6 +1166,7 @@ def test_hccl_all_to_all():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_all_to_all_single():
     """
     Feature: test distributed op
@@ -1188,6 +1228,7 @@ def test_hccl_all_to_all_single():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_all_gather():
     """
     Feature: test distributed op
@@ -1265,6 +1306,7 @@ def test_hccl_all_gather():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_all_gather_diff_shape():
     """
     Feature: test distributed op
@@ -1320,6 +1362,7 @@ def test_hccl_all_gather_diff_shape():
     assert np.allclose(output_tensor.asnumpy(), expect_output)
 
 
+@log_function_entry_exit
 def test_hccl_reduce_scatter():
     """
     Feature: test distributed op
@@ -1389,6 +1432,7 @@ def test_hccl_reduce_scatter():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_reduce_scatter_diff_shape():
     """
     Feature: test distributed op
@@ -1428,6 +1472,7 @@ def test_hccl_reduce_scatter_diff_shape():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_gather():
     """
     Feature: test distributed op
@@ -1514,6 +1559,7 @@ def test_hccl_gather():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_scatter():
     """
     Feature: test distributed op
@@ -1593,6 +1639,7 @@ def test_hccl_scatter():
         _pynative_executor.sync()
 
 
+@log_function_entry_exit
 def test_hccl_scalar():
     """
     Feature: test distributed op

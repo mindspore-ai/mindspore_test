@@ -48,6 +48,24 @@ if size % 2 != 0:
     raise RuntimeError("Group size should be divided by 2 exactly.")
 
 
+def log_function_entry_exit(func):
+    """
+    Feature: log function entry exit
+    Description: add log for func
+    Expectation: success
+    """
+    def wrapper(*args, **kwargs):
+        # 打印进入函数的信息
+        print(f"Entering comm function: {func.__name__}", flush=True)
+        # 调用原函数
+        result = func(*args, **kwargs)
+        # 打印退出函数的信息
+        print(f"Exiting comm function: {func.__name__}", flush=True)
+        return result
+    return wrapper
+
+
+@log_function_entry_exit
 def test_cpu_new_group():
     """
     Feature: test distributed op
@@ -71,6 +89,7 @@ def test_cpu_new_group():
         assert group == name
 
 
+@log_function_entry_exit
 def test_cpu_get_rank():
     """
     Feature: test distributed op
@@ -91,6 +110,7 @@ def test_cpu_get_rank():
         assert global_rank == rank
 
 
+@log_function_entry_exit
 def test_cpu_get_backend():
     """
     Feature: test distributed op
@@ -109,6 +129,7 @@ def test_cpu_get_backend():
         assert backend == "mccl"
 
 
+@log_function_entry_exit
 def test_cpu_get_process_group_ranks():
     """
     Feature: test distributed op
@@ -128,6 +149,7 @@ def test_cpu_get_process_group_ranks():
         assert ranks == [2, 3]
 
 
+@log_function_entry_exit
 def test_cpu_broadcast():
     """
     Feature: test distributed op
@@ -186,6 +208,7 @@ def test_cpu_broadcast():
         assert np.allclose(tensor.asnumpy(), except_output_tensor.asnumpy())
 
 
+@log_function_entry_exit
 def test_cpu_all_gather():
     """
     Feature: test distributed op
@@ -255,6 +278,7 @@ def test_cpu_all_gather():
         )
 
 
+@log_function_entry_exit
 def test_cpu_gather():
     """
     Feature: test distributed op
@@ -336,6 +360,7 @@ def test_cpu_gather():
         )
 
 
+@log_function_entry_exit
 def test_cpu_scatter():
     """
     Feature: test distributed op
@@ -391,6 +416,7 @@ def test_cpu_scatter():
         assert np.allclose(output_tensor1.asnumpy(), except_output_tensor.asnumpy())
 
 
+@log_function_entry_exit
 def test_cpu_barrier():
     """
     Feature: test distributed op
@@ -417,6 +443,7 @@ def test_cpu_barrier():
         assert output_handle is None
 
 
+@log_function_entry_exit
 def test_cpu_barrier1():
     """
     Feature: test distributed op
@@ -457,6 +484,7 @@ def test_cpu_barrier1():
         assert 4 < t < 5
 
 
+@log_function_entry_exit
 def test_cpu_send():
     """
     Feature: test distributed op
@@ -489,6 +517,7 @@ def test_cpu_send():
             assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
 
 
+@log_function_entry_exit
 def test_cpu_recv():
     """
     Feature: test distributed op
@@ -510,6 +539,7 @@ def test_cpu_recv():
         assert np.allclose(output.asnumpy(), input_tensor.asnumpy())
 
 
+@log_function_entry_exit
 def test_cpu_all_reduce_type():
     """
     Feature: test distributed op
@@ -548,6 +578,7 @@ def test_cpu_all_reduce_type():
     assert np.allclose(prod_input_tensor.asnumpy(), except_prod_output.asnumpy())
 
 
+@log_function_entry_exit
 def test_cpu_all_reduce():
     """
     Feature: test distributed op
