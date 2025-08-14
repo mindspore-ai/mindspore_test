@@ -144,6 +144,11 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
       for (size_t i = 1; i < sens_cnode->size(); ++i) {
         auto sens_input_cnode = sens_cnode->input(i)->cast<CNodePtr>();
         auto loss_input_cnode = loss_cnode->input(i)->cast<CNodePtr>();
+        // when return multi losses, one or multi of them may not be involved in the calculation and will be the initial
+        // value 0, so we need to ignore them.
+        if (loss_input_cnode == nullptr) {
+          continue;
+        }
         LossNodeInfo real_loss_node_info;
         real_loss_node_info.loss_node = loss_input_cnode;
         real_loss_node_info.dout_index = 0;
