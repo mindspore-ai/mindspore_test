@@ -23,7 +23,7 @@
 #include "utils/ms_context.h"
 #include "utils/anf_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"

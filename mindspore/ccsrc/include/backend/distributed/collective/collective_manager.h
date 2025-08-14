@@ -34,14 +34,11 @@
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
-#include "runtime/collective/collective_communication_lib.h"
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/visible.h"
 
-#ifndef EXPORT_WRAPPER
-#define EXPORT_WRAPPER __attribute__((visibility("default")))
-#endif
 namespace mindspore {
 namespace distributed {
 namespace collective {

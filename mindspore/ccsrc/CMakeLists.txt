@@ -137,7 +137,6 @@ set(BACKEND_COMMON_SUB_COMP
         distributed
         kernel
         backend/operator
-        runtime/collective
         backend/common/optimizer
         backend/common/pass
         backend/common/kernel_graph
@@ -169,7 +168,6 @@ target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_
 set(MS_BACKEND_SUB_COMP
         backend/common/somas
         backend/ms_backend
-        runtime/data_queue
         runtime/device
         runtime/graph_scheduler
         runtime/pynative

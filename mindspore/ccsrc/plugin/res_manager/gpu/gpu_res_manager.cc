@@ -26,15 +26,15 @@
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "ir/tensor_new.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/hardware_abstract/utils.h"
 #include "utils/dlopen_macro.h"
-#include "runtime/collective/collective_comm_lib_loader.h"
+#include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 #ifdef ENABLE_MPI
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif

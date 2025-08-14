@@ -21,7 +21,7 @@
 #include <vector>
 #include <memory>
 #include "lcal.h"
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 #include "utils/dlopen_macro.h"
 
 using namespace Lcal;

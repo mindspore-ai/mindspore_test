@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include <random>
-#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/device/cpu/hal/hardware/ms_communication_group.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "ps/core/collective_ops_impl.h"

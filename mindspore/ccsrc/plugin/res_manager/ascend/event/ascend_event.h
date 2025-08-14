@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_ASCEND_EVENT_H
 #define MINDSPORE_ASCEND_EVENT_H
 
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/visible.h"
 

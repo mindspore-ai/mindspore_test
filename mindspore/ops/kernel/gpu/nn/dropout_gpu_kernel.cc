@@ -17,7 +17,7 @@
 #include <algorithm>
 #include "kernel/gpu/nn/dropout_gpu_kernel.h"
 #include "mindspore/ops/infer/ops_func_impl/dropout.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

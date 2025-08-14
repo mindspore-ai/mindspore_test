@@ -18,7 +18,7 @@
 #define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_GPU_GPU_EVENT_H_
 
 #include <cuda_runtime_api.h>
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 
 namespace mindspore::device::gpu {
 class GpuEvent : public DeviceEvent {

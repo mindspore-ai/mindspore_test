@@ -17,7 +17,7 @@
 #include <memory>
 
 #include "kernel/cpu/standard_laplace_cpu_kernel.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

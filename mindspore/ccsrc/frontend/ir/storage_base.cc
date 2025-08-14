@@ -16,11 +16,11 @@
 #include "frontend/ir/storage_base.h"
 #include <utility>
 #include <string>
-#include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/hardware_abstract/utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/include/backend/mem_reuse/mem_tracker.h"
 

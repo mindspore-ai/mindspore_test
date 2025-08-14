@@ -21,7 +21,7 @@
 #include <vector>
 #include <memory>
 #include "plugin/res_manager/ascend/dvm/dvm.h"
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 
 using CommPtr = std::shared_ptr<dvm::Comm>;
 

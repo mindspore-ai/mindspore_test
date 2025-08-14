@@ -36,7 +36,7 @@
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/stream_util.h"
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif

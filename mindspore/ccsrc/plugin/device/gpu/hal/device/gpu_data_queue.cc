@@ -16,7 +16,7 @@
 #include "plugin/device/gpu/hal/device/gpu_data_queue.h"
 #include <string>
 #include <utility>
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "utils/ms_context.h"
 #include "plugin/device/gpu/hal/device/queue_common.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"

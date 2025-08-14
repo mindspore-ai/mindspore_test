@@ -24,7 +24,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "mindspore/core/include/utils/ms_utils.h"
-#include "runtime/device/res_manager/utils/utils.h"
+#include "runtime/hardware_abstract/utils.h"
 #include "mindspore/ccsrc/include/common/utils/comm_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"

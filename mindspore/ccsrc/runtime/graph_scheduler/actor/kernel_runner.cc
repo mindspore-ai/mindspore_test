@@ -28,7 +28,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

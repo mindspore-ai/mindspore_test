@@ -21,7 +21,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "plugin/device/ascend/optimizer/format_type/insert_cast.h"
 #include "kernel/kernel_build_info.h"
 #include "include/common/utils/utils.h"

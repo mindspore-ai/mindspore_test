@@ -23,8 +23,8 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
-#include "runtime/device/res_manager/utils/utils.h"
-#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
+#include "runtime/hardware_abstract/utils.h"
+#include "include/common/convert_tensor_utils.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {

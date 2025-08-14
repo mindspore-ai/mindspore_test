@@ -33,7 +33,7 @@
 #include "include/backend/visible.h"
 #include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/common/utils/stream_util.h"
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 
 namespace mindspore {
 namespace device {

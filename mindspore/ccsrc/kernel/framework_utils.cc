@@ -20,7 +20,7 @@
 #include <set>
 #include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

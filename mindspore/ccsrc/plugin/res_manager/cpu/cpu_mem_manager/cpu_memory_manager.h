@@ -21,7 +21,7 @@
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/backend/visible.h"
-#include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {

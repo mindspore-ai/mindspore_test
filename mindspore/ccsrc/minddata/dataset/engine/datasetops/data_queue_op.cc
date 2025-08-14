@@ -27,7 +27,7 @@
 #include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/task_manager.h"
 #ifdef WITH_BACKEND
-#include "mindspore/ccsrc/include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "utils/ms_context.h"
 #endif
 namespace mindspore {

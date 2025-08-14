@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 #include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/res_manager/ascend/collective/lowlatency_communication_group.h"

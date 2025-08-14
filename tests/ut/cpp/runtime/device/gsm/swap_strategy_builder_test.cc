@@ -19,7 +19,7 @@
 #include "common/common_test.h"
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "runtime/device/gsm/swap_strategy_builder.h"
+#include "runtime/hardware_abstract/gsm/swap_strategy_builder.h"
 
 namespace mindspore::device {
 class TestSwapStrategyBuilder : public BackendCommon {

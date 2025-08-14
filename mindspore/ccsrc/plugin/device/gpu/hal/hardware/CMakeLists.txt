@@ -3,9 +3,9 @@ if(ENABLE_GPU)
     list(REMOVE_ITEM HARDWARE_GPU_SRC_LIST "nvidia_collective_comm_lib.cc" "nvidia_communication_group.cc")
     if(ENABLE_MPI)
         set(NVIDIA_COLLECTIVE_SRCS "nvidia_collective_comm_lib.cc"
-                                "nvidia_communication_group.cc"
-                                ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc
-                                ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/communication_group.cc)
+            "nvidia_communication_group.cc"
+            ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/collective_communication_lib.cc
+            ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/communication_group.cc)
         set_property(SOURCE ${NVIDIA_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
                 SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
         add_library(nvidia_collective SHARED ${NVIDIA_COLLECTIVE_SRCS})

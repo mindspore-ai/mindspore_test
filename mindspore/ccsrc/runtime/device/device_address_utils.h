@@ -24,7 +24,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindapi/base/type_traits.h"
 

@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
-#include "runtime/collective/communication_group.h"
-#include "runtime/collective/dummy_collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))

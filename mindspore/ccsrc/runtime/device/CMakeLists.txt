@@ -1,13 +1,10 @@
-file(GLOB_RECURSE DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "common/*.cc" "gsm/*.cc"
-    "executor/dynamic_kernel.cc" "executor/executor_callback.cc"
-    "launch_kernel.cc"
-    "context_extends.cc" "tensors_queue.cc"
-    "common_somas_allocator.cc" "device_address_utils.cc"
+file(GLOB_RECURSE DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/gsm/*.cc"
+    "tensors_queue.cc" "device_address_utils.cc"
     "py_execute_utils.cc" "move_to.cc"
 )
 
-list(REMOVE_ITEM DEVICE_SRC_LIST "gsm/aio_plugin.cc")
-add_subdirectory(gsm)
+list(REMOVE_ITEM DEVICE_SRC_LIST "../hardware_abstract/gsm/aio_plugin.cc")
 
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

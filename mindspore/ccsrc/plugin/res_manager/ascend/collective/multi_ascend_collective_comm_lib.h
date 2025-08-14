@@ -26,9 +26,9 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #endif
-#include "runtime/collective/collective_communication_lib.h"
-#include "runtime/collective/collective_comm_lib_loader.h"
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"

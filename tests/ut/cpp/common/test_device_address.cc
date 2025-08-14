@@ -18,7 +18,7 @@
 #include <utility>
 #include <unordered_map>
 #include "ir/device_address_maker.h"
-#include "runtime/device/res_manager/utils/convert_tensor_utils.h"
+#include "include/common/convert_tensor_utils.h"
 
 namespace mindspore {
 namespace runtime {

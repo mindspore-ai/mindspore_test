@@ -20,7 +20,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/kash/kernel_pack.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/buffer_fusion/ub_pattern_fusion.h"
 #include "plugin/device/ascend/kernel/tbe/tbe_json/single_tbe_json_creator.h"
@@ -29,7 +29,24 @@
 namespace mindspore::kernel {
 namespace {
 constexpr auto kPatternElemWise = "ElemWise";
-}
+
+struct FusionScopeInfo {
+  FusionScopeInfo(int64_t id, std::string f_name, std::string core_type, std::vector<AnfNodePtr> in,
+                  std::vector<AnfNodePtr> comp, std::vector<AnfNodePtr> out)
+      : scope_id(id),
+        full_name(std::move(f_name)),
+        core_type(std::move(core_type)),
+        input_nodes(std::move(in)),
+        compute_nodes(std::move(comp)),
+        output_nodes(std::move(out)) {}
+  int64_t scope_id{};
+  std::string full_name{};
+  std::string core_type{};
+  std::vector<AnfNodePtr> input_nodes;
+  std::vector<AnfNodePtr> compute_nodes;
+  std::vector<AnfNodePtr> output_nodes;
+};
+}  // namespace
 
 using KernelBuildInfoBuilder = kernel::KernelBuildInfo::KernelBuildInfoBuilder;
 constexpr int64_t kShape4D = 4;

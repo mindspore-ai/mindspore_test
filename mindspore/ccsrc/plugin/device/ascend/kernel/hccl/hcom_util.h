@@ -27,7 +27,7 @@
 #include "hccl/base.h"
 #include "include/common/utils/contract.h"
 #include "hccl/hccl_types.h"
-#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "utils/shape_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindspore/ops/op_def/framework_op_name.h"

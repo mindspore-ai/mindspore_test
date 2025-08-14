@@ -66,7 +66,7 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensorreport_utils.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensorprint_utils.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tensordump_utils.h"

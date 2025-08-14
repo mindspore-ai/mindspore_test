@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "utils/log_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 #include "include/cuda_fp16.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/random_shuffle_impl.cuh"

@@ -20,7 +20,7 @@
 #include <string>
 #include <map>
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_kernel_executor.h"

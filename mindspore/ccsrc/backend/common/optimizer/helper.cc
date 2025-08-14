@@ -38,7 +38,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "backend/common/pass/const_input_to_attr.h"

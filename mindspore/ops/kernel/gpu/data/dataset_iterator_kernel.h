@@ -24,7 +24,7 @@
 #include "kernel/gpu/data/dataset_profiling.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "include/backend/data_queue/blocking_queue.h"
+#include "include/runtime/hardware_abstract/data_queue/blocking_queue.h"
 namespace mindspore {
 namespace kernel {
 using mindspore::device::DataQueueItem;

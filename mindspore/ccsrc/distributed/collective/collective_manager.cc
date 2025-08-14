@@ -35,9 +35,8 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/common/runtime_conf/runtime_env.h"
-#include "distributed/persistent/storage/json_utils.h"
-#include "runtime/collective/collective_communication_lib.h"
-#include "runtime/collective/dummy_collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
 #include "utils/ms_exception.h"
 

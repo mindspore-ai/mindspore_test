@@ -22,7 +22,7 @@
 #include <vector>
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "mindspore/ops/infer/uniform.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

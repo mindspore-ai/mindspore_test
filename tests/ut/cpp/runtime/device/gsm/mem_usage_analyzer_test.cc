@@ -19,7 +19,7 @@
 #include "common/common_test.h"
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "runtime/device/gsm/mem_usage_analyzer.h"
+#include "runtime/hardware_abstract/gsm/mem_usage_analyzer.h"
 
 namespace mindspore::device {
 class TestMemUsageAnalyzer : public BackendCommon {

@@ -25,7 +25,8 @@ if(ENABLE_D OR ENABLE_ACL)
         endif()
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/convert_utils.cc")
 
-        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../kernel/kernel_info.cc")
+        list(APPEND _TRANSFORM_SRC_LIST
+                "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_info.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/comm_manager.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/compile_cache_context.cc")
 

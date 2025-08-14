@@ -18,7 +18,7 @@
 
 #include <algorithm>
 #include "utils/ms_utils.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 

@@ -21,7 +21,7 @@
 #include <string>
 
 #include <unordered_map>
-#include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 
 namespace mindspore {

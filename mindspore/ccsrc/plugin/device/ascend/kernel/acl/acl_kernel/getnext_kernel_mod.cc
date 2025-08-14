@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/kernel/acl/acl_kernel/getnext_kernel_mod.h"
 #include <memory>
 #include "plugin/device/ascend/hal/device/ascend_data_queue.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"

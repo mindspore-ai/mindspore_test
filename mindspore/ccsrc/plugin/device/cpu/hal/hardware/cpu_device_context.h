@@ -23,9 +23,9 @@
 #include <mutex>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/collective/collective_communication_lib.h"
-#include "runtime/collective/collective_comm_lib_loader.h"
-#include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
+#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_res_manager.h"
 
 namespace mindspore {

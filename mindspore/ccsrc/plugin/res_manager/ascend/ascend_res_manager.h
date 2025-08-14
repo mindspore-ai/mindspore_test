@@ -25,7 +25,7 @@
 #include "acl/acl_rt.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ir/tensor.h"
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 

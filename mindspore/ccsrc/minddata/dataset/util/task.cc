@@ -20,7 +20,7 @@
 #include "minddata/utils.h"
 #ifdef WITH_BACKEND
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #endif
 namespace mindspore {
 namespace dataset {

@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/res_manager/ascend/collective/lowlatency_communication_group.h"
 
 #ifndef EXPORT_WRAPPER
