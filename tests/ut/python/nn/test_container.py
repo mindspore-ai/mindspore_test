@@ -101,6 +101,12 @@ class TestSequentialCell():
 
         assert out[0][0] == out_me[0][0]
 
+    def test_recompute(self):
+        m = nn.SequentialCell([conv2, avg_pool])
+        assert len(m) == 2
+        m.recompute()
+        assert len(m) == 2
+
 
 class TestCellList():
     """ TestCellList """

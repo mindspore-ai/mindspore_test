@@ -247,6 +247,14 @@ class SequentialCell(Cell):
         self._cells = temp_dict
         self.cell_list = list(self._cells.values())
 
+    def __setattr__(self, name, value):
+        from mindspore.common.recompute import _RecomputeCell
+        if isinstance(value, _RecomputeCell):
+            # RecomputeCell should not be executed
+            object.__setattr__(self, name, value)
+        else:
+            super().__setattr__(name, value)
+
     def __bool__(self):
         return len(self._cells) != 0
 
@@ -593,6 +601,14 @@ class CellDict(_CellDictBase, Cell):
 
     def __delitem__(self, key):
         del self._cells[key]
+
+    def __setattr__(self, name, value):
+        from mindspore.common.recompute import _RecomputeCell
+        if isinstance(value, _RecomputeCell):
+            # RecomputeCell should not be executed
+            object.__setattr__(self, name, value)
+        else:
+            super().__setattr__(name, value)
 
     def __len__(self):
         return len(self._cells)
