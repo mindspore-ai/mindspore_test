@@ -457,6 +457,7 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/type_id.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/types.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/shape_vector.h
+        ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/macros.h
     DESTINATION ${INSTALL_BASE_DIR}/include/mindapi/base
     COMPONENT mindspore)
 

@@ -22,10 +22,11 @@
 #include <cstddef>
 #if __has_include("include/mindapi/base/type_id.h")
 #include "include/mindapi/base/type_id.h"
+#include "include/mindapi/base/macros.h"
 #else
 #include "mindapi/base/type_id.h"
-#endif
 #include "mindapi/base/macros.h"
+#endif
 
 namespace mindspore {
 namespace abstract {
