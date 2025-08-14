@@ -125,7 +125,8 @@ void TCPClient::SendAsync(std::unique_ptr<MessageBase> &&msg) { (void)tcp_comm_-
 MessageBase *TCPClient::ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t timeout, bool *is_send_fail) {
   if (timeout == UINT32_MAX) {
     // This means we should use default ReceiveMsgTimeOut as timeout.
-    timeout = receive_timeout_ * 1000;
+    const size_t kSecondsToMilliseconds = 1000;
+    timeout = receive_timeout_ * kSecondsToMilliseconds;
   }
 
   std::unique_lock<std::mutex> lock(mutex_);
