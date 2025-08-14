@@ -2,6 +2,56 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.7.0 Release Notes
+
+### 主要特性及增强
+
+#### Dataset
+
+- [STABLE] [mindspore.dataset.vision.read_video](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset_vision/mindspore.dataset.vision.read_video.html) 接口新增支持基于Ascend VDEC的视频解码，用户可以通过 [mindspore.dataset.config.set_video_backend](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.config.set_video_backend.html) 接口指定视频处理后端为 `CPU`（默认）或 `Ascend` 。
+- [STABLE] 新增 [mindspore.dataset.vision.VideoDecoder](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset_vision/mindspore.dataset.vision.VideoDecoder.html) 接口，提供视频抽帧解码及获取元数据的能力，当前仅支持 `Ascend` 后端。
+
+#### 并行
+
+- [STABLE] MindSpore 支持收集和规约分发非均匀大小的张量。用户可以通过 [mint.distributed.all_gather_into_tensor_uneven](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.all_gather_into_tensor_uneven.html) 和 [mint.distributed.reduce_scatter_tensor_uneven](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.reduce_scatter_tensor_uneven.html) 算子接口使用该功能。[mint.distributed.all_gather](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.all_gather.html) 和 [mint.distributed.reduce_scatter](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.reduce_scatter.html)也分别新增对非均匀大小的收集和规约分发操作支持。
+- [BETA] 流水线并行支持ZeroBubbleV调度，降低流水线并行Bubble，同时可结合1B1F融合掩盖，提升通信和计算overlap的比例。
+- [STABLE] MindSpore 优化 PP 通讯域，显著降低 HCCL_BUFFER_SIZE。
+- [BETA] MindSpore 支持细粒度优化 `HCCL_BUFFER_SIZE`，可以通过环境变量 `MS_DEV_HCCL_CONF` 设置，详见[环境变量](https://www.mindspore.cn/docs/zh-CN/master/api_python/env_var_list.html)。
+
+#### Compiler
+
+- [BETA] 图模式支持 [mindspore.nn.Cell](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html) 注册正反向 hook 的功能。
+
+#### Runtime
+
+- [STABLE] MindSpore支持预留大页内存。用户可以通过在 [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.set_memory.html) 接口中传入 `huge_page_reserve_size` 参数使能该功能。
+
+### Lite
+
+MindSpore Lite面向不同硬件设备提供轻量化AI推理加速能力，使能智能应用，为开发者提供端到端的解决方案，为算法工程师和数据科学家提供开发友好、运行高效、部署灵活的体验。
+
+为了更好地促进人工智能软硬件应用生态繁荣发展，MindSpore Lite独立建仓促进生态发展。未来MindSpore Lite将与MindSpore AI社区一起，致力于丰富AI软硬件应用生态。
+
+更多详情请参阅[MindSpore Lite代码仓](https://gitee.com/mindspore/mindspore-lite)。
+
+### API 变更
+
+- [STABLE] 作为[mindspore.mint](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.mint.html) API接入任务的一部分，一些Tensor API的接口定义和功能进行了对齐和优化。
+
+  | mindspore.Tensor                |
+  | ------------------------------- |
+  | mindspore.Tensor.masked_scatter |
+  | mindspore.Tensor.bernoulli_     |
+  | mindspore.Tensor.zero_          |
+  | mindspore.Tensor.copy_          |
+
+- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.ops.html) API新增[mindspore.ops.ring_attention_update](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.ring_attention_update.html)接口，当前仅支持 Atlas A2 训练系列产品。
+- [STABLE] 新增[mindspore.enable_dynamic](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.enable_dynamic.html)接口，用于指定参数的shape是动态shape或者动态rank。
+
+### 贡献者
+
+Bellatan,caifubi,ccsszz,chaijinwei,chengbin,chenweifeng,chujinjin,DavidFFFan,DeshiChen,dingjinshan,fary86,fuchao,gaoyong10,GuoZhibin,guozhijian,haozhang,hedongdong,Henry Shi,hhz886,huangbingjian,huangziling,huda,Huilan Li,jiangchao_j,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jizewei,leida,lichen,limingqi107,LiNuohang,linux,liubuyu,liuluobin,looop5,luochao60,luoyang,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,NaCN,One_East,panzhihui,Qiao_Fu,qiuleilei,qiuyufeng,r1chardf1d0,SaiYao,shaoshengqi,shen_haochen,shenwei41,shuqian0,St.Universe,suteng,TAJh,tanghuikang,tianxiaodong,wang_ziqi,wangyibo,wujueying,wusimin,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,XinDu,xuzhen,yanghaoran,yangyingchun,yide12,yonibaehr,yuanqi,yuchaojie,YuJianfeng,YukioZzz,yuliangbin,zhangbuxue,zhangdanyang,zhanghanLeo,zhangyinxia,ZhangZGC,zhaochenjie,Zhi Feng Wu,zhuguodong,ZPaC,zyli2020,程超,胡犇,胡彬,宦晓玲,黄勇,李良灿,李林杰,刘飞扬,刘勇琪,刘子涵,王振邦,熊攀,杨卉,俞涵,云骑士,张栩浩,周一航
+
 ## MindSpore 2.7.0-rc1 Release Notes
 
 ### 主要特性及增强
