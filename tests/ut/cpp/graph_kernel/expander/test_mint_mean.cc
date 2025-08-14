@@ -29,19 +29,21 @@
 
 namespace mindspore::graphkernel::test {
 namespace {
-struct MeanExtParams {
+struct ReduceExtParams {
+  std::string op_name;
   ShapeVector input_shape;
   std::vector<int64_t> axis;
   bool keep_dims;
   ShapeVector expect_shape;
   TypePtr type;
+  bool can_expand;
 };
 }  // namespace
 
-/// Feature: Test graph kernel MeanExt expander
-/// Description: MeanExt will expanded
+/// Feature: Test graph kernel SumExt/MeanExt expander
+/// Description: expand if inputs are supported
 /// Expectation: After expand, the output shape and data type of sub graph should match expect
-class TestMeanExtExpander : public TestGraphKernelExpander, public testing::WithParamInterface<MeanExtParams> {
+class TestReduceExtExpander : public TestGraphKernelExpander, public testing::WithParamInterface<ReduceExtParams> {
   void SetUp() override {
     SetDeviceTarget(kAscendDevice);
     std::map<std::string, std::string> jit_config;
@@ -50,14 +52,14 @@ class TestMeanExtExpander : public TestGraphKernelExpander, public testing::With
   }
 };
 
-TEST_P(TestMeanExtExpander, MeanExt) {
+TEST_P(TestReduceExtExpander, MeanExt) {
   const auto &param = GetParam();
   ConstructGraph c;
   auto shape = c.NewTensorInput("input_shape", param.type, param.input_shape);
   auto axis = c.NewScalarInput("axis", MakeValue(param.axis), kInt64);
   auto keep_dims = c.NewValueNode(MakeValue<bool>(param.keep_dims));
   auto dtype = c.NewValueNode(MakeValue<int64_t>(param.type->type_id()));
-  auto op = c.NewCNodeWithBuildInfo("MeanExt", {shape, axis, keep_dims, dtype}, {});
+  auto op = c.NewCNodeWithBuildInfo(param.op_name, {shape, axis, keep_dims, dtype}, {});
   c.SetOutput(op);
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>()});
   auto nodes = TopoSort(c.GetGraph()->get_return());
@@ -69,10 +71,23 @@ TEST_P(TestMeanExtExpander, MeanExt) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpMeanExt, TestMeanExtExpander,
-                        testing::Values(MeanExtParams{{16, 16}, {0}, false, {16}, kFloat16},
-                                        MeanExtParams{{16, 16}, {1}, false, {16}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestReduceExt, TestReduceExtExpander,
+                        testing::Values(ReduceExtParams{"MeanExt", {16, 16}, {0}, false, {16}, kFloat16, true},
+                                        ReduceExtParams{"MeanExt", {16, 16}, {1}, true, {16, 1}, kFloat32, true},
+                                        ReduceExtParams{"MeanExt", {16, 16}, {1}, false, {16}, kBFloat16, true},
+                                        ReduceExtParams{"MeanExt", {16, 16}, {1}, false, {16}, kInt32, false},
+                                        ReduceExtParams{"MeanExt", {16, 16}, {1, -1}, false, {16}, kFloat32, false},
+                                        ReduceExtParams{"MeanExt", {-1, 16}, {1}, true, {-1, 1}, kFloat32, true},
+                                        ReduceExtParams{"MeanExt", {-1, 16}, {0}, true, {1, 16}, kFloat32, false},
+                                        ReduceExtParams{"SumExt", {16, 16}, {-2}, true, {1, 16}, kFloat16, true},
+                                        ReduceExtParams{"SumExt", {16, 16}, {1}, false, {16}, kFloat32, true},
+                                        ReduceExtParams{"SumExt", {16, 16}, {1}, false, {16}, kBFloat16, true},
+                                        ReduceExtParams{"SumExt", {16, 16}, {1}, false, {16}, kInt32, false},
+                                        ReduceExtParams{"SumExt", {}, {}, true, {}, kFloat32, false},
+                                        ReduceExtParams{"SumExt", {-2}, {}, true, {}, kFloat32, false},
+                                        ReduceExtParams{"SumExt", {16, 16}, {1, 1}, false, {16}, kFloat32, false}));
 }  // namespace mindspore::graphkernel::test

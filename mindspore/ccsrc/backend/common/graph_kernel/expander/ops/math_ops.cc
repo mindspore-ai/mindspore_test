@@ -289,6 +289,12 @@ NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) 
   std::vector<int64_t> axis_ = axis_opt.value();
   auto rank = SizeToLong(x_shape.size());
   (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
+  std::set<int64_t> uniq_axis(axis_.begin(), axis_.end());
+  if (uniq_axis.size() != axis_.size()) {
+    // duplicate axis not supported in SumExt/MeanExt
+    MS_LOG(DEBUG) << "Duplicate value found in reduce axis: " << axis_;
+    return {};
+  }
   if (axis_.empty()) {
     for (int64_t i = 0; i < rank; ++i) {
       axis_.push_back(i);
