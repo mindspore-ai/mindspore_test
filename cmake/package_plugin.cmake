@@ -41,7 +41,7 @@ if(ENABLE_CPU)
     )
 endif()
 
-if(ENABLE_DART)
+if(ENABLE_INFERRT)
     install(
         TARGETS mindspore_ms_infer_backend LIBRARY
         DESTINATION ${INSTALL_LIB_DIR}

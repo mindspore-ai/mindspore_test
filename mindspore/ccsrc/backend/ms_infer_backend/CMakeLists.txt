@@ -1,14 +1,14 @@
-# Include DART headers
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dair)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dart)
+# Include INFERRT headers
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc/ir)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inferrt/cc/rt)
 
-# Add compile definitions for DART
+# Add compile definitions for INFERRT
 set(ENABLE_RUN_TENSOR "on")
 
-# Add DART directories
-add_subdirectory(dart)
+# Add INFERRT directories
+add_subdirectory(inferrt)
 
 # Include ms_infer_backend Source files
 file(GLOB _MS_INFER_BACKEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
@@ -17,7 +17,7 @@ set_property(SOURCE ${_MS_INFER_BACKEND_SRC_LIST}
 
 # Create shared library
 add_library(mindspore_ms_infer_backend SHARED ${_MS_INFER_BACKEND_SRC_LIST})
-target_link_libraries(mindspore_ms_infer_backend PRIVATE dalang)
+target_link_libraries(mindspore_ms_infer_backend PRIVATE inferrt)
 target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_infer_backend PRIVATE mindspore_core mindspore_ops mindspore_ms_backend
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_profiler

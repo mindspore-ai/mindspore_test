@@ -42,12 +42,14 @@ check_on_off()
 update_submodule()
 {
   git submodule update --init metadef
-  if [[ "X$ENABLE_BACKEND" = "XDART" ]]; then
+
+  if [[ "X$ENABLE_INFERRT" = "Xon" ]]; then
     cd "${BASEPATH}/mindspore/ccsrc/backend/ms_infer_backend/"
-    git submodule add --force -b master https://gitee.com/ms-incubator/dart.git dart
-    git submodule update --init dart
+    git submodule add --force -b ms_inferrt https://gitee.com/mindspore/vllm-mindspore.git inferrt
+    git submodule update --init inferrt
+    cd "${BASEPATH}"
   fi
-  cd "${BASEPATH}"
+
   if [[ "X$ENABLE_AKG" = "Xon" ]]; then
     if [[ "X$ENABLE_D" == "Xon" ]]; then
       git submodule update --init akg

@@ -36,7 +36,6 @@ usage()
   echo "    -h Print usage"
   echo "    -b Select other backend, available: \\"
   echo "           ge:graph engine"
-  echo "           dart:ms_infer_backend with dart"
   echo "    -m Select graph engine backend mode, available: infer, train, default is infer"
   echo "    -a Enable ASAN, default off"
   echo "    -p Enable pipeline profile, print to stdout, default off"
