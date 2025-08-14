@@ -16,6 +16,7 @@
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include <complex>
 #include <vector>
+#include "base/float8_e4m3fn.h"
 #include "utils/shape_utils.h"
 namespace mindspore {
 namespace device {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "base/float8_e4m3fn.h"
 #include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/collective/leaper_trans.h"

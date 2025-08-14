@@ -33,7 +33,6 @@
 #include "utils/log_adapter.h"
 #include "base/bfloat16.h"
 #include "base/float8_e5m2.h"
-#include "base/float8_e4m3fn.h"
 #include "base/hifloat8.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
