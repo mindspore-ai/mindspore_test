@@ -15,7 +15,7 @@
  */
 
 #include "frontend/optimizer/irpass/virtualview_op.h"
-
+#include <unordered_set>
 #include <vector>
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"

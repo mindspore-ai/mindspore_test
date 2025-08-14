@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 #include "ir/func_graph_cloner.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {

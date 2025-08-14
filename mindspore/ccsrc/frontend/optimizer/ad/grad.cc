@@ -15,6 +15,7 @@
  */
 
 #include "frontend/optimizer/ad/grad.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -23,7 +24,8 @@
 #include <vector>
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/irpass.h"
-#include "pipeline/jit/ps/pass.h"
+#include "frontend/jit/ps/pass.h"
+#include "frontend/jit/ps/action.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
@@ -369,12 +371,47 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::Opt
   const auto &resources = optimizer->resource();
   AddToManage(resources, ori_func_graph);
 
+  FuncGraphPtr new_func_graph = ori_func_graph;
+
+  if (is_view_inplace) {
+    parse::ClearCNodeAbstract(ori_func_graph);
+    pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
+    FuncGraphPtr need_renormalize_func = ori_func_graph;
+
+    if (ori_func_graph->parent() != nullptr) {
+      res = std::dynamic_pointer_cast<pipeline::Resource>(resources);
+      need_renormalize_func = res->func_graph();
+      ori_func_graph->set_flag("J_INNER_FUNC", true);
+    }
+    abstract::AbstractBasePtrList new_args_spec;
+    (void)std::transform(need_renormalize_func->parameters().begin(), need_renormalize_func->parameters().end(),
+                         std::back_inserter(new_args_spec),
+                         [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+    new_func_graph = pipeline::Renormalize(res, need_renormalize_func, new_args_spec);
+
+    if (ori_func_graph->parent() != nullptr) {
+      res->set_func_graph(new_func_graph);
+      res->set_args_abs(new_args_spec);
+      auto manager = optimizer->manager();
+      MS_EXCEPTION_IF_NULL(manager);
+      new_func_graph->set_manager(manager);
+      for (auto sub_func : new_func_graph->func_graphs_used_total()) {
+        if (sub_func->has_flag("J_INNER_FUNC")) {
+          new_func_graph = sub_func;
+          new_func_graph->set_manager(manager);
+          sub_func->erase_flag("J_INNER_FUNC");
+          break;
+        }
+      }
+    }
+  }
+
   // Preprocessing for view inplace
-  bool use_view_inplace_new_method = ViewInplacePrepare(ori_func_graph, optimizer, is_view_inplace);
+  bool use_view_inplace_new_method = ViewInplacePrepare(new_func_graph, optimizer, is_view_inplace);
   bool use_view_inplace_old_method = is_view_inplace && !use_view_inplace_new_method;
-  FuncGraphPtr func_graph = ori_func_graph;
+  FuncGraphPtr func_graph = new_func_graph;
   if (use_view_inplace_new_method) {
-    func_graph = InsertVirtualOpsProcess(ori_func_graph, optimizer);
+    func_graph = InsertVirtualOpsProcess(new_func_graph, optimizer);
   }
 
   auto multi_graph_sink = [&func_graph](const FuncGraphPtr &f) {

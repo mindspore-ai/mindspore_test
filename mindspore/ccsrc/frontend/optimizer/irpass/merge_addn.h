@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,6 @@ class AddNZeroFilter : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
   bool IsReshapeZeros(const AnfNodePtr &node);
-
   void Visit(const CNodePtr &cnode) override;
 
   void Reset();
@@ -67,6 +66,7 @@ class AddNZeroFilter : public AnfVisitor {
  private:
   std::vector<AnfNodePtr> filtered_Xs_{}, Xs_{};
   bool has_zero_like_{false};
+  bool only_one_dynamic_zero_like_{false};
 };
 
 // {PrimAddN, {kPrimMakeTuple, Xs}}
