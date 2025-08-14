@@ -14,11 +14,13 @@
 
 import numpy as np
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 from mindspore import context, nn, Tensor
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 import mindspore.common.dtype as mstype
 import mindspore.runtime as rt
+import mindspore as ms
 
 
 class SparseApplyFtrlNet(nn.Cell):
@@ -88,3 +90,30 @@ def test_sparse_apply_ftrl_with_memory_optimize():
                             [0.2915, 0.2915, 0.2915],
                             [0.2915, 0.2915, 0.2915]]]).astype(np.float16)
     assert np.all(out[0].asnumpy() == expect_var)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
+def test_runtime_use_mem_pool():
+    """
+    Feature: runtime memory api use_mem_pool.
+    Description: Test runtime.use_mem_pool api.
+    Expectation: runtime.use_mem_pool api performs as expected.
+    """
+    set_device()
+    context.set_context(mode=context.PYNATIVE_MODE)
+    so_path = "/home/workspace/mindspore_dataset/custom_so/libascend_custom_allocator.so"
+    shape = (1024, 1024)
+    allocator = ms.runtime.PluggableAllocator(so_path, "Alloc", "Free")
+    mem_pool = ms.runtime.MemPool(allocator)
+    x = Tensor(np.zeros(shape), ms.float32)
+    with ms.runtime.use_mem_pool(mem_pool):
+        y = Tensor(np.zeros(shape), ms.float32)
+        y += 1
+
+        z = Tensor(np.zeros(shape), ms.float32)
+        z += 2
+
+    output = x + y + z
+    expected = Tensor(np.ones(shape) * 3, ms.float32)
+    assert np.allclose(output.asnumpy(), expected)

@@ -74,6 +74,20 @@
     :exclude-members: infer_value, infer_shape, infer_dtype
     :members:
 
+{% elif fullname=="mindspore.runtime.PluggableAllocator" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: alloc_fn_ptr, free_fn_ptr
+    :members:
+
+{% elif fullname=="mindspore.runtime.MemPool" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: allocator
+    :members:
+
 {% elif fullname=="mindspore.train.TrainFaultTolerance" %}
 {{ fullname | underline }}
 

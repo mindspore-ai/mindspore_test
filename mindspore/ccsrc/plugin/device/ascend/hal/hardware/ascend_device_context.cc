@@ -44,6 +44,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_pluggable_mem_allocator.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/res_manager/ascend/mbuf_manager/tdt_manager.h"
@@ -277,6 +278,7 @@ void PybindAscendStatelessFunc(py::module *m) {
   RegOpPrecisionConf(m);
   RegOpTuningConf(m);
   RegOpDebugConf(m);
+  RegPluggableAllocator(m);
 }
 REGISTER_DEV_STATELESS_FUNC_CB(kAscendDevice, PybindAscendStatelessFunc);
 }  // namespace ascend
