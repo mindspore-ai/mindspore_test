@@ -744,12 +744,12 @@ AbstractBasePtr InferImplMakeSlice(const AnalysisEnginePtr &, const PrimitivePtr
       auto build_value = arg->BuildValue();
       MS_EXCEPTION_IF_NULL(build_value);
       auto value = build_value->cast<tensor::TensorPtr>();
-      auto value_cpu = value->cpu();
       if (value != nullptr) {
         if (value->DataSize() != 1) {
           MS_EXCEPTION(TypeError) << "The input tensor of the MakeSlice operator must contain only one element,"
                                   << "but " << value->ToString() << " has " << value->DataSize() << " elements.";
         }
+        auto value_cpu = value->cpu();
         MS_EXCEPTION_IF_NULL(tensor_dtype);
         if (tensor_dtype->isa<Bool>()) {
           auto *bool_value = static_cast<bool *>(value_cpu->data_c());
