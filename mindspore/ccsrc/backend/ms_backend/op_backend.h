@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 #include "include/backend/visible.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/task/device_task.h"
 

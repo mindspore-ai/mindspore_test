@@ -44,8 +44,8 @@ mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parse
 mindspore/mindspore/ccsrc/pynative/grad/ir/ir_bprop.cc:mindspore::pynative::autograd::IrBprop::GetBpropGraphFromExpander
 mindspore/mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc:mindspore::PyExceptionInitializer::HandleExceptionRethrow
-mindspore/mindspore/ccsrc/backend/common/session/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::FlattenInputArg
-mindspore/mindspore/ccsrc/backend/common/session/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::GetValueByDeviceAddress
+mindspore/mindspore/ccsrc/backend/common/kernel_graph/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::FlattenInputArg
+mindspore/mindspore/ccsrc/backend/common/kernel_graph/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::GetValueByDeviceAddress
 mindspore/mindspore/ccsrc/backend/ge_backend/runtime/actor/data_source_actor.cc:mindspore::ge_backend::runtime::HostQueueDataSourceActor::OnMemoryAllocFinish
 mindspore/mindspore/ccsrc/backend/ge_backend/runtime/actor/output_actor.cc:mindspore::ge_backend::runtime::OutputActor::UpdateOutputDeviceAddress
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc:mindspore::runtime::DataPrepareActor::PrepareDataForWeightNode
@@ -119,7 +119,6 @@ mindspore/mindspore/ops/kernel/cpu/nnacl/fp32_grad/gemm.c:RowMajor2Col8MajorStri
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::ObjectIdLabel
 mindspore/mindspore/python/mindspore/ops/_op_impl/_custom_op/dsd_impl.py:dsd_matmul
 mindspore/mindspore/python/mindspore/ops/_op_impl/_custom_op/dsd_back_impl.py:dsdbpropimpl
-mindspore/mindspore/ccsrc/backend/common/session/gpu_session.cc:mindspore::session::gpu::GPUSession::LoadInputData
 mindspore/mindspore/ccsrc/memory/mem_pool/mem_dynamic_allocator.cc:mindspore::device::DynamicMemPoolBestFit::CombineMemBuf
 mindspore/mindspore/ccsrc/debug/dump_proto.cc:mindspore::ProtoExporter::SetNodeOutputType
 mindspore/mindspore/ccsrc/debug/dump_proto.cc:mindspore::ProtoExporter::SetValueToProto

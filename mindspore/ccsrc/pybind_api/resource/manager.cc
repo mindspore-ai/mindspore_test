@@ -44,7 +44,7 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "backend/common/session/session_factory.h"
+#include "backend/common/kernel_graph/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"

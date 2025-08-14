@@ -27,7 +27,7 @@
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "backend/common/session/kernel_graph_mgr.h"
+#include "backend/common/kernel_graph/kernel_graph_mgr.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"

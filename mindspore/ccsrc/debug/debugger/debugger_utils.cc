@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "ir/tensor_new.h"
-#include "backend/common/session/session_basic.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/data_dump/tensor_info_collect.h"
 #include "debug/data_dump/tensor_statistic.h"

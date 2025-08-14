@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/session/exec_order_builder.h"
+#include "backend/common/kernel_graph/exec_order_builder.h"
 #include <algorithm>
 #include <string>
 #include <functional>

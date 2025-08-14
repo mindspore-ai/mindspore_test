@@ -26,7 +26,7 @@
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 #include "ir/tensor.h"
-#include "backend/common/session/kernel_graph_mgr.h"
+#include "backend/common/kernel_graph/kernel_graph_mgr.h"
 #include "abstract/abstract_value.h"
 #include "backend/ge_backend/runtime/graph_partition.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"

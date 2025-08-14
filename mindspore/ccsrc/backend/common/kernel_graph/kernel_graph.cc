@@ -19,7 +19,7 @@
 #include <queue>
 #include <set>
 #include "abstract/ops/primitive_infer_map.h"
-#include "backend/common/session/exec_order_builder.h"
+#include "backend/common/kernel_graph/exec_order_builder.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
