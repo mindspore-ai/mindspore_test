@@ -28,7 +28,7 @@ namespace device {
 namespace cpu {
 class CPUResManager : public DeviceResManager {
  public:
-  CPUResManager() = default;
+  CPUResManager() { Initialize(); }
   ~CPUResManager() override = default;
 
   void Initialize() override;
