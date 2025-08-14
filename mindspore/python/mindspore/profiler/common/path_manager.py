@@ -135,7 +135,8 @@ class PathManager:
             msg = f"The path does not exist: {path}"
             raise ProfilerPathErrorException(msg)
         if os.name != 'nt' and os.stat(path).st_uid != os.getuid():
-            msg = f"Path {path} owner[{os.stat(path).st_uid}] does not match the current user[{os.getuid()}]."
+            msg = (f"Path {path} owner[{os.stat(path).st_uid}] does not match the current user[{os.getuid()}]."
+                   f"Please execute chown -R $(id -un) {path}")
             raise ProfilerPathErrorException(msg)
 
     @classmethod
@@ -153,7 +154,7 @@ class PathManager:
             msg = f"Invalid path is a soft link: {path}"
             raise ProfilerPathErrorException(msg)
         if not os.access(path, os.W_OK):
-            msg = f"The path writeable permission check failed: {path}"
+            msg = f"The path writeable permission check failed: {path}. Please execute chmod -R 755 {path}"
             raise ProfilerPathErrorException(msg)
 
     @classmethod
@@ -171,7 +172,7 @@ class PathManager:
             msg = f"Invalid path is a soft link: {path}"
             raise ProfilerPathErrorException(msg)
         if not os.access(path, os.R_OK):
-            msg = f"The path readable permission check failed: {path}"
+            msg = f"The path readable permission check failed: {path}. Please execute chmod -R 755 {path}"
             raise ProfilerPathErrorException(msg)
 
     @classmethod
@@ -402,3 +403,27 @@ class PathManager:
         if os.stat(path).st_uid == 0 or os.stat(path).st_uid == os.getuid():
             return True
         return False
+
+    @classmethod
+    def check_path_is_other_writable(cls, path):
+        """Check whether the file or directory in the specified path has writable permissions for others."""
+        file_stat = os.stat(path)
+        if file_stat.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            msg = (f"File path {path} has group or others writable permissions, which is not allowed."
+                   f"Please execute chmod -R 755 {path}")
+            raise ProfilerPathErrorException(msg)
+
+    @classmethod
+    def check_path_is_owner_or_root(cls, path):
+        """Check path is owner or root."""
+        file_stat = os.stat(path)
+        current_uid = os.getuid()
+        file_uid = file_stat.st_uid
+        if file_uid not in (0, current_uid):
+            return False
+        return True
+
+    @classmethod
+    def check_path_is_executable(cls, path):
+        """Check path is executable"""
+        return os.access(path, os.X_OK)

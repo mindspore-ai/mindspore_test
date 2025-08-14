@@ -226,3 +226,8 @@ class HostSystem(Enum):
     DISK = "disk"
     NETWORK = "network"
     OSRT = "osrt"
+
+
+class MsprofModeName:
+    """msprof mode name"""
+    MSPROF_DYNAMIC_ENV = "PROFILING_MODE"

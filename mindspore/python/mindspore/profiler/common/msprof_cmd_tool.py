@@ -14,6 +14,7 @@
 # ============================================================================
 """Tool for managing Ascend msprof profiling commands and environment."""
 import os
+import pwd
 import json
 import shutil
 from functools import lru_cache
@@ -22,6 +23,7 @@ from typing import Dict, List, Optional
 from mindspore import log as logger
 from mindspore.profiler.common.command_executor import CommandExecutor
 from mindspore.profiler.common.constant import ExportType
+from mindspore.profiler.common.path_manager import PathManager
 
 
 class MsprofCmdTool:
@@ -120,6 +122,7 @@ class MsprofCmdTool:
         Raises:
             FileNotFoundError: If msprof or python3 command is not found.
         """
+        self._check_msprof_profile_path_is_valid()
         if not shutil.which(self._MSPROF_CMD):
             logger.warning(
                 "The msprof command is not found in PATH. Searching in environment variables..."
@@ -131,10 +134,43 @@ class MsprofCmdTool:
                 logger.info("Successfully added msprof command to PATH.")
             else:
                 raise FileNotFoundError("Failed to find msprof command in environment.")
-
+        else:
+            msprof_path = shutil.which(self._MSPROF_CMD)
+        self._check_msprof_permission(msprof_path)
         if not shutil.which("python3"):
             logger.warning("Failed to find python3 command in environment.")
             raise FileNotFoundError("Failed to find python3 command in environment.")
+
+    def _check_msprof_profile_path_is_valid(self):
+        """Check msprof profiler path is invalid."""
+        PathManager.check_directory_path_readable(self._msprof_profile_path)
+        PathManager.check_directory_path_writeable(self._msprof_profile_path)
+        PathManager.check_path_owner_consistent(self._msprof_profile_path)
+        PathManager.check_path_is_other_writable(self._msprof_profile_path)
+        if not PathManager.check_path_is_executable(self._msprof_profile_path):
+            raise PermissionError(f"The '{self._msprof_profile_path}' path is not executable."
+                                  f"Please execute chmod -R 755 {self._msprof_profile_path}")
+
+    def _check_msprof_permission(self, msprof_path):
+        """Check msprof path permissions."""
+        msprof_script_path = self._get_msprof_script_path(self._MSPROF_PY_PATH)
+        if not msprof_script_path:
+            raise FileNotFoundError(
+                "Failed to find msprof.py path. Perhaps the permission of the 'msprof' tool is unexecutable. "
+                "Please check the CANN environment. You can modify the 'msprof' file to an executable permission "
+                "through the chmod method."
+            )
+        if not PathManager.check_path_is_owner_or_root(msprof_script_path) or \
+                not PathManager.check_path_is_owner_or_root(msprof_path):
+            raise PermissionError(f"The '{msprof_script_path}' or '{msprof_path}' path and current owner have "
+                                  f"inconsistent permissions. Please execute "
+                                  f"chown {pwd.getpwuid(os.getuid()).pw_name} {msprof_script_path} and "
+                                  f"chown {pwd.getpwuid(os.getuid()).pw_name} {msprof_path}")
+        if not PathManager.check_path_is_executable(msprof_script_path) or \
+                not PathManager.check_path_is_executable(msprof_path):
+            raise PermissionError(f"The '{msprof_script_path}' path or '{msprof_path}' path is not executable."
+                                  f"Please execute chmod u+x {msprof_script_path} and "
+                                  f"chmod u+x {msprof_path}")
 
     def _find_msprof_path(self) -> Optional[str]:
         """Find msprof path in environment variables.
