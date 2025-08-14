@@ -1446,6 +1446,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
                     << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
                     << " in funcgraph:" << func_graph->ToString();
       output_addr->Swap(tensor_device_address.get());
+      kernel_tensor->set_managed_by_somas(output_kernel_tensor->managed_by_somas());
     }
 
     MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()

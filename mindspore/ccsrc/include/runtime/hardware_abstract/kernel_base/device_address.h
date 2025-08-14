@@ -353,9 +353,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   void set_stream_id(uint32_t stream_id);
   const uint32_t stream_id() const override;
 
-  bool managed_by_somas() const;
-  void set_managed_by_somas(bool managed_by_somas);
-
   void AddHeldByNode(const std::weak_ptr<ValueNode> &value_node);
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes() const;
   void ClearHeldByNodes();
@@ -481,7 +478,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
   // this Tuple is {2}.
   ShapeVector shape_vector_{};
-  bool managed_by_somas_{false};
 
   friend class KernelRuntime;
   friend class MemoryManager;

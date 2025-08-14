@@ -403,6 +403,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     } else {
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
+      new_kernel_tensor->set_managed_by_somas(input_kernel_tensors_[i]->managed_by_somas());
       new_device_tensor->set_from_mem_pool(true);
     }
     MS_LOG(DEBUG) << GetAID().Name() << " creates the dynamic ref device address:" << new_device_tensor.get()

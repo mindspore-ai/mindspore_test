@@ -428,6 +428,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
       }
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
+      new_kernel_tensor->set_managed_by_somas(input_kernel_tensors_[i]->managed_by_somas());
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Kernel tensor copy store replace kernel tensor:" << input_kernel_tensors_[i]->ToString()
         << " to:" << new_kernel_tensor->ToString() << " for actor:" << GetAID();

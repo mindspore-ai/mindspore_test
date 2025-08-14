@@ -381,9 +381,9 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     task_id_on_stream_ = task_id_on_stream;
   }
 
-  bool managed_by_somas() const { return device_address_->managed_by_somas(); }
+  bool managed_by_somas() const { return managed_by_somas_; }
 
-  void set_managed_by_somas(bool managed_by_somas) { device_address_->set_managed_by_somas(managed_by_somas); }
+  void set_managed_by_somas(bool managed_by_somas) { managed_by_somas_ = managed_by_somas; }
 
   ContinuousDeviceAddressesPtr continuous_device_addresses() const;
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
@@ -560,6 +560,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   bool need_sync_user_data_{false};
   // Thread lock for ptr_.
   mutable std::mutex ptr_mutex_;
+  bool managed_by_somas_{false};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 
