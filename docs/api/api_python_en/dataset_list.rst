@@ -3,7 +3,7 @@
 
 .. currentmodule:: {{ module }}
 
-{% if objname in ['ArgoverseDataset','InMemoryGraphDataset']%}
+{% if objname in ['ArgoverseDataset','InMemoryGraphDataset'] %}
 
 {{ fullname | underline }}
 
