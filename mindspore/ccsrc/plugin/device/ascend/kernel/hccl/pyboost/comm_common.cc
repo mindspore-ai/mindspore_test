@@ -25,7 +25,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
+#include "runtime/core/graph_executor/pre_launch/kernel_cache.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"

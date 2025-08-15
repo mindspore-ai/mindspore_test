@@ -40,10 +40,10 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/graph_scheduler/graph_compiler.h"
+#include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/graph_adapter.h"
-#include "runtime/graph_scheduler/actor/actor_common.h"
+#include "runtime/core/actors/base/actor_common.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
@@ -53,7 +53,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"

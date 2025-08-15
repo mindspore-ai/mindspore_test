@@ -167,7 +167,7 @@ set(MS_BACKEND_SUB_COMP
         backend/common/somas
         backend/ms_backend
         runtime/device
-        runtime/graph_scheduler
+        runtime/core
         runtime/pynative
         plugin/device/cpu/hal/device
         plugin/device/cpu/hal/hardware

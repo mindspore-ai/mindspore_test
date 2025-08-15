@@ -69,7 +69,7 @@
 "mindspore/mindspore/ccsrc/plugin/ascend/res_manager/collective/lowlatency_communication_group.h"       "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/ascend/res_manager/collective/lowlatency_communication_group.h"       "build/namespaces"
 "mindspore/mindspore/ccsrc/runtime/memory/mem_pool/mem_tracker.cc"                                 "whitespace/indent"
-"mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc"                    "runtime/references"
+"mindspore/mindspore/ccsrc/runtime/core/actors/base/data_prepare_actor.cc"                    "runtime/references"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "readability/namespace"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "whitespace/indent"
 "mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/common/utils.h"                               "whitespace/empty_loop_body"

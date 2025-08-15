@@ -27,9 +27,9 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/graph_scheduler/actor/actor_common.h"
-#include "runtime/graph_scheduler/scheduler_helper.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/actors/base/actor_common.h"
+#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 
 namespace mindspore::pynative {
 namespace {

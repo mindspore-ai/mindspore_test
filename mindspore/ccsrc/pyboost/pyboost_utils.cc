@@ -22,7 +22,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"

@@ -21,8 +21,8 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
-#include "runtime/graph_scheduler/pre_launch_comm.h"
-#include "runtime/graph_scheduler/graph_scheduler.h"
+#include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {

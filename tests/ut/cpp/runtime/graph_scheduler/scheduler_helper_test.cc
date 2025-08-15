@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/graph_scheduler/scheduler_helper.h"
+#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "abstract/abstract_function.h"
 #include "common/common_test.h"
 #include "mindspore/ops/op_def/comparison_ops.h"

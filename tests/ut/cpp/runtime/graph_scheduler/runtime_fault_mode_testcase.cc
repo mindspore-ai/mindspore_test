@@ -15,7 +15,7 @@
  */
 
 #include "tests/ut/cpp/common/device_common_test.h"
-#include "runtime/graph_scheduler/scheduler_helper.h"
+#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

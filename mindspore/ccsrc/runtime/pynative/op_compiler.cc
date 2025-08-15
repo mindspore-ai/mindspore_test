@@ -31,7 +31,7 @@
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 
 namespace mindspore {
