@@ -62,7 +62,7 @@ bool GraphCaptureManager::CheckKernelSupportCapture(const KernelRunnerPtr &kerne
   }
 
   auto &llm_manager = LLMManager::GetInstance();
-  if (llm_manager.need_force_resize(kernel_mod->kernel_name())) {
+  if (llm_manager.need_force_resize(kernel_mod->kernel_name()) || kernel_runner->is_dynamic_value()) {
     return false;
   }
 
