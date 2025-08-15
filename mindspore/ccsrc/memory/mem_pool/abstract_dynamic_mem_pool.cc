@@ -124,37 +124,39 @@ inline MemBuf *MemBufAllocator::SearchAvailableMemBuf(size_t size) {
   for (auto backward_it = free_mem_bufs_.rbegin(); backward_it != free_mem_bufs_.rend(); backward_it++) {
     auto mem_buf = *backward_it;
     auto next_buf = mem_buf->next_;
-    if (next_buf != nullptr && next_buf->status_ == MemBufStatus::kMemBufEagerFree &&
-        mem_buf->size_ + next_buf->size_ >= size) {
-      // Located candidates, try map and split.
-      auto need_map_size = size - mem_buf->size_;
-      auto mapped_size = mem_mapper_(need_map_size, next_buf->addr_);
-      if (mapped_size != need_map_size) {
-        MS_LOG(WARNING) << "Map mem buf : " << mem_buf->ToJson() << ", next buf : " << next_buf->ToJson()
-                        << ", size : " << size << ", need_map_size : " << need_map_size
-                        << ", mapped_size : " << mapped_size << " failed.";
-        return nullptr;
-      }
-      // Update mem buf.
-      free_mem_bufs_.erase(mem_buf);
-      mem_buf->size_ = size;
-      mem_buf->status_ = MemBufStatus::kMemBufUsed;
-      // Remove eager free buf and try update it.
-      eager_free_mem_bufs_.erase(next_buf);
-      next_buf->addr_ = static_cast<uint8_t *>(next_buf->addr_) + need_map_size;
-      next_buf->size_ = next_buf->size_ - need_map_size;
-      // If next buf is empty, remove it or update remain eager free mem buf.
-      if (next_buf->size_ == 0) {
-        mem_buf->next_ = next_buf->next_;
-        if (next_buf->next_ != nullptr) {
-          next_buf->next_->prev_ = mem_buf;
-        }
-        delete next_buf;
-      } else {
-        eager_free_mem_bufs_.insert(next_buf);
-      }
-      return mem_buf;
+    if (next_buf == nullptr || next_buf->status_ == MemBufStatus::kMemBufEagerFree ||
+        mem_buf->size_ + next_buf->size_ < size) {
+      continue;
     }
+
+    // Located candidates, try map and split.
+    auto need_map_size = size - mem_buf->size_;
+    auto mapped_size = mem_mapper_(need_map_size, next_buf->addr_);
+    if (mapped_size != need_map_size) {
+      MS_LOG(WARNING) << "Map mem buf : " << mem_buf->ToJson() << ", next buf : " << next_buf->ToJson()
+                      << ", size : " << size << ", need_map_size : " << need_map_size
+                      << ", mapped_size : " << mapped_size << " failed.";
+      return nullptr;
+    }
+    // Update mem buf.
+    free_mem_bufs_.erase(mem_buf);
+    mem_buf->size_ = size;
+    mem_buf->status_ = MemBufStatus::kMemBufUsed;
+    // Remove eager free buf and try update it.
+    eager_free_mem_bufs_.erase(next_buf);
+    next_buf->addr_ = static_cast<uint8_t *>(next_buf->addr_) + need_map_size;
+    next_buf->size_ = next_buf->size_ - need_map_size;
+    // If next buf is empty, remove it or update remain eager free mem buf.
+    if (next_buf->size_ == 0) {
+      mem_buf->next_ = next_buf->next_;
+      if (next_buf->next_ != nullptr) {
+        next_buf->next_->prev_ = mem_buf;
+      }
+      delete next_buf;
+    } else {
+      eager_free_mem_bufs_.insert(next_buf);
+    }
+    return mem_buf;
   }
   return nullptr;
 }
@@ -1129,20 +1131,22 @@ const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree(
 
 size_t AbstractDynamicMemPool::ReleaseFreeBlocks() {
   MS_LOG(INFO) << "Release free blocks start.";
-  size_t release_free_size = 0;
+  size_t release_size = 0;
   for (auto &stream_id_allocator : stream_id_allocators_) {
-    release_free_size += stream_id_allocator.second->ReleaseFreeBlocks();
+    release_size += stream_id_allocator.second->ReleaseFreeBlocks();
   }
-  MS_LOG(INFO) << "Release free blocks size : " << release_free_size << ".";
-  return release_free_size;
+  MS_LOG(INFO) << "Release free blocks size : " << release_size << ".";
+  return release_size;
 }
 
 size_t AbstractDynamicMemPool::ReleaseCustomFreeBlocks() {
-  size_t release_free_size = 0;
+  MS_LOG(INFO) << "Release custom free blocks start.";
+  size_t release_size = 0;
   for (auto &customized_allocator : customized_allocators_) {
-    release_free_size += customized_allocator.second->ReleaseFreeBlocks();
+    release_size += customized_allocator.second->ReleaseFreeBlocks();
   }
-  return release_free_size;
+  MS_LOG(INFO) << "Release custom free blocks size : " << release_size << ".";
+  return release_size;
 }
 
 // The statistics information.
