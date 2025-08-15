@@ -1002,6 +1002,9 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 }
 
 void CollectiveManager::ClearUniqueID(const std::string &group_name) {
+  if (!need_host_collective_) {
+    return;
+  }
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
   MS_LOG(INFO) << "Start clearing unique id for group: " << group_name;
   host_comm_lib_instance_->ClearUniqueID(group_name);
