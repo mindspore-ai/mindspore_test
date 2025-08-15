@@ -3593,8 +3593,7 @@ class Cell(Cell_):
                 introduced by optimizer shard are recomputed in auto parallel or semi auto parallel mode.
                 Default: ``False`` .
         """
-        if context._get_mode() == context.PYNATIVE_MODE:
-            self._recompute_cell = recompute_registry.get()(self.construct)
+        self._recompute_cell = recompute_registry.get()(self.construct)
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
