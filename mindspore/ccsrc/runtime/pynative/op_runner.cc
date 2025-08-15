@@ -588,8 +588,9 @@ void UpdateOutputShape(const std::vector<EdgePtr> &output_edges) {
     MS_EXCEPTION_IF_NULL(edge);
     const auto &kernel_tensor = edge->kernel_tensor_;
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    kernel_tensor->set_host_shape(kernel_tensor->host_info_exist() ? kernel_tensor->GetShapeVector()
-                                                                   : kernel_tensor->host_shape());
+    auto device_address = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_address);
+    device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   }
 }
 
@@ -722,7 +723,7 @@ void UpdateOutputDeviceInfo(const std::vector<EdgePtr> &edges, const CNodePtr &k
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     const auto &device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
-    kernel_tensor->set_host_shape(kernel_tensor->GetShapeVector());
+    device_address->SetShapeVector(kernel_tensor->GetShapeVector());
     device_address->SetSize(output_size_list[i]);
   }
 }
@@ -752,7 +753,7 @@ void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, c
   new_kernel_tensor->set_device_ptr(nullptr);
   auto new_device_address = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_address);
-  new_kernel_tensor->set_host_shape(shape);
+  new_device_address->SetShapeVector(shape);
   new_device_address->SetSize(tensor_size);
   new_device_address->set_from_persistent_mem(tensor->is_parameter());
 

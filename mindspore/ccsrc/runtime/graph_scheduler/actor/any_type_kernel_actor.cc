@@ -135,7 +135,7 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
     }
     auto device_tensor = kernel_tensor->device_address().get();
     if (kernel_tensor->user_data() == nullptr) {
-      get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
+      get_shape_and_type_string(device_tensor->GetShapeVector(), device_tensor->type_id());
       continue;
     }
 
@@ -159,7 +159,7 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
     } else if (abstract->isa<abstract::AbstractTensor>()) {
       id = id + "Tensor_";
     }
-    get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
+    get_shape_and_type_string(device_tensor->GetShapeVector(), device_tensor->type_id());
   }
   return id;
 }
@@ -327,7 +327,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
 
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->host_shape(), device_context->device_context_key().device_name_,
+        device_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
         device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       auto other_type_device_tensor = kernel_tensor->device_address();
@@ -373,7 +373,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
                    << " node device tensor:" << device_tensor->ToString();
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {input_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->host_shape(), real_device_context->device_context_key().device_name_,
+        device_tensor->GetShapeVector(), real_device_context->device_context_key().device_name_,
         real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       auto other_type_device_tensor = kernel_tensor->device_address();

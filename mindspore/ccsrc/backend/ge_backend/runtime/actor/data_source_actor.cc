@@ -230,8 +230,8 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         }
       }
 
-      if (IsDynamic(device_tensor->host_shape())) {
-        device_tensor->set_host_shape(host_tensor->shape());
+      if (IsDynamic(device_tensor->GetShapeVector())) {
+        device_tensor->SetShapeVector(host_tensor->shape());
       }
     }
     AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors);

@@ -56,7 +56,7 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     MS_EXCEPTION_IF_NULL(abs);
     auto input_kernel_tensor = std::make_shared<KernelTensor>(abs->GetShape(), abs->GetType(), nullptr);
     input_kernel_tensor->set_device_address(input_x_address);
-    input_kernel_tensor->set_host_shape(x_tensor->shape());
+    input_x_address->SetShapeVector(x_tensor->shape());
     if (!input_kernel_tensor->host_info_exist()) {
       input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
                                        std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
@@ -118,7 +118,7 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     MS_EXCEPTION_IF_NULL(x_abs);
     auto input_kernel_tensor = std::make_shared<KernelTensor>(x_abs->GetShape(), x_abs->GetType(), nullptr);
     input_kernel_tensor->set_device_address(input_x_address);
-    input_kernel_tensor->set_host_shape(x_tensor->shape());
+    input_x_address->SetShapeVector(x_tensor->shape());
     if (!input_kernel_tensor->host_info_exist()) {
       input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
                                        std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
@@ -127,7 +127,7 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr 
     MS_EXCEPTION_IF_NULL(out_abs);
     auto output_kernel_tensor = std::make_shared<KernelTensor>(out_abs->GetShape(), out_abs->GetType(), nullptr);
     output_kernel_tensor->set_device_address(output_address);
-    output_kernel_tensor->set_host_shape(outputs[0]->shape());
+    output_address->SetShapeVector(outputs[0]->shape());
     if (!output_kernel_tensor->host_info_exist()) {
       output_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(outputs[0]->shape()),
                                         std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);

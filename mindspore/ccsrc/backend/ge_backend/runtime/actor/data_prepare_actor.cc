@@ -194,7 +194,7 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   MS_EXCEPTION_IF_NULL(input_param);
   auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(device_address);
-  if (!input_param->has_dynamic_shape() && !IsDynamic(device_address->host_shape())) {
+  if (!input_param->has_dynamic_shape() && !IsDynamic(device_address->GetShapeVector())) {
     return;
   }
 
@@ -930,7 +930,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       if (device_tensor->GetDeviceType() != device::GetDeviceTypeByName(device_name)) {
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
           {backend_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-          device_tensor->host_shape(), device_name, device_id);
+          device_tensor->GetShapeVector(), device_name, device_id);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         host_kernel_tensor = kernel_tensor;
         host_tensor_address = host_kernel_tensor->device_address();

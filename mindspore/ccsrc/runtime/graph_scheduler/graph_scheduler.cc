@@ -3564,7 +3564,7 @@ void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_nod
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      old_kernel_tensor->host_shape(), device_context->device_context_key().device_name_,
+      old_kernel_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     const auto &other_type_device_tensor = kernel_tensor->device_address();
@@ -3618,7 +3618,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
                      << ", type:" << device_context->GetDeviceType();
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
           {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-          old_kernel_tensor->host_shape(), device_context->device_context_key().device_name_,
+          old_kernel_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
           device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         const auto &other_type_device_tensor = kernel_tensor->device_address();
@@ -3642,7 +3642,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      old_kernel_tensor->host_shape(), device_context->device_context_key().device_name_,
+      old_kernel_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     const auto &other_type_device_tensor = kernel_tensor->device_address();
@@ -3716,8 +3716,8 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, index}, nullptr, sub_device_tensor->GetSize(), sub_device_tensor->format(),
-      sub_device_tensor->type_id(), sub_kernel_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+      sub_device_tensor->type_id(), sub_kernel_tensor->GetShapeVector(),
+      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
     const auto &new_device_tensor = kernel_tensor->device_address();

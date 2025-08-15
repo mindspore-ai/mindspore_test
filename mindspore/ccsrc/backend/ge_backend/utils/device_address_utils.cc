@@ -333,9 +333,10 @@ std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValu
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, output_idx}, nullptr, tensor_size, output_format, output_type_id, {}, node_target, device_id);
-  kernel_tensor->set_host_shape(kernel_tensor->GetShapeVector());
-  kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
   device::DeviceAddressPtr address = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(address);
+  address->SetShapeVector(kernel_tensor->GetShapeVector());
+  kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
   MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(value_node) << " addr:" << address
                 << " size:" << tensor_size << " format:" << output_format << " type:" << output_type_id
                 << " shape:" << kernel_tensor->GetShapeVector();
@@ -417,7 +418,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
     old_device_address->pointer_ref_count()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
     old_kernel_tensor->format(), old_device_address->type_id(), device_name, device_id,
     old_device_address->stream_id());
-  new_device_address->set_host_shape(old_kernel_tensor->host_shape());
+  new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_address(new_device_address);

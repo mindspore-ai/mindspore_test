@@ -405,7 +405,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
       node_device_address->pointer_ref_count()->ptr(), node_device_address->size(),
       node_device_address->GetShapeVector(), node_kernel_tensor->format(), node_device_address->type_id(), device_name,
       device_id, node_device_address->stream_id());
-    new_device_address->set_host_shape(node_kernel_tensor->host_shape());
+    new_device_address->SetShapeVector(node_kernel_tensor->GetShapeVector());
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     new_kernel_tensor->set_device_address(new_device_address);

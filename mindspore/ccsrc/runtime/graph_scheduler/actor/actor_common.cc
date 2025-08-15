@@ -891,11 +891,12 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
 
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
-  if (!IsDynamic(kernel_tensor->host_shape()) && !graph_parameter_store->IsPositionDynamic(outer_index, inner_index)) {
+  if (!IsDynamic(kernel_tensor->GetShapeVector()) &&
+      !graph_parameter_store->IsPositionDynamic(outer_index, inner_index)) {
     MS_LOG(DEBUG) << "No need to update dynamic shape and size, host shape dynamic is "
-                  << IsDynamic(kernel_tensor->host_shape()) << ", graph parameter store outer index: " << outer_index
-                  << ", inner index: " << inner_index << ", dynamic is "
-                  << graph_parameter_store->IsPositionDynamic(outer_index, inner_index);
+                  << IsDynamic(kernel_tensor->GetShapeVector())
+                  << ", graph parameter store outer index: " << outer_index << ", inner index: " << inner_index
+                  << ", dynamic is " << graph_parameter_store->IsPositionDynamic(outer_index, inner_index);
     return;
   }
 
@@ -1029,8 +1030,7 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device::GetDeviceNameByType(device_type), MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
-    auto new_kernel_tensor =
-      std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr, ShapeVector{});
+    auto new_kernel_tensor = std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr);
     new_kernel_tensor->set_size(LongToSize(tensor->DataNBytes()));
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Refresh store device tensor, from: " << new_device_tensor.get() << ", to null,"

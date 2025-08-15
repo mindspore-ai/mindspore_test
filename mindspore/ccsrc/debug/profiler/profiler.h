@@ -263,7 +263,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
           std::vector<ShapeVector> input_shapes;                                                                       \
           std::vector<std::string> input_types;                                                                        \
           for (auto &tensor : input_tensor) {                                                                          \
-            input_shapes.emplace_back(tensor->host_shape());                                                           \
+            input_shapes.emplace_back(tensor->GetShapeVector());                                                       \
             input_types.emplace_back(tensor->GetType()->ToString());                                                   \
           }                                                                                                            \
           mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordShapesData(brief_name, input_shapes, input_types); \

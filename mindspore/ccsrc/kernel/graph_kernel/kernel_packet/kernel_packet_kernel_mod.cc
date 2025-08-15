@@ -128,8 +128,7 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
       MS_EXCEPTION_IF_NULL(host_context);
       MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
       auto device_address = host_context->device_res_manager_->CreateDeviceAddress();
-      inputs_cache_[i] =
-        std::make_shared<KernelTensor>(device_address, shape, ori->GetType(), kValueAny, ShapeVector{});
+      inputs_cache_[i] = std::make_shared<KernelTensor>(device_address, shape, ori->GetType(), kValueAny);
       if (inputs_cache_[i]->user_data() == nullptr) {
         inputs_cache_[i]->set_user_data(std::make_shared<UserData>());
       }

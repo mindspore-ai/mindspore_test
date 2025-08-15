@@ -1169,7 +1169,7 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
   MS_EXCEPTION_IF_NULL(device_tensor);
   MS_EXCEPTION_IF_NULL(input_tensor);
   // update shape and size, for dynamic shape
-  if (!input_node->has_dynamic_shape() && !IsDynamic(device_tensor->host_shape())) {
+  if (!input_node->has_dynamic_shape() && !IsDynamic(device_tensor->GetShapeVector())) {
     return;
   }
 
@@ -1421,7 +1421,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),
-      output_addr->host_shape(), kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
+      output_addr->GetShapeVector(), kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(output_addr->stream_id());
@@ -1454,7 +1454,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
                   << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
                   << ", origin output device tensor: " << output_addr;
 
-    tensor_device_address->set_host_shape(out_tensor->shape());
+    tensor_device_address->SetShapeVector(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
     outputs->emplace_back(out_tensor);
     output_types->emplace_back(kernel_tensor->GetType());

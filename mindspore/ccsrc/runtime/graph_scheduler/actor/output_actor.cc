@@ -250,7 +250,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     } else {
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-        device_tensor->type_id(), parameter_kernel_tensor->host_shape(),
+        device_tensor->type_id(), parameter_kernel_tensor->GetShapeVector(),
         device_contexts_[output_position]->device_context_key().device_name_,
         device_contexts_[output_position]->device_context_key().device_id_);
       kernel_tensor->SetType(parameter_kernel_tensor->GetType());
@@ -484,8 +484,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
       auto shape = std::make_shared<abstract::TupleShape>();
       auto type = std::make_shared<Tuple>();
       auto temp_device_address = device_contexts_[output_position]->device_res_manager_->CreateDeviceAddress();
-      auto kernel_tensor =
-        std::make_shared<kernel::KernelTensor>(temp_device_address, shape, type, nullptr, ShapeVector{});
+      auto kernel_tensor = std::make_shared<kernel::KernelTensor>(temp_device_address, shape, type, nullptr);
       auto tensor_device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(tensor_device_address);
       tensor->set_device_address(tensor_device_address);
@@ -548,7 +547,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), node_kernel_tensor->host_shape(), device_context->device_context_key().device_name_,
+      device_tensor->type_id(), node_kernel_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
@@ -643,7 +642,7 @@ void OutputActor::HandleOutput() {
     auto node_with_index = device_tensor->GetNodeIndex();
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
-    tensor_device_address->set_host_shape(tensor->shape());
+    tensor_device_address->SetShapeVector(tensor->shape());
 
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
