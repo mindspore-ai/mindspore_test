@@ -96,11 +96,9 @@ struct BACKEND_EXPORT MemBuf : EventBase {
   void *addr_;
   uint32_t stream_id_;
   MemBlock *mem_block_;
-
   MemBufStatus status_;
-
-  std::string owner_name_;
   memory::mem_pool::MemType alloc_type_{memory::mem_pool::MemType::kOther};
+  std::string owner_name_;
 };
 
 struct MemBufComparator {
@@ -265,8 +263,8 @@ class BACKEND_EXPORT MemBufAllocator {
         mem_block_cleaner_(mem_block_cleaner),
         mem_mapper_(mem_mapper),
         mem_eager_freer_(mem_eager_freer),
-        enable_eager_free_(enable_eager_free),
         stream_id_(stream_id),
+        enable_eager_free_(enable_eager_free),
         is_persistent_(is_persistent),
         is_small_(is_small),
         is_customized_(is_customized) {
@@ -303,8 +301,9 @@ class BACKEND_EXPORT MemBufAllocator {
 
   std::string BriefInfo() const {
     std::stringstream ss;
-    ss << "Mem buf allocator, is persistent : " << is_persistent_ << ", stream id : " << stream_id_
-       << ", is small: " << is_small_ << ".";
+    ss << "Mem buf allocator, enable vmm : " << enable_eager_free_ << ", is persistent : " << is_persistent_
+       << ", stream id : " << stream_id_ << ", is small : " << is_small_ << ", is customized : " << is_customized_
+       << ".";
     return ss.str();
   }
 
@@ -322,7 +321,6 @@ class BACKEND_EXPORT MemBufAllocator {
   std::function<bool(MemBlock *)> mem_block_cleaner_;
   std::function<size_t(size_t size, void *addr)> mem_mapper_;
   std::function<size_t(void *addr, size_t size)> mem_eager_freer_;
-  bool enable_eager_free_;
 
   std::list<MemBlock *> mem_blocks_;
   using MemAllocator = memory::mem_pool::PooledAllocator<MemBuf *>;
@@ -333,6 +331,7 @@ class BACKEND_EXPORT MemBufAllocator {
   MemBuf *search_key_;
 
   uint32_t stream_id_;
+  bool enable_eager_free_;
   bool is_persistent_;
   bool is_small_;
   bool is_customized_;

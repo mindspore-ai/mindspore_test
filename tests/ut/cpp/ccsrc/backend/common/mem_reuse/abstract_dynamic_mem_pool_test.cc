@@ -61,7 +61,8 @@ class TestMemBufAllocator : public UT::Common {
 TEST_F(TestMemBufAllocator, test_brief_info) {
   auto allocator = GenerateMemBufAllocatorPtr();
   const auto &brief_info = allocator->BriefInfo();
-  EXPECT_EQ("Mem buf allocator, is persistent : 1, stream id : 0, is small: 0.", brief_info);
+  EXPECT_EQ("Mem buf allocator, enable vmm : 1, is persistent : 1, stream id : 0, is small : 0, is customized : 0.",
+            brief_info);
 }
 
 /// Feature: test actual peak size for MemBufAllocator.
