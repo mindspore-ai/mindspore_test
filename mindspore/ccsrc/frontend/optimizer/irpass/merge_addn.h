@@ -59,6 +59,7 @@ class AddNZeroFilter : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
   bool IsReshapeZeros(const AnfNodePtr &node);
+
   void Visit(const CNodePtr &cnode) override;
 
   void Reset();
@@ -66,7 +67,6 @@ class AddNZeroFilter : public AnfVisitor {
  private:
   std::vector<AnfNodePtr> filtered_Xs_{}, Xs_{};
   bool has_zero_like_{false};
-  bool only_one_dynamic_zero_like_{false};
 };
 
 // {PrimAddN, {kPrimMakeTuple, Xs}}

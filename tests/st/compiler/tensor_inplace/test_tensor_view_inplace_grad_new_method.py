@@ -744,18 +744,19 @@ def test_view_and_inplace_while():
 
             return x, y
 
+    @ms.jit(backend="ms_backend")
+    def grad_under_graph(net, x, y):
+        return grad(net, grad_position=(0, 1))(x, y)
 
     x_np = np.ones([4, 8]).astype(np.float32)
     y_np = 2 * np.ones([4, 8]).astype(np.float32)
     net = Net()
     out_back_expect = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
 
-    ms.set_context(mode=ms.GRAPH_MODE)
-    out_back_graph = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
+    out_back_graph = grad_under_graph(net, Tensor(x_np), Tensor(y_np))
     assert np.allclose(out_back_expect[0].asnumpy(), out_back_graph[0].asnumpy())
     assert np.allclose(out_back_expect[1].asnumpy(), out_back_graph[1].asnumpy())
 
-    ms.set_context(mode=ms.PYNATIVE_MODE)
     net.construct = ms.jit(net.construct, backend="ms_backend")
     out_back_jit = grad(net, grad_position=(0, 1))(Tensor(x_np), Tensor(y_np))
     assert np.allclose(out_back_expect[0].asnumpy(), out_back_jit[0].asnumpy())

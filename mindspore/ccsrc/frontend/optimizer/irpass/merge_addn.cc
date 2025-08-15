@@ -165,7 +165,7 @@ AnfNodePtr AddNZeroFilter::operator()(const OptimizerPtr &, const AnfNodePtr &no
   Reset();
   AnfVisitor::Match(prim::kPrimAddN, {IsCNode})(node);
 
-  if (only_one_dynamic_zero_like_ || filtered_Xs_.empty() || node->func_graph() == nullptr) {
+  if (filtered_Xs_.empty() || node->func_graph() == nullptr) {
     return nullptr;
   }
 
@@ -183,6 +183,7 @@ AnfNodePtr AddNZeroFilter::operator()(const OptimizerPtr &, const AnfNodePtr &no
   if (!has_zero_like_) {
     return nullptr;
   }
+
   auto cnode = node->cast<CNodePtr>();
   auto addn = NewValueNode(GetValueNode(cnode->input(0)));
   auto fg = node->func_graph();
@@ -210,24 +211,25 @@ void AddNZeroFilter::Visit(const CNodePtr &cnode) {
 
   // {kPrimMakeTuple, X1, X2, ...}
   filtered_Xs_.push_back(NewValueNode(prim::kPrimMakeTuple));
-  std::vector<AnfNodePtr> dynamic_zero_likes_nodes;
+  AnfNodePtr dynamic_zero_likes_node = nullptr;
   for (auto &x : Xs_) {
     if (!IsPrimitiveCNode(x, prim::kPrimZerosLike) && !IsReshapeZeros(x)) {
       filtered_Xs_.push_back(x);
     } else {
       has_zero_like_ = true;
-      MS_EXCEPTION_IF_NULL(x);
-      if (common::AnfAlgo::IsDynamicShape(x)) {
-        dynamic_zero_likes_nodes.push_back(x);
+      if (common::AnfAlgo::IsDynamicRankNode(x)) {
+        dynamic_zero_likes_node = x;
       }
     }
   }
 
-  if (!dynamic_zero_likes_nodes.empty()) {
-    filtered_Xs_.push_back(dynamic_zero_likes_nodes[0]);
+  if (dynamic_zero_likes_node != nullptr) {
+    filtered_Xs_.push_back(dynamic_zero_likes_node);
   }
-  if (dynamic_zero_likes_nodes.size() == 1) {
-    only_one_dynamic_zero_like_ = true;
+
+  // If filtered_Xs's size same as inputs, no exclude element, no need generate new node
+  if (filtered_Xs_.size() == inputs.size()) {
+    Reset();
   }
 }
 
@@ -235,7 +237,6 @@ void AddNZeroFilter::Reset() {
   Xs_.clear();
   filtered_Xs_.clear();
   has_zero_like_ = false;
-  only_one_dynamic_zero_like_ = false;
 }
 
 AnfNodePtr AddNCheckDump::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
