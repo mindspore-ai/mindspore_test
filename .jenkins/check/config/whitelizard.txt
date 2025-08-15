@@ -38,6 +38,7 @@ mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_runner.cc:mindspo
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchKernel
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/output_actor.cc:mindspore::runtime::OutputActor::HandleOutput
 mindspore/mindspore/ccsrc/pybind_api/init.cc:PYBIND11_MODULE
+mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute

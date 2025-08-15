@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include <algorithm>
 #include <fstream>
 #include <map>
