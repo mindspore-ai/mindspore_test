@@ -39,6 +39,24 @@ if size % 2 != 0:
     raise RuntimeError("Group size should be divided by 2 exactly.")
 
 
+def log_function_entry_exit(func):
+    """
+    Feature: log function entry exit
+    Description: add log for func
+    Expectation: success
+    """
+    def wrapper(*args, **kwargs):
+        # 打印进入函数的信息
+        print(f"Entering comm function: {func.__name__}", flush=True)
+        # 调用原函数
+        result = func(*args, **kwargs)
+        # 打印退出函数的信息
+        print(f"Exiting comm function: {func.__name__}", flush=True)
+        return result
+    return wrapper
+
+
+@log_function_entry_exit
 def test_all_gather_object():
     """
     Feature: test distributed op
@@ -67,6 +85,7 @@ def test_all_gather_object():
         all_gather_object(1, obj)
 
 
+@log_function_entry_exit
 def test_broadcast_object_list():
     """
     Feature: test distributed op
@@ -96,6 +115,7 @@ def test_broadcast_object_list():
         broadcast_object_list(1)
 
 
+@log_function_entry_exit
 def test_gather_object():
     """
     Feature: test distributed op
@@ -125,6 +145,7 @@ def test_gather_object():
             gather_object(obj, 1)
 
 
+@log_function_entry_exit
 def test_hccl_scatter_object_list():
     """
     Feature: test distributed op
