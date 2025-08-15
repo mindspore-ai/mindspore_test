@@ -80,15 +80,20 @@ tensor::TensorPtr WeightQuantBatchMatmulV2AscendCustomize(
     int kInt4ShapeMul = 2;
     weight_shape.back() *= kInt4ShapeMul;
     const ShapeVector &new_weight_shape = weight_shape;
-    auto weight_tensor_cpu = weight_tensor->cpu();
-    new_weight_tensor = tensor::from_buffer(weight_tensor_cpu->data_type(), new_weight_shape,
-                                            weight_tensor_cpu->data_c(), weight_tensor_cpu->data_type());
+    new_weight_tensor =
+      std::make_shared<tensor::Tensor>(weight_tensor->data_type(), new_weight_shape, weight_tensor->device_address());
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, new_weight_tensor,
                                 antiquant_scale_tensor, antiquant_offset_tensor, quant_scale_tensor,
                                 quant_offset_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+
+  if (tensor_type->element()->type_id() == kNumberTypeInt4) {
+    auto device_address = std::static_pointer_cast<device::DeviceAddress>(new_weight_tensor->device_address());
+    size_t int4_real_size = device_address->GetSize() / kSizeTwo;
+    device_address->SetSize(int4_real_size);
+  }
 
   TensorPtr x_tensor_trans = x_tensor;
   if (transpose_x_imm) {
