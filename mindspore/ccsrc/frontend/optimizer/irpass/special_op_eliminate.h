@@ -41,7 +41,6 @@
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "utils/tensor_construct_utils.h"
-#include "utils/ms_utils_secure.h"
 
 namespace mindspore {
 namespace opt {

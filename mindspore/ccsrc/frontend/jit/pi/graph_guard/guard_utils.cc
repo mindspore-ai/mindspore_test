@@ -18,6 +18,7 @@
 #include <regex>
 
 #include "ir/map_tensor.h"
+#include "ir/quantization_param.h"
 #include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "frontend/operator/primitive_py.h"
