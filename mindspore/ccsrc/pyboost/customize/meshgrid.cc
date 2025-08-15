@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/view.h"
 #include "kernel/ascend/pyboost/auto_generate/broadcast_to.h"
 #include "op_def/op_enum.h"

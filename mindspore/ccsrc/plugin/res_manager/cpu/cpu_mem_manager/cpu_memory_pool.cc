@@ -21,7 +21,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/convert_utils_base.h"
 #include "utils/distributed_meta.h"
 

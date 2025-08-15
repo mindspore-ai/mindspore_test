@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common_test.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

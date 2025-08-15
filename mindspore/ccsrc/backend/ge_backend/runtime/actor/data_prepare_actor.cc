@@ -638,7 +638,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   MS_LOG(DEBUG) << "Prepare data for control value node:" << node->DebugString() << " index:" << index;
   auto node_value = node->value();
   if (common::AnfAlgo::IsDynamicSequence(node)) {
-    auto tensor = AnfAlgo::SequenceToTensor(node_value);
+    auto tensor = common::AnfAlgo::SequenceToTensor(node_value);
     parser->AddControlNodeTensor(tensor);
     node_value = tensor;
     AnfAlgo::UpdateValueNodeShape(node);

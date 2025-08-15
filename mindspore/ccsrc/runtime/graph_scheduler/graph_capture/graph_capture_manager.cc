@@ -16,7 +16,7 @@
 
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include <string>
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/llm_manager.h"
 
 namespace mindspore {

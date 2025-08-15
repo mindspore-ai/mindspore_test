@@ -69,10 +69,10 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "runtime/device/move_to.h"
+#include "runtime/graph_scheduler/move_to.h"
 #include "tools/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 

@@ -22,8 +22,8 @@
 #include <map>
 #include <vector>
 #include "utils/ms_context.h"
-#include "include/common/visible.h"
-#include "include/common/runtime_conf/thread_bind_core.h"
+#include "runtime/utils/visible.h"
+#include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
@@ -38,7 +38,7 @@ const char kKernelLaunchGroupConf[] = "KernelLaunchGroupConf";
 const char kSimulationLevelKey[] = "MS_SIMULATION_LEVEL";
 constexpr auto kMsDevLaunchBlocking = "MS_DEV_LAUNCH_BLOCKING";
 
-class COMMON_EXPORT RuntimeConf {
+class RUNTIME_UTILS_EXPORT RuntimeConf {
  public:
   RuntimeConf();
   ~RuntimeConf();
@@ -153,7 +153,7 @@ class COMMON_EXPORT RuntimeConf {
   std::map<std::string, bool> conf_status_;
 };
 
-COMMON_EXPORT void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num);
+RUNTIME_UTILS_EXPORT void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num);
 }  // namespace runtime
 }  // namespace mindspore
 

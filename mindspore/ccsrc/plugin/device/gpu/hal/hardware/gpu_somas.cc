@@ -21,7 +21,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {

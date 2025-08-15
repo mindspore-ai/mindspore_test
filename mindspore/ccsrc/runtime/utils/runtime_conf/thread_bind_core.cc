@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/runtime_conf/thread_bind_core.h"
+#include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 
 #ifdef __linux__
 #define BIND_CORE
@@ -33,7 +33,7 @@
 #include "utils/file_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/distributed_meta.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {

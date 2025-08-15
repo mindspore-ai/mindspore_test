@@ -19,9 +19,9 @@
 #include <string>
 #include "utils/stream_guard.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/pynative/op_runner.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"

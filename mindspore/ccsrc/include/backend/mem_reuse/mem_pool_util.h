@@ -20,7 +20,7 @@
 #include <atomic>
 #include <string>
 
-#include "memory/mem_pool/mem_env.h"
+#include "runtime/memory/mem_pool/mem_env.h"
 #include "include/backend/visible.h"
 #include "utils/ms_utils.h"
 

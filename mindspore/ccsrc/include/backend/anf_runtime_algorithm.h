@@ -313,8 +313,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // Check all elements of a ndoe's output(tuple/list type) are scalar.
   static bool IsSequenceOutputOfScalar(const AnfNodePtr &node);
 
-  // The tensor related interfaces.
-  static tensor::TensorPtr SequenceToTensor(const ValuePtr &value);
   static void FlattenDynamicInputArg(const BaseRef &arg, const AnfNodePtr &node,
                                      std::vector<tensor::TensorPtr> *flatten_tensors);
   static void FlattenInputArg(const BaseRef &arg, const AnfNodePtr &node,

@@ -25,14 +25,14 @@
 #include <mutex>
 #include <iostream>
 
-#include "include/common/visible.h"
+#include "runtime/utils/visible.h"
 
 namespace mindspore {
 namespace runtime {
 using ModuleBindCorePolicy = std::map<std::string, std::vector<int>>;
 enum kBindCoreModule : int { kMAIN = 0, kRUNTIME, kPYNATIVE, kMINDDATA, kBATCHLAUNCH };
 
-class COMMON_EXPORT ThreadBindCore {
+class RUNTIME_UTILS_EXPORT ThreadBindCore {
  public:
   static ThreadBindCore &GetInstance() {
     static ThreadBindCore instance;

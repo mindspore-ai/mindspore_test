@@ -26,7 +26,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "mindspore/ccsrc/pyboost/pyboost_kernel_extra_func.h"
 #include "utils/simple_info.h"

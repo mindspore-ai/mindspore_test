@@ -26,7 +26,7 @@
 #include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
 #include "runtime/pipeline/task/batch_launch_kernel_task.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/phase.h"

@@ -18,11 +18,11 @@
 #include "ir/scalar.h"
 #include "mindspore/ccsrc/plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {

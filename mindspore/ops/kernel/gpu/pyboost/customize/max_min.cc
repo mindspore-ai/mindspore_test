@@ -18,7 +18,7 @@
 #include "kernel/gpu/pyboost/customize/max.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {

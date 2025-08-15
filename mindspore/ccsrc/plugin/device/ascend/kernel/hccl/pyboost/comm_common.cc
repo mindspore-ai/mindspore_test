@@ -26,8 +26,8 @@
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
-#include "include/common/runtime_conf/runtime_conf.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
 #include "availability/silent_check/silent_check.h"
 

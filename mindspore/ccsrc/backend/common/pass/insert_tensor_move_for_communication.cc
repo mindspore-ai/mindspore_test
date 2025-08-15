@@ -21,7 +21,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {

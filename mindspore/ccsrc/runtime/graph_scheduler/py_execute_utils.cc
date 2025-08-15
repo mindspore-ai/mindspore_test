@@ -16,9 +16,9 @@
 
 #include "include/backend/py_execute_utils.h"
 
+#include "include/common/utils/anfalgo.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -147,7 +147,7 @@ tensor::TensorPtr SequenceToValue(const py::sequence &obj) {
       values.emplace_back(ScalarToValue(element_obj));
     }
   }
-  return AnfAlgo::SequenceToTensor(std::make_shared<ValueTuple>(values));
+  return common::AnfAlgo::SequenceToTensor(std::make_shared<ValueTuple>(values));
 }
 
 bool IsValidObj(const py::object &obj) {

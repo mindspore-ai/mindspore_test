@@ -53,7 +53,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "backend/common/optimizer/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"

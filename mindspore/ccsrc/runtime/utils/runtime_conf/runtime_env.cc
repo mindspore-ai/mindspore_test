@@ -13,26 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "memory/mem_pool/mem_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
-namespace memory {
-namespace mem_pool {
-std::string GetAllocConfigValue(const std::string &alloc_config) {
-  const auto &value = common::GetConfigValue(kAllocConf, alloc_config);
+namespace runtime {
+std::string GetRuntimeConfigValue(const std::string &runtime_config) {
+  const auto &value = common::GetConfigValue(kRuntimeConf, runtime_config);
   return value;
 }
 
-bool IsEnableAllocConfig(const std::string &alloc_config) {
-  const auto &value = GetAllocConfigValue(alloc_config);
+bool IsEnableRuntimeConfig(const std::string &runtime_config) {
+  const auto &value = GetRuntimeConfigValue(runtime_config);
   return ((value == "True") || (value == "true"));
 }
 
-bool IsDisableAllocConfig(const std::string &alloc_config) {
-  const auto &value = GetAllocConfigValue(alloc_config);
+bool IsDisableRuntimeConfig(const std::string &runtime_config) {
+  const auto &value = GetRuntimeConfigValue(runtime_config);
   return ((value == "False") || (value == "false"));
 }
-}  // namespace mem_pool
-}  // namespace memory
+}  // namespace runtime
 }  // namespace mindspore

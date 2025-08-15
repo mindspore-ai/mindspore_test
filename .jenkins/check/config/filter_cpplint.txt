@@ -68,7 +68,7 @@
 "mindspore/mindspore/ccsrc/debug/data_dump/npy_header.h"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/collective/lowlatency_communication_group.h"       "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/collective/lowlatency_communication_group.h"       "build/namespaces"
-"mindspore/mindspore/ccsrc/memory/mem_pool/mem_tracker.cc"                                 "whitespace/indent"
+"mindspore/mindspore/ccsrc/runtime/memory/mem_pool/mem_tracker.cc"                                 "whitespace/indent"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc"                    "runtime/references"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "readability/namespace"
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "whitespace/indent"

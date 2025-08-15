@@ -32,7 +32,7 @@
 #include "ir/device_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"

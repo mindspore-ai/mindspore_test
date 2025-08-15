@@ -21,7 +21,7 @@
 #include <string>
 #include <memory>
 #include "runtime/device/res_manager/tensor_array.h"
-#include "runtime/device/tensors_queue.h"
+#include "runtime/utils/tensors_queue.h"
 
 namespace mindspore {
 namespace device {

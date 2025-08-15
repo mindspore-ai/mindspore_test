@@ -26,7 +26,7 @@
 #include "utils/profile.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
