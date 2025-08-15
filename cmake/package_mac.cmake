@@ -23,11 +23,7 @@ if(ENABLE_CPU)
 else()
     set(CPACK_MS_BACKEND "debug")
 endif()
-if(BUILD_DEV_MODE)
-    set(CPACK_MS_PACKAGE_NAME "mindspore-dev")
-else()
-    set(CPACK_MS_PACKAGE_NAME "mindspore")
-endif()
+set(CPACK_MS_PACKAGE_NAME "mindspore")
 include(CPack)
 
 # set install path

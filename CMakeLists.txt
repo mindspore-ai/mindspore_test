@@ -150,14 +150,6 @@ if(ENABLE_TESTCASES)
     add_subdirectory(tests)
 endif()
 
-# packaging
-file(READ ${CMAKE_SOURCE_DIR}/version.txt VERSION_NUMBER)
-string(REPLACE "\n" "" VERSION_NUMBER ${VERSION_NUMBER})
-if(${VERSION_NUMBER} MATCHES ".*dev.*")
-    message("building dev mode")
-    set(BUILD_DEV_MODE ON)
-endif()
-
 if(ONLY_BUILD_DEVICE_PLUGINS)
     include(cmake/package_plugin.cmake)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")

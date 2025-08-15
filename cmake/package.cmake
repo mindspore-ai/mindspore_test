@@ -26,12 +26,7 @@ elseif(ENABLE_CPU)
 else()
     set(CPACK_MS_BACKEND "debug")
 endif()
-if(BUILD_DEV_MODE)
-    # providing cuda11 version of dev package only
-    set(CPACK_MS_PACKAGE_NAME "mindspore-dev")
-else()
-    set(CPACK_MS_PACKAGE_NAME "mindspore")
-endif()
+set(CPACK_MS_PACKAGE_NAME "mindspore")
 include(CPack)
 
 # set install path
