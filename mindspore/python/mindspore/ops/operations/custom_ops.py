@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import json
 import os
 import re
+import sys
 import ast
 import hashlib
 import stat
@@ -26,6 +27,7 @@ import inspect
 import importlib
 import platform
 import subprocess
+import shutil
 import numpy as np
 import mindspore as ms
 from mindspore._c_expression import Oplib, typing
@@ -37,6 +39,7 @@ from mindspore.ops import DataType
 from mindspore import log as logger
 from mindspore import ops
 from mindspore.communication.management import get_rank, GlobalComm
+from mindspore import _checkparam as validator
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
@@ -1185,6 +1188,54 @@ class Custom(ops.PrimitiveWithInfer):
         return ops.primitive._run_op(self, self.name, args)
 
 
+class _MultiSoProxy:
+    """
+    A thin wrapper that transparently multiplexes attribute access between a
+    pure-Python fallback module and an optional compiled shared-object (SO)
+    module, honoring MindSpore’s current execution mode (GRAPH vs. PYNATIVE).
+    """
+
+    def __init__(self, func_module, so_module):
+        """
+        Args:
+            func_module (module or None): Python module to serve as the fallback implementation source.
+                May be ``None`` if no Python fallback is available.
+            so_module (module): Compiled shared-object module that provides
+                optimized kernels accessible only in ``PYNATIVE_MODE``.
+        """
+        self.func_module = func_module
+        self.so_module = so_module
+
+    def __getattr__(self, name: str):
+        """
+        Intercepts every attribute lookup and resolves it against the wrapped
+        modules according to the documented precedence rules.
+
+        Args:
+            name (str): Name of the custom operation being requested.
+
+        Returns:
+            Any: The requested callable or attribute from either ``func_module`` or ``so_module``.
+
+        Raises:
+            AttributeError: If the attribute is not found in any applicable module or
+            is incompatible with the current execution mode.
+        """
+        if self.func_module is not None and hasattr(self.func_module, name):
+            return getattr(self.func_module, name)
+        if context.get_context("mode") == ms.PYNATIVE_MODE:
+            if hasattr(self.so_module, name):
+                return getattr(self.so_module, name)
+            raise AttributeError(
+                f"Custom op '{name}' is neither in func_module nor in so_module."
+            )
+
+        raise AttributeError(
+            f"Custom op '{name}' does not support GRAPH mode. "
+            f"Please register it for GRAPH mode or switch to PYNATIVE mode."
+        )
+
+
 class CustomOpBuilder:
     r"""
     CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
@@ -1242,17 +1293,10 @@ class CustomOpBuilder:
     _loaded_ops = {}
 
     def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
-        self.name = name
-        self.source = sources
-        self.backend = backend
-        self.include_paths = include_paths
-        self.cflags = cflags
-        self.ldflags = ldflags
-        self.build_dir = kwargs.get("build_dir")
-        self.enable_atb = kwargs.get("enable_atb", False)
-        self.enable_asdsip = kwargs.get("enable_asdsip", False)
-        self.debug_mode = kwargs.get("debug_mode", False)
+        self._check_and_get_args(name, sources, backend, include_paths, cflags, ldflags, **kwargs)
+
         self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
+        self.auto_generate = self.name + "_auto_generate"
         if self.enable_atb:
             if backend is not None and backend != "Ascend":
                 raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be "
@@ -1274,6 +1318,124 @@ class CustomOpBuilder:
                 if not self.atb_home_path:
                     raise ValueError("Environment variable 'ATB_HOME_PATH' must be set when 'enable_atb' is True.")
 
+    def _check_and_get_args(self, name, sources, backend=None, include_paths=None,
+                            cflags=None, ldflags=None, **kwargs):
+        """
+        Validate and normalize all arguments to meet custom-op build requirements.
+        """
+
+        self.name = validator.check_value_type("name", name, [str])
+
+        if isinstance(sources, str):
+            sources = [sources]
+        self.source = validator.check_value_type("sources", sources, [list])
+        validator.check_element_type_of_iterable("sources", sources, [str])
+
+        self.backend = validator.check_value_type("backend", backend, [str, type(None)])
+        if self.backend is not None and self.backend not in {"CPU", "Ascend"}:
+            raise ValueError(
+                f"For 'backend', only 'CPU' or 'Ascend' are allowed, but got '{self.backend}'.")
+
+        self.include_paths = validator.check_value_type("include_paths", include_paths,
+                                                        [list, type(None)])
+        if self.include_paths is not None:
+            validator.check_element_type_of_iterable("include_paths", self.include_paths, [str])
+
+        self.cflags = validator.check_value_type("cflags", cflags, [str, type(None)])
+        self.ldflags = validator.check_value_type("ldflags", ldflags, [str, type(None)])
+
+        self.build_dir = validator.check_value_type("build_dir",
+                                                    kwargs.get("build_dir"),
+                                                    [str, type(None)])
+
+        self.debug_mode = validator.check_bool(kwargs.get("debug_mode", False), "debug_mode")
+        self.enable_asdsip = validator.check_bool(kwargs.get("enable_asdsip", False), "enable_asdsip")
+
+        def _check_str_or_list_str(key):
+            val = kwargs.get(key)
+            if val is None:
+                return val
+            if isinstance(val, str):
+                return val
+            val = validator.check_value_type(key, val, [list])
+            validator.check_element_type_of_iterable(key, val, [str])
+            return val
+
+        self.yaml = _check_str_or_list_str("op_def")
+        self.doc = _check_str_or_list_str("op_doc")
+
+        self.enable_atb = validator.check_bool(kwargs.get("enable_atb", False))
+
+    def generate_custom_op_def(self, module: str, input_path: str, doc_path: str, output_path: str) -> None:
+        """Call gen_custom_ops.py to generate custom operator definition"""
+        file_path = os.path.join(self._ms_path, "ops_generate/gen_custom_ops.py")
+        cmd = [
+            sys.executable,
+            file_path,
+            "-i", input_path,
+            "-o", output_path,
+            "-m", module,
+            "-d", doc_path
+        ]
+
+        try:
+            subprocess.run(
+                cmd,
+                check=True,
+                text=True,
+                capture_output=True
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                f"gen_custom_op.py failed with exit code {exc.returncode}.\n"
+                f"stdout: {exc.stdout}\n"
+                f"stderr: {exc.stderr}"
+            ) from None
+
+    def get_op_def(self):
+        """
+        Generate C++ operator-definition source files from one or more YAML specification files.
+        """
+        if self.yaml is None:
+            return []
+
+        if self.doc is None:
+            logger.info("Missing required 'doc': no YAML document was provided.")
+
+        build_path = self._get_build_directory()
+        yaml_path = os.path.join(build_path, "yaml")
+        op_def_path = os.path.join(build_path, self.auto_generate)
+        if os.path.exists(op_def_path):
+            shutil.rmtree(op_def_path)
+        os.makedirs(op_def_path, exist_ok=True)
+
+        def copy_files(yaml_files, dest_path):
+            if os.path.exists(dest_path):
+                shutil.rmtree(dest_path)
+            os.makedirs(dest_path, exist_ok=True)
+            for file_path in yaml_files:
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(f"File not found: {file_path}")
+
+                filename = os.path.basename(file_path)
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in ('.yaml', '.yml'):
+                    raise ValueError(f"Invalid file extension: {file_ext} for {filename}")
+
+                _dest_path = os.path.join(dest_path, filename)
+                shutil.copy2(file_path, _dest_path)
+
+        yaml_files = [self.yaml] if isinstance(self.yaml, str) else self.yaml
+        copy_files(yaml_files, yaml_path)
+        doc_path = ""
+        if self.doc is not None:
+            doc_path = os.path.join(build_path, "doc")
+            doc_files = [self.doc] if isinstance(self.doc, str) else self.doc
+            copy_files(doc_files, doc_path)
+
+        self.generate_custom_op_def(self.name, yaml_path, doc_path, op_def_path)
+        return [os.path.join(op_def_path, "gen_custom_ops_def.cc")]
+
     def get_sources(self):
         """
         Get the source files for the custom operator.
@@ -1281,7 +1443,8 @@ class CustomOpBuilder:
         Returns:
             str or list[str], The source file(s) for the operator.
         """
-        return self.source
+        self.source = [self.source] if isinstance(self.source, str) else self.source
+        return self.source + self.get_op_def()
 
     def get_include_paths(self):
         """
@@ -1402,15 +1565,42 @@ class CustomOpBuilder:
         """
         if self.name in CustomOpBuilder._loaded_ops:
             return CustomOpBuilder._loaded_ops[self.name]
+
         module_path = self.build()
-        mod = self._import_module(module_path)
+        so_module = CustomOpBuilder._import_module(module_path)
+        func_module = None
+        if self.yaml is not None:
+            module_path = os.path.join(self.build_dir, self.auto_generate, "gen_ops_def.py")
+            sys.path.append(os.path.join(self.build_dir, self.auto_generate))
+            sys.path.append(os.path.join(self.build_dir))
+            func_module = self._import_module(module_path, True)
+        mod = _MultiSoProxy(func_module, so_module)
         CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
 
-    def _import_module(self, module_path):
+    @staticmethod
+    def _import_module(module_path, is_yaml_build=False):
         """Import module from library."""
-        spec = importlib.util.spec_from_file_location(self.name, module_path)
+        module_path = os.path.abspath(module_path)
+        module_dir = os.path.dirname(module_path)
+        module_name = os.path.splitext(os.path.basename(module_path))[0]
+
+        if is_yaml_build:
+            package_name = os.path.basename(module_dir)
+            if module_dir not in sys.path:
+                sys.path.append(module_dir)
+
+            if package_name not in sys.modules:
+                pkg_spec = importlib.machinery.ModuleSpec(package_name, None, is_package=True)
+                pkg = importlib.util.module_from_spec(pkg_spec)
+                pkg.__path__ = [module_dir]
+                sys.modules[package_name] = pkg
+
+            module_name = f"{package_name}.{module_name}"
+
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
         module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
 
