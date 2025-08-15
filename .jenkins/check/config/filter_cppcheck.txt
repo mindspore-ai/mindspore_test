@@ -78,6 +78,7 @@
 "mindspore/mindspore/ccsrc/backend/common/expander/fallback/nn_ops.cc"                                           "unknownMacro"
 "mindspore/mindspore/ops/kernel/cpu/eltwise_grad_cpu_kernel.cc"                        "compareBoolExpressionWithInt"
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_self_cpu_kernel.cc"                        "duplicateExpression"
+"mindspore/mindspore/ops/kernel/cpu/eigen/gamma_cpu_kernel.cc"                                             "zerodivcond"
 "mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc"                                              "knownConditionTrueFalse"
 "mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc"                                 "unreachableCode"
 "mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc"                                 "unknownMacro"
