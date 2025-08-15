@@ -26,8 +26,8 @@
 #include <utility>
 #include <vector>
 #include <optional>
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/data_saver.h"
+#include "tools/profiler/profiling.h"
+#include "tools/profiler/data_saver.h"
 #include "actor/actormgr.h"
 #include "abstract/dshape.h"
 #include "ir/anf.h"

@@ -18,7 +18,7 @@
 #include <utility>
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"

@@ -20,7 +20,7 @@
 #include "include/common/utils/signal_util.h"
 #endif
 #include "utils/log_adapter.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 namespace mindspore {
 namespace runtime {

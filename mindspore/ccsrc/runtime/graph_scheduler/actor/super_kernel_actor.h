@@ -32,7 +32,7 @@
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/pipeline/async_rqueue.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "ir/anf.h"
 
 namespace mindspore {

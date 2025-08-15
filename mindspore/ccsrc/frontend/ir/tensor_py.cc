@@ -26,7 +26,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/cache_embedding_hashmap_struct.h"
 #include "include/common/utils/python_adapter.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "include/common/pynative/adapter.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/pynative/op_executor.h"

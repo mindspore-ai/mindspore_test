@@ -40,7 +40,7 @@
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"

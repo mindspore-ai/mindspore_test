@@ -19,8 +19,8 @@
 #include <fstream>
 #include <memory>
 
-#include "debug/dump/npy_header.h"
-#include "debug/dump/tensordump_control.h"
+#include "tools/dump/npy_header.h"
+#include "tools/dump/tensordump_control.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "utils/file_utils.h"

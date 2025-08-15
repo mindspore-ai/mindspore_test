@@ -29,8 +29,8 @@
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"
 
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiling.h"
+#include "tools/profiler/profiler.h"
 
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/compile_cache_context.h"

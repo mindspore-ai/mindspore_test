@@ -32,7 +32,7 @@
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {

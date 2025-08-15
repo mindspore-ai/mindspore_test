@@ -16,7 +16,7 @@
 
 #include <random>
 #include "common/common_test.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 namespace mindspore {
 namespace runtime {

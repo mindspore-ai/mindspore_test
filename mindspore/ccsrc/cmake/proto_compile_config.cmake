@@ -28,8 +28,8 @@ list(APPEND MINDSPORE_PROTO_LIST ${PROFILER_MEM_PROTO_PY})
 
 if(ENABLE_DEBUGGER)
     # debugger: compile proto files
-    include_directories("${CMAKE_BINARY_DIR}/debug/debugger")
-    file(GLOB_RECURSE DEBUGGER_PROTO_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "debug/debugger/debug_graph.proto")
+    include_directories("${CMAKE_BINARY_DIR}/tools/debugger")
+    file(GLOB_RECURSE DEBUGGER_PROTO_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tools/debugger/debug_graph.proto")
     ms_protobuf_generate(DEBUGGER_PROTO_SRCS DEBUGGER_PROTO_HDRS ${DEBUGGER_PROTO_LIST})
     if(ENABLE_D)
         file(GLOB_RECURSE DUMP_DATA_PROTO_LIST FOLLOW_SYMLINKS "${ASCEND_PATH}/latest/include/proto/dump_data.proto")

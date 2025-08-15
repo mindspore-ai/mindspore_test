@@ -73,7 +73,7 @@ endif()
 
 
 set(PROFILER_SUB_COMP
-    debug/profiler
+    tools/profiler
     plugin/device/cpu/hal/profiler
 )
 
@@ -133,7 +133,7 @@ endif()
 
 set(BACKEND_COMMON_SUB_COMP
         ps
-        debug
+        tools
         distributed
         kernel
         backend/operator

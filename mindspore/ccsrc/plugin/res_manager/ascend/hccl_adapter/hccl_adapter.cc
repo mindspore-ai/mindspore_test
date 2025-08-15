@@ -35,7 +35,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "debug/profiler/mstx/mstx_impl.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 static constexpr const auto kHcclPluginFileName = "libhccl_plugin.so";

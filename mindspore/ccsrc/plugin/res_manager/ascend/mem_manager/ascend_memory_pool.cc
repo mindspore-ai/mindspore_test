@@ -23,9 +23,9 @@
 #include <atomic>
 #include <set>
 
-#include "debug/profiler/profiling_data_dumper.h"
-#include "debug/profiler/profiling.h"
-#include "debug/profiler/mstx/mstx_impl.h"
+#include "tools/profiler/profiling_data_dumper.h"
+#include "tools/profiler/profiling.h"
+#include "tools/profiler/mstx/mstx_impl.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/comm_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"

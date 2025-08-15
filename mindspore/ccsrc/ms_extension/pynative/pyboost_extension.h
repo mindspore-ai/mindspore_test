@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 #include "ms_extension/common/tensor.h"
-#include "mindspore/ccsrc/debug/profiler/profiler.h"
+#include "mindspore/ccsrc/tools/profiler/profiler.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/pynative_utils.h"
 

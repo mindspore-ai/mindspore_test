@@ -28,8 +28,8 @@
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "debug/profiler/profiler.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiler.h"
+#include "tools/profiler/profiling.h"
 
 #include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
 #include "plugin/device/ascend/kernel/internal/internal_spinlock.h"

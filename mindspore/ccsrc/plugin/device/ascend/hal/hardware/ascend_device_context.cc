@@ -32,8 +32,8 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
-#include "debug/profiler/profiling.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "tools/profiler/profiling.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
@@ -51,7 +51,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "acl/acl_dump.h"
-#include "debug/dump/tensordump_control.h"
+#include "tools/dump/tensordump_control.h"
 
 namespace mindspore {
 namespace device {

@@ -63,14 +63,14 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/anf_ir_dump.h"
 #endif
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "runtime/device/move_to.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

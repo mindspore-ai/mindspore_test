@@ -26,7 +26,7 @@
 #include <set>
 #include <map>
 #include "include/common/utils/convert_utils.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "pybind11/numpy.h"

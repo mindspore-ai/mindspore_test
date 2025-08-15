@@ -50,9 +50,9 @@
 #include "runtime/graph_scheduler/execution_order_check/kernel_cache.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "debug/profiler/profiling.h"
+#include "tools/profiler/profiling.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
@@ -72,7 +72,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 #ifdef ENABLE_DUMP_IR
-#include "debug/rdr/graph_recorder.h"
+#include "tools/rdr/graph_recorder.h"
 #include "include/common/debug/rdr/recorder_manager.h"
 #include "ir/cell.h"
 #endif
