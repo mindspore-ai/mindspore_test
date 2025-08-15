@@ -14,7 +14,6 @@
 # ============================================================================
 """Tool for managing Ascend msprof profiling commands and environment."""
 import os
-import pwd
 import json
 import shutil
 from functools import lru_cache
@@ -164,8 +163,8 @@ class MsprofCmdTool:
                 not PathManager.check_path_is_owner_or_root(msprof_path):
             raise PermissionError(f"The '{msprof_script_path}' or '{msprof_path}' path and current owner have "
                                   f"inconsistent permissions. Please execute "
-                                  f"chown {pwd.getpwuid(os.getuid()).pw_name} {msprof_script_path} and "
-                                  f"chown {pwd.getpwuid(os.getuid()).pw_name} {msprof_path}")
+                                  f"chown {os.getlogin()} {msprof_script_path} and "
+                                  f"chown {os.getlogin()} {msprof_path}")
         if not PathManager.check_path_is_executable(msprof_script_path) or \
                 not PathManager.check_path_is_executable(msprof_path):
             raise PermissionError(f"The '{msprof_script_path}' path or '{msprof_path}' path is not executable."
