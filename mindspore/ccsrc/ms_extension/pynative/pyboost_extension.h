@@ -22,6 +22,8 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <optional>
+#include <type_traits>
 #include "ms_extension/common/tensor.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
@@ -91,20 +93,45 @@ void SetPromise(const std::string &op_name, const std::tuple<T...> &tuple, const
 }
 
 /**
- * @brief Converts a Tensor or an optional Tensor's stub node into a Tensor object.
- * @tparam T The type of the argument, which can be a Tensor or an optional Tensor.
- * @param arg The argument to convert.
+ * @brief Generic converter entry point.
+ * @tparam T Deduced type of the argument; must be one of
+ *           Tensor, std::optional<Tensor>, or std::vector<U> where
+ *           U is recursively any of the former.
+ * @param arg Object whose innermost Tensor elements will be converted.
  */
 template <typename T>
-void ConvertMsTensor(const T &arg) {
-  if constexpr (std::is_same_v<T, ms::Tensor>) {
-    arg.ConvertStubNodeToTensor();
-  } else {
-    if constexpr (std::is_same_v<T, std::optional<ms::Tensor>>) {
-      if (arg.has_value()) {
-        arg.value().ConvertStubNodeToTensor();
-      }
-    }
+void ConvertMsTensor(const T &arg) {}
+
+/**
+ * @brief Converts a single Tensor.
+ * @param arg Tensor instance to materialize.
+ */
+template <>
+inline void ConvertMsTensor<ms::Tensor>(const ms::Tensor &arg) {
+  arg.ConvertStubNodeToTensor();
+}
+
+/**
+ * @brief Converts a Tensor wrapped in std::optional.
+ * @param arg Optional tensor; conversion is skipped if disengaged.
+ */
+template <>
+inline void ConvertMsTensor<std::optional<ms::Tensor>>(const std::optional<ms::Tensor> &arg) {
+  if (arg.has_value()) {
+    arg.value().ConvertStubNodeToTensor();
+  }
+}
+
+/**
+ * @brief Recursively converts every element of a vector.
+ * @tparam T Value type stored in the vector; must itself be convertible
+ *           via ConvertMsTensor.
+ * @param vec Vector whose elements will be processed in order.
+ */
+template <typename T>
+void ConvertMsTensor(const std::vector<T> &vec) {
+  for (const auto &item : vec) {
+    ConvertMsTensor(item);
   }
 }
 

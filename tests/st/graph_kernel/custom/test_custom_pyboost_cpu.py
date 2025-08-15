@@ -53,6 +53,16 @@ def test_pyboost_cpu_add():
     expect = x + y + z
     assert np.allclose(out.asnumpy(), expect, 1e-3, 1e-3)
 
+    out = my_ops.add4(ms.Tensor(x), ms.Tensor(y), [ms.Tensor(z)])
+    assert np.allclose(out.asnumpy(), expect, 1e-3, 1e-3)
+
+    out = my_ops.add5(ms.Tensor(x), ms.Tensor(y), [[ms.Tensor(z)]])
+    assert np.allclose(out.asnumpy(), expect, 1e-3, 1e-3)
+
+    out = ms.mint.empty_like(ms.Tensor(x), device="cpu")
+    my_ops.add6(ms.Tensor(x), ms.Tensor(y), ms.Tensor(z), [out])
+    assert np.allclose(out.asnumpy(), expect, 1e-3, 1e-3)
+
 
 @arg_mark(plat_marks=["cpu_linux"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_pyboost_cpu_swap():

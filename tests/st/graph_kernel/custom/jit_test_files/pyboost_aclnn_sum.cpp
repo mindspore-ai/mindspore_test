@@ -16,8 +16,8 @@
 
 #include <set>
 #include <optional>
-#include "ms_extension/api.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "ms_extension/all.h"
+#include "graph/module.h"
 
 namespace custom {
 ms::Tensor GenResultTensor(const ms::Tensor &t, const std::vector<int64_t> &axis, bool keepdims, ms::TypeId type_id) {
@@ -61,4 +61,4 @@ ms::Tensor npu_abs_reduce_sum(const ms::Tensor &x, std::optional<std::vector<int
 }
 }  // namespace custom
 
-PYBIND11_MODULE(MS_EXTENSION_NAME, m) { m.def("npu_abs_reduce_sum", PYBOOST_CALLER(1, custom::npu_abs_reduce_sum)); }
+MS_CUSTOM_OPS_EXTENSION_MODULE(m) { m.def("npu_abs_reduce_sum", PYBOOST_CALLER(1, custom::npu_abs_reduce_sum)); }
