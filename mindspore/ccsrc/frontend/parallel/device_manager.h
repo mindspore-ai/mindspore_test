@@ -30,6 +30,7 @@
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/strategy.h"
 #include "include/common/utils/convert_utils.h"
+#include "include/common/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
@@ -109,6 +110,25 @@ class DeviceManager {
   int64_t stage_id_ = 0;             // the stage id of the global_rank_
   int64_t rank_index_in_stage_ = 0;  // the index of this rank in it's stage
   int64_t stage_device_num_ = 0;     // the device num of one stage
+};
+
+class FRONTEND_EXPORT ParallelCommManager {
+ public:
+  ParallelCommManager() = default;
+  ~ParallelCommManager() = default;
+  ParallelCommManager(const ParallelCommManager &) = delete;
+  ParallelCommManager &operator=(const ParallelCommManager &) = delete;
+  static std::shared_ptr<ParallelCommManager> GetInstance();
+
+  std::string RankListName(const std::vector<uint32_t> &ranks) const;
+  std::string HashName(const std::string &origin_name) const;
+
+  void SetHcclGroups(const std::vector<uint32_t> &ranks, std::string name, bool flag);
+  std::optional<std::pair<std::string, bool>> HcclGroups(const std::vector<uint32_t> &ranks) const;
+
+ private:
+  mindspore::HashMap<std::string, std::pair<std::string, bool>> hccl_groups_map_;  // {rank_list: <name, flag>}
+  inline static std::shared_ptr<ParallelCommManager> group_instance_{nullptr};
 };
 }  // namespace parallel
 }  // namespace mindspore

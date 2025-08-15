@@ -160,6 +160,19 @@ Status CreateGroups(const std::vector<std::pair<std::string, std::vector<uint32_
 }
 #endif
 
+bool hasCreated(const std::string &group_name, std::vector<uint32_t> ranks) {
+  bool group_reused = false;
+  const auto &pair = ParallelCommManager::GetInstance()->HcclGroups(ranks);
+  if (pair.has_value()) {
+    std::string new_group_name = pair.value().first;
+    bool isCreated = pair.value().second;
+    if (group_name == new_group_name && isCreated) {
+      group_reused = true;
+    }
+  }
+  return group_reused;
+}
+
 Status GroupManager::CreateGroup(const std::string &group_name, const std::vector<Device> &devices,
                                  mindspore::parallel::Group *const group) {
   // it is simple to use size to determine whether it is a world group
@@ -196,6 +209,13 @@ Status GroupManager::CreateGroup(const std::string &group_name, const std::vecto
 
     std::pair<std::string, std::vector<uint32_t>> group_info = std::make_pair(group_name, ranks);
     group_info_.push_back(group_info);
+
+    if (hasCreated(group_name, ranks)) {
+      // If the group has already been created in Python, it will not be created again.
+      std::string ranks_str = ParallelCommManager::GetInstance()->RankListName(ranks);
+      MS_LOG(WARNING) << "The group '" << group_name << "' has been created, the ranks are: " << ranks_str;
+      return Status::SUCCESS;
+    }
 
     bool ret = CreateGroupByExecutor(device_name, group_name, ranks, device_id);
     if (!ret) {

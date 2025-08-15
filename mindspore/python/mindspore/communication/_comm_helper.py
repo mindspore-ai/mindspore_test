@@ -25,7 +25,8 @@ from mindspore import context
 from mindspore.parallel._ps_context import _is_role_sched, _is_ps_mode,\
                                            _get_ps_context
 from mindspore import log as logger
-from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext, GroupOptions
+from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext, GroupOptions, \
+    ParallelCommManager
 from mindspore.common._utils import load_lib
 
 HCCL_LIB = 'libhccl_plugin.so'
@@ -523,6 +524,9 @@ def _create_group_helper(group, rank_ids, options=None):
             raise RuntimeError("Failed to create communication group for {} with rank ids {}. "
                                "If NCCL is used, 'export NCCL_DEBUG=INFO' "
                                "is suggested before launching jobs.".format(group, rank_ids))
+        group_info = ParallelCommManager.get_instance().hccl_groups(rank_ids)
+        if group_info is None:
+            ParallelCommManager.get_instance().set_hccl_groups(rank_ids, group, True)
 
     _ExistingGroup.ITEMS[group] = rank_ids
     sorted_ranks = sorted(rank_ids)
