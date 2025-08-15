@@ -1,0 +1,14 @@
+squeeze:
+  - op_yaml: squeeze_op.yaml
+    py_method: tensor_squeeze
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/squeeze_method.yaml
+    py_method: tensor_squeeze # callback to python function "def deprecated_tensor_std"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

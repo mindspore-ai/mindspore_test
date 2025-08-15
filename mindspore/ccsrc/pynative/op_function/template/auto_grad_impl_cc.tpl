@@ -22,6 +22,7 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/op_function/auto_grad_register.h"
+#include "mindspore/ccsrc/pynative/op_function/customize/grad_impl.h"
 ${ops_inc}
 
 namespace mindspore::pynative {

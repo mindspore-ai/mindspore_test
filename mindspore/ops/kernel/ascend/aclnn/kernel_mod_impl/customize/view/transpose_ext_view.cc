@@ -26,8 +26,9 @@ void TransposeExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> 
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   const auto &dim0 = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto &dim1 = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  info_ = ops::TransposeExtViewStridesCalc(old_info, dim0, dim1);
-  outputs[kIndex0]->set_tensor_storage_info(info_[0]);
+  auto infos = ops::TransposeExtViewStridesCalc(old_info->old_shape, old_info->old_strides,
+                                                inputs[kIndex0]->tensor_storage_info(), dim0, dim1);
+  outputs[kIndex0]->set_tensor_storage_info(infos[0]);
 }
 
 void TransposeExtView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

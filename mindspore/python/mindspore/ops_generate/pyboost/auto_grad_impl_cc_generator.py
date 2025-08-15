@@ -23,7 +23,7 @@ from common.template import Template
 import common.gen_constants as K
 from common.gen_utils import save_file
 from common.base_generator import BaseGenerator
-from pyboost.pyboost_utils import is_optional_param, get_input_dtype, is_op_multi_output
+from pyboost.pyboost_utils import is_optional_param, get_input_dtype, is_op_multi_output, get_output_dtype
 
 
 class AutoGradImplGenerator(BaseGenerator):
@@ -38,12 +38,17 @@ class AutoGradImplGenerator(BaseGenerator):
         self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
         self.AUTO_GRAD_IMPL_CC_TEMPLATE = template.AUTO_GRAD_IMPL_CC_TEMPLATE
         self.DO_GRAD_FUNCTION_BODY_TEMPLATE = template.DO_GRAD_FUNCTION_BODY_TEMPLATE
+        self.DO_VIEW_GRAD_FUNCTION_BODY_TEMPLATE = template.DO_VIEW_GRAD_FUNCTION_BODY_TEMPLATE
+        self.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE = template.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE
         self.auto_grad_reg_template = Template("const_cast<kernel::pyboost::${class_name}GradFunc&>(" + \
                                                "kernel::pyboost::AutoGradFactory::Get()." + \
                                                "ops_auto_grad_registers().${class_name}GradFuncObj) = " + \
                                                "kernel::pyboost::${class_name}GradFunc(DoGrad${class_name});")
         self.do_grad_op_args_with_type = Template(
             "const kernel::pyboost::OpPtr &op, ${input_args_with_type}"
+        )
+        self.do_grad_view_op_args_with_type = Template(
+            "${output_args_with_type}, ${input_args_with_type}"
         )
 
     def generate(self, work_path, op_protos):
@@ -60,8 +65,13 @@ class AutoGradImplGenerator(BaseGenerator):
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
+            # the backward func of flatten_ext and t_ext are implemented by other view ops, just continue
+            if op_proto.op_view and not op_proto.bprop_expander:
+                continue
             auto_grad_reg_list.append(self.auto_grad_reg_template.replace(class_name=op_proto.op_class.name))
-            do_grad_op_list.append(self._get_single_do_grad_op(op_proto))
+            do_single_grad_op_str = self._get_single_do_grad_view_op(op_proto)\
+                  if op_proto.op_view else self._get_single_do_grad_op(op_proto)
+            do_grad_op_list.append(do_single_grad_op_str)
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         pyboost_func_h_str = self.AUTO_GRAD_IMPL_CC_TEMPLATE.replace(do_grad_op=do_grad_op_list,
                                                                      auto_grad_reg=auto_grad_reg_list,
@@ -80,12 +90,11 @@ class AutoGradImplGenerator(BaseGenerator):
         Returns:
             str: The generated DoGrad function string.
         """
-        input_args_str = self._get_input_args(op_proto, False, False, op_proto.op_view)
-        input_args_with_optional_str = self._get_input_args(op_proto, False, True, op_proto.op_view)
-        input_args_with_type_str = self._get_input_args(op_proto, True, False, op_proto.op_view)
+        input_args_str = self._get_input_args(op_proto, False, False, False)
+        input_args_with_optional_str = self._get_input_args(op_proto, False, True, False)
+        input_args_with_type_str = self._get_input_args(op_proto, True, False, False)
         inner_grad_args_with_type = self._get_input_args(op_proto, True, False, False)
         multi_output_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
-        view_arg_str = self._get_view_str(op_proto.op_view, input_args_str)
         grad_args_with_type_str = self.do_grad_op_args_with_type.replace(input_args_with_type=input_args_with_type_str)
         inner_grad_args_with_type =\
             self.do_grad_op_args_with_type.replace(input_args_with_type=inner_grad_args_with_type)
@@ -94,22 +103,62 @@ class AutoGradImplGenerator(BaseGenerator):
         FALSE = "false"
         bprop_expander = TRUE if op_proto.bprop_expander else FALSE
         non_differentiable = TRUE if op_proto.non_differentiable else FALSE
-        if not op_proto.op_view:
-            convert_basic_to_value = ''
-        else:
-            input_args_with_optional_str, convert_basic_to_value = self._get_convert_str(op_proto,
-                                                                                         input_args_with_optional_str)
+
         return self.DO_GRAD_FUNCTION_BODY_TEMPLATE.replace(class_name=op_proto.op_class.name,
                                                            inner_grad_args_with_type=inner_grad_args_with_type,
                                                            grad_args_with_type=grad_args_with_type_str,
                                                            grad_input_args=input_args_str,
                                                            grad_input_args_with_optional=input_args_with_optional_str,
                                                            is_multi=multi_output_str,
-                                                           view_arg=view_arg_str,
                                                            op_def_name=op_def_name_str,
                                                            bprop_expander=bprop_expander,
-                                                           non_differentiable=non_differentiable,
-                                                           convert_basic_to_value=convert_basic_to_value)
+                                                           non_differentiable=non_differentiable)
+
+    def _get_single_do_grad_view_op(self, op_proto):
+        """
+        Generate the DoGrad function for a single view operator prototype.
+
+        Args:
+            op_proto: The operator prototype for which the DoGrad function is generated.
+
+        Returns:
+            str: The generated DoGrad function string.
+        """
+        input_args_str = self._get_input_args(op_proto, False, False, True)
+        input_args_with_optional_str = self._get_input_args(op_proto, False, True, True)
+        input_args_with_type_str = self._get_input_args(op_proto, True, False, True)
+        inner_grad_args_with_type = self._get_input_args(op_proto, True, False, False)
+        view_arg_str = self._get_view_str(input_args_str)
+        grad_args_with_type_str = self.do_grad_view_op_args_with_type\
+            .replace(input_args_with_type=input_args_with_type_str,
+                     output_args_with_type=self._get_output_arg(op_proto))
+        inner_grad_args_with_type =\
+            self.do_grad_view_op_args_with_type.replace(output_args_with_type="const ValuePtr &output_value",
+                                                        input_args_with_type=inner_grad_args_with_type)
+        op_def_name_str = "g" + op_proto.op_class.name
+        TRUE = "true"
+        FALSE = "false"
+        bprop_expander = TRUE if op_proto.bprop_expander else FALSE
+        non_differentiable = TRUE if op_proto.non_differentiable else FALSE
+        if op_proto.op_name in ["reshape", "expand_dims", "transpose", "slice_ext_view",\
+                                 "select_ext_view", "transpose_ext_view"]:
+            do_view_grad_function_body_tpl = self.DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE
+            convert_basic_to_value = ""
+        else:
+            do_view_grad_function_body_tpl = self.DO_VIEW_GRAD_FUNCTION_BODY_TEMPLATE
+            input_args_with_optional_str, convert_basic_to_value = self._get_convert_str(op_proto,
+                                                                                         input_args_with_optional_str)
+        return do_view_grad_function_body_tpl.replace(class_name=op_proto.op_class.name,
+                                                      inner_grad_args_with_type=inner_grad_args_with_type,
+                                                      grad_args_with_type=grad_args_with_type_str,
+                                                      grad_input_args=input_args_str,
+                                                      grad_input_args_with_optional=input_args_with_optional_str,
+                                                      view_arg=view_arg_str,
+                                                      op_def_name=op_def_name_str,
+                                                      bprop_expander=bprop_expander,
+                                                      non_differentiable=non_differentiable,
+                                                      convert_basic_to_value=convert_basic_to_value)
+
 
     def _get_input_args(self, op_proto, has_type, with_optional, use_basic_type=False):
         """
@@ -133,6 +182,15 @@ class AutoGradImplGenerator(BaseGenerator):
                 else:
                     args_list.append(f"{op_arg.arg_name}_tensor")
         return args_list
+
+    def _get_output_arg(self, op_proto):
+        # for view operators, the output is tensor or vector<tensor>
+        if len(op_proto.op_returns) != 1:
+            raise ValueError(f"the output of {op_proto.op_name} is not tensor, ",
+                             "tuple[tensor] or list[tensor], which is not not as expected")
+        output_dtype = get_output_dtype(op_proto.op_returns[0].arg_dtype)
+        output_arg = f"const {output_dtype} &output"
+        return output_arg
 
     def _get_convert_str(self, op_proto, args_name):
         """
@@ -161,12 +219,11 @@ class AutoGradImplGenerator(BaseGenerator):
             args_name_list.append(out_arg_name)
         return args_name_list, convert_funcs
 
-    def _get_view_str(self, is_view_op: bool, grad_args: list):
+    def _get_view_str(self, grad_args: list):
         """
         Get the view argument string for a DoGrad function.
 
         Args:
-            is_view_op (bool): Whether the operator is a view operator.
             grad_args (list): A list of gradient arguments.
 
         Returns:
@@ -174,7 +231,7 @@ class AutoGradImplGenerator(BaseGenerator):
         """
         view_arg_str = ''
         for i, grad_arg in enumerate(grad_args):
-            if is_view_op and i == 0:
+            if i == 0:
                 view_arg_str = ", " + grad_arg
                 break
         return view_arg_str

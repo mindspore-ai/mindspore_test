@@ -2,6 +2,8 @@ PyObject* TensorMethod${cpp_func_name}(PyObject* self, PyObject* py_args, PyObje
   static mindspore::pynative::PythonArgParser parser({
     ${signatures}
   }, "${func_name}");
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "tensor.${func_name}", false, true);
   auto input_tensor = mindspore::pynative::UnpackTensor(self, "${func_name}");
   auto parse_args = parser.Parse(py_args, py_kwargs, true);
   parse_args.InsertInputTensor(${self_index}, self);

@@ -51,8 +51,11 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
 
     def __init__(self):
         self.PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE
+        self.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE
         self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = template.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE
         self.native_function_multi_output_template = template.MULTI_OUTPUT_TEMPLATE
+        self.native_view_function_output_template =\
+            "const auto &output_value = runtime::ValueConverter::ToValue(outputs);\n"
         self.native_function_single_output_template = "const auto &output_value = op->outputs()[0];\n"
         self.native_include_header_template = Template(
             f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n')
@@ -93,15 +96,15 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
             output_expr = self._get_output_expr(op_proto)
 
             pyboost_func_str += \
-                template.PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE.replace(func_name=op_proto.op_class.name,
-                                                                       op_name=op_proto.op_class.name,
-                                                                       op_args=op_args_str,
-                                                                       convert_body=convert_value_type_str,
-                                                                       call_args=call_args_str,
-                                                                       call_args_with_type=call_args_with_type,
-                                                                       first_var_name=first_var_name,
-                                                                       output_expr=output_expr,
-                                                                       operator_name=op_proto.op_name)
+                self._get_native_grad_function_template(op_proto).replace(func_name=op_proto.op_class.name,
+                                                                          op_name=op_proto.op_class.name,
+                                                                          op_args=op_args_str,
+                                                                          convert_body=convert_value_type_str,
+                                                                          call_args=call_args_str,
+                                                                          call_args_with_type=call_args_with_type,
+                                                                          first_var_name=first_var_name,
+                                                                          output_expr=output_expr,
+                                                                          operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
             pyboost_func_include_headers_str += (
                 self.native_include_header_template.replace(operator_name=op_proto.op_name))
@@ -113,6 +116,11 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
                                                                 ops_inc=list(sorted(ops_inc_head_set)))
         save_file(os.path.join(work_path, K.PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH),
                   "pyboost_native_grad_functions.cc", native_grad_func_file)
+
+    def _get_native_grad_function_template(self, op_proto):
+        if op_proto.op_view:
+            return self.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE
+        return self.PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE
 
     def _convert_native_value_type(self, op_proto: OpProto) -> str:
         """
@@ -172,6 +180,8 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         Returns:
             str: The output expression used in the function implementation.
         """
+        if op_proto.op_view:
+            return self.native_view_function_output_template
         output_expr = self.native_function_single_output_template
         if pyboost_utils.is_op_multi_output(op_proto.op_returns):
             output_expr = self.native_function_multi_output_template

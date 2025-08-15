@@ -33,10 +33,10 @@ from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
 # 1
-from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
+from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, UniqueDim, \
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 # 2
-
+from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 # 3
 
 # 4
@@ -108,7 +108,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op, \
-    split_tensor_op, split_with_size_op
+    split_tensor_op, split_with_size_op, chunk_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
 
@@ -181,7 +181,6 @@ sort_ext_ = SortExt()
 scatter_prim = Scatter()
 scatter_value_ = ScatterValue()
 arange_ = Arange()
-chunk_ = Chunk()
 repeat_interleave_int_ = RepeatInterleaveInt()
 repeat_interleave_tensor_ = RepeatInterleaveTensor()
 unique_dim_ = UniqueDim()
@@ -994,7 +993,7 @@ def chunk_ext(input, chunks, dim=0):
          Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
          Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
     """
-    return chunk_(input, chunks, dim)
+    return chunk_op(input, chunks, dim)
 
 
 def fills(x, value):
@@ -1960,10 +1959,7 @@ def squeeze(input, axis=None):
     """
     if axis is None:
         axis = ()
-    if isinstance(axis, list):
-        axis = tuple(axis)
-    squeeze_ = _get_cache_prim(P.Squeeze)(axis)
-    return squeeze_(input)
+    return squeeze_impl(input, axis)
 
 
 def scatter_mul(input_x, indices, updates):

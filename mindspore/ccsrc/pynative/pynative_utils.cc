@@ -1507,6 +1507,17 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
   forward->ForwardOpGradImpl(grad_info, async_status);
 }
 
+void PyBoost::DoGrad(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) {
+  static const std::string kDoGradName = "DoGrad";
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     kDoGradName, false);
+
+  const auto &pynative_executor = Common::GetPyNativeExecutor();
+  const auto &forward = pynative_executor->forward_executor();
+  MarkPyBoostInputs(grad_info);
+  forward->ForwardOpGradImpl(grad_info, async_status);
+}
+
 void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info) {
   MS_EXCEPTION_IF_NULL(op_grad_info);
   size_t input_size = op_grad_info->input_value.size();

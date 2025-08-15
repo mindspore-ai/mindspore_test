@@ -20,6 +20,7 @@
 #include <atomic>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -117,7 +118,7 @@ class RingQueue {
   std::mutex mtx_;
   std::condition_variable not_full_;
   std::condition_variable not_empty_;
-  static const std::size_t max_spin_count_{600000};
+  static const std::size_t max_spin_count_{SIZE_MAX};
 };
 }  // namespace mindspore
 

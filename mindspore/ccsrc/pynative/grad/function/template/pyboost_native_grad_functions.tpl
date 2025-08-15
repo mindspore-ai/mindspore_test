@@ -27,12 +27,14 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "ir/dtype/tensor_type.h"
+#include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
 ${ops_inc}
 ${include_op_header}
 
 namespace mindspore {
 namespace pynative {
 device::DeviceType NativeFunc::device_target_ = device::DeviceType::kUnknown;
+AbstractConverter kNativeAbstractConverter;
 
 NodePtr NativeFunc::RunOpInVm(const PrimitivePtr &prim, const NodePtrList &inputs) {
   VectorRef args;

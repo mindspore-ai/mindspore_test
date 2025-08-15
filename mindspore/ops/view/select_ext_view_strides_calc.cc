@@ -15,20 +15,18 @@
  */
 
 #include <memory>
+#include <utility>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "view/select_ext_view_strides_calc.h"
 
-namespace {
-constexpr size_t kSelectExtInputsNum = 3;
-}
-
 namespace mindspore::ops {
-TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+TensorStorageInfoPtrList SelectExtStridesCalc(const std::vector<int64_t> &old_shape,
+                                              const std::vector<int64_t> &old_strides,
+                                              const TensorStorageInfoPtr &old_storage_info, const int64_t ori_dim,
                                               const int64_t ori_index) {
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
-  auto old_storage_offset = old_tensor_info->old_offset;
+  auto [ori_shape, ori_strides, old_storage_offset] =
+    GetOriShapeStridesAndOffset(old_shape, old_strides, old_storage_info);
 
   int dim_size = SizeToLong(old_shape.size());
   MS_CHECK_VALUE(dim_size > 0, "For Primitive [SelectExtView] rank must >= 1");
@@ -43,42 +41,32 @@ TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_
 
   auto new_shape = old_shape;
   auto new_strides = old_strides;
-  size_t new_storage_offset = old_storage_offset;
-  new_storage_offset += LongToSize(index * old_strides[dim]);
+  size_t new_storage_offset = old_storage_offset + LongToSize(index * old_strides[dim]);
   new_shape.erase(new_shape.begin() + dim);
   new_strides.erase(new_strides.begin() + dim);
-
+  bool is_contiguous = IsContiguous(new_shape, new_strides);
   auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
-  return {new_storage_info};
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), new_storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
+  return {std::move(new_storage_info)};
 }
 
-TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                    const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                     const int64_t &dim, const int64_t &index) {
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return SelectExtStridesCalc(old_tensor_info, dim, index);
+  return SelectExtStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim, index);
 }
 
 TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  constexpr size_t kSelectExtInputsNum = 3;
   if (CheckInputsNull(inputs, kSelectExtInputsNum) || !inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
   }
 
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
   auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
   auto index = GetValue<int64_t>(inputs[kInputIndex2]);
-  return SelectExtStridesCalc(old_tensor_info, dim, index);
+  return SelectExtViewBasicTypeCalc(input_tensor, dim, index);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(SelectExtView, SelectExtViewCalc);

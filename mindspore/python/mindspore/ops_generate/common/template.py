@@ -183,11 +183,17 @@ PYBOOST_REGISTRY_BODY_CC_TEMPLATE = Template.load_from_file(
 PYBOOST_CORE_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body.tpl'))
 
+PYBOOST_CORE_BODY_VIEW_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_view.tpl'))
+
 PYBOOST_CORE_BODY_COMM_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_comm.tpl'))
 
 PYBOOST_CORE_BODY_SYNC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_sync.tpl'))
+
+PYBOOST_CORE_BODY_VIEW_SYNC_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_body_view_sync.tpl'))
 
 PYBOOST_REGISTRY_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_registry_cc.tpl'))
@@ -259,11 +265,17 @@ TENSOR_FUNC_CLASS_REG = Template.load_from_file(
 PYBOOST_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function.tpl'))
 
+PYBOOST_VIEW_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_view_grad_function.tpl'))
+
 PYBOOST_GRAD_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function_header.tpl'))
 
 PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/grad/function/template/native_grad_function.tpl'))
+
+PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/grad/function/template/native_view_grad_function.tpl'))
 
 PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
@@ -587,6 +599,12 @@ FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
 FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/function_body.tpl'))
 
+FUNCTION_VIEW_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/function_view_body.tpl'))
+
+FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/function_view_customize_body.tpl'))
+
 FUNCTION_COMM_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/comm_function_body.tpl'))
 
@@ -595,6 +613,12 @@ FUNCTIONS_H_TEMPLATE = Template.load_from_file(
 
 DO_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/do_grad_function.tpl'))
+
+DO_VIEW_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/do_view_grad_function.tpl'))
+
+DO_VIEW_CUSTOMIZE_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/do_view_customize_grad_function.tpl'))
 
 TENSOR_PY_CC_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pybind_api/ir/tensor/template/tensor_py_gen.tpl'))

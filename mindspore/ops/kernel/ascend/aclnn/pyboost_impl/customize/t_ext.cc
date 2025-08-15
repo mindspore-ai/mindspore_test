@@ -29,13 +29,16 @@ namespace kernel {
 namespace pyboost {
 void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "TExt Launch start";
-  OpRunner::InferOpOutput(op, input_tensor);
-  auto input_rank = input_tensor->shape().size();
 
+  auto input_rank = input_tensor->shape().size();
+  if (MS_UNLIKELY(input_rank > 2)) {
+    MS_EXCEPTION(ValueError) << "For TExt, the input rank should be less equal to 2, but got " << input_rank;
+  }
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);
-  std::vector<int64_t> perm(input_rank);
+  std::vector<int64_t> perm;
+  perm.reserve(input_rank);
   for (size_t i = 0; i < input_rank; ++i) {
-    perm[i] = static_cast<int64_t>(input_rank - i - 1);
+    perm.push_back(static_cast<int64_t>(input_rank - i - 1));
   }
   auto output_tensor = transpose_op->Call(input_tensor, perm);
   op->set_outputs({output_tensor});

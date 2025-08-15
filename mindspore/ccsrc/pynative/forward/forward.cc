@@ -886,7 +886,7 @@ device::DeviceType ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &o
   PrimitiveReadLock read_lock(op_prim->shared_mutex());
   const auto &attr_map = op_prim->attrs();
   auto iter = attr_map.find("primitive_target");
-  if (iter != attr_map.end()) {
+  if (MS_UNLIKELY(iter != attr_map.end())) {
     return device::GetDeviceTypeByName(GetValue<std::string>(iter->second));
   }
   return DeviceManagerConf::GetInstance()->device_type();

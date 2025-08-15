@@ -443,43 +443,12 @@ void AutoGradUtil::SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, 
 
 ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,
                                   const tensor::TensorPtr &base_view) {
-  // delete NoneTypeNode check.
-  if (base_view != nullptr && op->outputs()[0]->storage_info() != nullptr) {
-    autograd::CreationType creationType =
-      requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode;
-    BuildViewAutoGradMeta(base_view, op->outputs()[0], creationType, requires_grad);
-  } else if (requires_grad) {
-    if (op->outputs()[0]->auto_grad_meta_data() == nullptr) {
-      op->outputs()[0]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(InputType::kOpOutput));
-    } else {
-      // View op from no grad mode has not input type, we need set it by inplace op,
-      // which only worked in view inplace process.
-      op->outputs()[0]->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
-    }
-  }
-  return op->outputs()[0];
+  return MakeOutput(requires_grad, op->outputs()[0], base_view);
 }
 
 ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,
                                        const tensor::TensorPtr &base_view) {
-  size_t size = op->outputs().size();
-  std::vector<ValuePtr> output_values(size);
-  for (size_t i = 0; i < size; ++i) {
-    const auto &output_tensor = op->outputs()[i];
-    MS_EXCEPTION_IF_NULL(output_tensor);
-    // Set auto grad meta data for op outputs
-    if (base_view != nullptr && output_tensor->storage_info() != nullptr) {
-      BuildViewAutoGradMeta(base_view, output_tensor, autograd::CreationType::kMultiOutput, requires_grad);
-    } else if (requires_grad) {
-      if (op->outputs()[i]->auto_grad_meta_data() == nullptr) {
-        op->outputs()[i]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(InputType::kOpOutput));
-      } else {
-        op->outputs()[0]->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
-      }
-    }
-    output_values[i] = output_tensor;
-  }
-  return std::make_shared<ValueTuple>(output_values);
+  return MakeOutput(requires_grad, op->outputs(), base_view);
 }
 
 ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,
@@ -501,6 +470,47 @@ ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost
     } else if (requires_grad) {
       if (op->outputs()[i]->auto_grad_meta_data() == nullptr) {
         op->outputs()[i]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(InputType::kOpOutput));
+      }
+    }
+    output_values[i] = output_tensor;
+  }
+  return std::make_shared<ValueTuple>(output_values);
+}
+
+ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const tensor::TensorPtr &output_tensor,
+                                  const tensor::TensorPtr &base_view) {
+  // delete NoneTypeNode check.
+  if (base_view != nullptr && output_tensor->storage_info() != nullptr) {
+    autograd::CreationType creationType =
+      requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode;
+    BuildViewAutoGradMeta(base_view, output_tensor, creationType, requires_grad);
+  } else if (requires_grad) {
+    if (output_tensor->auto_grad_meta_data() == nullptr) {
+      output_tensor->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(InputType::kOpOutput));
+    } else {
+      // View op from no grad mode has not input type, we need set it by inplace op,
+      // which only worked in view inplace process.
+      output_tensor->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
+    }
+  }
+  return output_tensor;
+}
+
+ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const std::vector<tensor::TensorPtr> &output_tensors,
+                                  const tensor::TensorPtr &base_view) {
+  size_t size = output_tensors.size();
+  std::vector<ValuePtr> output_values(size);
+  for (size_t i = 0; i < size; ++i) {
+    const auto &output_tensor = output_tensors[i];
+    MS_EXCEPTION_IF_NULL(output_tensor);
+    // Set auto grad meta data for op outputs
+    if (base_view != nullptr && output_tensor->storage_info() != nullptr) {
+      BuildViewAutoGradMeta(base_view, output_tensor, autograd::CreationType::kMultiOutput, requires_grad);
+    } else if (requires_grad) {
+      if (output_tensors[i]->auto_grad_meta_data() == nullptr) {
+        output_tensors[i]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(InputType::kOpOutput));
+      } else {
+        output_tensors[0]->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
       }
     }
     output_values[i] = output_tensor;
@@ -897,7 +907,7 @@ void AutoGradUtil::CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info) {
     }
   }
   if (op_grad_info->out_abs == nullptr) {
-    MS_LOG(EXCEPTION) << "Get output abs is nullptr";
+    op_grad_info->out_abs = kGradAbstractConverter.ConvertAbstract(op_grad_info->out_value);
   }
 }
 

@@ -385,6 +385,17 @@ def get_input_dtype(dtype: str, optional, use_basic_type=False):
     raise TypeError(f"""Unsupported convert type {dtype} for args.""")
 
 
+def get_output_dtype(dtype: str):
+    type_convert = {
+        'tensor': "mindspore::tensor::TensorPtr",
+        'tuple[tensor]': "std::vector<mindspore::tensor::TensorPtr>",
+        'list[tensor]': "std::vector<mindspore::tensor::TensorPtr>",
+    }
+    if dtype in type_convert:
+        return type_convert[dtype]
+    raise TypeError(f"""Unsupported convert type {dtype} for args.""")
+
+
 def is_cube(class_name):
     cube_set = {'Bmm', 'Baddbmm', 'MatMulExt', 'Mv'}
     if class_name in cube_set:

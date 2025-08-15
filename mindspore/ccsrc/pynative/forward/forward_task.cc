@@ -68,6 +68,21 @@ void PassthroughFrontendTask::SetException(const std::exception_ptr &e) {
   set_exception_func_();
 }
 
+void ViewPyboostPromiseTask::Run() {
+  static const std::string op_name = "View Operators";
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     op_name, false, false, task_id_);
+  run_func_();
+}
+
+void ViewPyboostPromiseTask::SetException(const std::exception_ptr &e) {
+  if (set_exception_func_ == nullptr) {
+    MS_LOG(ERROR) << "set_exception_func_ is null";
+    return;
+  }
+  set_exception_func_();
+}
+
 void SliceOpFrontendTask::Run() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      "Slice Op", false, false, task_id_);

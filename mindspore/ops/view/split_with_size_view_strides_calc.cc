@@ -21,13 +21,14 @@
 #include "view/split_with_size_view_strides_calc.h"
 
 namespace mindspore::ops {
-TensorStorageInfoPtrList SplitWithSizeViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                        const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList SplitWithSizeViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                         const std::vector<int64_t> &split_size, const int64_t &dim) {
-  return SplitWithSizeBasicTypeCalc(prim, input_tensor, split_size, dim);
+  return SplitWithSizeBasicTypeCalc(input_tensor, split_size, dim);
 }
+
 TensorStorageInfoPtrList SplitWithSizeViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return SplitWithSizeCalc(prim, inputs);
 }
+
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(SplitWithSizeView, SplitWithSizeViewCalc);
 }  // namespace mindspore::ops
