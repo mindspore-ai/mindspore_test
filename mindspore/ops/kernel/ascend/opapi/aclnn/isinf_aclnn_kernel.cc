@@ -31,6 +31,7 @@ namespace isinf {
 
 void IsInfAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
+  ClearOpsWorkSpaceList();
   const auto &input_shape = inputs[kIndex0]->GetShapeVector();
 
   auto type_id = inputs[kIndex0]->dtype_id();
