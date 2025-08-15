@@ -247,36 +247,6 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     }
   }
 
-  auto IsVirtualSummaryKernel = [](const CNodePtr &kernel) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    if (!AnfUtils::IsRealKernel(kernel)) {
-      auto name = common::AnfAlgo::GetCNodeName(kernel);
-      return name == "ScalarSummary" || name == "TensorSummary" || name == "ImageSummary" || name == "HistogramSummary";
-    }
-    return false;
-  };
-
-  auto IsKernelNotSupportKbkSubGraphMode = [&IsVirtualSummaryKernel](const CNodePtr &kernel) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    return IsVirtualSummaryKernel(kernel);
-  };
-
-  for (const auto &graph : graphs) {
-    MS_EXCEPTION_IF_NULL(graph);
-    auto topo_nodes = TopoSort(graph->get_return());
-    if (std::any_of(topo_nodes.begin(), topo_nodes.end(), [&](const AnfNodePtr &node) {
-          MS_EXCEPTION_IF_NULL(node);
-          if (!node->isa<CNode>()) {
-            return false;
-          }
-          auto kernel = node->cast<CNodePtr>();
-          return IsKernelNotSupportKbkSubGraphMode(kernel);
-        })) {
-      MS_LOG(DEBUG) << "Summary node is not supported, enable input optimize failed.";
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -1740,6 +1710,19 @@ bool IsRootGraphParameter(const AnfNodePtr &input_node, const KernelGraphPtr &gr
          root_graph_parameters.end();
 }
 
+void SetSummaryInputUserCount(const std::map<std::string, std::pair<AnfNodePtr, int>> &summary_nodes,
+                              const AnfNodePtr input_node, size_t real_outer_idx, size_t real_inner_idx) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  auto iter =
+    std::find_if(summary_nodes.begin(), summary_nodes.end(), [&input_node, &real_inner_idx](const auto &pair) {
+      return pair.second.first == input_node && pair.second.second == SizeToInt(real_inner_idx);
+    });
+  if (iter != summary_nodes.end()) {
+    (void)cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX);
+  }
+}
+
 void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_compiler_info) {
   ParameterStore &parameterStore = ParameterStore::GetInstance();
   auto cur_graph_parameter_store = parameterStore.GetGraphParameterStore();
@@ -1749,6 +1732,8 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
     MS_EXCEPTION_IF_NULL(graph);
     const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
     const auto &root_parameters = graph_compiler_info.origin_parameters_order_;
+    bool exist_summary = graph->summary_node_exist();
+    auto summary_nodes = graph->summary_nodes();
 
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
@@ -1814,6 +1799,9 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
                     << " for front node:" << front_node_with_index.first->DebugString()
                     << " index:" << front_node_with_index.second << " position:" << real_outer_idx
                     << " kernel tensor:" << cur_kernel_tensor->ToString();
+      if (exist_summary) {
+        SetSummaryInputUserCount(summary_nodes, input_node, real_outer_idx, real_inner_idx);
+      }
     }
   }
   control_node_scheduler_.BuildGraphParameterStoreForControlNode(graph_compiler_info, memory_manager_aid_);
