@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"

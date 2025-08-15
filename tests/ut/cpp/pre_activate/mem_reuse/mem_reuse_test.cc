@@ -19,7 +19,7 @@
 #include "include/backend/kernel_graph.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "frontend/operator/ops.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"

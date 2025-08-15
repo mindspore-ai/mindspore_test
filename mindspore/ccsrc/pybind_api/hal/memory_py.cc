@@ -21,7 +21,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 namespace mindspore {
 namespace hal {

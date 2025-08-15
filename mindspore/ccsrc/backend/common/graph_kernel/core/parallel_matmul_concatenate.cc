@@ -16,7 +16,7 @@
 
 #include "backend/common/graph_kernel/core/parallel_matmul_concatenate.h"
 #include "base/base.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 
 namespace mindspore::graphkernel {

@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <memory>
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/device/res_manager/swap_manager.h"
+#include "runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "plugin/res_manager/gpu/gpu_res_manager.h"
 
 namespace mindspore {

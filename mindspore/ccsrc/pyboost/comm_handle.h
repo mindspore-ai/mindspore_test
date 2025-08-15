@@ -21,7 +21,7 @@
 #include <utility>
 #include "include/common/visible.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "ir/device_event.h"
+#include "runtime/hardware_abstract/event/device_event.h"
 
 namespace mindspore {
 namespace kernel {

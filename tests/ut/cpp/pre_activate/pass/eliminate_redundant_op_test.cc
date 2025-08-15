@@ -28,7 +28,7 @@
 #include "include/backend/optimizer/pass_manager.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 
 #define private public

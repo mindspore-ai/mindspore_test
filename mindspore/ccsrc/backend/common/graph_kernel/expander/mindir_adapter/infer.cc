@@ -21,7 +21,7 @@
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 
 namespace mindspore::graphkernel::expander {
 void InferByDeviceInfo::InferOp(const NodePtr &node, const PrimitivePtr &prim, const NodePtrList &args) {

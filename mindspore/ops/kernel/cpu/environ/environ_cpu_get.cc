@@ -15,7 +15,7 @@
  */
 
 #include "kernel/cpu/environ/environ_cpu_get.h"
-#include "kernel/environ_manager.h"
+#include "runtime/hardware_abstract/kernel_base/environ_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {

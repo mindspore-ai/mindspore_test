@@ -8,10 +8,11 @@ if(ENABLE_CPU)
         list(REMOVE_ITEM HARDWARE_CPU_SRC_LIST "ms_collective_topo.cc" "ms_collective_node.cc")
     endif()
     if(ENABLE_MPI)
-        set(MPI_COLLECTIVE_SRCS "mpi_collective_comm_lib.cc"
-                                "mpi_communication_group.cc"
-                                ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc
-                                ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/communication_group.cc)
+        set(MPI_COLLECTIVE_SRCS
+            "mpi_collective_comm_lib.cc"
+            "mpi_communication_group.cc"
+            ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/collective_communication_lib.cc
+            ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/communication_group.cc)
     set_property(SOURCE ${MPI_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
     add_library(mpi_collective SHARED ${MPI_COLLECTIVE_SRCS})

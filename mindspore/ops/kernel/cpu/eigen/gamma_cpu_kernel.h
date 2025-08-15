@@ -25,7 +25,7 @@
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ops/kernel/cpu/utils/random_util.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 #include "mindspore/ops/infer/random_gamma.h"
 
 namespace mindspore {

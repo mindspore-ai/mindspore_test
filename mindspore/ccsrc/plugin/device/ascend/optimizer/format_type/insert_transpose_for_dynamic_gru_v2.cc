@@ -22,7 +22,7 @@
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

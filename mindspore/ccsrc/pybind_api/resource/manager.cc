@@ -56,7 +56,7 @@
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 #include "pipeline/jit/ps/pass_config.h"
 

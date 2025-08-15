@@ -17,7 +17,7 @@
 #include <optional>
 #include "ir/anf.h"
 #include "abstract/dshape.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/ge_backend/graph_ir/storage_format_config_factory.h"
 #include "utils/log_adapter.h"
 

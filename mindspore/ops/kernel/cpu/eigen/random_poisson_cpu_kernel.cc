@@ -20,7 +20,7 @@
 #include "unsupported/Eigen/CXX11/Tensor"
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/philox_random.h"
+#include "runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

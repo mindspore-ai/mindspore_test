@@ -22,7 +22,7 @@
 #include "frontend/operator/ops.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/ccsrc/include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

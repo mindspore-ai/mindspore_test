@@ -26,7 +26,7 @@
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/device/gpu/hal/hardware/nvidia_collective_comm_lib.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
-#include "runtime/collective/collective_comm_lib_loader.h"
+#include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 
 namespace mindspore {
 namespace kernel {

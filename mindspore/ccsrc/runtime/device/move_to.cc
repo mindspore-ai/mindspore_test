@@ -20,7 +20,6 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
@@ -128,10 +127,13 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
     auto host_shape = src_tensor->shape();
 
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT),
-                                                     type_id, host_shape, to, device_id);
-    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
-    dst_addr = kernel_tensor->device_address();
+    device::DeviceContextKey host_key = {to, device_id};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
+      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, device_id, 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

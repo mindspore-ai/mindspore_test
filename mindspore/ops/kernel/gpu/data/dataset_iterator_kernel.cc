@@ -25,7 +25,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"

@@ -34,7 +34,7 @@
 #include "ir/tensor_new.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/python_adapter.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"

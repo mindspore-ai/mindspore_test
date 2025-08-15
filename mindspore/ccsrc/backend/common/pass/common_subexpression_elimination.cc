@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

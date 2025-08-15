@@ -18,7 +18,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"

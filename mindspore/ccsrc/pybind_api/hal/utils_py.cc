@@ -22,7 +22,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 
 namespace mindspore {
 namespace hal {

@@ -23,7 +23,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

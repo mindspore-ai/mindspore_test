@@ -23,7 +23,7 @@
 #include <queue>
 #include <map>
 #include <tuple>
-#include "runtime/device/res_manager/capture_graph.h"
+#include "runtime/graph_scheduler/graph_capture/capture_graph.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 #include "runtime/graph_scheduler/actor/super_kernel_actor.h"

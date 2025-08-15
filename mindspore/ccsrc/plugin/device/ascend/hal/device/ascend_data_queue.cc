@@ -19,7 +19,7 @@
 #include <map>
 #include <utility>
 #include "graph/types.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"

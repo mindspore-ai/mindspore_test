@@ -23,7 +23,7 @@
 #include "utils/anf_utils.h"
 #include "include/common/expander/core/emitter.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

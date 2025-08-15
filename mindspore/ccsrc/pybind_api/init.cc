@@ -44,7 +44,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/cluster/tcp_store.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "pipeline/llm_boost/utils.h"

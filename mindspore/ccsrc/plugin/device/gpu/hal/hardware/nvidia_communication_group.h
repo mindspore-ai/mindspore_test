@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "runtime/collective/communication_group.h"
+#include "runtime/hardware_abstract/collective/communication_group.h"
 #include "utils/dlopen_macro.h"
 
 namespace mindspore {

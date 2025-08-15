@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/environ/environ_gpu_set.h"
-#include "kernel/environ_manager.h"
+#include "runtime/hardware_abstract/kernel_base/environ_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 

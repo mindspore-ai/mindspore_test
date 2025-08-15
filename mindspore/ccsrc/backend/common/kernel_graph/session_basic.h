@@ -32,7 +32,7 @@
 #include "ir/tensor.h"
 #include "utils/any.h"
 #include "include/common/utils/contract.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 #include "pynative/base.h"
 

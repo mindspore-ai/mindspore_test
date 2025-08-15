@@ -21,7 +21,7 @@
 #include "debug/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
-#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 
 namespace mindspore {
 namespace kernel {

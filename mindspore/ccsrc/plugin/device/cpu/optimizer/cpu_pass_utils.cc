@@ -25,7 +25,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/trace_base.h"

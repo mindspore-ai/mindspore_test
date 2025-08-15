@@ -17,7 +17,7 @@
 #include "backend/ge_backend/runtime/actor/control_flow/control_actor.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"

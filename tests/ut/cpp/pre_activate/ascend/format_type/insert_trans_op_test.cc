@@ -19,7 +19,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
-#include "include/backend/kernel_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
 
 #define private public

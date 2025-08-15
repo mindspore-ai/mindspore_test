@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/device/cpu/hal/hardware/mpi_communication_group.h"
 
 #ifndef EXPORT_MPI_WRAPPER

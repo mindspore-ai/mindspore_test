@@ -19,7 +19,7 @@
 #include <string>
 #include <map>
 #include "graph/types.h"
-#include "include/backend/data_queue/data_queue_mgr.h"
+#include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "utils/log_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

@@ -21,7 +21,6 @@
 #include <queue>
 #include <string>
 #include <memory>
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
