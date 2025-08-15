@@ -19,7 +19,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "plugin/device/ascend/optimizer/ascend_pass_optimization.h"

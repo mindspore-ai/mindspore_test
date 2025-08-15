@@ -37,7 +37,7 @@
 #include "include/common/utils/config_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/common/pass_manager/common_backend_optimization.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pynative/base.h"

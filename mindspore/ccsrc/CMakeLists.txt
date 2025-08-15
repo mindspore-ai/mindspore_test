@@ -135,7 +135,7 @@ set(BACKEND_COMMON_SUB_COMP
         distributed
         kernel
         backend/operator
-        backend/common/optimizer
+        backend/common/pass_manager
         backend/common/pass
         backend/common/kernel_graph
         backend/common/graph_kernel

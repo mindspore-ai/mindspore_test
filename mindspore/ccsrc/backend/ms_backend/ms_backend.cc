@@ -54,7 +54,7 @@
 #endif
 
 #include "runtime/graph_scheduler/device_address_utils.h"
-#include "backend/common/optimizer/dynamic_shape_helper.h"
+#include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"
 #include "include/common/utils/stub_tensor.h"

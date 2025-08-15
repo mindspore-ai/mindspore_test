@@ -34,7 +34,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "backend/common/optimizer/dynamic_shape_helper.h"
+#include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
