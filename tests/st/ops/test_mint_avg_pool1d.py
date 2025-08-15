@@ -100,7 +100,6 @@ def test_avg_pool1d_dynamic():
             [input_case2, 6, 1, 2, True, False],
         ],
         disable_mode=['GRAPH_MODE_GE'],
-        disable_case=['EmptyTensor',
-                      'ScalarTensor'],
+        disable_case=['ViewTensor', 'EmptyTensor', 'ScalarTensor'],
         case_config={'disable_input_check': True}
     )

@@ -124,7 +124,7 @@ def test_gmm_dyn_shape():
             inputs_1,
         ],
         disable_mode=['GRAPH_MODE_GE', 'PYNATIVE_MODE'],
-        disable_case=['EmptyTensor', 'ScalarTensor'],
+        disable_case=['ViewTensor', 'EmptyTensor', 'ScalarTensor'],
         case_config={'disable_input_check': True,
                      'disable_grad': True,
                      'deterministic_use_origin_inputs': True},

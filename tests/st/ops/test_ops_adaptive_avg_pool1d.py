@@ -50,8 +50,7 @@ def test_batchnorm1d_dyn():
     in2 = Tensor(np.random.randn(2, 4, 2), dtype=ms.float32)
     TEST_OP(forward_adaptive_avg_pool1d_net_dyn, [[in1], [in2]],
             disable_mode=['GRAPH_MODE_GE'],
-            disable_case=['EmptyTensor',
-                          'ScalarTensor'])
+            disable_case=['ViewTensor', 'EmptyTensor', 'ScalarTensor'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

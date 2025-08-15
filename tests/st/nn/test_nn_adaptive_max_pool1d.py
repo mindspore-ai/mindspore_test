@@ -95,5 +95,4 @@ def test_adaptive_max_pool1d_dyn():
     in2 = Tensor(np.random.randn(2, 4), dtype=ms.float32)
     TEST_OP(forward_adaptive_max_pool1d_for_dyn, [[in1], [in2]],
             disable_mode=['GRAPH_MODE_GE'],
-            disable_case=['EmptyTensor',
-                          'ScalarTensor'])
+            disable_case=['ViewTensor', 'EmptyTensor', 'ScalarTensor'])

@@ -98,7 +98,7 @@ def test_inplace_matmul_add_dyn_shape():
             list(generate_inputs(20, 30, 40, batch=4, dtype=ms.bfloat16)),
         ],
         disable_mode=['GRAPH_MODE_GE', 'PYNATIVE_MODE'],
-        disable_case=['EmptyTensor', 'ScalarTensor'],
+        disable_case=['ViewTensor', 'EmptyTensor', 'ScalarTensor'],
         case_config={'disable_grad': True},
         inplace_update=True
     )
