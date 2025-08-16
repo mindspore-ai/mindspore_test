@@ -127,12 +127,12 @@ if(ENABLE_MINDDATA)
           DESTINATION ${INSTALL_LIB_DIR} RENAME libswscale.so.6 COMPONENT mindspore)
     endif()
 
-    install(FILES ${opencv_LIBPATH}/libopencv_core.so.4.5.2
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_core.so.4.5 COMPONENT mindspore)
-    install(FILES ${opencv_LIBPATH}/libopencv_imgcodecs.so.4.5.2
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.so.4.5 COMPONENT mindspore)
-    install(FILES ${opencv_LIBPATH}/libopencv_imgproc.so.4.5.2
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.so.4.5 COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_core.so.4.11.0
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_core.so.411 COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_imgcodecs.so.4.11.0
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.so.411 COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_imgproc.so.4.11.0
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.so.411 COMPONENT mindspore)
     install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.so.10.0.0
       DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.so.10 COMPONENT mindspore)
 
