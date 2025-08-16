@@ -344,6 +344,8 @@ bool PinMemoryAllocator::Free(void *address_ptr) {
   return true;
 }
 
+bool PinMemoryAllocator::IsPinned() { return true; }
+
 void AscendResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

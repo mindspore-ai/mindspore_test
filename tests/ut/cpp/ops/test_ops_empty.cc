@@ -24,30 +24,35 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedInputArgs({InferInfoParam{ShapeArray{{}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(4), CreateScalar<int64_t>(1), CreateScalar<int64_t>(4)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat64)},
-                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")}})
+                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{4, 1, 4}}, {kNumberTypeFloat64});
   generator
     .FeedInputArgs({InferInfoParam{ShapeArray{{}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(2), kValueAny}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat32)},
-                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")}})
+                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeArray{}, TypeIdList{}, ValuePtrList{}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat32)},
-                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")}})
+                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeArray{{}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(4), CreateScalar<int64_t>(1), CreateScalar<int64_t>(4)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64},
-                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")}})
+                    InferInfoParam{ShapeVector{}, kObjectTypeString, MakeValue("Ascend")},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{4, 1, 4}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeArray{{}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(4), CreateScalar<int64_t>(1), CreateScalar<int64_t>(4)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(kNumberTypeFloat64)},
-                    InferInfoParam{ShapeVector{}, kObjectTypeString}})
+                    InferInfoParam{ShapeVector{}, kObjectTypeString},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)}})
     .FeedExpectedOutput({{4, 1, 4}}, {kNumberTypeFloat64});
   return generator.Generate();
 }

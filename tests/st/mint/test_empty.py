@@ -24,8 +24,8 @@ from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 class Net(ms.nn.Cell):
-    def construct(self, *size, dtype=None, device=None):
-        return mint.empty(*size, dtype=dtype, device=device)
+    def construct(self, *size, dtype=None, device=None, pin_memory=False):
+        return mint.empty(*size, dtype=dtype, device=device, pin_memory=pin_memory)
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -156,3 +156,30 @@ def test_empty_dynamic_shape():
             [[(2, 3)], [(3, 4, 5)]],
             disable_mode=['GRAPH_MODE_GE'],
             disable_case=['ScalarTensor'])
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('pin_memory', [None, True, False])
+def test_empty_pin_memory(pin_memory):
+    """
+    Feature: Test empty with pin_memory parameter.
+    Description: call mint.empty with valid input.
+    Expectation: return the correct value.
+    """
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    input_size = (1, 2, 3)
+    dtype = mstype.float32
+
+    net = Net()
+    if pin_memory is None:
+        y = net(input_size, dtype=dtype, device="CPU")
+    else:
+        y = net(input_size, dtype=dtype, device="CPU", pin_memory=pin_memory)
+    if pin_memory is None:
+        assert not y.is_pinned()
+    elif pin_memory:
+        assert y.is_pinned()
+    else:
+        assert not y.is_pinned()

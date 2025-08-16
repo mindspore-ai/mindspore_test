@@ -1514,12 +1514,12 @@ def deprecated_tensor_logaddexp2(input, other):
 
 
 # 157
-def tensor_empty(*size, dtype=None, device=None):
+def tensor_empty(*size, dtype=None, device=None, pin_memory=False):
     logger.error(
         "This is a function for empty not should be called. Please check the implementation.")
 
 
-def tensor_empty_like(input, *, dtype=None, device=None):
+def tensor_empty_like(input, *, dtype=None, device=None, pin_memory=False):
     raise NotImplementedError(
         "This is a function for empty_like should not be called. Please check the implementation.")
 

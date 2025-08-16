@@ -562,6 +562,37 @@ extern PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_pin_memory(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &value = tensor->value;
+  return tensor::PackTensor(TensorPybind::MakePinMemoryTensor(value));
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_is_pinned(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &tensor_py = tensor->value;
+  const auto &base_tensor = tensor_py.GetTensor();
+  if (base_tensor->device_address() == nullptr) {
+    MS_LOG(INFO) << "TensorPython_is_pinned device_address is nullptr.";
+    Py_RETURN_FALSE;
+  }
+  const auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  const auto allocator = device_address->allocator();
+  if (device_address->allocator() == nullptr) {
+    MS_LOG(INFO) << "TensorPython_is_pinned allocator is nullptr.";
+    Py_RETURN_FALSE;
+  }
+  if (allocator->IsPinned()) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorIndex_setitem_index_info(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *py_data;
@@ -1155,6 +1186,33 @@ static PyMethodDef Tensor_methods[] = {
                                 Examples:
                                     >>> a = np.ones((2, 3))
                                     >>> t = mindspore.Tensor.from_numpy(a)
+                                )mydelimiter"},
+  {"pin_memory", TensorPython_pin_memory, METH_VARARGS, R"mydelimiter(
+                                Copy current Tensor to pinned memory, and return a new Tensor.
+                                
+                                Returns:
+                                    Tensor, with same elements as the input tensor.
+                                
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> from mindspore import Tensor
+                                    >>> x = Tensor([1, 2, 3], ms.int16)
+                                    >>> out = x.pin_memory()
+                                    >>> print(out)
+                                    [1 2 3]
+                                )mydelimiter"},
+  {"is_pinned", TensorPython_is_pinned, METH_NOARGS, R"mydelimiter(
+                                Check whether a Tensor is allocated in pinned memory.
+
+                                Returns:
+                                    bool, whether the tensor is allocated in pinned memory.
+                                
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> from mindspore import Tensor
+                                    >>> x = ms.Tensor([1, 2, 3], ms.int16)
+                                    >>> print(x.is_pinned())
+                                    False
                                 )mydelimiter"},
   {"setitem_index_info", TensorIndex_setitem_index_info, METH_STATIC | METH_VARARGS, "Set item index information."},
   {"getitem_index_info", TensorIndex_getitem_index_info, METH_STATIC | METH_VARARGS, "Get item index information."},
