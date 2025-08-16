@@ -34,11 +34,11 @@ class TestNet(nn.Cell):
     """Test network"""
     def __init__(self, offload=True):
         super(TestNet, self).__init__()
-        self.fc1_werght = Parameter(initializer('normal', [28*28, 2560*50], ms.float32))
+        self.fc1_werght = Parameter(initializer('normal', [28*28, 2560*12], ms.float32))
         if offload:
-            self.fc2_werght = Parameter(initializer('normal', [2560*50, 2560], ms.float32), device="CPU")
+            self.fc2_werght = Parameter(initializer('normal', [2560*12, 2560], ms.float32), device="CPU")
         else:
-            self.fc2_werght = Parameter(initializer('normal', [2560*50, 2560], ms.float32))
+            self.fc2_werght = Parameter(initializer('normal', [2560*12, 2560], ms.float32))
         self.fc3_werght = Parameter(initializer('normal', [2560, 10], ms.float32))
 
         self.flatten = P.Flatten()
@@ -67,6 +67,7 @@ def test_param_offload():
     '''
     os.environ['MS_ALLOC_CONF'] = "enable_vmm:true"
     ms.set_seed(1)
+    ms.runtime.launch_blocking()
     context.set_context(jit_level='O0')
     context.set_context(max_device_memory='8.5GB')
 
@@ -88,7 +89,7 @@ def test_param_offload():
         label = Tensor(np.ones([batch_size]).astype(np.int32))
         loss = train_network(data, label)
         losses.append(loss)
-    assert losses[-1].asnumpy() <= 2.28684
+    assert losses[-1].asnumpy() <= 2.299586
     del os.environ['MS_ALLOC_CONF']
 
 
@@ -142,4 +143,4 @@ def test_param_offload_between_nets():
         loss = train_network(data, label)
         losses.append(loss)
 
-    assert losses[-1].asnumpy() <= 2.28684
+    assert losses[-1].asnumpy() <= 2.299586

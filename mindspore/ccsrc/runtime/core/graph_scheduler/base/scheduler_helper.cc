@@ -189,7 +189,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
       auto store_kernel_tensor = graph_parameter_store->Fetch(outer_idx, 0);
       if (store_kernel_tensor == nullptr || store_kernel_tensor->device_address() == nullptr) {
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
-        const auto &parameter_device = DeviceAddressUtils::GetParameterDeviceStr(anf_node);
+        const auto &parameter_device = AnfAlgo::GetParameterDeviceStr(anf_node);
         if (!parameter_device.empty()) {
           if (parameter_device != kToCpu) {
             MS_LOG(EXCEPTION) << "Device of parameter is supposed to be \"CPU\" if it is set, but got "

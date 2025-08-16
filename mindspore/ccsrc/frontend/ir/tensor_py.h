@@ -177,15 +177,6 @@ class FRONTEND_EXPORT TensorPybind {
 
   static std::string GetDevice(const TensorPtr &tensor);
 
-  struct TensorPyUserData {
-    py::object obj;
-    ~TensorPyUserData() {
-      // cppcheck-suppress unreadVariable
-      py::gil_scoped_acquire acquire_gil;
-      obj = py::object();
-    }
-  };
-
   static void SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value);
 
   static py::object GetUserData(const TensorPtr &tensor, const py::str &key);

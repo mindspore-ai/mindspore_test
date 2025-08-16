@@ -2046,16 +2046,23 @@ bool AnfAlgo::IsNodeOutputDynamicShape(const AnfNodePtr &node) {
 }
 
 std::string AnfAlgo::GetMoveToDstStr(const AnfNodePtr &node) {
-  constexpr size_t kToInputIdx = 2;
+  size_t dst_input_idx = kIndex0;
   MS_EXCEPTION_IF_NULL(node);
-  if (!node->isa<CNode>() || !IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+  if (!node->isa<CNode>()) {
+    return "";
+  }
+  if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+    dst_input_idx = kIndex2;
+  } else if (IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
+    dst_input_idx = kIndex3;
+  } else {
     return "";
   }
   const auto cnode = node->cast<CNodePtr>();
   if (cnode == nullptr) {
     return "";
   }
-  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(kToInputIdx), 0, true);
+  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(dst_input_idx), 0, true);
   const auto &to_input = kernel_with_index.first;
   if (to_input == nullptr || !to_input->isa<ValueNode>()) {
     MS_LOG(INFO) << "The second input of MoveTo is not a ValueNode.";

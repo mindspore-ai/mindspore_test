@@ -34,6 +34,15 @@ namespace py = pybind11;
 namespace mindspore {
 namespace tensor {
 
+struct TensorPyUserData {
+  py::object obj;
+  ~TensorPyUserData() {
+    // cppcheck-suppress unreadVariable
+    py::gil_scoped_acquire acquire_gil;
+    obj = py::object();
+  }
+};
+
 // TensorPyBase: An entity class
 class COMMON_EXPORT TensorPy {
  public:

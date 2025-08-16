@@ -80,6 +80,14 @@ void GraphParameterStore::SetOffloaded(size_t outer_index, size_t inner_index, b
   is_offload_parameter_[outer_index][inner_index] = is_offload;
 }
 
+bool GraphParameterStore::GetPinned(size_t outer_index, size_t inner_index) {
+  return is_parameter_pinned_[outer_index][inner_index];
+}
+
+void GraphParameterStore::SetPinned(size_t outer_index, size_t inner_index, bool is_offload) {
+  is_parameter_pinned_[outer_index][inner_index] = is_offload;
+}
+
 bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_index) {
   return parameter_used_times_[outer_index][inner_index] > 1;
 }

@@ -3689,9 +3689,21 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     }
     const auto &backend_node = node_with_index_with_context.first.first;
     const auto &index = node_with_index_with_context.first.second;
-    const auto &device_context = node_with_index_with_context.second;
+    auto device_context = node_with_index_with_context.second;
     MS_EXCEPTION_IF_NULL(backend_node);
     MS_EXCEPTION_IF_NULL(device_context);
+    const auto &parameter_device = AnfAlgo::GetParameterDeviceStr(root_graph_parameter);
+    std::shared_ptr<AddressAllocator> allocator = nullptr;
+    if (!parameter_device.empty() && parameter_device == kToCpu) {
+      if (device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+        allocator = device_context->device_res_manager_->pin_mem_allocator();
+        MS_LOG(DEBUG) << "Use PinMemoryAllocator for offloaded parameter. Parameter: "
+                      << root_graph_parameter->fullname_with_scope();
+      }
+      device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {parameter_device, device_context->device_context_key().device_id_});
+      MS_LOG(INFO) << "Offloaded parameter:" << root_graph_parameter->fullname_with_scope();
+    }
     if (index != 0) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, backend_node)
         << "#dmsg#Runtime error info:#dmsg#Device tensor store does not support tuple type, node:"
@@ -3713,6 +3725,7 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     new_device_tensor->SetNodeIndex(backend_node, index);
     new_device_tensor->set_is_ptr_persisted(sub_device_tensor->is_ptr_persisted());
     new_device_tensor->set_from_persistent_mem(true);
+    new_device_tensor->set_allocator(allocator);
     kernel_tensor->set_user_data(sub_kernel_tensor->user_data());
 
     SchedulerHelper::AddDeviceTensorStore(root_graph_parameter, kernel_tensor);

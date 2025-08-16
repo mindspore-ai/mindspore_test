@@ -111,7 +111,7 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
   }
   auto cnode = node->cast<CNodePtr>();
   if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
-    if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+    if (IsPrimitiveCNode(node, prim::kPrimMoveTo) || IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
       AssignStreamForMoveTo(node);
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
