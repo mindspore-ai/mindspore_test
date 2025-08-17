@@ -137,13 +137,18 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
           << "Can not find the loss cnode for multi output, find node is " << sens_cnode_input->DebugString();
       }
       auto loss_cnode = loss_node_info.loss_node;
-      MS_EXCEPTION_IF_NULL(sens_cnode);
+      MS_EXCEPTION_IF_NULL(loss_cnode);
       if (sens_cnode->size() != loss_cnode->size()) {
         MS_LOG_WITH_NODE(EXCEPTION, sens_cnode) << "for multi output, sens cnode size is not equal to loss cnode size";
       }
       for (size_t i = 1; i < sens_cnode->size(); ++i) {
-        auto sens_input_cnode = sens_cnode->input(i)->cast<CNodePtr>();
-        auto loss_input_cnode = loss_cnode->input(i)->cast<CNodePtr>();
+        auto loss_input_node = GetInputNodeBySkipDependAndUpdateState(loss_cnode, i);
+        auto loss_input_cnode = loss_input_node->cast<CNodePtr>();
+        // when return multi losses, one or multi of them may not be involved in the calculation and will be the initial
+        // value 0, so we need to ignore them.
+        if (loss_input_cnode == nullptr) {
+          continue;
+        }
         LossNodeInfo real_loss_node_info;
         real_loss_node_info.loss_node = loss_input_cnode;
         real_loss_node_info.dout_index = 0;

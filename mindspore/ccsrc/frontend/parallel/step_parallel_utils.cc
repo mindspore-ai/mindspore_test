@@ -3974,5 +3974,21 @@ bool StringToInt(std::string *str, int64_t *value) {
   }
   return true;
 }
+
+AnfNodePtr GetInputNodeBySkipDependAndUpdateState(const CNodePtr &cnode, size_t index) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto input_size = cnode->size();
+  if (index >= cnode->size()) {
+    MS_LOG(EXCEPTION) << "The index( " << index << ") exceeds the input size of cnode(" << input_size
+                      << "). The node is " << cnode->DebugString();
+  }
+  AnfNodePtr ret_node = cnode->input(index);
+  while (ret_node != nullptr && IsOneOfPrimitiveCNode(ret_node, {prim::kPrimDepend, prim::kPrimUpdateState})) {
+    auto ret_cnode = ret_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(ret_cnode);
+    ret_node = ret_cnode->input(kIndex1);
+  }
+  return ret_node;
+}
 }  // namespace parallel
 }  // namespace mindspore
