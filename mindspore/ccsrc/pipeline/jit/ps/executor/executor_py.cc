@@ -386,6 +386,38 @@ py::bytes ExecutorPy::GetFuncGraphProto(const std::string &phase, const std::str
   MS_LOG(INTERNAL_EXCEPTION) << "Unknown ir type: " << ir_type;
 }
 
+py::bytes ExecutorPy::GetOnnxFuncGraphProto(const std::string &phase, const std::vector<std::string> &input_names,
+                                            const std::vector<std::string> &outputs_names, const int &opset_version,
+                                            const bool &export_params, const bool &keep_initializers_as_inputs,
+                                            const py::dict &dynamic_axes, const bool &extra_save_params,
+                                            const std::string &save_file_dir) {
+  FuncGraphPtr fg_ptr = GetFuncGraph(phase);
+  std::map<std::string, std::map<int, std::string>> dynamic_axes_map;
+
+  if (!dynamic_axes.empty()) {
+    for (auto item : dynamic_axes) {
+      std::string input_name = py::cast<std::string>(item.first);
+      py::dict inner_dict = py::cast<py::dict>(item.second);
+      std::map<int, std::string> dim_name_map;
+      for (auto inner_item : inner_dict) {
+        int dim = py::cast<int>(inner_item.first);
+        std::string shape_name = py::cast<std::string>(inner_item.second);
+        dim_name_map[dim] = shape_name;
+      }
+      dynamic_axes_map[input_name] = dim_name_map;
+    }
+  }
+
+  std::string proto_str =
+    GetOnnxProtoString(fg_ptr, input_names, outputs_names, opset_version, export_params, keep_initializers_as_inputs,
+                       dynamic_axes_map, extra_save_params, save_file_dir);
+
+  if (proto_str.empty()) {
+    MS_LOG(EXCEPTION) << "Export ONNX format model failed.";
+  }
+  return proto_str;
+}
+
 namespace {
 std::map<string, string> GenerateJitConfigMap(const py::dict &jit_config) {
   std::map<string, string> ret{};
