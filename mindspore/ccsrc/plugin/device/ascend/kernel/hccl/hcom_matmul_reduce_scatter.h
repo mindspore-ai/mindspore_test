@@ -43,6 +43,7 @@ class HcomMatMulReduceScatterKernel : public HcclKernel {
   bool transpose_a_{false};
   bool transpose_b_{false};
 
+#ifdef ENABLE_INTERNAL_KERNELS
   Lcal::CoCDataTypeDesc lcoc_dtype_{Lcal::CoCDataTypeDesc::FP16FP16_FP32_FP16};
   Lcal::LcalType lcoc_type_{Lcal::LcalType::MATMUL_REDUCE_SCATTER};
   Lcal::QuantInfo quant_info_{};
@@ -53,6 +54,7 @@ class HcomMatMulReduceScatterKernel : public HcclKernel {
   SetParamForLcocFunPtr set_param_for_lcoc_func_{nullptr};
   GetLcocWorkspaceSizeFunPtr get_lcoc_workspace_func_{nullptr};
   MatmulReduceScatterFunPtr matmul_reduce_scatter_func_{nullptr};
+#endif
 };
 
 MS_HCCL_REG_KERNEL(MatmulReduceScatter, HcomMatMulReduceScatterKernel);
