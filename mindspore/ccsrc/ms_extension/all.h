@@ -28,12 +28,14 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/debug/profiler/profiler.h"
+#include "mindspore/ccsrc/pynative/grad/function.h"
 
 // ascend files
 #ifdef CUSTOM_ASCEND_OP
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"
 #endif  // CUSTOM_ASCEND_OP
 
 // The BaseTensor is deprecated
