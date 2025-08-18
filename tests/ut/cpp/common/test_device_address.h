@@ -65,7 +65,8 @@ class TestDeviceAddress : public DeviceAddress {
 
   void ClearDeviceMemory() {}
   bool IsPtrValid() const {
-    return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
+    return GetDevicePtr() != nullptr ||
+           (extra_data_->hete_info_ != nullptr && extra_data_->hete_info_->host_ptr_ != nullptr);
   }
   DeviceType GetDeviceType() const { return DeviceType::kCPU; }
 

@@ -96,25 +96,32 @@ void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMa
   g_deleter_func[static_cast<int>(device_type)] = func;
 }
 
-DeviceAddress::DeviceAddress() { device_pointer_ = std::make_shared<DevicePointer>(); }
+DeviceAddress::DeviceAddress() {
+  device_pointer_ = std::make_shared<DevicePointer>();
+  extra_data_ = std::make_shared<ExtraData>();
+}
 
 DeviceAddress::DeviceAddress(void *device_ptr, size_t size)
-    : device_pointer_(std::make_shared<DevicePointer>(device_ptr)), size_(size) {}
+    : device_pointer_(std::make_shared<DevicePointer>(device_ptr)), size_(size) {
+  extra_data_ = std::make_shared<ExtraData>();
+}
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name)
     : device_pointer_(std::make_shared<DevicePointer>(ptr)), size_(size) {
   device_type_ = device::GetDeviceTypeByName(device_name);
   SetDevicePtrDeleter();
+  extra_data_ = std::make_shared<ExtraData>();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
                              const std::string &device_name) {
   device_pointer_ = std::make_shared<DevicePointer>();
+  extra_data_ = std::make_shared<ExtraData>();
   device_pointer_->set_ptr(ptr);
   size_ = size;
-  dtype_id_ = type_id;
+  extra_data_->dtype_id_ = type_id;
   device_type_ = device::GetDeviceTypeByName(device_name);
-  format_ = kernel::GetFormatFromStrToEnum(format);
+  extra_data_->format_ = kernel::GetFormatFromStrToEnum(format);
   SetDevicePtrDeleter();
 }
 
@@ -123,22 +130,24 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_ve
     : device_pointer_(std::make_shared<DevicePointer>(ptr)),
       stream_id_(stream_id),
       size_(size),
-      format_(format),
-      dtype_id_(type_id),
-      device_type_(device::GetDeviceTypeByName(device_name)),
-      shape_vector_(shape_vector) {
+      device_type_(device::GetDeviceTypeByName(device_name)) {
   SetDevicePtrDeleter();
+  extra_data_ = std::make_shared<ExtraData>();
+  extra_data_->shape_vector_ = shape_vector;
+  extra_data_->format_ = format;
+  extra_data_->dtype_id_ = type_id;
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                             const KernelWithIndex &node_index, const std::string &device_name)
-    : node_index_(node_index) {
+                             const KernelWithIndex &node_index, const std::string &device_name) {
   device_pointer_ = std::make_shared<DevicePointer>();
+  extra_data_ = std::make_shared<ExtraData>();
   device_pointer_->set_ptr(ptr);
   size_ = size;
   device_type_ = device::GetDeviceTypeByName(device_name);
-  dtype_id_ = type_id;
-  format_ = kernel::GetFormatFromStrToEnum(format);
+  extra_data_->dtype_id_ = type_id;
+  extra_data_->format_ = kernel::GetFormatFromStrToEnum(format);
+  extra_data_->node_index_ = node_index;
   SetDevicePtrDeleter();
 }
 
@@ -147,15 +156,15 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
                       ? std::make_shared<DevicePointer>(other.device_pointer_->ptr(), other.device_pointer_->deleter(),
                                                         other.device_pointer_->allocator())
                       : std::make_shared<DevicePointer>();
-  tensor_storage_info_ = other.tensor_storage_info_;
+  extra_data_ = std::make_shared<ExtraData>();
+  extra_data_->tensor_storage_info_ = other.extra_data_->tensor_storage_info_;
   stream_id_ = other.stream_id_;
   size_ = other.size_;
-  format_ = other.format_;
-  dtype_id_ = other.dtype_id_;
+  extra_data_->format_ = other.extra_data_->format_;
+  extra_data_->dtype_id_ = other.extra_data_->dtype_id_;
   device_type_ = other.device_type_;
-  dtype_id_ = other.dtype_id_;
-  shape_vector_ = other.shape_vector_;
-  padding_type_ = other.padding_type();
+  extra_data_->shape_vector_ = other.extra_data_->shape_vector_;
+  extra_data_->padding_type_ = other.extra_data_->padding_type_;
   SetDevicePtrDeleter();
 }
 
@@ -168,28 +177,15 @@ DeviceAddress::~DeviceAddress() {
 
 std::string DeviceAddress::ToString() const {
   std::ostringstream ofs;
-  ofs << this << " device type:" << GetDeviceType() << " tensor storage info:" << tensor_storage_info_;
-  if (tensor_storage_info_ != nullptr) {
-    ofs << tensor_storage_info_->ToString();
-  }
-  ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_
-      << " device name:" << device::GetDeviceNameByType(device_type_) << " shape vector:{";
-  std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
+  ofs << this << " device name:" << device::GetDeviceNameByType(device_type_) << " size:" << size_
+      << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_;
   ofs << "} device point:";
   if (device_pointer_ == nullptr) {
     ofs << "0";
   } else {
     ofs << device_pointer_->ToString();
   }
-  if (hete_info_ != nullptr) {
-    ofs << " hete info:" << hete_info_->ToString();
-  }
-  const auto &node_index = GetNodeIndex();
-  if (node_index.first != nullptr) {
-    ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
-  }
-  ofs << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
-      << " padding type:" << padding_type_;
+  ofs << " extra data:" << extra_data_->ToString();
   return ofs.str();
 }
 
@@ -198,25 +194,27 @@ const void *DeviceAddress::GetPtr() const { return GetDevicePtr(); }
 void DeviceAddress::set_ptr(void *ptr) { device_pointer_->set_ptr(ptr); }
 
 size_t DeviceAddress::GetSize() const {
-  if (tensor_storage_info_ && (tensor_storage_info_->ori_size != 0)) {
-    return tensor_storage_info_->ori_size;
+  if (extra_data_->tensor_storage_info_ && (extra_data_->tensor_storage_info_->ori_size != 0)) {
+    return extra_data_->tensor_storage_info_->ori_size;
   }
   return size();
 }
 
 void DeviceAddress::SetSize(size_t size) { size_ = size; }
 
-std::string DeviceAddress::format() const { return kernel::GetFormatFromEnumToStr(format_); }
+std::string DeviceAddress::format() const { return kernel::GetFormatFromEnumToStr(extra_data_->format_); }
 
-void DeviceAddress::set_format(const std::string &format) { format_ = kernel::GetFormatFromStrToEnum(format); }
+void DeviceAddress::set_format(const std::string &format) {
+  extra_data_->format_ = kernel::GetFormatFromStrToEnum(format);
+}
 
-const std::string &DeviceAddress::padding_type() const { return padding_type_; }
+const std::string &DeviceAddress::padding_type() const { return extra_data_->padding_type_; }
 
-void DeviceAddress::set_padding_type(const std::string &padding_type) { padding_type_ = padding_type; }
+void DeviceAddress::set_padding_type(const std::string &padding_type) { extra_data_->padding_type_ = padding_type; }
 
-TypeId DeviceAddress::type_id() const { return dtype_id_; }
+TypeId DeviceAddress::type_id() const { return extra_data_->dtype_id_; }
 
-void DeviceAddress::set_type_id(TypeId dtype_id) { dtype_id_ = dtype_id; }
+void DeviceAddress::set_type_id(TypeId dtype_id) { extra_data_->dtype_id_ = dtype_id; }
 
 bool DeviceAddress::from_mem_pool() const { return device_pointer_->from_mem_pool(); }
 
@@ -234,14 +232,14 @@ void DeviceAddress::set_need_recycle(bool need_recycle) { need_recycle_ = need_r
 
 void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
 
-const ShapeVector &DeviceAddress::GetShapeVector() const { return shape_vector_; }
+const ShapeVector &DeviceAddress::GetShapeVector() const { return extra_data_->shape_vector_; }
 
-void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { shape_vector_ = shape_vector; }
+void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { extra_data_->shape_vector_ = shape_vector; }
 
-TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const { return tensor_storage_info_; }
+TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const { return extra_data_->tensor_storage_info_; }
 
 void DeviceAddress::set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info) {
-  tensor_storage_info_ = tensor_storage_info;
+  extra_data_->tensor_storage_info_ = tensor_storage_info;
 }
 
 device::DeviceType DeviceAddress::GetDeviceType() const { return device_type_; }
@@ -259,28 +257,27 @@ void DeviceAddress::set_stream_id(uint32_t stream_id) { stream_id_ = stream_id; 
 const uint32_t DeviceAddress::stream_id() const { return stream_id_; }
 
 void DeviceAddress::AddHeldByNode(const std::weak_ptr<ValueNode> &value_node) {
-  (void)held_by_nodes_.emplace_back(value_node);
+  (void)extra_data_->held_by_nodes_.emplace_back(value_node);
 }
 
-std::vector<std::weak_ptr<ValueNode>> DeviceAddress::held_by_nodes() const { return held_by_nodes_; }
+std::vector<std::weak_ptr<ValueNode>> DeviceAddress::held_by_nodes() const { return extra_data_->held_by_nodes_; }
 
-void DeviceAddress::ClearHeldByNodes() { held_by_nodes_.clear(); }
+void DeviceAddress::ClearHeldByNodes() { extra_data_->held_by_nodes_.clear(); }
 
-void DeviceAddress::SetNodeIndex(const AnfNodePtr &node, size_t out_index) { node_index_ = {node, out_index}; }
-
-KernelWithIndex DeviceAddress::GetNodeIndex() const {
-  return node_index_.first.expired() ? KernelWithIndex{nullptr, node_index_.second}
-                                     : KernelWithIndex{node_index_.first.lock(), node_index_.second};
+void DeviceAddress::SetNodeIndex(const AnfNodePtr &node, size_t out_index) {
+  extra_data_->SetNodeIndex(node, out_index);
 }
+
+KernelWithIndex DeviceAddress::GetNodeIndex() const { return extra_data_->GetNodeIndex(); }
 
 bool DeviceAddress::IsPtrValid() const {
   if (GetDevicePtr() != nullptr) {
     return true;
   }
-  if (hete_info_ == nullptr) {
+  if (extra_data_->hete_info_ == nullptr) {
     return false;
   }
-  return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
+  return extra_data_->hete_info_->host_ptr_ != nullptr || !extra_data_->hete_info_->file_name_.empty();
 }
 
 void DeviceAddress::Swap(DeviceAddress *other) {
@@ -295,11 +292,11 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   this->set_from_mem_pool(false);
 }
 
-HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return hete_info_; }
+HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return extra_data_->hete_info_; }
 
-void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
+void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { extra_data_->hete_info_ = hete_info; }
 
-std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return node_index_; }
+std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return extra_data_->node_index_; }
 
 void DeviceAddress::SetDevicePointerDeleter(std::function<void(void *, bool)> &&deleter) {
   device_pointer()->set_deleter(deleter);
@@ -316,7 +313,7 @@ DeviceAddressPtr DeviceAddress::CloneDeviceAddress() { return std::make_shared<D
 
 void DeviceAddress::set_data(tensor::TensorDataPtr &&data) {
   if (GetDeviceType() == device::DeviceType::kCPU) {
-    data_ = std::move(data);
+    extra_data_->data_ = std::move(data);
   } else {
     MS_LOG(DEBUG) << "Skip device address set_data";
   }
@@ -324,7 +321,7 @@ void DeviceAddress::set_data(tensor::TensorDataPtr &&data) {
 
 const tensor::TensorDataPtr &DeviceAddress::data() const {
   if (GetDeviceType() == device::DeviceType::kCPU) {
-    return data_;
+    return extra_data_->data_;
   } else {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
@@ -332,7 +329,7 @@ const tensor::TensorDataPtr &DeviceAddress::data() const {
 
 bool DeviceAddress::has_data() const {
   if (GetDeviceType() == device::DeviceType::kCPU) {
-    return data_ != nullptr;
+    return extra_data_->data_ != nullptr;
   } else {
     return false;
   }

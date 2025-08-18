@@ -16,6 +16,7 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "common/common_test.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
 namespace runtime {
@@ -24,14 +25,13 @@ class OpsCommonTest : public UT::Common {
   OpsCommonTest() {}
 };
 
-/// Feature: Test kernel tensor size.
-/// Description: Test kernel tensor size.
+/// Feature: Test device address size.
+/// Description: Test device address size.
 /// Expectation: As expected.
-// Add it back after simplifying device address.
-// TEST_F(OpsCommonTest, CalKernelTensorSize) {
-//   size_t kernel_tensor_size = sizeof(kernel::KernelTensor);
-//   size_t expected_size = 232;
-//   ASSERT_TRUE(kernel_tensor_size <= expected_size);
-// }
+TEST_F(OpsCommonTest, CalDeviceAddressSize) {
+  size_t device_address_size = sizeof(device::DeviceAddress);
+  size_t expected_size = 72;
+  ASSERT_TRUE(device_address_size <= expected_size);
+}
 }  // namespace runtime
 }  // namespace mindspore

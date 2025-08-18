@@ -146,6 +146,65 @@ struct HeterogeneousInfo {
 using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 
+// ExtraData stores variables for device address that have not yet been optimized.
+// It can be deleted after optimization.
+struct ExtraData {
+  ExtraData() = default;
+  ~ExtraData() = default;
+
+  void SetNodeIndex(const AnfNodePtr &node, size_t out_index) { node_index_ = {node, out_index}; }
+
+  KernelWithIndex GetNodeIndex() const {
+    return node_index_.first.expired() ? KernelWithIndex{nullptr, node_index_.second}
+                                       : KernelWithIndex{node_index_.first.lock(), node_index_.second};
+  }
+  std::string ToString() const {
+    std::ostringstream ofs;
+    ofs << this << " tensor storage info:" << tensor_storage_info_;
+    if (tensor_storage_info_ != nullptr) {
+      ofs << tensor_storage_info_->ToString();
+    }
+    ofs << " format:" << format_ << " dtype:" << dtype_id_ << " padding type:" << padding_type_;
+    std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
+    if (hete_info_ != nullptr) {
+      ofs << " hete info:" << hete_info_->ToString();
+    }
+    const auto &node_index = GetNodeIndex();
+    if (node_index.first != nullptr) {
+      ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
+    }
+    return ofs.str();
+  }
+
+  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
+  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
+  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
+  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
+  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
+  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
+  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
+  // this Tuple is {2}.
+  ShapeVector shape_vector_{};
+  Format format_{Format::DEFAULT_FORMAT};
+  // The data enum type id of the KernelTensor.
+  TypeId dtype_id_{kTypeUnknown};
+  TensorStorageInfoPtr tensor_storage_info_{nullptr};
+  // The padding type corresponds to data format.
+  std::string padding_type_;
+
+  // heterogeneous info
+  HeterogeneousInfoPtr hete_info_{nullptr};
+
+  // the data for numpy object.
+  tensor::TensorDataPtr data_;
+  // {node, out_index}
+  std::pair<AnfNodeWeakPtr, size_t> node_index_{AnfNodePtr(nullptr), 0};
+  // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
+  // We need to release the device memory when the reference count of the device address in bprop graph is 0.
+  std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
+};
+using ExtraDataPtr = std::shared_ptr<ExtraData>;
+
 enum class StorageType { kDevice, kHost, kFile };
 namespace device {
 // The flag of device address.
@@ -254,42 +313,15 @@ class MS_CORE_API DeviceAddress {
   // automatically when DeviceAddress destructed.
   void SetDevicePtrDeleter();
 
-  // {node, out_index}
-  std::pair<AnfNodeWeakPtr, size_t> node_index_{AnfNodePtr(nullptr), 0};
-  // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
-  // We need to release the device memory when the reference count of the device address in bprop graph is 0.
-  std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
-
   bool from_persistent_mem_{false};
   bool need_recycle_{false};
 
-  // The padding type corresponds to data format.
-  std::string padding_type_;
-
-  // heterogeneous info
-  HeterogeneousInfoPtr hete_info_{nullptr};
-
-  // the data for numpy object.
-  tensor::TensorDataPtr data_;
-
   DevicePointerPtr device_pointer_;
-  TensorStorageInfoPtr tensor_storage_info_{nullptr};
   uint32_t stream_id_{0};
   size_t size_{0};
-  Format format_{Format::DEFAULT_FORMAT};
-  // The data enum type id of the KernelTensor.
-  TypeId dtype_id_{kTypeUnknown};
   // The device target name, such as "GPU","Ascend".
   device::DeviceType device_type_{device::DeviceType::kUnknown};
-  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
-  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
-  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
-  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
-  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
-  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
-  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
-  // this Tuple is {2}.
-  ShapeVector shape_vector_{};
+  ExtraDataPtr extra_data_;
 };
 
 using DeviceAddressPtr = std::shared_ptr<DeviceAddress>;
