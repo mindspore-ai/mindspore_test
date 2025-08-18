@@ -67,7 +67,6 @@ KernelModPtr CustomKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
 bool CustomKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
-  // todo 判断dtypes是否支持
   return CustomKernelFactory::Instance().IsRegistered(opname);
 }
 
