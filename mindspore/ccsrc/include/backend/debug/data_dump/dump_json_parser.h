@@ -60,7 +60,6 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   bool IsFullDump() const;
   bool IsNpyFormat() const;
   bool IsDumpIter(uint32_t iteration) const;
-  std::string dump_layer() const { return dump_layer_; }
   bool async_dump_enabled() const { return async_dump_enabled_; }
   bool e2e_dump_enabled() const { return e2e_dump_enabled_; }
   bool e2e_sync_dump_enabled() const { return e2e_sync_dump_enabled_; }
@@ -154,7 +153,6 @@ class BACKEND_COMMON_EXPORT DumpJsonParser {
   uint32_t initial_dump_iter_{0};
   bool already_parsed_{false};
   bool dump_user_step_flag_{false};
-  std::string dump_layer_{""};
   std::string stat_calc_mode_{"host"};
   std::string device_stat_precision_mode_{"high"};
   nlohmann::json kernels_json_ = nlohmann::json::array();

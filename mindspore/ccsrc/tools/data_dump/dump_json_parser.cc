@@ -799,7 +799,6 @@ void DumpJsonParser::ParseKernels(const nlohmann::json &content) {
   kernels_json_ = content;
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  std::string backend = context->backend_policy();
   for (const auto &kernel : content) {
     bool ret;
     auto kernel_str = kernel.dump();
@@ -814,18 +813,11 @@ void DumpJsonParser::ParseKernels(const nlohmann::json &content) {
       std::string kernel_reg_exp = kernel_str.substr(
         kRegexPrefixLength, static_cast<int>(kernel_str.length()) - kRegexPrefixLength - kBracketsOffset);
       ret = kernel_regs_.try_emplace(kernel_str, std::regex(kernel_reg_exp)).second;
-      dump_layer_ += kernel_str + " ";
     } else {
       if (static_cast<int>(kernel_str.rfind('/')) == -1 && static_cast<int>(kernel_str.rfind("-op")) == -1) {
-        if (backend == "ge") {
-          MS_LOG(WARNING) << "It is not supported to specify operator types. " << kernel_str
-                          << " maybe not take effect.";
-          dump_layer_ += kernel_str + " ";
-        }
         ret = kernel_types_.try_emplace({kernel_str, 0}).second;
       } else {
         ret = kernels_.try_emplace({kernel_str, 0}).second;
-        dump_layer_ += kernel_str + " ";
       }
     }
     kernel_strings_.try_emplace({kernel_str, 0});
