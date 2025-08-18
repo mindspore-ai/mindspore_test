@@ -25,9 +25,9 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 

@@ -45,9 +45,9 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 

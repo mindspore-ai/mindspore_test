@@ -20,7 +20,7 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "include/common/visible.h"
+#include "runtime/utils/visible.h"
 
 namespace mindspore {
 namespace runtime {
@@ -60,9 +60,9 @@ const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
 const char kRuntimeExecutionOrderCheckIteration[] = "execution_order_check_iteration";
 const char kRuntimeHPMode[] = "high_performance_mode";
 
-COMMON_EXPORT std::string GetRuntimeConfigValue(const std::string &runtime_config);
-COMMON_EXPORT bool IsEnableRuntimeConfig(const std::string &runtime_config);
-COMMON_EXPORT bool IsDisableRuntimeConfig(const std::string &runtime_config);
+RUNTIME_UTILS_EXPORT std::string GetRuntimeConfigValue(const std::string &runtime_config);
+RUNTIME_UTILS_EXPORT bool IsEnableRuntimeConfig(const std::string &runtime_config);
+RUNTIME_UTILS_EXPORT bool IsDisableRuntimeConfig(const std::string &runtime_config);
 }  // namespace runtime
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_ENV_H_

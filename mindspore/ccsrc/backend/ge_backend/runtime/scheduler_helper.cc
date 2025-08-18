@@ -23,7 +23,7 @@
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace ge_backend {

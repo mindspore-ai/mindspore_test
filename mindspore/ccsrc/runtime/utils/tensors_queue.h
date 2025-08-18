@@ -23,10 +23,11 @@
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "runtime/utils/visible.h"
 
 namespace mindspore {
 namespace device {
-class BACKEND_EXPORT TensorsQueue {
+class RUNTIME_UTILS_EXPORT TensorsQueue {
  public:
   // Base TensorsQueue. Constructed by name, dtype, size, elements_num and shapes.
   TensorsQueue(const string &name, const TypePtr &dtype, const int64_t size, const int64_t elements_num,

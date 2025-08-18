@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 
 namespace mindspore {
 namespace pynative {

@@ -29,7 +29,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 
 namespace mindspore::pynative {
 namespace {

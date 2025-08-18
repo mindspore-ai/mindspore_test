@@ -19,7 +19,7 @@
 #include "abstract/abstract_value.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"

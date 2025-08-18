@@ -13,7 +13,7 @@ set_property(SOURCE ${EXTENSION_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
 add_library(mindspore_extension SHARED ${EXTENSION_SRC_LIST})
 
 target_link_libraries(mindspore_extension PRIVATE mindspore_core mindspore_pynative mindspore::pybind11_module
-                        mindspore_profiler mindspore_backend_common)
+                        mindspore_profiler mindspore_backend_common mindspore_runtime_utils)
 
 set_target_properties(mindspore_extension PROPERTIES INSTALL_RPATH $ORIGIN)
 

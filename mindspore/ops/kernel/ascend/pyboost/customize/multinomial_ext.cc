@@ -19,7 +19,7 @@
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {

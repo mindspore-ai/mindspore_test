@@ -305,6 +305,8 @@ class COMMON_EXPORT AnfAlgo {
     return false;
   }
 
+  static tensor::TensorPtr SequenceToTensor(const ValuePtr &value);
+
   // Get the real output node and indexes of get item, make tuple, depend, load.
   static AnfNodePtr GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> *const index_stack);
   static bool IsNopNode(const AnfNodePtr &node);

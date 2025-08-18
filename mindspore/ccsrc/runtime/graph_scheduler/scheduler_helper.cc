@@ -23,7 +23,7 @@
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "frontend/ir/tensor_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -31,7 +31,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 
 namespace mindspore {
 namespace runtime {

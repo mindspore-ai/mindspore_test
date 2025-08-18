@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 
 namespace mindspore {

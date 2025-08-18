@@ -35,7 +35,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/config_manager.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "load_mindir/load_model.h"
 #include "include/common/debug/dump_proto.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

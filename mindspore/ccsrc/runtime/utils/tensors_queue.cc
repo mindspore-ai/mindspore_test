@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/device/tensors_queue.h"
+#include "runtime/utils/tensors_queue.h"
+#include <functional>
 
 namespace mindspore {
 namespace device {

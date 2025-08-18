@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"

@@ -23,8 +23,8 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "utils/ms_utils.h"
-#include "include/common/runtime_conf/runtime_conf.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace device {

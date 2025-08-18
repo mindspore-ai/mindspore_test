@@ -17,7 +17,7 @@
 #include "backend/common/backend_common_callback.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "include/backend/distributed/init.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"

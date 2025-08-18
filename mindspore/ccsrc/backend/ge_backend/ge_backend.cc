@@ -54,7 +54,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ge_backend/runtime/graph_scheduler.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "include/common/utils/parallel_context.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)

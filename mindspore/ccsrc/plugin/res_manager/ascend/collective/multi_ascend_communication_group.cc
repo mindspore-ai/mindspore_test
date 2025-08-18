@@ -17,7 +17,7 @@
 #include "plugin/res_manager/ascend/collective/multi_ascend_communication_group.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "plugin/device/ascend/kernel/dvm/dvm_comm_info.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace device {

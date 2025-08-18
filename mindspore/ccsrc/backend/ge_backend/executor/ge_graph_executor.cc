@@ -29,7 +29,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"

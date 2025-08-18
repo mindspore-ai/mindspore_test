@@ -43,7 +43,7 @@
 #include "include/common/utils/tensor_py_wrapper.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/fallback.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"

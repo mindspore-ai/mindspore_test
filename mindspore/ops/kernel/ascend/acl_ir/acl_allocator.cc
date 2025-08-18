@@ -18,7 +18,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_utils.h"

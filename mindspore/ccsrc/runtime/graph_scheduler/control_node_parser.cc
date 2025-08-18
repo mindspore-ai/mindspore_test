@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "include/common/utils/convert_utils.h"
 #include "abstract/utils.h"

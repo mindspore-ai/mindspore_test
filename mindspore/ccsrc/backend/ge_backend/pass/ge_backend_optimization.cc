@@ -24,7 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "backend/ge_backend/pass/scalar_ops_output_unify_mindir.h"

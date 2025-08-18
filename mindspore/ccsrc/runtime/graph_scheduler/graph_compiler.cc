@@ -23,7 +23,7 @@
 #include <list>
 #include <regex>
 #include "runtime/graph_scheduler/graph_scheduler.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
@@ -57,7 +57,7 @@
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 

@@ -16,7 +16,7 @@
 
 #include <vector>
 #include "include/common/pybind_api/api_register.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

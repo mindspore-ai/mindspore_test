@@ -22,7 +22,7 @@
 #include <limits>
 
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/device_address_utils.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"

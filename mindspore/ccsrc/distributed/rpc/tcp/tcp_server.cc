@@ -15,7 +15,7 @@
  */
 
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
-#include "include/common/runtime_conf/runtime_env.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace distributed {

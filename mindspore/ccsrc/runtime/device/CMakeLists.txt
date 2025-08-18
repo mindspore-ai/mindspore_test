@@ -1,7 +1,5 @@
 file(GLOB_RECURSE DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/gsm/*.cc"
-    "tensors_queue.cc" "device_address_utils.cc"
-    "py_execute_utils.cc" "move_to.cc"
 )
 
 list(REMOVE_ITEM DEVICE_SRC_LIST "../hardware_abstract/gsm/aio_plugin.cc")

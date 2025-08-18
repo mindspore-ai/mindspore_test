@@ -21,7 +21,7 @@
 
 #include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/log_adapter.h"
-#include "include/common/runtime_conf/thread_bind_core.h"
+#include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 
 namespace mindspore {
 namespace dataset {

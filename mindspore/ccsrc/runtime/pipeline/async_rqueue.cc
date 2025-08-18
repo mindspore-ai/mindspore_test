@@ -20,8 +20,8 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#include "include/common/runtime_conf/thread_bind_core.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/thread_bind_core.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "tools/profiler/profiler.h"

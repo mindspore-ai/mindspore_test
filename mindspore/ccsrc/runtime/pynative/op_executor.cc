@@ -17,7 +17,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
-#include "include/common/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/backend/distributed/init.h"
 
