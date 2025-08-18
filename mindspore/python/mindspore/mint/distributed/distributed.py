@@ -1357,7 +1357,7 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
 
     Args:
         output(Tensor): the output tensor has the same dtype as `input` with a shape of
-            :math:`(input_split_sizes[rank], *)`, where rank is the local rank id of the device.
+            :math:`(input\_split\_sizes[rank], *)`, where rank is the local rank id of the device.
         input(Tensor): The input tensor to be reduced and scattered, Expected shape :math:`(N, *)`, where `*`
             means any number of additional dimensions. N must equal the sum of `input_split_sizes` across ranks.
         input_split_sizes (list[int], optional): List specifying how to split the first dimension of input tensor.
