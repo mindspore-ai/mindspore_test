@@ -101,11 +101,6 @@ if(ENABLE_D)
         )
     endif()
     install(
-        TARGETS ms_atb_boost
-        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
-        COMPONENT mindspore
-    )
-    install(
             TARGETS hccl_plugin
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
             COMPONENT mindspore

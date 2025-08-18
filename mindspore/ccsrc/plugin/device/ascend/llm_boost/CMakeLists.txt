@@ -13,7 +13,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 file(GLOB_RECURSE MS_LLM_BOOST_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "./atb_boost_builder.cc"
         "./ascend_native_boost_builder.cc"
         )
 
@@ -21,5 +20,4 @@ set_property(SOURCE ${_PREACTIVATE_SRC_LIST} ${MS_LLM_BOOST_910B} PROPERTY COMPI
         SUBMODULE_ID=mindspore::SubModuleId::SM_LLM_BOOST)
 
 add_library(_mindspore_plugin_device_ascend_llm_boost_910b_obj OBJECT ${MS_LLM_BOOST_910B})
-add_subdirectory(atb)
 add_subdirectory(ascend_native)
