@@ -37,7 +37,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/common/pass_manager/common_backend_optimization.h"
 #include "plugin/device/cpu/optimizer/insert_cast_cpu.h"
 #include "plugin/device/cpu/optimizer/insert_cast_to_pyexecute.h"
 #include "plugin/device/cpu/optimizer/insert_format_transform_op.h"

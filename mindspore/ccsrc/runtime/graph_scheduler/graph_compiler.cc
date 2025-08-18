@@ -31,7 +31,7 @@
 #include "runtime/pynative/op_compiler.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/common/pass_manager/common_backend_optimization.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "kernel/framework_utils.h"

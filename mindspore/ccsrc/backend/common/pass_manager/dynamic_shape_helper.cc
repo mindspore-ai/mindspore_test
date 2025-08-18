@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/optimizer/dynamic_shape_helper.h"
+#include "backend/common/pass_manager/dynamic_shape_helper.h"
 
 #include <memory>
 #include <algorithm>

@@ -23,7 +23,7 @@
 #include <mutex>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/res_manager/ascend/dvm/dvm.h"
-#include "backend/common/optimizer/dynamic_shape_helper.h"
+#include "backend/common/pass_manager/dynamic_shape_helper.h"
 
 namespace mindspore {
 namespace kernel {
