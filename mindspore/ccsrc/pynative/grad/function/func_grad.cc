@@ -1163,10 +1163,6 @@ void CopySliceNode::Release() {
 
 void CallCustomPyFunction(const std::shared_ptr<FunctionContext> &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomPyFunction";
-  if (!AutoGradUtil::NeedGrad(context->inputs)) {
-    MS_LOG(DEBUG) << "The custom bprop function no need grad!";
-    return;
-  }
   auto out_abstract = GenerateFlattenAbs(context->flatten_outputs);
   auto custom_fn = context->grad_node;
   custom_fn->SetOutAbstract(out_abstract);

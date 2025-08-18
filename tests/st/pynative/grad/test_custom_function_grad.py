@@ -31,13 +31,13 @@ oneslike = P.OnesLike()
 class MultiInputFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z
 
     @staticmethod
     def backward(ctx, z):
-        return z*3, z*4
+        return z * 3, z * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -62,13 +62,13 @@ def test_custom_function_multi_input():
 class MutiInputFunctionErrorNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z
 
     @staticmethod
     def backward(ctx, z):
-        return z*3
+        return z * 3
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -93,13 +93,13 @@ def test_custom_function_multi_input_grad_num_wrong():
 class MultiInputMultiOutputFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, t
 
     @staticmethod
     def backward(ctx, z, t):
-        return z*3, z*4
+        return z * 3, z * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -124,13 +124,13 @@ def test_custom_function_multi_input_multi_output():
 class MultiInputMultiOutputStarArgsFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, t
 
     @staticmethod
     def backward(ctx, *args):
-        return args[0]*3, args[1]*4
+        return args[0] * 3, args[1] * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -155,13 +155,13 @@ def test_custom_function_multi_input_multi_output_star_args():
 class MultiInputMultiOutputNotTensorFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, 4, t
 
     @staticmethod
     def backward(ctx, *args):
-        return args[0]*3, args[2]*4
+        return args[0] * 3, args[2] * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -186,13 +186,13 @@ def test_custom_function_multi_input_multi_output_not_tensor():
 class MultiInputMultiOutputFunctionErrorNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, t
 
     @staticmethod
     def backward(ctx, z):
-        return z*3, z*4
+        return z * 3, z * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -216,13 +216,13 @@ def test_custom_function_multi_backward_input_num_wrong():
 class MultiInputMultiOutputFunctionError1Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, t
 
     @staticmethod
     def backward(ctx, z, t):
-        return z*3, z*4
+        return z * 3, z * 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -247,13 +247,13 @@ def test_custom_function_no_tensor_grad_should_be_none():
 class MultiInputMultiOutputFunctionError2Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        t = x*x
-        z = t+y
+        t = x * x
+        z = t + y
         return z, t
 
     @staticmethod
     def backward(ctx, z, t):
-        return z*3, 4
+        return z * 3, 4
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -279,8 +279,8 @@ class CustomFunctionContextNet(_Function):
     @staticmethod
     def forward(ctx, x):
         ctx.age = 7
-        x2 = x*x
-        y = x2+1
+        x2 = x * x
+        y = x2 + 1
         ctx.save_for_backward(x, x2, y)
         return y
 
@@ -315,8 +315,8 @@ def test_custom_function_context():
 class CustomFunctionNeedGradNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        x2 = x*x
-        z = x2+1
+        x2 = x * x
+        z = x2 + 1
         return z
 
     @staticmethod
@@ -353,8 +353,8 @@ class CustomFunctionNeedGradForwardNet(_Function):
         assert len(need_grad) == 2, "number of need grad should be same as input size."
         assert need_grad[0], "first input need grad"
         assert not need_grad[1], "second input do not need grad"
-        x2 = x*x
-        z = x2+1
+        x2 = x * x
+        z = x2 + 1
         return z
 
     @staticmethod
@@ -385,12 +385,12 @@ class CustomFunctionDirtyTensorError1Net(_Function):
     def forward(ctx, x, y):
         x.add_(1)
         ctx.mark_dirty(x)
-        z = x+y
+        z = x + y
         return z
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output, grad_output*2
+        return grad_output, grad_output * 2
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -417,12 +417,12 @@ class CustomFunctionDirtyTensorError2Net(_Function):
     def forward(ctx, x, y):
         x.add_(1)
         ctx.mark_dirty(x)
-        z = x+y
+        z = x + y
         return z, x
 
     @staticmethod
     def backward(ctx, grad_output, a):
-        return grad_output, grad_output*2
+        return grad_output, grad_output * 2
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -449,12 +449,12 @@ class CustomFunctionDirtyTensorNet(_Function):
     def forward(ctx, x, y):
         x.add_(1)
         ctx.mark_dirty(x)
-        z = x+y
+        z = x + y
         return z, x
 
     @staticmethod
     def backward(ctx, grad_output, a):
-        return grad_output, grad_output*2
+        return grad_output, grad_output * 2
 
 
 class CustomFunctionLeafNet(nn.Cell):
@@ -734,8 +734,8 @@ def test_custom_function_multi_diff_output():
 class CustomFunctionMaterializeGradsNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        x2 = x*x
-        z = x2+1
+        x2 = x * x
+        z = x2 + 1
         return z, x2
 
     @staticmethod
@@ -772,8 +772,8 @@ def test_custom_function_materialize_grad():
 class CustomFunctionNotMaterializeGradsNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        x2 = x*x
-        z = x2+1
+        x2 = x * x
+        z = x2 + 1
         ctx.set_materialize_grads(False)
         return z, x2
 
@@ -810,8 +810,8 @@ def test_custom_function_not_materialize_grad():
 class CustomFunctionWithAttr(_Function):
     @staticmethod
     def forward(ctx, x, y):
-        x2 = x*x
-        z = x2+1
+        x2 = x * x
+        z = x2 + 1
         x.tensor = x2
         ctx.set_materialize_grads(False)
         ctx.save_for_backward(x)
@@ -931,3 +931,62 @@ def test_custom_function_reduce_exception():
     with pytest.raises(RuntimeError) as err:
         grad_net(net.apply)(x, y)
     assert "For custom function, grad tensor should be broadcast to" in str(err.value)
+
+
+class CustomFunctionSelfRequresGrad(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x._requires_grad = True
+        return x
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_self_requires_grad():
+    """
+    Feature: Custom autograd function.
+    Description: Test self requires grad.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    z = CustomFunctionSelfRequresGrad.apply(x, y)
+    assert x._requires_grad is True
+    assert z._requires_grad is False
+
+
+class CustomFunctionOutRequresGrad(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        z = Tensor([3, 3, 3], mindspore.float32)
+        z._requires_grad = True
+        return z
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_out_requires_grad_true():
+    """
+    Feature: Custom autograd function.
+    Description: Test out requires grad.
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    z = CustomFunctionSelfRequresGrad.apply(x, y)
+    assert x._requires_grad is False
+    assert z._requires_grad is False

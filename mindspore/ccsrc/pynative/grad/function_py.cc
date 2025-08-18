@@ -300,7 +300,8 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   }
   ctx->set_is_tensor_input(is_tensor_input);
   ctx->set_needs_input_grad(need_grad_input);
-
+  // Get need grad before forward.
+  bool need_do_grad = GradState::Get().RequiresGrad() && AutoGradUtil::NeedGrad(context->inputs);
   // Call forward function.
   py::object outputs;
   {
@@ -309,20 +310,12 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   }
   bool modified = ensure_obj_tuple(&outputs);
 
-  if (!GradState::Get().RequiresGrad()) {
-    MS_LOG(DEBUG) << "no need to do grad.";
-    if (modified) {
-      return py::cast<py::tuple>(outputs)[0];
-    }
-    return outputs;
-  }
-
   runtime::Pipeline::Get().WaitFrontend();
-
   ConstructContextAfterForward(context, ctx, outputs);
+
   auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
-  const auto custom_fn = std::make_shared<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta,
-                                                          context->flatten_outputs.size());
+  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta,
+                                                              context->flatten_outputs.size());
   ctx->set_weak_grad_node(custom_fn);
   context->grad_node = std::move(custom_fn);
 
@@ -337,18 +330,27 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   for (size_t i = 0; i < num_output; ++i) {
     if (flatten_outputs[i]->isa<tensor::Tensor>()) {
       auto tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
-      bool is_diff = non_diff_tensors.count(tensor) == 0;
+      bool is_diff = non_diff_tensors.count(tensor) == 0 && need_do_grad;
+      bool is_same_as_input = input_tensor_set.count(tensor) > 0;
+      bool is_dirty_tensor = dirty_tensor_set.count(tensor) > 0;
       if (!is_diff) {
-        // For tensor not need grad, we should clean grad meta data.
-        tensor = std::make_shared<tensor::Tensor>(*tensor);
-        tensor->set_auto_grad_meta_data(nullptr);
-        output_ret[i] = CValueToPybindObj(tensor);
-      } else {
-        if (input_tensor_set.count(tensor) > 0) {
-          if (dirty_tensor_set.count(tensor) == 0) {
+        if (!tensor->requires_grad()) {
+          if (is_same_as_input && !is_dirty_tensor) {
             tensor = ViewAsSelfWithNoGrad(tensor);
             flatten_outputs[i] = tensor;
           }
+        } else if (is_same_as_input) {
+          auto detach_tensor = std::make_shared<Tensor>(*tensor);
+          detach_tensor->set_auto_grad_meta_data(nullptr);
+          flatten_outputs[i] = detach_tensor;
+        } else if (impl::GetViewAutogradMetaImpl(tensor) == nullptr) {
+          tensor->set_auto_grad_meta_data(nullptr);
+        }
+        output_ret[i] = CValueToPybindObj(tensor);
+      } else {
+        if (is_same_as_input && !is_dirty_tensor) {
+          tensor = ViewAsSelfWithNoGrad(tensor);
+          flatten_outputs[i] = tensor;
         }
         AutoGradUtil::SetValueGradInfo(tensor, InputType::kOpOutput);
         output_ret[i] = CValueToPybindObj(tensor);
@@ -356,6 +358,13 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
     } else {
       output_ret[i] = py::cast<py::tuple>(outputs)[i];
     }
+  }
+  if (!need_do_grad) {
+    MS_LOG(DEBUG) << "no need to do grad.";
+    if (modified) {
+      return output_ret[0];
+    }
+    return std::move(output_ret);
   }
 
   // Clean device address to reduce the occupation of resources.
@@ -377,7 +386,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   if (modified) {
     return output_ret[0];
   }
-  return output_ret;
+  return std::move(output_ret);
 }
 
 void FunctionBase::GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx) {
