@@ -454,6 +454,9 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
       }
     }
     std::string input_format = AnfAlgo::GetOutputFormat(kernel_with_index.first, kernel_with_index.second);
+    if (first_node->isa<Parameter>() && !CheckDefaultSupportFormat(input_format)) {
+      input_formats->at(i) = input_format;
+    }
     input_format = NeedSetParameterFormat(kernel_with_index.first, input_formats->at(i), input_format)
                      ? input_formats->at(i)
                      : input_format;
