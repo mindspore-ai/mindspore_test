@@ -17,7 +17,7 @@
 #include <deque>
 #include <string>
 #include "utils/ms_context.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "backend/common/optimizer/cache_manager.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 

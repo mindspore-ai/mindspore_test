@@ -26,7 +26,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
-#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "include/common/utils/anfalgo.h"
 

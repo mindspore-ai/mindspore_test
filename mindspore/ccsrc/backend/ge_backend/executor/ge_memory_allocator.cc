@@ -24,8 +24,8 @@
 #include <vector>
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/utils/utils.h"
-#include "include/common/debug/draw.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/draw.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "abstract/abstract_value.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"

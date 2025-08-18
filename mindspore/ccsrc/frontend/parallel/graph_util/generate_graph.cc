@@ -31,7 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/anf.h"
 #include "ir/value.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/parse/parse_base.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
 #include "utils/anf_utils.h"
 #include "ir/primitive.h"

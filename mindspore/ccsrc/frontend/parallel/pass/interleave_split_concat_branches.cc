@@ -32,7 +32,7 @@
 #include "frontend/parallel/pass/interleave_branches_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 

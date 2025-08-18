@@ -42,7 +42,7 @@
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"

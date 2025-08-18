@@ -26,7 +26,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/forward/forward_task.h"
 #include "pynative/grad/function/func_builder.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "include/common/pynative/variable.h"
 
 namespace mindspore {

@@ -19,9 +19,9 @@
 
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "frontend/ir/primitive_py.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
-#include "pipeline/jit/ps/static_analysis/prim_utils.h"
+#include "frontend/operator/primitive_py.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/check_convert_utils.h"
 #include "utils/file_utils.h"

@@ -48,10 +48,10 @@ PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pynative/op_function/auto_gene
 FUNCTIONAL_OVERLOAD_GEN_PATH = "mindspore/ccsrc/frontend/operator/composite/auto_generate"
 PYBOOST_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pyboost/grad_functions/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pynative/op_function/auto_generate"
-TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_api/auto_generate"
+TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
-TENSOR_PY_CC_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate"
+TENSOR_PY_CC_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_register/auto_generate"
 
 # yaml keys def
 OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'graph_view', 'dispatch', 'labels',

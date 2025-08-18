@@ -19,7 +19,7 @@
 #include <string>
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/grad/function/func_grad.h"

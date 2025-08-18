@@ -25,11 +25,11 @@
 
 #include "base/base.h"
 #include "frontend/optimizer/opt.h"
-#include "pipeline/jit/ps/validator.h"
+#include "frontend/jit/ps/validator.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/visible.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 
 namespace mindspore {
 namespace opt {

@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "common/py_func_graph_fetcher.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/ops.h"
 #include "abstract/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

@@ -18,7 +18,7 @@
 
 #include "symbol_engine/ops/symbolic_shape_test_utils.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 namespace mindspore::symshape::test {
 struct MatMulDynShape {

@@ -17,11 +17,11 @@
 
 #include <string>
 
-#include "frontend/ir/base_ref_py.h"
+#include "frontend/operator/base_ref_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "ir/anf.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "ops/ops_frontend_func_impl.h"
 
 namespace mindspore::ops {

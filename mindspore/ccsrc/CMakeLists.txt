@@ -41,9 +41,9 @@ set(SUB_COMP
         frontend/expander
         frontend/ir
         frontend/np_dtypes
-        pipeline/jit/ps
-        pipeline/jit/pi
-        pipeline/jit/trace
+        frontend/jit/ps
+        frontend/jit/pi
+        frontend/jit/trace
         pipeline/llm_boost
         )
 
@@ -103,6 +103,7 @@ set(COMMON_SUB_COMP
         common/expander
         common/symbol_engine
         common/amp
+        common/ir_dump
         )
 
 foreach(_comp ${COMMON_SUB_COMP})

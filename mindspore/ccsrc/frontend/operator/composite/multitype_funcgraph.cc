@@ -22,12 +22,12 @@
 #include "abstract/dshape.h"
 #include "frontend/optimizer/opt.h"
 #include "utils/ms_context.h"
-#include "pipeline/jit/ps/fallback.h"
+#include "frontend/jit/ps/fallback.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/fallback.h"
 #include "ir/signature.h"
 #include "ir/dtype.h"
-#include "pipeline/jit/ps/debug/trace.h"
+#include "frontend/jit/ps/debug/trace.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

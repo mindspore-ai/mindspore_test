@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "pynative/pynative_utils.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_utils.h"

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "pipeline/jit/ps/static_analysis/evaluator.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/evaluator.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 
 #include "pipeline/static_analysis/helper.h"
 
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 
 namespace mindspore {
 namespace abstract {

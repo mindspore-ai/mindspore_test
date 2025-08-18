@@ -18,9 +18,9 @@
 
 #include "common/common_test.h"
 #include "utils/log_adapter.h"
-#include "pipeline/jit/ps/action.h"
-#include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/action.h"
+#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "frontend/jit/ps/pipeline.h"
 
 namespace mindspore {
 namespace pipeline {

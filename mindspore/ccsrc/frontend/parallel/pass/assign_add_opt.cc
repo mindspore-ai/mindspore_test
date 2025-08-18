@@ -31,7 +31,7 @@
 #include "frontend/parallel/pass/pass_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/convert_utils_base.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "mindspore/ccsrc/frontend/jit/ps/static_analysis/static_analysis.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

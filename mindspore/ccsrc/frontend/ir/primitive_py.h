@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_PRIMITIVE_PY_H_
-#define MINDSPORE_CCSRC_UTILS_PRIMITIVE_PY_H_
+#ifndef MINDSPORE_CCSRC_FRONTEND_IR_PRIMITIVE_PY_H_
+#define MINDSPORE_CCSRC_FRONTEND_IR_PRIMITIVE_PY_H_
 
 #include <map>
 #include <string>
@@ -240,4 +240,4 @@ class FRONTEND_EXPORT PrimitiveFunctionAdapter {
   PrimitivePtr attached_primitive_function_;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_UTILS_PRIMITIVE_PY_H_
+#endif  // MINDSPORE_CCSRC_FRONTEND_IR_PRIMITIVE_PY_H_

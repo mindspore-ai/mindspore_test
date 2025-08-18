@@ -24,7 +24,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
-#include "pipeline/jit/ps/parse/parse.h"
+#include "frontend/jit/ps/parse/parse.h"
 
 namespace mindspore {
 namespace opt {

@@ -75,7 +75,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "tools/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

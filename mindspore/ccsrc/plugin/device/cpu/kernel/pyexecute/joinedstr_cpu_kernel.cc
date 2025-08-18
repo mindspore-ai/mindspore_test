@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/parse/resolve.h"
+#include "frontend/jit/ps/parse/resolve.h"
 #include "include/common/fallback.h"
 
 namespace mindspore {

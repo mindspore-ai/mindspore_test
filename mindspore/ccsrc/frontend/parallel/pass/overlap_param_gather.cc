@@ -32,7 +32,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/utils.h"
-#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

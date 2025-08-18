@@ -22,7 +22,7 @@
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
-#include "pipeline/jit/ps/static_analysis/prim_to_function.h"
+#include "frontend/jit/ps/static_analysis/prim_to_function.h"
 
 namespace mindspore {
 namespace prim {

@@ -24,7 +24,7 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_mod.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "backend/common/graph_kernel/graph_kernel_flags.h"

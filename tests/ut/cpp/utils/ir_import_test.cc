@@ -18,9 +18,9 @@
 #include "common/common_test.h"
 
 #include "utils/log_adapter.h"
-#include "pipeline/jit/ps/parse/parse.h"
+#include "frontend/jit/ps/parse/parse.h"
 #include "ir/manager.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/ops.h"
 
 namespace mindspore {

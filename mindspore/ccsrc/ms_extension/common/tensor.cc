@@ -21,7 +21,7 @@
 #include "ir/tensor_new.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/pynative_utils.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/common/utils/stub_tensor.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"

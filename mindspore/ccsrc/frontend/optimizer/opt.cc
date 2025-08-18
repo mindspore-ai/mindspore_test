@@ -21,15 +21,15 @@
 #include <algorithm>
 #include <utility>
 
-#include "include/common/debug/draw.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/draw.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "frontend/optimizer/optimizer.h"
-#include "pipeline/jit/ps/validator.h"
-#include "pipeline/jit/ps/pass_config.h"
+#include "frontend/jit/ps/validator.h"
+#include "frontend/jit/ps/pass_config.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
 #include "utils/trace_info.h"

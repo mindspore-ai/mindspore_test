@@ -17,7 +17,7 @@
 #include "utils/ms_context.h"
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

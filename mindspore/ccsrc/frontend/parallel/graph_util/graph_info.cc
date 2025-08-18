@@ -16,12 +16,12 @@
 
 #include <regex>
 #include "frontend/parallel/graph_util/graph_info.h"
-#include "include/common/debug/anf_ir_dump.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
+#include "include/common/ir_dump/draw.h"
 #include "utils/ms_context.h"
 #include "ir/graph_utils.h"
-#include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 
 namespace mindspore {

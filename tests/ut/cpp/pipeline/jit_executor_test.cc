@@ -16,7 +16,7 @@
 #include <memory>
 
 #include "common/common_test.h"
-#include "pipeline/jit/ps/action.h"
+#include "frontend/jit/ps/action.h"
 
 namespace mindspore {
 namespace pipeline {

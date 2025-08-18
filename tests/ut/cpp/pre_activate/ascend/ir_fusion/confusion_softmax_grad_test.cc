@@ -17,7 +17,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/confusion_softmax_grad_rule.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace opt {

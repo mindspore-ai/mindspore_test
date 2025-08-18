@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common_test.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "utils/symbolic.h"
 
 namespace mindspore {

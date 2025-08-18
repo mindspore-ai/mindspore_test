@@ -19,7 +19,7 @@
 #include "common/common_test.h"
 #include "backend/common/pass/mindir/all_to_all_unify_mindir.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 
 namespace mindspore {

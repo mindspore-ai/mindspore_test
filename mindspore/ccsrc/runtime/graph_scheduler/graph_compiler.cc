@@ -38,14 +38,14 @@
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
-#include "include/common/debug/dump_proto.h"
+#include "include/common/ir_dump/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/cpu/hal/hardware/cpu_device_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #ifdef ENABLE_DUMP_IR
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
@@ -55,7 +55,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
-#include "pipeline/jit/ps/base.h"
+#include "frontend/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

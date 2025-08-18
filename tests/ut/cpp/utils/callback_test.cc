@@ -18,11 +18,11 @@
 #include "pybind11/pybind11.h"
 #include "include/common/utils/callbacks.h"
 #include "common/common_test.h"
-#include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"
-#include "include/common/debug/draw.h"
+#include "include/common/ir_dump/draw.h"
 #ifdef ENABLE_D
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/callbacks_ge.h"
 #endif

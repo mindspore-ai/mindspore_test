@@ -19,11 +19,11 @@
 #include <memory>
 #include <map>
 
-#include "pipeline/jit/ps/executor/executor_py.h"
-#include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pass.h"
-#include "pipeline/jit/ps/executor/jit_executor_py.h"
-#include "pipeline/jit/ps/parse/data_converter.h"
+#include "frontend/jit/ps/executor/executor_py.h"
+#include "frontend/jit/ps/executor/graph_executor_py.h"
+#include "frontend/jit/ps/pass.h"
+#include "frontend/jit/ps/executor/jit_executor_py.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "pynative/pynative_execute.h"
 #include "pynative/op_function/converter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
@@ -40,10 +40,10 @@
 #include "utils/llm_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/interpret_node_recorder.h"
-#include "include/common/debug/dump_proto.h"
-#include "pipeline/jit/ps/fallback.h"
-#include "pipeline/jit/ps/debug/trace.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "include/common/ir_dump/dump_proto.h"
+#include "frontend/jit/ps/fallback.h"
+#include "frontend/jit/ps/debug/trace.h"
+#include "frontend/jit/ps/pipeline.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -58,7 +58,7 @@
 #include "kernel/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
-#include "pipeline/jit/ps/pass_config.h"
+#include "frontend/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "abstract/abstract_value.h"
@@ -77,7 +77,7 @@
 #include "ir/cell.h"
 #endif
 
-#include "frontend/ir/py_execute_py.h"  // Only include one-time in the whole project.
+#include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
 #include "include/common/utils/pyobj_manager.h"

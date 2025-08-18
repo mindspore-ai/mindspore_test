@@ -31,7 +31,7 @@
 #include "include/backend/py_execute_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
+#include "mindspore/ccsrc/frontend/jit/ps/parse/resolve.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {

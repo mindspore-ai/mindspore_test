@@ -17,8 +17,8 @@
 #include "common/common_test.h"
 #include "tests/ut/cpp/operator/meta_dsl/dense.h"
 #include "ir/manager.h"
-#include "pipeline/jit/ps/static_analysis/prim.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/prim.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::prim {

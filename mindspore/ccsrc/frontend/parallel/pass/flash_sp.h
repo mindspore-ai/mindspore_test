@@ -25,7 +25,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "frontend/optimizer/optimizer.h"
 
 namespace mindspore {

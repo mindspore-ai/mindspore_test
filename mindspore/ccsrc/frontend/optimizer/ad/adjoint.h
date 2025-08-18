@@ -23,7 +23,7 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
-#include "mindspore/ccsrc/pipeline/jit/ps/resource_base.h"
+#include "mindspore/ccsrc/frontend/jit/ps/resource_base.h"
 
 namespace mindspore {
 namespace ad {

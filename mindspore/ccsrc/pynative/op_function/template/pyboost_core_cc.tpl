@@ -24,7 +24,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/predict_out_type_map.h"
 #include "pynative/forward/forward_task.h"
-#include "pipeline/jit/trace/trace_recorder.h"
+#include "frontend/jit/trace/trace_recorder.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pynative/op_function/comm_handle_py.h"
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"

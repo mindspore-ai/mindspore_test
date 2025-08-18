@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "utils/misc.h"
 #include "utils/any.h"
 #include "ir/dtype.h"

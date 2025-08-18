@@ -17,7 +17,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "backend/common/pass/ir_fusion/batchnorm_to_bninfer.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace opt {

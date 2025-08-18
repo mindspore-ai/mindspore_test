@@ -15,10 +15,10 @@
  */
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "pipeline/jit/ps/resource.h"
+#include "frontend/jit/ps/resource.h"
 #include "frontend/operator/ops.h"
 #include "ir/manager.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "kernel/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"

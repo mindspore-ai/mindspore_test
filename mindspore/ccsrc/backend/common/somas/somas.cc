@@ -34,7 +34,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/debug/common.h"
-#include "include/common/debug/anf_ir_dump.h"
+#include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/compile_cache_context.h"
 #ifdef ENABLE_DUMP_IR
 #include "tools/rdr/string_recorder.h"
