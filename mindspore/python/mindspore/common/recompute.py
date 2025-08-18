@@ -218,7 +218,7 @@ def recompute(block, *args, **kwargs):
     storing the intermediate activation computed in forward pass, we will recompute it in backward pass.
 
     Note:
-        - Recompute function only support block which inherited from Cell object.
+        Recompute function only support block which inherited from Cell object.
 
     Args:
         block (Cell): Block to be recompute.
