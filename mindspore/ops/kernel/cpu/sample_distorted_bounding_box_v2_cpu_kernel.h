@@ -29,38 +29,27 @@ namespace mindspore {
 namespace kernel {
 namespace sample_distorted_bounding_box_v2_cpu {
 class Region {
-  /**
-   * Note: The implementation of this class is referenced from
-   * https://github.com/tensorflow/tensorflow/blob/v2.6.2/tensorflow/core/kernels/image/sample_distorted_bounding_box_op.cc
-   */
  public:
-  Region() { SetPiont(0, 0, 0, 0); }
-  Region(int xmin, int ymin, int xmax, int ymax) { SetPiont(xmin, ymin, xmax, ymax); }
+  Region() {}
+  Region(int x_min, int y_min, int x_max, int y_max) : x_min_(x_min), y_min_(y_min), x_max_(x_max), y_max_(y_max) {}
 
-  void SetPiont(int xmin, int ymin, int xmax, int ymax) {
-    min_x_ = xmin;
-    min_y_ = ymin;
-    max_x_ = xmax;
-    max_y_ = ymax;
-  }
-
-  float Area() const { return static_cast<float>((max_x_ - min_x_) * (max_y_ - min_y_)); }
+  float Area() const { return static_cast<float>((x_max_ - x_min_) * (y_max_ - y_min_)); }
 
   Region Intersect(const Region &r) const {
-    const int pmin_x = std::max(min_x_, r.min_x_);
-    const int pmin_y = std::max(min_y_, r.min_y_);
-    const int pmax_x = std::min(max_x_, r.max_x_);
-    const int pmax_y = std::min(max_y_, r.max_y_);
-    if (pmin_x > pmax_x || pmin_y > pmax_y) {
+    const int tmp_min_x = std::max(x_min_, r.x_min_);
+    const int tmp_min_y = std::max(y_min_, r.y_min_);
+    const int tmp_max_x = std::min(x_max_, r.x_max_);
+    const int tmp_max_y = std::min(y_max_, r.y_max_);
+    if (tmp_min_x > tmp_max_x || tmp_min_y > tmp_max_y) {
       return Region();
     } else {
-      return Region(pmin_x, pmin_y, pmax_x, pmax_y);
+      return Region(tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y);
     }
   }
-  int min_x_;
-  int min_y_;
-  int max_x_;
-  int max_y_;
+  int x_min_ = 0;
+  int y_min_ = 0;
+  int x_max_ = 0;
+  int y_max_ = 0;
 };
 
 class SampleDistortedBoundingBoxV2CPUKernelMod : public NativeCpuKernelMod {
@@ -96,10 +85,9 @@ class SampleDistortedBoundingBoxV2CPUKernelMod : public NativeCpuKernelMod {
   uint32_t GenerateSingle();
   bool SatisfiesOverlapConstraints(const Region &crop, float minimum_object_covered,
                                    const std::vector<Region> &bounding_boxes) const;
+  void PickRandomOffsets(int width, int height, int original_width, int original_height, int *x, int *y);
   bool GenerateRandomCrop(int original_width, int original_height, float min_relative_crop_area,
                           float max_relative_crop_area, float aspect_ratio, Region *crop_rect);
-  template <typename T>
-  void CheckSDBBExt2(T *inputs0, float *inputs1, float *inputs2, T *outputs0, T *outputs1, float *outputs2);
   template <typename T>
   void LaunchSDBBExt2(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
