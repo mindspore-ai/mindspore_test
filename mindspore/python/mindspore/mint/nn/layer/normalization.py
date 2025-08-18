@@ -207,8 +207,8 @@ class BatchNorm1d(_BatchNorm):
         >>> net = mint.nn.BatchNorm1d(4)
         >>> output = net(input_x)
         >>> print(output)
-        [[ 0.99950075 0.9980011 -0.9980068 -0.9997783]
-         [-0.9995012 -0.99799967 0.9980068  0.9997778]]
+        [[0.6999965  0.4999975  0.4999975  0.59999704]
+         [0.4999975  0.399998   0.59999704 0.89999545]]
     """
 
     def _check_input_dim(self, input):
@@ -275,10 +275,10 @@ class BatchNorm2d(_BatchNorm):
         >>> net = mint.nn.BatchNorm2d(2)
         >>> output = net(input_x)
         >>> print(output)
-        [[[[-0.99950075]]
-          [[0.9980087]]]
-          [[[0.999501]]
-          [[-0.9980097]]]]
+        [[[[0.29999852]]
+          [[0.399998  ]]]
+         [[[0.4999975 ]]
+          [[0.29999852]]]]
     """
 
     def _check_input_dim(self, input):
@@ -345,8 +345,8 @@ class BatchNorm3d(_BatchNorm):
         >>> net = mint.nn.BatchNorm3d(2)
         >>> output = net(input_x)
         >>> print(output)
-        [[[[[-0.9999688 0.99996865]]]
-          [[[-0.9999833 06.9999831]]]]]
+        [[[[[0.0999995  0.89999545]]]
+          [[[1.1999941  2.2999885 ]]]]]
     """
 
     def _check_input_dim(self, input):
