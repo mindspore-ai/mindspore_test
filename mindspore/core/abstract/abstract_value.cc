@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "ir/map_tensor.h"
 #include "ir/value.h"
 #include "utils/hash_map.h"
 #include "utils/hashing.h"

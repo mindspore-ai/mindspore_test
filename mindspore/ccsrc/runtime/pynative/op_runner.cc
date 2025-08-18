@@ -30,6 +30,7 @@
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/optimizer/helper.h"
 #include "ir/device_type.h"
+#include "ir/map_tensor.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/core/graph_scheduler/base/device_address_utils.h"

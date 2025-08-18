@@ -20,6 +20,8 @@
 #include <map>
 #include <memory>
 #include <utility>
+
+#include "ir/map_tensor.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "ops/op_def.h"

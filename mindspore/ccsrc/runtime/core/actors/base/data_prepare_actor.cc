@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <set>
 
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"

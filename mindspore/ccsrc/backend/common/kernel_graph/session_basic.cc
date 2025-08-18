@@ -29,6 +29,7 @@
 #include "utils/hash_map.h"
 #include "ops/primitive_c.h"
 #include "ir/manager.h"
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

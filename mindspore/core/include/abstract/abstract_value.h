@@ -32,13 +32,17 @@
 #include "ir/dtype.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "ir/map_tensor.h"
 #include "abstract/dshape.h"
 #include "abstract/utils.h"
 #include "utils/shape_utils.h"
 #include "symbolic_shape/symbol.h"
 
 namespace mindspore {
+
+namespace tensor {
+class MapTensor;
+using MapTensorPtr = std::shared_ptr<MapTensor>;
+}  // namespace tensor
 namespace abstract {
 class AbstractBase;
 using AbstractBasePtrList = std::vector<AbstractBasePtr>;
