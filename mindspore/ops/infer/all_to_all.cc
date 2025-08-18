@@ -58,7 +58,7 @@ class AlltoAllInfer : public abstract::OpInferBase {
     if (split_count != rank_size) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << ", the 'split_count' must be equal to 'rank_size', but got 'split_count': "
-                               << split_dim << ", 'rank_size': " << rank_size;
+                               << split_count << ", 'rank_size': " << rank_size;
     }
     auto shape_size = SizeToLong(x_shape.size());
     if (concat_dim >= shape_size || concat_dim < -shape_size) {
