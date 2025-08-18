@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/debugger/tensor_summary.h"
+#include "tools/data_dump/debugger/tensor_summary.h"
 #include <cmath>
 #include <algorithm>
 #include <future>

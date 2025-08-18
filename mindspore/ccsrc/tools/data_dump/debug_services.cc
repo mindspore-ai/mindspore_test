@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/debug_services.h"
+#include "tools/data_dump/debug_services.h"
 #include <dirent.h>
 #include <algorithm>
 #include <functional>
@@ -34,9 +34,9 @@
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "tools/utils.h"
+#include "tools/data_dump/utils.h"
 #include "nlohmann/json.hpp"
-#include "tools/debugger/tensor_summary.h"
+#include "tools/data_dump/debugger/tensor_summary.h"
 #include "utils/file_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_utils.h"

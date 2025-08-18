@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #include <algorithm>
 #include <memory>
 #include <set>
@@ -27,7 +27,7 @@
 #include "tools/data_dump/tensor_statistic.h"
 #include "tools/data_dump/overflow_counter.h"
 #include "tools/dump/utils.h"
-#include "tools/utils.h"
+#include "tools/data_dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"

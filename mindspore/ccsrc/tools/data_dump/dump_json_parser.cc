@@ -19,7 +19,7 @@
 #include <chrono>
 #include <thread>
 #include "tools/dump/npy_header.h"
-#include "tools/utils.h"
+#include "tools/data_dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/ir_dump/anf_dump_utils.h"
 #include "include/common/debug/common.h"

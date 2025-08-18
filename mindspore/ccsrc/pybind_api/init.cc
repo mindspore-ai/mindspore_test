@@ -28,7 +28,7 @@
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
-#include "include/common/utils/summary/event_writer.h"
+#include "include/backend/debug/event_writer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/mpi/mpi_config.h"
 #include "utils/ms_utils.h"

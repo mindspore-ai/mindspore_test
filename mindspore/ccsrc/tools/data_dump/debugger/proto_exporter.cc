@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/proto_exporter.h"
 
 #include <fstream>
 #include <map>
@@ -32,7 +32,7 @@
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "utils/file_utils.h"
 #include "utils/anf_utils.h"
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 
 namespace mindspore {
 

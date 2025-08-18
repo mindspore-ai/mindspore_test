@@ -18,17 +18,17 @@ endif()
 
 if(ENABLE_DEBUGGER)
     list(APPEND _DEBUG_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/debugger/debugger.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/debugger/proto_exporter.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/debugger/tensor_summary.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/debug_services.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/debugger/debugger_utils.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/debugger.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/proto_exporter.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/tensor_summary.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debug_services.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/debugger_utils.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_stat_dump.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/utils.cc"
         )
 else()
     list(APPEND _DEBUG_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/debugger/proto_exporter_stub.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/proto_exporter_stub.cc"
         )
 endif()
 
@@ -40,9 +40,11 @@ list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/cpu_e2e_dump.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_utils.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/common/csv_writer.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/utils.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/summary/callbacks.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/summary/event_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
     )
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")

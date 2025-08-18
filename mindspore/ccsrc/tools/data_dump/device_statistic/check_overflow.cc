@@ -20,7 +20,7 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #include "include/common/debug/common.h"
 #include "tools/data_dump/device_statistic/kernel_factory.h"
 

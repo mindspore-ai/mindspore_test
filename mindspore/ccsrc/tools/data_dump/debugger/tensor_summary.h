@@ -30,7 +30,7 @@
 #include <future>
 
 #include "utils/hash_map.h"
-#include "tools/debug_services.h"
+#include "tools/data_dump/debug_services.h"
 
 namespace mindspore {
 class MeanCalculator {
