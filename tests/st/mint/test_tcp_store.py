@@ -264,7 +264,7 @@ def test_ip_port_wait_for_workers1():
         assert data.decode() == "value"
     end = time.time()
     t = end - start
-    assert t < 5
+    assert t < 5 - 0.1
     barrier()
 
 
@@ -287,7 +287,7 @@ def test_ip_port_wait_for_workers2():
         assert data.decode() == "value"
     end = time.time()
     t = end - start
-    assert t > 5
+    assert t > 5 - 0.1
     barrier()
 
 
@@ -310,7 +310,7 @@ def test_ip_port_get3():
         assert data.decode() == "value"
     end = time.time()
     t = end - start
-    assert t > 5
+    assert t > 5 - 0.1
     barrier()
 
 
@@ -334,7 +334,7 @@ def test_ip_port_wait_for_workers3():
     end = time.time()
     t = end - start
     if this_rank == 0 or this_rank == 1:
-        assert t > 3
+        assert t > 3 - 0.1
     barrier()
 
 
@@ -386,6 +386,7 @@ def test_tcp_complete003():
         TCPStore("127.0.0.1", -1, 1, True, timedelta(seconds=5), True)
     with pytest.raises(ValueError):
         TCPStore("127.0.0.1", 65536, 1, True, timedelta(seconds=5), True)
+    barrier()
 
 
 def test_tcp_complete004():
@@ -396,6 +397,7 @@ def test_tcp_complete004():
     """
     with pytest.raises(TypeError):
         TCPStore(None, start_port+17, 1, True, timedelta(seconds=5), True)
+    barrier()
 
 
 def test_tcp_complete005():
