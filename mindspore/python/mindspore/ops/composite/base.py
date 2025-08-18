@@ -31,7 +31,7 @@ from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFu
     SequenceSliceGetItem_, ListSliceSetItem_, VmapOperation_, TaylorOperation_, ListPop_, \
     ListClear_, ListReverse_, ListExtend_, DictClear_, DictHasKey_, DictUpdate_, DictFromKeys_, \
     ZerosLike_, TensorIndexGetitem_, TensorIndexSetitem_, ListAdd_, DictSetItem_, \
-    HandleBoolTensor_, PreSetitemByTuple_, StarredGetItem_, \
+    HandleBoolTensor_, PreSetitemByTuple_, StarredGetItem_, RecomputeBlock_, \
     StarredUnpack_, StarredUnpackMerge_, IterConverter_, HasNext_, Next_, MSContext
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit, _pynative_executor, _wrap_func
@@ -1315,3 +1315,17 @@ class _Next(Next_):
 
 ms_next = _Next('next')
 """`ms_next` will get next element and res elements for input"""
+
+
+class _RecomputeBlock(RecomputeBlock_):
+    """Set the block to be recomputed"""
+
+    def __init__(self, name):
+        """Initialize RecomputeBlock_."""
+        RecomputeBlock_.__init__(self, name)
+
+    def __call__(self, *args):
+        pass
+
+
+recompute_block = _RecomputeBlock("recompute_block")

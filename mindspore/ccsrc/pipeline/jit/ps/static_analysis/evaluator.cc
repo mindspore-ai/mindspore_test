@@ -35,11 +35,11 @@
 #include "pipeline/jit/ps/static_analysis/stack_frame.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/executor/graph_executor_py.h"
-#include "pipeline/jit/ps/pipeline.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "frontend/operator/composite/composite.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -625,7 +625,10 @@ FuncGraphPtr MetaFuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, cons
   if (meta_func_graph_->isa<expander::bprop::BpropMetaFuncGraph>()) {
     cloned_func_graph = GetCloneBpropGraph(meta_func_graph_, generated_func_graph_, this->bound_node(), scope_);
   } else {
-    cloned_func_graph = BasicClone(generated_func_graph_, false, std::make_shared<UpdateInfo>(scope_, debug_info));
+    // The scope with recompute prefix in recompute block should not be overwritten.
+    auto update_info =
+      meta_func_graph_->isa<prim::RecomputeBlock>() ? nullptr : std::make_shared<UpdateInfo>(scope_, debug_info);
+    cloned_func_graph = BasicClone(generated_func_graph_, false, update_info);
   }
   func_graph_cache_[args_abs_list] = cloned_func_graph;
   MS_EXCEPTION_IF_NULL(engine);
