@@ -12,3 +12,4 @@ inplace_stop_gradient:
     Ascend: InplaceStopGradientAscend
     GPU: None
     CPU: None
+  non-differentiable: True
