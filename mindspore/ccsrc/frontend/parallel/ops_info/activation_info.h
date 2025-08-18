@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_ACTIVATION_INFO_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_ACTIVATION_INFO_H_
 
-#include <ir/value.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,6 +27,9 @@
 #include "frontend/parallel/strategy.h"
 
 namespace mindspore {
+class ValueTuple;
+using ValueTuplePtr = std::shared_ptr<ValueTuple>;
+
 namespace parallel {
 constexpr size_t SORT_EXT_INPUT_SIZE = 2;
 

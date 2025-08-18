@@ -23,7 +23,6 @@
 #include "mindspore/core/include/ir/anf.h"
 #include "include/common/visible.h"
 #include "mindspore/core/include/ops/op_def.h"
-#include "mindspore/core/include/ir/value.h"
 
 namespace py = pybind11;
 namespace mindspore::pynative {}  // namespace mindspore::pynative

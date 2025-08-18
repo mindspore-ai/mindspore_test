@@ -22,7 +22,7 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include "ir/value.h"
+
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/construct_operator.h"
 #include "frontend/parallel/tensor_layout/redistribution_operator_infer.h"

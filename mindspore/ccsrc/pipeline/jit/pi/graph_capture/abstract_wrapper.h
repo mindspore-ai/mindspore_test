@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "pybind11/pybind11.h"
-#include "ir/value.h"
 #include "abstract/abstract_value.h"
 #include "pipeline/jit/pi/graph_capture/graph_build_helper.h"
 

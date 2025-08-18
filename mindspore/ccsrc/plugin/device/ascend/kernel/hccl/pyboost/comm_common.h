@@ -21,7 +21,6 @@
 #include <memory>
 #include <string>
 #include "ir/tensor.h"
-#include "ir/value.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "hccl/hccl.h"
 

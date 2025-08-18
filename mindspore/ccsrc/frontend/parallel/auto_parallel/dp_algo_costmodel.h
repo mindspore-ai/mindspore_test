@@ -22,7 +22,6 @@
 #include <vector>
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
-#include "ir/value.h"
 
 namespace mindspore {
 namespace parallel {

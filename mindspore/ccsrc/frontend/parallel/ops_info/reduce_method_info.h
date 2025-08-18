@@ -25,7 +25,6 @@
 #include "frontend/parallel/ops_info/activation_info.h"
 #include "frontend/parallel/strategy.h"
 #include "ir/tensor.h"
-#include "ir/value.h"
 #include "utils/hash_map.h"
 
 namespace mindspore {

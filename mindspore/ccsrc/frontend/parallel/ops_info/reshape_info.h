@@ -17,13 +17,12 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_RESHAPE_INFO_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_RESHAPE_INFO_H_
 
-#include <ir/value.h>
-
 #include <memory>
 #include <string>
 #include <vector>
 #include <utility>
 
+#include "ir/value.h"
 #include "utils/hash_map.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"

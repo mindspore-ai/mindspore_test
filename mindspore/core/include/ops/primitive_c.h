@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include "ir/primitive.h"
-#include "ir/value.h"
 #include "utils/hash_map.h"
 namespace mindspore {
 namespace ops {
