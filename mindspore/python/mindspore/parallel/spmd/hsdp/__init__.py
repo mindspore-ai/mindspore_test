@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Interfaces for hybrid shard data parallel"""
-from mindspore.parallel.spmd.hsdp.hsdp import apply_hsdp
-__all__ = ["apply_hsdp"]
+"""Interfaces for hybrid sharded data parallel"""
+from mindspore.parallel.spmd.hsdp.hsdp import hsdp
+__all__ = ["hsdp"]

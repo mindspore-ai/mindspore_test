@@ -25,7 +25,7 @@ def test_pure_dp():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_pure_dp"
+            pytest -s hsdp.py::test_pure_dp"
     )
     assert ret == 0
 
@@ -38,7 +38,7 @@ def test_zero1_fully_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero1_fully_shard"
+            pytest -s hsdp.py::test_zero1_fully_shard"
     )
     assert ret == 0
 
@@ -51,7 +51,7 @@ def test_zero1_partial_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero1_partial_shard"
+            pytest -s hsdp.py::test_zero1_partial_shard"
     )
     assert ret == 0
 
@@ -64,7 +64,7 @@ def test_zero2_fully_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero2_fully_shard"
+            pytest -s hsdp.py::test_zero2_fully_shard"
     )
     assert ret == 0
 
@@ -77,7 +77,7 @@ def test_zero2_partial_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero2_partial_shard"
+            pytest -s hsdp.py::test_zero2_partial_shard"
     )
     assert ret == 0
 
@@ -90,7 +90,7 @@ def test_zero3_fully_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero3_fully_shard"
+            pytest -s hsdp.py::test_zero3_fully_shard"
     )
     assert ret == 0
 
@@ -103,7 +103,7 @@ def test_zero3_partial_shard():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero3_partial_shard"
+            pytest -s hsdp.py::test_zero3_partial_shard"
     )
     assert ret == 0
 
@@ -116,7 +116,7 @@ def test_pure_dp_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_pure_dp_with_acc_grad"
+            pytest -s hsdp.py::test_pure_dp_with_acc_grad"
     )
     assert ret == 0
 
@@ -129,7 +129,7 @@ def test_zero1_fully_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero1_fully_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero1_fully_shard_with_acc_grad"
     )
     assert ret == 0
 
@@ -142,7 +142,7 @@ def test_zero1_partial_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero1_partial_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero1_partial_shard_with_acc_grad"
     )
     assert ret == 0
 
@@ -155,7 +155,7 @@ def test_zero2_fully_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero2_fully_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero2_fully_shard_with_acc_grad"
     )
     assert ret == 0
 
@@ -168,7 +168,7 @@ def test_zero2_partial_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero2_partial_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero2_partial_shard_with_acc_grad"
     )
     assert ret == 0
 
@@ -181,7 +181,7 @@ def test_zero3_fully_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero3_fully_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero3_fully_shard_with_acc_grad"
     )
     assert ret == 0
 
@@ -194,6 +194,6 @@ def test_zero3_partial_shard_with_acc_grad():
     '''
     ret = os.system(
         f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=18181\
-            pytest -s test_hsdp.py::test_zero3_partial_shard_with_acc_grad"
+            pytest -s hsdp.py::test_zero3_partial_shard_with_acc_grad"
     )
     assert ret == 0

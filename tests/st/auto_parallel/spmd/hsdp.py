@@ -17,9 +17,8 @@ import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
 from mindspore import nn, ops
 from mindspore.communication import init
-from mindspore.parallel.spmd.hsdp import apply_hsdp
+from mindspore.parallel.spmd.hsdp import hsdp
 
-ms.set_context(mode=ms.PYNATIVE_MODE)
 init()
 ms.set_seed(1)
 
@@ -70,7 +69,7 @@ def get_forward_fn(net):
 
 def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"):
     net = Network()
-    apply_hsdp(net, shard_size, threshold, optimizer_level)
+    hsdp(net, shard_size, threshold, optimizer_level)
 
     optimizer = nn.SGD(net.trainable_params(), 1e-2)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
@@ -86,7 +85,7 @@ def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="leve
 
 def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1):
     net = Network()
-    apply_hsdp(net, shard_size, threshold, optimizer_level, accumulate_grad_step=micro_step)
+    hsdp(net, shard_size, threshold, optimizer_level, accumulate_grad_step=micro_step)
 
     optimizer = nn.SGD(net.trainable_params(), 1e-2)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)

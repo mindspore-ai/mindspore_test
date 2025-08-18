@@ -64,9 +64,9 @@ def _extend_cell_with_hsdp_interface(cell):
         origin_class_to_extend_class[origin_class] = extend_class
     cell.__class__ = extend_class
 
-def apply_hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_grad_step=1):
+def hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_grad_step=1):
     r"""
-        apply hybrid data parallel.
+        apply hybrid sharded data parallel.
 
         Args:
             shard_size (int, optional): Set the optimizer weight shard group size if you want to specific the
