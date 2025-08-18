@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

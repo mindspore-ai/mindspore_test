@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/log_adapter.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/shape_utils.h"

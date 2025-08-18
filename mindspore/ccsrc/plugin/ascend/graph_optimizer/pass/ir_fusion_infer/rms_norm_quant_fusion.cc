@@ -21,6 +21,7 @@
 #include <utility>
 
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"

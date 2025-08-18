@@ -20,6 +20,7 @@
 #include <map>
 #include "symbolic_shape/symbol_info.h"
 #include "ir/kernel_tensor_value.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/check_convert_utils.h"
 #include "utils/value_utils.h"
 #include "symbolic_shape/int_symbol.h"

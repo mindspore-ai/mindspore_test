@@ -22,7 +22,6 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "ir/dtype.h"
 #include "ir/kernel_info_dev.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/visible.h"

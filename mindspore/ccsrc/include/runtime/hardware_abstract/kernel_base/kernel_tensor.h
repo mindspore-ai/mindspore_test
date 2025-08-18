@@ -37,7 +37,6 @@
 #include "include/backend/visible.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
 #include "runtime/hardware_abstract/visible.h"

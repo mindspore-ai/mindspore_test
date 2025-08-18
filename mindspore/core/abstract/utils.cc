@@ -18,6 +18,7 @@
 
 #include "abstract/utils.h"
 
+#include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "abstract/abstract_function.h"

@@ -18,6 +18,7 @@
 
 #include <string>
 #include <memory>
+#include "ir/dtype/tensor_type.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {

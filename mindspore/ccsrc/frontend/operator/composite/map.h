@@ -23,7 +23,6 @@
 #include <vector>
 #include <string>
 
-#include "ir/dtype.h"
 #include "ir/meta_func_graph.h"
 #include "frontend/operator/composite/multitype_funcgraph.h"
 

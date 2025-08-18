@@ -26,7 +26,6 @@
 #include <map>
 #include <optional>
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "base/base.h"
 #include "ir/kernel_info_dev.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"

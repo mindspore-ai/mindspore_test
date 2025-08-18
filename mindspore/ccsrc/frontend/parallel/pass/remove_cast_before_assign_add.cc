@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <algorithm>
 
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
 #include "utils/ms_context.h"

@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"

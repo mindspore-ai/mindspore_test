@@ -27,7 +27,6 @@
 
 #include "utils/hash_map.h"
 #include "ir/signature.h"
-#include "ir/dtype/type.h"
 #include "abstract/abstract_value.h"
 #include "base/base_ref.h"
 

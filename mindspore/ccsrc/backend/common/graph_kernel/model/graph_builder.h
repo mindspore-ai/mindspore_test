@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "mindapi/base/type_id.h"

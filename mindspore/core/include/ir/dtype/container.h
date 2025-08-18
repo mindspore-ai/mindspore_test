@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,8 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_CONTAINER_H_
 #define MINDSPORE_CORE_IR_DTYPE_CONTAINER_H_
 
-#include <cstddef>
-#include <iostream>
-#include <initializer_list>
-#include <map>
 #include <memory>
 #include <utility>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -238,6 +233,10 @@ class MS_CORE_API Dictionary final : public Object {
   std::vector<std::pair<ValuePtr, TypePtr>> key_values_;
 };
 using DictionaryPtr = std::shared_ptr<Dictionary>;
+
+GVAR_DEF(TypePtr, kList, std::make_shared<List>());
+GVAR_DEF(TypePtr, kTuple, std::make_shared<Tuple>());
+GVAR_DEF(TypePtr, kDict, std::make_shared<Dictionary>());
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_DTYPE_CONTAINER_H_

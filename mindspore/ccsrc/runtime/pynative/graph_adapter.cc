@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include "ir/tensor.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"

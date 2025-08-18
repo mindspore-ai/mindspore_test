@@ -38,6 +38,7 @@
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "ir/value.h"
+#include "ir/dtype/ref.h"
 #include "ops/op_def.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"

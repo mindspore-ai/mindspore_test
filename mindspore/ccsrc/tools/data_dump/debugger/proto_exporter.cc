@@ -28,6 +28,8 @@
 #include "include/backend/debug/debugger/debugger.h"
 #include "ir/graph_utils.h"
 #include "ir/scope.h"
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"

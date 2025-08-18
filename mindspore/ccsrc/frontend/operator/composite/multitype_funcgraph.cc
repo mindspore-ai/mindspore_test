@@ -26,6 +26,7 @@
 #include "include/common/fallback.h"
 #include "ir/signature.h"
 #include "ir/dtype.h"
+#include "ir/dtype/tensor_type.h"
 #include "frontend/jit/ps/debug/trace.h"
 
 namespace mindspore {

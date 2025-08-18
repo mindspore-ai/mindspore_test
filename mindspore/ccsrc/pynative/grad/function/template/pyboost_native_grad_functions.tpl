@@ -26,6 +26,7 @@
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "ir/dtype/tensor_type.h"
 ${ops_inc}
 ${include_op_header}
 

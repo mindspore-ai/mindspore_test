@@ -26,6 +26,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/core_ops_primitive.h"
+#include "ir/dtype/tensor_type.h"
 #include "frontend/operator/ops.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/primfunc_utils.h"

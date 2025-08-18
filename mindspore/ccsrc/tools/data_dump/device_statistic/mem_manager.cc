@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "ir/dtype/tensor_type.h"
 #include "include/common/debug/common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

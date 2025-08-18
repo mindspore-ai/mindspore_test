@@ -21,6 +21,7 @@
 
 #include "mindapi/base/type_id.h"
 #include "ir/dtype/type.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/shape_utils.h"
 #include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"

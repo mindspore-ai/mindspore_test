@@ -19,13 +19,8 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_TYPE_H_
 #define MINDSPORE_CORE_IR_DTYPE_TYPE_H_
 
-#include <cstddef>
-#include <iostream>
-#include <initializer_list>
 #include <unordered_map>
 #include <memory>
-#include <utility>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <type_traits>

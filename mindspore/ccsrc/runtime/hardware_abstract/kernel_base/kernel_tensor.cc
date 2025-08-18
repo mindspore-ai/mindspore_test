@@ -21,6 +21,7 @@
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/common/utils/convert_utils.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore::kernel {
 namespace {

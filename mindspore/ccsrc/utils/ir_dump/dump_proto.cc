@@ -24,6 +24,8 @@
 #include "proto/anf_ir.pb.h"
 #include "proto/mind_ir.pb.h"
 #include "ir/graph_utils.h"
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"

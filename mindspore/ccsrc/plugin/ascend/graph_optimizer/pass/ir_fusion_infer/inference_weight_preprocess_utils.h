@@ -33,6 +33,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
+class TensorType;
+using TensorTypePtr = std::shared_ptr<TensorType>;
 namespace opt {
 
 constexpr auto n_lens_str = "n_lens";

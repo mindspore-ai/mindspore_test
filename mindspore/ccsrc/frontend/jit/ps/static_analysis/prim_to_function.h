@@ -26,7 +26,7 @@
 
 #include "utils/hash_map.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
+#include "ir/primitive.h"
 
 namespace mindspore {
 /* namespace to support prim related definition */

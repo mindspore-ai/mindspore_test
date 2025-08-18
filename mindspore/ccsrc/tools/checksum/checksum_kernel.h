@@ -21,7 +21,6 @@
 #include "utils/ms_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace checksum {

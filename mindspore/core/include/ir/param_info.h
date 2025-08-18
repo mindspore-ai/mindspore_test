@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "ir/dtype.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 class ParamInfo;

@@ -22,6 +22,7 @@
 #include <utility>
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/visible.h"
 
 namespace mindspore {

@@ -23,7 +23,6 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include "ir/dtype.h"
 #include "hccl/base.h"
 #include "include/common/utils/contract.h"
 #include "hccl/hccl_types.h"

@@ -15,6 +15,7 @@
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore::expander::bprop {
 namespace {

@@ -17,9 +17,9 @@
 
 #include <vector>
 #include <string>
-
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

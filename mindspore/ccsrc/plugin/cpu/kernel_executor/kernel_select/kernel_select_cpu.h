@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "ir/anf.h"
-#include "ir/dtype/type.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

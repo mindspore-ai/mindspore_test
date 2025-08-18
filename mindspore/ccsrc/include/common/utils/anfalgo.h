@@ -31,7 +31,6 @@
 #include "include/common/utils/contract.h"
 #include "include/common/visible.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/func_graph.h"
 #include "ir/kernel_info_dev.h"
 #include "mindspore/ops/op_def/array_op_name.h"

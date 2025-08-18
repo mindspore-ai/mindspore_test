@@ -16,6 +16,7 @@
 
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/func_op/moe_token_unpermute.h"
 #include "ir/dtype/type.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/shape_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/ops_utils/op_constants.h"

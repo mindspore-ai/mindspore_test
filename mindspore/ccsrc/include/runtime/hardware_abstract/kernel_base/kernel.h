@@ -30,7 +30,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ops/base_operator.h"
 #include "nlohmann/json.hpp"
