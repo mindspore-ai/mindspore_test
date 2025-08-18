@@ -354,3 +354,18 @@ def test_mean_ext_shard_dim_none_layout():
     dim = None
     keepdim = True
     compile_graph(net, 8, "semi_auto_parallel", input_data, dim, keepdim)
+
+def test_mean_ext_shard_false_layout():
+    """
+    Feature: distribute operator mean_ext in semi auto parallel.
+    Description: basic
+    Expectation: compile done without error.
+    """
+    context.set_context(save_graphs=True)
+    layout = Layout((1, 4, 1, 2), ('a', 'b', 'c', 'd'))
+    strategy = (layout(('a', 'b', 'c', 'd'), "None"),)
+    net = MeanNet0(strategy)
+    input_data = Tensor(np.ones([16, 128]), dtype=ms.float32)
+    dim = None
+    keepdim = False
+    compile_graph(net, 8, "semi_auto_parallel", input_data, dim, keepdim)
