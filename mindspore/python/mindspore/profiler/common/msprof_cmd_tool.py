@@ -161,10 +161,9 @@ class MsprofCmdTool:
             )
         if not PathManager.check_path_is_owner_or_root(msprof_script_path) or \
                 not PathManager.check_path_is_owner_or_root(msprof_path):
-            raise PermissionError(f"The '{msprof_script_path}' or '{msprof_path}' path and current owner have "
-                                  f"inconsistent permissions. Please execute "
-                                  f"chown {os.getlogin()} {msprof_script_path} and "
-                                  f"chown {os.getlogin()} {msprof_path}")
+            raise PermissionError(f"PermissionError, CANN package user id: {os.stat(msprof_path).st_uid}, "
+                                  f"current user id: {os.getuid()}. "
+                                  f"Ensure CANN package user id and current user id consistency")
         if not PathManager.check_path_is_executable(msprof_script_path) or \
                 not PathManager.check_path_is_executable(msprof_path):
             raise PermissionError(f"The '{msprof_script_path}' path or '{msprof_path}' path is not executable."
@@ -201,7 +200,8 @@ class MsprofCmdTool:
         if not script_path:
             logger.error("Failed to find get_msprof_info.py path.")
             return {}
-
+        if not PathManager.check_path_is_executable(script_path):
+            raise PermissionError(f"The '{script_path}' path is not executable. Please execute chmod u+x {script_path}")
         host_dir = os.path.join(self._msprof_profile_path, "host")
         cmd = ["python3", script_path, "-dir", host_dir]
         command_outs = CommandExecutor.execute(cmd)[0]
