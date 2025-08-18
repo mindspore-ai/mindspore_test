@@ -33,7 +33,6 @@ set(ASCEND_SUB_COMP
         hal/hardware
         kernel
         optimizer
-        llm_boost
         )
 
 foreach(a_comp ${ASCEND_SUB_COMP})
