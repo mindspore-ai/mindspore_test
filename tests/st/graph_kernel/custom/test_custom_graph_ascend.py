@@ -20,7 +20,7 @@ from mindspore.ops import CustomOpBuilder
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_custom_single_operator():
     """
     Feature: Single-operator loading via CustomOpBuilder.
@@ -38,6 +38,36 @@ def test_custom_single_operator():
                                            "jit_test_files/graph/module.cpp"],
                                           backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
                                           op_doc=["jit_test_files/graph/add4_doc.yaml"]).load()
+
+        def construct(self, x, y):
+            return self.my_ops.add4(x, y, 1)
+
+    x = np.array([1, 2, 3], dtype=np.float16)
+    y = np.array([4, 5, 6], dtype=np.float16)
+    output = MyNet()(ms.Tensor(x), ms.Tensor(y))
+    expect = x + y
+    print(output.asnumpy())
+    assert np.allclose(output.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_custom_single_operator_tuple():
+    """
+    Feature: Single-operator loading via CustomOpBuilder.
+    Description: Build and execute the add4 operator defined in YAML and CPP files in GRAPH mode.
+    Expectation: Execution succeeds and outputs match NumPy results.
+    """
+    ms.set_device("Ascend")
+    ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
+
+    class MyNet(ms.nn.Cell):
+        def __init__(self):
+            super(MyNet, self).__init__()
+            self.my_ops = CustomOpBuilder("graphmode_add",
+                                          ("jit_test_files/graph/add4.cpp",
+                                           "jit_test_files/graph/module.cpp"),
+                                          backend="Ascend", op_def=("jit_test_files/graph/add4.yaml"),
+                                          op_doc=("jit_test_files/graph/add4_doc.yaml")).load()
 
         def construct(self, x, y):
             return self.my_ops.add4(x, y, 1)
