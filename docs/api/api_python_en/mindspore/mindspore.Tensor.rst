@@ -79,6 +79,7 @@ mindspore.Tensor
         ...
         >>> # initialize a tensor with init
         >>> t4 = Tensor(shape = (1, 3), dtype=ms.float32, init=One())
+        >>> t4.init_data()
         >>> print(t4)
         [[1. 1. 1.]]
         >>> print(type(t4))
