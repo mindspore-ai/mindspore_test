@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "pynative/base.h"
-#include "pynative/pynative_cache.h"
+#include "pynative/utils/base.h"
+#include "pynative/utils/pynative_cache.h"
 
 namespace mindspore {
 namespace pynative {

@@ -34,7 +34,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
-#include "mindspore/ccsrc/pynative/grad/function.h"
+#include "mindspore/ccsrc/pynative/backward/function.h"
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/custom_launch_aclnn.h"
 #endif  // CUSTOM_ASCEND_OP
 

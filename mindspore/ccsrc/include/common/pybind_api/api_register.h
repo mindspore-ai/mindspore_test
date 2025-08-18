@@ -74,7 +74,6 @@ FRONTEND_EXPORT void RegisterCustomizeFunction(py::module *m);
 FRONTEND_EXPORT void RegisterCellBackwardHookFunction(py::module *m);
 FRONTEND_EXPORT void RegisterDetachFunction(py::module *m);
 FRONTEND_EXPORT void RegisterFunctional(py::module *m);
-FRONTEND_EXPORT void RegDirectOps(py::module *m);
 namespace distributed {
 FRONTEND_EXPORT void RegReducer(py::module *m);
 }

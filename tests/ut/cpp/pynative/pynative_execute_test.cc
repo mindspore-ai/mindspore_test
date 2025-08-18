@@ -22,9 +22,9 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "frontend/operator/ops.h"
-#include "pynative/pynative_execute.h"
-#include "pynative/forward/do_infer.h"
-#include "pynative/base.h"
+#include "pynative/utils/pynative_execute.h"
+#include "pynative/forward/op_graph/do_infer.h"
+#include "pynative/utils/base.h"
 #include "utils/ms_context.h"
 
 namespace py = pybind11;

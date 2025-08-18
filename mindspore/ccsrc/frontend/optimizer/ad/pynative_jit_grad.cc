@@ -22,7 +22,7 @@
 #include <utility>
 #include <algorithm>
 #include <set>
-#include "pynative/pynative_utils.h"
+#include "pynative/utils/pynative_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/pynative/common_utils.h"
 #include "frontend/jit/ps/pass.h"

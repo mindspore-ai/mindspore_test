@@ -24,12 +24,12 @@
 #include "frontend/jit/ps/pass.h"
 #include "frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "pynative/pynative_execute.h"
-#include "pynative/op_function/converter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/expander/utils.h"
+#include "pynative/utils/pynative_execute.h"
+#include "pynative/forward/pyboost/converter.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
@@ -77,7 +77,7 @@
 #endif
 
 #include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
-#include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
+#include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
 #include "include/common/utils/pyobj_manager.h"
 

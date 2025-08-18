@@ -17,7 +17,7 @@
 #include "mindspore/ccsrc/pynative/parallel/reducer.h"
 #include "include/common/pybind_api/api_register.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
-#include "pynative/grad/function.h"
+#include "pynative/backward/function.h"
 
 namespace mindspore {
 namespace pynative {

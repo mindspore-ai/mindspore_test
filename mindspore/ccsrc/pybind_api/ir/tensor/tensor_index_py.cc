@@ -26,7 +26,7 @@
 #include "pybind11/pytypes.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
-#include "pynative/pynative_execute.h"
+#include "pynative/utils/pynative_execute.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/pynative/grad_state.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
