@@ -269,6 +269,9 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const KernelGraphPtr &grap
       if (item->isa<Parameter>()) {
         auto input_param = item->cast<ParameterPtr>();
         MS_EXCEPTION_IF_NULL(input_param);
+        if (IsDynamic(device_address->GetShapeVector())) {
+          input_param->set_has_dynamic_shape(true);
+        }
         // Unused address will not alloc memory, which is easy to cause problems for weight node, so skip weight node.
         if (!common::AnfAlgo::IsParameterWeight(input_param) &&
             !input_param->IsUsedByRealKernelInGraph(graph->graph_id())) {
