@@ -54,8 +54,8 @@ def test_call_ex_param(jit_func):
     context.set_context(mode=context.PYNATIVE_MODE)
     x = Tensor([1])
     y = Tensor([2])
-    assert (all(jit_func(x, y) == Tensor([3])))
-    assert (get_code_extra(jit_func.__wrapped__)['break_count_'] == 0)
+    assert all(jit_func(x, y) == Tensor([3]))
+    assert get_code_extra(jit_func.__wrapped__)['break_count_'] == 0
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -85,3 +85,59 @@ def test_call_function_ex_vargs_infer():
         o2 = compiled_fn(x)
         assert_equal(o1, o2)
         assert_executed_by_graph_mode(compiled_fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_call_function_ex_with_params_dict_merge_v1():
+    """
+    Feature: CALL_FUNCTION_EX.
+    Description: Test CALL_FUNCTION_EX with params dict merge.
+    Expectation: No graph breaks.
+    """
+
+    def f2(x, y, z):
+        return x + y + z
+
+    def fn(x: Tensor, y: Tensor, extra_kwargs: dict):
+        # BUILD_CONST_KEY_MAP + DICT_MERGE
+        return f2(x=x, y=y, **extra_kwargs)
+
+    x = Tensor([1, 2])
+    y = Tensor([2, 3])
+    z = Tensor([3, 4])
+    extra_kwargs = {'z': z}
+
+    o1 = fn(x, y, extra_kwargs)
+
+    compiled_fn = jit(fn, capture_mode="bytecode", fullgraph=True)
+    o2 = compiled_fn(x, y, extra_kwargs)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(compiled_fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_call_function_ex_with_params_dict_merge_v2():
+    """
+    Feature: CALL_FUNCTION_EX.
+    Description: Test CALL_FUNCTION_EX with params dict merge.
+    Expectation: No graph breaks.
+    """
+
+    def f2(x, y, z=2):
+        return ops.add(x, y) * z
+
+    def fn(x: Tensor, y: Tensor, extra_kwargs=None):
+        # BUILD_CONST_KEY_MAP + DICT_MERGE
+        return f2(x=x, y=y, **(extra_kwargs or {}))
+
+    x = Tensor([1, 2])
+    y = Tensor([3, 4])
+
+    o1 = fn(x, y)
+
+    compiled_fn = jit(fn, capture_mode="bytecode", fullgraph=True)
+    o2 = compiled_fn(x, y)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(compiled_fn)

@@ -391,8 +391,13 @@ bool GraphBuilder::UnpackElements(ValueNode *node) {
 bool GraphBuilder::UnpackDict(ValueNode *map) {
   PyObject *map_object = map->GetVobj() ? map->GetVobj()->GetPyObject().ptr() : nullptr;
   if (map->GetOpcode() == BUILD_MAP) {
+    MS_LOG(DEBUG) << "Do dict unpack from BUILD_MAP: " << map->ToString();
     std::for_each(map->inputs().begin(), map->inputs().end(), [this](ValueNode *n) { this->push(n); });
+  } else if (map->GetOpcode() == BUILD_CONST_KEY_MAP) {
+    MS_LOG(DEBUG) << "Do dict unpack from BUILD_CONST_KEY_MAP: " << map->ToString();
+    return UnpackConstKeyMapToStack(map);
   } else if (map_object != nullptr && PyDict_Check(map_object)) {
+    MS_LOG(DEBUG) << "Do dict unpack from dict object: " << map->ToString();
     auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
     // guard dict keys, transform to const key map......
     Py_ssize_t size = PyList_GET_SIZE(keys.ptr());
@@ -404,9 +409,81 @@ bool GraphBuilder::UnpackDict(ValueNode *map) {
       this->DoGetItem({BINARY_SUBSCR, 0});
     }
   } else {
+    MS_LOG(INFO) << "Cannot do dict unpack, unsupported dict type: " << map->ToString();
     return false;
   }
   return true;
+}
+
+bool GraphBuilder::UnpackConstKeyMapToStack(ValueNode *map) {
+  // Handle BUILD_CONST_KEY_MAP: stack layout is [v1, v2, v3, ..., (k1, k2, k3, ...)]
+  const std::vector<ValueNode *> &inputs = map->inputs();
+  if (inputs.empty()) {
+    MS_LOG(INFO) << "BUILD_CONST_KEY_MAP node has no inputs: " << map->ToString();
+    return false;
+  }
+
+  // Last input is the tuple of keys
+  ValueNode *keys_node = inputs.back();
+  MS_EXCEPTION_IF_NULL(keys_node->GetVobj());
+  py::object keys_obj = keys_node->GetVobj()->GetPyObject();
+  MS_EXCEPTION_IF_NULL(keys_obj.ptr());
+
+  if (!py::isinstance<py::tuple>(keys_obj)) {
+    MS_LOG(INFO) << "Keys node should be a tuple for BUILD_CONST_KEY_MAP: " << keys_node->ToString();
+    return false;
+  }
+
+  auto keys_tuple = keys_obj.cast<py::tuple>();
+  size_t num_keys = keys_tuple.size();
+  size_t num_values = inputs.size() - 1;  // Exclude the keys tuple
+
+  if (num_keys != num_values) {
+    MS_LOG(INFO) << "Number of keys (" << num_keys << ") does not match number of values (" << num_values
+                 << ") for BUILD_CONST_KEY_MAP";
+    return false;
+  }
+
+  // Collect key-value pairs in BUILD_MAP order: [..., k2, v2, k1, v1]
+  std::vector<ValueNode *> key_value_pairs;
+
+  for (size_t i = 0; i < num_keys; ++i) {
+    py::object key_obj = keys_tuple[i];
+    DoLoadConst({LOAD_CONST, 0, key_obj});
+    ValueNode *key_node = pop();
+    // Get the corresponding dict value
+    ValueNode *value_node = inputs[i];
+    // Add in BUILD_MAP order (key first, then value)
+    key_value_pairs.push_back(key_node);
+    key_value_pairs.push_back(value_node);
+  }
+  // Push all key-value pairs to stack
+  std::for_each(key_value_pairs.begin(), key_value_pairs.end(), [this](ValueNode *i) { this->push(i); });
+  return true;
+}
+
+std::vector<ValueNode *> GraphBuilder::UnpackConstKeyMap(ValueNode *map) {
+  MS_EXCEPTION_IF_NULL(map);
+  MS_EXCEPTION_IF_CHECK_FAIL(map->GetOpcode() == BUILD_CONST_KEY_MAP, "map should be BUILD_CONST_KEY_MAP");
+  std::vector<ValueNode *> build_inputs;
+
+  int old_size = SizeToInt(frame_.GetStacks().size());
+
+  // Call UnpackDict to unpack the dict to stack
+  if (!UnpackDict(map)) {
+    MS_LOG(INFO) << "Failed to unpack dict for BUILD_CONST_KEY_MAP: " << map->ToString();
+    return build_inputs;
+  }
+
+  int new_size = SizeToInt(frame_.GetStacks().size());
+  MS_EXCEPTION_IF_CHECK_FAIL(new_size > old_size, "new_size should be greater than old_size");
+  MS_EXCEPTION_IF_CHECK_FAIL((new_size - old_size) % 2 == 0, "unpacked values count should be even");
+
+  build_inputs.insert(build_inputs.end(), frame_.GetStacks().begin() + old_size, frame_.GetStacks().end());
+  frame_.Popn(new_size - old_size);
+
+  MS_LOG(DEBUG) << "Successfully unpacked BUILD_CONST_KEY_MAP with " << build_inputs.size() << " elements";
+  return build_inputs;
 }
 
 static void GenUnpackValue(const std::function<void(int, int)> &gen_item, int cnt, int cnt_after, Py_ssize_t size) {
@@ -1923,11 +2000,24 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
   ValueNode *origin = inputs[0];
   ValueNode *arg = inputs[1];
   ValueNode *arg2 = inputs.size() > 2 ? inputs[2] : nullptr;
-  if (origin->GetOpcode() != BUILD_LIST && origin->GetOpcode() != BUILD_MAP) {
-    MS_LOG(INFO) << "Stack node should be BUILD_LIST or BUILD_MAP, but actual is: " << origin->ToString();
+  if (origin->GetOpcode() != BUILD_LIST && origin->GetOpcode() != BUILD_MAP &&
+      origin->GetOpcode() != BUILD_CONST_KEY_MAP) {
+    MS_LOG(INFO) << "Stack node should be BUILD_LIST, BUILD_MAP or BUILD_CONST_KEY_MAP, but actual is: "
+                 << origin->ToString();
     return nullptr;
   }
-  std::vector<ValueNode *> build_inputs = origin->inputs();
+
+  std::vector<ValueNode *> build_inputs;
+  if (origin->GetOpcode() == BUILD_CONST_KEY_MAP) {
+    build_inputs = UnpackConstKeyMap(origin);
+    if (build_inputs.empty()) {
+      MS_LOG(INFO) << "Failed to unpack BUILD_CONST_KEY_MAP node: " << origin->ToString();
+      return nullptr;
+    }
+  } else {
+    build_inputs = origin->inputs();
+  }
+
   int div = 2;
   if (opcode == LIST_APPEND) {
     build_inputs.push_back(arg);
@@ -1958,7 +2048,7 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
   } else if (opcode == DICT_MERGE || opcode == DICT_UPDATE) {
     size_t size = frame_.GetStacks().size();
     if (!UnpackDict(arg)) {
-      MS_LOG(DEBUG) << "Unpack failed for argument [" << arg->ToString() << "]";
+      MS_LOG(INFO) << "Failed to unpack dict on rhs: " << arg->ToString();
       return nullptr;
     }
     build_inputs.insert(build_inputs.end(), frame_.GetStacks().begin() + size, frame_.GetStacks().end());
