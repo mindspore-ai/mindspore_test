@@ -11,6 +11,7 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "akg/*.cc"
         "graph_kernel/*.cc"
         "utils/*.cc"
+        "custom/*.cc"
         "internal/internal_kernel_build.cc"
         "internal/internal_ascend_adapter.cc"
         "atb/atb_kernel_build.cc"

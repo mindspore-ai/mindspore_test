@@ -66,6 +66,7 @@ enum KernelType : int {
   INTERNAL_KERNEL,
   GE_KERNEL,
   ATB_KERNEL,
+  CUSTOM_KERNEL,
 };
 
 namespace kernel {

@@ -19,11 +19,14 @@
 #include <set>
 #include <memory>
 #include <vector>
+#include <string>
+#include <utility>
 #include <optional>
 #include "pybind11/pybind11.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
 #include "ms_extension/common/visible.h"
+#include "ms_extension/common/tensor_accessor.h"
 
 namespace mindspore {
 namespace tensor {
@@ -125,6 +128,39 @@ class EXTENSION_API Tensor {
    * @throws If the Tensor is null, an exception is thrown.
    */
   void *GetDataPtr() const;
+
+  template <typename T>
+  T *data_ptr() const {
+    return static_cast<T *>(GetDataPtr());
+  }
+
+  /// \brief Provides a TensorAccessor for efficient multidimensional tensor access.
+  ///
+  /// This method returns a TensorAccessor object that allows direct and efficient access
+  /// to the tensor's underlying data, using the specified data type and dimensionality.
+  ///
+  /// \tparam T The data type of the tensor elements (e.g., float, int, etc.).
+  /// \tparam N The number of dimensions (rank) of the tensor.
+  ///
+  /// \note The tensor's shape and stride sizes must match the specified dimension `N`.
+  ///       If not, an exception will be thrown.
+  ///
+  /// \return A TensorAccessor object for accessing the tensor's data.
+  ///
+  /// \throws std::runtime_error If the tensor's shape or stride size does not match the specified dimension `N`.
+  template <typename T, size_t N>
+  TensorAccessor<T, N> accessor() const {
+    // Check if the shape and stride sizes match the expected dimension N
+    if (shape().size() != N || stride().size() != N) {
+      throw std::runtime_error(
+        "TensorAccessor error: The tensor's shape or stride does not match the specified dimension N. "
+        "Expected dimension: " +
+        std::to_string(N) + ", but got shape size: " + std::to_string(shape().size()) +
+        " and stride size: " + std::to_string(stride().size()) + ".");
+    }
+    // Return a TensorAccessor with the data pointer, shape, and stride
+    return TensorAccessor<T, N>(data_ptr<T>(), shape().data(), std::make_shared<ShapeVector>(std::move(stride())));
+  }
 
   /* ====== Operators based on Tensor BEGIN ====== */
  public:
