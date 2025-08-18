@@ -24,7 +24,9 @@
 #include "ir/tensor_new.h"
 #include "ir/device_address_maker.h"
 #include "ir/device_sync.h"
+#include "ir/dtype/type_id.h"
 #include "utils/shape_utils.h"
+#include "mindapi/base/format.h"
 #include "utils/anf_utils.h"
 #include "utils/llm_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -163,16 +165,18 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
   }
 
   if (device_address->GetDeviceType() != device_context_->GetDeviceType()) {
-    MS_LOG(INFO) << "need sync data to device, device type: "
-                 << device::GetDeviceNameByType(device_context_->GetDeviceType());
+    auto &device_context_key = device_context_->device_context_key();
+    MS_LOG(INFO) << "need sync data to device, device name: " << device_context_key.device_name_;
+    // create new device address for tensor
+    auto new_device_address = device_context_->device_res_manager_->CreateDeviceAddress(
+      nullptr, tensor->Size(), tensor->shape(), Format::DEFAULT_FORMAT, tensor->data_type(),
+      device_context_key.device_name_, device_context_key.device_id_, kDefaultStreamIndex);
     // malloc device memory
     device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
-    auto device_ptr = device_context_->device_res_manager_->AllocateMemory(tensor->Size(), kDefaultStreamIndex);
-    MS_EXCEPTION_IF_NULL(device_ptr);
-    // create new device address for tensor
-    auto new_device_address = GetDeviceAddressMaker(device_context_->GetDeviceType())(
-      tensor->data_type(), tensor->shape(), device_ptr, nullptr);
-    MS_EXCEPTION_IF_NULL(new_device_address);
+    if (!device_context_->device_res_manager_->AllocateMemory(new_device_address.get(), kDefaultStreamIndex)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed, device address: " << new_device_address->ToString()
+                        << ", tensor: " << tensor->ToString();
+    }
     // async H2D copy
     if (!AsyncCopy(new_device_address, device_address, kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "Failed async copy H2D for tensor: " << tensor->ToString()
@@ -180,7 +184,7 @@ void *GraphAdapter::PrepareTensorDataToDevice(const tensor::TensorPtr &tensor) {
     }
     // set the new device address to tensor
     tensor->set_device_address(new_device_address);
-    return device_ptr;
+    return new_device_address->GetMutablePtr();
   }
 
   if (device_address->GetMutablePtr() == nullptr) {
@@ -466,9 +470,12 @@ void GraphAdapter::ConvertOutputs(VectorRef *outputs) {
     auto dtype = ConvertDataType(da_tensor->type);
     MS_LOG(INFO) << "start construct output tensor, shape: " << shape << ", dtye: " << dtype;
     MS_EXCEPTION_IF_NULL(da_tensor->data);
-    auto device_address =
-      GetDeviceAddressMaker(device_context_->GetDeviceType())(dtype, shape, da_tensor->data, nullptr);
+    auto device_address = device_context_->device_res_manager_->CreateDeviceAddress(
+      da_tensor->data, SizeOf(shape) * abstract::TypeIdSize(dtype), shape, Format::DEFAULT_FORMAT, dtype,
+      device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_,
+      kDefaultStreamIndex);
     MS_EXCEPTION_IF_NULL(device_address);
+    device_address->set_from_mem_pool(true);
     auto output = std::make_shared<tensor::Tensor>(dtype, shape, device_address);
     MS_EXCEPTION_IF_NULL(output);
     MS_LOG(INFO) << "converted output tensor: " << output->ToString();
