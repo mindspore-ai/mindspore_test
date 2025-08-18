@@ -124,7 +124,7 @@ inline MemBuf *MemBufAllocator::SearchAvailableMemBuf(size_t size) {
   for (auto backward_it = free_mem_bufs_.rbegin(); backward_it != free_mem_bufs_.rend(); backward_it++) {
     auto mem_buf = *backward_it;
     auto next_buf = mem_buf->next_;
-    if (next_buf == nullptr || next_buf->status_ == MemBufStatus::kMemBufEagerFree ||
+    if (next_buf == nullptr || next_buf->status_ != MemBufStatus::kMemBufEagerFree ||
         mem_buf->size_ + next_buf->size_ < size) {
       continue;
     }
