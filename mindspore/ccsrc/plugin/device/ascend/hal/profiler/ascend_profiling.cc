@@ -24,15 +24,15 @@
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiling_python.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
-#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_prof_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 
 using mindspore::device::ascend::ErrorManagerAdapter;
 

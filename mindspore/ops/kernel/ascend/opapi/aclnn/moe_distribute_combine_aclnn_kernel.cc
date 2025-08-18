@@ -20,7 +20,7 @@
 #include <string>
 
 #include "ir/tensor.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace kernel {

@@ -24,7 +24,7 @@
 #include <mutex>
 #include <utility>
 #include "ir/tensor_new.h"
-#include "plugin/res_manager/ascend/dvm/dvm.h"
+#include "plugin/ascend/res_manager/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"

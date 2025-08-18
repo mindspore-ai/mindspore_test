@@ -21,7 +21,7 @@
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "infer/ops_func_impl/ring_attention_update.h"
 
 namespace mindspore {

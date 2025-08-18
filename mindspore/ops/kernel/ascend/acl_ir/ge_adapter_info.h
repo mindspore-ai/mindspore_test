@@ -28,8 +28,8 @@
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
 #include "kernel/ascend/visible.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 
 namespace mindspore::device::ascend {
 using TensorPtr = mindspore::tensor::TensorPtr;

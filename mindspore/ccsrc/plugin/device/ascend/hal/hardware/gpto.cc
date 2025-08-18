@@ -46,7 +46,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_adapter.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

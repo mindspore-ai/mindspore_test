@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #include "kernel/ascend/acl_ir/acl_allocator.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_allocator_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"

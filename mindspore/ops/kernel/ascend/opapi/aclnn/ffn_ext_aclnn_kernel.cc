@@ -15,7 +15,7 @@
  */
 #include <string>
 #include "kernel/ascend/opapi/aclnn/ffn_ext_aclnn_kernel.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 namespace mindspore {
 using mindspore::device::ascend::FFNActivationMode;
 namespace kernel {

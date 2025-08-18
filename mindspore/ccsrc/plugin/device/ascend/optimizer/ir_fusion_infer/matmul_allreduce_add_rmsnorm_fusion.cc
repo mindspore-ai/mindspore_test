@@ -19,12 +19,12 @@
 #include <string>
 
 #include "ir/tensor_new.h"
-#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/core_ops_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "backend/common/pass/common/gllo_utils.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"

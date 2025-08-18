@@ -11,9 +11,9 @@ if(ENABLE_D OR ENABLE_ACL)
         file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../version.txt" VERSION)
         add_definitions(-DVERSION="${VERSION}")
         list(REMOVE_ITEM _TRANSFORM_SRC_LIST "callbacks_ge.cc")
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/res_manager/ascend/op_adapter/
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/ascend/res_manager/op_adapter/
             _mindspore_ascend_op_adapter_obj)
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/res_manager/ascend/symbol_interface
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/ascend/res_manager/symbol_interface
             _mindspore_ascend_symbol_obj)
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/config_manager.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../common/debug/common.cc")

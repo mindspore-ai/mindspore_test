@@ -17,11 +17,11 @@
 #include "kernel/ascend/pyboost/customize/speed_fusion_attention.h"
 #include "kernel/ascend/pyboost/auto_generate/dropout_gen_mask_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/zeros.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/graph_scheduler/device_address_utils.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "ir/tensor_new.h"
 

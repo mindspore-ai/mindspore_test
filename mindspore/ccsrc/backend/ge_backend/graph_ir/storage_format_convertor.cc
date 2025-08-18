@@ -27,7 +27,7 @@
 #include "ir/func_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
+#include "plugin/ascend/res_manager/op_adapter/transform_util.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

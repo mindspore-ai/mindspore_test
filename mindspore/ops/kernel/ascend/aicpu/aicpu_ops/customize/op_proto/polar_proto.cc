@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/res_manager/ascend/op_adapter/custom_op_proto/cust_math_ops.h"
+#include "plugin/ascend/res_manager/op_adapter/custom_op_proto/cust_math_ops.h"
 #include "register/op_impl_registry.h"
 #include "utils/util.h"
 

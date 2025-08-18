@@ -22,9 +22,9 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "utils/ms_context.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_kernel_executor.h"
-#include "plugin/res_manager/ascend/ascend_res_manager.h"
+#include "plugin/ascend/res_manager/ascend_res_manager.h"
 
 namespace mindspore {
 namespace device {

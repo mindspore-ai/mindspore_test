@@ -21,8 +21,8 @@
 #include <tuple>
 #include <string>
 #include "include/common/utils/utils.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
@@ -79,10 +79,12 @@ MoeDispatchParams ParseMoeDispatchParams(const Int64ImmPtr &ep_world_size, const
   return params;
 }
 
-std::shared_ptr<runtime::PyBoostDeviceTask> CreateMoeDispatchTask(
-  const std::shared_ptr<OpRunner> &op, const TensorPtr &x, const TensorPtr &expert_ids,
-  const std::optional<TensorPtr> &expert_scales, const std::optional<TensorPtr> &scales,
-  const std::optional<TensorPtr> &x_activate_mask, const MoeDispatchParams &params) {
+std::shared_ptr<runtime::PyBoostDeviceTask> CreateMoeDispatchTask(const std::shared_ptr<OpRunner> &op,
+                                                                  const TensorPtr &x, const TensorPtr &expert_ids,
+                                                                  const std::optional<TensorPtr> &expert_scales,
+                                                                  const std::optional<TensorPtr> &scales,
+                                                                  const std::optional<TensorPtr> &x_activate_mask,
+                                                                  const MoeDispatchParams &params) {
   return std::make_shared<runtime::PyBoostDeviceTask>(
     [op, x, expert_ids, scales, x_activate_mask, expert_scales, params]() {
       MS_LOG(DEBUG) << "Run device task MoeDistributeDispatch start";

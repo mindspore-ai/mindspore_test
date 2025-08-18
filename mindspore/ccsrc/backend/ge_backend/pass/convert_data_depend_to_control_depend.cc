@@ -22,8 +22,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_desc.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {

@@ -21,8 +21,8 @@
 #include "backend/ge_backend/graph_ir/aoe_util.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_base_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore::backend::ge_backend {
 namespace AoeOptions {

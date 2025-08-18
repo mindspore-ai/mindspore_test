@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/pyboost/customize/mm_ext.h"
 #include <memory>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

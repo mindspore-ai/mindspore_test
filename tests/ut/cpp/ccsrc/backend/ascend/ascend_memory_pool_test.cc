@@ -16,10 +16,10 @@
 #include <atomic>
 
 #include "common/common_test.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #define private public
 #define protected public
-#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
 #undef private
 #undef protected
 

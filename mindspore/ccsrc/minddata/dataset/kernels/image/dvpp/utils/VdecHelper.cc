@@ -13,8 +13,8 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/VdecHelper.h"
 
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteUtils.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 using namespace std;
 

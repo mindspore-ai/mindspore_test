@@ -17,7 +17,7 @@
 #include <memory>
 #include "kernel/ascend/pyboost/customize/inplace_scatter_src.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {

@@ -28,7 +28,7 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "ir/dtype/type.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 

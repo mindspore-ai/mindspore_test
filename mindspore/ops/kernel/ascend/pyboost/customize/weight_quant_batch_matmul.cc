@@ -16,7 +16,7 @@
 
 #include "kernel/ascend/pyboost/customize/weight_quant_batch_matmul.h"
 #include <memory>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 

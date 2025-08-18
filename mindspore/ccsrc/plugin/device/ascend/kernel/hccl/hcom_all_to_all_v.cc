@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_all_to_all_v.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace kernel {

@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/kernel/atb/atb_adapter.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore::device::ascend {
 namespace {

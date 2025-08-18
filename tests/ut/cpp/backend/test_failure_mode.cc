@@ -25,7 +25,7 @@
 #define protected public
 #include "backend/common/pass/mindir/dropout_unify_mindir.h"
 #include "backend/common/pass/other/lamb_fission.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #undef private
 #undef protected
 

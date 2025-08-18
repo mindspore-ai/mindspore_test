@@ -57,7 +57,7 @@ mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionIni
 mindspore/mindspore/ccsrc/utils/anfalgo.cc:mindspore::common::AnfAlgo::GetTensorValueString
 mindspore/mindspore/ops/kernel/gpu/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
 mindspore/mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fission/dynamic_rnn_grad_fission_v2.cc:mindspore::opt::AddLSTMInputGradNode
-mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
+mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc:aicpu::ARMDropOutGenMaskKernel
 mindspore/model_zoo/official/recommend/wide_and_deep/src/wide_and_deep.py:__init__
 mindspore/model_zoo/official/recommend/wide_and_deep_multitable/src/wide_and_deep.py:__init__
