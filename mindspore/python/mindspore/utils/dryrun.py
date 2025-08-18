@@ -74,7 +74,7 @@ def set_simulation():
     os.environ["MS_SIMULATION_LEVEL"] = "1"
     obj = TraceBack()
     Tensor.asnumpy = obj.inject(Tensor.asnumpy)
-    Tensor._getitem = obj.inject(Tensor._getitem)
+    Tensor.__getitem__ = obj.inject(Tensor.__getitem__)
     Tensor.is_contiguous = obj.inject(Tensor.is_contiguous)
     Tensor.flush_from_cache = obj.inject(Tensor.flush_from_cache)
     Tensor.__str__ = no_inject_traceback_for_print
