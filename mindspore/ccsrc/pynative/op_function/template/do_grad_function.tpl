@@ -25,6 +25,6 @@ void DoGrad${class_name}(${grad_args_with_type}) {
   if (require_grad) {
     DoGrad${class_name}Inner(op, ${grad_input_args_with_optional}, output_value);
   } else if (is_inplace_op) {
-    PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
+    PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]->version());
   }
 }

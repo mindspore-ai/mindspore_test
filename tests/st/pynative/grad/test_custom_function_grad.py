@@ -933,7 +933,7 @@ def test_custom_function_reduce_exception():
     assert "For custom function, grad tensor should be broadcast to" in str(err.value)
 
 
-class CustomFunctionSelfRequresGrad(_Function):
+class CustomFunctionSelfRequiresGrad(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x._requires_grad = True
@@ -957,12 +957,12 @@ def test_custom_function_self_requires_grad():
     """
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
-    z = CustomFunctionSelfRequresGrad.apply(x, y)
+    z = CustomFunctionSelfRequiresGrad.apply(x, y)
     assert x._requires_grad is True
     assert z._requires_grad is False
 
 
-class CustomFunctionOutRequresGrad(_Function):
+class CustomFunctionOutRequiresGrad(_Function):
     @staticmethod
     def forward(ctx, x, y):
         z = Tensor([3, 3, 3], mindspore.float32)
@@ -987,6 +987,6 @@ def test_custom_function_out_requires_grad_true():
     """
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
-    z = CustomFunctionSelfRequresGrad.apply(x, y)
+    z = CustomFunctionOutRequiresGrad.apply(x, y)
     assert x._requires_grad is False
     assert z._requires_grad is False

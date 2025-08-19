@@ -57,7 +57,7 @@ struct COMMON_EXPORT PyBackwardNodePreHook : public BackwardNodePreHook {
   PyObject *hook_dict_;
 };
 
-using RetainGradHookFn = std::function<void(const TensorPtr &grad)>;
+using RetainGradHookFn = std::function<void(const tensor::TensorPtr &grad)>;
 struct COMMON_EXPORT RetainGradHook {
   explicit RetainGradHook(RetainGradHookFn hook_fn);
   ~RetainGradHook() = default;

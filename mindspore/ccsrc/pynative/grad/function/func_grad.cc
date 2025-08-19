@@ -624,8 +624,14 @@ void UpdateGradientsContexts(const ValuePtr &input, bool accumulate_grad,
   auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(input);
   MS_EXCEPTION_IF_NULL(tensor);
   const auto &auto_grad_meta = tensor->auto_grad_meta_data();
-  MS_EXCEPTION_IF_NULL(auto_grad_meta);
+  if (auto_grad_meta == nullptr) {
+    MS_LOG(DEBUG) << "Input tenosr has been inplace stop gradient!";
+    return;
+  }
   const auto &grad_node = auto_grad_meta->UnsafeGetGradNodeImpl();
+  if (grad_node == nullptr) {
+    return;
+  }
   if (accumulate_grad) {
     (*gradient_context)[grad_node.get()] = GradientContext(true);
   } else {
@@ -663,16 +669,14 @@ void KPynativeOp(const GradParamPtr &grad_param) {
   MS_LOG(DEBUG) << "Begin KPynativeOp"
                 << ", prim: " << grad_param->op_grad_info->op_prim->name();
   const auto &prim = grad_param->op_grad_info->op_prim;
+  auto flatten_outputs = CommonUtils::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value);
   if (!AutoGradUtil::IsPrimNeedGrad(prim) || !AutoGradUtil::NeedGrad(grad_param->op_grad_info->input_value)) {
     MS_LOG(DEBUG) << "Prim " << prim->name() << " does not need to do op grad.";
-    if (grad_param->op_grad_info->operator_type == OperatorType::kInplaceOp) {
-      AutoGradUtil::BumpVersion(grad_param->op_grad_info->input_value[kIndex0]);
-    }
+    UpdateVersion(grad_param->op_grad_info, flatten_outputs);
     return;
   }
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
   BackwardNodePtr fn = nullptr;
-  auto flatten_outputs = CommonUtils::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value);
   size_t flatten_output_size = flatten_outputs.size();
   bool is_custom_prim =
     IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);

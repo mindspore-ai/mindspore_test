@@ -95,7 +95,7 @@ void RetainGradHook::operator()(const ValuePtr &grad) {
   if (grad->isa<None>()) {
     return;
   }
-  const auto grad_tensor = grad->cast<TensorPtr>();
+  const auto grad_tensor = grad->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   hook_fn_(grad_tensor);
 }
