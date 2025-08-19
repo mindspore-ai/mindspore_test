@@ -23,7 +23,6 @@
 #include <vector>
 #include "minddata/dataset/engine/perf/profiling.h"
 #include "minddata/dataset/util/cond_var.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

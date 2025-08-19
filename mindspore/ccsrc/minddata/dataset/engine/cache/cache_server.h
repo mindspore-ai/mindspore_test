@@ -33,20 +33,12 @@
 #include <set>
 #include <thread>
 #include "minddata/dataset/engine/cache/cache_arena.h"
-#include "minddata/dataset/engine/cache/cache_hw.h"
 #include "minddata/dataset/engine/cache/cache_numa.h"
 #include "minddata/dataset/engine/cache/cache_service.h"
 #include "minddata/dataset/engine/cache/cache_grpc_server.h"
 #include "minddata/dataset/engine/cache/cache_pool.h"
-#include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/util/allocator.h"
-#include "minddata/dataset/util/arena.h"
-#include "minddata/dataset/util/lock.h"
-#include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/semaphore.h"
 #include "minddata/dataset/util/service.h"
 #include "minddata/dataset/util/services.h"
-#include "minddata/dataset/util/system_pool.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/task_manager.h"
 

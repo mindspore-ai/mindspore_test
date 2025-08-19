@@ -18,7 +18,6 @@
 #include <iostream>
 
 #include "minddata/dataset/core/config_manager.h"
-#include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {
 namespace dataset {

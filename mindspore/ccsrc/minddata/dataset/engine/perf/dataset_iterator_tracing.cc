@@ -15,7 +15,6 @@
  */
 #include "minddata/dataset/engine/perf/dataset_iterator_tracing.h"
 
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/path.h"
 
 namespace mindspore {

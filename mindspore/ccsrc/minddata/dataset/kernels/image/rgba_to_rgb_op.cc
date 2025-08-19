@@ -16,7 +16,6 @@
 #include "minddata/dataset/kernels/image/rgba_to_rgb_op.h"
 
 #include "minddata/dataset/kernels/image/image_utils.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

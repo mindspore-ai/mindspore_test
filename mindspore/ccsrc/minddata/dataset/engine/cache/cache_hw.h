@@ -27,8 +27,6 @@
 #include <string>
 #include <vector>
 #include "minddata/dataset/engine/cache/cache_common.h"
-#include "minddata/dataset/util/memory_pool.h"
-#include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/task.h"
 

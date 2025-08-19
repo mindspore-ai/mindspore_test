@@ -27,10 +27,8 @@
 #include "minddata/dataset/core/tensor_row.h"
 #include "minddata/dataset/engine/cache/cache_client.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
-#include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/queue_map.h"
-#include "minddata/dataset/util/semaphore.h"
 
 namespace mindspore {
 namespace dataset {

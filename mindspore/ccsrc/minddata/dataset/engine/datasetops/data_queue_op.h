@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/pipeline_op.h"
-#include "minddata/dataset/engine/datasetops/repeat_op.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 
 #include "minddata/dataset/engine/perf/device_queue_tracing.h"
@@ -32,7 +31,6 @@
 #include "minddata/dataset/util/rdr.h"
 #endif
 #include "minddata/dataset/util/queue.h"
-#include "minddata/dataset/util/circular_pool.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue.h"
 
 namespace mindspore {

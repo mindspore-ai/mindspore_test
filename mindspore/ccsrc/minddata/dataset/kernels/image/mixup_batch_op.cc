@@ -23,7 +23,6 @@
 #include "minddata/dataset/core/cv_tensor.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

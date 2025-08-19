@@ -27,7 +27,6 @@
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/service.h"
 #include "minddata/dataset/util/slice.h"
-#include "minddata/dataset/util/auto_index.h"
 #include "minddata/dataset/util/btree.h"
 
 namespace mindspore {

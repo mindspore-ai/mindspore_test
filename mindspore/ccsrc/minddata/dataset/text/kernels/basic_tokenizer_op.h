@@ -26,7 +26,6 @@
 #include "minddata/dataset/text/kernels/regex_replace_op.h"
 #include "minddata/dataset/text/kernels/regex_tokenizer_op.h"
 #include "minddata/dataset/text/kernels/tokenizer_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

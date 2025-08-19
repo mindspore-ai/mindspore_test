@@ -69,7 +69,6 @@
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/subset_sampler_ir.h"
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/weighted_random_sampler_ir.h"
 
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/execute.h"
 #include "minddata/dataset/include/dataset/iterator.h"
@@ -132,7 +131,6 @@
 #include "minddata/dataset/kernels/ir/vision/uniform_aug_ir.h"
 #include "minddata/dataset/kernels/ir/vision/vertical_flip_ir.h"
 #include "minddata/dataset/text/ir/kernels/text_ir.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

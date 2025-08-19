@@ -34,7 +34,6 @@
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/batch_info.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -25,7 +25,7 @@
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/system_pool.h"
 #include "minddata/dataset/util/semaphore.h"
-#include "minddata/dataset/util/services.h"
+
 namespace mindspore {
 namespace dataset {
 template <typename K, typename T>

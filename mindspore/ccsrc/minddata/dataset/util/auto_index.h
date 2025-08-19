@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "minddata/dataset/util/btree.h"
-#include "minddata/dataset/util/system_pool.h"
 
 namespace mindspore {
 namespace dataset {

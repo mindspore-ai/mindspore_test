@@ -15,8 +15,6 @@
  */
 #include "minddata/dataset/kernels/image/resize_preserve_ar_op.h"
 
-#include "minddata/dataset/util/status.h"
-
 namespace mindspore {
 namespace dataset {
 const int32_t ResizePreserveAROp::kDefImgOrientation = 0;

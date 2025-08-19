@@ -24,7 +24,6 @@
 #include <vector>
 #include "minddata/dataset/engine/cache/cache_hw.h"
 #include "minddata/dataset/util/arena.h"
-#include "minddata/dataset/util/memory_pool.h"
 
 namespace mindspore {
 namespace dataset {

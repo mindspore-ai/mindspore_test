@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "minddata/dataset/util/status.h"
-
 namespace mindspore::dataset {
 std::string GenerateShmName();
 

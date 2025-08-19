@@ -23,8 +23,7 @@
 #include <utility>
 
 #include "minddata/dataset/engine/opt/pass.h"
-#include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
+#include "minddata/dataset/util/path.h"
 
 namespace mindspore {
 namespace dataset {

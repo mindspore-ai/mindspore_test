@@ -23,7 +23,6 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/ir/tensor_operation.h"
 #include "minddata/dataset/kernels/ir/validators.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {

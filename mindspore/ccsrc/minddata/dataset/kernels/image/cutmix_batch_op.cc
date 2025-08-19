@@ -16,6 +16,7 @@
 
 #include "minddata/dataset/kernels/image/cutmix_batch_op.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -24,7 +25,6 @@
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

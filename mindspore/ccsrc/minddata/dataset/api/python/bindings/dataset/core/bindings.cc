@@ -36,7 +36,6 @@
 #if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 #endif
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

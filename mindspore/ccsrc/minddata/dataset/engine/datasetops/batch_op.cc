@@ -27,7 +27,6 @@
 #include "minddata/dataset/util/command.h"
 #include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/sig_handler.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/utils.h"
 
 namespace mindspore {

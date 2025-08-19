@@ -28,7 +28,6 @@
 #include "minddata/dataset/core/tensor_shape.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/pipeline_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

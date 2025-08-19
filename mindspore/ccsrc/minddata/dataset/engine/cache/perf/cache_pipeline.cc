@@ -16,7 +16,6 @@
 
 #include "minddata/dataset/engine/cache/perf/cache_pipeline_run.h"
 #include <cstring>
-#include "minddata/dataset/util/log_adapter.h"
 
 namespace ms = mindspore;
 namespace ds = mindspore::dataset;

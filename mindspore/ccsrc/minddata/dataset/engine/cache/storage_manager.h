@@ -25,7 +25,6 @@
 
 #include "minddata/dataset/engine/cache/storage_container.h"
 #include "minddata/dataset/util/auto_index.h"
-#include "minddata/dataset/util/lock.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/service.h"
 #include "minddata/dataset/util/slice.h"

@@ -28,7 +28,6 @@
 #include "minddata/dataset/engine/cache/cache_client.h"
 #include "minddata/dataset/engine/cache/cache_server.h"
 #include "minddata/dataset/engine/cache/cache_ipc.h"
-#include "minddata/dataset/util/path.h"
 #include "minddata/dataset/include/dataset/constants.h"
 
 namespace mindspore {

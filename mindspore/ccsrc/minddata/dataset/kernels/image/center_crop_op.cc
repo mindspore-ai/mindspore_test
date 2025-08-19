@@ -19,7 +19,6 @@
 
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
-#include "minddata/dataset/util/status.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

@@ -16,7 +16,6 @@
 #include "minddata/dataset/kernels/image/hwc_to_chw_op.h"
 
 #include "minddata/dataset/kernels/image/image_utils.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -18,7 +18,6 @@
 #include <random>
 
 #include "minddata/dataset/core/config_manager.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -26,15 +26,9 @@
 #include <utility>
 #include <vector>
 
-#include "minddata/dataset/core/global_context.h"
-#include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/engine/cache/cache_request.h"
 #include "minddata/dataset/engine/cache/cache_pool.h"
-#include "minddata/dataset/util/arena.h"
-#include "minddata/dataset/util/btree.h"
 #include "minddata/dataset/util/service.h"
-#include "minddata/dataset/util/services.h"
-#include "minddata/dataset/util/system_pool.h"
 
 namespace mindspore {
 namespace dataset {

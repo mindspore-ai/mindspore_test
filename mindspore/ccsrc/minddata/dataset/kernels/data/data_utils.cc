@@ -28,9 +28,7 @@
 #endif
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_shape.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/kernels/data/type_cast_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

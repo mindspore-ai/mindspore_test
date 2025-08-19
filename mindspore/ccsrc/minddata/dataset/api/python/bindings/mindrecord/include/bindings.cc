@@ -18,7 +18,6 @@
 
 #include "minddata/dataset/api/python/pybind_register.h"
 
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"

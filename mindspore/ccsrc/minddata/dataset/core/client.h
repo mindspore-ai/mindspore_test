@@ -19,7 +19,6 @@
 // client.h
 // Include file for DE client functions
 
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_shape.h"
@@ -50,7 +49,6 @@
 #include "minddata/dataset/engine/datasetops/zip_op.h"
 #include "minddata/dataset/engine/datasetops/concat_op.h"
 #include "minddata/dataset/engine/execution_tree.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

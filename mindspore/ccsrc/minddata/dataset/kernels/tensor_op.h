@@ -31,7 +31,6 @@
 #include "minddata/dataset/core/tensor_row.h"
 #include "minddata/dataset/engine/perf/info_collector.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 
 #define IO_CHECK(input, output)                             \
   do {                                                      \

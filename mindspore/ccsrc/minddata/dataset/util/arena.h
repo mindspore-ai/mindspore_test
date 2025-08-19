@@ -20,7 +20,6 @@
 #include <mutex>
 #include <utility>
 #include "minddata/dataset/util/allocator.h"
-#include "minddata/dataset/util/memory_pool.h"
 #include "minddata/dataset/util/treap.h"
 
 #define ARENA_LOG_BLK_SZ (6u)

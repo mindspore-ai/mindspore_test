@@ -35,7 +35,6 @@
 #include "minddata/dataset/kernels/py_func_op.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/ftok_key.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/task_manager.h"
 #if defined(ENABLE_D)

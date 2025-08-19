@@ -26,8 +26,6 @@
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/list.h"
 #include "minddata/dataset/util/lock.h"
-#include "minddata/dataset/util/memory_pool.h"
-#include "minddata/dataset/util/services.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {

@@ -15,7 +15,6 @@
  */
 #include "minddata/dataset/engine/cache/cache_arena.h"
 #include "minddata/dataset/engine/cache/cache_server.h"
-#include "minddata/dataset/util/path.h"
 namespace mindspore {
 namespace dataset {
 CachedSharedMemory::CachedSharedMemory(int32_t port, size_t val_in_GB)

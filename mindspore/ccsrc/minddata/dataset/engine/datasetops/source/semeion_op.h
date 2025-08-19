@@ -26,8 +26,6 @@
 #include "minddata/dataset/engine/datasetops/source/mappable_leaf_op.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/engine/ir/cache/dataset_cache.h"
-#include "minddata/dataset/util/path.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

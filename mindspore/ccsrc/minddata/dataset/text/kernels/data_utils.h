@@ -19,8 +19,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "minddata/dataset/util/status.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/cv_tensor.h"

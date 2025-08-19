@@ -24,7 +24,7 @@
 #include "minddata/dataset/engine/gpu_item_connector.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/epoch_ctrl_op.h"
-#include "minddata/dataset/util/status.h"
+#include "minddata/dataset/util/circular_pool.h"
 #include "minddata/dataset/util/task_manager.h"
 #ifdef WITH_BACKEND
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"

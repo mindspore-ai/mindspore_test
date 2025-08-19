@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #include "minddata/dataset/util/intrp_service.h"
+#include <thread>
 #include <sstream>
 #include "minddata/dataset/util/services.h"
-#include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore {
 namespace dataset {
@@ -48,7 +48,7 @@ Status IntrpService::Register(std::string *name, IntrpResource *res) {
     try {
       std::ostringstream ss;
       std::string uuid = std::string("");
-      ss << this_thread::get_id();
+      ss << std::this_thread::get_id();
       MS_LOG(DEBUG) << "Register resource with name " << *name << ". Thread ID " << ss.str() << ".";
       auto it = all_intrp_resources_.emplace(*name, res);
       while (it.second == false) {
@@ -72,7 +72,7 @@ Status IntrpService::Deregister(const std::string &name) noexcept {
   std::lock_guard<std::mutex> lck(mutex_);
   try {
     std::ostringstream ss;
-    ss << this_thread::get_id();
+    ss << std::this_thread::get_id();
     MS_LOG(DEBUG) << "De-register resource with name " << name << ". Thread ID is " << ss.str() << ".";
     auto n = all_intrp_resources_.erase(name);
     if (n == 0) {

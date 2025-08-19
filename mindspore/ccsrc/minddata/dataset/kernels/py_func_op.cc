@@ -23,7 +23,6 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/command.h"
 #include "minddata/dataset/util/sig_handler.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {

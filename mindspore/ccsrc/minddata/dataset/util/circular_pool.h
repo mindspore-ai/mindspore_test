@@ -19,7 +19,6 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-#include "minddata/dataset/util/memory_pool.h"
 #include "minddata/dataset/util/arena.h"
 #include "minddata/dataset/util/lock.h"
 

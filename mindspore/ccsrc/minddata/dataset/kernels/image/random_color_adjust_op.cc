@@ -20,7 +20,6 @@
 
 #include "minddata/dataset/kernels/image/image_utils.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

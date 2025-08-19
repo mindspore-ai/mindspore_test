@@ -22,8 +22,6 @@
 #include "minddata/dataset/core/tensor_row.h"
 #include "minddata/dataset/engine/connector.h"
 
-#include "minddata/dataset/include/dataset/constants.h"
-
 namespace mindspore {
 namespace dataset {
 

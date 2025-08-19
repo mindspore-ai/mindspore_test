@@ -17,7 +17,6 @@
 #include "minddata/dataset/audio/kernels/treble_biquad_op.h"
 
 #include "minddata/dataset/audio/kernels/audio_utils.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

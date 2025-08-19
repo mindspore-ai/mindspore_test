@@ -18,6 +18,7 @@
 #include "minddata/dataset/core/config_manager.h"
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/global_context.h"
+#include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/util/system_pool.h"
 #include "minddata/dataset/util/task_manager.h"
