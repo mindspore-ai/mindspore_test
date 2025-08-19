@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 #include "backend/common/backend_common_callback.h"
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

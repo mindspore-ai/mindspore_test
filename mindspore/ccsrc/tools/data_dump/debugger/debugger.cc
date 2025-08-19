@@ -34,11 +34,11 @@
 #include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/ir_dump/anf_dump_utils.h"
 #ifdef ENABLE_DEBUGGER
-#include "tools/debugger/proto_exporter.h"
+#include "tools/data_dump/debugger/proto_exporter.h"
 #endif
 #include "include/backend/debug/debugger/proto_exporter.h"
-#include "tools/debugger/debugger_utils.h"
-#include "tools/debug_services.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
+#include "tools/data_dump/debug_services.h"
 #include "tools/dump/utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "proto/debug_graph.pb.h"

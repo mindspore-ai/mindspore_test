@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_DEBUG_DEBUG_SERVICES_H_
-#define MINDSPORE_CCSRC_DEBUG_DEBUG_SERVICES_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUG_SERVICES_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUG_SERVICES_H_
 
 #include <cmath>
 #include <vector>
@@ -29,7 +29,7 @@
 #include <limits>
 #include <sstream>
 #include <utility>
-#include "tools/tensor_load.h"
+#include "tools/data_dump/tensor_load.h"
 #include "include/backend/debug/tensor_data.h"
 #include "base/float16.h"
 

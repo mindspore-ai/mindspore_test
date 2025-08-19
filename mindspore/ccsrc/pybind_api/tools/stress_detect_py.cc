@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pybind_api/utils/stress_detect_py.h"
+#include "pybind_api/tools/stress_detect_py.h"
 #include <utility>
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"

@@ -22,7 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "include/securec.h"
-#include "include/common/visible.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace system {
@@ -30,7 +30,7 @@ class FileSystem;
 class WriteFile;
 }  // namespace system
 namespace summary {
-class COMMON_EXPORT EventWriter {
+class BACKEND_COMMON_EXPORT EventWriter {
  public:
   // The file name = path + file_name
   explicit EventWriter(const std::string &file_full_name);

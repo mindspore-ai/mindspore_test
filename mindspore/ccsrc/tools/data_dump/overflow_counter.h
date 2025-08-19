@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_DEBUG_DATA_DUMP_OVERFLOW_COUNTER_H_
-#define MINDSPORE_CCSRC_DEBUG_DATA_DUMP_OVERFLOW_COUNTER_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_OVERFLOW_COUNTER_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_OVERFLOW_COUNTER_H_
 
 #include <mutex>
 #include <memory>

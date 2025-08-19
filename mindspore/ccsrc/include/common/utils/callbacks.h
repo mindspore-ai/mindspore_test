@@ -38,9 +38,7 @@ COMMON_EXPORT extern const char kCheckPoint[];
 const int kCallbackOk = 0;
 const int kCallbackFalied = 1;
 
-bool GetParameterShape(const FuncGraphPtr &anf_graph, const std::string &param_name,
-                       const std::shared_ptr<std::vector<int>> &shape);
-COMMON_EXPORT uint32_t SummarySaveCallback(uint32_t, const std::map<std::string, TensorPtr> &);
+uint32_t SummarySaveCallback(uint32_t, const std::map<std::string, TensorPtr> &);
 }  // namespace callbacks
 }  // namespace mindspore
 

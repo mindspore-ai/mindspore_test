@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/utils.h"
+#include "tools/data_dump/utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

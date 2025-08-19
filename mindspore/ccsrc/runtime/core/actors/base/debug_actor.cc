@@ -27,7 +27,7 @@
 #include "utils/ms_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
 #include "include/common/debug/common.h"

@@ -39,11 +39,11 @@
 #include "include/backend/debug/common/csv_writer.h"
 #include "abstract/utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "tools/debugger/debugger_utils.h"
+#include "tools/data_dump/debugger/debugger_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "ops/op_def.h"
-#include "tools/debug_services.h"
-#include "tools/tensor_load.h"
+#include "tools/data_dump/debug_services.h"
+#include "tools/data_dump/tensor_load.h"
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 

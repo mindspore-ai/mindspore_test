@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_DEBUG_TENSOR_STATISTIC_H_
-#define MINDSPORE_CCSRC_DEBUG_TENSOR_STATISTIC_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STATISTIC_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_TENSOR_STATISTIC_H_
 
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-#include "tools/debug_services.h"
+#include "tools/data_dump/debug_services.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "utils/log_adapter.h"
 
