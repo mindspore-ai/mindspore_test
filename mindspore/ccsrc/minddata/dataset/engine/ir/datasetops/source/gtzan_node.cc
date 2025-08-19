@@ -15,6 +15,8 @@
  */
 #include "minddata/dataset/engine/ir/datasetops/source/gtzan_node.h"
 
+#include <utility>
+
 #include "minddata/dataset/engine/datasetops/source/gtzan_op.h"
 #include "minddata/dataset/util/status.h"
 

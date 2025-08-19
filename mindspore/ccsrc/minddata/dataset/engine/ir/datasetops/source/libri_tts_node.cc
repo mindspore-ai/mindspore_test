@@ -15,6 +15,8 @@
  */
 #include "minddata/dataset/engine/ir/datasetops/source/libri_tts_node.h"
 
+#include <utility>
+
 #include "minddata/dataset/engine/datasetops/source/libri_tts_op.h"
 #include "minddata/dataset/util/status.h"
 

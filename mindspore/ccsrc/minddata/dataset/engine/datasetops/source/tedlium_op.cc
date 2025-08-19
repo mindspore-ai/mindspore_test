@@ -15,7 +15,9 @@
  */
 #include "minddata/dataset/engine/datasetops/source/tedlium_op.h"
 
+#include <algorithm>
 #include <fstream>
+#include <utility>
 
 #include "minddata/dataset/core/config_manager.h"
 #include "minddata/dataset/core/tensor_shape.h"

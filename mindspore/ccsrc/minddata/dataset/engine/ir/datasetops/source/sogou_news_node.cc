@@ -15,6 +15,9 @@
  */
 #include "minddata/dataset/engine/ir/datasetops/source/sogou_news_node.h"
 
+#include <algorithm>
+#include <utility>
+
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/status.h"
 
