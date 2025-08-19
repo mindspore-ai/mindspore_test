@@ -47,8 +47,6 @@
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
-#include "pipeline/llm_boost/utils.h"
-#include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pybind_api/resource/manager.h"
 #include "tools/profiler/profiling.h"
@@ -146,21 +144,6 @@ void RegFrameworkPythonProfileRecorder(py::module *m) {
     .def("record_start", &runtime::PythonProfilerRecorder::record_start, "record_start")
     .def("record_end", &runtime::PythonProfilerRecorder::record_end, "record_end");
 }
-
-void RegLlmBoostBinder(const py::module *m) {
-  (void)py::class_<pipeline::LlmBoostBinder, std::shared_ptr<pipeline::LlmBoostBinder>>(*m, "LlmBoostBinder")
-    .def(py::init<const std::string &, const std::string &>())
-    .def("init", &pipeline::LlmBoostBinder::Init, "init")
-    .def("forward", &pipeline::LlmBoostBinder::Forward, py::arg("inputs"), py::arg("params") = py::str(""), "forward")
-    .def("set_kvcache", &pipeline::LlmBoostBinder::SetKVCache, "set_kvcache")
-    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights")
-    .def("set_weights_map", &pipeline::LlmBoostBinder::SetWeightMap, "set_weights_map")
-    .def("init_model", &pipeline::LlmBoostBinder::InitModel, "init_model")
-    .def("add_flags", &pipeline::LlmBoostBinder::AddFlags, py::arg("is_first_iteration") = py::bool_(false),
-         "add_flags");
-}
-
-void RegLlmBoostUtils(py::module *m) { m->def("_set_format", &pipeline::SetFormat, "set_format"); }
 }  // namespace profiler
 }  // namespace mindspore
 
@@ -227,8 +210,6 @@ void RegModule(py::module *m) {
   mindspore::abstract::RegPrimitiveFrontEval();
 #endif
   mindspore::ops::RegOpEnum(m);
-  mindspore::profiler::RegLlmBoostBinder(m);
-  mindspore::profiler::RegLlmBoostUtils(m);
 }
 
 void RegModuleHelper(py::module *m) {

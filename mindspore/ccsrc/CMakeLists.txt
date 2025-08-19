@@ -44,7 +44,6 @@ set(SUB_COMP
         frontend/jit/ps
         frontend/jit/pi
         frontend/jit/trace
-        pipeline/llm_boost
         )
 
 foreach(_comp ${SUB_COMP})
