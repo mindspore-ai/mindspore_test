@@ -95,12 +95,7 @@ GVAR_DEF(PrimitivePtr, kPrimTensorArrayGather, std::make_shared<Primitive>("Tens
 GVAR_DEF(PrimitivePtr, kPrimPartitionedCall, std::make_shared<Primitive>("PartitionedCall"));
 GVAR_DEF(PrimitivePtr, kPrimDecodeImage, std::make_shared<Primitive>("DecodeImage"));
 GVAR_DEF(PrimitivePtr, kPrimKMeansCentroids, std::make_shared<Primitive>("KMeansCentroids"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferCreate, std::make_shared<Primitive>("ReservoirReplayBufferCreate"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferPush, std::make_shared<Primitive>("ReservoirReplayBufferPush"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferSample, std::make_shared<Primitive>("ReservoirReplayBufferSample"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferDestroy, std::make_shared<Primitive>("ReservoirReplayBufferDestroy"));
 GVAR_DEF(PrimitivePtr, kPrimOCRDetectionPreHandle, std::make_shared<Primitive>("OCRDetectionPreHandle"));
-GVAR_DEF(PrimitivePtr, kPrimBufferAppend, std::make_shared<Primitive>("BufferAppend"));
 
 // NPU
 GVAR_DEF(PrimitivePtr, kPrimNPUGetFloatStatus, std::make_shared<Primitive>("NPUGetFloatStatus"));

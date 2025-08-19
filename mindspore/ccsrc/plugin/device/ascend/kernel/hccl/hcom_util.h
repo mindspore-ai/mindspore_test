@@ -114,9 +114,7 @@ class HcomUtil {
   static bool GetHcomReceiveType(const AnfNodePtr &anf_node, TypeId *receive_type);
   static void AdjustShapeByDataType(TypeId type_id, ShapeVector *shape);
 
-  static inline bool IsReceiveOp(const std::string &kernel_name) {
-    return kernel_name == mindspore::kReceiveOpName || kernel_name == mindspore::kMuxReceiveOpName;
-  }
+  static inline bool IsReceiveOp(const std::string &kernel_name) { return kernel_name == mindspore::kReceiveOpName; }
 
   template <typename T>
   static inline bool GetHcomAttr(const PrimitivePtr &prim, const std::string &attr_name, T *value_ptr) {

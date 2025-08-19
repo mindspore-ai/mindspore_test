@@ -61,7 +61,6 @@
 #include "runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
-#include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

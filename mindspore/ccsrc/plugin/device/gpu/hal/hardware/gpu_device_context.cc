@@ -74,7 +74,6 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/parallel_context.h"
 #include "tools/profiler/profiling.h"
-#include "runtime/device/res_manager/tensor_array.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/common/backend_common_callback.h"
 #include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"

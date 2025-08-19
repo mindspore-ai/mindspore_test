@@ -42,11 +42,6 @@ if(EXISTS ${CMAKE_C_COMPILER} AND EXISTS ${CMAKE_CXX_COMPILER})
         ${CMAKE_CURRENT_SOURCE_DIR}/aicpu_sharder/aicpu_async_event.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/aicpu_sharder/aicpu_context.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/aicpu_sharder/aicpu_pulse.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/replay_buffer/fifo_replay_buffer.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/replay_buffer/priority_replay_buffer_kernels.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/replay_buffer/priority_replay_buffer.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/replay_buffer/reservoir_replay_buffer_kernels.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/replay_buffer/reservoir_replay_buffer.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/candidate_sampler_kernels.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/cast_kernels.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/concat_offset_kernel.cc

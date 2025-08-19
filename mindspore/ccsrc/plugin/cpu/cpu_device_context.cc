@@ -71,7 +71,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
 #include "tools/profiler/profiling.h"
-#include "runtime/device/res_manager/tensor_array.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
