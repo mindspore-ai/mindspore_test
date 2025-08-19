@@ -857,7 +857,6 @@ const std::string GetSubModuleName(SubModuleId module_id) {
     "API",                // SM_API
     "SYMBOLIC_SHAPE",     // SM_SYMBOLIC_SHAPE
     "GRAPH_KERNEL",       // SM_GRAPH_KERNEL
-    "LLM_BOOST",          // SM_LLM_BOOST
     "TRACE",              // SM_TRACE
     "INTERNAL_KERNEL",    // SM_INTERNAL_KERNEL
     "EXTENSION",          // SM_EXTENSION
