@@ -609,6 +609,22 @@ bool IsEmptySequence(const tensor::TensorPtr &tensor) {
   return tensor->base_shape_ptr() != nullptr && tensor->base_shape_ptr()->isa<abstract::SequenceShape>() &&
          tensor->base_shape_ptr()->cast<abstract::SequenceShapePtr>()->size() == 0;
 }
+
+void HandleSameOutput(const KernelTensorPtr &kernel_tensor, const TensorPtr &tensor,
+                      device::DeviceContext *const real_device_context, const AID &aid) {
+  // The outputs have the same output node but different tensors, user data needs to be set
+  // on the other same nodes.
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (kernel_tensor->user_data()) {
+    tensor->CloneUserData(*(kernel_tensor->user_data()));
+  }
+  // For trace memory, the new ref count will always be 0.
+  if (!ActorDispatcher::enable_use_trace_memory() || kernel_tensor->new_ref_count() > 0) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free same kernel tensor:" << kernel_tensor << " for actor:" << aid;
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context, aid.Name());
+  }
+}
 }  // namespace
 
 void OutputActor::HandleOutput() {
@@ -649,13 +665,7 @@ void OutputActor::HandleOutput() {
     MS_EXCEPTION_IF_NULL(real_device_context);
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {
-      // For trace memory, the new ref count will always be 0.
-      if (!ActorDispatcher::enable_use_trace_memory() || device_tensor->new_ref_count() > 0) {
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Free same kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
-        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context,
-                                                                GetAID().Name());
-      }
+      HandleSameOutput(kernel_tensor, tensor, real_device_context, GetAID());
       continue;
     }
 
