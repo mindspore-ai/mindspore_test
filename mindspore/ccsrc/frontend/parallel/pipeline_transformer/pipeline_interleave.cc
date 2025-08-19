@@ -1212,8 +1212,8 @@ void PipelineInterleave::CutBorder() {
   std::reverse(all_nodes.begin(), all_nodes.end());
   int64_t order = 0;
   for (auto &node : all_nodes) {
-    if (is_v_shape_ &&
-        (IsPrimitiveCNode(node, prim::kPrimMatMul) || (IsPrimitiveCNode(node, prim::kPrimBatchMatMul)))) {
+    if (is_v_shape_ && IsOneOfPrimitiveCNode(node, {prim::kPrimMatMul, prim::kPrimBatchMatMul, prim::kPrimMatMulExt,
+                                                    prim::kPrimBatchMatMulExt})) {
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       const auto &the_4th_input = cnode->input(kIndex4);
