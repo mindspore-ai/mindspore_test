@@ -86,6 +86,20 @@ static void KernelFormatRegister() {
     MS_FORMAT_MAPPING((std::vector<std::string>{kOpFormat_DEFAULT, kOpFormat_DEFAULT, kOpFormat_FRAC_NZ,
                                                 kOpFormat_FRAC_NZ, kOpFormat_DEFAULT, kOpFormat_DEFAULT}),
                       (std::vector<std::string>{})));
+
+  MS_CUSTOM_KERNEL_HARDWARE_FORMAT_MAPPING_REG(
+    type_cast, ascend310p,
+    MS_FORMAT_MAPPING((std::vector<std::string>{kOpFormat_DEFAULT, kOpFormat_DEFAULT}),
+                      (std::vector<std::string>{kOpFormat_DEFAULT, kOpFormat_DEFAULT})),
+    MS_FORMAT_MAPPING((std::vector<std::string>{kOpFormat_FRAC_NZ, kOpFormat_DEFAULT}),
+                      (std::vector<std::string>{kOpFormat_FRAC_NZ, kOpFormat_DEFAULT})));
+
+  MS_CUSTOM_KERNEL_HARDWARE_FORMAT_MAPPING_REG(
+    type_cast, ascend910b,
+    MS_FORMAT_MAPPING((std::vector<std::string>{kOpFormat_DEFAULT, kOpFormat_DEFAULT}),
+                      (std::vector<std::string>{kOpFormat_DEFAULT, kOpFormat_DEFAULT})),
+    MS_FORMAT_MAPPING((std::vector<std::string>{kOpFormat_FRAC_NZ, kOpFormat_DEFAULT}),
+                      (std::vector<std::string>{kOpFormat_FRAC_NZ, kOpFormat_DEFAULT})));
 }
 
 void ProcessCustomKernelFormatMapping(const CNodePtr &kernel, std::vector<std::string> *input_formats,

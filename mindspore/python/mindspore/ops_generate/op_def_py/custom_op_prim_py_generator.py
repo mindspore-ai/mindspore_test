@@ -18,7 +18,7 @@ Module for generating Python primitive operator definitions from specifications.
 import common.gen_utils as gen_utils
 import common.template_utils as template
 from common.op_proto import OpProto
-from op_def_py.base_op_prim_py_generator import BaseOpPrimPyGenerator, generate_py_op_deprecated
+from op_def_py.base_op_prim_py_generator import BaseOpPrimPyGenerator, generate_py_op_deprecated, _generate_arg_handler
 
 
 class CustomOpPrimPyGenerator(BaseOpPrimPyGenerator):
@@ -107,9 +107,9 @@ class CustomOpPrimPyGenerator(BaseOpPrimPyGenerator):
         init_code_str += f"\n"
         return init_code_str
 
-    def _generate_call_code(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
+    def _get_call_method_body_str(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
         """
-        Generates the __call__ method code for the operator primitive class.
+        Generates the body of the __call__ method.
 
         Args:
             args_handlers (dict): Dictionary of argument handlers.
@@ -119,9 +119,22 @@ class CustomOpPrimPyGenerator(BaseOpPrimPyGenerator):
             op_proto (OpProto): The operator prototype.
 
         Returns:
-            str: A string containing the __call__ method code.
+            str: A string containing the body of the call method.
         """
-        call_code_str = ""
-        call_code_str += f"""    def __call__(self, *args, **kwargs):"""
-        call_code_str += f"""\n        return self.custom_op_func(*args, **kwargs)"""
-        return call_code_str
+        call_args_list_str = ""
+        if inputs_args:
+            args_with_handler = []
+            for arg in inputs_args:
+                if arg in args_handlers:
+                    is_optional = inputs_default.get(arg) == "None"
+                    args_with_handler.append(
+                        _generate_arg_handler(op_proto.op_class.name, arg, args_handlers[arg], is_optional))
+                else:
+                    args_with_handler.append(arg)
+            call_args_list_str += ", ".join(args_with_handler)
+        if init_args:
+            call_args_list_str += ", "
+            call_args_list_str += ", ".join([f'self.{arg}' for arg in init_args])
+
+        call_method_body_str = f"\n        return self.custom_op_func({call_args_list_str})"
+        return call_method_body_str
