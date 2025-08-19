@@ -32,6 +32,7 @@ StrOrTuple = Union[str, Tuple["StrOrTuple", ...], List["StrOrTuple"]]
 def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[LayoutInfo]]]:
     """
     Get all params strategy info or specific rank strategy info in this cell.
+    Result format: {rank_id: {param_name: [Layout, str, str]}}.
     For more information on layouts, please refer to :class:'mindspore.parallel.Layout'.
 
     Args:
@@ -72,6 +73,7 @@ def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[Lay
 def get_current_strategy_metadata(network) -> Dict[int, Dict[str, List[LayoutInfo]]]:
     """
     Get parameters dictionary of cur rank of the network.
+    Result format: {0: {param_name: [Layout, str, str]}}.
 
     Args:
         network(str): The network name.
@@ -115,7 +117,8 @@ class _NetStrategyInfo:
         self._raw_global_layout = global_layout
         self._raw_local_layout = local_layout
 
-    def _get_layout_handle(self):
+    @staticmethod
+    def _get_layout_handle():
         """Get strategy handle"""
         layout_handle = StrategyLayout.get_instance()
         if layout_handle is None:
@@ -144,7 +147,8 @@ class _NetStrategyInfo:
         self._layout_to_string(local_layout)
         return local_layout
 
-    def _get_valid_layout(self, phase, layout_dict):
+    @staticmethod
+    def _get_valid_layout(phase, layout_dict):
         """Helper: Validate and extract layout by phase."""
         if not phase:
             return None
@@ -251,7 +255,8 @@ class _NetStrategyInfo:
         new_tensor_map = tuple([first_alias] + rest_alias)
         return new_tensor_map
 
-    def _split_dev_dim(self, info: SimpleNamespace):
+    @staticmethod
+    def _split_dev_dim(info: SimpleNamespace):
         """Split the counter dimension of dev_mat and adjust tensor_map."""
         dev_mat = info.dev_mat
         counter = info.counter
@@ -263,7 +268,8 @@ class _NetStrategyInfo:
         new_tensor_map = [[v if v < flag or v == -1 else v + 1 for v in sub] for sub in info.tensor_map]
         return new_dev_mat, counter, new_tensor_map, False
 
-    def _calc_used_dev_num(self, dev_mat, tensor_map):
+    @staticmethod
+    def _calc_used_dev_num(dev_mat, tensor_map):
         """Count the total number of device nums that have been used."""
         idx_flat = [idx for idx in chain.from_iterable(tensor_map) if idx != -1]
         if not idx_flat:
@@ -271,7 +277,8 @@ class _NetStrategyInfo:
         prod_list = [dev_mat[len(dev_mat) - idx - 1] for idx in idx_flat]
         return int(np.prod(prod_list))
 
-    def _get_used_dev_mat(self, dev_mat, tensor_map) -> List[bool]:
+    @staticmethod
+    def _get_used_dev_mat(dev_mat, tensor_map) -> List[bool]:
         """List that records whether the device ID is being used or not."""
         used = set()
         for elem in tensor_map:
@@ -281,7 +288,8 @@ class _NetStrategyInfo:
                 used.add(elem)
         return [(len(dev_mat) - i - 1) in used for i in range(len(dev_mat))]
 
-    def _compact_tensor_map(self, alias_map: Sequence[StrOrTuple]) -> Tuple[StrOrTuple, ...]:
+    @staticmethod
+    def _compact_tensor_map(alias_map: Sequence[StrOrTuple]) -> Tuple[StrOrTuple, ...]:
         """Extend tensor map of 'None'."""
 
         def _compress(elem: StrOrTuple) -> StrOrTuple:
@@ -296,7 +304,8 @@ class _NetStrategyInfo:
 
         return tuple(_compress(e) for e in alias_map)
 
-    def _layout_to_string(self, layout_info):
+    @staticmethod
+    def _layout_to_string(layout_info):
         """Print layout info."""
         for rank_id, param_layout in layout_info.items():
             logger.info("rank_id=%s", rank_id)
