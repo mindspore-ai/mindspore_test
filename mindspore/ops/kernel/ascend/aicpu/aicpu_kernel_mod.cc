@@ -29,7 +29,7 @@
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "kernel/ascend/aicpu/aicpu_proto_util.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "plugin/device/ascend/hal/device/ascend_data_queue.h"
+#include "plugin/ascend/res_manager/data_queue/ascend_data_queue.h"
 #include "utils/ms_context.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"

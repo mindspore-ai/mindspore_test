@@ -28,7 +28,7 @@
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/phase.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/add_layer_norm_fusion.h"
 
 namespace mindspore::graphkernel::test {
 namespace {

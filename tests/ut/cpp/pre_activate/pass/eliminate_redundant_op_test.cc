@@ -22,7 +22,7 @@
 #include "ir/manager.h"
 #include "include/common/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
-#include "plugin/device/ascend/optimizer/format_type/insert_cast.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/insert_cast.h"
 #include "backend/common/pass/eliminate_redundant_op.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
@@ -33,7 +33,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/format_type/insert_trans_op.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/insert_trans_op.h"
 #undef private
 #undef protected
 

@@ -24,7 +24,7 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "plugin/device/ascend/optimizer/format_type/insert_cast.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/insert_cast.h"
 #include "kernel/kernel_build_info.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"

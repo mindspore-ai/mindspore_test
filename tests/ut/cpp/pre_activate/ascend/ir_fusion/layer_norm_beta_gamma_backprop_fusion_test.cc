@@ -21,7 +21,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/ir_fusion/layer_norm_beta_gamma_backprop_fusion.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion/layer_norm_beta_gamma_backprop_fusion.h"
 #undef private
 #undef protected
 

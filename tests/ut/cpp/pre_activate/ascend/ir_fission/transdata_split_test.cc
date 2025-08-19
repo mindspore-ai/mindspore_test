@@ -24,8 +24,8 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/format_type/insert_trans_op.h"
-#include "plugin/device/ascend/optimizer/ir_fission/transdata_split.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/insert_trans_op.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fission/transdata_split.h"
 #undef private
 #undef protected
 

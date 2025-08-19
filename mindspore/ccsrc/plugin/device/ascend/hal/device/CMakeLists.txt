@@ -5,7 +5,7 @@ endif()
 
 file(GLOB_RECURSE MS_DEVICE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
 list(REMOVE_ITEM MS_DEVICE_910B "distribute/mpi_collective_group.cc"
-        "distribute/collective_group_wrapper.cc" "distribute/mpi_pycc.cc" "ascend_host_queue.cc")
+        "distribute/collective_group_wrapper.cc" "distribute/mpi_pycc.cc")
 
 set_property(SOURCE ${MS_DEVICE_910B} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 

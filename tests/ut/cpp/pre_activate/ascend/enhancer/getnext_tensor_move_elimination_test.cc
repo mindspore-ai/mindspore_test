@@ -21,7 +21,7 @@
 #include "include/common/utils/utils.h"
 #include "kernel/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/enhancer/getnext_tensor_move_elimination.h"
+#include "plugin/ascend/graph_optimizer/pass/enhancer/getnext_tensor_move_elimination.h"
 
 namespace mindspore {
 namespace opt {

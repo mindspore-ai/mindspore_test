@@ -16,7 +16,7 @@
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/adam_apply_one_with_decay_rule.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion/adam_apply_one_with_decay_rule.h"
 #include "include/common/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {

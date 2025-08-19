@@ -18,7 +18,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/common/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/reshape_transpose_fusion.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion/reshape_transpose_fusion.h"
 
 namespace mindspore {
 namespace opt {

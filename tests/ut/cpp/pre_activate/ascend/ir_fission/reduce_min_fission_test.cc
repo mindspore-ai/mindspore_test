@@ -19,7 +19,7 @@
 #include "include/common/ir_dump/anf_ir_dump.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/ir_fission/reduce_min_fission.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fission/reduce_min_fission.h"
 #undef private
 #undef protected
 

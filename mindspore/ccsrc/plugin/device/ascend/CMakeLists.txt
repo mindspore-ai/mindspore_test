@@ -29,40 +29,81 @@ endif()
 
 ########### mindspore_ascend.so #####
 set(ASCEND_SUB_COMP
-        hal/device
-        hal/hardware
+        hal
         kernel
-        optimizer
         )
 
 foreach(a_comp ${ASCEND_SUB_COMP})
     add_subdirectory(${a_comp})
     string(REPLACE "/" "_" sub ${a_comp})
-    if(TARGET _mindspore_plugin_device_ascend_${sub}_obj)
-        list(APPEND ASCEND_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_${sub}_obj>)
-        add_dependencies(_mindspore_plugin_device_ascend_${sub}_obj proto_input)
-    endif()
     if(TARGET _mindspore_plugin_device_ascend_${sub}_910b_obj)
         list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_${sub}_910b_obj>)
         add_dependencies(_mindspore_plugin_device_ascend_${sub}_910b_obj proto_input)
     endif()
 endforeach()
 
-set(ASCEND_COMMON_SUB
-        hal/profiler
-        hal/special
-        )
+set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../ascend")
+file(GLOB ASCEND_SRC_LIST
+  "${ASCEND_PLUGIN_PATH}/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/gpto/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/somas/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/stream_assign/*.cc"
+  "${ASCEND_PLUGIN_PATH}/kernel_executor/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/mindir/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/heterogeneous/*.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ascend_pass_optimization.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/optimizer_utils.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/get_value_helper.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/backend_common_unify_mindir.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/insert_cast.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/insert_identity.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/set_fracz_group_attr.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/utils.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/deal_ref_output.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/common/gllo_utils.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/expander_fallback.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/tensor_scatter_fission.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/adam_weight_decay_fission.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnorm_to_bninfer.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnormgrad_to_bninfergrad.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/adaptive_max_pool2d_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/flash_attention_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/grouped_matmul_assignadd_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/matmul_assignadd_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/insert_depend_for_all_gather.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_weight_preprocess_utils.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_matmul_split_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_swiglu_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_swiglu_fusion_v2.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/swiglu_dynamic_quant_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/swiglu_reshape_dynamic_quant_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_qbmm_fusion_base.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_qbmm_add_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/shape_reshape_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/add_layer_norm_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/add_rms_norm_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/rms_norm_quant_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/add_rms_norm_quant_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/add_cast_rms_norm_cast_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/matmul_allreduce_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/qbmm_allreduce_convert_bias.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/split_concat_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/matmul_sigmoid_add_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/matmul_sigmoid_cast_add_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/matmul_elemwise_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/inference_qbmm_elemwise_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion_infer/moe_init_routing_dyn_quantv2_fusion.cc"
+  "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/enhancer/eliminate_maketuple_getitem.cc")
 
-foreach(a_comp ${ASCEND_COMMON_SUB})
-    add_subdirectory(${a_comp})
-    string(REPLACE "/" "_" sub ${a_comp})
-    if(TARGET _mindspore_plugin_device_ascend_${sub}_obj)
-        list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_${sub}_obj>)
-        add_dependencies(_mindspore_plugin_device_ascend_${sub}_obj proto_input)
-    endif()
-endforeach()
-
-list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})
+list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_SRC_LIST})
+list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_hal_device_910b_obj>)
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 
