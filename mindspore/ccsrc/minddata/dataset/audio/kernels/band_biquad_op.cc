@@ -15,6 +15,8 @@
  */
 #include "minddata/dataset/audio/kernels/band_biquad_op.h"
 
+#include <limits>
+
 #include "minddata/dataset/audio/kernels/audio_utils.h"
 #include "minddata/dataset/util/status.h"
 

@@ -16,6 +16,9 @@
 
 #include "minddata/dataset/engine/ir/datasetops/source/penn_treebank_node.h"
 
+#include <algorithm>
+#include <utility>
+
 #include "minddata/dataset/engine/datasetops/source/penn_treebank_op.h"
 #include "minddata/dataset/util/status.h"
 

@@ -16,6 +16,9 @@
 
 #include "minddata/dataset/engine/ir/datasetops/source/ag_news_node.h"
 
+#include <algorithm>
+#include <utility>
+
 #include "minddata/dataset/engine/datasetops/source/ag_news_op.h"
 #include "minddata/dataset/engine/datasetops/source/csv_op.h"
 #include "minddata/dataset/util/status.h"
