@@ -80,3 +80,24 @@ def test_np_swapaxes():
         return tensor_x[1, 1, 0], tensor_y[1, 1, 0]
     x, y = np_swapaxes()
     assert x == 6 and y == 3
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_index_asnp():
+    """
+    Feature: JIT Fallback
+    Description: Test tensor index in graph mode.
+    Expectation: No exception.
+    """
+    @jit
+    def tensor_index_asnp(x):
+        y = x.asnumpy()
+        y[0] = 11
+        return y, x, y
+    x = Tensor([2, 4])
+    expect_output = (np.array([11, 4]), Tensor([2, 4]), np.array([11, 4]))
+    actual_output = tensor_index_asnp(x)
+    assert np.allclose(actual_output[1].asnumpy(), expect_output[1].asnumpy(), 0.001, 0.001)
+    assert np.allclose(actual_output[0], expect_output[0], 0.001, 0.001)
+    assert np.allclose(actual_output[2], expect_output[2], 0.001, 0.001)
