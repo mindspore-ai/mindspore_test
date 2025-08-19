@@ -37,7 +37,7 @@ mindspore.nn.EmbeddingLookup
         Tensor，shape为 :math:`(z_1, z_2, ..., z_N)` 的Tensor。
 
     异常：
-        - **TypeError** - `vocab_size` 、 `embedding_size`不是整数。
+        - **TypeError** - `vocab_size` 或 `embedding_size` 不是整数。
         - **TypeError** - `sparse` 不是bool或 `manual_shapes` 不是tuple。
         - **ValueError** - `vocab_size` 或 `embedding_size` 小于1。
         - **ValueError** - `target` 既不是'CPU'也不是'DEVICE'。
