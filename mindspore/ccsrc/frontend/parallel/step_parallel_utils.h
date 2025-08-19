@@ -232,6 +232,7 @@ int64_t LongAdd(int64_t base, int64_t shift);
 bool NeededHandleShardParam();
 bool IsCommunicateNode(const AnfNodePtr &node);
 bool StringToInt(std::string *str, int64_t *value);
+AnfNodePtr GetInputNodeBySkipDependAndUpdateState(const CNodePtr &cnode, size_t index);
 }  // namespace parallel
 }  // namespace mindspore
 
