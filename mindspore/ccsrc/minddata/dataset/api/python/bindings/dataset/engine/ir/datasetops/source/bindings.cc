@@ -22,7 +22,6 @@
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
-#include "minddata/dataset/util/path.h"
 
 // IR leaf nodes
 #include "minddata/dataset/engine/ir/datasetops/source/ag_news_node.h"

@@ -19,8 +19,6 @@
 #include <iostream>
 #include <iterator>
 
-#include "minddata/dataset/util/log_adapter.h"
-
 namespace mindspore {
 namespace dataset {
 template <typename T>

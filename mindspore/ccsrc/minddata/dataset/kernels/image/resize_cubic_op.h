@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "lite_cv/lite_mat.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {

@@ -27,7 +27,6 @@
 #include "minddata/dataset/engine/perf/monitor.h"
 #include "minddata/dataset/engine/tree_adapter.h"
 #include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/path.h"
 #ifdef WITH_BACKEND
 #include "utils/ms_context.h"
 #endif

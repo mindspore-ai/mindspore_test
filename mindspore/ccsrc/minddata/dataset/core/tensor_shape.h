@@ -31,9 +31,8 @@ namespace py = pybind11;
 #endif
 
 #include "minddata/dataset/include/dataset/constants.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/core/global_context.h"
-#include "minddata/dataset/util/allocator.h"
+#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

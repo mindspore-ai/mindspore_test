@@ -16,7 +16,6 @@
 #include "minddata/dataset/engine/datasetops/send_bridge_op.h"
 
 #include "minddata/dataset/kernels/tensor_op.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/task_manager.h"

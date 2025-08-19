@@ -32,7 +32,7 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/CommonDataType.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/resouce_info.h"
-#include "minddata/dataset/util/log_adapter.h"
+
 using AclEnvGuard = mindspore::AclEnvGuard;
 using AclInitAdapter = mindspore::AclInitAdapter;
 

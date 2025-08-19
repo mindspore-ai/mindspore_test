@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 #include "minddata/dataset/util/status.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/engine/tree_adapter.h"
 #include "minddata/dataset/engine/tree_modifier.h"

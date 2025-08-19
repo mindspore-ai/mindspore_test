@@ -26,7 +26,6 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/text/kernels/tokenizer_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -16,7 +16,6 @@
 
 #include "minddata/dataset/callback/callback_manager.h"
 #include "minddata/dataset/callback/ds_callback.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/engine/datasetops/dataset_op.h"
 
 namespace mindspore {

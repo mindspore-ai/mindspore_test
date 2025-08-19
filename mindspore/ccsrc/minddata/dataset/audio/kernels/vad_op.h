@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 
 namespace mindspore {

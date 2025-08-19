@@ -20,8 +20,6 @@
 #include <string>
 #include "include/securec.h"
 
-#include "minddata/dataset/util/task_manager.h"
-
 namespace mindspore {
 namespace dataset {
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)

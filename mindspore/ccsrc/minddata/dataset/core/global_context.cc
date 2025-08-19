@@ -18,12 +18,9 @@
 #include <memory>
 #include <mutex>
 
-#include "minddata/dataset/core/config_manager.h"
 #include "minddata/dataset/core/cv_tensor.h"
 #include "minddata/dataset/core/device_tensor.h"
 #include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/engine/perf/profiling.h"
-#include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/system_pool.h"
 
 namespace mindspore {

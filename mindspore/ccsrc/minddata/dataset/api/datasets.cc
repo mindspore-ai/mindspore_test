@@ -35,7 +35,6 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/engine/ir/cache/dataset_cache_impl.h"
 #include "minddata/dataset/include/dataset/text.h"
 

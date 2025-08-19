@@ -25,13 +25,11 @@
 #include "minddata/dataset/engine/connector.h"
 #include "minddata/dataset/engine/cache/cache_client.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
-#include "minddata/dataset/engine/datasetops/repeat_op.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sequential_sampler.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/queue_map.h"
-#include "minddata/dataset/util/semaphore.h"
-#include "minddata/dataset/util/wait_post.h"
+
 namespace mindspore {
 namespace dataset {
 /// \brief This is the base class for CacheOp and CacheLookupOp which share many similarities.

@@ -23,7 +23,6 @@
 #include <new>
 #include "include/securec.h"
 #include "minddata/dataset/util/allocator.h"
-#include "minddata/dataset/util/memory_pool.h"
 
 namespace mindspore {
 namespace dataset {

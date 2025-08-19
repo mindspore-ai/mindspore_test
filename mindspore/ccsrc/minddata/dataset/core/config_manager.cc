@@ -21,8 +21,6 @@
 #include <utility>
 
 #include "include/dataset/constants.h"
-#include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/status.h"
 #include "nlohmann/json.hpp"
 #include "util/path.h"
 #include "utils/ms_utils.h"

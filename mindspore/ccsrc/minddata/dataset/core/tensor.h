@@ -40,7 +40,6 @@
 #include "minddata/dataset/core/tensor_shape.h"
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/status.h"
 #include "utils/ms_utils.h"
 
 #ifdef ENABLE_PYTHON

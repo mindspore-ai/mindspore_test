@@ -16,7 +16,6 @@
 #include "minddata/dataset/util/circular_pool.h"
 
 #include "include/securec.h"
-#include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {
 namespace dataset {

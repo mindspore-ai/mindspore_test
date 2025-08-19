@@ -16,7 +16,6 @@
 #include "minddata/dataset/engine/datasetops/zip_op.h"
 
 #include "minddata/dataset/core/config_manager.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {

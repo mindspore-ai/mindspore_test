@@ -16,8 +16,6 @@
 #include <iostream>
 #include "minddata/dataset/engine/cache/cache_admin_arg.h"
 #include "minddata/dataset/engine/cache/cache_common.h"
-#include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/path.h"
 
 namespace ms = mindspore;
 namespace ds = mindspore::dataset;

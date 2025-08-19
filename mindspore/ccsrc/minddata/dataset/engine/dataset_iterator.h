@@ -26,7 +26,6 @@
 #include "minddata/dataset/engine/datasetops/dataset_op.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/engine/perf/dataset_iterator_tracing.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

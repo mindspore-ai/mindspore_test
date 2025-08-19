@@ -24,7 +24,6 @@
 #include "minddata/dataset/api/python/pybind_register.h"
 #include "minddata/dataset/util/shared_mem.h"
 #include "minddata/dataset/util/sig_handler.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

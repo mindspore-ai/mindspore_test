@@ -28,16 +28,12 @@
 #include <utility>
 #include <vector>
 
-#include "minddata/dataset/core/config_manager.h"
 #ifdef ENABLE_CACHE
 #include "minddata/dataset/engine/cache/cache_grpc_client.h"
 #else
 #include "minddata/dataset/engine/cache/stub/cache_grpc_client.h"
 #endif
 
-#include "minddata/dataset/util/lock.h"
-#include "minddata/dataset/util/cond_var.h"
-#include "minddata/dataset/util/queue_map.h"
 #include "minddata/dataset/util/task_manager.h"
 #include "minddata/dataset/util/wait_post.h"
 

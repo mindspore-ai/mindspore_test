@@ -26,9 +26,7 @@
 #include "minddata/dataset/engine/datasetops/shuffle_op.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

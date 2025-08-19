@@ -38,8 +38,6 @@
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/kernels/ir/validators.h"
-#include "minddata/dataset/util/path.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {

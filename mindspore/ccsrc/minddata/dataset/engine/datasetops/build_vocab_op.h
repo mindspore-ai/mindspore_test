@@ -27,7 +27,6 @@
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
 #include "minddata/dataset/include/dataset/text.h"
 #include "minddata/dataset/util/queue.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

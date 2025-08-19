@@ -16,9 +16,6 @@
 
 #include "minddata/dataset/engine/perf/device_queue_tracing.h"
 
-#include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/path.h"
-
 namespace mindspore {
 namespace dataset {
 Path DeviceQueueTracing::GetFileName(const std::string &dir_path, const std::string &rank_id) {

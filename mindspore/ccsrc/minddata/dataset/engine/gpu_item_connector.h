@@ -22,7 +22,6 @@
 #include <vector>
 #include "minddata/dataset/engine/connector.h"
 #include "minddata/dataset/util/status.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "include/runtime/hardware_abstract/data_queue/blocking_queue.h"
 
 using mindspore::device::DataQueueItem;

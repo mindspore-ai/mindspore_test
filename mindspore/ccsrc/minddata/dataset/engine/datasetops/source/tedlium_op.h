@@ -27,9 +27,6 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/engine/ir/cache/dataset_cache.h"
 
-#include "minddata/dataset/util/status.h"
-#include "minddata/dataset/util/path.h"
-
 namespace mindspore {
 namespace dataset {
 class TedliumOp : public MappableLeafOp {

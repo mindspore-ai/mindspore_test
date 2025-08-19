@@ -31,7 +31,6 @@
 #include "minddata/dataset/kernels/image/image_utils.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/services.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/wait_post.h"
 
 namespace mindspore {

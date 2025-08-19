@@ -25,7 +25,6 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_video_utils.h"
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
-#include "minddata/dataset/include/dataset/constants.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 

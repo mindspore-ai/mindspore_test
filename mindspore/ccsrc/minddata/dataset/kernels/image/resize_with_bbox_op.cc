@@ -23,7 +23,6 @@
 #include "minddata/dataset/kernels/image/bounding_box.h"
 #include "minddata/dataset/kernels/image/resize_op.h"
 #include "minddata/dataset/kernels/tensor_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -21,12 +21,10 @@
 #include <vector>
 
 #include "minddata/dataset/callback/callback_param.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/core/tensor_row.h"
 
 #include "minddata/dataset/kernels/tensor_op.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/task_manager.h"

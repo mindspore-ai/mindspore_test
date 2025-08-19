@@ -24,7 +24,6 @@
 
 #include "include/api/status.h"
 #include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/transforms.h"
 #include "minddata/dataset/include/dataset/vision.h"
 #include "minddata/dataset/kernels/ir/tensor_operation.h"

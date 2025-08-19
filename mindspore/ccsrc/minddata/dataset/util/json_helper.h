@@ -26,7 +26,6 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "include/securec.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/status.h"
 #include "utils/file_utils.h"

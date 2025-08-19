@@ -37,7 +37,6 @@
 
 #include "minddata/dataset/util/intrp_resource.h"
 #include "minddata/dataset/util/list.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/wait_post.h"
 
 namespace mindspore {

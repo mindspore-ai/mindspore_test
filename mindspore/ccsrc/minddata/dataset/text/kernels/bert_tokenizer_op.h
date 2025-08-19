@@ -24,7 +24,6 @@
 #include "minddata/dataset/text/kernels/tokenizer_op.h"
 #include "minddata/dataset/text/kernels/whitespace_tokenizer_op.h"
 #include "minddata/dataset/text/kernels/wordpiece_tokenizer_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

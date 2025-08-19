@@ -17,7 +17,6 @@
 #include <limits>
 #include "minddata/dataset/engine/cache/cache_grpc_server.h"
 #include "minddata/dataset/engine/cache/cache_server.h"
-#include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/task_manager.h"
 #include "minddata/dataset/util/log_adapter.h"
 

@@ -16,7 +16,6 @@
 
 #include "minddata/dataset/core/de_tensor.h"
 #include "minddata/dataset/core/device_tensor.h"
-#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/type_id.h"
 #include "minddata/dataset/util/log_adapter.h"
 #define EXCEPTION_IF_NULL(ptr) MS_EXCEPTION_IF_NULL(ptr)

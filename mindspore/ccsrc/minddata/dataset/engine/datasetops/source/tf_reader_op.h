@@ -32,7 +32,6 @@
 
 #include "minddata/dataset/util/wait_post.h"
 #include "minddata/dataset/util/auto_index.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/engine/data_schema.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"

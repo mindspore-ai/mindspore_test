@@ -16,9 +16,6 @@
 #include "minddata/dataset/engine/cache/storage_container.h"
 #include <unistd.h>
 #include <vector>
-#include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/path.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

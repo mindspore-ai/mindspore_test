@@ -31,7 +31,6 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/kernels/tensor_op.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/validators.h"
 
 constexpr double PI = 3.141592653589793;

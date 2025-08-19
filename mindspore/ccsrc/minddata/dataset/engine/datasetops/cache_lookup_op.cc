@@ -18,7 +18,6 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/engine/execution_tree.h"
-#include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {
 namespace dataset {

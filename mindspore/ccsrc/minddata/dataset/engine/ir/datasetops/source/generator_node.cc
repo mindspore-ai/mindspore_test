@@ -21,7 +21,6 @@
 #include "minddata/dataset/engine/datasetops/repeat_op.h"
 #include "minddata/dataset/engine/datasetops/source/generator_op.h"
 #include "minddata/dataset/engine/opt/pass.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

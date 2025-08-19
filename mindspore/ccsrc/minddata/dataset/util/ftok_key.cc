@@ -33,18 +33,6 @@
 #include <sys/msg.h>
 #endif
 
-#include "minddata/dataset/callback/callback_param.h"
-#include "minddata/dataset/include/dataset/constants.h"
-#include "minddata/dataset/core/global_context.h"
-#include "minddata/dataset/core/message_queue.h"
-#include "minddata/dataset/core/tensor_row.h"
-#include "minddata/dataset/engine/ir/datasetops/map_node.h"
-#include "minddata/dataset/kernels/tensor_op.h"
-#include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/random.h"
-#include "minddata/dataset/util/task_manager.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
-
 namespace mindspore {
 namespace dataset {
 #if !defined(_WIN32) && !defined(_WIN64)

@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/engine/data_schema.h"

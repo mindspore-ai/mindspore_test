@@ -21,7 +21,6 @@
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/device_tensor.h"
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
-#include "minddata/dataset/util/path.h"
 
 namespace mindspore {
 namespace dataset {

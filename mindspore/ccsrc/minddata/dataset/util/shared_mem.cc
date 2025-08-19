@@ -25,6 +25,8 @@
 #include <cerrno>
 #include <random>
 
+#include "minddata/dataset/util/status.h"
+
 namespace mindspore::dataset {
 #if !defined(_WIN32) && !defined(_WIN64)
 std::string GenerateShmName() {

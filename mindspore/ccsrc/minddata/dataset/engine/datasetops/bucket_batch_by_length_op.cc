@@ -15,11 +15,12 @@
  */
 #include "minddata/dataset/engine/datasetops/bucket_batch_by_length_op.h"
 
+#include <utility>
+
 #include "minddata/dataset/core/config_manager.h"
 #include "minddata/dataset/core/tensor_shape.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace py = pybind11;
 namespace mindspore {

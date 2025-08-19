@@ -24,7 +24,6 @@
 
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/intrp_resource.h"
-#include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/service.h"
 
 namespace mindspore {

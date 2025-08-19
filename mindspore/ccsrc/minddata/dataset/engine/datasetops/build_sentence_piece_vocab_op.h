@@ -29,7 +29,6 @@
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/pipeline_op.h"
 #include "minddata/dataset/include/dataset/text.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/util/queue.h"
 #include "pybind11/pybind11.h"
 

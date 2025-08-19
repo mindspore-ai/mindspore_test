@@ -17,7 +17,6 @@
 #include "minddata/dataset/kernels/image/random_resize_with_bbox_op.h"
 
 #include "minddata/dataset/kernels/image/resize_with_bbox_op.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

@@ -15,8 +15,6 @@
  */
 #include "minddata/dataset/text/kernels/jieba_tokenizer_op.h"
 
-#include "minddata/dataset/util/path.h"
-
 namespace mindspore {
 namespace dataset {
 JiebaTokenizerOp::JiebaTokenizerOp(const std::string &hmm_path, const std::string &dict_path, const JiebaMode &mode,

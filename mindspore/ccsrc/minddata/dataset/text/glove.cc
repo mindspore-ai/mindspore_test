@@ -16,6 +16,7 @@
 
 #include "minddata/dataset/text/glove.h"
 
+#include "minddata/dataset/util/path.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

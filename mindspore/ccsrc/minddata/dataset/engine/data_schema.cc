@@ -23,9 +23,7 @@
 #include <nlohmann/json.hpp>
 
 #include "utils/ms_utils.h"
-#include "minddata/dataset/util/status.h"
 #include "minddata/dataset/core/tensor_shape.h"
-#include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {
 namespace dataset {

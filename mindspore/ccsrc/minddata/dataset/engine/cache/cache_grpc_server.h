@@ -22,12 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "minddata/dataset/engine/cache/cache_common.h"
 #include "minddata/dataset/engine/cache/cache_ipc.h"
-#include "minddata/dataset/util/allocator.h"
-#include "minddata/dataset/util/arena.h"
-#include "minddata/dataset/util/status.h"
-#include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore {
 namespace dataset {

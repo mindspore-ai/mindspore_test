@@ -19,7 +19,6 @@
 
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

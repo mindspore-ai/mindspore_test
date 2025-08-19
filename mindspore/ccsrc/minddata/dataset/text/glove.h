@@ -26,7 +26,6 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/include/dataset/iterator.h"
 #include "minddata/dataset/text/vectors.h"
-#include "minddata/dataset/util/path.h"
 
 namespace mindspore {
 namespace dataset {
