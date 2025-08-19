@@ -275,9 +275,7 @@ class _AutoIdentifyDynamicShape:
                 continue
             if not isinstance(elem, (list, tuple, Tensor, int, float)):
                 return False
-            if isinstance(elem, Tensor) and \
-                self._is_invalid_shape(elem.shape) and \
-                not enable_jit_dynamic:
+            if isinstance(elem, Tensor) and self._is_invalid_shape(elem.shape) and not enable_jit_dynamic:
                 return False
             if not is_sink_mode and isinstance(elem, (list, tuple)):
                 return self._is_enable_auto_dynamic_shape(elem, is_sink_mode, enable_jit_dynamic)
