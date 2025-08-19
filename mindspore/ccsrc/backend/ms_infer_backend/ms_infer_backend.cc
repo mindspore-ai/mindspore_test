@@ -22,12 +22,12 @@
 
 #include "backend/backend_manager/backend_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "backend/common/optimizer/common_backend_optimization.h"
+#include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/runtime_conf/thread_bind_core.h"
-#include "debug/profiler/profiler.h"
+#include "include/runtime/utils/runtime_conf/thread_bind_core.h"
+#include "tools/profiler/profiler.h"
 
 #include "backend/ms_infer_backend/ms_infer_backend.h"
 #include "backend/ms_infer_backend/host_value_store.h"

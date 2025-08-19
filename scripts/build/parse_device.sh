@@ -32,6 +32,7 @@ parse_device()
   do
     if [[ "X$D" == "Xgpu" ]]; then
       export ENABLE_GPU="on"
+      export ENABLE_INFERRT="on"
       export GPU_BACKEND="cuda"
       ENABLE_CPU="on"
       ENABLE_MPI="on"
@@ -48,6 +49,7 @@ parse_device()
       export DEVICE_VERSION=
     elif [[ "X$D" == "Xrocm" ]]; then
       export ENABLE_GPU="on"
+      export ENABLE_INFERRT="on"
       export GPU_BACKEND="rocm"
       ENABLE_CPU="on"
       ENABLE_MPI="on"
@@ -60,6 +62,7 @@ parse_device()
       # building 310 package by giving specific -V 310 instruction
       if [[ "X$DEVICE_VERSION" == "X310" ]]; then
         export ENABLE_D="on"
+        export ENABLE_INFERRT="on"
         export ENABLE_AKG="on"
         export ENABLE_ACL="on"
         ENABLE_CPU="on"
@@ -68,6 +71,7 @@ parse_device()
       # universal ascend package, building 910b package by giving specific -V 910b instruction
       elif [[ "X$DEVICE_VERSION" == "X910" || "X$DEVICE_VERSION" == "X910b" || "X$DEVICE_VERSION" == "Xa5" ]]; then
         export ENABLE_D="on"
+        export ENABLE_INFERRT="on"
         export ENABLE_ACL="on"
         ENABLE_CPU="on"
         export ENABLE_MPI="on"
@@ -85,6 +89,7 @@ parse_device()
       export DEVICE_VERSION=
     elif [[ "X$D" == "Xcpu" ]]; then
       export ENABLE_CPU="on"
+      export ENABLE_INFERRT="on"
       export ENABLE_MPI="on"
     elif [[ "X$D" == "X" ]]; then
       :

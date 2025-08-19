@@ -33,7 +33,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/convert_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
 #include "backend/ms_infer_backend/host_value_store.h"

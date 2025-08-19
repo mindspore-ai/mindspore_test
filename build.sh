@@ -44,10 +44,9 @@ update_submodule()
   git submodule update --init metadef
 
   if [[ "X$ENABLE_INFERRT" = "Xon" ]]; then
-    cd "${BASEPATH}/mindspore/ccsrc/backend/ms_infer_backend/"
-    git submodule add --force -b ms_inferrt https://gitee.com/mindspore/vllm-mindspore.git inferrt
-    git submodule update --init inferrt
-    cd "${BASEPATH}"
+    export INTERRT_DIR="mindspore/ccsrc/backend/ms_infer_backend/inferrt"
+    git submodule add --force -b ms_inferrt https://gitee.com/mindspore/vllm-mindspore.git ${INTERRT_DIR}
+    git submodule update --init ${INTERRT_DIR}
   fi
 
   if [[ "X$ENABLE_AKG" = "Xon" ]]; then

@@ -24,11 +24,11 @@
 
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "backend/common/optimizer/dynamic_shape_helper.h"
+#include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
-#include "debug/profiler/profiler.h"
+#include "tools/profiler/profiler.h"
 
 #include "tensor/tensor.h"
 #include "backend/ms_infer_backend/ms_kernel_lib.h"
