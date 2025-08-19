@@ -23,7 +23,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/ir_fission/topk_split.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fission/topk_split.h"
 #undef private
 #undef protected
 

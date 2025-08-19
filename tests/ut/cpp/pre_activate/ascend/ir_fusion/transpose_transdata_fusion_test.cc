@@ -22,8 +22,8 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/format_type/insert_trans_op.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/transpose_transdata_fusion.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/insert_trans_op.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion/transpose_transdata_fusion.h"
 #undef private
 #undef protected
 

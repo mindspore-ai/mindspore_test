@@ -25,7 +25,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/enhancer/insert_tensor_move_for_hccl_op.h"
+#include "plugin/ascend/graph_optimizer/pass/enhancer/insert_tensor_move_for_hccl_op.h"
 #include "backend/common/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
 #undef private
 #undef protected

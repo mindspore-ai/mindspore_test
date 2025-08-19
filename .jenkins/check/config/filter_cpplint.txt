@@ -5,7 +5,7 @@
 "mindspore/include/infer_tensor.h"                                                                 "runtime/references"
 "mindspore/include/inference.h"                                                                    "runtime/explicit"
 "mindspore/mindspore/core/abstract/utils.cc"                                                       "build/include_what_you_use"
-"mindspore/mindspore/ccsrc/plugin/device/ascend/optimizer/buffer_fusion/ub_pattern_fusion.cc"      "build/include_what_you_use"
+"mindspore/mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/buffer_fusion/ub_pattern_fusion.cc"      "build/include_what_you_use"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/profiling_callback_register.cc"      "runtime/references"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/profiling_manager.h"                 "runtime/references"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/profiling_reporter.h"                 "runtime/references"

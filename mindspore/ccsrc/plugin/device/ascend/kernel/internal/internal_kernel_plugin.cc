@@ -23,7 +23,7 @@
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
+#include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"

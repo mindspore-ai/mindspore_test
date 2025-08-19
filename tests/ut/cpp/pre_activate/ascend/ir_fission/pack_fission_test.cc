@@ -18,7 +18,7 @@
 #include "common/py_func_graph_fetcher.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/ir_fission/pack_fission.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fission/pack_fission.h"
 #include "backend/common/pass/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
 #undef private
 #undef protected

@@ -25,7 +25,7 @@
 #include "include/common/utils/utils.h"
 #include "kernel/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/format_type/check_consistency.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/check_consistency.h"
 
 namespace mindspore {
 namespace opt {

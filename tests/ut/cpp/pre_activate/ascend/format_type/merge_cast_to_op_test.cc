@@ -25,7 +25,7 @@
 
 #define private public
 #define protected public
-#include "plugin/device/ascend/optimizer/format_type/merge_cast_to_op.h"
+#include "plugin/ascend/graph_optimizer/pass/format_type/merge_cast_to_op.h"
 #undef private
 #undef protected
 

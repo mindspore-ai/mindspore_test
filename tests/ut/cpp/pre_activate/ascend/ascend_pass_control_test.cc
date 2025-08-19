@@ -15,7 +15,7 @@
  */
 #include "common/backend_common_test.h"
 #define private public
-#include "plugin/device/ascend/optimizer/ascend_pass_control.h"
+#include "plugin/ascend/graph_optimizer/pass/ascend_pass_control.h"
 #undef private
 
 namespace {
