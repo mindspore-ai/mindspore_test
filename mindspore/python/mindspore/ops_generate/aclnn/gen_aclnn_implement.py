@@ -118,7 +118,7 @@ def gen_aclnn_kernel(op_proto: OpProto, need_update_shape=False, auto=False):
         logging.warning("Kernel {%s} is already registered.", op_name)
         return
 
-    aclnn_path = f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/'
+    aclnn_path = f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/customize/'
     # merge inner ops
     dispatch = op_proto.op_dispatch
     aclnn_name = ''.join(word.capitalize() for word in op_name.split('_'))
@@ -130,7 +130,7 @@ def gen_aclnn_kernel(op_proto: OpProto, need_update_shape=False, auto=False):
     if auto:
         auto_gen = "_auto_gen"
         kernelmod_name = aclnn_name + "Ascend"
-        aclnn_path = f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_auto_gen/'
+        aclnn_path = f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/'
         pathlib.Path(os.path.join(K.WORK_DIR, aclnn_path)
                      ).mkdir(parents=True, exist_ok=True)
     if dispatch.ascend is None:
@@ -145,9 +145,9 @@ def gen_aclnn_kernel(op_proto: OpProto, need_update_shape=False, auto=False):
              kernelmod_h_and_cc_path, need_update_shape)
 
 
-def get_registed_ops(file_path=f'{MS_OPS_KERNEL_PATH}/ascend/opapi/'):
+def get_registed_ops(file_path=f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/'):
     '''get registered ops by search files'''
-    # default search in 'ops/kernel/ascend/opapi/'
+    # default search in 'ops/kernel/ascend/aclnn/kernel_mod_impl/'
     search_path = os.path.join(K.WORK_DIR, file_path)
     ret = []
     try:
@@ -167,7 +167,7 @@ def get_registed_ops(file_path=f'{MS_OPS_KERNEL_PATH}/ascend/opapi/'):
 
 registed_ops = get_registed_ops()
 manual_registed_ops = get_registed_ops(
-    f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/')
+    f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/customize/')
 
 
 def check_op_registed(op_name, manual=False):
@@ -182,7 +182,7 @@ def generate_aclnn_reg_code(yaml_data):
     yaml_str = gen_utils.safe_load_yaml(ops_yaml_path)
 
     reg_code = f"""
-#include "{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
+#include "{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 
 namespace mindspore {{
 namespace kernel {{
@@ -224,9 +224,9 @@ def generate_aclnn_reg_file(work_path, yaml_str):
     Generate nnacl kernelmod register
     """
     tmp_register_file = work_path + \
-        f'{MS_OPS_KERNEL_PATH}/ascend/opapi/tmp_aclnn_kernel_register.cc'
+        f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/tmp_aclnn_kernel_register.cc'
     register_file = work_path + \
-        f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_register_auto.cc'
+        f'{MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/aclnn_kernel_register_auto.cc'
     reg_code = generate_aclnn_reg_code(yaml_str)
     gen_utils.save_file(
         os.path.dirname(tmp_register_file), os.path.basename(tmp_register_file), gen_utils.cc_license_str + reg_code)

@@ -29,7 +29,7 @@
 #include "plugin/ascend/res_manager/collective/ccool_communication_group.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/collective/ascend_communication_group.h"
-#include "kernel/ascend/opapi/aclnn/add_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/add_aclnn_kernel.h"
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))
 #endif

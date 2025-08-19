@@ -114,7 +114,10 @@ class PyboostOpHeaderGenerator(BaseGenerator):
             raise ValueError(
                 f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_OP_HEADER_TEMPLATE = template_dict[device]
-        self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
+        if device == "ascend":
+            self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
+        else:
+            self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
         self.hccl_code_generate_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
         self.device = device
 
@@ -174,7 +177,10 @@ class PyboostInternalOpHeaderGenerator(BaseGenerator):
             raise ValueError(
                 f"Currently, only support 'ascend' for internal operations, {device} is not supported.")
         self.pyboost_internal_op_header_template = template.PYBOOST_ASCEND_INTERNAL_OP_HEADER_TEMPLATE
-        self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/internal/auto_generate/"
+        if device == "ascend":
+            self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/internal/auto_generate/"
+        else:
+            self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/internal/auto_generate/"
         self.device = device
 
     def generate(self, work_path, op_protos):
@@ -234,7 +240,7 @@ class PyboostOpCppGenerator:
             PYBOOST_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
-            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
+            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
             self.device_reg_str = "Ascend"
         elif device == 'cpu':
             PYBOOST_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE
@@ -311,8 +317,12 @@ must be provided for comm op {operator_name}")
                 customize_include = \
                     f'#include "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/{operator_name.lower()}.h"\n'
             else:
-                customize_include = \
-                    f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
+                if self.device == 'ascend':
+                    customize_include = \
+                        f'#include "{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/customize/{operator_name.lower()}.h"\n'
+                else:
+                    customize_include = \
+                        f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
 
             register_custom = self._get_register_custom_kernel(op_proto)
             cpp_func_return = _generate_cpp_func_return(op_proto)
@@ -386,7 +396,7 @@ class PyboostViewOpCppGenerator:
             PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_ASCEND_VIEW_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
-            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
+            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
             self.device_reg_str = "Ascend"
         elif device == 'cpu':
             PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_CPU_VIEW_CALL_TEMPLATE
@@ -499,7 +509,7 @@ class AclnnOpCppCodeGenerator:
         if device == 'ascend':
             PYBOOST_CALL_TEMPLATE = template.PYBOOST_ASCEND_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
-            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
+            gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
             self.device_reg_str = "Ascend"
         elif device == 'cpu':
             PYBOOST_CALL_TEMPLATE = template.PYBOOST_CPU_CALL_TEMPLATE
@@ -517,9 +527,14 @@ class AclnnOpCppCodeGenerator:
         self.PYBOOST_REG_OP_TEMPLATE = Template('MS_REG_PYBOOST_OP(${device}, ${op_name});' \
                                                 '${register_custom_kernel}')
         self.PYBOOST_CALL_TEMPLATE = PYBOOST_CALL_TEMPLATE
-        self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.Template(
-            '#include "kernel/${device}/pyboost/auto_generate/${operator_name}.h"\n'
-        )
+        if device == "ascend":
+            self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.Template(
+                '#include "kernel/ascend/aclnn/pyboost_impl/auto_generate/${operator_name}.h"\n'
+            )
+        else:
+            self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.Template(
+                '#include "kernel/${device}/pyboost/auto_generate/${operator_name}.h"\n'
+            )
 
         self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
         self.gen_path = gen_path
@@ -710,9 +725,9 @@ class InternalOpCppCodeGenerator:
         self.internal_single_op_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_SOURCE_TEMPLATE
         self.internal_single_op_customize_source_template = template.PYBOOST_INTERNAL_SINGLE_OP_CUSTOMIZE_TEMPLATE
         self.customize_inc_template = Template(
-            '#include "${ms_ops_kernel_path}/ascend/pyboost/internal/customize/${operator_name}.h"\n'
+            '#include "${ms_ops_kernel_path}/ascend/aclnn/pyboost_impl/internal/customize/${operator_name}.h"\n'
         )
-        self.gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/auto_generate/"
+        self.gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/internal/auto_generate/"
 
     def generate_internal_op_cpp_code(self, work_path, op_protos):
         """
@@ -890,7 +905,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
         self.PYBOOST_CPU_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_OP_SOURCE_TEMPLATE
         self.PYBOOST_GPU_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_OP_SOURCE_TEMPLATE
-        self.ascend_gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
+        self.ascend_gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
         self.cpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         self.gpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
         self.hccl_gen_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
@@ -1150,7 +1165,10 @@ def delete_residual_files(work_path, op_protos):
     for op_proto in op_protos:
         all_operator_name.append(op_proto.op_name)
     devices = ["ascend", "gpu", "cpu"]
-    code_generate_path_list = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in devices]
+    code_generate_path_list = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
+                               if device != "ascend" else
+                               f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
+                               for device in devices]
     code_generate_path_list.append(
         f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     for code_generate_path in code_generate_path_list:

@@ -123,7 +123,7 @@ PYBOOST_CORE_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/ccsrc/pynative/op_function/template/pyboost_core_header.tpl'))
 PYBOOST_INTERNAL_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/template/pyboost_internal_header_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/internal/template/pyboost_internal_header_template.tpl'))
 
 PYBOOST_INTERNAL_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
@@ -285,33 +285,33 @@ PYBOOST_OP_REGISTER_TEMPLATE = Template.load_from_file(
 # Ascend op generate
 PYBOOST_ASCEND_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_header_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_aclnn_header_template.tpl'))
 PYBOOST_ASCEND_INTERNAL_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/internal/template/pyboost_internal_header_template.tpl')
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/internal/template/pyboost_internal_header_template.tpl')
 )
 
 PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_source_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_aclnn_source_template.tpl'))
 
 PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_header_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_aclnn_single_op_header_template.tpl'))
 
 PYBOOST_ASCEND_SINGLE_HCLL_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_hccl_op_header_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_aclnn_single_hccl_op_header_template.tpl'))
 
 PYBOOST_CALL_FUNC_TEMPLATE = Template('${return_type} Call(${call_args_with_type}) override;')
 
 PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_source_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_aclnn_single_op_source_template.tpl'))
 
 PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_ascend_call_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_ascend_call_template.tpl'))
 
 PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
@@ -320,7 +320,7 @@ PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
 
 PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template'
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template'
                  '/pyboost_ascend_customize_call_template.tpl'))
 
 # GPU op generate
@@ -543,10 +543,10 @@ op_template = Template("""void ${op_name}::set_${arg_name}(const ${dtype} &${arg
                        """             { return GetValue<${dtype}>(GetAttr("${arg_name}")); }\n\n""")
 
 ACLNN_KERNEL_CC_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, f'./{K.MS_OPS_KERNEL_PATH}/ascend/opapi/template/aclnn_kernel_cc.tpl'))
+    os.path.join(K.WORK_DIR, f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/template/aclnn_kernel_cc.tpl'))
 
 ACLNN_KERNEL_H_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, f'./{K.MS_OPS_KERNEL_PATH}/ascend/opapi/template/aclnn_kernel_h.tpl'))
+    os.path.join(K.WORK_DIR, f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/template/aclnn_kernel_h.tpl'))
 
 update_output_shape_and_size_template = Template("""
 void ${kernelmod_name}::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,

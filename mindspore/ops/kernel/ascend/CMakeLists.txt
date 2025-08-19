@@ -4,11 +4,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 add_subdirectory(aicpu/aicpu_ops)
 
 set(ASCEND_KERNEL_COMP
-        pyboost
-        opapi
         availability
         acl
         acl_ir
+        aclnn
 )
 foreach(_comp ${ASCEND_KERNEL_COMP})
     add_subdirectory(${_comp})

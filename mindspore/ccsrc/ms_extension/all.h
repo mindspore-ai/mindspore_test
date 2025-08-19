@@ -32,8 +32,8 @@
 // ascend files
 #ifdef CUSTOM_ASCEND_OP
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
 #endif  // CUSTOM_ASCEND_OP
 
 // The BaseTensor is deprecated

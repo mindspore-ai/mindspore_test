@@ -107,7 +107,7 @@ The auto generated operator pyboost code files are in path:
 
 1. 'mindspore/pyboost/auto_generate'.
 
-2. 'mindspore/ops/kernel/ascend/pyboost/auto_generate'.
+2. 'mindspore/ops/kernel/ascend/aclnn/pyboost_impl/auto_generate'.
 
 3. 'mindspore/ops/kernel/gpu/pyboost/auto_generate'.
 

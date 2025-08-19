@@ -25,7 +25,7 @@
 
 // ascend files
 #ifdef CUSTOM_ASCEND_OP
-#include "mindspore/ops/kernel/ascend/pyboost/customize/custom_launch_aclnn.h"
+#include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/custom_launch_aclnn.h"
 #ifdef CUSTOM_ENABLE_ATB
 #include "ms_extension/ascend/atb/atb_common.h"
 #endif  // CUSTOM_ENABLE_ATB

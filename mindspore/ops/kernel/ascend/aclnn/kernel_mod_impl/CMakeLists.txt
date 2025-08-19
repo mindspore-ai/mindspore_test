@@ -1,0 +1,5 @@
+include(${OPS_DIR}/cmake/merge_ops.cmake)
+set(ASCEND_OPAPI_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/kernel/ascend/aclnn/kernel_mod_impl)
+merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR} ${ASCEND_OPAPI_MERGE_DIR} ascend_opapi_merge "")
+file(GLOB_RECURSE ASCEND_OPAPI_MERGE_FILES ${ASCEND_OPAPI_MERGE_DIR}/*.cc)
+set(KERNEL_MOD_IMPL_SRCS ${ASCEND_OPAPI_MERGE_FILES} PARENT_SCOPE)

@@ -123,8 +123,8 @@ mindspore/ccsrc/pybind_api/ir/tensor/tensor_register/auto_generate/tensor_py_gen
 mindspore/ccsrc/pybind_api/ir/tensor/tensor_register/auto_generate/tensor_py_gen.h
 mindspore/python/mindspore/common/_tensor_docs.py
 mindspore/python/mindspore/common/_tensor_cpp_method.py
-mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
-mindspore/ops/kernel/ascend/pyboost/internal/functions/
+mindspore/ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/
+mindspore/ops/kernel/ascend/aclnn/pyboost_impl/internal/functions/
 mindspore/ccsrc/plugin/device/ascend/kernel/internal/pyboost/auto_gen/
 
 # ascendc compile
