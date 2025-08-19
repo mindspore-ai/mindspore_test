@@ -351,11 +351,13 @@ Status MeanExtInfo::InferForwardCommunicationByLayout() {
   std::vector<int64_t> dim_list = reduce_dim();
   std::vector<int64_t> shard_dims;
   for (size_t i = 0; i < input_tensor_map.size(); ++i) {
-    // use to generate group_rank_id
     auto pos = std::find_if(dim_list.begin(), dim_list.end(), [i](const int64_t &dim) { return SizeToLong(i) == dim; });
     if (pos != dim_list.end()) {
-      std::transform(input_tensor_map[i].begin(), input_tensor_map[i].end(), std::back_inserter(shard_dims),
-                     [this](auto elem) { return SizeToLong(dev_matrix_shape_.size() - kIndex1 - elem); });
+      std::for_each(input_tensor_map[i].begin(), input_tensor_map[i].end(), [this, &shard_dims](auto elem) {
+        if (elem != -1) {
+          shard_dims.push_back(SizeToLong(dev_matrix_shape_.size() - kIndex1 - elem));
+        }
+      });
     }
   }
 
