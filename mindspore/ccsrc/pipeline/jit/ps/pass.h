@@ -82,6 +82,7 @@ bool AddRecomputationPass(const ResourcePtr &resource);
 bool OptAfterRecomputeGroup(const ResourcePtr &resource);
 bool SetTrainingFlagPass(const ResourcePtr &resource);
 bool BackendPass(const ResourcePtr &resource);
+bool SymbolEngineOptGroup(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 

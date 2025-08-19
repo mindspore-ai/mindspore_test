@@ -87,6 +87,7 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
   void InitCompileCacheResource(const ResourcePtr &resource, const std::string &phase);
   void set_process_id();
+  void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
 
   std::map<std::string, ExecutorInfoPtr> info_;
   std::string phase_;

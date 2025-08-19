@@ -1097,7 +1097,7 @@ bool OptAfterRecomputeGroup(const ResourcePtr &resource) { return OptPassGroup(r
 bool JitOptPassBGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "jit_opt_b"); }
 
 bool OptPassRNGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "renormal"); }
-bool SymEngOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "symbol_engine_opt"); }
+bool SymbolEngineOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "symbol_engine_opt"); }
 
 bool OptPassGradEpilogueGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_grad_epilogue"); }
 bool OptPassAddAttr(const ResourcePtr &resource) { return OptPassGroup(resource, "add_attr"); }
@@ -1918,7 +1918,7 @@ std::vector<PassItem> kVmPasses = {
   {"split_layernorm_comm", SplitLayerNormCommFpPass},
   // The pass cache hccl group, so the hccl group should be created before the pass
   {"handle_group_info", HandleGroupInfoPass},
-  {"symbol_engine_optimizer", SymEngOptGroup}};
+  {"symbol_engine_optimizer", SymbolEngineOptGroup}};
 
 std::vector<PassItem> kPynativePasses = {{"opt_a", OptPassAGroup},
                                          {"opt_b", OptPassBGroup},

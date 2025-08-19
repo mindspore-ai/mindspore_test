@@ -37,6 +37,7 @@
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/python_utils.h"
 #include "include/common/utils/tensor_py_wrapper.h"
+#include "include/common/symbol_engine/symbol_engine_impl.h"
 
 #include "pipeline/jit/ps/compile_cache_manager.h"
 #include "pipeline/jit/ps/debug/trace.h"
@@ -49,6 +50,10 @@
 #include "utils/phase.h"
 #include "utils/shape_utils.h"
 
+#include "symbolic_shape/symbol_info.h"
+
+#include "frontend/parallel/dynamic_shape/dynamic_shape.h"
+
 namespace mindspore {
 // namespace to support intermediate representation definition
 namespace pipeline {
@@ -56,6 +61,7 @@ using Tensor = mindspore::tensor::Tensor;
 using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTensorPtr;
 using VmEvalPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
+using MetaTensor = mindspore::tensor::MetaTensor;
 
 const char IR_TYPE_ANF[] = "anf_ir";
 const char IR_TYPE_ONNX[] = "onnx_ir";
@@ -638,6 +644,79 @@ py::dict ExecutorPy::GetParams(const std::string &phase) {
     }
   }
   return parameter_dict;
+}
+
+void ExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs) {
+  std::vector<symshape::SymbolInfoList> symbol_infos;
+  symbol_infos.reserve(args_abs->size());
+  bool has_dyn_shape = false;
+  bool is_parallel = parallel::IsSemiOrAutoParallelMode();
+
+  for (size_t i = 0; i < args.size(); i++) {
+    auto iter = cur_convert_input_.find(args[i].ptr());
+    if (iter == cur_convert_input_.end()) {
+      continue;
+    }
+    auto &info_list = symbol_infos.emplace_back(symshape::SymbolInfoList{});
+    if (!iter->second.first->isa<MetaTensor>()) {
+      continue;
+    }
+    auto digital_shape = iter->second.second->GetShape();
+    MS_EXCEPTION_IF_NULL(digital_shape);
+    if (digital_shape->IsDynamic()) {
+      has_dyn_shape = true;
+    }
+    constexpr char symbolic_shape_attr[] = "symbolic_shape";
+    if (!py::hasattr(args[i], symbolic_shape_attr) ||
+        !py::isinstance<py::list>(py::getattr(args[i], symbolic_shape_attr))) {
+      if (is_parallel && digital_shape->isa<abstract::TensorShape>()) {
+        info_list.resize(digital_shape->GetShapeVector().size());
+      }
+      continue;
+    }
+    auto symbolic_shape_obj = py::getattr(args[i], symbolic_shape_attr);
+    MS_EXCEPTION_IF_CHECK_FAIL(py::isinstance<py::list>(symbolic_shape_obj), "tensor.symbolic_shape should be a list");
+    auto obj_list = py::cast<py::list>(symbolic_shape_obj);
+    info_list.resize(obj_list.size());
+    for (size_t j = 0; j < obj_list.size(); j++) {
+      if (!py::isinstance<py::dict>(obj_list[j])) {
+        continue;
+      }
+      auto dict_obj = py::cast<py::dict>(obj_list[j]);
+      for (auto cfg_iter = dict_obj.begin(); cfg_iter != dict_obj.end(); ++cfg_iter) {
+        auto cfg_key = py::cast<std::string>(cfg_iter->first);
+        if (cfg_key == "max") {
+          info_list[j].max = py::cast<int64_t>(cfg_iter->second);
+        } else if (cfg_key == "min") {
+          info_list[j].min = py::cast<int64_t>(cfg_iter->second);
+        } else if (cfg_key == "divisor") {
+          info_list[j].divisor = py::cast<int64_t>(cfg_iter->second);
+        } else if (cfg_key == "remainder") {
+          info_list[j].remainder = py::cast<int64_t>(cfg_iter->second);
+        } else if (cfg_key == "id") {
+          info_list[j].id = py::cast<int64_t>(cfg_iter->second);
+        } else if (cfg_key == "name") {
+          info_list[j].name = py::cast<std::string>(cfg_iter->second);
+        }
+      }
+    }
+  }
+
+  MS_LOG(DEBUG) << "before parallel symbol";
+  parallel::PrintSymbolInfo(symbol_infos);
+  symbol_infos = parallel::ParallelSymbolInfo(symbol_infos, has_dyn_shape);
+  MS_LOG(DEBUG) << "after parallel symbol";
+  parallel::PrintSymbolInfo(symbol_infos);
+
+  auto symbolic_shape_list = symshape::BuildSymbolicShapeBySymbolInfo(*args_abs, symbol_infos);
+  for (size_t i = 0; i < symbolic_shape_list.size(); i++) {
+    // when the same tensor object is used in set_inputs interface, the inputs may shared a same Abstract object.
+    // but for dynamic shape, the same "-1" in abstract can be different symbolic shape.
+    auto abs = symshape::CloneAbstractIfSymbolExists((*args_abs)[i]);
+    MS_EXCEPTION_IF_NULL(abs);
+    abs->SetSymbolicShape(symbolic_shape_list[i]);
+    (*args_abs)[i] = abs;
+  }
 }
 
 void CleanCache() {
