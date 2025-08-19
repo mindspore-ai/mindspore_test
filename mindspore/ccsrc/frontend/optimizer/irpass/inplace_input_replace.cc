@@ -57,6 +57,53 @@ AnfNodePtr FindNodeUserWithIOMonad(const mindspore::CompactSet<std::pair<AnfNode
   return found ? node_user_with_io_monad : nullptr;
 }
 
+void RecordInplaceNodes(const CNodePtr &cnode, std::unordered_map<AnfNodePtr, AnfNodePtr> *inplace_input) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &prim = GetCNodePrimitive(cnode);
+  const auto &inputs = cnode->inputs();
+  // Func call nodes and switch call nodes
+  if (prim == nullptr) {
+    if (IsPrimitiveCNode(inputs[kIndex0], prim::kPrimSwitch)) {
+      auto switch_cnode = inputs[kIndex0]->cast<CNodePtr>();
+      auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
+      auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
+      auto true_index = IsFuncOutputSameWithParamNode(true_fg);
+      if (true_index == -1) {
+        return;
+      }
+      auto false_index = IsFuncOutputSameWithParamNode(false_fg);
+      if (true_index == false_index) {
+        (*inplace_input)[cnode->input(true_index + 1)] = cnode;
+        MS_LOG(INFO) << "Record inplace switch call cnode as inplace node: " << cnode->DebugString();
+      }
+    } else {
+      auto fg = GetValueNode<FuncGraphPtr>(inputs[kIndex0]);
+      if (auto index = IsFuncOutputSameWithParamNode(fg); index != -1) {
+        (*inplace_input)[cnode->input(index + 1)] = cnode;
+        MS_LOG(INFO) << "Record inplace call cnode as inplace node: " << cnode->DebugString();
+      }
+    }
+    return;
+  }
+
+  // Inplace op nodes
+  if (prim->inplace_prim()) {
+    const auto &indexes = prim->inplace_input_indexes();
+    if (indexes.size() != 1) {
+      return;
+    }
+    (*inplace_input)[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
+    MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
+    return;
+  }
+
+  if (IsPrimitiveCNode(cnode, prim::kPrimVirtualViewGrad)) {
+    (*inplace_input)[cnode->input(1)] = cnode;
+    MS_LOG(INFO) << "Record VirtualViewGrad cnode as inplace node: " << cnode->DebugString();
+    return;
+  }
+}
+
 /**
  * \brief Change inplace input of cnode in func_graph.
  *
@@ -101,39 +148,7 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
     ReplaceInplaceNodeForCNode(cnode, inplace_input, manager, func_graph, true);
 
     // Record nodes need to be replaced later
-    const auto &prim = GetCNodePrimitive(cnode);
-    const auto &inputs = cnode->inputs();
-    if (prim == nullptr) {
-      if (IsPrimitiveCNode(inputs[kIndex0], prim::kPrimSwitch)) {
-        auto switch_cnode = inputs[kIndex0]->cast<CNodePtr>();
-        auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
-        auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
-        auto true_index = IsFuncOutputSameWithParamNode(true_fg);
-        if (true_index != -1) {
-          auto false_index = IsFuncOutputSameWithParamNode(false_fg);
-          if (true_index == false_index) {
-            inplace_input[cnode->input(true_index + 1)] = cnode;
-            MS_LOG(INFO) << "Record inplace switch call cnode as inplace node: " << cnode->DebugString();
-          }
-        }
-      } else {
-        auto fg = GetValueNode<FuncGraphPtr>(inputs[kIndex0]);
-        if (auto index = IsFuncOutputSameWithParamNode(fg); index != -1) {
-          inplace_input[cnode->input(index + 1)] = cnode;
-          MS_LOG(INFO) << "Record inplace call cnode as inplace node: " << cnode->DebugString();
-        }
-      }
-    } else if (prim->inplace_prim()) {
-      const auto &indexes = prim->inplace_input_indexes();
-      if (indexes.size() != 1) {
-        continue;
-      }
-      inplace_input[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
-      MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
-    } else if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
-      inplace_input[cnode->input(1)] = cnode;
-      MS_LOG(INFO) << "Record VirtualViewGrad cnode as inplace node: " << cnode->DebugString();
-    }
+    RecordInplaceNodes(cnode, &inplace_input);
   }
 
   // Reprocess return node separately, avoid leaving any isolated nodes unreplaced

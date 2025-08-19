@@ -21,6 +21,34 @@
 namespace mindspore {
 namespace opt {
 namespace irpass {
+
+namespace {
+AnfNodePtr GetValidFuncCallNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (IsPrimitiveCNode(cnode->input(kIndex0), prim::kPrimSwitch)) {
+    auto switch_cnode = cnode->input(kIndex0)->cast<CNodePtr>();
+    auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
+    auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
+    auto true_index = IsFuncOutputSameWithParamNode(true_fg);
+    if (true_index == -1) {
+      return nullptr;
+    }
+    auto false_index = IsFuncOutputSameWithParamNode(false_fg);
+    if (true_index != false_index) {
+      return nullptr;
+    }
+    return cnode->input(true_index + 1);
+  } else if (auto fg = GetValueNode<FuncGraphPtr>(cnode->input(kIndex0)); fg != nullptr) {
+    auto index = IsFuncOutputSameWithParamNode(fg);
+    if (index == -1) {
+      return nullptr;
+    }
+    return cnode->input(index + 1);
+  }
+  return nullptr;
+}
+}  // namespace
+
 constexpr auto kOutputSameWithParamIndex = "output_same_with_param_index";
 constexpr auto kIsCheckOutputSameWithParamIndex = "is_check_output_same_with_param_index";
 
@@ -185,44 +213,33 @@ int IsFuncOutputSameWithParamNode(const FuncGraphPtr &fg) {
   // %2 = Op(param1, param2)
   // ==> Same as: %2 = Op(%1, param2)
   auto current_node = fg->output();
+  MS_EXCEPTION_IF_NULL(current_node);
   while (!current_node->isa<Parameter>()) {
     if (!IsCNode(current_node)) {
       break;
     }
     auto cnode = current_node->cast<CNodePtr>();
-    const auto &prim = GetCNodePrimitive(cnode);
     if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
       current_node = cnode->input(kIndex1);
-    } else if (IsInplaceNode(current_node)) {
+      continue;
+    }
+
+    if (IsInplaceNode(current_node)) {
+      const auto &prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
       const auto &indexes = prim->inplace_input_indexes();
       if (indexes.size() != 1) {
         break;
       }
       current_node = cnode->input(indexes[0] + 1);
-    } else {
-      if (IsPrimitiveCNode(cnode->input(kIndex0), prim::kPrimSwitch)) {
-        auto switch_cnode = cnode->input(kIndex0)->cast<CNodePtr>();
-        auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
-        auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
-        auto true_index = IsFuncOutputSameWithParamNode(true_fg);
-        if (true_index == -1) {
-          break;
-        }
-        auto false_index = IsFuncOutputSameWithParamNode(false_fg);
-        if (true_index != false_index) {
-          break;
-        }
-        current_node = cnode->input(true_index + 1);
-      } else if (auto fg = GetValueNode<FuncGraphPtr>(cnode->input(kIndex0)); fg != nullptr) {
-        auto index = IsFuncOutputSameWithParamNode(fg);
-        if (index == -1) {
-          break;
-        }
-        current_node = cnode->input(index + 1);
-      } else {
-        break;
-      }
+      continue;
     }
+
+    auto poss_node = GetValidFuncCallNode(cnode);
+    if (poss_node == nullptr) {
+      break;
+    }
+    current_node = poss_node;
   }
   auto it = std::find(params.begin(), params.end(), current_node);
   auto index = -1;

@@ -373,7 +373,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::Opt
 
   FuncGraphPtr new_func_graph = ori_func_graph;
 
-  if (is_view_inplace) {
+  if (is_view_inplace && common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE") != "1") {
     parse::ClearCNodeAbstract(ori_func_graph);
     pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
     FuncGraphPtr need_renormalize_func = ori_func_graph;

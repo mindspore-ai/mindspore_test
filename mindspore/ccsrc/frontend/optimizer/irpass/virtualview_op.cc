@@ -325,7 +325,8 @@ void VirtualViewInsertProcesser::ProcessInplaceNode(const CNodePtr &cnode) {
 }
 
 void VirtualViewInsertProcesser::CheckAndProcessInplaceFuncCallNode(const CNodePtr &node) {
-  const auto &inputs = node->cast<CNodePtr>()->inputs();
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &inputs = node->inputs();
   // Get CallNode and its args: {Inplace_func, input_args}
   std::vector<std::pair<FuncGraphPtr, AnfNodePtrList>> call_nodes_vector;
   if (auto fg = GetValueNode<FuncGraphPtr>(inputs[0]); fg != nullptr) {
