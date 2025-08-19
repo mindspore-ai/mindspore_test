@@ -32,7 +32,7 @@
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "backend/common/kernel_graph/session_factory.h"
-#include "runtime/graph_scheduler/graph_compiler.h"
+#include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "backend/ms_backend/segment_runner.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 

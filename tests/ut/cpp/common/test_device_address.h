@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "abstract/abstract_function.h"
-#include "runtime/graph_scheduler/control_node_parser.h"
+#include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"

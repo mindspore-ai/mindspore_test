@@ -19,7 +19,7 @@
 
 #include "acl/acl_mdl.h"
 #include "plugin/ascend/res_manager/visible.h"
-#include "runtime/graph_scheduler/graph_capture/capture_graph.h"
+#include "runtime/core/graph_executor/kernel_capture/capture_graph.h"
 
 namespace mindspore::device::ascend {
 

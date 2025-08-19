@@ -25,7 +25,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"

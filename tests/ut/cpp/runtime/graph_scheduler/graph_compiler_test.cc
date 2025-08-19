@@ -16,7 +16,7 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
-#include "runtime/graph_scheduler/graph_compiler.h"
+#include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

@@ -24,7 +24,7 @@
 #include "utils/ms_context.h"
 #include "actor/actormgr.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "pynative/pynative_execute.h"
 #include "frontend/jit/ps/executor/graph_executor_py.h"
 #include "frontend/jit/ps/pipeline.h"

@@ -15,7 +15,7 @@
  */
 
 #include "tests/ut/cpp/common/device_common_test.h"
-#include "runtime/graph_scheduler/actor/kernel_runner.h"
+#include "runtime/core/actors/base/kernel_runner.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 namespace mindspore {
 namespace runtime {

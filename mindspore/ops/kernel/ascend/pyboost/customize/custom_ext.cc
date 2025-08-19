@@ -19,7 +19,7 @@
 #include <string>
 #include "utils/stream_guard.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/pynative/op_runner.h"

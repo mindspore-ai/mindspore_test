@@ -58,7 +58,7 @@
 #include "frontend/np_dtypes/np_dtypes.h"
 #include "include/common/amp/amp.h"
 #include "frontend/jit/trace/trace_recorder.h"
-#include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
+#include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif

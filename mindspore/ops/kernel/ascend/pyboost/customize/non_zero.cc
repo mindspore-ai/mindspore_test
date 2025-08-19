@@ -20,7 +20,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pipeline/pipeline.h"
 

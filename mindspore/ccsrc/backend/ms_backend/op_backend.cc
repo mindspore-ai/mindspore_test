@@ -23,7 +23,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "runtime/graph_scheduler/device_address_utils.h"
+#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
