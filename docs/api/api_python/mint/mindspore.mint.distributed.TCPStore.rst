@@ -8,8 +8,8 @@ mindspore.mint.distributed.TCPStore
     .. note::
         - 该功能通过CPU实现，不涉及任何与Ascend相关的硬件操作。
         - 目前TCPStore类构造函数提供的所有参数均不支持。主节点和端口号等都由MindSpore框架统一指定。以下为预留参数，目前不支持，设置无效。
-        - 当前TcpStore功能受限，仅支持key小于4k、value小于1G场景，复杂场景待支持。
-        - TcpStore功能中消息收发超时时间由 `MS_RECEIVE_MSG_TIMEOUT` 环境变量控制，单位：秒，默认值: ``15`` 。如果出现超时，用户需增加该配置值。
+        - 当前TCPStore功能受限，仅支持key小于4k、value小于1G场景，复杂场景待支持。
+        - TCPStore功能中消息收发超时时间由 `MS_RECEIVE_MSG_TIMEOUT` 环境变量控制，单位：秒，默认值: ``15`` 。如果出现超时，用户需增加该配置值。
 
     参数：
         - **host_name** (str，无效参数，可选) - 服务器存储应运行的主机名或 IP 地址。默认值为 ``None`` 。

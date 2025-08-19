@@ -18,8 +18,8 @@ mindspore.ops.ring_attention_update
         - 当 `layout` 为 ``"TND"`` 时， `prev_attn_out` 的最后一个维度需要为64的倍数。
         - 当 `layout` 为 ``"TND"`` 时， `actual_seq_qlen` 为必填。
         - 当 `layout` 为 ``"TND"`` 时，输入Shape不能过大。需要注意N*D的大小，限制为： 
-          (AlignUp(NxD, 64)x(DataSizex6+8))+(AlignUp(Nx8, 64)x56) <= 192x1024。
-          `prev_attn_out` 数据类型为float32时，DataSize为4；数据类型为float16 / bfloat16时，DataSize为2。
+          :math:`(\text{AlignUp}(N*D, 64)*(DataSize*6+8))+(\text{AlignUp}(N*8, 64)*56) <= 192*1024`。
+          `prev_attn_out` 数据类型为float32时，:math:`DataSize` 为4；数据类型为float16 / bfloat16时，:math:`DataSize` 为2。
         - 当 `layout` 为 ``"TND"`` 时，如果 `actual_seq_qlen` 不是从0到T的非递减序列，计算结果未定义。
 
     参数：
