@@ -41,11 +41,13 @@ def is_dim_unknown(shape):
         raise ValueError(f"'shape' should have only one -2 or no -2 at all but got ({shape}).")
     return False
 
+
 def get_func(func):
     """Get function object"""
     if isinstance(func, types.MethodType):
         return func.__func__
     return func
+
 
 def _jit_fallback_raise_func(type_name, script):
     """raise function for jit fallback."""
