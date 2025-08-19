@@ -1505,7 +1505,7 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
   forward->ForwardOpGradImpl(grad_info, async_status);
 }
 
-void PyBoost::MarkSideEffect(PyObject * arg) {
+void PyBoost::MarkSideEffect(PyObject *arg) {
   if (tensor::IsTensorPy(arg)) {
     tensor::PyType<tensor::TensorPy> *tensor = reinterpret_cast<tensor::PyType<tensor::TensorPy> *>(arg);
     tensor->value.set_has_side_effect(true);
@@ -1557,14 +1557,25 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info) {
   }
 }
 
-void PyBoost::BumpVersionAsync(const tensor::TensorPtr &tensor) {
+void PyBoost::BumpVersionAsync(tensor::Version version) {
   const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
   if (forward->enable_async()) {
-    const auto task = [tensor]() { tensor->BumpVersion(); };
+    const auto task = [version]() mutable { version.BumpVersion(); };
     const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
     bprop_queue->Push(std::make_shared<BpropTask>(task));
   } else {
-    tensor->BumpVersion();
+    version.BumpVersion();
+  }
+}
+
+void PyBoost::UpdateVersionAsync(const autograd::ViewAutoGradMetaDataPtr &view_meta, const tensor::Version &version) {
+  const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
+  if (forward->enable_async()) {
+    const auto task = [view_meta, version]() { view_meta->set_version_attr(version.current_version()); };
+    const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+    bprop_queue->Push(std::make_shared<BpropTask>(task));
+  } else {
+    view_meta->set_version_attr(version.current_version());
   }
 }
 

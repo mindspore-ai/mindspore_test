@@ -55,6 +55,31 @@ TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self) {
   kernel::pyboost::RequireGradGuard require_grad_guard(false);
   return kernel::pyboost::view(self, self->shape());
 }
+
+void MarkInputsNeedGrad(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx, const py::args &inputs,
+                        std::vector<TensorMeta> *inputs_meta) {
+  size_t inputs_size = inputs.size();
+  std::vector<bool> is_tensor_input;
+  is_tensor_input.reserve(inputs_size);
+  py::tuple need_grad_input = py::tuple(inputs_size);
+  for (size_t i = 0; i < inputs_size; ++i) {
+    const auto tensor = tensor::ConvertToTensor(inputs[i]);
+    if (tensor != nullptr) {
+      (void)is_tensor_input.emplace_back(true);
+      tensor->set_need_pipeline_sync(true);
+      need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
+      (void)context->inputs.emplace_back(tensor);
+      (void)inputs_meta->emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
+    } else {
+      (void)is_tensor_input.emplace_back(false);
+      need_grad_input[i] = py::bool_(false);
+      (void)context->inputs.emplace_back(kNone);
+      (void)inputs_meta->emplace_back();
+    }
+  }
+  ctx->set_is_tensor_input(is_tensor_input);
+  ctx->set_needs_input_grad(need_grad_input);
+}
 }  // namespace
 
 const char CUSTOM_FORWARD_NAME[] = "forward";
@@ -268,34 +293,13 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   py::object ctx_obj = cls();
   auto ctx = py::cast<FunctionPtr>(ctx_obj);
   MS_EXCEPTION_IF_NULL(ctx);
-
-  const auto inputs_size = inputs.size();
-  context->inputs.reserve(inputs_size);
-  std::vector<bool> is_tensor_input;
-  is_tensor_input.reserve(inputs_size);
   std::vector<TensorMeta> inputs_meta;
-  inputs_meta.reserve(inputs_size);
-  py::tuple need_grad_input = py::tuple(inputs_size);
+  inputs_meta.reserve(inputs.size());
+  context->inputs.reserve(inputs.size());
 
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    const auto tensor = tensor::ConvertToTensor(inputs[i]);
-    if (tensor != nullptr) {
-      (void)is_tensor_input.emplace_back(true);
-      tensor->set_need_pipeline_sync(true);
-      need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
-      (void)context->inputs.emplace_back(tensor);
-      (void)inputs_meta.emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
-    } else {
-      (void)is_tensor_input.emplace_back(false);
-      need_grad_input[i] = py::bool_(false);
-      (void)context->inputs.emplace_back(kNone);
-      (void)inputs_meta.emplace_back();
-    }
-  }
-  ctx->set_is_tensor_input(is_tensor_input);
-  ctx->set_needs_input_grad(need_grad_input);
+  MarkInputsNeedGrad(context, ctx, inputs, &inputs_meta);
   // Get need grad before forward.
   bool need_do_grad = GradState::Get().RequiresGrad() && AutoGradUtil::NeedGrad(context->inputs);
   // Call forward function.
@@ -336,9 +340,9 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
             flatten_outputs[i] = tensor;
           }
         } else if (is_same_as_input) {
-          auto detach_tensor = std::make_shared<Tensor>(*tensor);
-          detach_tensor->set_auto_grad_meta_data(nullptr);
-          flatten_outputs[i] = detach_tensor;
+          tensor = std::make_shared<Tensor>(*tensor);
+          tensor->set_auto_grad_meta_data(nullptr);
+          flatten_outputs[i] = tensor;
         } else if (impl::GetViewAutogradMetaImpl(tensor) == nullptr) {
           tensor->set_auto_grad_meta_data(nullptr);
         }

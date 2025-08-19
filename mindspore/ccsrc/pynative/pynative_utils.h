@@ -208,7 +208,8 @@ struct PyBoost {
   }
 
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info);
-  static void BumpVersionAsync(const tensor::TensorPtr &tensor);
+  static void BumpVersionAsync(tensor::Version version);
+  static void UpdateVersionAsync(const autograd::ViewAutoGradMetaDataPtr &grad_meta, const tensor::Version &version);
   static ValuePtr OutputToValue(const tensor::TensorPtr &output) { return output; }
   static ValuePtr MultiOutputToValue(const std::vector<TensorPtr> &outputs) {
     std::vector<ValuePtr> output_values;

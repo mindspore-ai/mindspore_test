@@ -231,6 +231,7 @@ class MS_CORE_API Base : public std::enable_shared_from_this<Base> {
   std::shared_ptr<Derived> shared_from_base() {
     return std::static_pointer_cast<Derived>(shared_from_this());
   }
+
   UserData user_data_;
 };
 

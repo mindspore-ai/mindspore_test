@@ -393,11 +393,13 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
                                          autograd::CreationType creation_type, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(output);
   auto view_meta = autograd::impl::GetViewAutogradMetaImpl(src_tensor);
+  autograd::ViewAutoGradMetaDataPtr cur_view_meta;
   if (view_meta != nullptr) {
     output->set_version(src_tensor->version());
-    output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
+    cur_view_meta = std::make_shared<autograd::ViewAutoGradMetaData>(
       view_meta->view_info().Union(), requires_grad ? InputType::kOpOutput : InputType::kUnkown,
-      creation_type != autograd::CreationType::kDefault ? creation_type : view_meta->creation_type()));
+      creation_type != autograd::CreationType::kDefault ? creation_type : view_meta->creation_type());
+    output->set_auto_grad_meta_data(cur_view_meta);
   } else {
     if (src_tensor->auto_grad_meta_data() == nullptr) {
       // If base tensor is input of view op, we need construct auto_grad_meta_data for base tensor, to
@@ -422,8 +424,12 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
     base_tensor->set_device_address(nullptr);
     ViewInfo view_info(base_tensor);
     output->set_version(src_tensor->version());
-    output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
-      std::move(view_info), requires_grad ? InputType::kOpOutput : InputType::kUnkown, creation_type));
+    cur_view_meta = std::make_shared<autograd::ViewAutoGradMetaData>(
+      std::move(view_info), requires_grad ? InputType::kOpOutput : InputType::kUnkown, creation_type);
+    output->set_auto_grad_meta_data(cur_view_meta);
+  }
+  if (!requires_grad) {
+    PyNativeAlgo::PyBoost::UpdateVersionAsync(cur_view_meta, output->version());
   }
 }
 
