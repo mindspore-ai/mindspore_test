@@ -36,8 +36,8 @@ from functools import partial
 import math
 import sys
 import time
-import numpy as np
 from safetensors.numpy import save_file
+import numpy as np
 import google
 
 from mindspore.train.checkpoint_pb2 import Checkpoint
@@ -991,7 +991,11 @@ def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choi
 
         return _handle_shared_param_for_pipeline_parallel(save_obj)
 
-    return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+    if isinstance(save_obj, nn.Cell):
+        return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+
+    raise TypeError("For 'save_checkpoint', the argument 'save_obj' must be list、dict or nn.cell, "
+                    "but got {}.".format(type(save_obj)))
 
 
 def _save_param_list_data(data_list, key, param):
@@ -2728,85 +2732,77 @@ def convert_model(mindir_file, convert_file, file_format):
         export(net, *net_input, file_name=convert_file, file_format=file_format)
 
 
-def _load_ckpt_to_new_name_map(path, name_map=None):
-    return _load_and_transform(path, name_map, mindspore.load_checkpoint, None)
+def _load_file_and_convert_name(path, name_map=None, format="ckpt"):
+    """
+    Load file, during load convert name by name_map.
 
+    Args:
+        path (str): The file path.
+        name_map (dict): Convert the name of parameter by name_map.
+        format (str): The format of the file. Option: 'ckpt', 'safetensors'
 
-def _load_sf_to_new_name_map(path, name_map=None):
-    load_func = partial(mindspore.load_checkpoint, format="safetensors")
-    return _load_and_transform(path, name_map, load_func, None)
+    Returns:
+        Dict, key is parameter name, value is a Parameter or string.
+    """
+    if name_map is not None:
+        load_func = partial(mindspore.load_checkpoint, format=format)
+        return _load_and_transform(path, name_map, load_func)
+
+    return mindspore.load_checkpoint(path, format=format)
 
 
 def _process_file(file_info):
-    cur_ckpt_path, name_map, save_path, file = file_info
-    if name_map is not None:
-        param_dict = _load_ckpt_to_new_name_map(cur_ckpt_path, name_map)
+    """Rrocess file."""
+    cur_path, name_map, save_path, file, dst_format = file_info
+    if dst_format == "safetensors":
+        param_dict = _load_file_and_convert_name(cur_path, name_map, format="ckpt")
+        safetensors_filename = file.replace(".ckpt", ".safetensors")
+        dst_file = os.path.join(save_path, safetensors_filename)
+        mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
     else:
-        param_dict = mindspore.load_checkpoint(cur_ckpt_path)
-    safetensors_filename = file.replace(".ckpt", ".safetensors")
-    dst_file = os.path.join(save_path, safetensors_filename)
-    mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
+        param_dict = _load_file_and_convert_name(cur_path, name_map, format="safetensors")
+        ckpt_filename = file.replace(".safetensors", ".ckpt")
+        dst_file = os.path.join(save_path, ckpt_filename)
+        mindspore.save_checkpoint(param_dict, dst_file)
 
 
-def _process_file_safetensors(file_info):
-    cur_safe_path, name_map, save_path, file = file_info
-    if name_map is not None:
-        param_dict = _load_sf_to_new_name_map(cur_safe_path, name_map)
-    else:
-        param_dict = mindspore.load_checkpoint(cur_safe_path, format="safetensors")
-    ckpt_filename = file.replace(".safetensors", ".ckpt")
-    dst_file = os.path.join(save_path, ckpt_filename)
-    mindspore.save_checkpoint(param_dict, dst_file)
-
-
-def _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map):
+def _gather_all_tasks(file_path, save_path, file_name_regex, name_map, dst_format="ckpt"):
     """gather transform rank together"""
-    tasks = []
+    if dst_format == "ckpt":
+        cur_file_suffix = ".safetensors"
+    else:
+        cur_file_suffix = ".ckpt"
+
+    tasks_list = []
     for root, dirs, _ in os.walk(file_path):
         if root != file_path:
             continue
 
         rank_dirs = [d for d in dirs if d.startswith('rank')]
         if not rank_dirs:
-            raise ValueError(
-                f"For 'safetensors_to_ckpt', no directories starting with 'rank' found in {file_path}")
+            if dst_format == "safetensors":
+                raise ValueError(
+                    f"For 'ckpt_to_safetensors', no directories starting with 'rank' found in {file_path}.")
+            if dst_format == "ckpt":
+                raise ValueError(
+                    f"For 'safetensors_to_ckpt', no directories starting with 'rank' found in {file_path}.")
+
+            raise ValueError(f"For '_gather_all_tasks', error args 'format': {dst_format}.")
 
         for rank_dir in rank_dirs:
             rank_dir_path = os.path.join(root, rank_dir)
-            dst_root = os.path.join(save_path,
-                                    os.path.relpath(rank_dir_path, file_path)) if save_path else rank_dir_path
+            if save_path is not None:
+                dst_root = os.path.join(save_path, os.path.relpath(rank_dir_path, file_path))
+            else:
+                dst_root = rank_dir_path
+
             os.makedirs(dst_root, exist_ok=True)
-            tasks.extend(
-                (os.path.join(rank_dir_path, file), name_map, dst_root, file)
-                for file in os.listdir(rank_dir_path)
-                if file.endswith(".safetensors") and (file_name_regex is None or re.findall(file_name_regex, file))
-            )
-    return tasks
 
+            for file in os.listdir(rank_dir_path):
+                if file.endswith(cur_file_suffix) and (file_name_regex is None or re.search(file_name_regex, file)):
+                    tasks_list.append((os.path.join(rank_dir_path, file), name_map, dst_root, file, dst_format))
 
-def _gather_tasks_covert(file_path, save_path, file_name_regex, name_map):
-    """gather transform rank together"""
-    tasks = []
-    for root, dirs, _ in os.walk(file_path):
-        if root != file_path:
-            continue
-
-        rank_dirs = [d for d in dirs if d.startswith('rank')]
-        if not rank_dirs:
-            raise ValueError(
-                f"For 'ckpt_to_safetensors', no directories starting with 'rank' found in {file_path}")
-
-        for rank_dir in rank_dirs:
-            rank_dir_path = os.path.join(root, rank_dir)
-            dst_root = os.path.join(save_path,
-                                    os.path.relpath(rank_dir_path, file_path)) if save_path else rank_dir_path
-            os.makedirs(dst_root, exist_ok=True)
-            tasks.extend(
-                (os.path.join(rank_dir_path, file), name_map, dst_root, file)
-                for file in os.listdir(rank_dir_path)
-                if file.endswith(".ckpt") and (file_name_regex is None or re.findall(file_name_regex, file))
-            )
-    return tasks
+    return tasks_list
 
 
 def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
@@ -2856,9 +2852,9 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
             f"For 'ckpt_to_safetensors', the type of 'name_map' must be a directory, but got '{type(name_map)}'")
 
     if is_dir:
-        tasks = _gather_tasks_covert(file_path, save_path, file_name_regex, name_map)
+        tasks_list = _gather_all_tasks(file_path, save_path, file_name_regex, name_map, dst_format="safetensors")
         with mp.Pool(processes=processes_num) as pool:
-            list(_progress_bar(pool.imap(_process_file, tasks), total=len(tasks)))
+            list(_progress_bar(pool.imap(_process_file, tasks_list), total=len(tasks_list)))
     elif is_file:
         if not file_path.endswith(".ckpt"):
             raise ValueError(f"For 'ckpt_to_safetensors', the input file must be a .ckpt file, but got {file_path}")
@@ -2867,10 +2863,7 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        if name_map is not None:
-            param_dict = _load_ckpt_to_new_name_map(file_path, name_map)
-        else:
-            param_dict = mindspore.load_checkpoint(file_path)
+        param_dict = _load_file_and_convert_name(file_path, name_map, format="ckpt")
 
         safetensors_filename = os.path.basename(file_path).replace(".ckpt", ".safetensors")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), safetensors_filename)
@@ -2921,9 +2914,9 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
             f"For 'safetensors_to_ckpt', the type of 'name_map' must be a directory, but got '{type(name_map)}'")
 
     if is_dir:
-        tasks = _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map)
+        tasks_list = _gather_all_tasks(file_path, save_path, file_name_regex, name_map, dst_format="ckpt")
         with mp.Pool(processes=processes_num) as pool:
-            list(_progress_bar(pool.imap(_process_file_safetensors, tasks), total=len(tasks)))
+            list(_progress_bar(pool.imap(_process_file, tasks_list), total=len(tasks_list)))
     elif is_file:
         if not file_path.endswith(".safetensors"):
             raise ValueError(
@@ -2933,10 +2926,7 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        if name_map is not None:
-            param_dict = _load_sf_to_new_name_map(file_path, name_map)
-        else:
-            param_dict = mindspore.load_checkpoint(file_path, format="safetensors")
+        param_dict = _load_file_and_convert_name(file_path, name_map, format="safetensors")
 
         ckpt_filename = os.path.basename(file_path).replace(".safetensors", ".ckpt")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), ckpt_filename)
