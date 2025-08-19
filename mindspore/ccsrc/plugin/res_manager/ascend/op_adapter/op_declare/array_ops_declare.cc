@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -185,6 +186,7 @@ OUTPUT_MAP(Identity) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(IdentityLoad, kNameLoad, ADPT_DESC(Identity))
 REG_ADPT_DESC(IdentityListGetItem, kNameListGetItem, ADPT_DESC(Identity))
 REG_ADPT_DESC(IdentityIdentity, kNameIdentity, ADPT_DESC(Identity))
+REG_ADPT_DESC(IdentityFormatCast, prim::kPrimFormatCast->name(), ADPT_DESC(Identity))
 
 // IdentityN
 INPUT_MAP(IdentityN) = EMPTY_INPUT_MAP;
