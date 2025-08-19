@@ -63,7 +63,7 @@ void GmmV2AscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTupleP
   static const auto act_type = std::make_shared<Int64Imm>(0);
   auto out = grouped_matmul_v4(x_tensor_list, weight_tensor_list, bias_tensor_list, std::nullopt, std::nullopt,
                                std::nullopt, std::nullopt, std::nullopt, group_list, std::nullopt, std::nullopt,
-                               std::nullopt, split_item, group_type, group_list_type, act_type);
+                               std::nullopt, split_item, group_type, group_list_type, act_type, std::nullopt);
   op->set_outputs(out);
   MS_LOG(DEBUG) << "GMMV2 Func Op launch end.";
 }

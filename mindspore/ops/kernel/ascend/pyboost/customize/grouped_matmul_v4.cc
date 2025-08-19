@@ -60,13 +60,14 @@ void GroupedMatmulV4AscendCustomize(
   const std::optional<ValueTuplePtr> &activation_input_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_offset_tensor_list, const Int64ImmPtr &split_item_imm,
-  const Int64ImmPtr &group_type_imm, const Int64ImmPtr &group_list_type_imm, const Int64ImmPtr &act_type_imm) {
-  MS_LOG(DEBUG) << "Call GroupedMatmulExt start";
+  const Int64ImmPtr &group_type_imm, const Int64ImmPtr &group_list_type_imm, const Int64ImmPtr &act_type_imm,
+  const std::optional<Int64ImmPtr> &output_dtype_imm) {
+  MS_LOG(DEBUG) << "Call GroupedMatmulV4 start";
   OpRunner::InferOpOutput(op, x_tensor_list, weight_tensor_list, bias_tensor_list, scale_tensor_list,
                           offset_tensor_list, antiquant_scale_tensor_list, antiquant_offset_tensor_list,
                           pre_token_scale_tensor_list, group_list, activation_input_tensor_list,
                           activation_quant_scale_tensor_list, activation_quant_offset_tensor_list, split_item_imm,
-                          group_type_imm, group_list_type_imm, act_type_imm);
+                          group_type_imm, group_list_type_imm, act_type_imm, output_dtype_imm);
 
   // Convert ValuePtr to c++ scalar
   std::vector<TensorPtr> x = ConvertValueTupleToVector<TensorPtr>(x_tensor_list);
@@ -116,7 +117,7 @@ void GroupedMatmulV4AscendCustomize(
                    antiquant_scale, antiquant_offset, pre_token_scale, group_list, activation_input,
                    activation_quant_scale, activation_quant_offset, split_item, group_type, group_list_type, act_type,
                    outputs, activation_feature_out, dyn_quant_scale_out);
-      MS_LOG(DEBUG) << "Launch GroupedMatmulExt end";
+      MS_LOG(DEBUG) << "Launch GroupedMatmulV4 end";
     }));
 }
 }  // namespace pyboost
