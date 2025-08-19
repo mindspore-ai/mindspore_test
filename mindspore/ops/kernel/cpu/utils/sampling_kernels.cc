@@ -20,11 +20,11 @@
 
 namespace mindspore {
 namespace kernel {
-static const std::map<std::string, KernelType> kKernelTypeMap = {
-  {"lanczos1", Lanczos1}, {"lanczos3", Lanczos3}, {"lanczos5", Lanczos5},   {"gaussian", Gaussian},
-  {"box", Box},           {"triangle", Triangle}, {"keyscubic", KeysCubic}, {"mitchellcubic", MitchellCubic}};
+KernelType GetSamplingKernelType(const std::string &str) {
+  static const std::map<std::string, KernelType> kKernelTypeMap = {
+    {"lanczos1", Lanczos1}, {"lanczos3", Lanczos3}, {"lanczos5", Lanczos5},   {"gaussian", Gaussian},
+    {"box", Box},           {"triangle", Triangle}, {"keyscubic", KeysCubic}, {"mitchellcubic", MitchellCubic}};
 
-KernelType KernelTypeFromString(const std::string &str) {
   auto iter = kKernelTypeMap.find(str);
   if (iter == kKernelTypeMap.end()) {
     return TypeEnd;
