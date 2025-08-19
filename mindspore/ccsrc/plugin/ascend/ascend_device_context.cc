@@ -51,7 +51,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "acl/acl_dump.h"
-#include "tools/dump/tensordump_control.h"
+#include "tools/dump/tensordump.h"
 
 namespace mindspore {
 namespace device {
@@ -94,7 +94,7 @@ void AscendDeviceContext::InitializeForAclop() const {
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
-  datadump::TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
+  datadump::TensorDumpManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
   initialized_aclop_ = true;
   MS_LOG(INFO) << "End initializing for acl.";
 }

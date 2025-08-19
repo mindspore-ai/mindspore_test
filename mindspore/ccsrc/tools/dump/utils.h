@@ -17,13 +17,19 @@
 #ifndef MINDSPORE_CCSRC_DEBUG_DUMP_UTILS_H_
 #define MINDSPORE_CCSRC_DEBUG_DUMP_UTILS_H_
 
+#include <string>
+
 #include "utils/ms_utils.h"
 #include "include/common/visible.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
 namespace datadump {
 
 DUMP_EXPORT std::uint32_t GetRankID();
+DUMP_EXPORT bool StartsWith(const std::string &, const std::string &);
+DUMP_EXPORT bool EndsWith(const std::string &, const std::string &);
+DUMP_EXPORT void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
 
 }  // namespace datadump
 }  // namespace mindspore
