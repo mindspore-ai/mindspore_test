@@ -47,6 +47,70 @@ mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 mindspore::HashMap<std::string, FuncGraphPtr> original_bprop_graph;
 std::set<std::string> check_invalid_dout_bprop_graph;
+mindspore::HashMap<std::string, FuncGraphPtr> origin_grad_graph_;
+mindspore::HashMap<std::string, mindspore::HashMap<size_t, FuncGraphPtr>> filtered_grad_graph;
+
+std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key) {
+  auto iter = pass_grad_graph_.find(key);
+  if (iter == pass_grad_graph_.end()) {
+    return std::make_pair(nullptr, nullptr);
+  }
+  return iter->second;
+}
+
+void StoreOriginGradGraph(const std::string &key, const FuncGraphPtr &fg) {
+  auto iter = origin_grad_graph_.find(key);
+  if (iter != origin_grad_graph_.end()) {
+    MS_LOG(EXCEPTION) << "Key " << key << " has already set origin graph.";
+  }
+  origin_grad_graph_[key] = fg;
+}
+
+FuncGraphPtr GetOriginGradGraph(const std::string &key) {
+  auto iter = origin_grad_graph_.find(key);
+  if (iter == origin_grad_graph_.end()) {
+    MS_LOG(EXCEPTION) << "Key " << key << " can not find origin graph.";
+  }
+  return iter->second;
+}
+
+bool HasOriginGradGraph(const std::string &key) {
+  auto iter = origin_grad_graph_.find(key);
+  return iter != origin_grad_graph_.end();
+}
+
+size_t StoreFilteredGradGraph(const std::string &cache_key, size_t hash_key, const FuncGraphPtr &fg) {
+  auto cache_key_iter = filtered_grad_graph.find(cache_key);
+  if (cache_key_iter == filtered_grad_graph.end()) {
+    mindspore::HashMap<size_t, FuncGraphPtr> new_filtered_map = {
+      {hash_key, fg},
+    };
+    filtered_grad_graph[cache_key] = new_filtered_map;
+    return 1;
+  }
+  auto &cur_filtered_map = cache_key_iter->second;
+  auto iter = cur_filtered_map.find(hash_key);
+  if (iter != cur_filtered_map.end()) {
+    MS_LOG(EXCEPTION) << "Hash key " << hash_key << " has already set filtered grad graph.";
+  }
+  cur_filtered_map[hash_key] = fg;
+  return cur_filtered_map.size();
+}
+
+FuncGraphPtr GetFilteredGradGraph(const std::string &cache_key, size_t hash_key) {
+  auto cache_key_iter = filtered_grad_graph.find(cache_key);
+  if (cache_key_iter == filtered_grad_graph.end()) {
+    MS_LOG(INFO) << "Can not find cache key " << cache_key << " in filtered_grad_graph";
+    return nullptr;
+  }
+  const auto &cur_filter_map = cache_key_iter->second;
+  auto iter = cur_filter_map.find(hash_key);
+  if (iter == cur_filter_map.end()) {
+    MS_LOG(INFO) << "Can not find filtered grad graph by hash Key " << hash_key;
+    return nullptr;
+  }
+  return iter->second;
+}
 
 namespace {
 using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
@@ -164,8 +228,12 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
                        const std::string &cache_key) {
   pipeline::ResourcePtr resource;
   const auto &it = jit_forward_resource.find(cache_key);
-  if (it == jit_forward_resource.end()) {
-    if (cache_hit) {
+  constexpr auto need_repeat_task_emit_key = "need_repeat_task_emit";
+  bool need_repeat_task_emit = fg->has_flag(need_repeat_task_emit_key);
+  if (it == jit_forward_resource.end() || need_repeat_task_emit) {
+    if (need_repeat_task_emit) {
+      fg->erase_flag(need_repeat_task_emit_key);
+    } else if (cache_hit) {
       MS_LOG(WARNING) << "Can not find cached resource for func graph: " << fg->ToString();
     }
     resource = std::make_shared<pipeline::Resource>();
@@ -418,6 +486,8 @@ void ClearGradCache() {
   jit_forward_resource.clear();
   original_bprop_graph.clear();
   check_invalid_dout_bprop_graph.clear();
+  origin_grad_graph_.clear();
+  filtered_grad_graph.clear();
 }
 
 void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads) {
