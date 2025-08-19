@@ -20,7 +20,7 @@
 #include "tools/dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 

@@ -35,10 +35,10 @@
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
 #ifdef ENABLE_DUMP_IR
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "tools/profiler/profiler.h"

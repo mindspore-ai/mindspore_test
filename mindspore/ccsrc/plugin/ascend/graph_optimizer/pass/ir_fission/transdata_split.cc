@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/core/include/utils/trace_info.h"
 

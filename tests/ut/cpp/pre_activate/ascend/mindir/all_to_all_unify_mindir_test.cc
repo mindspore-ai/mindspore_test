@@ -17,7 +17,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/operator/ops.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/optimizer.h"

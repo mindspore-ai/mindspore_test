@@ -21,7 +21,7 @@
 #include "utils/log_adapter.h"
 #include "frontend/jit/ps/parse/parse.h"
 #include "frontend/jit/ps/resource.h"
-#include "include/common/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 
 namespace mindspore {
 namespace parse {

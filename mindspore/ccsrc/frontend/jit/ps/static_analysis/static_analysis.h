@@ -43,7 +43,7 @@
 #include "abstract/analysis_context.h"
 #include "abstract/abstract_function.h"
 #include "frontend/jit/ps/parse/parse.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace abstract {

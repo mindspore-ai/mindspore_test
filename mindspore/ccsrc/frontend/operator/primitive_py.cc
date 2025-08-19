@@ -23,7 +23,7 @@
 #include "pybind11/pytypes.h"
 #include "include/common/pybind_api/api_register.h"
 #include "frontend/jit/ps/parse/parse_flags.h"
-#include "frontend/operator/base_ref_py.h"
+#include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "utils/convert_utils_base.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "utils/ms_context.h"

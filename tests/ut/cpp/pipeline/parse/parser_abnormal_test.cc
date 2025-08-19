@@ -20,7 +20,7 @@
 #include "utils/log_adapter.h"
 #include "utils/profile.h"
 #include "frontend/jit/ps/parse/parse.h"
-#include "include/common/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 
 namespace mindspore {
 namespace parse {

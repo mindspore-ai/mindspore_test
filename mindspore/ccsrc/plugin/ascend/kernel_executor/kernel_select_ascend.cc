@@ -39,7 +39,7 @@
 #include "kernel/ascend/acl_ir/op_api_util.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "include/common/utils/ms_device_shape_transfer.h"

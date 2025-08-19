@@ -23,8 +23,8 @@
 #include "ir/primitive.h"
 #include "ir/graph_utils.h"
 #include "ir/tensor.h"
-#include "include/common/ir_dump/anf_dump_utils.h"
-#include "include/common/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "include/common/debug/common.h"
 
 namespace mindspore {

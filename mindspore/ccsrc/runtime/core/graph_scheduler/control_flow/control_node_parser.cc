@@ -31,7 +31,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "abstract/abstract_function.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

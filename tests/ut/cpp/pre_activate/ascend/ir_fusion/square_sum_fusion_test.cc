@@ -17,7 +17,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion/square_sum_fusion.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace opt {

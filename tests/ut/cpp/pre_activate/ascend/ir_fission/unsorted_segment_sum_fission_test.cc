@@ -17,7 +17,7 @@
 #include "plugin/ascend/graph_optimizer/pass/ir_fission/unsorted_segment_sum_d_fission.h"
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 
 namespace mindspore {
 namespace opt {

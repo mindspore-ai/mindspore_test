@@ -28,7 +28,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "ir/tensor.h"
 #include "include/common/debug/common.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"
 #include "utils/log_adapter.h"

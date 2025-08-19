@@ -22,7 +22,7 @@
 #include "frontend/jit/ps/pipeline.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"
-#include "include/common/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #ifdef ENABLE_D
 #include "mindspore/ccsrc/backend/ge_backend/graph_ir/callbacks_ge.h"
 #endif

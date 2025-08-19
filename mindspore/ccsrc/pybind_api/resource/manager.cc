@@ -40,7 +40,7 @@
 #include "utils/llm_manager.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/interpret_node_recorder.h"
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "frontend/jit/ps/pipeline.h"

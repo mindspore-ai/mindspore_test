@@ -17,7 +17,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"

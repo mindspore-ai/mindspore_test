@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_DRAW_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_DRAW_H_
+#ifndef MINDSPORE_CCSRC_UTILS_IR_DUMP_DRAW_H_
+#define MINDSPORE_CCSRC_UTILS_IR_DUMP_DRAW_H_
 
 #include <fstream>
 #include <memory>
@@ -101,4 +101,4 @@ COMMON_EXPORT void DrawUserFuncGraph(const std::string &filename, const FuncGrap
 }  // namespace draw
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_DRAW_H_
+#endif  // MINDSPORE_CCSRC_UTILS_IR_DUMP_DRAW_H_

@@ -27,7 +27,7 @@
 #include "ir/tensor_new.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "include/common/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"

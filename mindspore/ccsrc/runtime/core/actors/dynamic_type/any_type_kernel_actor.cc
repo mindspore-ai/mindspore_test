@@ -18,7 +18,7 @@
 #include <set>
 #include <unordered_map>
 #include <functional>
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/fallback.h"

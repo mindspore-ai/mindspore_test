@@ -36,7 +36,7 @@
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/fallback.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

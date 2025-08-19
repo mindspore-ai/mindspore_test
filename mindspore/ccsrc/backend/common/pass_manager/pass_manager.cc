@@ -17,7 +17,7 @@
 #include <deque>
 #include <string>
 #include "utils/ms_context.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "backend/common/pass_manager/cache_manager.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 
