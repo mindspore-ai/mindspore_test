@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,6 @@
 #include "base/effect_info.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
-#include "ir/func_graph_transform.h"
-#include "ir/func_graph_base.h"
 #include "ir/dtype/amp.h"
 #include "abstract/abstract_value.h"
 #include "symbolic_shape/symbol_engine.h"
@@ -80,6 +78,149 @@ using AnfNodeCounterMap = CounterOrderedMap<AnfNodePtr>;
 using CNodeIndexCounterMap = CounterOrderedMap<CNodeIndexPairPtr, CNodeIndexHasher, CNodeIndexEqual>;
 
 using FuncGraphMap = OrderedMap<FuncGraphPtr, int>;
+
+class MS_CORE_API FuncGraphTransform {
+ public:
+  enum Type { kGtPrimitive, kGtFuncGraph };
+
+  explicit FuncGraphTransform(const PrimitivePtr &prim, const FuncGraphPtr &func_graph = nullptr,
+                              const CNodePtr &primal_cnode = nullptr)
+      : prim_(prim), func_graph_(FuncGraphWeakPtr(func_graph)), primal_cnode_(primal_cnode) {}
+
+  explicit FuncGraphTransform(const FuncGraphPtr &func_graph, const PrimitivePtr &prim = func_graph_prim_,
+                              const CNodePtr &primal_cnode = nullptr);
+
+  explicit FuncGraphTransform(const CNodePtr &primal_cnode, const PrimitivePtr &prim = func_graph_prim_,
+                              const FuncGraphPtr &func_graph = nullptr)
+      : prim_(prim), func_graph_(FuncGraphWeakPtr(func_graph)), primal_cnode_(primal_cnode) {}
+
+  FuncGraphTransform(const FuncGraphTransform &t)
+      : prim_(t.prim_), func_graph_(t.func_graph_), primal_cnode_(t.primal_cnode_) {}
+
+  ~FuncGraphTransform() = default;
+
+  Type type() const {
+    if (IsFuncGraph()) {
+      return kGtFuncGraph;
+    } else {
+      return kGtPrimitive;
+    }
+  }
+
+  bool IsPrimitive() const { return (func_graph_.lock() == nullptr); }
+  bool IsFuncGraph() const { return (func_graph_.lock() != nullptr); }
+  FuncGraphPtr func_graph() const { return func_graph_.lock(); }
+  PrimitivePtr primitive() const { return prim_; }
+  CNodePtr primal_cnode() const { return primal_cnode_; }
+
+  FuncGraphTransform &operator=(const FuncGraphTransform &t) {
+    if (this != &t) {
+      prim_ = t.prim_;
+      func_graph_ = t.func_graph_;
+      primal_cnode_ = t.primal_cnode_;
+    }
+    return *this;
+  }
+
+ private:
+  PrimitivePtr prim_;
+  // FuncGraph will be hold by FuncGraphManager, so weak_ptr is enough here.
+  // And use weak_ptr can break the reference cycle between "primal" and "grad" graph in
+  // FPropRemapper::FinalizeGraph().
+  FuncGraphWeakPtr func_graph_;
+  static const PrimitivePtr func_graph_prim_;
+  CNodePtr primal_cnode_;
+};
+
+class FuncGraphBase;
+using FuncGraphBasePtr = std::shared_ptr<FuncGraphBase>;
+class MS_CORE_API FuncGraphLoopBreaker {
+ public:
+  ~FuncGraphLoopBreaker();
+
+  static FuncGraphLoopBreaker &Inst();
+
+  void RegFuncGraphBase(FuncGraphBase *graph) {
+    std::lock_guard<std::mutex> lock_set(func_mutex_);
+    (void)func_set_.insert(graph);
+  }
+  void UnRegFuncGraphBase(FuncGraphBase *graph) {
+    std::lock_guard<std::mutex> lock_set(func_mutex_);
+    (void)func_set_.erase(graph);
+  }
+
+  void BreakLoop();
+
+  void CleanMetaFuncGraphs();
+
+  void CleanUnusedFuncGraphs(const std::string &phase);
+
+  void ClearCellGraphs(const std::string &phase);
+
+  void Dump() const;
+
+ private:
+  FuncGraphLoopBreaker() = default;
+  std::set<FuncGraphBase *> func_set_;
+  std::mutex func_mutex_;
+};
+
+class FuncGraphChecker {
+ public:
+  FuncGraphChecker() = default;
+  template <typename... Ts>
+  void AddCheckFunc(const std::shared_ptr<std::function<bool(const Ts &... args)>> &func) {
+    func_ = func;
+  }
+
+  template <typename... Ts>
+  bool Execute(const Ts &... args) const {
+    if (func_ == nullptr) {
+      return true;
+    }
+    auto func = reinterpret_cast<std::function<bool(const Ts &... args)> *>(func_.get());
+    return (*func)(args...);
+  }
+
+ private:
+  std::shared_ptr<void> func_{nullptr};
+};
+
+class FuncGraphBase : public Value {
+ public:
+  FuncGraphBase() {
+    FuncGraphLoopBreaker::Inst().RegFuncGraphBase(this);
+    reg_flg_ = true;
+  }
+
+  ~FuncGraphBase() override {
+    if (reg_flg_) {
+      FuncGraphLoopBreaker::Inst().UnRegFuncGraphBase(this);
+    }
+  }
+  MS_DECLARE_PARENT(FuncGraphBase, Value);
+
+  // Clear the member of FuncGraph to break loop
+  virtual void DoBreakLoop() = 0;
+
+  bool has_side_effect_node() const { return has_side_effect_node_; }
+  void set_has_side_effect_node(bool has_side_effect_node) { has_side_effect_node_ = has_side_effect_node; }
+
+  MS_CORE_API const FuncGraphChecker &GetChecker(const std::string &checker_name);
+
+  MS_CORE_API void AddChecker(const std::string &checker_name, const std::shared_ptr<FuncGraphChecker> &new_checker);
+
+ protected:
+  friend FuncGraphLoopBreaker;
+  bool reg_flg_{false};
+  // If the subclass (such as FuncGraph) has started destructing.
+  bool subclass_destruct_flag_{false};
+
+ private:
+  // If the nodes or their callee's nodes contain Depend CNode with isolated side-effect node.
+  bool has_side_effect_node_{false};
+  HashMap<std::string, std::shared_ptr<FuncGraphChecker>> checkers_;
+};
 
 class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
  public:

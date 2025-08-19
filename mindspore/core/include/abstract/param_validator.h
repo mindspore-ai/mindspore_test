@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,12 +71,6 @@ void CheckShapeAllPositive(const std::string &op, const ShapeVector &shape);
 
 MS_CORE_API void CheckShapeAnyAndPositive(const std::string &op, const ShapeVector &shape);
 
-std::vector<int64_t> CheckAttrIntOrTuple(const std::string &op, const ValuePtr &attr, const size_t start_idx,
-                                         const size_t num_element);
-
-std::string CheckAttrStringSet(const std::string &op, const ValuePtr &attr, const std::string &attr_name,
-                               const std::set<std::string> &val_set);
-
 MS_CORE_API void CheckRequiredArgsSize(const std::string &op, const AbstractBasePtrList &args_abs_list,
                                        size_t size_expect);
 
@@ -115,21 +109,6 @@ std::shared_ptr<T> CheckArg(const std::string &op, const AbstractBasePtrList &ar
                             << ", but got " << args_abs_list[index]->BuildType()->ToString() << ".";
   }
   return arg;
-}
-
-// check if each element in args_abs is type T, and can be joined.
-template <typename T>
-void CheckArgsSpec(const AbstractBasePtrList &args_list) {
-  for (const auto &arg : args_list) {
-    MS_EXCEPTION_IF_NULL(arg);
-    if (!arg->isa<T>()) {
-      auto type = arg->BuildType();
-      MS_EXCEPTION_IF_NULL(type);
-      MS_EXCEPTION(TypeError) << "Expected type " << ReportNameTraits<T>::name << ", but got " << type->ToString()
-                              << ".";
-    }
-  }
-  (void)AbstractJoin(args_list);
 }
 }  // namespace abstract
 }  // namespace mindspore

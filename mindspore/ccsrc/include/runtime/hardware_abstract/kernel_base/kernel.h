@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"
-#include "ir/kernel_tensor_value.h"
 #include "ops/base_operator.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
