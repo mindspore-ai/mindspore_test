@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
-#include "plugin/device/ascend/kernel/host/host_kernel_build.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 
 namespace mindspore {
 namespace kernel {

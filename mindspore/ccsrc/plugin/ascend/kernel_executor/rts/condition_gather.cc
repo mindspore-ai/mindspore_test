@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/condition_switch.h"
+#include "plugin/ascend/kernel_executor/rts/condition_gather.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {
-ConditionSwitchKernel::~ConditionSwitchKernel() {}
+ConditionGatherKernel::~ConditionGatherKernel() {}
 
-bool ConditionSwitchKernel::Init(const AnfNodePtr &anf_node) {
+bool ConditionGatherKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
@@ -29,7 +29,7 @@ bool ConditionSwitchKernel::Init(const AnfNodePtr &anf_node) {
   return true;
 }
 
-bool ConditionSwitchKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
+bool ConditionGatherKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
                                    const std::vector<KernelTensor *> &, void *) {
   return true;
 }

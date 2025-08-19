@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
 
 namespace mindspore {
 namespace kernel {

@@ -50,6 +50,8 @@ file(GLOB ASCEND_SRC_LIST
   "${ASCEND_PLUGIN_PATH}/graph_optimizer/somas/*.cc"
   "${ASCEND_PLUGIN_PATH}/graph_optimizer/stream_assign/*.cc"
   "${ASCEND_PLUGIN_PATH}/kernel_executor/*.cc"
+  "${ASCEND_PLUGIN_PATH}/kernel_executor/rts/*.cc"
+  "${ASCEND_PLUGIN_PATH}/kernel_executor/host/*.cc"
   "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/mindir/*.cc"
   "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/heterogeneous/*.cc"
   "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ascend_pass_optimization.cc"

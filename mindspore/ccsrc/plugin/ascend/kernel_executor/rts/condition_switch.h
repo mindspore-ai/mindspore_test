@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+
+#include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
 
 namespace mindspore {
 namespace kernel {
-class ConditionGatherKernel : public RtKernel {
+class ConditionSwitchKernel : public RtKernel {
  public:
-  ConditionGatherKernel() = default;
-  ~ConditionGatherKernel() override;
+  ConditionSwitchKernel() = default;
+  ~ConditionSwitchKernel() override;
   bool Init(const AnfNodePtr &anf_node) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *) override;
 };
 
-MS_REG_RTKERNEL(conditiongather, ConditionGatherKernel);
+MS_REG_RTKERNEL(conditionswitch, ConditionSwitchKernel);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/rt_kernel_info.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel_info.h"
 #include <unordered_map>
 #include <algorithm>
 #include "mindspore/ops/op_def/ascend_op_name.h"

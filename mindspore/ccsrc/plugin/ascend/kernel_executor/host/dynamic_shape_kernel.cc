@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/host/dynamic_shape_kernel.h"
+#include "plugin/ascend/kernel_executor/host/dynamic_shape_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

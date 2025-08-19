@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_SEND_H
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
 #include "plugin/ascend/res_manager/event/ascend_event.h"
 
 namespace mindspore {

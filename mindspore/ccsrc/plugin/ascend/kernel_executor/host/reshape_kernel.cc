@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/host/reshape_kernel.h"
+#include "plugin/ascend/kernel_executor/host/reshape_kernel.h"
 
 #include <algorithm>
 #include <functional>

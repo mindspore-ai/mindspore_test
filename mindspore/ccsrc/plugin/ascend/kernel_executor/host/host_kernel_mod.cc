@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/host/host_kernel_mod.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 
 #include "kernel/framework_utils.h"
 
