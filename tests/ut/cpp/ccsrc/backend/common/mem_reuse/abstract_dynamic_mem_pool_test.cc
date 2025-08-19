@@ -151,6 +151,45 @@ TEST_F(TestMemBufAllocator, test_allocate_free) {
   merge_mem_bufs.clear();
 }
 
+
+/// Feature: test search logic for MemBufAllocator.
+/// Description: test search available mem buf.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestMemBufAllocator, test_search_available_mem_buf) {
+  auto allocator = GenerateMemBufAllocatorPtr();
+  auto ptr_1 = allocator->Malloc(1 << 10);
+  auto ptr_2 = allocator->Malloc(1 << 10);
+  auto ptr_3 = allocator->Malloc(1 << 10);
+  bool ret = allocator->Free(ptr_2);
+  // used, idle, used
+  EXPECT_TRUE(ptr_1->status_ == MemBufStatus::kMemBufUsed);
+  EXPECT_TRUE(ptr_2->status_ == MemBufStatus::kMemBufIdle);
+  EXPECT_TRUE(ptr_3->status_ == MemBufStatus::kMemBufUsed);
+  auto free_size_pair = allocator->FreeIdleMemsByEagerFree();
+  EXPECT_EQ(free_size_pair.first, 1 << 10);
+  EXPECT_TRUE(ptr_1->status_ == MemBufStatus::kMemBufUsed);
+  EXPECT_TRUE(ptr_2->status_ == MemBufStatus::kMemBufEagerFree);
+  EXPECT_TRUE(ptr_3->status_ == MemBufStatus::kMemBufUsed);
+  // used, eager_free, used
+  allocator->Free(ptr_1);
+  // idle, eager_free, used 
+  auto mem_buf = allocator->Malloc(2 << 10);
+  // used, used
+  EXPECT_EQ(ptr_3->prev_, mem_buf);
+  EXPECT_TRUE(ptr_3->next_ != nullptr && ptr_3->next_->status_ == MemBufStatus::kMemBufEagerFree);
+  ptr_1 = allocator->Malloc(1 << 10);
+  ptr_2 = allocator->Malloc(1 << 10);
+  // used, used, + used(ptr_1), + used(ptr_2)
+  auto ptr_4 = allocator->Malloc(2 << 10);
+  // used, used, + used(ptr_1), + used(ptr_2), + used(ptr_4)
+  allocator->Free(ptr_2);
+  allocator->Free(ptr_4);
+  allocator->FreeIdleMemsByEagerFree();
+  allocator->Free(ptr_1);
+  mem_buf = allocator->Malloc(2 << 10);
+  EXPECT_EQ(ptr_3->next_, mem_buf);
+}
+
 class LinearDynamicMemPool : public AbstractDynamicMemPool {
  public:
   LinearDynamicMemPool() { SetEnableVmm(true); }
@@ -268,10 +307,10 @@ TEST_F(TestAbstractDynamicMemPool, test_basic_allocation) {
 /// Expectation: all interface work normally and can not throw exception.
 TEST_F(TestAbstractDynamicMemPool, test_alloc_continuous_tensor_mem_with_aligned_size) {
   auto mem_pool = std::make_shared<LinearDynamicMemPool>();
-  std::vector<size_t> alignd_sizes{1 * kDynamicMemAlignSize, 2 * kDynamicMemAlignSize, 3 * kDynamicMemAlignSize,
+  std::vector<size_t> aligned_sizes{1 * kDynamicMemAlignSize, 2 * kDynamicMemAlignSize, 3 * kDynamicMemAlignSize,
                                    4 * kDynamicMemAlignSize};
-  const auto &aligned_addresses = mem_pool->AllocContinuousTensorMem(alignd_sizes, kDefaultStreamIndex);
-  EXPECT_EQ(aligned_addresses.size(), alignd_sizes.size());
+  const auto &aligned_addresses = mem_pool->AllocContinuousTensorMem(aligned_sizes, kDefaultStreamIndex);
+  EXPECT_EQ(aligned_addresses.size(), aligned_sizes.size());
   EXPECT_EQ(reinterpret_cast<size_t>(aligned_addresses[0]) + kDynamicMemAlignSize,
             reinterpret_cast<size_t>(aligned_addresses[1]));
   EXPECT_EQ(reinterpret_cast<size_t>(aligned_addresses[1]) + 2 * kDynamicMemAlignSize,
@@ -280,16 +319,16 @@ TEST_F(TestAbstractDynamicMemPool, test_alloc_continuous_tensor_mem_with_aligned
             reinterpret_cast<size_t>(aligned_addresses[3]));
   // assert mem buf counts is 4
   EXPECT_EQ(mem_pool->stream_id_allocators_.size(), (size_t)1);
-  EXPECT_EQ(mem_pool->addr_mem_buf_allocators_.size(), alignd_sizes.size());
+  EXPECT_EQ(mem_pool->addr_mem_buf_allocators_.size(), aligned_sizes.size());
   // malloc more mem buf
   void *addr = mem_pool->AllocTensorMem(1);
   EXPECT_EQ(reinterpret_cast<size_t>(aligned_addresses[3]) + 4 * kDynamicMemAlignSize, reinterpret_cast<size_t>(addr));
   // free first two address
   mem_pool->FreeTensorMem(aligned_addresses[0]);
   mem_pool->FreeTensorMem(aligned_addresses[1]);
-  // malloc again to assert reust first two address
-  void *first_addr = mem_pool->AllocTensorMem(alignd_sizes[0]);
-  void *second_addr = mem_pool->AllocTensorMem(alignd_sizes[1]);
+  // malloc again to assert result first two address
+  void *first_addr = mem_pool->AllocTensorMem(aligned_sizes[0]);
+  void *second_addr = mem_pool->AllocTensorMem(aligned_sizes[1]);
   EXPECT_EQ(aligned_addresses[0], first_addr);
   EXPECT_EQ(aligned_addresses[1], second_addr);
   // free used addresses
@@ -310,7 +349,7 @@ TEST_F(TestAbstractDynamicMemPool, test_alloc_continuous_tensor_mem_with_aligned
 /// Feature: test alloc unaligned continuous tensor mem for abstract dynamic mem pool.
 /// Description: test alloc continuous tensor mem with unaligned size.
 /// Expectation: all interface work normally and can not throw exception.
-TEST_F(TestAbstractDynamicMemPool, test_alloc_continuous_tensor_mem_with_unalignd_size) {
+TEST_F(TestAbstractDynamicMemPool, test_alloc_continuous_tensor_mem_with_unaligned_size) {
   auto mem_pool = std::make_shared<LinearDynamicMemPool>();
   std::vector<size_t> sizes{1, 2, 3, 4};
   const auto &addresses = mem_pool->AllocContinuousTensorMem(sizes, kDefaultStreamIndex);
