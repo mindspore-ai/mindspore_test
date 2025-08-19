@@ -17,8 +17,8 @@
 #include <vector>
 #include <string>
 #include "ir/tensor.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/matmul_allreduce_add_rmsnorm_aclnn_kernel.h"
 
 namespace mindspore {

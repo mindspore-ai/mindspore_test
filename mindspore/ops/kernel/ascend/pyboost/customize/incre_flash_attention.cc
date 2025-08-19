@@ -18,11 +18,11 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {

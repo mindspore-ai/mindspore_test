@@ -22,8 +22,8 @@
 #include "abstract/utils.h"
 #include "utils/check_convert_utils.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {

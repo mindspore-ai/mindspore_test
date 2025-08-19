@@ -19,8 +19,8 @@
 #include "hccl/hccl_types.h"
 #include "mindspore/ops/infer/ops_func_impl/all_gather_matmul.h"
 #include "mindspore/core/include/utils/anf_utils.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {

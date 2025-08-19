@@ -17,7 +17,7 @@
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include <algorithm>
 #include <limits>
-#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
+#include "plugin/ascend/res_manager/op_adapter/transform_util.h"
 #include "graph/operator_factory.h"
 
 namespace mindspore::device::ascend {

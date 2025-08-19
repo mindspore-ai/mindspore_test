@@ -20,7 +20,7 @@
 #include <string>
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/kernel/hccl/pyboost/comm_common.h"
 
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include <vector>
 #include <unordered_set>
 #include "backend/ge_backend/graph_ir/types.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "acl/acl_rt.h"
 
 namespace mindspore {

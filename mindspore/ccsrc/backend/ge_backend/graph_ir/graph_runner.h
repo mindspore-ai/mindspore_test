@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 
-#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
+#include "plugin/ascend/res_manager/op_adapter/transform_util.h"
 #include "backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "ir/tensor.h"
 #include "include/backend/visible.h"

@@ -20,7 +20,7 @@
 #include <limits>
 #include <vector>
 #include "hccl/hccl_types.h"
-#include "plugin/res_manager/ascend/ascend_res_manager.h"
+#include "plugin/ascend/res_manager/ascend_res_manager.h"
 
 namespace mindspore {
 namespace device {

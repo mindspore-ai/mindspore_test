@@ -18,7 +18,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 

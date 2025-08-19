@@ -28,13 +28,13 @@
 #include "include/backend/kernel_graph.h"
 #include "abstract/abstract_value.h"
 #include "utils/phase.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
-#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"
+#include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

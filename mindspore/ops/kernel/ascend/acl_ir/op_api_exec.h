@@ -29,9 +29,9 @@
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "kernel/ascend/acl_ir/op_api_cache.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "kernel/ascend/visible.h"
 
 namespace mindspore::device::ascend {

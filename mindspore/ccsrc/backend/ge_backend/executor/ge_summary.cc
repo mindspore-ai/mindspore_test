@@ -17,7 +17,7 @@
 #include "backend/ge_backend/executor/ge_summary.h"
 #include <vector>
 #include <string>
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace backend {

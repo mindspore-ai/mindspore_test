@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <vector>
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace hccl {

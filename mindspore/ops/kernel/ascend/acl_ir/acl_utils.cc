@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <mutex>
 #include <set>
-#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"
 #include "utils/ms_context.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/acl_ir/acl_allocator.h"
@@ -26,12 +26,12 @@
 #include "utils/file_utils.h"
 #include "tools/profiler/profiler.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_op_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_base_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_op_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace {
 /*

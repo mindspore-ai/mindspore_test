@@ -15,11 +15,11 @@
  */
 
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_type.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"

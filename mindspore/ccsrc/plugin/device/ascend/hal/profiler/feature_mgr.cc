@@ -14,8 +14,8 @@
  */
 #include "plugin/device/ascend/hal/profiler/feature_mgr.h"
 #include "utils/log_adapter.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_prof_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace profiler {

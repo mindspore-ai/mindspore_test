@@ -15,10 +15,10 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_scatter.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "include/backend/distributed/init.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {

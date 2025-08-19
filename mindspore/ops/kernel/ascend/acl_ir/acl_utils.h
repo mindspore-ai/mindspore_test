@@ -24,10 +24,10 @@
 #include "graph/types.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
-#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_op_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/op_adapter/transform_util.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_base_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_op_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "kernel/ascend/visible.h"
 namespace mindspore::device::ascend {
 struct AclExecParam {

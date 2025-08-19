@@ -16,9 +16,9 @@
 
 #include "plugin/device/ascend/kernel/host/dynamic_shape_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {

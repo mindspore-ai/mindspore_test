@@ -20,9 +20,9 @@
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
-#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "acl/acl.h"
 
 #define TMP_LOG(level) MS_LOG(level) << GetName() << ": "

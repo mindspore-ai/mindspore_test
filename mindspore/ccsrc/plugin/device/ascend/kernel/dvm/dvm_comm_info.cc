@@ -23,7 +23,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace graphkernel {

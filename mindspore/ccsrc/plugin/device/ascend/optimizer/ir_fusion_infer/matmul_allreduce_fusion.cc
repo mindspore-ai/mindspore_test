@@ -33,7 +33,7 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "ir/anf.h"
 #include "utils/phase.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 

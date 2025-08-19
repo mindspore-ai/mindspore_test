@@ -17,7 +17,7 @@
 #include "kernel/ascend/pyboost/atb_runner.h"
 #include "atb/atb_infer.h"
 #include "tools/profiler/profiler.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "runtime/pynative/op_executor.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 

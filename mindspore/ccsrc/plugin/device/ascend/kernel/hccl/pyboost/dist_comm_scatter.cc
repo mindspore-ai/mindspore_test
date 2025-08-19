@@ -21,10 +21,10 @@
 #include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/kernel/hccl/pyboost/comm_common.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {

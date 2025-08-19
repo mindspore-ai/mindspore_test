@@ -20,7 +20,7 @@
 #include <vector>
 #include <utility>
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 namespace mindspore {
 namespace kernel {
 namespace ffn_ext {

@@ -15,7 +15,7 @@
  */
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/internal/functions/functions.h"
 ${ops_prim_inc}
 ${merge_op_header}

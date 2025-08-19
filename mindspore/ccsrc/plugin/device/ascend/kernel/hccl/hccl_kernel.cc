@@ -29,11 +29,11 @@
 #include "include/common/utils/utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/ms_context.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
-#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
-#include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "utils/ms_exception.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;

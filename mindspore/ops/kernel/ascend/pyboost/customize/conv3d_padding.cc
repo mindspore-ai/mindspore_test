@@ -18,7 +18,7 @@
 #include <memory>
 #include <algorithm>
 #include <string>
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

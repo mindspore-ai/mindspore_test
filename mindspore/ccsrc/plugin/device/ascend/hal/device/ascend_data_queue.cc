@@ -24,12 +24,12 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
-#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_tdt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_symbol.h"
+#include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace device {

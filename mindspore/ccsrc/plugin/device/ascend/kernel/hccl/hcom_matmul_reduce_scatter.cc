@@ -17,8 +17,8 @@
 #include "plugin/device/ascend/kernel/hccl/hcom_matmul_reduce_scatter.h"
 #include "hccl/hccl_types.h"
 #include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
-#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"
 #include "mindspore/core/include/utils/anf_utils.h"
 

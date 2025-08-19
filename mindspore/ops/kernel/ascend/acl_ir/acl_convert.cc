@@ -27,9 +27,9 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
-#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_base_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace mindspore::device::ascend {
 namespace {
