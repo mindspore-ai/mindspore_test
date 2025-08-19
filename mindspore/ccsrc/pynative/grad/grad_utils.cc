@@ -67,8 +67,7 @@ using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         kMakeListOpName,
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
-                                                     kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
-                                                     kInplaceStopGradientName};
+                                                     kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 
 // for simply infer (simple infer will push abs in bprop queue)

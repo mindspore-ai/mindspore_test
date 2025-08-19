@@ -17,18 +17,22 @@
 #include <memory>
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "kernel/ascend/pyboost/customize/inplace_stop_gradient.h"
+#include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
+#include "mindspore/ccsrc/include/common/pynative/variable.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void InplaceStopGradientAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Inplace StopGradient Ascend start";
-  if (OpRunStatus::Get().RequireGrad()) {
-    if (input_tensor->storage_info() != nullptr) {
-      MS_LOG(EXCEPTION) << "Cannot stop_gradient view inplace";
-    }
-    input_tensor->set_need_pipeline_sync(true);
-    input_tensor->set_auto_grad_meta_data(nullptr);
+  if (pynative::autograd::impl::GetViewAutogradMetaImpl(input_tensor) != nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot stop_gradient view inplace";
+  }
+  runtime::Pipeline::Get().WaitBpropStage();
+  input_tensor->set_need_pipeline_sync(true);
+  input_tensor->set_auto_grad_meta_data(nullptr);
+  if (input_tensor->param_info() != nullptr) {
+    input_tensor->param_info()->set_requires_grad(false);
   }
   op->set_outputs({input_tensor});
   MS_LOG(DEBUG) << "Inplace StopGradient Ascend end";
