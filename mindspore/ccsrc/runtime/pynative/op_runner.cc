@@ -66,7 +66,7 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
     auto &tensor = input_tensors[i];
     auto &input_node = input_nodes[i];
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    auto tensor_address = tensor->device_address();
     auto node_address = AnfAlgo::GetMutableOutputAddr(input_node, 0);
     // node_address can't be null
     MS_EXCEPTION_IF_NULL(node_address);
@@ -115,7 +115,7 @@ void UpdateParameterShapeFromInputTensor(const AnfNodePtr &input_node, const ten
 void SetDeviceAddress(const AnfNodePtr &input_node, const tensor::TensorPtr &input_tensor,
                       const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto tensor_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+  auto tensor_address = input_tensor->device_address();
   auto node_address = AnfAlgo::GetMutableOutputAddr(input_node, 0);
 
   UpdateParameterShapeFromInputTensor(input_node, input_tensor);
@@ -162,7 +162,7 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_CHECK_FAIL(device_address != nullptr,
                              "Tensor device address is nullptr, id is " + std::to_string(tensor->id()));
   // Break copy data to device address if has the device_address has flag ignore.
@@ -228,7 +228,7 @@ void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::Device
 void UpdateAddressSizeForDynamicShapeTensor(const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   if (input_tensor->base_shape_ptr() != nullptr) {
-    auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
+    auto device_address = input_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     auto tensor_size = input_tensor->DataNBytes();
     if (tensor_size != device_address->GetSize()) {
@@ -1010,9 +1010,7 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
     MS_EXCEPTION_IF_NULL(input_tensor);
     const auto &input_edge = inputs[i];
 
-    const auto &device_sync = input_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_sync);
-    const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    auto device_address = input_tensor->device_address();
 
     if (device_address->GetTensorStorageInfo() != nullptr) {
       MS_EXCEPTION(RuntimeError) << "Not support view tensor for " << op_compiler_info->graph_info_;
@@ -1023,7 +1021,7 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
 
     UpdateAddressInfoByInputTensor(op_compiler_info, input_tensor, input_edge, input_node);
 
-    const auto &new_device_address = input_edge->kernel_tensor_->device_address();
+    auto new_device_address = input_edge->kernel_tensor_->device_address();
     if (device_address->GetDeviceType() != new_device_address->GetDeviceType()) {
       runtime::Pipeline::Get().WaitForward();
       MS_LOG(DEBUG) << "Input tensor device address type:"
@@ -1058,8 +1056,7 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
   for (size_t i = 0; i < input_tensors_num; ++i) {
     const auto &input_tensor = input_tensors[i];
     MS_EXCEPTION_IF_NULL(input_tensor);
-    const auto &device_sync = input_tensor->device_address();
-    const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    auto device_address = input_tensor->device_address();
 
     const auto &input_edge = input_edges[i];
     if (input_edge->ignore_h2d_) {

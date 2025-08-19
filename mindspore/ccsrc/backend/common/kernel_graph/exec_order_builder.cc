@@ -21,6 +21,8 @@
 #include "ir/core_ops_primitive.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
+#include "ops_utils/op_constants.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::session {

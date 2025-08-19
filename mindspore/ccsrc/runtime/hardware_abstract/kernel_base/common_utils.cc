@@ -25,7 +25,7 @@
 #include <vector>
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include "include/common/debug/common.h"
 #include "mindapi/base/type_id.h"
 #include "utils/anf_utils.h"

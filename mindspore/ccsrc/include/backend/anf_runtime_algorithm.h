@@ -33,7 +33,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/common/utils/contract.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

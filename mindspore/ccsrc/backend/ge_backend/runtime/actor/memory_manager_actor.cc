@@ -133,7 +133,7 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> 
 void MemoryManagerActor::FreeMemory(const std::vector<KernelTensorPtr> *free_list, OpContext<KernelTensor> *,
                                     const AID &from_aid) {
   for (auto &kernel_tensor : *free_list) {
-    FreeMemoryByRefCount(kernel_tensor->device_address().get(), from_aid.Name());
+    FreeMemoryByRefCount(kernel_tensor, from_aid.Name());
   }
 }
 
@@ -147,8 +147,7 @@ void MemoryManagerActor::FreeBatchMemory(const std::vector<KernelTensorPtr> *fre
   for (size_t i = 0; i < (*free_list).size(); ++i) {
     auto &kernel_tensor = (*free_list)[i];
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto &device_tensor = kernel_tensor->device_address();
-    FreeMemoryByRefCount(device_tensor.get(), from_aid.Name());
+    FreeMemoryByRefCount(kernel_tensor, from_aid.Name());
   }
 
   PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, from_aid.Name(), false);
@@ -160,31 +159,33 @@ void MemoryManagerActor::Wait(OpContext<KernelTensor> *const op_context, const A
 }
 
 // Only one of the static and dynamic reference counts will take effect.
-void MemoryManagerActor::FreeMemoryByRefCount(DeviceTensor *const device_tensor, const std::string &op_name) {
+void MemoryManagerActor::FreeMemoryByRefCount(const KernelTensorPtr &kernel_tensor, const std::string &op_name) {
+  if (kernel_tensor == nullptr) {
+    return;
+  }
+  auto device_tensor = kernel_tensor->device_address();
   if (device_tensor == nullptr) {
     return;
   }
-  if (device_tensor->original_ref_count() != SIZE_MAX) {
+  if (kernel_tensor->original_ref_count() != SIZE_MAX) {
     // The static reference count is decremented to zero to free memory, and reset to the original count.
-    size_t ref_count = device_tensor->DecreaseRefCount();
+    size_t ref_count = kernel_tensor->DecreaseRefCount();
     if (ref_count == 0) {
-      device_tensor->ResetRefCount();
-      device_tensor->ClearUserData();
+      kernel_tensor->ResetRefCount();
       if (device_tensor->GetPtr() != nullptr) {
         auto held_by_nodes = device_tensor->held_by_nodes();
         if (held_by_nodes.empty()) {
-          FreeMemoryByDeviceContext(device_tensor);
+          FreeMemoryByDeviceContext(device_tensor.get());
         } else {
-          FreeMemoryByValueNode(held_by_nodes, device_tensor);
+          FreeMemoryByValueNode(held_by_nodes, kernel_tensor);
         }
       }
     }
-  } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
+  } else if (kernel_tensor->dynamic_ref_count() != INT32_MAX) {
     // The dynamic reference count is decremented to zero to free memory.
-    if ((device_tensor->DecreaseDynamicRefCount(op_name) == 0) && (device_tensor->GetPtr() != nullptr)) {
-      device_tensor->ClearUserData();
+    if ((kernel_tensor->DecreaseDynamicRefCount(op_name) == 0) && (device_tensor->GetPtr() != nullptr)) {
       MS_LOG(DEBUG) << "Free memory by the dynamic reference count, device address" << device_tensor->GetPtr() << ".";
-      FreeMemoryByDeviceContext(device_tensor);
+      FreeMemoryByDeviceContext(device_tensor.get());
     }
   }
 }

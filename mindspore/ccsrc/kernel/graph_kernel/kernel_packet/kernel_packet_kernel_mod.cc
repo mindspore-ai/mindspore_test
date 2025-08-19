@@ -209,7 +209,7 @@ KernelPacketKernelMod::AddressArgs KernelPacketKernelMod::GetLaunchArgs(const st
       MS_LOG(DEBUG) << "Inner input " << i << " used workspace " << j;
       res_inputs[i] = inputs_cache_[i].get();
       // set the device_ptr of workspaces to res_input
-      res_inputs[i]->set_pointer_ref_count(workspaces[j]->pointer_ref_count());
+      res_inputs[i]->set_pointer_ref_count(workspaces[j]);
       // copy host data to device
       if (host_data_cache_[i] != nullptr) {
         MS_LOG(DEBUG) << "Copy input " << i << " from host to device. device_ptr: " << res_inputs[i]->device_ptr()

@@ -120,7 +120,7 @@ void OutputActor::FreeOutputNodeMem() {
     if ((output_node == nullptr) || (output_device_tensor == nullptr) || (output_device_tensor->GetPtr() == nullptr)) {
       continue;
     }
-    if (!IsOutputAddressPersisted(output_device_tensor.get(), output_nodes_[i])) {
+    if (!IsOutputAddressPersisted(output_kernel_tensor, output_nodes_[i])) {
       FreeMemoryByDeviceContext(output_device_tensor.get());
     }
   }
@@ -133,11 +133,15 @@ void OutputActor::FreeSummaryNodeMem() {
     if (summary_node == nullptr) {
       continue;
     }
-    auto output_device_addr = AnfAlgo::GetMutableOutputAddr(summary_node, index, false);
+    auto output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(summary_node, index, false);
+    if (output_kernel_tensor == nullptr) {
+      continue;
+    }
+    auto output_device_addr = output_kernel_tensor->device_address();
     if ((output_device_addr == nullptr) || (output_device_addr->GetPtr() == nullptr)) {
       continue;
     }
-    if (!IsOutputAddressPersisted(output_device_addr.get(), summary_nodes_[i])) {
+    if (!IsOutputAddressPersisted(output_kernel_tensor, summary_nodes_[i])) {
       FreeMemoryByDeviceContext(output_device_addr.get());
     }
   }
@@ -439,9 +443,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
-    tensor_device_address->set_original_ref_count(SIZE_MAX);
-    tensor_device_address->ResetRefCount();
-    tensor_device_address->set_dynamic_ref_count(INT32_MAX);
+    output_kernel_tensors_[i]->set_original_ref_count(SIZE_MAX);
+    output_kernel_tensors_[i]->ResetRefCount();
+    output_kernel_tensors_[i]->set_dynamic_ref_count(INT32_MAX);
     auto node_with_index = device_tensor->GetNodeIndex();
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
@@ -462,7 +466,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
-    if (IsOutputAddressPersisted(device_tensor.get(), output_nodes_[i])) {
+    if (IsOutputAddressPersisted(output_kernel_tensors_[i], output_nodes_[i])) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
       if (!host_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {

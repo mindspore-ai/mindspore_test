@@ -99,13 +99,9 @@ void ConditionSwitchRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     if (output_kernel_tensors_[i] == nullptr) {
       MS_LOG(EXCEPTION) << "Invalid input device tensor index:" << i + 1 << " for actor:" << GetAID();
     }
-    auto input_device_tensor = input_kernel_tensors_[i + 1]->device_address().get();
-    MS_EXCEPTION_IF_NULL(input_device_tensor);
-    auto output_device_tensor = output_kernel_tensors_[i]->device_address().get();
-    MS_EXCEPTION_IF_NULL(output_device_tensor);
-    output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
-    output_device_tensor->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_device_tensor->new_ref_count()
+    output_kernel_tensors_[i]->set_pointer_ref_count(input_kernel_tensors_[i + 1].get());
+    output_kernel_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_kernel_tensors_[i]->new_ref_count()
                   << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()
                   << " ref input kernel tensor:" << input_kernel_tensors_[i + 1]->ToString();
   }

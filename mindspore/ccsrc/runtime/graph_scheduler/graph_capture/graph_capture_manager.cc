@@ -278,7 +278,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
         << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-        << " new ref count:" << device_tensor->new_ref_count()
+        << " new ref count:" << kernel_tensor->new_ref_count()
         << " super kernel actor context:" << cur_device_context->device_context_key().ToString()
         << " kernel actor context:" << cur_device_context->device_context_key().ToString();
       auto real_input_data_infos = kernel_actor->real_input_data_infos();
@@ -409,7 +409,7 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
       << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
-      << " new ref count:" << device_tensor->new_ref_count()
+      << " new ref count:" << kernel_tensor->new_ref_count()
       << " super kernel actor context:" << cur_device_context->device_context_key().ToString();
     if ((device_tensor->GetDeviceType() != cur_device_context->GetDeviceType()) ||
         !AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_) ||

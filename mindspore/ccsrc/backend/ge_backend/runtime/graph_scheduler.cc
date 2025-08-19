@@ -29,7 +29,7 @@
 #include "debug/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -826,7 +826,7 @@ DataPrepareActorPtr GraphScheduler::BuildDataPrepareActor(const GraphCompilerInf
     actor_name, memory_manager_aid_, debug_aid_, profiler_aid_, &graph_compiler_info, host_queue_ds_actor, host_queue);
   MS_EXCEPTION_IF_NULL(data_prepare_actor);
   if (host_queue_ds_actor != nullptr) {
-    data_prepare_actor->ref_device_tensors_ = host_queue_ds_actor->ref_device_tensors_;
+    data_prepare_actor->ref_kernel_tensors_ = host_queue_ds_actor->ref_kernel_tensors_;
   }
   MS_LOG(INFO) << "Create data prepare actor: " << actor_name;
   InsertActor(data_prepare_actor.get());
@@ -1494,7 +1494,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
   MS_EXCEPTION_IF_NULL(old_kernel_tensor);
   auto device_tensor = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  if (IsPersistentDeviceTensor(parameter) || device_tensor->is_ptr_persisted()) {
+  if (IsPersistentDeviceTensor(parameter) || old_kernel_tensor->is_ptr_persisted()) {
     device_tensor->SetNodeIndex(parameter, 0);
     SchedulerHelper::AddDeviceTensorStore(front_node, old_kernel_tensor);
   }
@@ -1580,7 +1580,7 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     auto new_device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     new_device_tensor->SetNodeIndex(backend_node, index);
-    new_device_tensor->set_is_ptr_persisted(sub_device_tensor->is_ptr_persisted());
+    kernel_tensor->set_is_ptr_persisted(sub_kernel_tensor->is_ptr_persisted());
     new_device_tensor->set_from_persistent_mem(true);
     kernel_tensor->set_user_data(sub_kernel_tensor->user_data());
 
@@ -1676,10 +1676,10 @@ void GraphScheduler::DumpDeviceTensorStore(const GraphCompilerInfo &graph_compil
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
             << "\tsize:" << device_tensor->GetSize() << "\tstream id:" << device_tensor->stream_id()
-            << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-            << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << kernel_tensor->flag()
+            << "\toriginal_ref_count:" << kernel_tensor->original_ref_count()
+            << "\tdynamic_ref_count:" << kernel_tensor->dynamic_ref_count() << "\tflag:" << kernel_tensor->flag()
             << "\tdevice_type:" << device_tensor->GetDeviceType()
-            << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
+            << "\tis_ptr_persisted:" << kernel_tensor->is_ptr_persisted() << "\n ";
       }
     }
 

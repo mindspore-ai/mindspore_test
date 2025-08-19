@@ -429,7 +429,7 @@ bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
   return host_context->device_res_manager_->SyncAllStreams();
 }
 
-bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceSyncPtr &src_device_tensor,
+bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceAddressPtr &src_device_tensor,
                           size_t stream_id, bool *has_h2d_copy) {
   // judge copy operation only for capture graph.
   if (has_h2d_copy != nullptr) {
@@ -949,7 +949,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
   UpdateDynamicShapeAndSize(tensor, kernel_tensor, outer_index, inner_index);
   graph_parameter_store->ResetAddrRefCount(outer_index, inner_index);
   if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-    device_tensor->IncreaseNewRefCount(from_aid.Name());
+    kernel_tensor->IncreaseNewRefCount(from_aid.Name());
     MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
                   << ", inner index: " << inner_index << ", address: " << device_tensor
                   << " from graph parameter store.";
@@ -958,7 +958,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
   if (device_tensor->GetSize() == 0) {
     // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
     // so the ref count should be add.
-    device_tensor->IncreaseNewRefCount(from_aid.Name());
+    kernel_tensor->IncreaseNewRefCount(from_aid.Name());
     MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
                   << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
     return;
@@ -968,7 +968,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
     {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
 
   if (device_tensor->GetPtr() == nullptr) {
-    auto mem_type = device_tensor->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
+    auto mem_type = kernel_tensor->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
                                                                : memory::mem_pool::MemType::kKernel;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), mem_type, device_tensor->GetSize(),
                                                    device_tensor.get());
@@ -976,6 +976,9 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
                         << ", for kernel tensor: " << kernel_tensor->ToString();
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
   } else {
     if (!(graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(node))) {
@@ -1048,7 +1051,7 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
                               has_h2d_copy);
   if ((graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
-    device_tensor->set_new_ref_count(SIZE_MAX);
+    kernel_tensor->set_new_ref_count(SIZE_MAX);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
@@ -1146,12 +1149,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
   CheckInputSize(kernel_tensor, tensor, outer_index, inner_index);
-  auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto tensor_address = tensor->device_address();
   if (tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
     auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
     tensor->set_device_address(empty_tensor->device_address());
-    tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+    tensor_address = empty_tensor->device_address();
   }
   auto device_tensor = kernel_tensor->device_address();
 
@@ -1169,7 +1172,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << tensor_address;
-  tensor_address->set_new_ref_count(SIZE_MAX);
+  kernel_tensor->set_new_ref_count(SIZE_MAX);
   if (tensor_address->GetPtr() == nullptr) {
     MS_LOG(EXCEPTION) << "Device ptr of tensor address can not be nullptr, device type: "
                       << tensor_address->GetDeviceType() << " for parameter index:" << outer_index
@@ -1220,8 +1223,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
     PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch, has_h2d_copy);
     auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
-    if (!is_weight && kernel_tensor->device_address() != nullptr &&
-        kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
+    if (!is_weight && kernel_tensor->device_address() != nullptr && kernel_tensor->new_ref_count() == SIZE_MAX) {
       graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
     }
     return kernel_tensor;
@@ -1248,8 +1250,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
   std::unique_lock<std::shared_mutex> write_lock(mtx);
   PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch, has_h2d_copy);
   auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
-  if (!is_weight && kernel_tensor->device_address() != nullptr &&
-      kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
+  if (!is_weight && kernel_tensor->device_address() != nullptr && kernel_tensor->new_ref_count() == SIZE_MAX) {
     graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
   }
   return kernel_tensor;

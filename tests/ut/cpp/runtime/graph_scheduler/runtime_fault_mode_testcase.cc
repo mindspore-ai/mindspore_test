@@ -559,8 +559,7 @@ TEST_F(RuntimeFaultModeTest, InvalidActorSet) {
 TEST_F(RuntimeFaultModeTest, OutofMemory) {
   AID aid;
   auto &memory_manager_actor = MemoryManagerActor::GetInstance();
-  auto device_tensor =
-    std::make_shared<TestDeviceAddress>(nullptr, 2048, "format", TypeId::kNumberTypeUInt16, "CPU", 0);
+  auto device_tensor = std::make_shared<TestDeviceAddress>(nullptr, 2048, "format", TypeId::kNumberTypeUInt16, "CPU");
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
@@ -608,7 +607,7 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   MS_EXCEPTION_IF_NULL(device_context);
   auto device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
+    nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0);
   auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, add_node.get());
 

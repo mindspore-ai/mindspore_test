@@ -19,7 +19,7 @@
 #include "mindapi/base/format.h"
 #include "include/common/utils/utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_py.h"
 
@@ -44,7 +44,6 @@ py::object SetFormat(const py::object &py_tensor, const std::string &format_name
     {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
   auto device_name = device_context->device_context_key().device_name_;
-  auto device_id = device_context->device_context_key().device_id_;
   auto stream_id = device_context->device_res_manager_->DefaultStream();
   auto device_sync = tensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
@@ -59,7 +58,7 @@ py::object SetFormat(const py::object &py_tensor, const std::string &format_name
   }
   device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, static_cast<size_t>(tensor->DataNBytes()), tensor->shape(), format, tensor->data_type(), device_name,
-    device_id, stream_id);
+    stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_from_persistent_mem(tensor->is_parameter());
   tensor->set_device_address(device_address);

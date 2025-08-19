@@ -52,7 +52,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
       reinterpret_cast<void *>(device_ptr), src->Size(), src->shape(), Format::DEFAULT_FORMAT, src->data_type(),
-      device_name, device_id, stream_id);
+      device_name, stream_id);
 
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(device_ptr) << ", size:" << src->Size()
                   << ", shape:" << src->shape() << ", data_type:" << TypeIdToString(src->data_type());
@@ -83,7 +83,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
 
   auto dst_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
     reinterpret_cast<void *>(ptr + offset_size), dst->Size(), dst->shape(), Format::DEFAULT_FORMAT, dst->data_type(),
-    device_name, device_id, stream_id);
+    device_name, stream_id);
 
   MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(ptr) << ", size:" << dst->Size()
                 << ", shape:" << dst->shape() << ", data_type:" << TypeIdToString(dst->data_type());

@@ -89,8 +89,7 @@ void ControlActor::GetAllKernelTensors(const OpRealParameterWithBranchID &op_rea
 void ControlActor::IncreaseDynamicRefCount(const OpData<KernelTensor> *op_data) const {
   MS_EXCEPTION_IF_NULL(op_data);
   MS_EXCEPTION_IF_NULL(op_data->data_);
-  MS_EXCEPTION_IF_NULL(op_data->data_->device_address());
-  op_data->data_->device_address()->IncreaseDynamicRefCount(GetAID().Name());
+  op_data->data_->IncreaseDynamicRefCount(GetAID().Name());
 }
 
 void ControlActor::IncreaseDynamicRefCount(const OpPartialPtr &op_partial) {
@@ -101,9 +100,7 @@ void ControlActor::IncreaseDynamicRefCount(const OpPartialPtr &op_partial) {
   GetAllKernelTensors(op_partial, &partial_kernel_tensors);
   for (auto &partial_kernel_tensor : partial_kernel_tensors) {
     MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    auto &partial_device_tensor = partial_kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseDynamicRefCount(GetAID().Name());
+    partial_kernel_tensor->IncreaseDynamicRefCount(GetAID().Name());
   }
 }
 
@@ -112,9 +109,7 @@ void ControlActor::IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op
   GetAllKernelTensors(op_real_parameter, &partial_kernel_tensors);
   for (auto &partial_kernel_tensor : partial_kernel_tensors) {
     MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    auto &partial_device_tensor = partial_kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseDynamicRefCount(GetAID().Name());
+    partial_kernel_tensor->IncreaseDynamicRefCount(GetAID().Name());
   }
 }
 
@@ -460,7 +455,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
 
   auto new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
-  UpdateRefCount(new_device_tensor.get(), true);
+  UpdateRefCount(new_kernel_tensor, true);
   created_heter_kernel_tensors_[std::make_pair(index, new_device_tensor->GetDeviceType())] = new_kernel_tensor;
   MS_LOG(DEBUG) << "Actor:" << GetAID() << " create new device tensor:" << new_device_tensor
                 << " type:" << new_device_tensor->type_id() << " by node device tensor:" << node_device_tensor
@@ -503,21 +498,17 @@ void ControlActor::UpdateOutputData(OpData<KernelTensor> *const output_data, con
   MS_EXCEPTION_IF_NULL(output_data->data_);
   auto data = output_data->data_->device_address().get();
   MS_EXCEPTION_IF_NULL(data);
-  if ((!data->IsPtrValid()) || (data->ref_count() != SIZE_MAX)) {
+  if ((!data->IsPtrValid()) || (output_data->data_->ref_count() != SIZE_MAX)) {
     std::string error_info = "The address of the " + std::to_string(formal_parameter_position) +
-                             " device address:" + std::to_string((size_t)data) +
-                             " origin ref count:" + std::to_string(data->original_ref_count()) +
-                             " current ref count:" + std::to_string(data->ref_count()) +
-                             " dynamic ref count:" + std::to_string(data->dynamic_ref_count()) +
+                             " kernel tensor:" + output_data->data_->ToString() +
                              " position real parameter is nullptr or ref count is wrong for actor:" + GetAID().Name() +
                              ".";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
-  if ((data->dynamic_ref_count() != INT32_MAX)) {
-    MS_LOG(DEBUG) << "Set dynamic ref count from:" << data->dynamic_ref_count()
-                  << " to int32 max for device address:" << data << " ptr:" << data->GetPtr()
-                  << " in actor:" << GetAID();
-    data->set_dynamic_ref_count(INT32_MAX);
+  if ((output_data->data_->dynamic_ref_count() != INT32_MAX)) {
+    MS_LOG(DEBUG) << "Set dynamic ref count from:" << output_data->data_->dynamic_ref_count()
+                  << " to int32 max for kernel tensor:" << output_data->data_->ToString() << " in actor:" << GetAID();
+    output_data->data_->set_dynamic_ref_count(INT32_MAX);
   }
 
   // Foreach the device tensors to set the ptr from data, only the formal parameter device tensor of ref node need set
@@ -742,9 +733,9 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   created_new_nodes_.emplace_back(new_cnode);
   new_device_tensor->SetNodeIndex(new_cnode, 0);
   new_device_tensor->set_from_persistent_mem(addr_list[0]->device_address()->from_persistent_mem());
-  new_device_tensor->set_dynamic_ref_count(0);
-  new_device_tensor->set_original_ref_count(SIZE_MAX);
-  new_device_tensor->ResetRefCount();
+  new_kernel_tensor->set_dynamic_ref_count(0);
+  new_kernel_tensor->set_original_ref_count(SIZE_MAX);
+  new_kernel_tensor->ResetRefCount();
 
   // Merge device address list into a single device address.
   auto tmp_kernel_tensor = AnfAlgo::CreateKernelTensor(
@@ -818,9 +809,9 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
                                 TypeId::kNumberTypeInt64, ShapeVector(), device_name, device_id);
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
-  new_device_tensor->set_dynamic_ref_count(0);
-  new_device_tensor->set_original_ref_count(SIZE_MAX);
-  new_device_tensor->ResetRefCount();
+  new_kernel_tensor->set_dynamic_ref_count(0);
+  new_kernel_tensor->set_original_ref_count(SIZE_MAX);
+  new_kernel_tensor->ResetRefCount();
   if (!host_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, GetAID().Name(),
                                                 new_device_tensor->GetSize());

@@ -1481,7 +1481,7 @@ void RegPyTensor(py::module *m) {
 void RegMetaTensor(const py::module *m) {
   // Define TensorData as a python class so that ownership of tensor data can be managed.
   (void)py::class_<TensorData, TensorDataPtr>(*m, "_TensorData");
-  (void)py::class_<DeviceSync, DeviceSyncPtr>(*m, "_DeviceSync");
+  (void)py::class_<DeviceAddress, DeviceAddressPtr>(*m, "_DeviceAddress");
 }
 
 void RegCSRTensor(const py::module *m) {

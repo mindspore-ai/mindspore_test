@@ -49,8 +49,12 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
 
     try {
       bool success = false;
-      if (kernel_tensor->continuous_device_addresses() == nullptr) {
+      if (kernel_tensor->continuous_kernel_tensors() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+        if (success) {
+          static std::string name = "Alloc memory";
+          kernel_tensor->IncreaseNewRefCount(name);
+        }
       } else {
         device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "", false);
 
@@ -90,8 +94,12 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     }
     try {
       bool success = false;
-      if (kernel_tensor->continuous_device_addresses() == nullptr) {
+      if (kernel_tensor->continuous_kernel_tensors() == nullptr) {
         success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+        if (success) {
+          static std::string name = "Alloc memory";
+          kernel_tensor->IncreaseNewRefCount(name);
+        }
       } else {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Allocate continuous memory, device address : " << device_tensor << ".";
@@ -115,21 +123,26 @@ bool MemoryManagerActor::AllocateContinuousMemory(KernelTensor *kernel_tensor, c
   auto device_tensor = kernel_tensor->device_address().get();
   MS_EXCEPTION_IF_NULL(device_tensor);
   std::vector<size_t> size_list;
-  const auto &continuous_device_addresses = kernel_tensor->continuous_device_addresses();
-  for (const auto &device_address_wpr : *continuous_device_addresses) {
-    const auto &device_address = device_address_wpr.lock();
+  const auto &continuous_kernel_tensors = kernel_tensor->continuous_kernel_tensors();
+  for (const auto &continuous_kernel_tensor_wpr : *continuous_kernel_tensors) {
+    const auto &continuous_kernel_tensor = continuous_kernel_tensor_wpr.lock();
+    MS_EXCEPTION_IF_NULL(continuous_kernel_tensor);
+    auto device_address = continuous_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     (void)size_list.emplace_back(device_address->GetSize());
   }
   const auto &device_addresses =
     device_context->device_res_manager_->AllocateContinuousMemory(size_list, kDefaultStreamIndex);
-  if (device_addresses.size() == continuous_device_addresses->size()) {
-    for (size_t i = 0, end = (*continuous_device_addresses).size(); i < end; ++i) {
-      const auto &device_address = (*(continuous_device_addresses))[i].lock();
+  if (device_addresses.size() == continuous_kernel_tensors->size()) {
+    for (size_t i = 0, end = (*continuous_kernel_tensors).size(); i < end; ++i) {
+      const auto &continuous_kernel_tensor = (*(continuous_kernel_tensors))[i].lock();
+      MS_EXCEPTION_IF_NULL(continuous_kernel_tensor);
+      auto device_address = continuous_kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
       MS_EXCEPTION_IF_CHECK_FAIL(device_address->GetPtr() == nullptr, "Continuous memory conflicted.");
       device_address->set_ptr(device_addresses[i]);
       device_address->set_from_mem_pool(true);
-      device_address->IncreaseNewRefCount(from_aid.Name() + " alloc continue memory");
+      continuous_kernel_tensor->IncreaseNewRefCount(from_aid.Name() + " alloc continue memory");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
                                                      memory::mem_pool::MemType::kContinuousMemory,
                                                      device_address->GetSize(), device_tensor);
@@ -266,6 +279,9 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> 
       if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
         return;
+      } else {
+        static std::string name = "Alloc memory";
+        kernel_tensor->IncreaseNewRefCount(name);
       }
     } catch (const std::exception &e) {
       SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
@@ -454,8 +470,8 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
     return;
   }
   const auto &device_tensor = kernel_tensor->device_address().get();
-  if (device_tensor->new_ref_count() != SIZE_MAX) {
-    if (device_tensor->new_ref_count() == 0) {
+  if (kernel_tensor->new_ref_count() != SIZE_MAX) {
+    if (kernel_tensor->new_ref_count() == 0) {
       const auto &node_with_index = device_tensor->GetNodeIndex();
       MS_LOG(EXCEPTION) << "Invalid new ref count:0 for decrease for kernel tensor:" << kernel_tensor->ToString()
                         << " node:"
@@ -468,8 +484,7 @@ void MemoryManagerActor::FreeMemoryByRefCount(KernelTensor *const kernel_tensor,
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Op:" << op_name << " decrease new ref count for:" << kernel_tensor->ToString();
-    if ((device_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
-      device_tensor->ClearUserData();
+    if ((kernel_tensor->DecreaseNewRefCount(op_name) == 0) && device_tensor->IsPtrValid()) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Op:" << op_name << " free memory by the new reference count, kernel tensor:" << kernel_tensor->ToString()
         << ".";

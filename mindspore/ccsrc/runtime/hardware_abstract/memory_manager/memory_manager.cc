@@ -91,7 +91,7 @@ uint8_t *MemoryManager::MallocDynamicMem(size_t size, bool communication_mem) {
 
 bool MemoryManager::MallocMemFromMemPool(const DeviceAddressPtr &address, size_t size) {
   MS_EXCEPTION_IF_NULL(address);
-  auto device_ptr = MallocMemFromMemPool(size, address->from_persistent_mem_, false, address->stream_id());
+  auto device_ptr = MallocMemFromMemPool(size, address->from_persistent_mem(), false, address->stream_id());
   if (!device_ptr) {
     return false;
   }

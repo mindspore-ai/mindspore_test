@@ -143,7 +143,7 @@ class DataPrepareActor : public DebugAwareActor {
   // Record each tensor related to graph.
   static mindspore::HashMap<const tensor::Tensor *, mindspore::HashSet<const DataPrepareActor *>> tensor_with_graphs_;
   // The ref relationship of device address.
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors_;
 
   bool has_dynamic_shape_{false};
 

@@ -40,6 +40,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

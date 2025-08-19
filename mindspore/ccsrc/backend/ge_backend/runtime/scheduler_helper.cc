@@ -116,7 +116,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
                 << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
   kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  UpdateRefCount(kernel_tensor->device_address().get(), true);
+  UpdateRefCount(kernel_tensor, true);
 }
 
 void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
@@ -210,7 +210,7 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
   // The device address of super kernel actor can't be changed, so set the max reference count.
   if (IsControlFlowActor(to_actor->type()) || (from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
       (to_actor->type_ == KernelTransformType::kSuperKernelActor)) {
-    UpdateRefCount(device_tensor.get(), true);
+    UpdateRefCount(kernel_tensor, true);
   }
 
   if (IsControlFlowActor(to_actor->type())) {
@@ -246,14 +246,14 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
   // The output actor need use the relevant information of node to create output tensor.
   device_tensor->SetNodeIndex(from_kernel, from_output_index);
   // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
-  UpdateRefCount(device_tensor.get(), true);
+  UpdateRefCount(kernel_tensor, true);
 
   MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
                 << " to actor:" << to_actor->GetAID() << " from kernel"
                 << (from_kernel == nullptr ? "null" : from_kernel->DebugString()) << " device address:" << device_tensor
-                << " original ref count:" << device_tensor->original_ref_count()
-                << " ref count:" << device_tensor->ref_count()
-                << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+                << " original ref count:" << kernel_tensor->original_ref_count()
+                << " ref count:" << kernel_tensor->ref_count()
+                << " dynamic ref count:" << kernel_tensor->dynamic_ref_count();
 }
 
 void SchedulerHelper::AddControlArrow(AbstractActor *const from_actor, AbstractActor *const to_actor) {

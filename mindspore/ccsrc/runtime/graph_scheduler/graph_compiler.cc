@@ -25,7 +25,7 @@
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pynative/op_executor.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/pynative/op_compiler.h"
@@ -80,12 +80,12 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
   for (const auto &item : summary_nodes) {
     const AnfNodePtr &node = item.second.first;
     size_t index = IntToSize(item.second.second);
-    auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
-    MS_EXCEPTION_IF_NULL(device_address);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_LOG(DEBUG) << "Set new ref count to max for summary node:" << node->fullname_with_scope()
                   << " debug string:" << node->DebugString() << " output index:" << index
-                  << " device address:" << device_address;
-    device_address->set_new_ref_count(SIZE_MAX);
+                  << " kernel tensor:" << kernel_tensor->ToString();
+    kernel_tensor->set_new_ref_count(SIZE_MAX);
   }
 }
 

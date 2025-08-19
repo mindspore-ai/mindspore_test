@@ -47,7 +47,7 @@ class PYBOOST_API PyBoostUtils {
 
   static void DispatchRun(const std::shared_ptr<runtime::PyBoostDeviceTask> &task);
 
-  static DeviceSyncPtr ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync);
+  static DeviceAddressPtr ContiguousByDeviceAddress(const DeviceAddressPtr &device_sync);
 
   // Create kernel tensors
   static std::vector<kernel::KernelTensorPtr> CreateWorkSpaceKernelTensors(const KernelModPtr &kernel_mod,

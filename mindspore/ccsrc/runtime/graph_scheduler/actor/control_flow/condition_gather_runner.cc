@@ -32,7 +32,7 @@ ConditionGatherRunner::ConditionGatherRunner(const std::string &name, const CNod
 
 ConditionGatherRunner::~ConditionGatherRunner() {
   for_each(need_clean_ptr_device_addresses_.begin(), need_clean_ptr_device_addresses_.end(),
-           [](const device::DeviceAddressPtr &device_address) { device_address->set_ptr(nullptr); });
+           [](const DeviceAddressPtr &device_address) { device_address->set_ptr(nullptr); });
 }
 
 void ConditionGatherRunner::ExecuteInferShapeTask(OpContext<KernelTensor> *const context, bool high_perf) {
@@ -252,11 +252,9 @@ void ConditionGatherRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     MS_EXCEPTION_IF_NULL(input_kernel_tensors_[input_index]->device_address());
     output_kernel_tensors_[i]->device_address()->set_tensor_storage_info(
       input_kernel_tensors_[input_index]->device_address()->GetTensorStorageInfo());
-    output_kernel_tensors_[i]->device_address()->set_pointer_ref_count(
-      input_kernel_tensors_[input_index]->device_address()->pointer_ref_count());
-    output_kernel_tensors_[i]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Actor:" << GetAID()
-                  << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
+    output_kernel_tensors_[i]->set_pointer_ref_count(input_kernel_tensors_[input_index].get());
+    output_kernel_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_kernel_tensors_[i]->new_ref_count()
                   << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()
                   << " ref input kernel tensor:" << input_kernel_tensors_[input_index]->ToString();
   }

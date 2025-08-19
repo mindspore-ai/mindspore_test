@@ -153,7 +153,7 @@ void MapTensor::TransExportDataToTensor(const HashTableExportData &export_data) 
   }
 }
 
-MapTensor::ExportData MapTensor::ExportDataFromDevice(const DeviceSyncPtr &device_sync, bool incremental,
+MapTensor::ExportData MapTensor::ExportDataFromDevice(const DeviceAddressPtr &device_sync, bool incremental,
                                                       bool *last_slice) const {
   MS_LOG(EXCEPTION) << "Call deprecated interface ExportDataFromDevice.";
 }
@@ -188,7 +188,7 @@ MapTensor::ExportData MapTensor::Export(bool incremental) const {
   MS_LOG(DEBUG) << (incremental ? "Incremental" : "Full") << " export MapTensor";
 
   // Check device
-  DeviceSyncPtr device_sync = device_address();
+  DeviceAddressPtr device_sync = device_address();
   if (device_sync != nullptr) {
     return ExportDataFromDevice(device_sync, incremental);
   }
@@ -206,7 +206,7 @@ MapTensor::ExportData MapTensor::Export(bool incremental) const {
 
 MapTensor::ExportData MapTensor::ExportSlice(bool incremental, bool *last_slice) const {
   MS_EXCEPTION_IF_NULL(last_slice);
-  DeviceSyncPtr device_sync = device_address();
+  DeviceAddressPtr device_sync = device_address();
   MS_EXCEPTION_IF_NULL(device_sync);
   return ExportDataFromDevice(device_sync, incremental, last_slice);
 }

@@ -224,7 +224,7 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
   if (device_address == nullptr) {
     device_address = device_context_->device_res_manager_->CreateDeviceAddress(
       nullptr, static_cast<size_t>(msTensor->DataNBytes()), msTensor->shape(), mindspore::Format::ND,
-      msTensor->data_type(), device_name_, device_id_, stream_id_);
+      msTensor->data_type(), device_name_, stream_id_);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->set_from_persistent_mem(msTensor->is_parameter());
     msTensor->set_device_address(device_address);
@@ -298,7 +298,7 @@ const tensor::TensorPtr BoostModelATB::CreateMsTensorFromTensorDesc(const atb::T
   if (device_address == nullptr) {
     device_address = device_context_->device_res_manager_->CreateDeviceAddress(
       nullptr, static_cast<size_t>(msTensor->DataNBytes()), msTensor->shape(), mindspore::Format::ND,
-      msTensor->data_type(), device_name_, device_id_, stream_id_);
+      msTensor->data_type(), device_name_, stream_id_);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->set_from_persistent_mem(msTensor->is_parameter());
     msTensor->set_device_address(device_address);

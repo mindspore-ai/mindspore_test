@@ -26,6 +26,7 @@
 #include "frontend/parallel/node_check.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"

@@ -20,7 +20,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
@@ -64,7 +64,7 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
+  DeviceAddressPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
@@ -98,9 +98,9 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   }
 
   auto src_addr = src_tensor->device_address();
-  device::DeviceAddressPtr src_device_ptr = nullptr;
+  DeviceAddressPtr src_device_ptr = nullptr;
   if (src_addr != nullptr) {
-    src_device_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(src_addr);
+    src_device_ptr = std::dynamic_pointer_cast<DeviceAddress>(src_addr);
     MS_EXCEPTION_IF_NULL(src_device_ptr);
     auto src_type = GetDeviceNameByType(src_device_ptr->GetDeviceType());
     if (to == src_type) {
@@ -133,13 +133,17 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, device_id, 0);
+      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
+    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(dst_addr, type_id, host_shape);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());
     if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
                         << ") isn't enough. Allocate size: " << size;
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
     dst_tensor->set_device_address(dst_addr);
   } else if (dst_addr->GetMutablePtr() == nullptr) {

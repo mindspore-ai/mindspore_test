@@ -32,8 +32,7 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_address->GetMutablePtr(), device_address->size(), shape,
     kernel::GetFormatFromStrToEnum(device_address->format()), device_address->type_id(),
-    device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id(),
-    device_address->stream_id());
+    device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->stream_id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
 }
@@ -75,8 +74,6 @@ void StorageBase::InplaceReSize(int64_t size) {
     }
     device_data_->set_ptr(device_ptr);
     device_data_->set_from_mem_pool(true);
-    static std::string name = "Alloc memory";
-    device_data_->IncreaseNewRefCount(name);
     device_data_->SetSize(size);
     return;
   }
