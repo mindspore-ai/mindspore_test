@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "abstract/utils.h"
 #include "utils/core_op_utils.h"
-#include "utils/simple_info.h"
 
 namespace mindspore::ops {
 namespace {

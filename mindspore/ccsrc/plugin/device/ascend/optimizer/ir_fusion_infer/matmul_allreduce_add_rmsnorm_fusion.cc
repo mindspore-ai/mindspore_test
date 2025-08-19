@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 #include "ir/tensor_new.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "ir/core_ops_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"

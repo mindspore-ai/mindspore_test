@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "ir/core_ops_name.h"
 #include "ir/dtype/number.h"
 #include "ir/func_graph.h"
 #include "ir/param_info.h"
