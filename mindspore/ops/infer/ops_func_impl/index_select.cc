@@ -45,14 +45,16 @@ BaseShapePtr IndexSelectFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto output_shape = input_shape;
   auto index_shape = input_args[kIndex2]->GetShape()->GetShapeVector();
   if (MS_LIKELY(!IsDynamicRank(index_shape))) {
-    MS_CHECK_VALUE(index_shape.size() == 1, "For 'IndexSelect', the dimension of 'index' must be 1, but got " +
-                                              std::to_string(index_shape.size()) + ".");
+    MS_CHECK_VALUE(index_shape.size() <= 1,
+                   "For 'IndexSelect', the rank of 'index' must not be greater than 1, but got " +
+                     std::to_string(index_shape.size()) + ".");
   }
 
   if (MS_UNLIKELY(IsDynamic(index_shape))) {
     output_shape[axis] = abstract::TensorShape::kShapeDimAny;
   } else {
-    output_shape[axis] = index_shape[kIndex0];
+    // Scalar Tensor is treated as a 1-D Tensor with shape (1,)
+    output_shape[axis] = index_shape.empty() ? 1 : index_shape[kIndex0];
   }
 
   return std::make_shared<abstract::TensorShape>(output_shape);

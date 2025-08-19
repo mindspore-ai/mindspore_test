@@ -105,8 +105,8 @@ def test_tensor_index_copy__test_op():
     """
     x1 = ms.mint.randn((5, 5, 3), dtype=ms.float32)
     dim1 = 0
-    index1 = ms.Tensor([0, 2], dtype=ms.int64)
-    tensor1 = ms.mint.randn((2, 5, 3), dtype=ms.float32)
+    index1 = ms.Tensor([2,], dtype=ms.int64)
+    tensor1 = ms.mint.randn((1, 5, 3), dtype=ms.float32)
 
     x2 = ms.mint.randn((5, 3), dtype=ms.float32)
     dim2 = -1
