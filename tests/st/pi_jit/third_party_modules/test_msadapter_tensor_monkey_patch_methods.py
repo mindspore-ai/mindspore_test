@@ -87,3 +87,55 @@ def test_msadapter_Tensor_new_ones_monkey_patch():
 
     assert_equal(o1, o2)
     assert_executed_by_graph_mode(compiled_fn)
+
+
+# mindspeed patch
+def ensure_contiguous_wrapper(fn):
+    def wrapper(tensor, *args, **kwargs):
+        if not tensor.is_contiguous():
+            tensor = tensor.contiguous()
+        # LOAD_FAST    0 tensor
+        # BUILD_LIST   1
+        # LOAD_FAST    1 args
+        # LIST_EXTEND  1 // merge tensor and *args
+        return fn(tensor, *args, **kwargs)
+
+    return wrapper
+
+
+# msadapter patch
+def view(self, *shape):
+    result = []
+    if type(shape) is tuple:
+        for items in shape:
+            if not isinstance(items, int):
+                for item in items:
+                    result.append(item)
+            else:
+                result.append(items)
+    return ops.reshape(self, result)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_msadapter_and_mindspeed_Tensor_view_monkey_patch():
+    """
+    Feature: Test msadapter+mindspeed Tensor.view monkey patch method.
+    Description: monkey patch Tensor.view with custom view() function.
+    Expectation: no exception, no graph break.
+    """
+
+    # Monkey patch
+    Tensor.view = ensure_contiguous_wrapper(view)
+
+    def fn(x: Tensor):
+        return x.view(-1, 2) + 1
+
+    x = mindspore.tensor([[1, 2, 3, 4]])  # Shape is (1, 4)
+
+    o1 = fn(x)
+
+    compiled_fn = jit(fn, capture_mode='bytecode', fullgraph=True)
+    o2 = compiled_fn(x)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(compiled_fn)

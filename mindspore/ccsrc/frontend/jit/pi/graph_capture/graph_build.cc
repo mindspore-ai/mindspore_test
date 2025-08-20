@@ -1918,13 +1918,14 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     div = 1;
   } else if (opcode == LIST_EXTEND) {
     if (arg->IsConstantValue()) {
-      build_inputs = UnpackConstObject(arg->GetConstantInfo()->value());
+      const std::vector<ValueNode *> &extended_nodes = UnpackConstObject(arg->GetConstantInfo()->value());
+      build_inputs.insert(build_inputs.end(), extended_nodes.begin(), extended_nodes.end());
     } else if (arg->GetOpcode() == BUILD_LIST || arg->GetOpcode() == BUILD_TUPLE) {
       build_inputs.insert(build_inputs.end(), arg->inputs().begin(), arg->inputs().end());
     } else {
       int size = GetIterableSize(arg);
       if (size < 0) {
-        MS_LOG(ERROR) << "Invalid iterable object:" << arg->ToString();
+        MS_LOG(INFO) << "Invalid iterable object:" << arg->ToString();
         return nullptr;
       }
       if (size > 0) {
