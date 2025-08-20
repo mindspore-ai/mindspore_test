@@ -16,7 +16,7 @@
 
 #include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
 #include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
-#include "common/ms_factory.h"
+#include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore::kernel {
 static bool g_init_op_plugin_kernels = []() {

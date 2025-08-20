@@ -188,7 +188,7 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
     if (kernel_mod->Init(prim, inputs, outputs)) {
       // use op plugin when init success
       cache_helper.SetCache(key, kernel_mod);
-      PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device_name, kernel_mod);
+      PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
       return kernel_mod;
     }
     cache_helper.SetCache(key, kernel_mod);
