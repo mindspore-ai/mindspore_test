@@ -15,9 +15,9 @@ ring_attention_update:
             - This is an experimental API that is subject to change or deletion.
             - When `layout` is ``"TND"``, the last dimension of `prev_attn_out` must be a multiple of 64.
             - When `layout` is ``"TND"``, `actual_seq_qlen` is mandatory.
-            - When `layout` is ``"TND"``, N x D must satisfy the constraint:
-              (AlignUp(NxD, 64)x(DataSizex6+8))+(AlignUp(Nx8, 64)x56) <= 192x1024.
-              DataSize is 4 bytes when `prev_attn_out` dtype is float32, 2 bytes when dtype is float16 / bfloat16.
+            - When `layout` is ``"TND"``, N * D must satisfy the constraint:
+              :math:`(\text{AlignUp}(N*D, 64)*(DataSize*6+8))+(\text{AlignUp}(N*8, 64)*56) <= 192*1024`.
+              :math:`DataSize` is 4 bytes when `prev_attn_out` dtype is float32, 2 bytes when dtype is float16 / bfloat16.
             - When `layout` is ``"TND"``, if `actual_seq_qlen` is not a non-decreasing sequence from 0 to T, the result is undefined.
 
         Args:

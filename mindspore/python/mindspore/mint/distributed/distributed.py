@@ -150,7 +150,7 @@ class TCPStore:
         - Currently, all parameters provided by the TCPStore class constructor are not supported
           except for `host_name`, `port`, `world_size`, `is_master`, `timeout` and `wait_for_workers`,
           which are reserved parameters and invalid settings.
-        - The current TcpStore function is limited and only supports scenarios where the key is
+        - The current TCPStore function is limited and only supports scenarios where the key is
           less than 4k and the value is less than 1G. Complex scenarios are to be supported.
 
     Args:
