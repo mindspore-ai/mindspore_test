@@ -293,8 +293,9 @@ DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
       dlm_tensor->strides[i] = 1;
     }
   }
-  auto view = kernel::pyboost::as_strided(src, dlm_tensor->shape, dlm_tensor->strides, src->storage_offset());
   runtime::Pipeline::Get().WaitFrontend();
+  auto view = kernel::pyboost::as_strided(src, dlm_tensor->shape, dlm_tensor->strides, src->storage_offset());
+  runtime::Pipeline::Get().WaitForward();
   dlm_tensor->tensor.manager_ctx = dlm_tensor;
   dlm_tensor->tensor.deleter = &deleter;
   auto view_address = std::dynamic_pointer_cast<device::DeviceAddress>(view->device_address());
