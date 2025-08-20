@@ -1,6 +1,14 @@
 mindspore.dataset
 =================
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   mindspore.dataset.loading
+   mindspore.dataset.transforms
+   mindspore.mindrecord
+
 MindSpore Dataset is a high-performance data engine module specifically designed within the MindSpore framework,
 dedicated to providing efficient, flexible, and user-friendly data loading and preprocessing solutions for deep learning tasks.
 It supports multiple data formats (such as MindRecord, TFRecord, etc.) and includes a rich set of built-in public dataset interfaces,
