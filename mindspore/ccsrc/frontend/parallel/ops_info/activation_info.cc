@@ -70,13 +70,14 @@ Status ActivationInfo::GetAttrs() {
 }
 
 Status ActivationBase::CheckInputLayout() {
-  if (inputs_tensor_info_.size() != kSizeOne) {
+  auto input_size = inputs_shape_.size();
+  if (inputs_tensor_info_.size() != inputs_shape_.size()) {
     if (is_in_layout_propagation_) {
       MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                   << " rather than 1.";
+                   << " rather than " << input_size << ".";
     } else {
       MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                    << " rather than 1.";
+                    << " rather than " << input_size << ".";
     }
     return FAILED;
   }
