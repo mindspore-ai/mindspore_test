@@ -21,7 +21,7 @@
 #include <memory>
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
+#include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
 #endif
 
 namespace mindspore {

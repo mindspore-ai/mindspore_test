@@ -24,7 +24,7 @@
 #include "Eigen/Core"
 #include "abstract/utils.h"
 #include "ir/anf.h"
-#include "plugin/device/cpu/hal/device/cpu_common.h"
+#include "plugin/device/cpu/kernel/cpu_common.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/python_fallback_running.h"

@@ -20,8 +20,8 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_tensor_array.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/rl/cpu_tensor_array.h"
 #include "runtime/device/tensor_array_manager.h"
 
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
+#include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {
 namespace kernel {

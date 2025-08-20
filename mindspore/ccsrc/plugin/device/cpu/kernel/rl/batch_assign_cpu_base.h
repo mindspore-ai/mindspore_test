@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KEREL_RL_BATCH_ASSIGN_CPU_BASE_H_
 
 #include <shared_mutex>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

@@ -40,7 +40,7 @@
 #include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
-#include "plugin/device/cpu/hal/hardware/cpu_device_context.h"
+#include "plugin/cpu/cpu_device_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif

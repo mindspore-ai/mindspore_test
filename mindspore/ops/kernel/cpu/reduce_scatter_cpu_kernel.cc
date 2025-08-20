@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/reduce_scatter_cpu_kernel.h"
 
-#include "plugin/device/cpu/hal/device/mpi/mpi_interface.h"
+#include "plugin/cpu/kernel_executor/mpi/mpi_interface.h"
 #include "mindspore/ops/infer/reduce_scatter.h"
 
 namespace mindspore {

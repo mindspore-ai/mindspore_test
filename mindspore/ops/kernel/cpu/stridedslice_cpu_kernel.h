@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "nnacl/fp32/strided_slice_fp32.h"
 

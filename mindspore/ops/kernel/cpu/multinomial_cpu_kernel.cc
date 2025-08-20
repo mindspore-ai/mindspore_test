@@ -27,7 +27,7 @@
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "runtime/hardware_abstract/kernel_base/philox_random.h"
 

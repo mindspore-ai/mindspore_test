@@ -43,7 +43,7 @@
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
+#include "plugin/cpu/kernel_executor/kernel_select/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

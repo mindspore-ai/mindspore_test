@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <functional>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_common.h"
+#include "plugin/device/cpu/kernel/cpu_common.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 

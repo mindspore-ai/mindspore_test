@@ -17,7 +17,7 @@
 #include "kernel/cpu/embedding_look_up_comm_grad_cpu_kernel.h"
 #include <thread>
 
-#include "plugin/device/cpu/hal/device/mpi/mpi_interface.h"
+#include "plugin/cpu/kernel_executor/mpi/mpi_interface.h"
 
 namespace mindspore {
 namespace kernel {

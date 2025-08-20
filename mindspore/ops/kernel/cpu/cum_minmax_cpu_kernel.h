@@ -22,7 +22,7 @@
 #include <string>
 #include <memory>
 #include <map>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 enum CumOpType { CUMMIN = 0, CUMMAX, CUM_OP_INVALID_TYPE = 255 };

@@ -20,7 +20,7 @@
 #include <vector>
 #include <utility>
 #include "mindspore/ops/infer/approximate_equal.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
