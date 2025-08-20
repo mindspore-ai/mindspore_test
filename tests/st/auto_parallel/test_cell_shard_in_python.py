@@ -56,6 +56,16 @@ def test_cell_shard_2():
     master_port = 11293
     run_case(case_name, master_port)
 
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
+def test_cell_shard_3():
+    '''
+    Feature: run shard in python.
+    Description: Test cell shard in python.
+    Expectation: Run success.
+    '''
+    case_name = "test_cell_shard_3"
+    master_port = 11294
+    run_case(case_name, master_port)
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_cell_shard_with_bprop():
@@ -65,5 +75,5 @@ def test_cell_shard_with_bprop():
     Expectation: Run success.
     '''
     case_name = "test_cell_shard_with_bprop"
-    master_port = 11294
+    master_port = 11295
     run_case(case_name, master_port)

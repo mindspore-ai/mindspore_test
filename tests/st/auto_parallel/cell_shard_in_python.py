@@ -147,9 +147,13 @@ base_device_matrix = (2, 4)  # dp=2, mp=4
 base_alias_name = ("dp", "mp")
 base_rank_list = list(range(8))
 
-base_device_matrix2 = (8,)  # dp=2, mp=4
+base_device_matrix2 = (8,)
 base_alias_name2 = ("dp_mp",)
 base_rank_list2 = list(range(8))
+
+base_device_matrix3 = (2, 2, 2)
+base_alias_name3 = ("cp", "ep", "tp")
+base_rank_list3 = list(range(8))
 
 
 def test_cell_shard_1():
@@ -220,6 +224,38 @@ def test_cell_shard_2():
     output_layout_dict = output_layout.to_dict()
     assert output_layout_dict["tensor_map"] == (1, 0)
 
+
+def test_cell_shard_3():
+    '''
+    Feature: Model parallel in python shard, tp extend ep.
+    Description: Test model parallel in python shard with changeable device matrix .
+    Expectation: Run success.
+    '''
+    layout3 = Layout(base_device_matrix3, base_alias_name3, base_rank_list3)
+    x_layout = layout3("cp", "ep", "tp")
+
+    in_strategy_1 = (layout3("cp", ("ep", "tp"), "None"),)
+    out_strategy_1 = (layout3("cp", ("ep", "tp"), "None"),)
+
+    in_strategy_2 = (layout3("cp", "ep", "tp"),)
+    out_strategy_2 = (layout3("cp", "ep", "tp"),)
+
+    in_strategy_3 = (layout3(("cp", "ep"), "None", "tp"),)
+    out_strategy_3 = (layout3("cp", "ep", "tp"),)
+
+    strategy_list = ((in_strategy_1, out_strategy_1),
+                     (in_strategy_2, out_strategy_2),
+                     (in_strategy_3, out_strategy_3))
+    output = run_scenario(
+        "Model Parallel (MP)",
+        x_layout,
+        x_shape=(16, 32, 16),
+        strategy_list=strategy_list
+    )
+    output_layout = output.layout
+    assert output_layout is not None
+    output_layout_dict = output_layout.to_dict()
+    assert output_layout_dict["tensor_map"] == (2, 1, 0)
 
 def test_cell_shard_with_bprop():
     '''

@@ -127,29 +127,11 @@ class TensorRedistribution:
     def _apply_eazy_redistribute(self, src_layout, dst_layout):
         """_apply_eazy_redistribute"""
         if (src_layout.device_matrix != dst_layout.device_matrix or
-                src_layout.alias_name != dst_layout.alias_name or
                 src_layout.rank_list != dst_layout.rank_list):
             return False
 
-        def tensor_map_items(layout):
-            number_items = []
-            tuple_items = []
-            for _, item in enumerate(layout.tensor_map):
-                if item == -1:  # Replicated axis
-                    continue
-                if isinstance(item, tuple):
-                    tuple_items.append(item)
-                else:
-                    number_items.append(item)
-            return tuple_items, number_items
-
-        src_tuple_map_items, src_number_map_items = tensor_map_items(src_layout)
-        dst_tuple_map_items, dst_number_map_items = tensor_map_items(dst_layout)
-        if not set(src_tuple_map_items).issubset(set(dst_tuple_map_items)) and \
-                not set(dst_tuple_map_items).issubset(set(src_tuple_map_items)):
-            return False
-        if not set(src_number_map_items).issubset(set(dst_number_map_items)) and \
-                not set(dst_number_map_items).issubset(set(src_number_map_items)):
+        tensor_map_size = len(src_layout.tensor_map)
+        if len(dst_layout.tensor_map) != tensor_map_size:
             return False
         return True
 

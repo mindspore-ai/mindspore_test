@@ -296,6 +296,158 @@ class TestRedistributionOperatorInfer:
         assert op1[0] == SPLIT_BY_AXIS
         assert op1[1] == (1, (1, 2), 32)
 
+    def test_tuple_shard_concat_to_tuple(self):
+        """
+        Feature: Test tuple shard concat operations
+        Description: Test combination of concat and split operations
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 2],
+            in_tensor_map=[(0, 1, 2), NONE],
+            out_tensor_map=[(0, 1), NONE],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == CONCAT_BY_AXIS
+        assert op1[1] == (0, 2, 8)
+
+    def test_tuple_shard_split_to_tuple(self):
+        """
+        Feature: Test tuple shard split operations
+        Description: Test combination of concat and split operations
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 2],
+            in_tensor_map=[0, 1],
+            out_tensor_map=[0, (1, 2)],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == SPLIT_BY_AXIS
+        assert op1[1] == (1, 2, 8)
+
+    def test_tuple_shard_tp_extend_ep_case1(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case1
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 2],
+            in_tensor_map=[2, 1, 0],
+            out_tensor_map=[2, (1, 0), NONE],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (2, 1, 2, 0, 2)
+
+    def test_tuple_shard_tp_extend_ep_case2(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case2
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 2],
+            in_tensor_map=[2, (1, 0), NONE],
+            out_tensor_map=[2, 1, 0],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (2, 2, 1, 0, 2)
+
+    def test_tuple_shard_tp_extend_ep_case3(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case3
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 4, 2],
+            in_tensor_map=[3, (2, 1), 0],
+            out_tensor_map=[3, (2, 1, 0), NONE],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (2, 1, 2, 0, 2)
+
+    def test_tuple_shard_tp_extend_ep_case4(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case4
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 4, 2],
+            in_tensor_map=[3, (2, 1, 0), NONE],
+            out_tensor_map=[3, (2, 1), 0],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (2, 2, 1, 0, 2)
+
+    def test_tuple_shard_tp_extend_ep_case5(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case5
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 4, 8, 2],
+            in_tensor_map=[4, (3, 2), (1, 0)],
+            out_tensor_map=[4, (3, 2, 1, 0), NONE],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (16, 1, 2, (1, 0), 16)
+
+    def test_tuple_shard_tp_extend_ep_case6(self):
+        """
+        Feature: Test tuple shard tp extend ep operations
+        Description: Test tuple shard tp extend ep operations, case5
+        Expectation: Should return SUCCESS with correct operation sequence
+        """
+        inferrer = RedistributionOperatorInfer(
+            dev_mat=[8, 4, 4, 8, 2],
+            in_tensor_map=[4, (3, 2, 1, 0), NONE],
+            out_tensor_map=[4, (3, 2), (1, 0)],
+        )
+        status = inferrer.InferRedistributionOperator()
+        assert status == Status.SUCCESS
+        self.print_op_list(inferrer.operator_list_)
+        assert len(inferrer.operator_list_) == 1
+        op1 = inferrer.operator_list_[0]
+        assert op1[0] == PERMUTE_BY_AXIS
+        assert op1[1] == (16, 2, 1, (1, 0), 16)
+
 def test_2x3_single_dim():
     """
     Feature: Test rank_list generate by device matrix
