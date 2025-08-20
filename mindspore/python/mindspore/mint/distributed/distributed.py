@@ -149,9 +149,9 @@ class TCPStore:
         - Currently, all parameters provided by the TCPStore class constructor are not supported.
           The master node and port number are uniformly specified by the MindSpore framework.
           The following parameters are provided, currently not supported and settings are invalid.
-        - The current TcpStore function is limited and only supports scenarios where the key is
+        - The current TCPStore function is limited and only supports scenarios where the key is
           less than 4k and the value is less than 1G. Complex scenarios are to be supported.
-        - The timeout interval for message sending and receiving in the TcpStore function is controlled by
+        - The timeout interval for message sending and receiving in the TCPStore function is controlled by
           the `MS_RECEIVE_MSG_TIMEOUT` environment variable, in seconds, with a default value of ``15``.
           If a timeout occurs, the user needs to increase the configuration value.
 
