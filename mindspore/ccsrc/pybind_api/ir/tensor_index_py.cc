@@ -2514,9 +2514,9 @@ void RecordTensorIndex(const TensorPtr index, TensorPtrList *remain_indexes, con
     remain_indexes->at(dim) = index;
   }
   while (dim > remain_indexes->size()) {
-    remain_indexes->emplace_back(empty_tensor_9d);
+    (void)remain_indexes->emplace_back(empty_tensor_9d);
   }
-  remain_indexes->emplace_back(index);
+  (void)remain_indexes->emplace_back(index);
 }
 
 TensorPtr DoSelect(const TensorPtr &self, int dim, int index, int dim_size) {
@@ -2550,9 +2550,9 @@ TensorPtr CpuDirectly(const TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(dst);
   // sync stream to ensure device address is ready
   runtime::Pipeline::Get().WaitForward();
-  host_context->device_res_manager_->SyncStream(tensor->device_address()->stream_id());
+  host_context->device_res_manager_->SyncStream(CurrentStream::id());
   // create a new src device address with offset
-  size_t device_offset = tensor->storage_offset() * abstract::TypeIdSize(tensor->data_type());
+  size_t device_offset = static_cast<size_t>(tensor->storage_offset()) * abstract::TypeIdSize(tensor->data_type());
   auto src = MakeDeviceAddress(tensor->data_type(), tensor->shape(), tensor->device_address()->GetMutablePtr(),
                                device_offset, tensor->device_address()->GetDeviceType());
   MS_EXCEPTION_IF_NULL(src);
@@ -2614,6 +2614,7 @@ int64_t GetIndex(const py::object &index, const int64_t default_value) {
   }
   if (IsTensorPy(index)) {
     TensorPtr tensor_index = ConvertToTensor(index);
+    MS_EXCEPTION_IF_NULL(tensor_index);
     return DoItem(tensor_index);
   }
   return index.cast<int64_t>();
@@ -2666,6 +2667,7 @@ TensorPtr ProcessDimInMultiDimIndex(const TensorPtr &prev_result, const TensorPt
     *dim += 1;
   } else if (IsTensorPy(index)) {
     TensorPtr tensor_index = ConvertToTensor(index);
+    MS_EXCEPTION_IF_NULL(tensor_index);
     const std::vector<TypeId> int_types = {kNumberTypeInt8,  kNumberTypeInt16,  kNumberTypeInt32,  kNumberTypeInt64,
                                            kNumberTypeUInt8, kNumberTypeUInt16, kNumberTypeUInt32, kNumberTypeUInt64};
     auto type_id = tensor_index->data_type();
@@ -2717,7 +2719,9 @@ py::tuple WrapIndexToTuple(const py::object &py_index) {
   }
   if (py::isinstance<py::list>(py_index)) {
     py::list py_list = py_index.cast<py::list>();
-    if (py_list.size() >= 32) {
+    // If the list is too long, convert to tuple directly to avoid performance issue.
+    const size_t list_max_index_num = 32;
+    if (py_list.size() >= list_max_index_num) {
       return py::make_tuple(py_index);
     }
     bool exist_no_int_bool = false;
@@ -2742,6 +2746,7 @@ int CountIndexedDims(const py::tuple &indexes) {
     py::object index = indexes[i];
     if (IsTensorPy(index)) {
       TensorPtr tensor = ConvertToTensor(index);
+      MS_EXCEPTION_IF_NULL(tensor);
       if (tensor->data_type() == TypeId::kNumberTypeBool) {
         count += tensor->DataDim();
       } else {
@@ -2877,6 +2882,7 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
   TypePtr self_dtype = TypeIdToType(self->data_type());
   if (IsTensorPy(py_value)) {
     tensor_value = ConvertToTensor(py_value);
+    MS_EXCEPTION_IF_NULL(tensor_value);
   } else if (py::isinstance<py::int_>(py_value)) {
     tensor_value = tensor::from_scalar(py::cast<int64_t>(py_value), self_dtype);
   } else if (py::isinstance<py::bool_>(py_value)) {
