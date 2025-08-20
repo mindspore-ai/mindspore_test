@@ -4686,7 +4686,7 @@ py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object 
   auto args_abstract_wrapper = HandleInputArgs(args);
   const auto &helper = GraphBuildHelperFactory(callable_info);
   if (helper != nullptr) {
-    auto callable_value = ConvertPyObjToValue(callable_info);
+    auto callable_value = ConvertPyCallableToValue(callable_info);
     CallInfo call_info{callable_value, callable_info, args_abstract_wrapper};
     auto res = helper->Prepare(this, call_info);
     UpdateNodeInfo(res, call_node, stop_reason);
