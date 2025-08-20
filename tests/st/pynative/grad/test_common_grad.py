@@ -20,7 +20,7 @@ from mindspore import grad
 import mindspore.nn as nn
 from mindspore import context, ops
 from mindspore.common import Tensor
-from mindspore.common.api import jit
+from mindspore.common.api import jit, _pynative_executor
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
@@ -961,16 +961,39 @@ def test_auto_grad_stop_gradient_inplace():
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
+def test_auto_grad_stop_gradient_inplace_input():
+    """
+    Feature: Test stop gradient inplace.
+    Description: The input is applied by inplace stop_gradient.
+    Expectation: Success.
+    """
+    x = Tensor([2.0], ms.float32)
+    y = Tensor([3.0], ms.float32)
+
+    def fn(x, y):
+        ops.stop_gradient_(x)
+        return x * y
+    grad_op = ops.GradOperation(get_all=True)
+    grads = grad_op(fn)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.array([0.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array([2.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_no_grad_stop_gradient_inplace_view():
     """
     Feature: Test stop gradient inplace view in no grad mode.
     Description: Test stop gradient inplace view in no grad mode.
-    Expectation: Success.
+    Expectation: Raise Runtime Error.
     """
     x = Tensor([2.0, 3.0], ms.float32)
     net = StopGradientInplaceViewNet()
-    out = net(x)
-    assert np.allclose(out.asnumpy(), np.array([8.0, 12.0], dtype=np.float32), 0.00001, 0.00001)
+    with pytest.raises(RuntimeError, match="Cannot stop_gradient view inplace"):
+        net(x)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'],
