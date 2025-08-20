@@ -66,3 +66,26 @@ def get_sdc_detect_result():
         False
     """
     return _c_expression.get_sdc_detect_result()
+
+
+class _SdcDetector:
+    """
+    Manager of feature value sampling for SDC detect
+    """
+    def __init__(self):
+        self.param_count = -1
+
+    def need_sample(self):
+        """"If need to sample feature value."""
+        if not _c_expression.is_silent_detect_enable():
+            return False
+        grad_sample_interval = _c_expression.get_silent_detect_config('grad_sample_interval')
+        self.param_count = (self.param_count + 1) % grad_sample_interval
+        return self.param_count == 0
+
+    @staticmethod
+    def get_dump_name(param_name):
+        """Get dump file name with sdc prefix."""
+        return _c_expression.get_silent_detect_feature_name(param_name)
+
+_sdc_detector = _SdcDetector()

@@ -15,6 +15,7 @@
 
 import math
 import os
+import subprocess
 import tempfile
 import re
 import mindspore as ms
@@ -110,3 +111,73 @@ def test_silent_detect_v4():
         silent_detect_log = extract_silent_detect_log(log_content)
         assert target_out == silent_detect_log
     del os.environ["VLOG_v"]
+
+
+def exec_command(cmd):
+    s = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    out = s.stdout.read().decode("UTF-8")
+    s.stdout.close()
+    return out
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_silent_detect_strikeout():
+    '''
+    Feature: silent detect with strikeout
+    Description: inject feature value abnormal to strikeout, then start CheckSum
+    Expectation: record feature value strikes and CheckSum
+    '''
+    os.environ['MS_NPU_ASD_CONFIG'] = "enable:true,with_checksum:true,grad_sample_interval:1,cooldown:1,"\
+                                      "strikes_num:2,strikes_window:5,checksum_cooldown:2"
+    os.environ['VLOG_v'] = "13001"
+    ret1 = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=11235 --join=True --log_dir=./test_silent_detect_strikeout_log "
+        "python -s silent_detect.py semi_auto_parallel"
+    )
+    if ret1 != 0:
+        result = subprocess.run("grep 'port have been bound' test_silent_detect_strikeout_log/worker_*",
+                                shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
+        result = subprocess.run(f"grep -r 'Error code' test_silent_detect_strikeout_log",
+                                shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
+    assert ret1 == 0
+    ret2 = os.system("grep -r 'Silent detect strike detected:' test_silent_detect_strikeout_log/worker_*")
+    assert ret2 == 0
+    ret3 = os.system("grep -r 'Feature value detection strikes out!' test_silent_detect_strikeout_log/worker_*")
+    assert ret3 == 0
+    ret4 = os.system("grep -r 'Global CheckSum result is' test_silent_detect_strikeout_log/worker_*")
+    assert ret4 == 0
+    del os.environ['MS_NPU_ASD_CONFIG']
+    del os.environ['VLOG_v']
+    os.system('rm -rf test_silent_detect_strikeout_log')
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_silent_detect_without_parallel_pass():
+    '''
+    Feature: silent detect only supports auto_parallel or semi_auto_parallel mode
+    Description: silent detection relies on mirror ops inserted by parallel pass,
+                 i.e. auto_parallel or semi_auto_parallel mode
+    Expectation: warning log when parallel mode is data_parallel
+    '''
+    os.environ['MS_NPU_ASD_CONFIG'] = "enable:true,with_checksum:true,grad_sample_interval:1,cooldown:1,"\
+                                      "strikes_num:2,strikes_window:5,checksum_cooldown:2"
+    ret1 = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=11235 --join=True --log_dir=./test_silent_detect_without_parallel_pass "
+        "python -s silent_detect.py data_parallel"
+    )
+    if ret1 != 0:
+        result = subprocess.run("grep 'port have been bound' test_silent_detect_without_parallel_pass/worker_*",
+                                shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
+        result = subprocess.run(f"grep -r 'Error code' test_silent_detect_without_parallel_pass",
+                                shell=True, stdout=subprocess.PIPE)
+        print(result.stdout.decode("utf-8"))
+    assert ret1 == 0
+    ret2 = os.system("grep -rE \"WARNING.*Silent detect supports 'auto_parallel' and 'semi_auto_parallel' "
+                     "parallel_mode\" test_silent_detect_without_parallel_pass/worker_*")
+    assert ret2 == 0
+    del os.environ['MS_NPU_ASD_CONFIG']
+    os.system('rm -rf test_silent_detect_without_parallel_pass')

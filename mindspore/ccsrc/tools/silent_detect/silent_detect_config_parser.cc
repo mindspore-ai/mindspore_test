@@ -19,16 +19,18 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "include/common/utils/parallel_context.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 
 namespace {
-constexpr auto kMsNpuAsdConfigs = "MS_NPU_ASD_CONFIG";
+constexpr auto kMsNpuAsdConfig = "MS_NPU_ASD_CONFIG";
 
 const char kSpaceChar = ' ';
 const char kColonSeparator = ':';
 const char kEqualSeparator = '=';
 const char kCommaSeparator = ',';
+const int kNumber3 = 3;
 
 constexpr auto kEnable = "enable";
 constexpr auto kWithChecksum = "with_checksum";
@@ -39,6 +41,14 @@ constexpr auto kChecksumCooldownKey = "checksum_cooldown";
 constexpr auto kUpperThresh1Key = "upper_thresh1";
 constexpr auto kUpperThresh2Key = "upper_thresh2";
 constexpr auto kGradSampleIntervalKey = "grad_sample_interval";
+
+const int kDefaultGradSampleInterval = 10;
+const int kDefaultUpperThresh1 = 1e6;
+const int kDefaultUpperThresh2 = 1e2;
+const int kDefaultCooldown = 5;
+const int kDefaultStrikesNum = 3;
+const int kDefaultStrikesWindow = 480;
+const int kDefaultChecksumCooldown = 180;
 }  // namespace
 
 namespace mindspore {
@@ -86,13 +96,13 @@ bool SilentDetectConfigParser::ParseConfigs(const std::string &config_str) {
 SilentDetectConfigParser::SilentDetectConfigParser()
     : enable_(false),
       with_checksum_(false),
-      grad_sample_interval_(10),
-      upper_thresh1_(1e6),
-      upper_thresh2_(1e2),
-      cooldown_(5),
-      strikes_num_(3),
-      strikes_window_(480),
-      checksum_cooldown_(180) {
+      grad_sample_interval_(kDefaultGradSampleInterval),
+      upper_thresh1_(kDefaultUpperThresh1),
+      upper_thresh2_(kDefaultUpperThresh2),
+      cooldown_(kDefaultCooldown),
+      strikes_num_(kDefaultStrikesNum),
+      strikes_window_(kDefaultStrikesWindow),
+      checksum_cooldown_(kDefaultChecksumCooldown) {
   Init();
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "SilentDetect initialized with enable: " << enable_
                                   << ", with_checksum: " << with_checksum_
@@ -124,7 +134,7 @@ bool SilentDetectConfigParser::IsIntegerGreaterEqual3(const std::string &str) {
   if (!IsPositiveInteger(str)) return false;
   try {
     int value = std::stoi(str);
-    return value >= 3;
+    return value >= kNumber3;
   } catch (const std::exception &e) {
     return false;
   }
@@ -136,6 +146,16 @@ void SilentDetectConfigParser::ParseEnable(const ConfigMap &config_map) {
 
   const std::string &value = it->second;
   if (value == "true") {
+#if defined(__linux__)
+    auto parallel_context = parallel::ParallelContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(parallel_context);
+    auto parallel_mode = parallel_context->parallel_mode();
+    if (parallel_mode != parallel::kAutoParallel && parallel_mode != parallel::kSemiAutoParallel) {
+      MS_LOG(WARNING) << "Silent detect supports '" << parallel::kAutoParallel << "' and '"
+                      << parallel::kSemiAutoParallel << "' parallel_mode, but got '" << parallel_mode
+                      << "'. It may not take effect.";
+    }
+#endif
     enable_ = true;
   } else if (value == "false") {
     enable_ = false;
@@ -146,6 +166,7 @@ void SilentDetectConfigParser::ParseEnable(const ConfigMap &config_map) {
 }
 
 void SilentDetectConfigParser::ParseWithChecksum(const ConfigMap &config_map) {
+#if defined(__linux__) && defined(WITH_BACKEND)
   auto it = config_map.find(kWithChecksum);
   if (it == config_map.end()) return;
 
@@ -158,6 +179,10 @@ void SilentDetectConfigParser::ParseWithChecksum(const ConfigMap &config_map) {
     MS_LOG(WARNING) << "MS_NPU_ASD_CONFIG-with_checksum value '" << value << "' is invalid, use the default value of "
                     << with_checksum_ << ".";
   }
+#else
+  MS_LOG(WARNING) << "MS_NPU_ASD_CONFIG-with_checksum only supported on linux platform, use the default value of "
+                  << with_checksum_ << ".";
+#endif
 }
 
 void SilentDetectConfigParser::ParseCooldown(const ConfigMap &config_map) {
@@ -259,7 +284,7 @@ void SilentDetectConfigParser::ParseGradSampleInterval(const ConfigMap &config_m
 }
 
 void SilentDetectConfigParser::Init() {
-  std::string config_str = common::GetEnv(kMsNpuAsdConfigs);
+  std::string config_str = common::GetEnv(kMsNpuAsdConfig);
   if (!config_str.empty()) {
     config_str = Trim(config_str);
     if (!config_str.empty()) {

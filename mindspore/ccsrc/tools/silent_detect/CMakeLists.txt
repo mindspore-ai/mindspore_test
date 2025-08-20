@@ -1,7 +1,7 @@
-file(GLOB _DUMP_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
-set_property(SOURCE ${_DUMP_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
+file(GLOB _SILENT_DETECT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
+set_property(SOURCE ${_SILENT_DETECT_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
     SUBMODULE_ID=mindspore::SubModuleId::SM_DEBUG)
-add_library(_mindspore_silent_detect_obj OBJECT ${_DUMP_SRC_LIST})
+add_library(_mindspore_silent_detect_obj OBJECT ${_SILENT_DETECT_SRC_LIST})
 target_link_libraries(_mindspore_silent_detect_obj PRIVATE mindspore_core mindspore_common proto_input)
 add_dependencies(_mindspore_silent_detect_obj proto_input)
 set_target_properties(_mindspore_silent_detect_obj PROPERTIES INSTALL_RPATH $ORIGIN)

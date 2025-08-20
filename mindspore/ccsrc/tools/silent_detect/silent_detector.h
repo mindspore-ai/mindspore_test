@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECTOR_H
-#define MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECTOR_H
+#ifndef MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECTOR_H
+#define MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECTOR_H
 
+#include <atomic>
+#include <chrono>
 #include <deque>
 #include <optional>
-#include <unordered_map>
 #include <string>
+#include <shared_mutex>
+#include <thread>
+#include <unordered_map>
 #include "include/common/visible.h"
 #include "ir/tensor.h"
 
@@ -50,21 +54,49 @@ class DUMP_EXPORT SilentDetector {
     return instance;
   }
 
+  ~SilentDetector();
+
   SilentDetector(const SilentDetector &) = delete;
   SilentDetector &operator=(const SilentDetector &) = delete;
   SilentDetector(SilentDetector &&) = delete;
   SilentDetector &operator=(SilentDetector &&) = delete;
   std::optional<StrikeRecord> CheckValue(const string &name, double value);
-  std::optional<StrikeRecord> CheckValueWithCoolDown(const string &name, double value, int cooldown);
+  std::optional<StrikeRecord> CheckValueWithCoolDown(const string &name, double value, std::chrono::minutes cooldown);
   friend void SilentDetect(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
 
  private:
   SilentDetector();
+
+#if defined(__linux__) && defined(WITH_BACKEND)
+  void ProcessStrike(const StrikeRecord &record);
+  void DetectStrikeout();
+  void DoCheckSum();
+  void ResetTcpStore();
+  bool PutTcpStore(const std::string &key, const std::string &value);
+  std::string GetTcpStore(const std::string &key);
+  void AddTcpStore(const std::string &key, int64_t value);
+#endif
+
+  // feature value detection
   std::unordered_map<std::string, StatData> check_status_;
-  std::chrono::system_clock::time_point earliest_strike_time_;
+  std::chrono::system_clock::time_point prev_strike_time_;
+  std::chrono::minutes cooldown_;  // feature value abnormal cooldown and CheckSum running time
+  // strikeout with checksum
+  uint32_t rank_id_;
+  uint32_t rank_size_;
+  bool checksum_enable_;
+  bool checksum_result_;
+  std::deque<std::chrono::system_clock::time_point> feat_value_strikes_;
+  std::shared_mutex feat_value_strikes_mutex_;
+  uint32_t strikes_num_;
+  std::chrono::minutes strikes_window_;
+  std::chrono::system_clock::time_point prev_checksum_time_;
+  std::chrono::minutes checksum_cooldown_;
+  std::thread strikeout_detector_;
+  std::atomic<bool> strikeout_detector_running_;
 };
 
 }  // namespace silentdetect
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECTOR_H
+#endif  // MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECTOR_H

@@ -37,6 +37,7 @@ from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _H
                                                _VirtualAssignKvCache)
 from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
+from mindspore.utils.sdc_detect import _sdc_detector
 import mindspore as ms
 
 _squared_device_local_norm = None
@@ -277,6 +278,8 @@ def get_bprop_mirror_micro_step_operator(self):
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
+    # feature value sampling for sdc detect
+    feat_value_dump_name = _sdc_detector.get_dump_name(param_name) if _sdc_detector.need_sample() else None
 
     def bprop(x, z, out, dout):
         if dump_local_norm or dump_device_local_norm:
@@ -289,6 +292,9 @@ def get_bprop_mirror_micro_step_operator(self):
             if dump_device_local_norm:
                 z = F.depend(z, F.assign_add(squared_device_local_norm,
                                              cast(squared_norm, squared_device_local_norm.dtype)))
+        if feat_value_dump_name and z.ndim > 1:
+            feat_value = square(F.max(F.abs(z))[0])
+            z = F.depend(z, tensor_dump(feat_value_dump_name, feat_value))
         real_grad = z
         assign_out = dout
         if issubclass_(F.typeof(dout), mstype.tensor_type):
@@ -343,14 +349,16 @@ def get_bprop_all_gather(self):
         ln_print = P.Print()
         tensor_dump = P.TensorDump()
         reduce_sum = P.ReduceSum(keep_dims=False)
-        square = P.Square()
         sqrt = P.Sqrt()
+    square = P.Square()
     if dump_local_norm_path:
         global_rank = get_rank()
         file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
+    # feature value sampling for sdc detect
+    feat_value_dump_name = _sdc_detector.get_dump_name(param_name) if _sdc_detector.need_sample() else None
 
     def bprop(x, out, dout):
         if param_name and (dump_local_norm or dump_device_local_norm):
@@ -363,6 +371,9 @@ def get_bprop_all_gather(self):
             if dump_device_local_norm:
                 dout = F.depend(dout, F.assign_add(squared_device_local_norm,
                                                    cast(squared_norm, squared_device_local_norm.dtype)))
+        if param_name and feat_value_dump_name and dout.ndim > 1:
+            feat_value = square(F.max(F.abs(dout))[0])
+            dout = F.depend(dout, tensor_dump(feat_value_dump_name, feat_value))
 
         dx = reduce_scatter(dout)
         if mean_flag:
@@ -452,6 +463,8 @@ def get_bprop_micro_step_all_gather(self):
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
+    # feature value sampling for sdc detect
+    feat_value_dump_name = _sdc_detector.get_dump_name(param_name) if _sdc_detector.need_sample() else None
 
     def bprop(x, z, out, dout):
         if with_mirror_operator:
@@ -472,6 +485,9 @@ def get_bprop_micro_step_all_gather(self):
             if dump_device_local_norm:
                 z = F.depend(z, F.assign_add(squared_device_local_norm,
                                              cast(squared_norm, squared_device_local_norm.dtype)))
+        if feat_value_dump_name and z.ndim > 1:
+            feat_value = square(F.max(F.abs(z))[0])
+            z = F.depend(z, tensor_dump(feat_value_dump_name, feat_value))
         if not do_mirror:
             return (z, cast(out_tensor, dtype(z)))
         real_grad = reduce_scatter(z)
@@ -728,6 +744,8 @@ def get_bprop_mirror_operator(self):
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
+    # feature value sampling for sdc detect
+    feat_value_dump_name = _sdc_detector.get_dump_name(param_name) if _sdc_detector.need_sample() else None
     if dev_num > 1:
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
@@ -762,6 +780,9 @@ def get_bprop_mirror_operator(self):
             if dump_device_local_norm:
                 dout = F.depend(dout, F.assign_add(squared_device_local_norm,
                                                    cast(squared_norm, squared_device_local_norm.dtype)))
+        if feat_value_dump_name and dout.ndim > 1:
+            feat_value = square(F.max(F.abs(dout))[0])
+            dout = F.depend(dout, tensor_dump(feat_value_dump_name, feat_value))
 
         if dev_num == 1:
             return (dout,)

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECT_CONFIG_PARSER_H_
-#define MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECT_CONFIG_PARSER_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECT_CONFIG_PARSER_H_
+#define MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECT_CONFIG_PARSER_H_
 
 #include <functional>
 #include <map>
 #include <string>
 #include "include/common/visible.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace silentdetect {
@@ -83,4 +84,4 @@ class DUMP_EXPORT SilentDetectConfigParser {
 }  // namespace silentdetect
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_TOOLS_SILENT_CHECK_SILENT_DETECT_CONFIG_PARSER_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_DETECT_CONFIG_PARSER_H_
