@@ -225,7 +225,8 @@ class MS_CORE_API DeviceAddress {
   DeviceAddress(void *device_ptr, size_t size);
 
   explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name);
-  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name);
+  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name,
+                         uint32_t stream_id = 0);
   explicit DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId type_id,
                          const std::string &device_name, uint32_t stream_id);
   explicit DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,

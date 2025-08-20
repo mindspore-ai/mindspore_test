@@ -232,8 +232,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!SyncAllStreamForDeviceAddress(
-          device_tensor->GetDeviceType() == device::DeviceType::kCPU ? tensor_device_address : device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, tensor_device_address) ||
         !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
@@ -257,7 +256,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, host_tensor->device_address()) ||
         !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
