@@ -60,6 +60,8 @@ class AddressAllocator {
   virtual bool Free(void *address_ptr) = 0;
 
   virtual bool IsPinned() { return false; }
+
+  virtual void *GetHostPtrByDevicePtr(void *devicePtr) { return nullptr; }
 };
 
 // DevicePointer encapsulates pointer and reference count-related operations, and supports custom allocator and

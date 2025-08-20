@@ -405,6 +405,7 @@ void AscendResManager::Initialize() {
 
   enable_memory_tracker_ = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   pin_mem_allocator_ = std::make_shared<PinMemoryAllocator>(swap_manager_);
+  shared_mem_allocator_ = SharedMemoryAllocator::getInstance();
   initialized_ = true;
 }
 
