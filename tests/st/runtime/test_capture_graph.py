@@ -187,3 +187,60 @@ def test_kv_cache_for_capture_graph():
     expected = np.array([[11.036, 11.036, 11.036, 11.036], [11.036, 11.036, 11.036, 11.036]], dtype=np.float32)
 
     assert np.allclose(output, expected, rtol=0, atol=0.001), f"Result wrong, real: {output}, expected: {expected}"
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_multi_graph_cache_for_capture_graph():
+    """
+    Feature: capture graph support multi graph cache
+    Description: Test multi shape change when capture graph
+    Expectation: No exception and result is correct
+    """
+    rt.set_kernel_launch_capture(True)
+    new_input1 = Tensor(np.ones((2, 5)).astype(np.float32))
+    new_input2 = Tensor((np.ones((2, 6)) * 2).astype(np.float32))
+    new_input3 = Tensor((np.ones((2, 7)) * 3).astype(np.float32))
+    new_input4 = Tensor((np.ones((2, 8)) * 4).astype(np.float32))
+    dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+    base_shape = (2, 3)
+
+    net = SeqNet()
+    net.set_inputs(dyn_input_data)
+    net.phase = "increment"
+
+    for i in range(1, 20):
+        if i in {5, 6, 9, 12, 15}:
+            output = net(new_input1)
+            output_np = output.asnumpy()
+            expected = 9.5
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
+        elif i == 7:
+            output = net(new_input2)
+            output_np = output.asnumpy()
+            expected = 11.5
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
+        elif i == 8:
+            output = net(new_input4)
+            output_np = output.asnumpy()
+            expected = 15.5
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
+        elif i in {10, 11, 13}:
+            output = net(new_input3)
+            output_np = output.asnumpy()
+            expected = 13.5
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
+        else:
+            input_data1 = Tensor(np.full(base_shape, i).astype(np.float32))
+            output = net(input_data1)
+            output_np = output.asnumpy()
+            expected = expected_output(i)
+            assert np.allclose(output_np, expected), \
+                f"Output {output_np} does not match expected {expected} at step {i}"
