@@ -14,6 +14,7 @@ if(ENABLE_D OR ENABLE_ACL)
   add_subdirectory(mem_manager)
   add_subdirectory(hccl_adapter)
   add_subdirectory(capture_graph)
+  add_subdirectory(allocator)
 
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>)
@@ -26,6 +27,7 @@ if(ENABLE_D OR ENABLE_ACL)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_hccl_adapter_obj>)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mbuf_manager_obj>)
   list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_res_manager_obj>)
+  list(APPEND ASCEND_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_allocator_obj>)
 
   add_library(mindspore_ascend_res_manager SHARED ${ASCEND_RES_MANAGER_OBJECTS_SRC})
   target_link_libraries(mindspore_ascend_res_manager PRIVATE mindspore_core mindspore_common pybind11::module

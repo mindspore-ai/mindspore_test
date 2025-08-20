@@ -28,6 +28,7 @@
 #include "runtime/hardware_abstract/event/device_event.h"
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
+#include "plugin/res_manager/ascend/allocator/shared_memory_allocator.h"
 
 namespace mindspore {
 namespace device {
@@ -191,6 +192,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   std::shared_ptr<AddressAllocator> pin_mem_allocator() const override { return pin_mem_allocator_; }
 
+  std::shared_ptr<AddressAllocator> shared_mem_allocator() const override { return shared_mem_allocator_; }
+
  private:
   bool SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const;
@@ -234,6 +237,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
   std::shared_ptr<PinMemoryAllocator> pin_mem_allocator_{nullptr};
+  std::shared_ptr<SharedMemoryAllocator> shared_mem_allocator_{nullptr};
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   DeviceEventPtrList device_events_{};
   std::mutex device_events_mutex_;

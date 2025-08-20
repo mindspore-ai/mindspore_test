@@ -1156,6 +1156,18 @@ extern PyObject *TensorPython_RetainGrad(PyObject *self, PyObject *) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_SetSharedMemory(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  auto ret = TensorPybind::SharedMemory(tensor->value.GetTensor());
+  if (!ret) {
+    MS_LOG(WARNING) << "Failed to create shared memory between host and device";
+  }
+  Py_INCREF(self);
+  return self;
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *state;
@@ -1481,6 +1493,8 @@ static PyMethodDef Tensor_methods[] = {
   {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
   {"requires_grad_", (PyCFunction)TensorPython_RequiresGrad, METH_VARARGS, "RequiresGrad."},
   {"_retain_grad", (PyCFunction)TensorPython_RetainGrad, METH_NOARGS, "Set the tensor needs to retain the gradient."},
+  {"_shared_host_memory_with_device_", (PyCFunction)TensorPython_SetSharedMemory, METH_NOARGS,
+   "shared host memory with device."},
   {NULL, NULL, 0, NULL}};
 
 extern void TensorPy_pydealloc(PyObject *obj) {
