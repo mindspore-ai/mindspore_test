@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace kernel {
 void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist,
-                                             const std::vector<TensorPtr> &tensorlist, bool is_input) {
+                                             const TensorPtrList &tensorlist, bool is_input) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
     if (tensorlist[i] == nullptr) {
       shapelist->at(i) = internal::ShapeInfo{0};
@@ -69,7 +69,7 @@ void InternalKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *argi
 }
 
 void InternalKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> *arginfos,
-                                                const std::vector<TensorPtr> &tensorlist, bool is_input) {
+                                                const TensorPtrList &tensorlist, bool is_input) {
   arginfos->resize(tensorlist.size());
   for (size_t i = 0; i < tensorlist.size(); ++i) {
     if (is_input) {
@@ -80,8 +80,8 @@ void InternalKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutab
   }
 }
 
-bool InternalKernelInfo::IsInternalDtypeSupport(const std::vector<TensorPtr> *ms_inputs,
-                                                const std::vector<TensorPtr> *ms_outputs) {
+bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs,
+                                                const TensorPtrList *ms_outputs) {
   internal_inputs_dtype_.resize(ms_inputs->size());
   internal_outputs_dtype_.resize(ms_outputs->size());
 
@@ -107,8 +107,8 @@ bool InternalKernelInfo::IsInternalDtypeSupport(const std::vector<TensorPtr> *ms
 }
 
 void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                                           const uint64_t &tiling_key, const std::vector<TensorPtr> &inputs,
-                                           const std::vector<TensorPtr> &outputs) {
+                                           const uint64_t &tiling_key, const TensorPtrList &inputs,
+                                           const TensorPtrList &outputs) {
   auto key = GetOrGenerateOpKey(op_key);
   auto it = hash_map_.find(key);
   if (it != hash_map_.end()) {
@@ -139,7 +139,6 @@ void InternalKernelInfo::GetOrCreateKernel(const std::shared_ptr<pyboost::OpRunn
   if (internal_ret != internal::kInternalOk) {
     MS_LOG(EXCEPTION) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
   }
-}
 
   tiling_info_ = GetOrGenerateTiling(op, tiling_key);
   if (tiling_info_ == nullptr) {

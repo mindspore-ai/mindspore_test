@@ -27,9 +27,18 @@ from common.template import Template
 from common.op_proto import OpProto
 
 from . import pyboost_utils
-from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
-    number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
-    get_input_args_type_str, basic_type_convert_str, input_dtype_to_cpp_type
+from .pyboost_utils import (
+    get_input_dtype,
+    tuple_input_to_cpp_type,
+    get_return_type,
+    number_input_to_cpp_type,
+    get_const_number_convert,
+    get_tuple_input_convert,
+    is_optional_param,
+    get_input_args_type_str,
+    basic_type_convert_str,
+    input_dtype_to_cpp_type,
+)
 
 
 class OpTemplateParser:
@@ -47,38 +56,40 @@ class OpTemplateParser:
         self.op_proto = op_proto
         self.tensor_arg_handler_prt_template = Template(
             "parse_args.arg_list_[${idx}] = "
-            "PyLong_FromLong((*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", "
+            'PyLong_FromLong((*pynative::${func_str}("${func_name}", "${op_arg_name}", '
             "parse_args.arg_list_[${idx}]))->value());\n"
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         self.function_arg_handler_prt_template = Template(
             "parse_args.arg_list_[${idx}] = "
-            "PyLong_FromLong((*${func_str}(\"${func_name}\", \"${op_arg_name}\", "
+            'PyLong_FromLong((*${func_str}("${func_name}", "${op_arg_name}", '
             "parse_args.arg_list_[${idx}]))->value());\n"
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         self.arg_handler_template = Template(
             "parse_args.arg_list_[${idx}] = "
-            "py::cast(pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", parse_args.arg_list_[${idx}]));\n"
+            'py::cast(pynative::${func_str}("${func_name}", "${op_arg_name}", parse_args.arg_list_[${idx}]));\n'
             "parse_args.src_types_[${idx}] = ops::OP_DTYPE::DT_BEGIN;\n"
             "parse_args.dst_types_[${idx}] = ${new_type};\n"
         )
         self.arg_handler_optional_template = Template(
-            'if (!py::isinstance<py::none>(parse_args.arg_list_[${idx}])) {\n'
-            '  ${arg_handler_str}\n'
-            '}\n'
+            "if (!py::isinstance<py::none>(parse_args.arg_list_[${idx}])) {\n"
+            "  ${arg_handler_str}\n"
+            "}\n"
         )
-        self.arg_handler_type_map = {"to_2d_paddings": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "dtype_to_type_id": "ops::OP_DTYPE::DT_INT",
-                                     "to_kernel_size": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "to_strides": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "str_to_enum": "ops::OP_DTYPE::DT_INT",
-                                     "to_pair": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "to_dilations": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "to_output_padding": "ops::OP_DTYPE::DT_TUPLE_INT",
-                                     "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT"}
+        self.arg_handler_type_map = {
+            "to_2d_paddings": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "dtype_to_type_id": "ops::OP_DTYPE::DT_INT",
+            "to_kernel_size": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "to_strides": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "str_to_enum": "ops::OP_DTYPE::DT_INT",
+            "to_pair": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "to_dilations": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "to_output_padding": "ops::OP_DTYPE::DT_TUPLE_INT",
+            "to_rates": "ops::OP_DTYPE::DT_TUPLE_INT",
+        }
 
     @staticmethod
     def _parse_call_args_types(op_proto, basic_type=False, is_convert=False):
@@ -100,20 +111,18 @@ class OpTemplateParser:
             is_optional = is_optional_param(op_arg)
             if is_convert:
                 if op_arg.is_type_id:
-                    call_args_types.append('TypeId')
+                    call_args_types.append("TypeId")
                     continue
-                call_args_types.append(input_dtype_to_cpp_type(
-                    op_arg.arg_dtype, is_optional))
+                call_args_types.append(
+                    input_dtype_to_cpp_type(op_arg.arg_dtype, is_optional)
+                )
             else:
-                call_args_types.append(get_input_dtype(
-                    op_arg.arg_dtype, is_optional, basic_type))
+                call_args_types.append(
+                    get_input_dtype(op_arg.arg_dtype, is_optional, basic_type)
+                )
         return call_args_types
 
     def parse_call_args_with_types(self, basic_type=False, is_convert=False):
-                    op_arg.arg_dtype, is_optional))
-        return call_args_types
-
-    def parse_call_args_with_types(self, is_convert=False):
         """
         Parses the original call arguments and their types for the operator.
 
@@ -125,7 +134,9 @@ class OpTemplateParser:
         """
         call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         call_args_after_convert, _, _ = self.op_args_converter()
-        call_args_types = self._parse_call_args_types(self.op_proto, basic_type, is_convert)
+        call_args_types = self._parse_call_args_types(
+            self.op_proto, basic_type, is_convert
+        )
         call_args_with_types = []
         if is_convert:
             for type_name, arg_name in zip(call_args_types, call_args_after_convert):
@@ -154,10 +165,13 @@ class OpTemplateParser:
                 call_arg = op_arg.arg_name + "_tensor"
                 need_malloc_tensors.append(call_arg)
                 call_args_with_tensor.append(call_arg)
-            elif tuple_input_to_cpp_type(op_arg.arg_dtype) and pyboost_utils.is_tensor_list(op_arg):
+            elif tuple_input_to_cpp_type(
+                op_arg.arg_dtype
+            ) and pyboost_utils.is_tensor_list(op_arg):
                 need_malloc_tensors.append(call_arg + "_vector")
                 tensor_list_convert.append(
-                    get_tuple_input_convert(call_arg, op_arg.arg_dtype))
+                    get_tuple_input_convert(call_arg, op_arg.arg_dtype)
+                )
                 call_args_with_tensor.append(call_arg + "_vector")
             else:
                 call_args_with_tensor.append(call_arg)
@@ -202,19 +216,18 @@ class OpTemplateParser:
         for op_arg, call_arg in zip(self.op_proto.op_args, call_args):
             if number_input_to_cpp_type(op_arg.arg_dtype):
                 call_args_after_convert.append(call_arg + "_imm")
-                const_number_convert.append(
-                    get_const_number_convert(call_arg, op_arg))
+                const_number_convert.append(get_const_number_convert(call_arg, op_arg))
             elif tuple_input_to_cpp_type(op_arg.arg_dtype):
                 call_args_after_convert.append(call_arg + "_vector")
                 value_tuple_convert.append(
-                    get_tuple_input_convert(call_arg, op_arg.arg_dtype))
+                    get_tuple_input_convert(call_arg, op_arg.arg_dtype)
+                )
             else:
                 call_args_after_convert.append(call_arg)
         if const_number_convert:
-            const_number_convert.insert(
-                0, '// Convert ValuePtr to c++ scalar\n')
+            const_number_convert.insert(0, "// Convert ValuePtr to c++ scalar\n")
         if value_tuple_convert:
-            value_tuple_convert.insert(0, '// ValueTuple to std::vector\n')
+            value_tuple_convert.insert(0, "// ValueTuple to std::vector\n")
         return call_args_after_convert, value_tuple_convert, const_number_convert
 
     def get_pyboost_func_name(self):
@@ -253,22 +266,24 @@ class OpTemplateParser:
                 - type_num (int): The number of argument types.
                 - signature_table (str): The generated signature table as a string.
         """
-        signature_table = ''
+        signature_table = ""
         type_num = 0
         args_signature = self.op_proto.op_args_signature
         if args_signature is not None:
             dtype_group = args_signature.dtype_group
-            indexes = {arg.arg_name: index for index, arg in enumerate(self.op_proto.op_args)}
+            indexes = {
+                arg.arg_name: index for index, arg in enumerate(self.op_proto.op_args)
+            }
             if dtype_group is not None:
-                match = re.findall(r'\((.*?)\)', dtype_group)
+                match = re.findall(r"\((.*?)\)", dtype_group)
                 for item in match:
-                    name_args = item.replace(' ', '').split(",")
-                    signature_table += '{'
+                    name_args = item.replace(" ", "").split(",")
+                    signature_table += "{"
                     for arg in name_args:
                         arg_index = indexes[arg]
                         signature_table += f"""{arg_index}, """
                     signature_table = signature_table[:-2]
-                    signature_table += '}, '
+                    signature_table += "}, "
                     type_num += 1
                 signature_table = signature_table[:-2]
         return type_num, signature_table
@@ -284,7 +299,10 @@ class OpTemplateParser:
         call_args_types = self._parse_call_args_types(self.op_proto)
         call_args = OpTemplateParser.parse_original_call_args(self.op_proto.op_args)
         for _type, arg_name in zip(call_args_types, call_args):
-            if _type in ("mindspore::tensor::TensorPtr", "std::optional<mindspore::tensor::TensorPtr>"):
+            if _type in (
+                "mindspore::tensor::TensorPtr",
+                "std::optional<mindspore::tensor::TensorPtr>",
+            ):
                 call_args_tensor.append(arg_name)
         return call_args_tensor
 
@@ -316,8 +334,8 @@ class OpTemplateParser:
         """
         returns_type = []
         type_convert_to_base = {
-            'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::TensorPtr>',
-            'mindspore::tensor::TensorPtr': 'mindspore::tensor::TensorPtr'
+            "std::vector<mindspore::tensor::TensorPtr>": "std::vector<mindspore::tensor::TensorPtr>",
+            "mindspore::tensor::TensorPtr": "mindspore::tensor::TensorPtr",
         }
         for return_obj in self.op_proto.op_returns:
             temp_return = get_return_type(return_obj.arg_dtype)
@@ -329,7 +347,7 @@ class OpTemplateParser:
             cpp_func_return = returns_type[0]
         elif len(returns_type) > 1:
             cpp_func_return = "std::tuple<"
-            cpp_func_return += ','.join(s for s in returns_type)
+            cpp_func_return += ",".join(s for s in returns_type)
             cpp_func_return += ">"
         else:
             raise Exception("Not return found")
@@ -344,37 +362,38 @@ class OpTemplateParser:
                 - op_outputs (str): The output variable representation for the operator.
                 - call_outputs (str): The call output variable representation for the operator.
         """
-        op_outputs = ''
-        call_outputs = ''
+        op_outputs = ""
+        call_outputs = ""
         returns_type = []
         for return_obj in self.op_proto.op_returns:
             returns_type.append(get_return_type(return_obj.arg_dtype))
 
         if len(returns_type) == 1:
-            if returns_type[0] == 'mindspore::tensor::TensorPtr':
-                op_outputs = 'outputs[0]'
-                call_outputs = 'outputs_[0]'
+            if returns_type[0] == "mindspore::tensor::TensorPtr":
+                op_outputs = "outputs[0]"
+                call_outputs = "outputs_[0]"
             elif returns_type[0] == "std::vector<mindspore::tensor::TensorPtr>":
-                op_outputs = 'outputs'
-                call_outputs = 'outputs_'
+                op_outputs = "outputs"
+                call_outputs = "outputs_"
             else:
-                raise Exception(
-                    "Not support return type {}".format(returns_type[0]))
+                raise Exception("Not support return type {}".format(returns_type[0]))
         elif len(returns_type) > 1:
-            outputs_str = ''
+            outputs_str = ""
             for i in range(len(returns_type)):
-                outputs_str += 'outputs[{}],'.format(i)
+                outputs_str += "outputs[{}],".format(i)
             op_outputs = outputs_str[:-1]
 
-            outputs_str = ''
+            outputs_str = ""
             for i in range(len(returns_type)):
-                outputs_str += 'outputs_[{}],'.format(i)
+                outputs_str += "outputs_[{}],".format(i)
             outputs_str = outputs_str[:-1]
             call_outputs = "std::make_tuple(" + outputs_str + ")"
 
         return op_outputs, call_outputs
 
-    def generate_signature_str(self, kw_only_args=None, varargs=None, *, is_tensor_api: bool) -> str:
+    def generate_signature_str(
+        self, kw_only_args=None, varargs=None, *, is_tensor_api: bool
+    ) -> str:
         """
         Generates a single function signature string for the given operation prototype.
 
@@ -401,9 +420,9 @@ class OpTemplateParser:
             if is_tensor_api and _is_input_arg(arg_name, op_name):
                 continue
 
-            single_arg = ''
+            single_arg = ""
             if not first_arg:
-                single_arg = ', '
+                single_arg = ", "
 
             arg_handler = arg.arg_handler
             if arg_handler:
@@ -411,11 +430,12 @@ class OpTemplateParser:
                     arg_dtype = K.ARG_HANDLER_MAP[arg_handler]
                 else:
                     raise ValueError(
-                        f"Generate failed. Check if {arg_handler} is registered in TensorFuncRegCppGenerator.")
+                        f"Generate failed. Check if {arg_handler} is registered in TensorFuncRegCppGenerator."
+                    )
             else:
                 arg_dtype = arg.arg_dtype
                 for cast_type in arg.type_cast:
-                    arg_dtype += f'|{cast_type}'
+                    arg_dtype += f"|{cast_type}"
 
             # handle varargs params
             if varargs and arg_name in varargs and arg_index == 0:
@@ -449,33 +469,40 @@ class OpTemplateParser:
             str: Generated argument handler processing code.
         """
         arg_handler_prt_template = (
-            self.tensor_arg_handler_prt_template) if is_tensor_api else self.function_arg_handler_prt_template
+            (self.tensor_arg_handler_prt_template)
+            if is_tensor_api
+            else self.function_arg_handler_prt_template
+        )
 
         arg_handler_processor = []
         op_args = op_proto.op_args
         for idx, op_arg in enumerate(op_args):
             arg_handler = op_arg.arg_handler
-            func_str = ''.join(word.capitalize()
-                               for word in arg_handler.split('_'))
+            func_str = "".join(word.capitalize() for word in arg_handler.split("_"))
             if arg_handler:
                 op_arg_name = op_arg.arg_name
                 new_type = self.arg_handler_type_map.get(arg_handler, "Not exist")
                 if func_str in ("StrToEnum", "DtypeToTypeId"):
-                    arg_handler_str = arg_handler_prt_template.replace(func_str=func_str,
-                                                                       func_name=func_name,
-                                                                       op_arg_name=op_arg_name,
-                                                                       idx=idx,
-                                                                       new_type=new_type)
+                    arg_handler_str = arg_handler_prt_template.replace(
+                        func_str=func_str,
+                        func_name=func_name,
+                        op_arg_name=op_arg_name,
+                        idx=idx,
+                        new_type=new_type,
+                    )
                 else:
-                    arg_handler_str = self.arg_handler_template.replace(func_str=func_str,
-                                                                        func_name=func_name,
-                                                                        op_arg_name=op_arg_name,
-                                                                        idx=idx,
-                                                                        new_type=new_type)
+                    arg_handler_str = self.arg_handler_template.replace(
+                        func_str=func_str,
+                        func_name=func_name,
+                        op_arg_name=op_arg_name,
+                        idx=idx,
+                        new_type=new_type,
+                    )
 
                 if op_arg.default == "None":
-                    arg_handler_str = self.arg_handler_optional_template.replace(idx=idx,
-                                                                                 arg_handler_str=arg_handler_str)
+                    arg_handler_str = self.arg_handler_optional_template.replace(
+                        idx=idx, arg_handler_str=arg_handler_str
+                    )
                 arg_handler_processor.append(arg_handler_str)
 
         return arg_handler_processor
@@ -494,14 +521,21 @@ class OpTemplateParser:
         op_name = op_proto.op_class.name
         op_args = op_proto.op_args
         if op_name in K.INPUT_NAME_MAP:
-            self_index = [i for i in range(
-                len(op_args)) if op_args[i].arg_name == K.INPUT_NAME_MAP[op_name]]
+            self_index = [
+                i
+                for i in range(len(op_args))
+                if op_args[i].arg_name == K.INPUT_NAME_MAP[op_name]
+            ]
         else:
-            self_index = [i for i in range(
-                len(op_args)) if op_args[i].arg_name in K.INPUT_ARGS_NAME]
+            self_index = [
+                i
+                for i in range(len(op_args))
+                if op_args[i].arg_name in K.INPUT_ARGS_NAME
+            ]
         if len(self_index) != 1:
             raise ValueError(
-                f'There must be only one field named \'input\'. But got {len(self_index)} in {op_name}')
+                f"There must be only one field named 'input'. But got {len(self_index)} in {op_name}"
+            )
         return self_index[0]
 
     def get_convert_args_str(self, op_proto, is_tensor_api):
@@ -528,18 +562,23 @@ class OpTemplateParser:
             if op_proto.op_view:
                 convert_func = basic_type_convert_str(op_arg.arg_dtype, False)
                 if convert_func != "":
-                    arg_convert_str = arg_basic_convert_template.replace(convert_func=convert_func,
-                                                                         index=idx)
+                    arg_convert_str = arg_basic_convert_template.replace(
+                        convert_func=convert_func, index=idx
+                    )
                     convert_args_str += arg_convert_str
                     continue
-            arg_convert_template = Template("parse_args.ConvertOptional<${des_type}>(${index}), ") if is_optional \
+            arg_convert_template = (
+                Template("parse_args.ConvertOptional<${des_type}>(${index}), ")
+                if is_optional
                 else Template("parse_args.Convert<${des_type}>(${index}), ")
+            )
             if op_arg.is_type_id:
-                arg_type_str = get_input_args_type_str('type', False)
+                arg_type_str = get_input_args_type_str("type", False)
             else:
                 arg_type_str = get_input_args_type_str(op_arg.arg_dtype, False)
-            convert_args_str += arg_convert_template.replace(index=idx,
-                                                             des_type=arg_type_str[:-3])
+            convert_args_str += arg_convert_template.replace(
+                index=idx, des_type=arg_type_str[:-3]
+            )
         return convert_args_str[:-2]
 
 

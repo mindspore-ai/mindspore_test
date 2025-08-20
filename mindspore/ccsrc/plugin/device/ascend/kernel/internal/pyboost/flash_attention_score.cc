@@ -54,9 +54,9 @@ void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
                                const int64_t &head_num, const float &keep_prob, const float &scale_value,
                                const int64_t &pre_tokens, const int64_t &next_tokens, const int64_t &inner_precise,
                                const int64_t &input_layout, const int64_t &sparse_mode) {
-  std::vector<TensorPtr> inputs = {query, key, value, real_shift.has_value() ? real_shift.value() : nullptr,
+  TensorPtrList inputs = {query, key, value, real_shift.has_value() ? real_shift.value() : nullptr,
                                        attn_mask.has_value() ? attn_mask.value() : nullptr};
-  std::vector<TensorPtr> outputs = {op->outputs()[kIndex3]};
+  TensorPtrList outputs = {op->outputs()[kIndex3]};
   TransInternalShapes(inputs, outputs);
 
   auto attn_mask_tensor = inputs.back();

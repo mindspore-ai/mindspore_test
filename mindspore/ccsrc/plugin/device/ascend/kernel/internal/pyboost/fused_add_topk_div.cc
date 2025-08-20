@@ -31,10 +31,10 @@ void FusedAddTopKDiv::Call(const std::shared_ptr<pyboost::OpRunner> &op, const u
                            const int64_t &activate_type, const bool &is_norm, const float &scale,
                            const std::optional<TensorPtr> &mapping_num,
                            const std::optional<TensorPtr> &mapping_table, const bool &enable_expert_mapping) {
-  std::vector<TensorPtr> inputs = {x, add_num, mapping_num.has_value() ? mapping_num.value() : nullptr,
+  TensorPtrList inputs = {x, add_num, mapping_num.has_value() ? mapping_num.value() : nullptr,
                                        mapping_table.has_value() ? mapping_table.value() : nullptr};
 
-  std::vector<TensorPtr> outputs = op->outputs();
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   param_.group_num = static_cast<int32_t>(group_num);

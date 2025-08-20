@@ -53,7 +53,7 @@ void PagedAttention::Call(
   const std::optional<TensorPtr> &attn_mask, const std::optional<TensorPtr> &q_seq_lens,
   const std::optional<TensorPtr> &alibi_mask, const int64_t &head_num, const float &scale_value,
   const int64_t &kv_head_num, const int64_t &kv_cache_quant_mode, const int64_t &mask_mode, const int64_t &mla_v_dim) {
-  std::vector<TensorPtr> inputs = {query,
+  TensorPtrList inputs = {query,
                                        key_cache,
                                        value_cache.has_value() ? value_cache.value() : nullptr,
                                        block_tabels.has_value() ? block_tabels.value() : nullptr,
@@ -62,7 +62,7 @@ void PagedAttention::Call(
                                        antiquant_offset.has_value() ? antiquant_offset.value() : nullptr,
                                        attn_mask.has_value() ? attn_mask.value() : nullptr,
                                        alibi_mask.has_value() ? alibi_mask.value() : nullptr};
-  std::vector<TensorPtr> outputs = op->outputs();
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   param_.head_num = static_cast<int32_t>(head_num);
