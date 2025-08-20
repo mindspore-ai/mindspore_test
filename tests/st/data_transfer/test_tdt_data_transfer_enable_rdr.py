@@ -19,7 +19,7 @@ import json
 import mindspore.context as context
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
-from .test_tdt_data_transfer import test_tdt_consume_beyond_produce
+from .test_tdt_data_transfer import tdt_consume_beyond_produce
 
 # create config file for RDR
 def create_config_file(path):
@@ -34,7 +34,7 @@ def test_train(device_type):
     with tempfile.TemporaryDirectory() as tmpdir:
         config_file = create_config_file(tmpdir)
         context.set_context(env_config_path=config_file)
-        test_tdt_consume_beyond_produce()
+        tdt_consume_beyond_produce()
 
 @security_off_wrap
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

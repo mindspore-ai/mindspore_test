@@ -126,6 +126,25 @@ def op_network_with_step_num(dataset, step_num):
     return op_network_with_epoch(net_with_dataset, step_num)
 
 
+def tdt_consume_beyond_produce():
+    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(op_timeout=30)
+
+    batch_size = 64
+    repeat_num = 1
+    num_rows = 640
+    beyond_step_num = 1000
+    ds = dataset_cifar(batch_size=batch_size, repeat_num=repeat_num, num_rows=num_rows)
+
+    try:
+        iter_num = op_network_with_step_num(ds, step_num=beyond_step_num)
+        logger.info("out_iter_num：%s", iter_num)
+        assert False
+    except RuntimeError as e:
+        logger.info("when dataset batch num is less than train loop, error msg is %s", e)
+        assert True
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tdt_produce_beyond_consume():
     """
@@ -153,19 +172,4 @@ def test_tdt_consume_beyond_produce():
     Description: Number of source data is less than train loop.
     Expectation: Returns fail and raises excrption.
     """
-    context.set_context(mode=context.GRAPH_MODE)
-    context.set_context(op_timeout=30)
-
-    batch_size = 64
-    repeat_num = 1
-    num_rows = 640
-    beyond_step_num = 1000
-    ds = dataset_cifar(batch_size=batch_size, repeat_num=repeat_num, num_rows=num_rows)
-
-    try:
-        iter_num = op_network_with_step_num(ds, step_num=beyond_step_num)
-        logger.info("out_iter_num：%s", iter_num)
-        assert False
-    except RuntimeError as e:
-        logger.info("when dataset batch num is less than train loop, error msg is %s", e)
-        assert True
+    tdt_consume_beyond_produce()
