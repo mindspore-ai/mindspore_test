@@ -87,5 +87,8 @@ PYBIND_REGISTER(RegisterShmIDAndMsgID, 0, ([](py::module *m) {
                                  RegisterShmIDAndMsgID(pid, shm_id, msg_id);
                                }));
                 }));
+
+PYBIND_REGISTER(CheckIfWorkerExit, 0,
+                ([](py::module *m) { (void)m->def("check_if_worker_exit", ([]() { return CheckIfWorkerExit(); })); }));
 }  // namespace dataset
 }  // namespace mindspore

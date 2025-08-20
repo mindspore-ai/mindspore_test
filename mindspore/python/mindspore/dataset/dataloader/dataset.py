@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
+"""Dataset module."""
+
 from typing import Generic, Iterable, Iterator, TypeVar
 
 from mindspore import Tensor
@@ -20,22 +22,32 @@ from mindspore import Tensor
 _T_co = TypeVar("_T_co", covariant=True)
 
 class Dataset(Generic[_T_co]):
+    """
+    Base class for map style datasets.
+
+    Map style datasets are datasets that represent a mapping from keys to data samples.
+    Subclasses must overwrite `__getitem__` method, defining how to retrieve the samples
+    according to the key. Subclasses could optionally overwrite `__len__` method, returning
+    the size of the dataset.
+    """
     def __init__(self) -> None:
         pass
 
-    def __getitem__(self, index):
-        raise NotImplementedError("{} should implement `__getitem__` method.".format(self.__class__.__name__))
-
-    def __len__(self):
-        raise NotImplementedError("{} should implement `__len__` method.".format(self.__class__.__name__))
+    def __getitem__(self, index: int) -> _T_co:
+        raise NotImplementedError(f"{self.__class__.__name__} should implement `__getitem__` method.")
 
 
 class IterableDataset(Dataset[_T_co], Iterable[_T_co]):
-    def __init__(self) -> None:
-        pass
+    """
+    Base class for iterable datasets.
 
-    def __iter__(self):
-        raise NotImplementedError("{} should implement `__iter__` method.".format(self.__class__.__name__))
+    Iterable datasets are datasets that represent an iterator over data samples. It is particularly useful
+    when random reads are expensive or even improbable. Subclasses must overwrite `__iter__` method, returning
+    an iterator of samples over the dataset.
+    """
+
+    def __iter__(self) -> Iterator[_T_co]:
+        raise NotImplementedError(f"{self.__class__.__name__} should implement `__iter__` method.")
 
 
 class TensorDataset(Dataset[tuple[Tensor, ...]]):
@@ -49,6 +61,7 @@ class TensorDataset(Dataset[tuple[Tensor, ...]]):
         assert all(
             tensors[0].size == tensor.size for tensor in tensors
         ), "Size mismatch between tensors"
+        super().__init__()
         self.tensors = tensors
 
     def __getitem__(self, index):

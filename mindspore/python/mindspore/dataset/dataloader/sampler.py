@@ -13,9 +13,13 @@
 # limitations under the License.
 # ==============================================================================
 
-import mindspore as ms
+"""Sampler module."""
+
 import itertools
 from typing import Generic, Iterable, Iterator, TypeVar, Union
+
+import mindspore as ms
+
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -27,21 +31,35 @@ class Sampler(Generic[_T_co]):
 
 class SequentialSampler(Sampler):
     def __init__(self, data_source) -> None:
+        super().__init__(data_source)
         self.data_source = data_source
 
-    def __iter__(self)->Iterator[int]:
+    def __iter__(self) -> Iterator[int]:
         yield from range(len(self.data_source))
 
     def __len__(self):
         return len(self.data_source)
 
 
-class RandomSampler(Sampler):
-    def __init__(self,
-                 data_source,
-                 replacement: bool=False,
-                 num_samples: Union[int, None] = None,
-                 generator=None) -> None:
+class RandomSampler(Sampler[int]):
+    """
+    Sampler that samples elements randomly.
+
+    Args:
+        data_source (Dataset): The data source to sample from.
+        replacement (bool, optional): Whether to put the element back for the next draw. Default: False.
+        num_samples (int, optional): The number of samples to draw. Default: None, set to the length of `data_source`.
+        generator (mindspore.Generator, optional): The generator to use in sampling. Default: None, not deterministic.
+    """
+
+    def __init__(
+            self,
+            data_source,
+            replacement: bool = False,
+            num_samples: Union[int, None] = None,
+            generator=None,
+    ) -> None:
+        super().__init__(data_source)
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
@@ -62,17 +80,19 @@ class RandomSampler(Sampler):
                 generator = ms.Generator()
                 generator.manual_seed(seed)
         else:
-            # no mao yong
+            # no need to use custom generator
             generator = self.generator
 
-        # 有放回
+        # with replacement
         if self.replacement:
             for _ in range(self.num_samples // 32):
-                yield from ms.ops.randint(low=0, high=n, size=(32,), 
-                                          dtype=ms.int64, seed=seed).tolist()
-            yield from ms.ops.randint(low=0, high=n, size=(self.num_samples % 32,),
-                                      dtype=ms.int64, seed=seed).tolist()
-        # 无放回
+                yield from ms.ops.randint(
+                    low=0, high=n, size=(32,), dtype=ms.int64, seed=seed
+                ).tolist()
+            yield from ms.ops.randint(
+                low=0, high=n, size=(self.num_samples % 32,), dtype=ms.int64, seed=seed
+            ).tolist()
+        # without replacement
         else:
             for _ in range(self.num_samples // n):
                 yield from ms.ops.randperm(n, seed=seed).tolist()
@@ -82,15 +102,24 @@ class RandomSampler(Sampler):
         return self.num_samples
 
 
-class BatchSampler(Sampler):
-    def __init__(self,
-                 sampler: Union[Sampler, Iterable],
-                 batch_size: int,
-                 drop_last: bool) -> None:
-        if not isinstance(batch_size, int) or isinstance(batch_size, bool) or batch_size <= 0:
-            raise ValueError(f"batch_size should be a positive integer value, but got batch_size={batch_size}")
+class BatchSampler(Sampler[list[int]]):
+    """
+    Sampler that yields a mini-batch of indices at a time.
+
+    Args:
+        sampler (Union[Sampler, Iterable]): The base sampler used to yield indices.
+        batch_size (int): The size of the mini-batch.
+        drop_last (bool): Whether to drop the last batch if it is less than `batch_size`.
+    """
+
+    def __init__(self, sampler: Union[Sampler, Iterable], batch_size: int, drop_last: bool) -> None:
+        super().__init__()
+        if not isinstance(batch_size, int) or isinstance(batch_size, bool):
+            raise TypeError(f"batch_size must be int, but got: {type(batch_size).__name__}")
+        if batch_size <= 0:
+            raise ValueError(f"batch_size must be positive, but got: {batch_size}")
         if not isinstance(drop_last, bool):
-            raise ValueError(f"drop_last should be a boolean value, but got drop_last={drop_last}")
+            raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}.")
 
         self.sampler = sampler
         self.batch_size = batch_size
@@ -112,7 +141,9 @@ class BatchSampler(Sampler):
                 batch = [*itertools.islice(sampler_iter, self.batch_size)]
 
     def __len__(self) -> int:
-        raise NotImplementedError
+        if self.drop_last:
+            return len(self.sampler) // self.batch_size
+        return (len(self.sampler) - 1) // self.batch_size + 1
 
 
 class InfiniteSampler(Sampler):

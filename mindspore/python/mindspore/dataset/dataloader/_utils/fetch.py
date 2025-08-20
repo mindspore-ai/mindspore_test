@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""
+Fetch module.
+"""
 
 from .collate import default_collate, default_convert
 
-class _Fetcher:
+
+class Fetcher:
+    """
+    Fetcher to fetch data from dataset.
+    """
+
     def __init__(self, dataset, auto_collation, collate_fn):
         self.dataset = dataset
         self.auto_collation = auto_collation
@@ -27,10 +35,27 @@ class _Fetcher:
                 self.collate_fn = default_convert
 
     def fetch(self, indices):
-        raise NotImplementedError("{} should implement `fetch` method.".format(self.__class__.__name__))
+        """
+        Fetch data from dataset.
+        """
 
-class _MapDatasetFetcher(_Fetcher):
+        raise NotImplementedError(f"{self.__class__.__name__} should implement `fetch` method.")
+
+    def reset(self):
+        """
+        Reset the dataset.
+        """
+
+
+class MapDatasetFetcher(Fetcher):
+    """
+    Fetcher for MapDataset.
+    """
+
     def fetch(self, indices):
+        """
+        Fetch data from dataset.
+        """
         if self.auto_collation:
             data = [self.dataset[index] for index in indices]
         else:
@@ -38,14 +63,25 @@ class _MapDatasetFetcher(_Fetcher):
         return self.collate_fn(data)
 
 
-class _IterableDatasetFetcher(_Fetcher):
+class IterableDatasetFetcher(Fetcher):
+    """
+    Fetcher for IterableDataset.
+    """
+
     def __init__(self, dataset, auto_collation, collate_fn, drop_last):
+        """
+        Initialize the fetcher.
+        """
+
         super().__init__(dataset, auto_collation, collate_fn)
         self.drop_last = drop_last
-        self.dataset_iterator = iter(self.dataset)
-        self.ended = False
+        self.reset()
 
     def fetch(self, indices):
+        """
+        Fetch data from dataset.
+        """
+
         if self.ended:
             raise StopIteration
 
@@ -55,13 +91,21 @@ class _IterableDatasetFetcher(_Fetcher):
                 try:
                     data.append(next(self.dataset_iterator))
                 except StopIteration:
-                    if len(data) > 0:
+                    if data:
                         self.ended = True
                         break
             # once get none from dataset_iterator, iter stops
             # or received data size less than indices size, iter stops
-            if len(data) == 0 or self.drop_last and len(data) < len(indices):
+            if not data or self.drop_last and len(data) < len(indices):
                 raise StopIteration
         else:
             data = next(self.dataset_iterator)
         return self.collate_fn(data)
+
+    def reset(self):
+        """
+        Reset the fetcher.
+        """
+
+        self.dataset_iterator = iter(self.dataset)
+        self.ended = False

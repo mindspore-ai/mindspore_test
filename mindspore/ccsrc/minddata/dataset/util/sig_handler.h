@@ -42,5 +42,8 @@ extern void ReleaseShmAndMsg();
 
 /// \brief Called in Python Layer of main process
 extern void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids);
+
+/// \brief Check if the worker process has exited.
+extern std::string CheckIfWorkerExit();
 }  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_

@@ -13,8 +13,33 @@
 # limitations under the License.
 # ==============================================================================
 
-"""
-Utils for the dataloader.
-"""
+import time
 
-WORKER_TIME_OUT = 5
+import numpy as np
+
+from mindspore.dataset.dataloader import DataLoader, Dataset
+
+
+class MockDataset(Dataset):
+
+    def __init__(self, num_samples):
+        super().__init__()
+        self.num_samples = num_samples
+        self.data = [idx for idx in range(num_samples)]
+
+    def __getitem__(self, index):
+        time.sleep(5)
+        return np.array(self.data[index], dtype=np.uint8)
+
+    def __len__(self):
+        return self.num_samples
+
+
+def run_data_loader():
+    data_loader = DataLoader(MockDataset(100), num_workers=8)
+    for _ in data_loader:
+        pass
+
+
+if __name__ == "__main__":
+    run_data_loader()

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Distributed sampler module."""
+
 import math
 from collections.abc import Iterator
 from typing import Optional, TypeVar
@@ -58,14 +60,15 @@ class DistributedSampler(Sampler[_T_co]):
     """
 
     def __init__(
-        self,
-        dataset: Dataset,
-        num_replicas: Optional[int] = None,
-        rank: Optional[int] = None,
-        shuffle: Optional[bool] = True,
-        seed: Optional[int] = 0,
-        drop_last: Optional[bool] = False,
+            self,
+            dataset: Dataset,
+            num_replicas: Optional[int] = None,
+            rank: Optional[int] = None,
+            shuffle: Optional[bool] = True,
+            seed: Optional[int] = 0,
+            drop_last: Optional[bool] = False,
     ) -> None:
+        super().__init__(dataset)
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("MindSpore distributed feature is not available.")
@@ -103,7 +106,6 @@ class DistributedSampler(Sampler[_T_co]):
             g.manual_seed(self.seed + self.epoch)
             # TODO: need to use mint operator on cpu backend
             indices = ms.ops.randperm(len(self.dataset), seed=self.seed + self.epoch).tolist()
-            #indices = ms.mint.randperm(len(self.dataset), generator=g).tolist()
         else:
             indices = list(range(len(self.dataset)))
 

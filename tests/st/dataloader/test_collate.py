@@ -1,12 +1,28 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import collections
 import numpy as np
 
 import mindspore as ms
-import mindspore.dataset as ds
-from mindspore.dataset.dataloader.utils.collate import default_convert, default_collate
+from mindspore.dataset.dataloader import DataLoader, Dataset, default_convert, default_collate
+from tests.mark_utils import arg_mark
 
 
 class ImmutableMapping(collections.abc.Mapping):
+
     def __init__(self, data):
         self._data = data
 
@@ -21,6 +37,7 @@ class ImmutableMapping(collections.abc.Mapping):
 
 
 class UnsupportedMutableMapping(collections.abc.MutableMapping):
+
     def __init__(self, data):
         self._data = data
 
@@ -39,25 +56,34 @@ class UnsupportedMutableMapping(collections.abc.MutableMapping):
     def __iter__(self):
         return iter(self._data)
 
-    # 故意不实现 copy 方法
+    # deliberately not implement copy method
     def __copy__(self):
-        raise TypeError("不支持 copy 操作")
+        raise TypeError("not support copy operation")
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_default_convert_class_type():
+    """
+    Feature: Test default_convert function.
+    Description: Test default_convert function with ImmutableMapping and UnsupportedMutableMapping.
+    Expectation: The result is as expected.
+    """
+
     dataloader1 = default_convert(ImmutableMapping({0: "a", 1: "b"}))
     print(dataloader1)
     dataloader2 = default_convert(UnsupportedMutableMapping({0: "x", 1: "y"}))
     print(dataloader2)
-    assert (dataloader2 == {0: 'x', 1: 'y'})
+    assert dataloader2 == {0: 'x', 1: 'y'}
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_default_convert_common_type():
     """
-    Feature: 
-    Description: 
-    Expectation: 
+    Feature: Test default_convert function.
+    Description: Test default_convert function with Tensor, number, Type SaUO (byte, string, unicode, object).
+    Expectation: The result is as expected.
     """
+
     # Tensor
     assert default_convert(ms.Tensor(1)) == ms.Tensor(1)
 
@@ -95,9 +121,8 @@ def test_default_convert_common_type():
 
     # list
     def compare_seq(l1, l2):
-        breakpoint()
         assert len(l1) == len(l2)
-        for (v1, v2) in zip(l1, l2):
+        for v1, v2 in zip(l1, l2):
             if isinstance(v1, dict):
                 v1, v2 = v1["d"], v2['d']
             if isinstance(v1, ms.Tensor) and isinstance(v2, ms.Tensor):
@@ -108,29 +133,32 @@ def test_default_convert_common_type():
     data = [1, np.array(2), [3], {"d": np.array([4, 5])}]
     expected = [1, ms.Tensor(2), [3], {"d": ms.Tensor([4, 5])}]
     compare_seq(default_convert(data), expected)
-    
+
     # tuple
     data = (1, np.array(2), [3], {"d": np.array([4, 5])})
     expected = (1, ms.Tensor(2), [3], {"d": ms.Tensor([4, 5])})
     compare_seq(default_convert(data), expected)
-    
 
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_default_collate():
     """
-    Feature: 
-    Description: 
-    Expectation: 
+    Feature: Test default_collate function.
+    Description: Test default_collate function with same type and different type.
+    Expectation: The result is as expected.
     """
+
     # same type
     inputs = [ms.Tensor(np.array(1, dtype=np.uint8)), ms.Tensor(np.array(0, dtype=np.uint8))]
     assert (default_collate(inputs) == ms.Tensor([1, 0])).all()
 
-    # differnet type, not support by ops
+    # different type, not support by ops
     inputs = [ms.Tensor(np.array(1, dtype=np.uint8)), ms.Tensor(np.array(2, dtype=np.float32))]
     assert (default_collate(inputs) == ms.Tensor([1, 2])).all()
 
 
-class MyDataset(ds.Dataset):
+class MyDataset(Dataset):
+
     def __init__(self, num_samples):
         super().__init__()
         self.num_samples = num_samples
@@ -143,16 +171,18 @@ class MyDataset(ds.Dataset):
         return self.num_samples
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_collate_fn():
     """
-    Feature: 
-    Description: 
-    Expectation: 
+    Feature: Test collate_fn function.
+    Description: Test collate_fn function with MyDataset.
+    Expectation: The result is as expected.
     """
+
     def my_collate(data):
         return [{"ori plus one": d + 1} for d in data]
 
     dataset = MyDataset(10)
-    dataloader = ds.DataLoader(dataset, batch_size=2, collate_fn=my_collate)
+    dataloader = DataLoader(dataset, batch_size=2, collate_fn=my_collate)
     for data in dataloader:
         print(data)
