@@ -31,6 +31,9 @@
 namespace mindspore {
 namespace kernel {
 namespace sparse_cross_cpu {
+template <typename T>
+class TensorColumnBase;
+
 class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseCrossCpuKernelMod> {
  public:
   SparseCrossCpuKernelMod() = default;
@@ -53,11 +56,9 @@ class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
                                 const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  template <bool HASHED_OUTPUT, typename T, typename S>
-  bool SparseCrossCann(const std::vector<std::vector<int64_t>> &indices_list_in,
-                       const std::vector<std::vector<T>> &values_list_in,
-                       const std::vector<std::vector<int64_t>> &shapes_list_in,
-                       const std::vector<std::vector<S>> &dense_list_in,
+  template <bool HASHED_OUTPUT, typename T>
+  bool SparseCrossCann(const std::vector<std::unique_ptr<TensorColumnBase<T>>> &columns, int64_t batch_size,
+                       const std::vector<int64_t> &output_start_indices,
                        const std::vector<kernel::KernelTensor *> &outputs) const;
 
   template <typename T1, typename T2>
@@ -68,8 +69,6 @@ class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   int64_t num_buckets_;
   uint64_t hash_key_;
   bool hash_out_;
-  std::vector<std::vector<int64_t>> _indices_out_;
-  std::vector<int64_t> _values_out_;
   TypeId values_type_{kTypeUnknown};
   TypeId dense_type_{kTypeUnknown};
   std::vector<TypeId> types_;
