@@ -172,7 +172,6 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   CNodePtr NewCNodeWithInfos(const AnfNodePtrList &inputs, const CNodePtr &ori_cnode = nullptr);
   void CreateKernelInfoFromNewParameter(const CNodePtr &cnode) const;
   CNodePtr NewCNode(const CNodePtr &cnode);
-  void ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) const;
   ParameterPtr NewParameter(const ParameterPtr &parameter = nullptr);
   ParameterPtr NewParameter(const abstract::AbstractBasePtr &abstract);
   ValueNodePtr NewValueNode(const ValueNodePtr &value_node = nullptr) const;

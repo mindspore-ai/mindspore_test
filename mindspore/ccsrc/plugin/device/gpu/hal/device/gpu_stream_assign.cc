@@ -38,7 +38,7 @@ void AssignGpuStream(const std::shared_ptr<session::KernelGraph> &kernel_graph) 
   // All operators in pynative mode use default_stream.
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  const bool use_default_stream = kernel_graph->has_flag(kFlagPyNativeRunInGraph);
+  const bool use_default_stream = JitPipelineCompiling();
   if (use_default_stream) {
     AssignDefaultGpuStream(kernel_graph);
     return;

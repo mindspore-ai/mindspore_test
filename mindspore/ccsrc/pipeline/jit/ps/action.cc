@@ -35,6 +35,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/param_info.h"
 #include "ir/cell.h"
+#include "ir/device_address.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/common/utils/python_adapter.h"
@@ -151,6 +152,14 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
 
     if (param_node->has_default()) {
       new_paras.push_back(param_node);
+      auto default_param = param_node->default_param();
+      MS_EXCEPTION_IF_NULL(default_param);
+      auto param_tensor = default_param->cast<tensor::TensorPtr>();
+      if (param_tensor && param_tensor->device_address()) {
+        auto param_deviceaddress = std::dynamic_pointer_cast<device::DeviceAddress>(param_tensor->device_address());
+        MS_EXCEPTION_IF_NULL(param_deviceaddress);
+        param_node->set_format(param_deviceaddress->format());
+      }
       continue;
     }
 
@@ -159,6 +168,13 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
       auto param_value = tensor::GetMetaTensorFromValue(arguments[i]);
       if (param_value != nullptr && param_value->is_parameter()) {
         param_node->set_default_param(arguments[i]);
+      }
+      auto argument_tensor = arguments[i]->cast<tensor::TensorPtr>();
+      if (argument_tensor && argument_tensor->device_address()) {
+        auto argument_deviceaddress =
+          std::dynamic_pointer_cast<device::DeviceAddress>(argument_tensor->device_address());
+        MS_EXCEPTION_IF_NULL(argument_deviceaddress);
+        param_node->set_format(argument_deviceaddress->format());
       }
     }
 

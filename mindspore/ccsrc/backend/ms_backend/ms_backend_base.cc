@@ -800,9 +800,8 @@ void MSBackendBase::CompileGraphFromSegment(const FuncGraphPtr &func_graph, cons
     AnfNodePtrList outputs;
     std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
 
-    auto is_pynative_jit = JitPipelineCompiling();
-    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     backend_jit_config, is_pynative_jit);
+    GraphId graph_id =
+      graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     func_graph_to_sub_segments_[func_graph].emplace_back(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
@@ -1150,7 +1149,7 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, false);
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config);
     return graph_compiler->Fetch(graph_id);
   };
 
@@ -1750,9 +1749,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc();
 
-  auto is_pynative_jit = JitPipelineCompiling();
-  func_graph->set_flag(kFlagPyNativeRunInGraph, is_pynative_jit);
-
   // Compile root graph.
   bool load_compile_cache = false;
   if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
@@ -1788,11 +1784,10 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   graph_compiler_info->func_graph_to_kernel_graph_ids_ = func_graph_to_kernel_graph_ids_;
   // Use kernel graph, which output maybe change by backed pass, so backup output
   graph_compiler_info->origin_output_node_ = origin_output_node;
-  graph_compiler_info->is_pynative_mode_ = true;
+  graph_compiler_info->is_pynative_mode_ = JitPipelineCompiling();
 
-  if (!is_pynative_jit && ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1)) {
+  if ((!graph_compiler_info->graphs_.empty() || graph_compiler_info->control_nodes_.size() > 1)) {
     MS_LOG(DEBUG) << "Start transform";
-    graph_compiler_info->is_pynative_mode_ = false;
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
