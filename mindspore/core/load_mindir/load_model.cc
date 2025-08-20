@@ -35,6 +35,7 @@
 #include "ir/map_tensor.h"
 #include "ir/functor.h"
 #include "ir/tensor_new.h"
+#include "ops/op_def.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -2547,6 +2548,28 @@ bool MSANFModelParser::BuildPrimitiveNode(const mind_ir::PrimitiveProto &primiti
 
   if (primitive_proto.has_instance_name()) {
     prim->set_instance_name(primitive_proto.instance_name());
+  }
+
+  // Set primitive view inplace attributes
+  auto op_name = prim->name();
+  if (mindspore::ops::IsPrimitiveFunction(op_name)) {
+    auto op_def = mindspore::ops::GetOpDef(op_name);
+    MS_EXCEPTION_IF_NULL(op_def);
+    auto signatures = op_def->signatures_;
+    std::vector<size_t> rw_write_input_indexes;
+    for (size_t i = 0; i < signatures.size(); ++i) {
+      if (signatures[i].rw == SignatureEnumRW::kRWWrite) {
+        (void)rw_write_input_indexes.emplace_back(i);
+        prim->set_inplace_prim(true);
+      }
+    }
+    auto inplace_input_indexes = prim->GetInplaceIndexes();
+    prim->set_inplace_input_indexes(inplace_input_indexes);
+    prim->set_rw_write_input_indexes(rw_write_input_indexes);
+    prim->set_graph_view_prim(op_def->is_graph_view_);
+    if (prim->inplace_prim() || prim->graph_view_prim()) {
+      prim->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
+    }
   }
 
   // Set primitive attributes
