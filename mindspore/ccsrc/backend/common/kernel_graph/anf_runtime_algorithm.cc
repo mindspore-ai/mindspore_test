@@ -147,27 +147,6 @@ std::string PrintKernelFormatAndType(const std::string &fmt, const TypeId &type,
   }
 } callback_register;
 
-tensor::TensorPtr GetForwardOutputTensor(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  if (node->isa<ValueNode>()) {
-    auto value_node = node->cast<ValueNodePtr>();
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto value = value_node->value();
-    MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<tensor::Tensor>()) {
-      auto tensor = value->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      // If output used as sens, output will create(clone) a fake tensor with device address is nullptr for memory
-      // usage. It has is_forward_output flag, which will be used for tensor input mask, and affect single op graph
-      // cache.
-      if (tensor->is_forward_output() && tensor->device_address() != nullptr) {
-        return tensor;
-      }
-    }
-  }
-  return nullptr;
-}
-
 size_t GetOutputTensorNumByKernelInfo(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(node->kernel_info());
@@ -871,11 +850,6 @@ TypeId AnfRuntimeAlgorithm::GetPrevNodeOutputDeviceDataType(const AnfNodePtr &an
 // get output device addr of anf_node
 const DeviceAddress *AnfRuntimeAlgorithm::GetOutputAddr(const AnfNodePtr &node, size_t output_idx, bool skip_nop_node) {
   MS_EXCEPTION_IF_NULL(node);
-  auto tensor = GetForwardOutputTensor(node);
-  if (tensor != nullptr) {
-    return dynamic_cast<const DeviceAddress *>(tensor->device_address().get());
-  }
-
   if (common::AnfAlgo::IsNopNode(node) && (skip_nop_node || common::AnfAlgo::IsNeedSkipNopOpAddr(node))) {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
@@ -894,11 +868,6 @@ const DeviceAddress *AnfRuntimeAlgorithm::GetOutputAddr(const AnfNodePtr &node, 
 DeviceAddressPtr AnfRuntimeAlgorithm::GetMutableOutputAddr(const AnfNodePtr &node, size_t output_idx,
                                                            bool skip_nop_node) {
   MS_EXCEPTION_IF_NULL(node);
-  auto tensor = GetForwardOutputTensor(node);
-  if (tensor != nullptr) {
-    return std::dynamic_pointer_cast<DeviceAddress>(tensor->device_address());
-  }
-
   if (common::AnfAlgo::IsNopNode(node) && (skip_nop_node || common::AnfAlgo::IsNeedSkipNopOpAddr(node))) {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);

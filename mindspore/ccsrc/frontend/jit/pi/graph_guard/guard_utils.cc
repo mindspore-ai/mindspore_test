@@ -1394,10 +1394,9 @@ class TensorData : public MetaTensorData {
     }
     bool ret = MetaTensorData::operator==(obj);
     const TensorData &other = static_cast<const TensorData &>(obj);
-    ret = ret && other.is_forward_output_ == is_forward_output_ && other.graph_output_ == graph_output_ &&
-          other.specialized_ == specialized_ && IsBaseShapePtr(other) && IsCastDtype(other) &&
-          other.compression_type_ == compression_type_ && other.quant_params_.size() == quant_params_.size() &&
-          other.tensor_name_.compare(tensor_name_) == 0;
+    ret = ret && other.graph_output_ == graph_output_ && other.specialized_ == specialized_ && IsBaseShapePtr(other) &&
+          IsCastDtype(other) && other.compression_type_ == compression_type_ &&
+          other.quant_params_.size() == quant_params_.size() && other.tensor_name_.compare(tensor_name_) == 0;
     if (!ret) {
       return ret;
     }
@@ -1447,7 +1446,7 @@ class TensorData : public MetaTensorData {
  protected:
   std::string ToStringIntern() override {
     std::string ret = MetaTensorData::ToStringIntern();
-    ret += DESC_STRING(is_forward_output_) + DESC_STRING(graph_output_);
+    ret += DESC_STRING(graph_output_);
     ret +=
       DESC_TOSTRING(cast_dtype_) + DESC_TOSTRING(base_shape_ptr_) + DESC_STRING(compression_type_) + DESC(tensor_name_);
     for (size_t i = 0; i < quant_params_.size(); ++i) {
@@ -1461,9 +1460,6 @@ class TensorData : public MetaTensorData {
 
   bool CheckTensorAndParam(const mindspore::tensor::TensorPtr &tensor_ptr) const {
     // tensor_ptr->base_shape_ptr_ should check ?
-    if (tensor_ptr->is_forward_output() != is_forward_output_) {
-      return false;
-    }
     auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(tensor_ptr);
     if (tensor_tensor_ptr == nullptr) {
       return true;
@@ -1523,7 +1519,6 @@ class TensorData : public MetaTensorData {
 
   void StoreTensor(mindspore::tensor::TensorPtr tensor_ptr) {
     MetaTensorData::StoreTensor(std::static_pointer_cast<tensor::MetaTensor>(tensor_ptr));
-    is_forward_output_ = tensor_ptr->is_forward_output();
     base_shape_ptr_ = tensor_ptr->base_shape_ptr() == nullptr ? nullptr : tensor_ptr->base_shape_ptr()->Clone();
 
     auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(tensor_ptr);
@@ -1557,8 +1552,7 @@ class TensorData : public MetaTensorData {
 
   void SubInfo(InfoPack *info) override {
     MetaTensorData::SubInfo(info);
-    (*info) << is_forward_output_ << graph_output_ << cast_dtype_ << base_shape_ptr_ << uint8_t(compression_type_)
-            << tensor_name_;
+    (*info) << graph_output_ << cast_dtype_ << base_shape_ptr_ << uint8_t(compression_type_) << tensor_name_;
     (*info) << uint64_t(quant_params_.size());
     for (auto qp : quant_params_) {
       (*info) << qp;
@@ -1569,7 +1563,6 @@ class TensorData : public MetaTensorData {
   }
 
   PyTypeObject *tensor_type_;
-  bool is_forward_output_{false};
   std::unique_ptr<uint8_t[]> data_ptr_{nullptr};
   size_t data_len_{0};
   bool graph_output_{false};
@@ -2415,7 +2408,6 @@ class EqGuard : public GuardItem {
       return {};
     }
     tensor::TensorPtr copy_tensor = std::make_shared<tensor::Tensor>(new_tensor->Dtype()->type_id(), new_shape);
-    copy_tensor->set_is_forward_output(new_tensor->is_forward_output());
     auto tensor_tensor_ptr = std::dynamic_pointer_cast<tensor::Tensor>(new_tensor);
     if (tensor_tensor_ptr != nullptr) {
       if (tensor_tensor_ptr->IsGraphOutput()) {

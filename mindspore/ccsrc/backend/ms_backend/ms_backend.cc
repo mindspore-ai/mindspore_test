@@ -127,7 +127,6 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
 
   for (size_t i = 0; i < graphs.size(); ++i) {
-    pynative::GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(graphs[i], device_contexts[i]);
     pynative::GraphAdapter::GenerateRefCountForBpropValueNode(graphs[i]);
     graph_adapter_.GenerateBackoffValueNodeOwners(graphs[i]);
   }
@@ -202,7 +201,6 @@ void MSBackend::RunActorSet(BackendGraphId graph_id, runtime::ActorSet *actor_se
   if (graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
     for (size_t i = 0; i < graphs.size(); ++i) {
       graph_adapter_.UpdateForwardOutputInBpropGraph(graphs[i], device_contexts[i], no_multi_graph);
-      pynative::GraphAdapter::UpdateDynamicValueNodeAbstract(graphs[i]);
     }
   }
 

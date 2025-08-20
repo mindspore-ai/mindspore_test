@@ -241,7 +241,6 @@ void ClearSingleton() {
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();
   CommManager::Clear();
-  expander::ClearAllCache();
   runtime::KernelCache::GetInstance().ClearBuffers();
 
   MS_LOG(INFO) << "End clear singleton.";

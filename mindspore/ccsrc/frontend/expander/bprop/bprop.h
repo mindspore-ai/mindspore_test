@@ -30,30 +30,11 @@ namespace mindspore {
 namespace expander {
 namespace bprop {
 FRONTEND_EXPORT bool HasBpropExpander(const std::string &prim_name);
-void ClearBpropOpGraphMap();
-using UserType = std::unordered_map<AnfNodePtr, std::vector<std::pair<std::weak_ptr<CNode>, int>>>;
-struct UserMap {
-  UserType dout_user_;
-  UserType tuple_getitem_user_;
-};
 
 class FRONTEND_EXPORT BpropExpander {
  public:
-  BpropExpander(CNodePtrList *outputs, UserMap *users) : outputs_(outputs), users_(users) {}
-  ~BpropExpander() = default;
-  bool Run(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values = {});
-  static const mindspore::HashSet<size_t> &GetUnusedInputs(const string &op_name);
   static void FreeUselessValues(const PynativeCallback &cb);
   static bool IsCloneInplaceInput(const PynativeCallback &cb);
-
- protected:
-  bool RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values);
-  void PostProcess(const CNodePtr &cnode) const;
-  void DumpResult(const std::string &name) const;
-  NodePtrList input_nodes_;
-  NodePtrList output_nodes_;
-  CNodePtrList *outputs_{nullptr};
-  UserMap *users_{nullptr};
 };
 
 bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim, const FuncGraphPtr &graph);

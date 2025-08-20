@@ -24,7 +24,6 @@ namespace mindspore {
 namespace expander {
 bool ConvertPrimToPrimPy(const FuncGraphPtr &graph);
 ValuePtr ConvertPrimToPrimPy(const PrimitivePtr &primc);
-FRONTEND_EXPORT void ClearAllCache();
 }  // namespace expander
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_EXPANDER_UTILS_H

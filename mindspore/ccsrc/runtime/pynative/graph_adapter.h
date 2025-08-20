@@ -37,8 +37,6 @@ class GraphAdapter {
                                               const std::vector<tensor::TensorPtr> &input_tensors,
                                               const device::DeviceContext *device_context);
   static void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph);
-  static void ClearForwardOutputValueNodeDeviceAddress(const KernelGraphPtr &graph,
-                                                       const device::DeviceContext *device_context);
   static void RemoveUnusedValueNodes(const KernelGraphPtr &graph);
   static void HandleHeterogeneousTensors(const std::vector<std::vector<tensor::TensorPtr>> &tensors,
                                          const std::vector<device::DeviceContext *> &device_contexts,
@@ -46,7 +44,6 @@ class GraphAdapter {
   static bool IsPynativeGeGraphSink(const GraphCompilerInfo &graph_compiler_info);
   static bool IsPynativeGeGraphSink(const FuncGraphPtr &func_graph);
   static bool IsAutoParallel();
-  static void UpdateDynamicValueNodeAbstract(const KernelGraphPtr &graph);
   static void SensTensorToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context);
 
  private:
