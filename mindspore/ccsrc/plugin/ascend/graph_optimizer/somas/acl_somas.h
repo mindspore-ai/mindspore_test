@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 #include <memory>
-#include "backend/common/somas/somas.h"
+#include "backend/ms_backend/somas.h"
 
 namespace mindspore {
 namespace device {

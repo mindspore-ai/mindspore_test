@@ -79,7 +79,7 @@
 
 #include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
-#include "backend/common/somas/somas.h"
+#include "backend/ms_backend/somas.h"
 #include "include/common/utils/pyobj_manager.h"
 
 namespace mindspore {

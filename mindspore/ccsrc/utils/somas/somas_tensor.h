@@ -21,8 +21,8 @@
 #include <set>
 #include <vector>
 #include <string>
-#include "backend/common/somas/somas_solver_pre.h"
-
+#include "include/common/visible.h"
+#include "utils/somas/somas_solver_alg.h"
 namespace mindspore {
 namespace somas {
 // Lifetime type
@@ -54,7 +54,7 @@ enum LifeLongType {
   kLifeLongGraphEnd     // life time is from tensor start to graph end
 };
 
-class BACKEND_EXPORT SomasTensor {
+class COMMON_EXPORT SomasTensor {
  public:
   size_t aligned_size_{0};
   LifeLongType lifelong_value_;
@@ -90,8 +90,8 @@ class BACKEND_EXPORT SomasTensor {
   size_t GetOffset() const { return offset_; }
   bool IsSemiLifelongStart() const { return lifelong_value_ == kLifeLongGraphStart; }
   bool IsSemiLifelongEnd() const { return lifelong_value_ == kLifeLongGraphEnd; }
-  string GetTypeString();
-  string GetLifelongString();
+  std::string GetTypeString();
+  std::string GetLifelongString();
   // Computing functions
   void SetOffset() {
     if (aligned_size_ != 0) {

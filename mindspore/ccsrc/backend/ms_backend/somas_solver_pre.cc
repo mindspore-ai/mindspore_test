@@ -14,6 +14,7 @@
  * limitations under the License.
 */
 
+#include "backend/ms_backend/somas_solver_pre.h"
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -21,8 +22,8 @@
 #include <utility>
 #include "include/common/thread_pool.h"
 
-#include "backend/common/somas/somas_solver_core.h"
-#include "backend/common/somas/somas_solver_pre.h"
+#include "utils/somas/somas_solver_core.h"
+#include "utils/somas/somas_solver_alg.h"
 #include "include/common/debug/common.h"
 
 namespace mindspore {

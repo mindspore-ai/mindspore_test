@@ -23,9 +23,7 @@
 #include <vector>
 #include <map>
 #include "utils/hash_map.h"
-#include "backend/common/somas/somas_solver_alg.h"
-#include "backend/common/somas/somas_solver_core.h"
-#include "backend/common/somas/somas_solver_pre.h"
+#include "utils/somas/somas_solver_core.h"
 
 using mindspore::HashMap;
 using std::sort;

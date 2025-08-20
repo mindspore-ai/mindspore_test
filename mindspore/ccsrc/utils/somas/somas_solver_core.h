@@ -23,13 +23,13 @@
 #include <string>
 #include <vector>
 
-#include "backend/common/somas/somas_solver_alg.h"
-#include "backend/common/somas/somas_solver_pre.h"
+#include "include/common/visible.h"
+#include "utils/somas/somas_solver_alg.h"
 
 namespace mindspore {
 namespace somas {
 
-class SomasSolverCore {
+class COMMON_EXPORT SomasSolverCore {
  public:
   /// Interface Function: receive parameters, creates the model to solve and then save the result
   SomasSolverCore(const TensorsDescMap &tensors, const std::vector<VectorBitSet> *constraints, uint32_t sol,

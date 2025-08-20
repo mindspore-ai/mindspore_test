@@ -14,11 +14,12 @@
  * limitations under the License.
 */
 
-#include "backend/common/somas/somas_solver_alg.h"
+#include "utils/somas/somas_solver_alg.h"
 
 #include <algorithm>
 #include <stack>
 #include <utility>
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace somas {
