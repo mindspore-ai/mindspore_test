@@ -314,8 +314,8 @@ class BACKEND_EXPORT MemBufAllocator {
 
  protected:
 #endif
-  inline MemBuf *MapAndSplitMemBuf(MemBuf *candidate, size_t size);
-  inline MemBlock *ExpandBlock(size_t size);
+  MemBuf *MapAndSplitMemBuf(MemBuf *candidate, size_t size);
+  MemBlock *ExpandBlock(size_t size);
 
   std::function<MemBlock *(size_t)> mem_block_expander_;
   std::function<bool(MemBlock *)> mem_block_cleaner_;
@@ -458,7 +458,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   void WaitPipelineHelper();
 
   MemBufAllocatorPtr GenerateAllocator(const AllocatorInfo &allocator_key);
-  inline MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
+  MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
   virtual MemBufAllocatorPtr GenerateCustomAllocator(uint32_t stream_id) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
