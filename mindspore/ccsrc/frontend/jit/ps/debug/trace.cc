@@ -36,6 +36,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/file_utils.h"
 #include "utils/ms_exception.h"
+#include "utils/label.h"
 
 namespace mindspore {
 // namespace to support debug trace information

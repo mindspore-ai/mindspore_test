@@ -23,6 +23,7 @@
 #include "ir/manager.h"
 #include "utils/ordered_set.h"
 #include "utils/convert_utils_base.h"
+#include "utils/label.h"
 #include "abstract/abstract_function.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/phase.h"

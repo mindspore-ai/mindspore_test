@@ -25,6 +25,7 @@
 #include "ir/manager.h"
 #include "frontend/jit/ps/parse/parse.h"
 #include "utils/log_adapter.h"
+#include "utils/label.h"
 
 namespace mindspore {
 class FuncGraphIndex {
