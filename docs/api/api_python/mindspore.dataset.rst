@@ -1,6 +1,14 @@
 mindspore.dataset
 =================
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   mindspore.dataset.loading
+   mindspore.dataset.transforms
+   mindspore.mindrecord
+
 MindSpore Dataset是MindSpore框架中专门设计的高性能数据引擎模块，致力于为深度学习任务提供高效、灵活且易用的数据加载与预处理解决方案。它支持多种数据格式（如MindRecord、TFRecord等），并内置了丰富的公开数据集接口，帮助用户快速构建数据流水线。
 通过 MindSpore Dataset，用户可以轻松实现数据读取、转换、增强等操作，满足图像、文本、音频等多种数据类型的处理需求。
 
