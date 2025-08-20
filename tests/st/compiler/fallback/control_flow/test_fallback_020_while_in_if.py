@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 """ test graph fallback control flow."""
 import mindspore as ms
 from mindspore import Tensor, jit, context, nn, Parameter
+from mindspore._extends.parse import compile_config
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -110,8 +111,12 @@ def test_while_two_cond_in_if_1():
         x += Tensor(-1)
         return x + y
 
-    res = control_flow_while()
-    assert res == 21
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        res = control_flow_while()
+        assert res == 21
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',

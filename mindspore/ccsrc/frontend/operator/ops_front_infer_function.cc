@@ -754,10 +754,10 @@ AbstractBasePtr InferImplMakeSlice(const AnalysisEnginePtr &, const PrimitivePtr
         if (tensor_dtype->isa<Bool>()) {
           auto *bool_value = static_cast<bool *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((static_cast<int64_t>(*bool_value)))->ToAbstract());
-        } else if (tensor_dtype == kInt64) {
+        } else if (tensor_dtype->type_id() == kInt64->type_id()) {
           auto *int_value = static_cast<int64_t *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((*int_value))->ToAbstract());
-        } else if (tensor_dtype == kInt32) {
+        } else if (tensor_dtype->type_id() == kInt32->type_id()) {
           auto *int_value = static_cast<int32_t *>(value_cpu->data_c());
           slice_args.push_back(MakeValue((*int_value))->ToAbstract());
         } else {
