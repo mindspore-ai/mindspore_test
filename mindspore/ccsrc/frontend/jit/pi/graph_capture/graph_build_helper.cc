@@ -33,7 +33,6 @@
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
 #include "ir/func_graph_flag.h"
 
-
 namespace mindspore {
 namespace pijit {
 GraphBuildHelperPtr GraphBuildHelperFactory(const py::object &object) {
@@ -219,7 +218,7 @@ AbstractWrapperPtr GradGraphBuildHelper::HandleGrad(const FuncGraphBuilderPtr &f
   }
 
   const auto &meta_object = GetObject(0);
-  auto value = ConvertPyObjToValue(meta_object);
+  auto value = ConvertPyCallableToValue(meta_object);
   MS_EXCEPTION_IF_NULL(value);
   auto meta = value->cast<MetaFuncGraphPtr>();
   MS_EXCEPTION_IF_NULL(meta);

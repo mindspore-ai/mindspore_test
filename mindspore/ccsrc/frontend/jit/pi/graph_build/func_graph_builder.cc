@@ -613,7 +613,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
 
 AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
                                              const AbstractWrapperPtrList &inputs_abstract_wrapper) {
-  auto callable_value = ConvertPyObjToValue(callable_obj);
+  auto callable_value = ConvertPyCallableToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert python object " << py::str(callable_obj) << " to value failed.";
     return nullptr;
@@ -658,7 +658,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &cal
                                                            const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                                            const py::object &kw_names) {
   MS_LOG(INFO) << "Handle CallFunctionKw with callable_object: " << py::str(callable_obj);
-  auto callable_value = ConvertPyObjToValue(callable_obj);
+  auto callable_value = ConvertPyCallableToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
     return nullptr;
@@ -703,7 +703,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const ValuePtr &calla
 AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const py::object &callable_obj,
                                                            const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   MS_LOG(INFO) << "Handle CallFunctionEx with callable_object: " << py::str(callable_obj);
-  auto callable_value = ConvertPyObjToValue(callable_obj);
+  auto callable_value = ConvertPyCallableToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert to value failed for callable_obj: " << py::str(callable_obj);
     return nullptr;
