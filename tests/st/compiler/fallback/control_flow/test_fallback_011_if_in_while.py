@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 """ test graph fallback control flow if in while scenario"""
 import numpy as np
 from mindspore import Tensor, jit, context, nn, ops
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
@@ -37,8 +38,12 @@ def test_if_in_while_1():
                 y += Tensor(1)
             x += Tensor(1)
         return x + y
-    res = control_flow_if_in_while()
-    assert res == 7
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        res = control_flow_if_in_while()
+        assert res == 7
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
@@ -57,9 +62,12 @@ def test_if_in_while_2():
                 break
             x += Tensor(1)
         return x
-    res = control_flow_if_in_while()
-    assert res == 3
-
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        res = control_flow_if_in_while()
+        assert res == 3
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
@@ -80,9 +88,13 @@ def test_if_in_while_3():
                 continue
             x += Tensor(1)
         return x + y
-    res = control_flow_if_in_while()
-    assert res == 6
 
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        res = control_flow_if_in_while()
+        assert res == 6
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
@@ -109,9 +121,12 @@ def test_if_in_while_4():
             else:
                 x += Tensor(1)
         return x + y
-    res = control_flow_if_in_while()
-    assert res == 5
-
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
+        res = control_flow_if_in_while()
+        assert res == 5
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
