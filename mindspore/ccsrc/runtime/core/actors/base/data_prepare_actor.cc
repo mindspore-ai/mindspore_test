@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include "runtime/core/actors/base/data_prepare_actor.h"
 #include <algorithm>
 #include <set>
 
 #include "ir/tensor_new.h"
-#include "runtime/core/actors/base/data_prepare_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
 #include "runtime/core/actors/base/loop_count_actor.h"

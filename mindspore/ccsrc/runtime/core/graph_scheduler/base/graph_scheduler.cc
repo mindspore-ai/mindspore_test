@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include <algorithm>
 #include <queue>
 #include <vector>
@@ -36,7 +37,6 @@
 #include "runtime/core/graph_scheduler/optimizer/multi_actor_fusion.h"
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/graph_scheduler/base/graph_parameter_store.h"
-#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
