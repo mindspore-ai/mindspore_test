@@ -162,8 +162,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::vector<uint64_t> GetOptimizerTimestamps() override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
-  bool AllocateForHete(DeviceAddress *const &address, mindspore::HeterogeneousInfoPtr hete_info) const;
-  void FreeForHete(mindspore::HeterogeneousInfoPtr hete_info) const;
 
   // Override interface for multi stream event control.
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
@@ -213,10 +211,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
                                    size_t stream_id) const;
   bool SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                             size_t stream_id) const;
-  bool CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
-  bool CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
   bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                         const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
                         const DeviceSyncPtr src_device_sync = nullptr) const;

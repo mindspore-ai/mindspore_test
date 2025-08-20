@@ -379,9 +379,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
 
   void Swap(DeviceAddress *other);
 
-  HeterogeneousInfoPtr heterogeneous_info() const;
-  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info);
-
   // Free the ptr in user data when the ref count is 0.
   void ClearUserData() {}
 
@@ -430,9 +427,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // Indicating whether the address is the input of view op.
   // If yes, the device address cannot be reused with the host address in CPU.
   bool is_view_{false};
-
-  // heterogeneous info
-  HeterogeneousInfoPtr hete_info_{nullptr};
 
   // the data for numpy object.
   tensor::TensorDataPtr data_;

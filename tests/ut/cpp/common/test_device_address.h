@@ -66,7 +66,7 @@ class TestDeviceAddress : public DeviceAddress {
 
   void ClearDeviceMemory() {}
   bool IsPtrValid() const {
-    return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
+    return GetDevicePtr() != nullptr;
   }
   DeviceType GetDeviceType() const { return DeviceType::kCPU; }
 
@@ -110,9 +110,6 @@ class TestResManager : public device::DeviceResManager {
     MS_EXCEPTION_IF_NULL(address);
     if (address->GetMutablePtr() != nullptr) {
       address->set_ptr(nullptr);
-    }
-    if (address->heterogeneous_info() != nullptr && address->heterogeneous_info()->host_ptr_ != nullptr) {
-      address->heterogeneous_info()->host_ptr_ = nullptr;
     }
   }
   void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }

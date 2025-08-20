@@ -405,16 +405,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     need_sync_user_data_ = false;
   }
 
-  HeterogeneousInfoPtr heterogeneous_info() const {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->heterogeneous_info();
-  }
-
-  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info) {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->set_heterogeneous_info(hete_info);
-  }
-
   // Clone a new KernelTensor from this.
   std::shared_ptr<KernelTensor> CloneKernelTensor() { return std::make_shared<KernelTensor>(*this); }
 

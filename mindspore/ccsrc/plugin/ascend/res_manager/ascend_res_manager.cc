@@ -500,31 +500,6 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   }
   return true;
 }
-
-bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &address,
-                                       HeterogeneousInfoPtr hete_info) const {
-  MS_EXCEPTION_IF_NULL(address);
-  MS_EXCEPTION_IF_NULL(hete_info);
-  if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedHostMem) {
-    if (hete_info->host_ptr_ != nullptr) {
-      MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
-      return false;
-    }
-    auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
-    hete_info->host_ptr_ = host_ptr;
-    address->set_from_mem_pool(true);
-  }
-  if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedDiskFile) {
-    if (!hete_info->file_name_.empty()) {
-      MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
-      return false;
-    }
-    auto file_name = swap_manager_->GetSwapFileName(device_id_);
-    swap_manager_->CreateFile(file_name, address->GetSize());
-    hete_info->file_name_ = file_name;
-  }
-  return true;
-}
 void *AscendResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   AscendHalManager::GetInstance().SetContext(device_id_);
 
@@ -541,18 +516,6 @@ void *AscendResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) co
 size_t AscendResManager::GetMaxUsedMemorySize() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetMaxUsedMemorySize();
-}
-
-void AscendResManager::FreeForHete(HeterogeneousInfoPtr hete_info) const {
-  MS_EXCEPTION_IF_NULL(hete_info);
-  if (hete_info->host_ptr_ != nullptr) {
-    swap_manager_->FreeHostMemory(hete_info->host_ptr_);
-    hete_info->host_ptr_ = nullptr;
-  }
-  if (!hete_info->file_name_.empty()) {
-    swap_manager_->DeleteFile(hete_info->file_name_);
-    hete_info->file_name_ = "";
-  }
 }
 
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
@@ -922,25 +885,6 @@ bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrt
   return true;
 }
 
-bool AscendResManager::CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address,
-                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
-  MS_LOG(DEBUG) << "Copy device to host for hete info, src device address:" << src_device_address->ToString()
-                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
-  if (src_device_address->hete_info_->host_ptr_ == nullptr) {
-    if (!src_device_address->hete_info_->file_name_.empty()) {
-      MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet., file name:"
-                        << src_device_address->hete_info_->file_name_
-                        << " src device address:" << src_device_address->ToString()
-                        << " dst device address:" << dst_device_address->ToString();
-    } else {
-      MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr, src device address:"
-                        << src_device_address->ToString() << " dst device address:" << dst_device_address->ToString();
-    }
-  }
-  return BaseCopy(dst_device_address->GetDevicePtr(), src_device_address->hete_info_->host_ptr_,
-                  dst_device_address->GetSize(), ACL_MEMCPY_HOST_TO_HOST, stream_id);
-}
-
 bool AscendResManager::CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address,
                                                      const DeviceAddress *src_device_address, size_t stream_id) const {
   MS_LOG(DEBUG) << "Copy device to host for different format, src device address:" << src_device_address->ToString()
@@ -1048,10 +992,6 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
                     << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
   BindDeviceToCurrentThread(false);
-  // Check hete info.
-  if (src_device_address->hete_info_ != nullptr) {
-    return CopyDeviceToHostForHeteInfo(dst_device_address, src_device_address, stream_id);
-  }
 
   // Check format.
   static const std::set<std::string> basic_format = {kOpFormat_NCHW, kOpFormat_DEFAULT, kOpFormat_NCDHW, kOpFormat_ND};
@@ -1068,27 +1008,6 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
                 << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
   return BaseCopy(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(), dst_device_address->GetSize(),
                   ACL_MEMCPY_DEVICE_TO_HOST, stream_id);
-}
-
-bool AscendResManager::CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address,
-                                                   const DeviceAddress *src_device_address, size_t stream_id) const {
-  MS_LOG(DEBUG) << "Copy host to device for hete info, src device address:" << src_device_address->ToString()
-                << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
-  if (dst_device_address->hete_info_->host_ptr_ == nullptr) {
-    if (!dst_device_address->hete_info_->file_name_.empty()) {
-      MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet., file name:"
-                        << dst_device_address->hete_info_->file_name_
-                        << " src device address:" << src_device_address->ToString()
-                        << " dst device address:" << dst_device_address->ToString();
-      return false;
-    } else {
-      MS_LOG(EXCEPTION) << "Illegal heterogeneous info: empty file name and host ptr, src device address:"
-                        << src_device_address->ToString() << " dst device address:" << dst_device_address->ToString();
-      return false;
-    }
-  }
-  return BaseCopy(dst_device_address->hete_info_->host_ptr_, src_device_address->GetDevicePtr(),
-                  src_device_address->GetSize(), ACL_MEMCPY_HOST_TO_HOST, stream_id);
 }
 
 bool AscendResManager::CopyHostToDevice(const DeviceAddress *dst_device_address,
@@ -1248,9 +1167,6 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
   }
   BindDeviceToCurrentThread(false);
   // Check hete info.
-  if (dst_device_address->hete_info_ != nullptr) {
-    return CopyHostToDeviceForHeteInfo(dst_device_address, src_device_address, stream_id);
-  }
 
   // Check format.
   static const std::set<std::string> basic_format = {kOpFormat_NCHW, kOpFormat_DEFAULT, kOpFormat_NCDHW, kOpFormat_ND};
