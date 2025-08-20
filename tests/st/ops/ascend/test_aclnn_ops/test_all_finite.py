@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-'''test all finite'''
+"""test all finite"""
 import pytest
 import numpy as np
 
@@ -32,8 +32,13 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="essential",
+)
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_all_finite(mode):
     """
     Feature: Add all_finite ops.
@@ -41,7 +46,7 @@ def test_all_finite(mode):
     Expectation: Success.
     """
     ms.set_context(mode=mode)
-    ms.set_context(jit_level='O0')
+    ms.set_context(jit_level="O0")
     shape1 = [128, 128]
     shape2 = [12960, 65]
     inputs = [
@@ -76,8 +81,13 @@ def test_all_finite(mode):
     assert output1.asnumpy() == True
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="unessential",
+)
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_all_finite_small(mode):
     """
     Feature: Add all_finite ops.
@@ -85,7 +95,7 @@ def test_all_finite_small(mode):
     Expectation: Success.
     """
     ms.set_context(mode=mode)
-    ms.set_context(jit_level='O0')
+    ms.set_context(jit_level="O0")
     net = Net()
 
     in1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
