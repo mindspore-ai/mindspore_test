@@ -437,7 +437,7 @@ def test_llama2_cell_dp2mp4pp2_fgi():
                 parm_parallel_speed_up_check_pairs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     """
     Feature: test llama2 cell_dp2mp4pp2_fgi
