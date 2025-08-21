@@ -26,6 +26,21 @@
 namespace mindspore {
 namespace kernel {
 namespace resize_bicubic_cpu {
+struct ResizerState {
+  void CalculateSize(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape, bool align_corners_flag);
+  int64_t batch_size;
+  int64_t out_height;
+  int64_t out_width;
+  int64_t in_height;
+  int64_t in_width;
+  int64_t channels;
+  float height_scale;
+  float width_scale;
+  int64_t out_hw_size;
+  int64_t in_hw_size;
+  int64_t bchw_size;
+};
+
 class ResizeBicubicCPUKernelMod : public NativeCpuKernelMod {
  public:
   ResizeBicubicCPUKernelMod() = default;
@@ -50,12 +65,15 @@ class ResizeBicubicCPUKernelMod : public NativeCpuKernelMod {
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 
   template <typename T1, typename T2>
-  inline void interpolate_with_caching(const T1 *input_data, const bool half_pixel_centers_, T2 *output_data);
+  inline void InterpolateWithCache(const T1 *input_data, T2 *output_data);
 
   using ResizeBicubicFunc = std::function<bool(ResizeBicubicCPUKernelMod *, const std::vector<kernel::KernelTensor *> &,
                                                const std::vector<kernel::KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, ResizeBicubicFunc>> func_list_;
   ResizeBicubicFunc kernel_func_;
+
+  ResizerState state_info_;
+  bool half_pixel_centers_ = false;
 };
 }  // namespace resize_bicubic_cpu
 }  // namespace kernel
