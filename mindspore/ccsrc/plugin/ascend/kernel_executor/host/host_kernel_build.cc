@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/host/host_kernel_build.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
+#include <vector>
 #include <string>
-#include "plugin/device/ascend/kernel/host/host_kernel_mod.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/log_adapter.h"

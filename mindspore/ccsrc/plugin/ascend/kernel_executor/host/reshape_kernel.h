@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/kernel/host/host_kernel_mod.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 namespace mindspore {
 namespace kernel {
 class ReshapeKernelMod : public HostKernelMod {

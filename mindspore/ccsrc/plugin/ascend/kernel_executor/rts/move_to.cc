@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/move_to.h"
+#include "plugin/ascend/kernel_executor/rts/move_to.h"
 
 #include <map>
 #include <string>

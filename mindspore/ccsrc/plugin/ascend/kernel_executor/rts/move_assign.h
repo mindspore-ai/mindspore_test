@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H
-#include <memory>
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_RTS_MOVE_ASSIGN_H
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_RTS_MOVE_ASSIGN_H
+
 #include <vector>
 
-#include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/move_to.h"
 
 namespace mindspore {
 namespace kernel {
-class ConditionSwitchKernel : public RtKernel {
+class MoveAssign : public MoveTo {
  public:
-  ConditionSwitchKernel() = default;
-  ~ConditionSwitchKernel() override;
-  bool Init(const AnfNodePtr &anf_node) override;
-  bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
-              const std::vector<KernelTensor *> &, void *) override;
-};
+  MoveAssign() = default;
+  ~MoveAssign() override {}
 
-MS_REG_RTKERNEL(conditionswitch, ConditionSwitchKernel);
+  bool Init(const AnfNodePtr &anf_node) override;
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override { return {kIndex0, kIndex1}; }
+};
+MS_REG_RTKERNEL(moveassign, MoveAssign);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_SWITCH_H
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_RTS_MOVE_ASSIGN_H

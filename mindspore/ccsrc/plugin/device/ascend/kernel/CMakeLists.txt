@@ -4,10 +4,8 @@ endif()
 
 file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "acl/*.cc"
-        "host/*.cc"
         "hccl/*.cc"
         "simu/*.cc"
-        "rts/*.cc"
         "akg/*.cc"
         "graph_kernel/*.cc"
         "utils/*.cc"

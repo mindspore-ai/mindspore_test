@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
+#include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
 #include <memory>
 #include <string>
 #include "include/backend/anf_runtime_algorithm.h"

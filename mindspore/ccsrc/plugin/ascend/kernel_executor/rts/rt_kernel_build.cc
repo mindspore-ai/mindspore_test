@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+#include "plugin/ascend/kernel_executor/rts/rt_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 
