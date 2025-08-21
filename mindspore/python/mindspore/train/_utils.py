@@ -582,17 +582,12 @@ def _progress_bar(iterable, total=None):
         print_progress_bar(i)
 
 
-def _load_and_transform(path, name_map, load_func, transform_func=None):
+def _load_and_transform(path, name_map, load_func):
     """use load_func to load and use transform_func to convert"""
-    if load_func is not None:
-        param_dict = load_func(path)
-    else:
-        param_dict = path
+    param_dict = load_func(path)
     transform_dict = {}
+
     for k, v in param_dict.items():
         new_name = name_map.get(k, k) if name_map is not None else k
-        if transform_func is not None:
-            transform_dict[new_name] = transform_func(v, new_name)
-        else:
-            transform_dict[new_name] = v
+        transform_dict[new_name] = v
     return transform_dict
