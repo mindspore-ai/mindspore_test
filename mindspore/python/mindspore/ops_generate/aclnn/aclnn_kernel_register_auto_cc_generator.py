@@ -30,7 +30,7 @@ from resources.resource_list import ResourceType
 
 
 ACLNN_REG_CODE = """
-#include "$ops_gen_kernel_path/ascend/opapi/aclnn_kernel_mod.h"
+#include "$ops_gen_kernel_path/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
@@ -88,14 +88,14 @@ class AclnnKernelRegisterAutoCcGenerator(BaseGenerator):
         res_str = template.CC_LICENSE_STR + reg_code
 
         save_path = os.path.join(
-            work_path, f"{K.MS_OPS_KERNEL_PATH}/ascend/opapi/auto_generate")
+            work_path, f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/auto_generate")
         file_name = "aclnn_kernel_register_auto.cc"
         gen_utils.save_file(save_path, file_name, res_str)
 
 
-def get_registed_ops(file_path=f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/'):
+def get_registed_ops(file_path=f'{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/'):
     '''get registered ops by search files'''
-    # default search in 'ops/kernel/ascend/opapi/'
+    # default search in 'ops/kernel/ascend/aclnn/kernel_mod_impl/'
     search_path = os.path.join(K.WORK_DIR, file_path)
     ret = []
     try:
@@ -117,7 +117,7 @@ def get_registed_ops(file_path=f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/'):
 
 registed_ops = get_registed_ops()
 manual_registed_ops = get_registed_ops(
-    f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/')
+    f'{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/kernel_mod_impl/customize/')
 
 
 def check_op_registed(op_name, manual=False):

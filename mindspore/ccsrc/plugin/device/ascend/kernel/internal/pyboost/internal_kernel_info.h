@@ -39,7 +39,7 @@
 #include "plugin/device/ascend/kernel/internal/pyboost/internal_pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/op_executor.h"
 

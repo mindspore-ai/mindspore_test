@@ -52,7 +52,7 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
 
-#include "mindspore/ops/kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "pyboost/pyboost_utils.h"
@@ -60,12 +60,12 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
-#include "kernel/ascend/opapi/aclnn_kernel_build.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
-#include "kernel/ascend/opapi/aclnn_kernel_mod.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"

@@ -27,7 +27,7 @@
 #include "plugin/ascend/res_manager/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pynative/lazy_fusion.h"
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_dump.h"
 

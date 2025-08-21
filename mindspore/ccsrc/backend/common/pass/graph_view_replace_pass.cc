@@ -33,7 +33,7 @@
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "kernel/ascend/opapi/aclnn_kernel_build.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "mindspore/core/include/ops/op_def.h"
 
 namespace mindspore {

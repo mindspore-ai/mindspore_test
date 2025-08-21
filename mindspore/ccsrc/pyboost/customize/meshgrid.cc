@@ -19,8 +19,8 @@
 #include <utility>
 #include <string>
 #include "runtime/core/graph_scheduler/base/device_address_utils.h"
-#include "kernel/ascend/pyboost/auto_generate/view.h"
-#include "kernel/ascend/pyboost/auto_generate/broadcast_to.h"
+#include "kernel/ascend/aclnn/pyboost_impl/auto_generate/view.h"
+#include "kernel/ascend/aclnn/pyboost_impl/auto_generate/broadcast_to.h"
 #include "op_def/op_enum.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "utils/core_op_utils.h"
