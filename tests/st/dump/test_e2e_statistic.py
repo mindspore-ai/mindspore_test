@@ -104,7 +104,7 @@ def get_dumped_stat_list(dump_file_path):
 def check_moveto_dump(dump_path):
     stat_list = get_dumped_stat_list(Path(dump_path) / "rank_0" / "Net" / "0" / "0")
     for data in stat_list:
-        if data['Op Name'] == 'Default_MoveTo-op0':
+        if data['Op Name'] == 'Default/MoveTo-op0':
             assert data['IO'] == 'input'
 
 
@@ -114,8 +114,8 @@ def compare_single_data(x, y, data_len, net, dump_path, precision_mode="high"):
     if precision_mode == "high":
         t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(np.float32), t_out.astype(np.float32)
 
-    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
-                  'Shape': "(" + str(data_len) + ")"}
+    common_res = {'Op Type': 'Add', 'Op Name': 'Default/Add-op0', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
+                  'Shape': "[" + str(data_len) + "]"}
     target_list = []
     for idx, tensor in enumerate([t_x, t_y]):
         target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}
@@ -167,8 +167,8 @@ def compare_parallel_hash(x, y, data_len, net, dump_path, precision_mode="high")
     if precision_mode == "high":
         t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(np.float32), t_out.astype(np.float32)
 
-    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
-                  'Shape': "(" + str(data_len) + ")"}
+    common_res = {'Op Type': 'Add', 'Op Name': 'Default/Add-op0', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype),
+                  'Shape': "[" + str(data_len) + "]"}
     target_list = []
     for idx, tensor in enumerate([t_x, t_y]):
         target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}
@@ -354,7 +354,7 @@ def test_e2e_statistic_massive_data():
 
     def extra_json_settings(data):
         data["e2e_dump_settings"]["stat_calc_mode"] = "host"
-        data["e2e_dump_settings"]["enable"] = True
+        data["e2e_dump_settings"]["enable"] = False
         data["common_dump_settings"]["statistic_category"].append("hash:sha1")
 
     with tempfile.TemporaryDirectory() as test_dir:

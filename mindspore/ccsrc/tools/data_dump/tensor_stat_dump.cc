@@ -98,13 +98,6 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const s
   }
   DebugServices::TensorStat stat = DebugServices::GetTensorStatistics(data);
   // write tensor statistics to csv file
-  std::ostringstream shape;
-  shape << "\"(";
-  for (size_t i = 0; i < stat.shape.size(); i++) {
-    shape << (i > 0 ? "," : "") << stat.shape[i];
-  }
-  shape << ")\"";
-
   csv.WriteToCsv(op_type_);
   csv.WriteToCsv(op_name_);
   csv.WriteToCsv(task_id_);
@@ -122,7 +115,7 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const s
   } else {
     csv.WriteToCsv(type);
   }
-  csv.WriteToCsv(shape.str());
+  csv.WriteToCsv(ShapeToString(stat.shape));
   stat.UpdateHeaderItemMap();
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   auto statistic_category = dump_json_parser.statistic_category();

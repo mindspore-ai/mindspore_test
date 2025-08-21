@@ -96,8 +96,8 @@ def compare_single_data(x, y, net, dump_path):
     t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(
         np.float32), t_out.astype(np.float32)
 
-    common_res = {'Op Type': 'Add', 'Data Size': str(
-        x.nbytes), 'Data Type': str(x.dtype), 'Shape': "(3)"}
+    common_res = {'Op Type': 'Add', 'Op Name': 'Default/Add-op0', 'Data Size': str(
+        x.nbytes), 'Data Type': str(x.dtype), 'Shape': "[3]"}
     target_list = []
     for idx, tensor in enumerate([t_x, t_y]):
         target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}

@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "ir/tensor.h"
 namespace mindspore {
 
 constexpr auto csvHeaderComm = "Op Type,Op Name,Task ID,Stream ID,Timestamp,IO,Slot,Data Size,Data Type,Shape";
@@ -59,6 +60,7 @@ class CsvHeaderUtil {
 
 bool CheckStoul(size_t *const output_digit, const std::string &input_str);
 
+string ShapeToString(const ShapeVector &shape);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_UTILS_H

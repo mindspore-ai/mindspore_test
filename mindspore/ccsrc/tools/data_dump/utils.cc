@@ -31,4 +31,14 @@ bool CheckStoul(size_t *const output_digit, const std::string &input_str) {
   return true;
 }
 
+string ShapeToString(const ShapeVector &shape) {
+  std::ostringstream sstr;
+  sstr << "\"[";
+  for (size_t i = 0; i < shape.size(); i++) {
+    sstr << (i > 0 ? "," : "") << shape[i];
+  }
+  sstr << "]\"";
+  return string{sstr.str()};
+}
+
 }  // namespace mindspore

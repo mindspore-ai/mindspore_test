@@ -34,15 +34,6 @@ using TensorPtr = tensor::TensorPtr;
 constexpr auto kInput = "input";
 constexpr auto kOutput = "output";
 constexpr auto kCsvFileName = "statistic.csv";
-string ShapeToString(const ShapeVector &shape) {
-  std::ostringstream sstr;
-  sstr << "\"(";
-  for (size_t i = 0; i < shape.size(); i++) {
-    sstr << (i > 0 ? "," : "") << shape[i];
-  }
-  sstr << ")\"";
-  return string{sstr.str()};
-}
 string TensorToString(TensorPtr tensor) {
   if (!tensor) {
     return "null";
@@ -97,7 +88,6 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
 void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<KernelTensor *> tensors, bool is_input,
                            const CNodePtr &node, uint32_t graph_id) {
   string node_name = GetKernelNodeName(node);
-  GetFileKernelName(NOT_NULL(&node_name));
   string node_type = common::AnfAlgo::GetCNodeName(node);
   uint32_t stream_id = AnfAlgo::GetStreamId(node);
   MS_LOG(DEBUG) << "Start calc " << node_name << " node statistics.";

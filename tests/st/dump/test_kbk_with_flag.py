@@ -120,7 +120,7 @@ def run_trans_flag(test_name):
             assert os.path.exists(csv_path)
             df = remove_trailing_commas(csv_path)
             op_name = df['Op Name'].iloc[0]
-            expect_op_name = "add|Default_TensorDump-op0"
+            expect_op_name = "add|Default/TensorDump-op0"
             assert op_name == expect_op_name
         del os.environ['MINDSPORE_DUMP_CONFIG']
         del os.environ['MS_KERNEL_LAUNCH_SKIP']

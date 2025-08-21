@@ -139,6 +139,7 @@ void E2eDump::DumpOutputSingleNode(const CNodePtr &node, const std::string &dump
 void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
                              std::string *kernel_name, const Debugger *debugger, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(node);
+  std::string stat_op_name = *kernel_name;
   GetFileKernelName(NOT_NULL(kernel_name));
   auto output_size = AnfAlgo::GetOutputTensorNum(node);
   std::vector<size_t> valid_indexes;
@@ -180,7 +181,7 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
-      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, false, j, j);
+      TensorStatDump stat_dump(op_type, stat_op_name, task_id, stream_id, timestamp, false, j, j);
       (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
   }
@@ -318,6 +319,7 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
 void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
                             std::string *kernel_name, const Debugger *debugger, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(node);
+  std::string stat_op_name = *kernel_name;
   GetFileKernelName(NOT_NULL(kernel_name));
   auto input_size = common::AnfAlgo::GetInputTensorNum(node);
   std::vector<size_t> valid_indexes;
@@ -365,7 +367,7 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
-      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, true, j, slot);
+      TensorStatDump stat_dump(op_type, stat_op_name, task_id, stream_id, timestamp, true, j, slot);
       (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
   }
