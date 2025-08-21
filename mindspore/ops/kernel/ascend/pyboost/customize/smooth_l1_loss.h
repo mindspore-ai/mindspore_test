@@ -18,7 +18,6 @@
 #define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_SMOOTH_L1_LOSS_ASCEND_H_
 #include <memory>
 #include "ir/tensor.h"
-#include "ir/value.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 

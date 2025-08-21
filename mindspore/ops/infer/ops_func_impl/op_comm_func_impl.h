@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 #include "ir/tensor.h"
-#include "ir/value.h"
 #include "ops/infer_info/infer_info.h"
 
 namespace mindspore {

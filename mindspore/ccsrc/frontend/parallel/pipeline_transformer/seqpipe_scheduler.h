@@ -24,7 +24,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "base/base.h"
 #include "utils/hash_map.h"

@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_WKV_INFO_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_WKV_INFO_H_
 
-#include <ir/value.h>
 #include <memory>
 #include <string>
 #include <vector>

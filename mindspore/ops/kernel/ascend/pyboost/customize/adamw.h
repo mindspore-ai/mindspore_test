@@ -18,10 +18,8 @@
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_ADAMW_H_
 
 #include <memory>
-#include <vector>
 #include <tuple>
 #include "ir/tensor.h"
-#include "ir/value.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {

@@ -21,7 +21,6 @@
 #include <memory>
 #include <vector>
 #include "utils/hash_map.h"
-#include "ir/value.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/activation_info.h"
 #include "frontend/parallel/strategy.h"

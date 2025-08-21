@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_NEW_ONES_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_NEW_ONES_H_
 
-#include <vector>
 #include <memory>
 #include "ir/scalar.h"
 #include "ir/value.h"

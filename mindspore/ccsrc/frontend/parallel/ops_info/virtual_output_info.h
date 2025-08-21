@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "ir/value.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/ops_info/virtual_dataset_info.h"
 #include "frontend/parallel/strategy.h"

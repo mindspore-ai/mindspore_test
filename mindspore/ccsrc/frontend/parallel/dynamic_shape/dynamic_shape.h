@@ -22,7 +22,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "base/base.h"
 #include "utils/hash_map.h"

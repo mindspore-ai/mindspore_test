@@ -17,9 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_SCATTER_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_SCATTER_H_
 
-#include <vector>
 #include <memory>
-#include <tuple>
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

@@ -22,7 +22,6 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
-#include "ir/value.h"
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "include/common/visible.h"

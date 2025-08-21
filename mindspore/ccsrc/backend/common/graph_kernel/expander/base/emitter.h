@@ -16,7 +16,6 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_EXPANDER_BASE_EMITTER_H_
 #define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_EXPANDER_BASE_EMITTER_H_
 #include <memory>
-#include "ir/value.h"
 #include "ir/tensor.h"
 #include "backend/common/graph_kernel/expander/base/meta_op.h"
 #include "backend/common/graph_kernel/expander/base/node.h"

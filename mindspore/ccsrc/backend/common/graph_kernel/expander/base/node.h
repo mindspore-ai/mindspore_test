@@ -20,7 +20,6 @@
 #include <vector>
 #include <string>
 #include "abstract/dshape.h"
-#include "ir/value.h"
 
 namespace mindspore::graphkernel::expander {
 using abstract::BaseShapePtr;

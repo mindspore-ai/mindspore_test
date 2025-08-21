@@ -25,7 +25,6 @@
 #include "include/common/visible.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "ir/value.h"
 #include "ir/meta_func_graph.h"
 #include "ir/core_ops_primitive.h"
 

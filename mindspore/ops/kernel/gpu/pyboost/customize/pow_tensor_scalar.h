@@ -17,10 +17,8 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_PYBOOST_CUSTOMIZE_POW_TENSOR_SCALAR_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_PYBOOST_CUSTOMIZE_POW_TENSOR_SCALAR_H_
 
-#include <vector>
 #include <memory>
 #include "ir/scalar.h"
-#include "ir/value.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
