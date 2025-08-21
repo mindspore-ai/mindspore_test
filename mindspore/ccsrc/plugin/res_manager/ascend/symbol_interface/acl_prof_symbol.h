@@ -20,18 +20,18 @@
 #include "utils/dlopen_macro.h"
 
 namespace mindspore::device::ascend {
-ORIGIN_METHOD(aclprofCreateConfig, aclprofConfig *, uint32_t *, uint32_t, aclprofAicoreMetrics,
-              const aclprofAicoreEvents *, uint64_t)
-ORIGIN_METHOD(aclprofDestroyConfig, aclError, const aclprofConfig *)
-ORIGIN_METHOD(aclprofFinalize, aclError)
-ORIGIN_METHOD(aclprofInit, aclError, const char *, size_t)
-ORIGIN_METHOD(aclprofStart, aclError, const aclprofConfig *)
-ORIGIN_METHOD(aclprofStop, aclError, const aclprofConfig *)
-ORIGIN_METHOD(aclprofCreateStepInfo, aclprofStepInfo *)
-ORIGIN_METHOD(aclprofGetStepTimestamp, aclError, aclprofStepInfo *, aclprofStepTag, aclrtStream)
-ORIGIN_METHOD(aclprofDestroyStepInfo, void, aclprofStepInfo *)
-ORIGIN_METHOD(aclprofGetSupportedFeatures, aclError, size_t *, void **)
-ORIGIN_METHOD(aclprofGetSupportedFeaturesV2, aclError, size_t *, void **)
+ORIGIN_METHOD_WITH_SIMU(aclprofCreateConfig, aclprofConfig *, uint32_t *, uint32_t, aclprofAicoreMetrics,
+                        const aclprofAicoreEvents *, uint64_t)
+ORIGIN_METHOD_WITH_SIMU(aclprofDestroyConfig, aclError, const aclprofConfig *)
+ORIGIN_METHOD_WITH_SIMU(aclprofFinalize, aclError)
+ORIGIN_METHOD_WITH_SIMU(aclprofInit, aclError, const char *, size_t)
+ORIGIN_METHOD_WITH_SIMU(aclprofStart, aclError, const aclprofConfig *)
+ORIGIN_METHOD_WITH_SIMU(aclprofStop, aclError, const aclprofConfig *)
+ORIGIN_METHOD_WITH_SIMU(aclprofCreateStepInfo, aclprofStepInfo *)
+ORIGIN_METHOD_WITH_SIMU(aclprofGetStepTimestamp, aclError, aclprofStepInfo *, aclprofStepTag, aclrtStream)
+ORIGIN_METHOD_WITH_SIMU(aclprofDestroyStepInfo, void, aclprofStepInfo *)
+ORIGIN_METHOD_WITH_SIMU(aclprofGetSupportedFeatures, aclError, size_t *, void **)
+ORIGIN_METHOD_WITH_SIMU(aclprofGetSupportedFeaturesV2, aclError, size_t *, void **)
 
 extern aclprofCreateConfigFunObj aclprofCreateConfig_;
 extern aclprofDestroyConfigFunObj aclprofDestroyConfig_;
@@ -46,6 +46,7 @@ extern aclprofGetSupportedFeaturesFunObj aclprofGetSupportedFeatures_;
 extern aclprofGetSupportedFeaturesFunObj aclprofGetSupportedFeaturesV2_;
 
 void LoadProfApiSymbol(const std::string &ascend_path);
+void LoadSimulationProfApi();
 }  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_PROF_SYMBOL_H_
