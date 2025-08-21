@@ -23,6 +23,7 @@
 #include "acl/acl.h"
 #include "ms_extension/pynative/pyboost_extension.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 
 namespace ms::pynative {
 using mindspore::device::ascend::aclTensor;
@@ -72,11 +73,8 @@ using AsdFftExecFunc = int (*)(asdFftHandle handle, aclTensor *input, aclTensor 
 #define GET_API_FUNC(func_name) reinterpret_cast<_##func_name>(GetAsdSipApiFuncAddr(#func_name))
 
 inline std::string GetAsdSipLibPath() {
-#ifdef ASDSIP_PATH
-  return std::string(ASDSIP_PATH) + "/lib/libasdsip.so";
-#else
-  MS_LOG(EXCEPTION) << "Find libasdsip.so failed, you should install the nnal package first.";
-#endif
+  auto ascend_path = mindspore::device::ascend::GetAscendPath();
+  return ascend_path + "/../../nnal/asdsip/latest/lib/libasdsip.so";
 }
 
 inline uint64_t HashFFTParam(const FFTParam &param) {
