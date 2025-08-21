@@ -25,7 +25,6 @@
 #include <stack>
 #include <unordered_map>
 
-#include "ir/dtype/amp.h"
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"

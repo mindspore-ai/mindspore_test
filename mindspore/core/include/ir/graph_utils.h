@@ -29,7 +29,6 @@
 #include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
-#include "utils/label.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore {
