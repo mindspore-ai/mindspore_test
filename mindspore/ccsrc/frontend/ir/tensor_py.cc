@@ -835,11 +835,16 @@ std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
 
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
-  MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = tensor::from_spec(self.data_type(), self.shape(), device::GetDeviceTypeByName(to));
-  bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
+  MS_LOG(INFO) << "Try move tensor to " << to;
+  const auto &device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (to != "CPU" && to != device) {
+    MS_LOG(EXCEPTION) << "The value of arg 'to' of method 'move_to' should be same with device target, bug got to:"
+                      << to << ", device target: " << device;
+  }
+  auto target_tensor = tensor::from_spec(self.data_type(), self.shape(), device::GetDeviceTypeByName(to));
+  bool return_self = false;
   device::MoveTo(std::make_shared<tensor::Tensor>(self), target_tensor, to, blocking, &return_self);
   if (return_self) {
     return std::make_shared<tensor::Tensor>(self);
