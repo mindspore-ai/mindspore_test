@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
-#include "pybind_api/hal/stream_py.h"
+#include "pybind_api/runtime/stream_py.h"
 #include "runtime/hardware_abstract/event/device_event.h"
 
 namespace mindspore {

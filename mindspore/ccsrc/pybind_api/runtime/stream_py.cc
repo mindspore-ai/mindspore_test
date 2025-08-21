@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pybind_api/hal/stream_py.h"
+#include "pybind_api/runtime/stream_py.h"
 #include <utility>
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
@@ -21,7 +21,7 @@
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pybind_api/hal/utils_py.h"
+#include "pybind_api/runtime/utils_py.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore {

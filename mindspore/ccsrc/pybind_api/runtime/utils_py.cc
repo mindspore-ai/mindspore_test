@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pybind_api/hal/utils_py.h"
+#include "pybind_api/runtime/utils_py.h"
 #include <string>
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

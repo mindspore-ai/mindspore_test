@@ -282,8 +282,6 @@ BACKEND_COMMON_EXPORT int64_t SplitTupleInputs(const FuncGraphPtr &graph, const 
 BACKEND_COMMON_EXPORT AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph,
                                                                     const CNodePtr &cnode_ptr);
 
-BACKEND_COMMON_EXPORT void InferOp(const CNodePtr &node, void *args = nullptr);
-
 using LaunchHandler = abstract::AbstractBasePtr (*)(const PrimitivePtr &,
                                                     const std::vector<abstract::AbstractBase *> &);
 BACKEND_COMMON_EXPORT void set_launch_handler(const LaunchHandler &handler);
