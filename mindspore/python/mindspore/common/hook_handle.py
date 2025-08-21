@@ -15,6 +15,7 @@
 """The removable handle for cell hook function."""
 from __future__ import absolute_import
 import weakref
+from collections import OrderedDict
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
@@ -173,3 +174,62 @@ class HookHandle:
             extra_dict = self.extra_dict_ref()
             if extra_dict is not None and self.handle_id in extra_dict:
                 del extra_dict[self.handle_id]
+
+
+def _check_hook_results(pre_res, new_res, hook_fn):
+    if not isinstance(new_res, tuple):
+        raise RuntimeError(f"hook {hook_fn.__name__} should return a tuple of grad.")
+
+    new_res_len = len(new_res)
+    pre_res_len = len(pre_res)
+    if new_res_len != pre_res_len:
+        raise RuntimeError(
+            f"hook {hook_fn.__name__} returned incorrect length {new_res_len}, expected {pre_res_len}."
+        )
+
+
+class _HookUtils:
+    r"""
+    Internal utility class for hook registration and execution.
+    """
+
+    @staticmethod
+    def register_hook(hook_dict, hook_fn):
+        """
+        Register hook
+
+        Args:
+            hook_dict (dict): hook dict.
+            hook_fn (function): hook function.
+
+        Returns:
+            tuple: Updated hook_dict and HookHandle object.
+        """
+        if hook_dict is None:
+            hook_dict = OrderedDict()
+        handle = HookHandle(hook_dict)
+        hook_dict[handle.handle_id] = hook_fn
+        return hook_dict, handle
+
+    @staticmethod
+    def run_hook(hook_dict, args):
+        """
+        Run all hooks in the hook_dict with the given arguments.
+
+        Args:
+            hook_dict (dict): Dictionary of registered hooks.
+            args (tuple): Arguments to pass to the hook functions.
+
+        Returns:
+            Modified first argument if any hook returns a new value; otherwise, None.
+        """
+        is_modify = False
+        args_list = list(args)
+        # Note: We create a list from hook_dict.values() to ensure safe iteration.
+        for hook_fn in list(hook_dict.values()):
+            res = hook_fn(*args_list)
+            if res is not None:
+                _check_hook_results(args_list[0], res, hook_fn)
+                args_list[0] = res
+                is_modify = True
+        return args_list[0] if is_modify else None

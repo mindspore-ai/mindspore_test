@@ -746,3 +746,40 @@ def test_view_inplace_on_view_base():
     grad_op = ops.GradOperation(get_all=True)
     grad = grad_op(fn)(input_tensor)
     np.allclose(grad[0].asnumpy(), np.array([0.0, 1.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+def test_view_inplace_view_rebase_error():
+    """
+    Feature: Test view inplace valid.
+    Description: Test view rebase error.
+    Expectation: Raise RuntimeError.
+    """
+
+    def fn(x):
+        x_view1, x_view2 = ops.split(x, 1)
+        with _no_grad():
+            x_view1 += 1.0
+        return x_view2
+
+    input_tensor = Tensor([[1., 2.], [2., 2.]])
+
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    with pytest.raises(RuntimeError) as err:
+        grad_op(input_tensor)
+        _pynative_executor.sync()
+    assert "A view of base is being rebase" in str(err.value)
+    assert "This view is one of output for multi output operator" in str(err.value)
+
+    def fn1(x):
+        y = x * 2.0
+        with _no_grad():
+            y_view = y[0]
+        y += 1.0
+        return y_view
+
+    grad_op = GradOfFirstInput(fn1, sens_param=False)
+    with pytest.raises(RuntimeError) as err:
+        grad_op(input_tensor)
+        _pynative_executor.sync()
+    assert ("A view of base is being rebase, "
+            "which created in no_grad mode and inplace modified with grad mode enabled.") in str(err.value)

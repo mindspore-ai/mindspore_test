@@ -77,7 +77,7 @@ ValuePtrList AutoCastAndReduce(const ValuePtrList &gradients, const std::vector<
       continue;
     }
     if (!input_info.IsBroadcastTo(grad_tensor->shape())) {
-      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to input shape, but got "
+      MS_LOG(EXCEPTION) << "For custom function, grad tensor should be broadcast to expected shape, but got "
                         << grad_tensor->shape() << " vs " << input_info.shape();
     }
     grad_tensor = input_info.Cast(input_info.ReduceGrad(grad_tensor));
@@ -103,6 +103,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
+  MS_EXCEPTION_IF_CHECK_FAIL(bprop_fn_.ptr() != nullptr, kCallBackwradTwiceErr);
   py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
   size_t fn_size = is_recompute_ ? list_inputs.size() + kSizeOne : list_inputs.size() + kSizeTwo;
@@ -155,6 +156,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << "Begin PyBackwardNode CallBackward";
   // Construct input for backward function.
   py::gil_scoped_acquire gil_acquire;
+  MS_EXCEPTION_IF_CHECK_FAIL(backward_fn_.ptr() != nullptr, kCallBackwradTwiceErr);
   auto gradients = ValueListToValue(grads);
   auto ctx = py::cast<FunctionPtr>(obj_);
   MS_EXCEPTION_IF_NULL(ctx);
@@ -200,7 +202,7 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
 
   // Convert python object to tensor.
   ValuePtrList gradient_values;
-  ConvertPybindTupleGradToCValue(grad_tuple, &gradient_values, true);
+  ConvertPybindTupleGradToCValue(grad_tuple, &gradient_values);
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Custom backward function output is empty!";
   }

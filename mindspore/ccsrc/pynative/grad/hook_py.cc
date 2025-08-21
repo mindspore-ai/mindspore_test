@@ -17,9 +17,13 @@
 #include "pynative/grad/hook_py.h"
 #include <memory>
 #include <string>
+#include <utility>
+#include <map>
+#include <unordered_map>
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/adapter.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "include/common/pynative/hook.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/grad/function/func_grad.h"
@@ -42,9 +46,11 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
     }
     MS_LOG(DEBUG) << "Create leaf node for: " << tensor->ToString();
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    auto fn = std::make_shared<autograd::LeafNode>(
-      tensor->param_info() != nullptr ? tensor->param_info()->name() : "register_hook_input", tensor->shape(),
-      tensor->Dtype(), tensor->is_parameter());
+    auto fn = std::make_shared<autograd::LeafNode>(tensor->param_info() != nullptr
+                                                     ? tensor->param_info()->name()
+                                                     : "register_hook_input_" + std::to_string(tensor->id()),
+                                                   tensor, tensor->shape(), tensor->Dtype(), tensor->is_parameter());
+    auto_grad_meta_data->set_requires_grad(true);
     auto_grad_meta_data->set_grad_node(fn);
     tensor->set_auto_grad_meta_data(auto_grad_meta_data);
     return fn;
@@ -56,32 +62,6 @@ BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
   return grad_node;
 }
 }  // namespace
-
-PyTensorBackwardNodePreHook::PyTensorBackwardNodePreHook(const py::function &hook_fn, size_t output_idx)
-    : hook_fn_(hook_fn), output_idx_(output_idx) {}
-
-PyTensorBackwardNodePreHook::~PyTensorBackwardNodePreHook() {
-  py::gil_scoped_acquire gil;
-  hook_fn_ = py::object();
-}
-
-void PyTensorBackwardNodePreHook::operator()(ValuePtrList *grad) {
-  if (output_idx_ >= grad->size()) {
-    MS_LOG(EXCEPTION) << "PyTensor hook output_idx out of range";
-  }
-
-  py::gil_scoped_acquire gil;
-  const auto py_grad = CValueToPybindObj((*grad)[output_idx_]);
-  const auto ret = hook_fn_(py_grad);
-  if (!ret.is_none()) {
-    if (tensor::IsTensorPy(ret)) {
-      (*grad)[output_idx_] = tensor::ConvertToTensor(ret);
-    } else {
-      MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "
-                        << py::str(ret.get_type().attr("__name__")).cast<std::string>() << ".";
-    }
-  }
-}
 
 uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::TensorPtr &tensor, const py::function &hook) {
   ++unique_id_;
@@ -118,11 +98,12 @@ py::list RegisterHook::GetHooks(const tensor::TensorPtr &tensor) {
   if (const auto auto_grad_meta_data = impl::GetAutogradMetaImpl(tensor)) {
     const auto output_idx = auto_grad_meta_data->output_index();
     if (const auto grad_node = auto_grad_meta_data->UnsafeGetGradNodeImpl()) {
-      const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks();
-      for (const auto &item : py_tensor_pre_hooks) {
-        const auto &py_hooks = item.second;
-        if (py_hooks->output_idx_ == output_idx) {
-          hooks.append(py_hooks->hook_fn_);
+      if (const auto &py_tensor_pre_hooks = grad_node->py_tensor_pre_hooks()) {
+        for (const auto &item : *py_tensor_pre_hooks) {
+          const auto &py_hooks = item.second;
+          if (py_hooks->output_idx_ == output_idx) {
+            hooks.append(py_hooks->hook_fn_);
+          }
         }
       }
     }

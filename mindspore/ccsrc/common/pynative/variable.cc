@@ -91,6 +91,21 @@ SavedNodePtr SavedNode::ConstructSavedNode(const ValuePtr &output, bool is_view_
   return std::make_shared<SavedNode>(detach_value, nullptr, false, is_placeholder);
 }
 
+bool AutoGradMetaData::requires_grad() const {
+  if (requires_grad_) {
+    return true;
+  }
+  auto grad_node = UnsafeGetGradNodeImpl();
+  if (grad_node != nullptr && !grad_node->IsLeaf()) {
+    return true;
+  }
+  return false;
+}
+
+bool ViewAutoGradMetaData::requires_grad() const {
+  return AutoGradMetaData::requires_grad() || view_info_.base()->requires_grad();
+}
+
 BackwardNode::BackwardNode(string name, uint64_t seq_id, size_t output_size) noexcept
     : name_(std::move(name)), seq_id_(seq_id), output_size_(output_size) {}
 
@@ -102,7 +117,7 @@ ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
   return flatten_gradients;
 }
 
-bool BackwardNode::IsEmpty() {
+bool BackwardNode::IsEmpty() const {
   if (std::all_of(next_edges().begin(), next_edges().end(),
                   [](const Edge &edge) -> bool { return !edge.is_defined(); })) {
     return true;
@@ -112,7 +127,7 @@ bool BackwardNode::IsEmpty() {
 
 std::string BackwardNode::ToString() const {
   std::ostringstream buf;
-  buf << "Node name: " << name() << "\n";
+  buf << "Parent node: " << UniqueId() << "\n";
   for (size_t i = 0; i < next_edges().size(); ++i) {
     if (!next_edges()[i].is_defined()) {
       buf << "Last edge: " << i << " undefined edge"
@@ -121,9 +136,33 @@ std::string BackwardNode::ToString() const {
     }
     const auto &last_grad_node = next_edges()[i].grad_node;
     auto index = next_edges()[i].input_index;
-    buf << "Last edge: " << i << ", node name: " << last_grad_node->name() << ", output index: " << index << "\n";
+    buf << "Last edge: " << i << ", node name: " << last_grad_node->UniqueId() << ", output index: " << index << "\n";
   }
   return buf.str();
+}
+
+void BackwardNode::CustomDeleter(BackwardNode *grad_node) {
+  if (grad_node->next_edges().empty()) {
+    delete grad_node;
+    return;
+  }
+  std::vector<std::shared_ptr<BackwardNode>> local_stack;
+  static auto iteration_deleter = [](BackwardNode *node, std::vector<std::shared_ptr<BackwardNode>> *stack) {
+    for (auto &next_edge : node->mutable_next_edges()) {
+      if (next_edge.is_defined() && next_edge.grad_node.use_count() == 1) {
+        (void)stack->emplace_back(std::move(next_edge.grad_node));
+      } else {
+        next_edge.grad_node = nullptr;
+      }
+    }
+  };
+  iteration_deleter(grad_node, &local_stack);
+  delete grad_node;
+  while (!local_stack.empty()) {
+    auto child_node = std::move(local_stack.back());
+    local_stack.pop_back();
+    iteration_deleter(child_node.get(), &local_stack);
+  }
 }
 
 AutoDiffGuard::AutoDiffGuard(const AutoDiffInterfacePtr &auto_diff) {
@@ -143,7 +182,7 @@ AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor) {
 }
 
 AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor) {
-  auto auto_grad_meta = tensor.auto_grad_meta_data();
+  const auto &auto_grad_meta = tensor.auto_grad_meta_data();
   if (auto_grad_meta == nullptr) {
     return nullptr;
   }

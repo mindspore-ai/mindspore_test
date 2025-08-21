@@ -70,7 +70,7 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
     AutoGradUtil::SetInferMultiOutputToGrad(op_grad_info, op);
     PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
   } else if (op_type == OperatorType::kInplaceOp) {
-    PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
+    PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]->version());
   }
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));

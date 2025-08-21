@@ -82,7 +82,7 @@ struct Common {
   static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
   static tensor::TensorPtr CaculateGradNorm(const tensor::TensorPtr &grad);
   template <typename T>
-  static std::string PrintDebugInfo(std::vector<T> items, const std::string &info_header = "",
+  static std::string PrintDebugInfo(const std::vector<T> &items, const std::string &info_header = "",
                                     bool is_print_tensor_data = false) {
     static constexpr size_t end_char_size = 2;
     std::ostringstream buf;
@@ -163,6 +163,7 @@ struct PyBoost {
   static PyboostOpRunInfoPtr Init_Pyboost(const PrimitivePtr &prim);
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
+  PYNATIVE_EXPORT static void MarkSideEffect(PyObject *arg);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
                                const AbstractBasePtr &abstract, const ValuePtr &real_out);
@@ -207,7 +208,8 @@ struct PyBoost {
   }
 
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info);
-  static void BumpVersionAsync(const tensor::TensorPtr &tensor);
+  static void BumpVersionAsync(tensor::Version version);
+  static void UpdateVersionAsync(const autograd::ViewAutoGradMetaDataPtr &grad_meta, const tensor::Version &version);
   static ValuePtr OutputToValue(const tensor::TensorPtr &output) { return output; }
   static ValuePtr MultiOutputToValue(const std::vector<TensorPtr> &outputs) {
     std::vector<ValuePtr> output_values;

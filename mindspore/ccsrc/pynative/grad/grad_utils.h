@@ -33,7 +33,6 @@ namespace mindspore {
 namespace pynative {
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
 enum class SpecialType { kZerosLikeType = 0, kOnesLikeType = 1 };
-
 class TensorMeta {
  public:
   TensorMeta() : is_default_(true) {}
@@ -67,6 +66,16 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
   const PrimitivePtr &prim_;
   ValuePtrList *inputs_;
   ValuePtr *output_;
+};
+
+class AutoGradGuard {
+ public:
+  explicit AutoGradGuard(bool require_grad);
+  ~AutoGradGuard();
+
+ private:
+  bool origin_require_grad_{false};
+  bool origin_enable_grad_{false};
 };
 
 struct AutoGradUtil {
@@ -122,6 +131,8 @@ struct AutoGradUtil {
                                         device::DeviceType device_target, ValuePtrList &&inputs);
   static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
   static TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self);
+  static TensorPtr Add(const TensorPtr &input, const TensorPtr &other);
+  static TensorPtr Clone(const TensorPtr &input);
 };
 }  // namespace pynative
 }  // namespace mindspore
