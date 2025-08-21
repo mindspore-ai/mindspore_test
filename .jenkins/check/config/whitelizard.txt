@@ -56,7 +56,6 @@ mindspore/mindspore/ccsrc/frontend/jit/ps/static_analysis/prim.cc:mindspore::abs
 mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ccsrc/utils/anfalgo.cc:mindspore::common::AnfAlgo::GetTensorValueString
 mindspore/mindspore/ops/kernel/gpu/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
-mindspore/mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fission/dynamic_rnn_grad_fission_v2.cc:mindspore::opt::AddLSTMInputGradNode
 mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc:aicpu::ARMDropOutGenMaskKernel
 mindspore/model_zoo/official/recommend/wide_and_deep/src/wide_and_deep.py:__init__
@@ -177,7 +176,6 @@ mindspore/mindspore/ccsrc/frontend/parallel/auto_parallel/rec_core/rec_partition
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/reshape_info.cc:mindspore::parallel::ReshapeInfo::ComputeReplaceOp
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_transfer.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/graph_util/graph_utils.cc:mindspore::parallel::ReplaceOpInput
-mindspore/mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fusion/lamb_next_mv_with_decay_v1_rule.cc:mindspore::opt::MatchAdd5Pattern
 mindspore/mindspore/python/mindspore/ops/_utils/utils.py:get_broadcast_shape
 mindspore/mindspore/ccsrc/pybind_api/ir/dtype_py.cc:mindspore::RegTyping
 mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc:mindspore::tensor::RegTensorPyFunction
