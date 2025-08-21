@@ -2179,7 +2179,7 @@ class ImageFolderDataset(MappableDataset, VisionBaseDataset):
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     Note:
-        - The shape of the image column is [image_size] if `decode` flag is ``False``, or [H,W,C] otherwise.
+        - The shape of the image column is [undecoded_image_size] if `decode` flag is ``False``, or [H,W,C] otherwise.
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
