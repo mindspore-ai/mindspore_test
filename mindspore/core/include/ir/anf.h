@@ -32,7 +32,7 @@
 #include "base/base.h"
 #include "base/effect_info.h"
 #include "ir/kernel_info_dev.h"
-
+#include "ir/scope.h"
 #include "ir/primal_attr.h"
 #include "ir/primal_debug_info.h"
 #include "utils/hashing.h"
