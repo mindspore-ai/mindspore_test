@@ -1,4 +1,7 @@
 file(GLOB_RECURSE _UTILS_SRC_LIST ./*.cc)
+file(STRINGS "${TOP_DIR}/version.txt" VERSION)
+add_definitions(-DVERSION=\"${VERSION}\")
+
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     file(GLOB_RECURSE _UTILS_SIGNAL_SRC_FILES ./signal_util.cc)
     list(REMOVE_ITEM _UTILS_SRC_LIST ${_UTILS_SIGNAL_SRC_FILES})

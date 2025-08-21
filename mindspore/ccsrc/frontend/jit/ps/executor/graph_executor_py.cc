@@ -42,7 +42,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy.h"
 
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif

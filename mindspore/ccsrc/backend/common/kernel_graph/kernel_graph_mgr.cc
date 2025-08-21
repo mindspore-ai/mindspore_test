@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "utils/log_adapter.h"
@@ -37,7 +37,7 @@
 #include "include/common/utils/config_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "load_mindir/load_model.h"
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"

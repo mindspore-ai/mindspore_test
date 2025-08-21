@@ -34,7 +34,7 @@
 #include "frontend/operator/primitive_py.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "ir/func_graph_cloner.h"
 
 namespace mindspore {

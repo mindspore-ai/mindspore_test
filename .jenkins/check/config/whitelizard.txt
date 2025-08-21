@@ -39,7 +39,6 @@ mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_runner.cc:mindspore::r
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchKernel
 mindspore/mindspore/ccsrc/runtime/core/actors/base/output_actor.cc:mindspore::runtime::OutputActor::HandleOutput
 mindspore/mindspore/ccsrc/pybind_api/init.cc:PYBIND11_MODULE
-mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute
@@ -69,7 +68,7 @@ mindspore/mindspore/ccsrc/frontend/jit/ps/pipeline.cc:mindspore::pipeline::JitEx
 mindspore/mindspore/ccsrc/frontend/jit/ps/pipeline.cc:mindspore::pipeline::Pipeline::Run
 mindspore/mindspore/ccsrc/frontend/jit/ps/action.cc:mindspore::pipeline::TaskEmitAction
 mindspore/mindspore/ccsrc/frontend/jit/ps/debug/anf_ir_utils.cc:mindspore::Skip
-mindspore/mindspore/ccsrc/common/ir_dump/anf_ir_dump.cc:mindspore::Skip
+mindspore/mindspore/ccsrc/utils/ir_dump/anf_ir_dump.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/transform/express_ir/onnx_exporter.cc:mindspore::OnnxExporter::ExportPrimDynamicRNN
 mindspore/mindspore/python/mindspore/ops/operations/array_ops.py:_compute_slicing_shape
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d_ext
@@ -125,9 +124,6 @@ mindspore/mindspore/core/ir/dtype/type.cc:mindspore::ObjectIdLabel
 mindspore/mindspore/python/mindspore/ops/_op_impl/_custom_op/dsd_impl.py:dsd_matmul
 mindspore/mindspore/python/mindspore/ops/_op_impl/_custom_op/dsd_back_impl.py:dsdbpropimpl
 mindspore/mindspore/ccsrc/runtime/memory/mem_pool/mem_dynamic_allocator.cc:mindspore::device::DynamicMemPoolBestFit::CombineMemBuf
-mindspore/mindspore/ccsrc/debug/dump_proto.cc:mindspore::ProtoExporter::SetNodeOutputType
-mindspore/mindspore/ccsrc/debug/dump_proto.cc:mindspore::ProtoExporter::SetValueToProto
-mindspore/mindspore/ccsrc/debug/dump_proto.cc:mindspore::ProtoExporter::SetScalarToProto
 mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_10x16_kernel_nhwc_fp32.c:nnacl_gemm_avx512_10x16_kernel_nhwc_fp32
 mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_11x32_kernel_nhwc_fp32.c:nnacl_gemm_avx512_11x32_kernel_nhwc_fp32
 mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/gemm_avx512/nnacl_gemm_avx512_1x96_kernel_nhwc_fp32.c:nnacl_gemm_avx512_1x96_kernel_nhwc_fp32

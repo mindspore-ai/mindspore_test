@@ -34,7 +34,7 @@
 #include "frontend/jit/pi/graph_build/build_graph_utils.h"
 #include "frontend/jit/pi/graph_capture/abstract_object.h"
 #include "frontend/jit/pi/capture_context.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/jit/pi/graph_compiler/utils.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

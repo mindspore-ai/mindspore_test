@@ -27,7 +27,7 @@
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "tools/profiler/profiling.h"
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {

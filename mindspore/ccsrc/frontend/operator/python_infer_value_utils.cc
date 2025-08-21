@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "frontend/operator/base_ref_py.h"
+#include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "ir/anf.h"

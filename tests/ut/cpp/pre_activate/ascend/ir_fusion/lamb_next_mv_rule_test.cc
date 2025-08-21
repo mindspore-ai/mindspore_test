@@ -16,7 +16,7 @@
 
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion/lamb_next_mv_rule.h"
 
 namespace mindspore {

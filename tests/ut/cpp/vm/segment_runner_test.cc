@@ -27,7 +27,7 @@
 #include "frontend/jit/ps/parse/parse.h"
 #include "ir/graph_utils.h"
 #include "frontend/jit/ps/resource.h"
-#include "include/common/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
 #include "pyboost/pyboost_utils.h"
 #include "ir/tensor.h"

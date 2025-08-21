@@ -30,7 +30,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/primfunc_utils.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/pynative/common_utils.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "include/common/utils/stub_tensor.h"

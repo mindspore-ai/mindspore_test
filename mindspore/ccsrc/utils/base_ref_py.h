@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_FRONTEND_OPERATOR_BASE_REF_PY_H_
-#define MINDSPORE_CCSRC_FRONTEND_OPERATOR_BASE_REF_PY_H_
+#ifndef MINDSPORE_CCSRC_UTILS_BASE_REF_PY_H_
+#define MINDSPORE_CCSRC_UTILS_BASE_REF_PY_H_
 
 #include <memory>
 #include <string>
@@ -51,4 +51,4 @@ class PyObjectRef : public BaseRef {
 };
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_BASE_REF_PY_H_
+#endif  // MINDSPORE_CCSRC_UTILS_BASE_REF_PY_H_

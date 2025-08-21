@@ -34,7 +34,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/convert_utils.h"

@@ -21,7 +21,7 @@
 #include "include/common/expander/core/infer.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/anf_utils.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/expander/utils.h"
 
 namespace mindspore {

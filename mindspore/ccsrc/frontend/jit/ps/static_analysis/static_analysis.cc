@@ -40,7 +40,7 @@
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "include/common/fallback.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"

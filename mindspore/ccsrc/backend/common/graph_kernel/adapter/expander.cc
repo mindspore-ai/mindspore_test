@@ -36,7 +36,7 @@
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "ir/func_graph_cloner.h"
 #include "mindspore/ops/op_def/op_name.h"

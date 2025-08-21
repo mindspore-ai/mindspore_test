@@ -32,7 +32,7 @@
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "backend/common/kernel_graph/jit_call_graph.h"
 #include "ir/anf.h"
-#include "frontend/operator/base_ref_py.h"
+#include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "pybind_api/pybind_patch.h"
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/convert_utils.h"

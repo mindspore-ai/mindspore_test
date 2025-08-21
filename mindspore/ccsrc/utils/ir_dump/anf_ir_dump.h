@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_ANF_IR_DUMP_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_ANF_IR_DUMP_H_
+#ifndef MINDSPORE_CCSRC_UTILS_IR_DUMP_ANF_IR_DUMP_H_
+#define MINDSPORE_CCSRC_UTILS_IR_DUMP_ANF_IR_DUMP_H_
 
 #include <string>
 #include <memory>
@@ -153,4 +153,4 @@ COMMON_EXPORT void GetSubgraphAttrAsString(const FuncGraphPtr &func_graph, std::
 COMMON_EXPORT void ExportIR(const std::string &filename, const FuncGraphPtr &func_graph);
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_IR_DUMP_ANF_IR_DUMP_H_
+#endif  // MINDSPORE_CCSRC_UTILS_IR_DUMP_ANF_IR_DUMP_H_

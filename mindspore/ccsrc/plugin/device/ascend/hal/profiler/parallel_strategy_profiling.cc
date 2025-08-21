@@ -15,7 +15,7 @@
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include <fstream>
 #include "sys/stat.h"
-#include "include/common/ir_dump/dump_proto.h"
+#include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"

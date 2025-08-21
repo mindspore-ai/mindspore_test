@@ -25,8 +25,8 @@
 #include <initializer_list>
 
 #include "tools/profiler/profiling.h"
-#include "include/common/ir_dump/draw.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/action.h"

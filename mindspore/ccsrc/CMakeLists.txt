@@ -102,7 +102,6 @@ set(COMMON_SUB_COMP
         common/expander
         common/symbol_engine
         common/amp
-        common/ir_dump
         )
 
 foreach(_comp ${COMMON_SUB_COMP})

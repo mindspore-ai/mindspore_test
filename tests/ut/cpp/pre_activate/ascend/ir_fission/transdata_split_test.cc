@@ -19,7 +19,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "kernel/oplib/oplib.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "utils/ms_context.h"
 
 #define private public

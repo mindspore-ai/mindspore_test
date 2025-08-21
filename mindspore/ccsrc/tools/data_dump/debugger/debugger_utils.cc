@@ -34,7 +34,7 @@
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
 #include "include/backend/debug/debugger/debugger.h"
-#include "include/common/ir_dump/anf_dump_utils.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"

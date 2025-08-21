@@ -24,7 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/graph_ir/utils.h"
-#include "include/common/ir_dump/anf_ir_dump.h"
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/backend/kernel_graph.h"
 #include "abstract/abstract_value.h"
 #include "utils/phase.h"
