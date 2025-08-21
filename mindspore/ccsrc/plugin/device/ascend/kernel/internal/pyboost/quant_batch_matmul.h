@@ -39,7 +39,6 @@ class QuantBatchMatmul : public InternalKernelInfo {
   uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
-  uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;
 
  private:
   internal::TensorFormat output_format_;

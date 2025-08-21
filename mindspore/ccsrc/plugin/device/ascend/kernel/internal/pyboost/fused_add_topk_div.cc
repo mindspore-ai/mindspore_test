@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/kernel/internal/pyboost/fused_add_topk_div.h"
 
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,10 +29,10 @@ void FusedAddTopKDiv::Call(const std::shared_ptr<pyboost::OpRunner> &op, const u
                            const uint64_t &tiling_key, const TensorPtr &x, const TensorPtr &add_num,
                            const int64_t &group_num, const int64_t &group_topk, const int64_t &n, const int64_t &k,
                            const int64_t &activate_type, const bool &is_norm, const float &scale,
-                           const std::optional<TensorPtr> &mapping_num,
-                           const std::optional<TensorPtr> &mapping_table, const bool &enable_expert_mapping) {
+                           const std::optional<TensorPtr> &mapping_num, const std::optional<TensorPtr> &mapping_table,
+                           const bool &enable_expert_mapping) {
   TensorPtrList inputs = {x, add_num, mapping_num.has_value() ? mapping_num.value() : nullptr,
-                                       mapping_table.has_value() ? mapping_table.value() : nullptr};
+                          mapping_table.has_value() ? mapping_table.value() : nullptr};
 
   TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);

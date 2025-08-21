@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/kernel/internal/pyboost/group_topk.h"
 
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,8 +26,8 @@ internal::InternalOpPtr GroupTopk::CreateKernel(const internal::InputsImmutableI
 }
 
 void GroupTopk::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                     const TensorPtr &token, const TensorPtr &idx_arr, const int64_t &group_num,
-                     const int64_t &k, const int64_t &k_inner) {
+                     const TensorPtr &token, const TensorPtr &idx_arr, const int64_t &group_num, const int64_t &k,
+                     const int64_t &k_inner) {
   TensorPtrList inputs = {token, idx_arr};
   TensorPtrList outputs = {};
   TransInternalShapes(inputs, outputs);
