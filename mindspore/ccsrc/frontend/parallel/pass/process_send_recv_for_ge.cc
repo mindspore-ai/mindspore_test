@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/process_send_recv_for_ge.h"
+#include "frontend/parallel/pass/process_send_recv_for_ge.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 #include <queue>
+#include <tuple>
+#include <algorithm>
+#include <map>
+#include <set>
 #include "ir/tensor_new.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"

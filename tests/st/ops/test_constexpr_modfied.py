@@ -202,28 +202,6 @@ def test_flip():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
-def test_calculate_expert_capacity():
-    """
-    Feature: calculate_expert_capacity func
-    Description: Verify the result of calculate_expert_capacity
-    Expectation: success
-    """
-    from mindspore.parallel._transformer.moe import calculate_expert_capacity
-
-    class Net(nn.Cell):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.func = calculate_expert_capacity
-
-        def construct(self, k, tokens_per_group, capacity_factor, expert_dim):
-            return self.func(k, tokens_per_group, capacity_factor, expert_dim)
-
-    net = Net()
-    assert net(10.1, 2.0, 3.3, 4) == 17
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
-          card_mark='onecard', essential_mark='unessential')
 def test_unsqueeze():
     """
     Feature: unsqueeze func

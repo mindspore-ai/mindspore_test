@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/comm_op_attrs.h"
+#include "frontend/parallel/pass/comm_op_attrs.h"
 #include <memory>
 #include <vector>
 #include <string>

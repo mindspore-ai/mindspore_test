@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/slice_activation_in_recompute.h"
-
+#include "frontend/parallel/pass/slice_activation_in_recompute.h"
 #include <memory>
 #include <queue>
 #include <utility>
@@ -23,7 +22,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-
+#include <unordered_map>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
