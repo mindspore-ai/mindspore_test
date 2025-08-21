@@ -708,6 +708,8 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Grad interface of PyNative.
   static const GradHookInterfacePtr &grad_impl();
 
+  void shallow_copy_from(const Tensor &other);
+
  private:
   inline static GradHookInterfacePtr grad_impl_{nullptr};
   // Really execute callback function when host value is updated of Tensor.

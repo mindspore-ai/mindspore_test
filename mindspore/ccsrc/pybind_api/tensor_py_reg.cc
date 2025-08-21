@@ -420,6 +420,29 @@ extern PyObject *TensorPython_get_output_index(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_get_data(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  auto tensor = obj->value.GetTensor();
+  auto new_tensor = std::make_shared<Tensor>(*tensor);
+  new_tensor->set_auto_grad_meta_data(nullptr);
+  new_tensor->set_version(Version());
+  return PackTensor(new_tensor);
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern int TensorPython_set_data(PyObject *self, PyObject *other, void *) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *self_obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  auto self_tensor = self_obj->value.GetTensor();
+
+  PyType<TensorPy> *other_obj = reinterpret_cast<PyType<TensorPy> *>(other);
+  auto other_tensor = other_obj->value.GetTensor();
+  self_tensor->shallow_copy_from(*other_tensor);
+  return 0;
+  HANDLE_MS_EXCEPTION_RET_FAIL_END
+}
+
 static PyGetSetDef PyTensorPython_getseters[] = {
   {"param_info", (getter)TensorPython_get_paramInfo, (setter)TensorPython_set_paramInfo, "paramInfo of the tensor",
    nullptr},
@@ -511,6 +534,8 @@ static PyGetSetDef PyTensorPython_getseters[] = {
   {"_grad_node", (getter)TensorPython_grad_node, nullptr, "Get the backward node.", NULL},
   {"_version", (getter)TensorPython_get_version, nullptr, "Get tensor's version.", NULL},
   {"_output_index", (getter)TensorPython_get_output_index, nullptr, "Get tensor's output index."},
+  {"data", (getter)TensorPython_get_data, TensorPython_set_data,
+   "An attribute that provides access to the raw data without tracking its computational history for autograd", NULL},
   {NULL}  // Sentinel
 };
 

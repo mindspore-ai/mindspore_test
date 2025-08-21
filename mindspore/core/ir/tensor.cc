@@ -185,6 +185,15 @@ Tensor &Tensor::AssignValue(const Tensor &tensor) {
   return *this;
 }
 
+void Tensor::shallow_copy_from(const Tensor &other) {
+  if (this != &other) {
+    ExecuteLazyTask();
+    MetaTensor::operator=(other);
+    device_sync_ = other.device_address();
+    device_info_ = CopyDeviceInfo(other.device_info_);
+  }
+}
+
 abstract::AbstractBasePtr Tensor::ToAbstract() {
   auto tens = shared_from_base<Tensor>();
   auto dtype = tens->Dtype();
