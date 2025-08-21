@@ -82,7 +82,7 @@ bool TCPClient::Connect(const std::string &dst_url, size_t retry_count, const Me
         MS_LOG(ERROR) << "Can not disconnect from the server: " << dst_url;
         return false;
       }
-      SleepBasedOnScale(interval, interval_ms);
+      SleepBasedOnScale(interval, enable_ssl_ ? kExecuteIntervalM : interval_ms);
     }
   }
   return false;
