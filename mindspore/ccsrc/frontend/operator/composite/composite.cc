@@ -2853,9 +2853,6 @@ FuncGraphPtr RecomputeBlock::GenerateFuncGraph(const AbstractBasePtrList &args_a
   MS_EXCEPTION_IF_NULL(real_fn);
   auto origin_fg = real_fn->func_graph();
   MS_EXCEPTION_IF_NULL(origin_fg);
-  if (HasSetRecompute(origin_fg)) {
-    MS_LOG(EXCEPTION) << "The cell passed into the recompute api should be set recomputed only once.";
-  }
   Cloner cloner({origin_fg}, false, true, true);
   cloner.set_clone_for_recompute(true);
   cloner.Run();
@@ -2867,7 +2864,9 @@ FuncGraphPtr RecomputeBlock::GenerateFuncGraph(const AbstractBasePtrList &args_a
   auto cloned_fg = cloned_fg_iter->second;
   MS_EXCEPTION_IF_NULL(cloned_fg);
   cloned_fg->set_python_obj(origin_fg->python_obj());
-  cloned_fg->set_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE, true);
+  if (!HasSetRecompute(origin_fg)) {
+    cloned_fg->set_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE, true);
+  }
   parse::UpdateRecomputeScope(cloned_fg);
   auto fg = std::make_shared<FuncGraph>();
   (void)fg->add_parameter();
