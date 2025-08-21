@@ -1268,11 +1268,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('broadcast_to')(self, shape)
 
-    def real(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.real`.
-        """
-        return tensor_operator_registry.get('real')(self)
 
     def tanh_(self):
         r"""
@@ -3521,12 +3516,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
-
-    def imag(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.imag`.
-        """
-        return tensor_operator_registry.get('imag')(self)
 
     def quantile(self, q, axis=None, keepdims=False):
         r"""

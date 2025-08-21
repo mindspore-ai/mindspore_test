@@ -390,4 +390,8 @@ deprecated_tensor_method_map = {
     "count_nonzero": "deprecated_tensor_count_nonzero",
     # 1028
     "var": "deprecated_tensor_var",
+    # 1029
+    "real": "tensor_real",
+    # 1030
+    "imag": "tensor_imag",
 }
