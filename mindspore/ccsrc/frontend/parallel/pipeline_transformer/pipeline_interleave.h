@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "ir/value.h"
-#include "ir/graph_utils.h"
 #include "base/base.h"
 #include "utils/hash_map.h"
 #include "frontend/parallel/step_parallel.h"

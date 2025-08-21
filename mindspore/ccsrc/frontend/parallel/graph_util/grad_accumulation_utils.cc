@@ -27,6 +27,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "ir/value.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel.h"

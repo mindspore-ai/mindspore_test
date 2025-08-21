@@ -44,6 +44,7 @@
 #include "utils/trace_info.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "ir/cell.h"
+#include "ir/graph_utils.h"
 #include "include/common/amp/amp.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/utils.h"

@@ -35,6 +35,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"

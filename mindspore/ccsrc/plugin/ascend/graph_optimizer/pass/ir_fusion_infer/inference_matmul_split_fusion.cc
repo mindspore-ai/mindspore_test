@@ -24,6 +24,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

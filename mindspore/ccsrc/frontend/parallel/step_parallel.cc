@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include "utils/ms_context.h"
+#include "ir/graph_utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/parallel_context.h"

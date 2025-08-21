@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "ir/anf.h"
-#include "ir/manager.h"
 #include "frontend/parallel/parallel_processor_context.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 

@@ -27,6 +27,7 @@
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

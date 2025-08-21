@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/manager.h"
 #include "ir/dtype.h"
+#include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "utils/trace_info.h"

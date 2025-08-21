@@ -23,6 +23,7 @@
 #include "frontend/parallel/device_manager.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

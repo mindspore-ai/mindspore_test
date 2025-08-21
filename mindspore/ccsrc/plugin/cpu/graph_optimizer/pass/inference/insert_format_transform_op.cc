@@ -29,6 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

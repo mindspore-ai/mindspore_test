@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
 #include "abstract/dshape.h"

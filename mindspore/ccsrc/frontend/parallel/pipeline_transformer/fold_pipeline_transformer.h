@@ -22,8 +22,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-
-#include "ir/graph_utils.h"
 #include "base/base.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"

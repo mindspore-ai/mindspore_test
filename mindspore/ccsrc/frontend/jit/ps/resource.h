@@ -32,7 +32,6 @@
 
 #include "utils/any.h"
 #include "utils/profile.h"
-#include "ir/manager.h"
 
 #include "frontend/jit/ps/resource_base.h"
 #include "frontend/jit/ps/static_analysis/prim.h"

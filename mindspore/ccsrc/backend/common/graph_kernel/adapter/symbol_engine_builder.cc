@@ -22,6 +22,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 namespace {

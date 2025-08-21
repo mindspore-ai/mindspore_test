@@ -34,6 +34,7 @@
 #include "utils/trace_base.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"

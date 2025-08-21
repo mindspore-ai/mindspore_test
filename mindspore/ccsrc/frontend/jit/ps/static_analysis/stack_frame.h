@@ -24,6 +24,7 @@
 
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace abstract {

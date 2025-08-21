@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "include/common/utils/anfalgo.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

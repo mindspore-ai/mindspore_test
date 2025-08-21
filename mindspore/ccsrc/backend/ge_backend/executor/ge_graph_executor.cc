@@ -47,6 +47,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/singleton.h"
+#include "ir/graph_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "mindspore/core/include/ir/tensor_new.h"

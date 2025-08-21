@@ -26,6 +26,7 @@
 #include "ir/manager.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
+#include "ir/graph_utils.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"

@@ -25,6 +25,7 @@
 #include <map>
 #include <set>
 #include "ir/tensor_new.h"
+#include "ir/graph_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"

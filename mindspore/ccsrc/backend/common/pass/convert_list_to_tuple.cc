@@ -19,6 +19,7 @@
 #include <algorithm>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

@@ -78,6 +78,7 @@
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace backend {

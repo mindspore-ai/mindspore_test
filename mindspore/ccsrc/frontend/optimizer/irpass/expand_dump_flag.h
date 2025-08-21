@@ -26,6 +26,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "utils/anf_utils.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::opt::irpass {
 const PrimitiveSet dump_skipped_prim_set = {prim::kPrimReturn,       prim::kPrimDepend,      prim::kPrimMakeTuple,

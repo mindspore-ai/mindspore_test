@@ -43,6 +43,7 @@
 #include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/node_check.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"

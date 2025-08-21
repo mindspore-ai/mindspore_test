@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/named.h"
+#include "ir/graph_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/eliminate_redundant_output.h"

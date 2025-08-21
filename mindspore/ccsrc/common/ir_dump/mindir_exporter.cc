@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "abstract/abstract_function.h"
 #include "utils/file_utils.h"
+#include "irs/graph_utils.h"
 
 namespace {
 using mindspore::CNodePtr;

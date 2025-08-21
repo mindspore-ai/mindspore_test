@@ -34,6 +34,7 @@
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "kernel/framework_utils.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/helper.h"

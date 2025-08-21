@@ -18,6 +18,7 @@
 #include <memory>
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/kernel_graph.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 bool UssAtomicAdd::Run(const FuncGraphPtr &func_graph) {

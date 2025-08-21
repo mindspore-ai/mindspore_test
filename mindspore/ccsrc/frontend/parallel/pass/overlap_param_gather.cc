@@ -29,6 +29,7 @@
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/pass/pass_utils.h"
 #include "include/common/utils/parallel_context.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/utils.h"

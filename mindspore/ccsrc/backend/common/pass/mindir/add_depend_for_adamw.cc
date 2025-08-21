@@ -16,6 +16,7 @@
 
 #include "backend/common/pass/mindir/add_depend_for_adamw.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
