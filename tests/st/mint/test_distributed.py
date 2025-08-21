@@ -826,7 +826,15 @@ def test_hccl_broadcast():
     assert output_handle is None
     except_output_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
     assert np.allclose(tensor.asnumpy(), except_output_tensor.asnumpy())
-
+    # bool type
+    if rank == 0:
+        tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        tensor = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+    output_handle = broadcast(tensor, src=0)
+    assert output_handle is None
+    except_output_tensor = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    assert np.allclose(tensor.asnumpy(), except_output_tensor.asnumpy())
     # 异步场景
     tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
     if rank != 1:
