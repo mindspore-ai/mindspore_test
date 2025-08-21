@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 #include "utils/log_adapter.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"

@@ -21,7 +21,7 @@
 #include "kernel/gpu/arrays/ones_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_v2_impl.cuh"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {

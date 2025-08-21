@@ -18,7 +18,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/reduce.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/reduce_impl.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/pyboost/customize/non_zero.h"
 #include "ir/scalar.h"
-#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
