@@ -647,6 +647,11 @@ def create_group(group, rank_ids, options=None):
                     hccl_config(dict)
                 }
 
+            `hccl_config` currently only supports "hccl_buffer_size" or "hccl_comm".
+            hccl_buffer_size (uint32): specifies the size of the HCCL communication buffer.
+            hccl_comm (int64): specifies an existing HcclComm pointer. If "hccl_comm" is set,
+            "hccl_buffer_size" will be ignored.
+
     Raises:
         TypeError: If group is not a string or `rank_ids` is not a list.
         ValueError: If `rank_ids` size is not larger than 1, or `rank_ids` has duplicate data, or backend is invalid.
