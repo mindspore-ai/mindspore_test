@@ -235,9 +235,9 @@ void SplitWithSizeInfo::ReplaceNodeInputOrAttrs() {
   std::vector<int64_t> size_splits = GetValue<std::vector<int64_t>>(tuple);
   std::vector<int64_t> new_size_splits;
 
-  std::vector<Dimensions> stra = strategy_->GetInputDim();
+  auto stra = inputs_tensor_info_.front().InferStrategy();
   for (size_t i = 0; i < size_splits.size(); ++i) {
-    new_size_splits.push_back(size_splits[i] / stra[0][axis_]);
+    new_size_splits.push_back(size_splits[i] / stra[axis_]);
   }
 
   auto func_graph = cnode_->func_graph();
