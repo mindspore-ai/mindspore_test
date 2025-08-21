@@ -28,7 +28,6 @@
 #include "abstract/utils.h"
 #include "include/common/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "include/common/utils/recompute_helper.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
 #include "utils/trace_info.h"
@@ -605,9 +604,6 @@ FuncGraphPtr MetaFuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, cons
     meta_func_graph_->set_scope_name(scope_->name());
   }
   if (this->bound_node() != nullptr) {
-    if (meta_func_graph_->isa<prim::RecomputeBlock>() && WithRecomputedScope(bound_node())) {
-      MS_LOG(EXCEPTION) << "The cell passed into the recompute api should be set recomputed only once.";
-    }
     auto node_debug_info = bound_node()->debug_info();
     TraceGuard trace_guard(MakeTraceInfo<TraceGenMetaFuncGraph>(node_debug_info));  // Allow null debug info.
     if (node_debug_info != nullptr) {
