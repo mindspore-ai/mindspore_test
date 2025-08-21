@@ -2196,10 +2196,20 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
     return {};
   }
 
+  const auto &abstract =
+    AnfAlgo::GetNodeAbstractByIndex(front_parameter_with_index.first, front_parameter_with_index.second);
   for (const auto &node_with_index_to_context : iter->second) {
     const auto &node = node_with_index_to_context.first.first;
     MS_EXCEPTION_IF_NULL(node);
-    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0) {
+    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0 && node->isa<Parameter>() &&
+        node_with_index_to_context.first.second == 0 && node->abstract() != nullptr &&
+        !node->abstract()->isa<abstract::AbstractAny>()) {
+      MS_LOG(DEBUG) << "Front node:" << front_parameter_with_index.first->DebugString()
+                    << " index:" << front_parameter_with_index.second << " backend node:" << node->DebugString()
+                    << " abstract:" << node->abstract()->ToString();
+      return node_with_index_to_context;
+    }
+    if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
       return node_with_index_to_context;
     }
     MS_LOG(DEBUG) << "Backend node:" << node->DebugString()

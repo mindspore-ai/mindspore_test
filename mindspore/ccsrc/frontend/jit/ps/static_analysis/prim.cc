@@ -1,4 +1,3 @@
-
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
@@ -161,6 +160,9 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
 
 AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
+  if (abs->inplace_abstract() != nullptr) {
+    return abs->inplace_abstract();
+  }
   if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
@@ -188,6 +190,9 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
         ref_tensor = ref_tensor->Broaden();
       }
       input_args[index]->set_inplace_abstract(ref_tensor);
+    } else {
+      auto ref_tensor = input_args[index]->cast<abstract::AbstractRefPtr>();
+      ref_tensor->set_is_inplace(true);
     }
   }
   if (inplace_indexes.size() == 0 || output_abs == nullptr) {
@@ -921,19 +926,13 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
 AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const AbstractBasePtrList &args,
                                                                        const AbstractBasePtr &res) {
   if (graph_view_prim()) {
-    static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-    if (close_view_op) {
-      prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
+    auto ge_mode = AnfAlgo::IsBackendGe();
+    if (ge_mode) {
+      MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
+                      << "The code utilizes the View operator: " << prim_func_->ToString();
     } else {
-      auto ge_mode = AnfAlgo::IsBackendGe();
-      if (ge_mode) {
-        prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
-        MS_LOG(WARNING) << "The view feature is not currently supported in GE mode. "
-                        << "The code utilizes the View operator: " << prim_func_->ToString();
-      } else {
-        MS_LOG(DEBUG) << "View prim infer.";
-        return UpdateViewOpsAbstract(res, args);
-      }
+      MS_LOG(DEBUG) << "View prim infer.";
+      return UpdateViewOpsAbstract(res, args);
     }
   }
   const auto &rw_write_indexes = rw_write_input_indexes();
@@ -2928,6 +2927,16 @@ class PyInterpretEvaluator final : public TransitionPrimEvaluator {
     }
 
     AbstractBasePtr res = ToAbstract(converted_val, AnalysisContext::DummyContext(), out_conf);
+    if (!converted_val->ContainsValueAny()) {
+      AnfNodePtr value_node = NewValueNode(converted_val);
+      value_node->set_abstract(res);
+      value_node->set_debug_info(node->debug_info());
+      AnalysisEnginePtr eng = out_conf->engine();
+      MS_EXCEPTION_IF_NULL(eng);
+      AnfNodeConfigPtr fn_conf = eng->MakeConfig(value_node, out_conf->context(), out_conf->func_graph());
+      return eng->ForwardConfig(out_conf, fn_conf);
+    }
+
     auto infer_result = std::make_shared<EvalResult>(res, std::make_shared<AttrValueMap>());
     evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
     return infer_result;

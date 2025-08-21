@@ -15,16 +15,24 @@
  */
 
 #include "frontend/optimizer/ad/grad.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/irpass.h"
-#include "frontend/optimizer/inplace_input_replace.h"
+#include "frontend/jit/ps/pass.h"
+#include "frontend/jit/ps/action.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/virtualview_op.h"
+#include "frontend/optimizer/irpass/virtualviewgrad_op.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "frontend/optimizer/irpass/free_variables_eliminate.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -39,99 +47,6 @@ constexpr auto kNeedGradFlag = "need_grad";
 constexpr auto kHasViewOutputFlag = "has_view_output";
 constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
 constexpr auto kSetNeedGradFlag = "set_need_grad_flag";
-
-FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(resource);
-
-  opt::irpass::OptimizeIRPassLib irpass;
-  opt::OptPassConfig partial_eliminate_opt_ = opt::OptPassConfig(
-    {irpass.partial_eliminate_, irpass.switch_partial_eliminater_, irpass.switch_layer_partial_eliminater_});
-  opt::OptPassGroupMap map({{"partial_eliminate_", partial_eliminate_opt_}});
-
-  auto after_lift_opt = opt::Optimizer::MakeOptimizer("partial_eliminate", resource, map);
-
-  FuncGraphPtr opt_fg = nullptr;
-  ProfileExecute(MsProfile::GetProfile()->Step("partial_eliminate_before_grad"),
-                 [&after_lift_opt, func_graph, &opt_fg]() { opt_fg = after_lift_opt->step(func_graph, true); });
-  return opt_fg;
-}
-
-FuncGraphVector PartialEliminateMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs) {
-  auto new_res = std::dynamic_pointer_cast<pipeline::Resource>(resource);
-  if (new_res == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Parameter resources is not a pipeline::Resource";
-  }
-  FuncGraphVector opt_fgs;
-  for (const auto &func_graph : func_graphs) {
-    auto opt_fg = PartialEliminateOptPass(new_res, func_graph);
-#ifdef ENABLE_DUMP_IR
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    if (context->CanDump(kIntroductory)) {
-      DumpIR("after_opt_" + opt_fg->ToString() + ".ir", opt_fg);
-    }
-#endif
-    opt_fgs.push_back(opt_fg);
-  }
-  return opt_fgs;
-}
-
-FuncGraphPtr LiftFv(const pipeline::ResourceBasePtr &resource, const FuncGraphPtr &func_graph) {
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  bool enable_save_graphs = context->CanDump(kIntroductory);
-  if (enable_save_graphs) {
-    DumpIR("before_lift_" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
-  FuncGraphPtr new_fg = LiftingClone(func_graph);
-#ifdef ENABLE_DUMP_IR
-  if (enable_save_graphs) {
-    DumpIR("after_lift_" + new_fg->ToString() + ".ir", new_fg);
-  }
-#endif
-  auto new_res = std::dynamic_pointer_cast<pipeline::Resource>(resource);
-  if (new_res == nullptr) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, func_graph->return_node())
-      << "Parameter resources is not a pipeline::Resource";
-  }
-  auto opt_fg = PartialEliminateOptPass(new_res, new_fg);
-#ifdef ENABLE_DUMP_IR
-  if (enable_save_graphs) {
-    DumpIR("after_opt_" + opt_fg->ToString() + ".ir", opt_fg);
-  }
-#endif
-  return opt_fg;
-}
-
-FuncGraphVector LiftFvMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs) {
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    for (const auto &func_graph : func_graphs) {
-      DumpIR("before_lift_" + func_graph->ToString() + ".ir", func_graph);
-    }
-  }
-#endif
-  bool has_used_fg = std::any_of(func_graphs.cbegin(), func_graphs.cend(), [](const FuncGraphPtr &func_graph) {
-    return func_graph->func_graphs_used().size() != 0;
-  });
-  // All func_graphs being graded don't have used funcgraphs, no need to do lifting clone.
-  if (!has_used_fg) {
-    return func_graphs;
-  }
-  FuncGraphVector new_fgs = LiftingCloneMulti(func_graphs);
-#ifdef ENABLE_DUMP_IR
-  if (context->CanDump(kIntroductory)) {
-    for (const auto &new_fg : new_fgs) {
-      DumpIR("after_lift_" + new_fg->ToString() + ".ir", new_fg);
-    }
-  }
-#endif
-  return PartialEliminateMulti(resource, new_fgs);
-}
 
 bool ForwardInputsEqual(const AnfNodeWeakPtrList &first_inputs, const AnfNodeWeakPtrList &second_inputs) {
   if (first_inputs.size() != second_inputs.size()) {
@@ -256,14 +171,6 @@ void CheckViewInplaceOutput(const FuncGraphPtr &func_graph) {
   CheckOutputInner(output);
 }
 
-bool IsInplaceNode(const AnfNodePtr &node) {
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  auto prim = GetValueNode<PrimitivePtr>(node->cast<CNodePtr>()->input(0));
-  return prim != nullptr && prim->inplace_prim();
-}
-
 bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_map) {
   auto node_users_iter = node_user_map.find(node);
   if (node_users_iter == node_user_map.end()) {
@@ -271,17 +178,6 @@ bool UpdateStateUseOnly(const AnfNodePtr &node, const NodeUsersMap &node_user_ma
   }
   return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
                      [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
-}
-
-bool IsViewOutput(const AnfNodePtr &node) {
-  auto abs = node->abstract();
-  if (abs != nullptr && abs->isa<abstract::AbstractRefTensor>()) {
-    const auto ref = abs->cast<abstract::AbstractRefPtr>();
-    if (ref->is_view_output()) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
@@ -303,7 +199,7 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
     }
 
     // is inplace node
-    if (IsInplaceNode(node) && UpdateStateUseOnly(node, node_users_map)) {
+    if (mindspore::opt::irpass::IsInplaceNode(node) && UpdateStateUseOnly(node, node_users_map)) {
       auto inplace_node = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(inplace_node);
       auto prim_value = inplace_node->input(0)->cast<ValueNodePtr>()->value();
@@ -312,7 +208,7 @@ void GetNeedGradMapForUpdateStateUseOnlyNodes(const FuncGraphPtr &func_graph,
       std::vector<size_t> rw_write_input_indexes = prim->rw_write_input_indexes();
       for (auto index : rw_write_input_indexes) {
         auto inplace_input = inplace_node->input(index + 1);
-        if (IsViewOutput(inplace_input)) {
+        if (mindspore::opt::irpass::IsViewOutput(inplace_input)) {
           (*need_grad_map)[inplace_input] = node;
         } else {
           (*need_grad_map)[inplace_node] = node;
@@ -388,29 +284,136 @@ bool NeedCheckInvalidViewInplaceDout(const std::string &scene) {
   }
   return check_invalid_dout_level == scene;
 }
+
+bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
+  std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE");
+  MS_LOG(INFO) << "This view_inplace_grad_config is: " << view_inplace_grad_config;
+  if (view_inplace_grad_config == "2") {
+    // Choose new view inplace grad scheme.
+    (void)mindspore::opt::irpass::PreprocessForVirtualViewGradInsert(func_graph, optimizer);
+    return true;
+  }
+  if (view_inplace_grad_config == "1") {
+    // Choose old view inplace grad scheme.
+    return false;
+  }
+  if (view_inplace_grad_config == "0") {
+    // If view and inplace operators appear in a control flow scenario, need to select the old solution.
+    bool is_control_flow_scene = mindspore::opt::irpass::PreprocessForVirtualViewGradInsert(func_graph, optimizer);
+    MS_LOG(INFO) << "Exist control_flow scene: " << is_control_flow_scene;
+    return !is_control_flow_scene;
+  }
+  MS_LOG(EXCEPTION) << "The internal switch ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE only supports "
+                       "input 0, 1, 2, but the value obtained is: "
+                    << view_inplace_grad_config;
+}
+
+bool ViewInplacePrepare(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_view_inplace) {
+  const auto &resources = optimizer->resource();
+  if (!is_view_inplace) {
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                          opt::irpass::ViewInplacePassType::OnlyDoInplace);
+    return false;
+  }
+  // Do inline upfront to ensure the correct method is selected
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::CommonInline);
+
+  if (ChooseNewViewInplaceScheme(func_graph, optimizer)) {
+    return true;
+  }
+
+  // Old method, pass dout with mask information included
+  MS_LOG(INFO) << "Choose old view inplace grad scheme for func_graph:" << func_graph->ToString();
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::OnlyDoInplace);
+  if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
+    CheckViewInplaceOutput(func_graph);
+  }
+  std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
+  GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
+  SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
+  return false;
+}
+
+FuncGraphPtr InsertVirtualOpsProcess(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
+  const auto &resources = optimizer->resource();
+  MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                        opt::irpass::ViewInplacePassType::VirtualOpsInsert);
+
+  if (!mindspore::opt::irpass::CheckExistFv(func_graph)) {
+    // Convert View op name -> Primitive
+    mindspore::opt::irpass::ConvertViewOpNameInVirtualViewGrad(func_graph, optimizer);
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(
+      resources, func_graph, opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove);
+    return func_graph;
+  }
+  MS_LOG(INFO) << "Exist free variable, handle supported control flow func graph";
+  // If exist fv, do Renormalize and LiftFv.
+  auto new_func_graph = mindspore::opt::irpass::FreeVariablesEliminate(func_graph, optimizer);
+  AddToManage(resources, new_func_graph);
+  // Convert View op name -> Primitive
+  mindspore::opt::irpass::ConvertViewOpNameInVirtualViewGrad(new_func_graph, optimizer);
+  mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, new_func_graph,
+                                                        opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove);
+  return new_func_graph;
+}
 }  // namespace
 
-FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
+FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
                               BpropAutoMonadLevel level, bool is_view_inplace, bool is_grad_by_j = false) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-
-  // Do inplace input replacement
-  mindspore::opt::DoInplaceInputReplace(func_graph, optimizer);
-
-  if (is_view_inplace) {
-    if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneTwo)) {
-      CheckViewInplaceOutput(func_graph);
-    }
-    std::map<AnfNodePtr, AnfNodePtr> need_grad_map{};
-    GetNeedGradMapForUpdateStateUseOnlyNodes(func_graph, &need_grad_map);
-    SetFlagForInplaceNodesUpdateStateUseOnly(func_graph, need_grad_map);
-  }
-  auto gradkv = func_graph->transforms().find("grad");
-  if (gradkv != func_graph->transforms().end()) {
+  MS_EXCEPTION_IF_NULL(ori_func_graph);
+  auto gradkv = ori_func_graph->transforms().find("grad");
+  if (gradkv != ori_func_graph->transforms().end()) {
     return gradkv->second.func_graph();
   }
   const auto &resources = optimizer->resource();
-  AddToManage(resources, func_graph);
+  AddToManage(resources, ori_func_graph);
+
+  FuncGraphPtr new_func_graph = ori_func_graph;
+
+  if (is_view_inplace && common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE") != "1") {
+    parse::ClearCNodeAbstract(ori_func_graph);
+    pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
+    FuncGraphPtr need_renormalize_func = ori_func_graph;
+
+    if (ori_func_graph->parent() != nullptr) {
+      res = std::dynamic_pointer_cast<pipeline::Resource>(resources);
+      need_renormalize_func = res->func_graph();
+      ori_func_graph->set_flag("J_INNER_FUNC", true);
+    }
+    abstract::AbstractBasePtrList new_args_spec;
+    (void)std::transform(need_renormalize_func->parameters().begin(), need_renormalize_func->parameters().end(),
+                         std::back_inserter(new_args_spec),
+                         [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+    new_func_graph = pipeline::Renormalize(res, need_renormalize_func, new_args_spec);
+
+    if (ori_func_graph->parent() != nullptr) {
+      res->set_func_graph(new_func_graph);
+      res->set_args_abs(new_args_spec);
+      auto manager = optimizer->manager();
+      MS_EXCEPTION_IF_NULL(manager);
+      new_func_graph->set_manager(manager);
+      for (auto sub_func : new_func_graph->func_graphs_used_total()) {
+        if (sub_func->has_flag("J_INNER_FUNC")) {
+          new_func_graph = sub_func;
+          new_func_graph->set_manager(manager);
+          sub_func->erase_flag("J_INNER_FUNC");
+          break;
+        }
+      }
+    }
+  }
+
+  // Preprocessing for view inplace
+  bool use_view_inplace_new_method = ViewInplacePrepare(new_func_graph, optimizer, is_view_inplace);
+  bool use_view_inplace_old_method = is_view_inplace && !use_view_inplace_new_method;
+  FuncGraphPtr func_graph = new_func_graph;
+  if (use_view_inplace_new_method) {
+    func_graph = InsertVirtualOpsProcess(new_func_graph, optimizer);
+  }
+
   auto multi_graph_sink = [&func_graph](const FuncGraphPtr &f) {
     if (MsContext::GetInstance()->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
       if (func_graph->has_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE)) {
@@ -419,7 +422,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
     }
   };
 
-  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, is_view_inplace, is_grad_by_j);
+  auto f = std::make_shared<DFunctor>(func_graph, resources, is_top, use_view_inplace_old_method, is_grad_by_j);
   auto user_defined = f->KUserDefined(func_graph);
   if (user_defined != nullptr) {
     multi_graph_sink(user_defined);
@@ -439,16 +442,20 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
   if (is_top) {
     DFunctor::Clear();
   }
-  if (is_top && is_view_inplace) {
-    auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
-    AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
-    tape->set_output(bout);
-  }
 
-  // In the view + inplace scenario, ensure that the input corresponding to the inplace op that has not been updated in
-  // place must not require gradient.
-  if (is_view_inplace && NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneOne)) {
-    mindspore::opt::irpass::MarkInvalidInplaceOpDout(res);
+  // Postprocessing for view inplace
+  if (use_view_inplace_old_method) {
+    if (is_top) {
+      auto get_real_bprop_out = std::make_shared<prim::GetRealBpropOut>("get_real_bprop_out");
+      AnfNodePtr bout = tape->NewCNodeInOrder({NewValueNode(get_real_bprop_out), tape->output()});
+      tape->set_output(bout);
+    }
+    if (NeedCheckInvalidViewInplaceDout(opt::irpass::kCheckDoutLevelSceneOne)) {
+      mindspore::opt::irpass::MarkInvalidInplaceOpDout(res);
+    }
+  } else if (use_view_inplace_new_method) {
+    mindspore::pipeline::ViewInplaceBeforeGradProcessPass(resources, func_graph,
+                                                          opt::irpass::ViewInplacePassType::EliminateVirtualView);
   }
 
   multi_graph_sink(res);
@@ -476,9 +483,26 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   FuncGraphPtr grad_fg = func_graph;
   if (func_graph->func_graphs_used().size() != 0 && optimizer->is_first_order_j()) {
     lift_fv_before_grad = true;
-    grad_fg = LiftFv(resources, func_graph);
+    grad_fg = mindspore::opt::irpass::LiftFv(resources, func_graph);
   } else {
     lift_fv_before_grad = false;
+  }
+  if (is_view_inplace && mindspore::opt::irpass::CheckExistFv(func_graph)) {
+    auto res = std::dynamic_pointer_cast<pipeline::Resource>(resources);
+    auto res_func = res->func_graph();
+    func_graph->set_flag("J_INNER_FUNC", true);
+    grad_fg = mindspore::opt::irpass::LiftFv(resources, res_func);
+    auto manager = optimizer->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    grad_fg->set_manager(manager);
+    for (auto sub_func : grad_fg->func_graphs_used_total()) {
+      bool has_flag = sub_func->has_flag("J_INNER_FUNC");
+      if (has_flag) {
+        grad_fg = sub_func;
+        sub_func->erase_flag("J_INNER_FUNC");
+        break;
+      }
+    }
   }
   return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
 }
@@ -506,13 +530,13 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
   FuncGraphVector before_grad_fgs;
   if (optimizer->is_first_order_j()) {
     lift_fv_before_grad = true;
-    before_grad_fgs = LiftFvMulti(resources, func_graphs);
+    before_grad_fgs = mindspore::opt::irpass::LiftFvMulti(resources, func_graphs);
   } else {
     before_grad_fgs = func_graphs;
     lift_fv_before_grad = false;
   }
   for (size_t i = 0; i < before_grad_fgs.size(); ++i) {
-    const auto &func_graph = before_grad_fgs[i];
+    auto func_graph = before_grad_fgs[i];
     auto grad_fg =
       GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i], is_grad_by_j);
     grad_fgs.push_back(grad_fg);

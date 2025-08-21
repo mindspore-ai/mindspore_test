@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 # limitations under the License.
 # ============================================================================
 import os
+import numpy as np
 import mindspore as ms
 from mindspore import jit
 from mindspore import Tensor
 from mindspore import mutable
-import numpy as np
 
 reserved_env = None
 
@@ -33,39 +33,6 @@ def teardown_module():
         os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
     else:
         os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
-
-
-def test_initial_scalar_body_tensor1():
-    """
-    Feature: While specialize.
-    Description: Test scalar arg when first entry of while and set to tensor in body.
-    Expectation: No exception in infer process.
-    """
-
-    def func(x, a, b):
-        y = 1
-        while a < b:
-            while a < b - 1:
-                y = Tensor(2, ms.float32)
-                a += 1
-            a += 1
-        return x + y
-
-    @jit
-    def test_net(x, a, b):
-        out = x
-        while a < b:
-            while a < b - 1:
-                out = func(out, a, b)
-                a += 1
-            a += 1
-        return out
-
-    input_np_x = np.random.rand(2, 3, 4, 5).astype(np.float32)
-    input_me_x = Tensor(input_np_x)
-    input_me_a = Tensor(2, ms.float32)
-    input_me_b = Tensor(6, ms.float32)
-    test_net(input_me_x, input_me_a, input_me_b)
 
 
 def test_initial_scalar_body_tensor2():

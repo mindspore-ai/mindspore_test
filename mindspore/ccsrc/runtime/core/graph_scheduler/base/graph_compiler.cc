@@ -311,7 +311,8 @@ GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrLi
 
   auto output_with_indexs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
   for (const auto &output_with_index : output_with_indexs) {
-    const auto &output = output_with_index.first;
+    const auto &output =
+      common::AnfAlgo::VisitKernelWithReturnType(output_with_index.first, output_with_index.second).first;
     MS_EXCEPTION_IF_NULL(output);
     if (common::AnfAlgo::IsBpropCutOpExecInBackend(output) || HasAbstractMonad(output)) {
       continue;

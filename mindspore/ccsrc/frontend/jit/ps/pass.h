@@ -23,6 +23,7 @@
 #include <string>
 #include "frontend/jit/ps/resource.h"
 #include "include/common/visible.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -82,6 +83,8 @@ bool AddRecomputationPass(const ResourcePtr &resource);
 bool OptAfterRecomputeGroup(const ResourcePtr &resource);
 bool SetTrainingFlagPass(const ResourcePtr &resource);
 bool BackendPass(const ResourcePtr &resource);
+void ViewInplaceBeforeGradProcessPass(const ResourceBasePtr &resource, const FuncGraphPtr &func_graph,
+                                      opt::irpass::ViewInplacePassType type);
 }  // namespace pipeline
 }  // namespace mindspore
 

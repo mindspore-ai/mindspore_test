@@ -29,6 +29,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "frontend/optimizer/irpass/updatestate_eliminate.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/group_manager.h"
@@ -1703,7 +1704,24 @@ void PipelinePostProcess::MoveSharedParamMirrorOutCall(const std::vector<AnfNode
   }
 }
 
+void PipelinePostProcess::EliminateUpdateStateMakeTupleWithUselessLoadNode() {
+  const auto &main_graph_nodes = TopoSort(main_graph_->get_return(), SuccDeeperSimple);
+  for (const auto &node : main_graph_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
+      continue;
+    }
+    auto update_state = node->cast<CNodePtr>();
+    auto new_update_state = opt::irpass::EliminateUpdateStateMakeTupleWithUselessLoadNode(update_state);
+    if (new_update_state != nullptr) {
+      MS_LOG(DEBUG) << "Replace UpdateState from update_state: " << update_state->DebugString()
+                    << "to new_update_state: " << new_update_state->DebugString();
+      (void)manager_->Replace(update_state, new_update_state);
+    }
+  }
+}
+
 void PipelinePostProcess::RemoveUselessOriginSharedCell() {
+  EliminateUpdateStateMakeTupleWithUselessLoadNode();
   const auto &main_graph_nodes = TopoSort(main_graph_->get_return(), SuccDeeperSimple);
   for (const auto &node : main_graph_nodes) {
     if (!node->isa<CNode>()) {

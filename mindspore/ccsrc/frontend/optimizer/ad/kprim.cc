@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,12 @@
 #include "include/common/pynative/grad_state.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {
@@ -134,47 +137,33 @@ AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop
                             const AnfNodePtr &umonad_arg) {
   MS_EXCEPTION_IF_NULL(prim);
   const auto &need_clone_input_index = GetNeedCloneInputIndex(prim);
-  if (need_clone_input_index.empty()) {
-    return umonad_arg;
-  } else {
+  AnfNodePtr umonad_param = umonad_arg;
+  if (!need_clone_input_index.empty()) {
     // Need do input args clone for inplace ops
     // Change From
     // ==> primal_cnode: {kPrimInplace, args0, args1, ..., umonad}
     // To:
     // ==> new_load_cnode = Load(args0, umonad)
+    // ==> new_tensor_move_cnode = TensorMove(new_load_cnode)
     // ==> new_umonad_cnode = UpdateState(umonad, new_load_cnode)
     // ==> primal_cnode: {kPrimInplace, args0, args1, ..., new_umoad_cnode}
     MS_EXCEPTION_IF_NULL(fprop);
     MS_EXCEPTION_IF_NULL(bprop);
     const auto &params = fprop->parameters();
-    AnfNodePtr umonad_param = umonad_arg;
-    CNodePtr bprop_meta_funcgraph_caller = nullptr;
-    for (auto node : TopoSort(bprop->output())) {
-      if (!node->isa<CNode>()) {
-        continue;
-      }
-      auto cnode = node->cast<CNodePtr>();
-      if (IsValueNode<expander::bprop::BpropMetaFuncGraph>(cnode->input(0))) {
-        bprop_meta_funcgraph_caller = cnode;
-        break;
-      }
-    }
-    if (bprop_meta_funcgraph_caller == nullptr) {
-      MS_LOG(WARNING) << "No bprop meta funcgraph found for prim: " << prim->ToString();
-      return umonad_arg;
-    }
-    MS_EXCEPTION_IF_NULL(bprop_meta_funcgraph_caller);
+    auto manager = Manage(bprop);
     for (size_t index : need_clone_input_index) {
       const auto original_inplace_param = params[index];
       auto new_load_cnode = fprop->NewCNode({NewValueNode(prim::kPrimLoad), original_inplace_param, umonad_param});
-      auto new_umonad_cnode = fprop->NewCNode({NewValueNode(prim::kPrimUpdateState), umonad_param, new_load_cnode});
-      bprop_meta_funcgraph_caller->set_input(index + 1, new_load_cnode);
+      auto new_tensor_move_cnode = fprop->NewCNode({NewValueNode(prim::kPrimTensorMove), new_load_cnode});
+      auto new_umonad_cnode =
+        fprop->NewCNode({NewValueNode(prim::kPrimUpdateState), umonad_param, new_tensor_move_cnode});
       MS_LOG(INFO) << "Clone bprop argument with index: " << std::to_string(index)
                    << " for inplace op: " << prim->ToString();
       umonad_param = new_umonad_cnode;
+      manager->Replace(original_inplace_param, new_tensor_move_cnode);
     }
-    return umonad_param;
   }
+  return umonad_param;
 }
 
 AnfNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node, bool is_view_inplace) {
@@ -183,6 +172,56 @@ AnfNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node, 
   }
   auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
   return fg->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_node});
+}
+
+FuncGraphPtr GenerateBpropForVirtualViewGrad(size_t inputs_num) {
+  auto func_graph = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> outputs = {NewValueNode(prim::kPrimMakeTuple)};
+  // Calculate dout for inputs:
+  // ==> def BpropForVirtualViewGrad(view_input, view_output, ori_view_op, ori_view_other_args, output, dout):
+  // ==>   return Select(mask, dout, 0), Ori_view(dout, Ori_view_other_args), 0 ...
+  std::vector<ParameterPtr> fg_params;
+  std::vector<AnfNodePtr> ori_view_inputs;
+  size_t ori_view_inputs_start_index = 2;
+  size_t ori_view_inputs_end_index = inputs_num - 1;
+  for (size_t i = 0; i < inputs_num + kIndex2; ++i) {
+    auto param = func_graph->add_parameter();
+    (void)fg_params.emplace_back(param);
+    if (i > ori_view_inputs_start_index && i < ori_view_inputs_end_index) {
+      (void)ori_view_inputs.emplace_back(param);
+    }
+  }
+  auto dout = fg_params.back();
+  const auto &ori_view_op = fg_params[kIndex2];
+  // 1. Calculate dout for view_input
+  // Firstly, init a dout_mask whose values are all One
+  auto ori_mask =
+    func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimOnesLikeExt), dout, NewValueNode(int64_t(kBool->type_id()))});
+  // Secondly, use original view op to get view_out area
+  std::vector<AnfNodePtr> mask_view_op_inputs = {ori_view_op, ori_mask};
+  mask_view_op_inputs.insert(mask_view_op_inputs.end(), ori_view_inputs.begin(), ori_view_inputs.end());
+  auto mask_viewed = func_graph->NewCNodeInOrder(mask_view_op_inputs);
+  // Finally, inplace change mask_viewed to Zero
+  auto mask_viewed_zero = func_graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimZerosLikeExt), mask_viewed, NewValueNode(int64_t(kBool->type_id()))});
+  auto mask_viewed_changed = func_graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimInplaceCopy), mask_viewed, mask_viewed_zero, NewValueNode(MakeValue<bool>(false))});
+  ori_mask = func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), ori_mask, mask_viewed_changed});
+  auto all_zeros_tensor =
+    func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimZerosLikeExt), dout, NewValueNode(int64_t(kBool->type_id()))});
+  auto din_for_view_input =
+    func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimSelect), ori_mask, dout, all_zeros_tensor});
+  (void)outputs.emplace_back(din_for_view_input);
+  // 2. Calculate dout for view_output
+  std::vector<AnfNodePtr> node_inputs = {ori_view_op, dout};
+  node_inputs.insert(node_inputs.end(), ori_view_inputs.begin(), ori_view_inputs.end());
+  (void)outputs.emplace_back(func_graph->NewCNode(node_inputs));
+  // 3. Other params' din are zeros
+  for (size_t i = 2; i < inputs_num; ++i) {
+    (void)outputs.emplace_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), fg_params[i]}));
+  }
+  func_graph->set_output(func_graph->NewCNodeInOrder(outputs));
+  return func_graph;
 }
 }  // namespace
 
@@ -735,6 +774,9 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
       << ", but the CNode is: " << cnode->first->DebugString();
   }
   inputs_num -= monad_params_size;
+  if (IsPrimitiveEquals(prim, prim::kPrimVirtualViewGrad)) {
+    return GenerateBpropForVirtualViewGrad(inputs_num);
+  }
 
   auto func_graph = std::make_shared<FuncGraph>();
   std::vector<AnfNodePtr> outputs;

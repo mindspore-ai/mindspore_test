@@ -344,6 +344,149 @@ def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
     return self_viewed, remain_indexes, need_index_prim
 
 
+def _get_need_index_prim(index, need_index_prim):
+    if isinstance(index, bool):
+        need_index_prim = True
+    elif isinstance(index, Tensor):
+        if F.rank(index) == 0 and index.dtype in mstype.int_type + mstype.uint_type + (mstype.bool_,):
+            if index.dtype not in mstype.int_type + mstype.uint_type:
+                need_index_prim = True
+        else:
+            need_index_prim = True
+    return need_index_prim
+
+
+def _process_with_inplace_index_input(prev_result, orig_tensor, index, dim, dim_index, remain_indexes, orig_dim, value):
+    """Process dim in multi dim index"""
+    result = prev_result
+    if isinstance(index, bool):
+        result = expand_dims_view_op(prev_result, dim)
+        index_for_bool = tensor_1d if index else empty_tensor_1d
+        remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + (index_for_bool,)
+        inplace_index_put_op(result, remain_indexes, value, False)
+    elif isinstance(index, int):
+        result = _do_select(prev_result, dim, index, dim_index, F.shape(orig_tensor)[orig_dim])
+        inplace_index_put_op(result, remain_indexes, value, False)
+    elif isinstance(index, slice):
+        result = _do_slice(prev_result, dim, index, F.shape(orig_tensor)[orig_dim])
+        inplace_index_put_op(result, remain_indexes, value, False)
+    elif isinstance(index, EllipsisType):
+        inplace_index_put_op(result, remain_indexes, value, False)
+    elif index is None:
+        result = expand_dims_view_op(prev_result, dim)
+        inplace_index_put_op(result, remain_indexes, value, False)
+    elif isinstance(index, Tensor):
+        result = prev_result
+        if F.rank(index) == 0 and index.dtype in mstype.int_type + mstype.uint_type + (mstype.bool_,):
+            if index.dtype in mstype.int_type + mstype.uint_type:
+                index_py = TensorToScalar()(index)
+                dim_size = F.shape(orig_tensor)[orig_dim]
+                if index_py >= dim_size or index_py < -dim_size:
+                    raise IndexError("Index is out of bounds.")
+                new_index = (index_py + dim_size) % dim_size
+                result = select_ext_view_op(prev_result, dim, new_index)
+                # in graph mode, remain_indexes in different branch requires same size, so we fill empty tensor to it
+                remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes) + 1)
+                inplace_index_put_op(result, remain_indexes, value, False)
+            else:
+                # process index with Tensor bool type
+                result = expand_dims_view_op(prev_result, dim)
+                index_for_bool = tensor_1d if index else empty_tensor_1d
+                remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + \
+                                 (index_for_bool,)
+                inplace_index_put_op(result, remain_indexes, value, False)
+        else:
+            remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + (index,)
+            inplace_index_put_op(result, remain_indexes, value, False)
+    else:
+        raise IndexError("Invalid tensor index type")
+    return orig_tensor
+
+
+def _process_with_do_copy(prev_result, orig_tensor, index, dim, dim_index, remain_indexes, orig_dim, value):
+    """Process dim in multi dim index"""
+    result = prev_result
+    if isinstance(index, bool):
+        result = expand_dims_view_op(prev_result, dim)
+        index_for_bool = tensor_1d if index else empty_tensor_1d
+        remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + (index_for_bool,)
+        do_copy(result, value)
+    elif isinstance(index, int):
+        result = _do_select(prev_result, dim, index, dim_index, F.shape(orig_tensor)[orig_dim])
+        do_copy(result, value)
+    elif isinstance(index, slice):
+        result = _do_slice(prev_result, dim, index, F.shape(orig_tensor)[orig_dim])
+        do_copy(result, value)
+    elif isinstance(index, EllipsisType):
+        do_copy(result, value)
+    elif index is None:
+        result = expand_dims_view_op(prev_result, dim)
+        do_copy(result, value)
+    elif isinstance(index, Tensor):
+        result = prev_result
+        if F.rank(index) == 0 and index.dtype in mstype.int_type + mstype.uint_type + (mstype.bool_,):
+            if index.dtype in mstype.int_type + mstype.uint_type:
+                index_py = TensorToScalar()(index)
+                dim_size = F.shape(orig_tensor)[orig_dim]
+                if index_py >= dim_size or index_py < -dim_size:
+                    raise IndexError("Index is out of bounds.")
+                new_index = (index_py + dim_size) % dim_size
+                result = select_ext_view_op(prev_result, dim, new_index)
+                # in graph mode, remain_indexes in different branch requires same size, so we fill empty tensor to it
+                remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes) + 1)
+                do_copy(result, value)
+            else:
+                # process index with Tensor bool type
+                result = expand_dims_view_op(prev_result, dim)
+                index_for_bool = tensor_1d if index else empty_tensor_1d
+                remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + \
+                                 (index_for_bool,)
+                do_copy(result, value)
+        else:
+            remain_indexes = remain_indexes[0:dim] + (empty_tensor_9d,) * (dim - len(remain_indexes)) + (index,)
+            do_copy(result, value)
+    else:
+        raise IndexError("Invalid tensor index type")
+    return orig_tensor
+
+
+def _process_multi_dim_index_for_setitem(self, indexes, remain_indexes, indexed_dims, value):
+    """Process indexes in tuple"""
+    self_viewed = self
+    dim = 0
+    orig_dim = 0
+    need_index_prim = False
+    preprocessed_index = []
+    for index in indexes:
+        if isinstance(index, (list, tuple, np.ndarray)):
+            if not F.isconstant(index):
+                raise IndexError(
+                    "Current Tensor indexing does not support mutable list/tuple or list containing tensors. "
+                    "Please use an immutable expression instead.")
+            index = Tensor(index)
+            if isinstance(index, Tensor) and \
+                F.dtype(index) in (mstype.int8, mstype.int16, mstype.uint16, mstype.uint32,
+                                   mstype.uint64, mstype.float16, mstype.float32, mstype.float64):
+                # only uint8, int32 and int64 are supported by IndexOp
+                index = F.cast(index, mstype.int64)
+        preprocessed_index.append(index)
+        need_index_prim = _get_need_index_prim(index, need_index_prim)
+
+    result = self
+
+    for i, index in enumerate(preprocessed_index):
+        if i == len(preprocessed_index) - 1:
+            if need_index_prim:
+                result = _process_with_inplace_index_input(self_viewed,
+                                                           self, index, dim, i, remain_indexes, orig_dim, value)
+            else:
+                result = _process_with_do_copy(self_viewed, self, index, dim, i, remain_indexes, orig_dim, value)
+        else:
+            self_viewed, dim, remain_indexes, orig_dim, _ = _process_dim_in_multi_dim_index(
+                self_viewed, self, index, dim, indexed_dims, i, remain_indexes, orig_dim, True)
+    return result
+
+
 def _check_type_of_list_index(index_list):
     """Check type of element in list index"""
     for index in index_list:
@@ -446,13 +589,7 @@ def _tensor_setitem(self, index, value):
     if F.rank(self) < indexed_dims:
         raise IndexError("For setitem, there are too many indices")
     remain_indexes = ()
-    self_viewed, remain_indexes, need_index_prim = _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims)
-    if not need_index_prim:
-        do_copy(self_viewed, value)
-        return self
-    inplace_index_put_op(self_viewed, remain_indexes, value, False)
-    return self
-
+    return _process_multi_dim_index_for_setitem(self, indexes, remain_indexes, indexed_dims, value)
 
 setattr(tensor_operator_registry, "_tensor_getitem", _tensor_getitem)
 setattr(tensor_operator_registry, "_tensor_setitem", _tensor_setitem)

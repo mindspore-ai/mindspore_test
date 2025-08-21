@@ -65,6 +65,10 @@ static bool CanBeIsolatedNode(const std::string &var_name, const AnfNodePtr &nod
     // We add it as an isolate node if its name is not empty.
     return !var_name.empty();
   }
+  // DoUnpackCall func call should be regarded as isolated nodes
+  if (IsPrimitiveCNode(node, prim::kPrimDoUnpackCall)) {
+    return true;
+  }
   // Primitive cnode with side effects can be isolate nodes.
   auto effect_info = GetPrimEffectInfo(prim);
   bool has_effects = (effect_info.memory || effect_info.io);
@@ -323,7 +327,7 @@ AnfNodePtr FunctionBlock::ReadVariable(const std::string &var_name) {
   return phi_param;
 }
 
-// Resolve Ast operator node: augassign +=, -=, *=, /=, //=
+// Resolve Ast operator node: augassign +=, -=, *=, /=, //=, %=
 py::tuple FunctionBlock::GetAugAssignAstOpNameSpace(const py::object &op) {
   auto ast = parser_.ast();
   MS_EXCEPTION_IF_NULL(ast);

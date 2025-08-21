@@ -63,6 +63,7 @@ class BpropGenerator {
   bool need_reuse_forward_node_{false};
   size_t bprop_origin_param_size_{0};
   std::vector<FuncGraphPtr> fprop_sub_fgs_{};
+  AnfNodePtrList fprop_modified_params_{};
   AnfNodePtrList replace_nodes_{};
   abstract::AbstractBasePtrList replace_nodes_abs_{};
 };

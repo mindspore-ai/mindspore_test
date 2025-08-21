@@ -211,12 +211,25 @@ void AddNZeroFilter::Visit(const CNodePtr &cnode) {
 
   // {kPrimMakeTuple, X1, X2, ...}
   filtered_Xs_.push_back(NewValueNode(prim::kPrimMakeTuple));
+  AnfNodePtr dynamic_zero_likes_node = nullptr;
   for (auto &x : Xs_) {
     if (!IsPrimitiveCNode(x, prim::kPrimZerosLike) && !IsReshapeZeros(x)) {
       filtered_Xs_.push_back(x);
     } else {
       has_zero_like_ = true;
+      if (common::AnfAlgo::IsDynamicRankNode(x)) {
+        dynamic_zero_likes_node = x;
+      }
     }
+  }
+
+  if (dynamic_zero_likes_node != nullptr) {
+    filtered_Xs_.push_back(dynamic_zero_likes_node);
+  }
+
+  // If filtered_Xs's size same as inputs, no exclude element, no need generate new node
+  if (filtered_Xs_.size() == inputs.size()) {
+    Reset();
   }
 }
 

@@ -663,42 +663,49 @@ void DumpOperands(const AnfNodePtr &node, const OrderedMap<AnfNodePtr, int32_t> 
   gsub->buffer << "(";
   const auto &inputs = GetInputs(node);
   size_t len = inputs.size();
-  if (len > 1) {
-    // Skip inputs[0] which is Primitive valuenode
-    for (size_t i = 1; i < len; ++i) {
-      AnfNodePtr in = inputs[i];
-      MS_EXCEPTION_IF_NULL(in);
-      if (i != 1) {
-        gsub->buffer << ", ";
-      }
-      if (in->isa<Parameter>()) {
-        DumpParamterInOperand(node, in, para_map, gsub);
-      } else if (in->isa<CNode>()) {
-        auto iter = gsub->local_var_map.find(in);
-        if (iter != gsub->local_var_map.end()) {
-          gsub->buffer << "%" << iter->second;
-        } else {
-          auto input = in->cast<CNodePtr>();
-          auto fg = input->func_graph();
-          if (fg == nullptr) {
-            MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << input->DebugString();
-          }
-          gsub->buffer << "$(@" << fg->ToString() << ":" << input->ToString() << ")";
-        }
-      } else if (in->isa<ValueNode>() && !IsValueNode<FuncGraph>(in)) {
-        // ValueNode except FuncGraph.
-        GetValueText(GetValueNode(in), gsub);
-      } else if (IsValueNode<FuncGraph>(in)) {
-        FuncGraphPtr fg = GetValueNode<FuncGraphPtr>(in);
-        if (fg == nullptr) {
-          MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << in->DebugString();
-        }
-        gsub->buffer << "@" << fg->ToString();
-      } else if (AnfUtils::IsCustomActorNode(in)) {
-        gsub->buffer << "%" << AnfUtils::GetCustomActorName(in);
+  if (len <= 1) {
+    gsub->buffer << ")";
+    return;
+  }
+  // Skip inputs[0] which is Primitive valuenode
+  for (size_t i = 1; i < len; ++i) {
+    AnfNodePtr in = inputs[i];
+    MS_EXCEPTION_IF_NULL(in);
+    if (i != 1) {
+      gsub->buffer << ", ";
+    }
+    if (in->isa<Parameter>()) {
+      DumpParamterInOperand(node, in, para_map, gsub);
+    } else if (in->isa<CNode>()) {
+      auto iter = gsub->local_var_map.find(in);
+      if (iter != gsub->local_var_map.end()) {
+        gsub->buffer << "%" << iter->second;
       } else {
-        gsub->buffer << in->ToString();
+        auto input = in->cast<CNodePtr>();
+        auto fg = input->func_graph();
+        if (fg == nullptr) {
+          MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << input->DebugString();
+        }
+        gsub->buffer << "$(@" << fg->ToString() << ":" << input->ToString() << ")";
       }
+    } else if (in->isa<ValueNode>() && !IsValueNode<FuncGraph>(in)) {
+      auto value = GetValueNode(in);
+      if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) && value->isa<Primitive>()) {
+        gsub->buffer << value->ToString();
+      } else {
+        // ValueNode except FuncGraph.
+        GetValueText(value, gsub);
+      }
+    } else if (IsValueNode<FuncGraph>(in)) {
+      FuncGraphPtr fg = GetValueNode<FuncGraphPtr>(in);
+      if (fg == nullptr) {
+        MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << in->DebugString();
+      }
+      gsub->buffer << "@" << fg->ToString();
+    } else if (AnfUtils::IsCustomActorNode(in)) {
+      gsub->buffer << "%" << AnfUtils::GetCustomActorName(in);
+    } else {
+      gsub->buffer << in->ToString();
     }
   }
   gsub->buffer << ")";

@@ -83,8 +83,8 @@ parse_augassign_object_map = {
     ast.Mult:       (trope_ns, 'augassign_mul', '*='),
     ast.Div:        (trope_ns, 'augassign_div', '/='),
     ast.FloorDiv:   (trope_ns, 'augassign_floordiv', '//='),
+    ast.Mod:        (trope_ns, 'augassign_mod', '%='),
 
-    ast.Mod:        (trope_ns, 'mod', '%'),
     ast.Pow:        (trope_ns, 'pow', '**'),
     ast.MatMult:    (trope_ns, 'matmul', '@'),
     ast.LShift:     (trope_ns, 'lshift', '<<'),

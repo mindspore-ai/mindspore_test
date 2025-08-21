@@ -1060,6 +1060,12 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
                              std::to_string(input_index);
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
+  if (!IsContiguousStorage(device_tensor->GetTensorStorageInfo())) {
+    std::stringstream error_info;
+    error_info << "Not support non-contiguous heter input:" << kernel_tensor->ToString() << " for actor:" << GetAID()
+               << " input index:" << input_index;
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
+  }
   if (input_index >= copy_input_kernel_tensors_.size()) {
     std::stringstream ofs;
     ofs << "Invalid input index:" << input_index

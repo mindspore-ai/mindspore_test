@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <utility>
 #include "mindspore/ops/op_def/other_ops.h"
+#include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {
 namespace opt {
+namespace irpass {
 namespace {
 bool IsInplaceCNode(const AnfNodePtr &node) {
+  if (IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad)) {
+    return true;
+  }
   auto prim = GetCNodePrimitive(node);
   return prim != nullptr && prim->inplace_prim();
 }
@@ -52,6 +57,53 @@ AnfNodePtr FindNodeUserWithIOMonad(const mindspore::CompactSet<std::pair<AnfNode
   return found ? node_user_with_io_monad : nullptr;
 }
 
+void RecordInplaceNodes(const CNodePtr &cnode, std::unordered_map<AnfNodePtr, AnfNodePtr> *inplace_input) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &prim = GetCNodePrimitive(cnode);
+  const auto &inputs = cnode->inputs();
+  // Func call nodes and switch call nodes
+  if (prim == nullptr) {
+    if (IsPrimitiveCNode(inputs[kIndex0], prim::kPrimSwitch)) {
+      auto switch_cnode = inputs[kIndex0]->cast<CNodePtr>();
+      auto true_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex2));
+      auto false_fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(kIndex3));
+      auto true_index = IsFuncOutputSameWithParamNode(true_fg);
+      if (true_index == -1) {
+        return;
+      }
+      auto false_index = IsFuncOutputSameWithParamNode(false_fg);
+      if (true_index == false_index) {
+        (*inplace_input)[cnode->input(true_index + 1)] = cnode;
+        MS_LOG(INFO) << "Record inplace switch call cnode as inplace node: " << cnode->DebugString();
+      }
+    } else {
+      auto fg = GetValueNode<FuncGraphPtr>(inputs[kIndex0]);
+      if (auto index = IsFuncOutputSameWithParamNode(fg); index != -1) {
+        (*inplace_input)[cnode->input(index + 1)] = cnode;
+        MS_LOG(INFO) << "Record inplace call cnode as inplace node: " << cnode->DebugString();
+      }
+    }
+    return;
+  }
+
+  // Inplace op nodes
+  if (prim->inplace_prim()) {
+    const auto &indexes = prim->inplace_input_indexes();
+    if (indexes.size() != 1) {
+      return;
+    }
+    (*inplace_input)[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
+    MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
+    return;
+  }
+
+  if (IsPrimitiveCNode(cnode, prim::kPrimVirtualViewGrad)) {
+    (*inplace_input)[cnode->input(1)] = cnode;
+    MS_LOG(INFO) << "Record VirtualViewGrad cnode as inplace node: " << cnode->DebugString();
+    return;
+  }
+}
+
 /**
  * \brief Change inplace input of cnode in func_graph.
  *
@@ -69,11 +121,12 @@ AnfNodePtr FindNodeUserWithIOMonad(const mindspore::CompactSet<std::pair<AnfNode
  **/
 void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  std::map<AnfNodePtr, AnfNodePtr> inplace_input;
+  std::unordered_map<AnfNodePtr, AnfNodePtr> inplace_input;
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto &node_users_map = manager->node_users();
-  for (auto node : TopoSort(func_graph->return_node())) {
+  auto output_node = func_graph->output();
+  for (auto node : TopoSort(output_node)) {
     if (!irpass::IsCNode(node) || IsPrimitiveCNode(node, prim::kPrimVirtualAssignAdd) ||
         node->func_graph() != func_graph) {
       continue;
@@ -92,65 +145,47 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       }
     }
 
-    for (size_t i = 1; i < cnode->size(); i++) {
-      auto original_input = cnode->input(i);
-      if (inplace_input.count(original_input) == 0 || original_input->func_graph() != func_graph) {
-        continue;
-      }
-      // Find the final inplaced cnode to replace
-      // For example:
-      // %1 = Inplace(%0)
-      // %2 = Inplace(%1)
-      // %3 = Depend(%0, U) ==> %3 = Depend(%2, U)
-      AnfNodePtr repalced_node = inplace_input[original_input];
-      while (inplace_input.count(repalced_node) != 0) {
-        repalced_node = inplace_input[repalced_node];
-      }
-      MS_LOG(INFO) << "Replace cnode : " << cnode->DebugString() << " input from: " << original_input->DebugString()
-                   << " to: " << repalced_node->DebugString() << " for inplace ops replacement.";
-      manager->SetEdge(cnode, i, repalced_node);
-    }
-    const auto &prim = GetCNodePrimitive(cnode);
-    if (prim != nullptr && prim->inplace_prim()) {
-      const auto &indexes = prim->inplace_input_indexes();
-      if (indexes.size() != 1) {
-        continue;
-      }
-      inplace_input[cnode->input(LongToSize(indexes[0] + 1))] = cnode;
-      MS_LOG(INFO) << "Record cnode as inplace node: " << cnode->DebugString();
-    }
+    ReplaceInplaceNodeForCNode(cnode, inplace_input, manager, func_graph, true);
+
+    // Record nodes need to be replaced later
+    RecordInplaceNodes(cnode, &inplace_input);
+  }
+
+  // Reprocess return node separately, avoid leaving any isolated nodes unreplaced
+  if (!IsPrimitiveCNode(output_node, prim::kPrimDepend)) {
+    return;
+  }
+  AnfNodePtr real_output = output_node;
+  while (IsPrimitiveCNode(real_output, prim::kPrimDepend)) {
+    real_output = real_output->cast<CNodePtr>()->input(kIndex1);
+  }
+  // real_output = {prim::kPrimMakeTuple, inplace_input, ...}
+  // Isolated inplace nodes
+  // Return {prim::kPrimDepend, real_output, ...}
+  auto real_output_cnode = real_output->cast<CNodePtr>();
+  if (real_output_cnode != nullptr && !IsMonad(real_output_cnode->inputs().back())) {
+    ReplaceInplaceNodeForCNode(real_output_cnode, inplace_input, manager, func_graph);
   }
   return;
 }
 }  // namespace
 
-void DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
+bool DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   bool exist_inplace_nodes = std::any_of(all_nodes.begin(), all_nodes.end(), IsInplaceCNode);
   if (!exist_inplace_nodes) {
-    return;
+    return false;
   }
-
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_before_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
 
   // Do inplace input replace for func_graph and sub_graphs
   ChangeInplaceInputInner(func_graph);
-  const auto &sub_graphs = func_graph->func_graphs_used_total();
-  for (auto sub_graph : sub_graphs) {
+  auto sub_graphs = func_graph->func_graphs_used_total();
+  for (const auto &sub_graph : sub_graphs) {
     ChangeInplaceInputInner(sub_graph);
   }
 
-#ifdef ENABLE_DUMP_IR
-  if (context->CanDump(kIntroductory)) {
-    DumpIR("opt_after_do_inplace_input_replace_" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
+  return false;
 }
+}  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

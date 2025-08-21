@@ -21,6 +21,53 @@ context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_if_after_for_in_for_tensor():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_for_in_for():
+        x = Tensor([1])
+        y = Tensor([2])
+        z = Tensor([7])
+        for i in range(5):
+            for _ in range(3):
+                y -= i
+            y = y * x - Tensor([9])
+        z = z + Tensor([7])
+        if x + y >= z:
+            y = y * x - Tensor([9])
+            return y - z
+        return y + z
+    res = control_flow_if_after_for_in_for()
+    assert res == -59
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_if_after_for_in_for_tensor_2():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_for_in_for():
+        x = Tensor([1])
+        y = (Tensor([1]), Tensor([2]), Tensor([4]), Tensor([5]))
+        for i in y:
+            for _ in range(3):
+                x -= i
+        z = Tensor([7])
+        if x + y[0] >= z:
+            return x - z
+        return x + z
+    res = control_flow_if_after_for_in_for()
+    assert res == -28
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_after_for_in_for_numpy():
     """
     Feature: JIT Fallback

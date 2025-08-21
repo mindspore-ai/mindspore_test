@@ -114,6 +114,10 @@
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
 #include "frontend/optimizer/irpass/check_invalid_view_inplace_dout.h"
+#include "frontend/optimizer/irpass/virtualviewgrad_op.h"
+#include "frontend/optimizer/irpass/virtualview_op.h"
+#include "frontend/optimizer/irpass/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -340,12 +344,15 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     irpass.addn_zero_filter_,
     irpass.ad_related_special_op_eliminate_,
     irpass.special_op_eliminate_,
+    irpass.virtual_view_grad_op_eliminate_,
   });
   opt::OptPassConfig fill_zeros_like = opt::OptPassConfig{irpass.zero_like_fill_zero_};
   // In case custom bprop has meta fg need to expand, such as J.
   opt::OptPassConfig expand_meta_fg = opt::OptPassConfig{opt::irpass::ExpandMetaFg()};
 
   (void)map.emplace_back("grad_graph_opt", grad_graph_opt);
+  (void)map.emplace_back("updatestate_depend_eliminate",
+                         opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater()));
   (void)map.emplace_back("zeros_like", fill_zeros_like);
   (void)map.emplace_back("expand_meta_fg", expand_meta_fg);
 
@@ -1027,6 +1034,36 @@ OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
   OptPassGroupMap opt_map(
     {{"frontend_op_eliminate", frontend_op_eliminate}, {"inline_after_opt_a", inline_after_opt_a}});
   return opt_map;
+}
+
+OptPassGroupMap GetViewInplaceProcessMap(opt::irpass::ViewInplacePassType type) {
+  opt::irpass::OptimizeIRPassLib irpass;
+  if (type == opt::irpass::ViewInplacePassType::CommonInline) {
+    OptPassGroupMap inline_map({{"inline", opt::OptPassConfig({irpass.inline_})}});
+    return inline_map;
+  } else if (type == opt::irpass::ViewInplacePassType::VirtualOpsInsert) {
+    OptPassGroupMap view_inplace_map(
+      {{"virtual_view_grad_insert", opt::OptPassConfig(opt::irpass::VirtualViewGradInsert)}});
+    return view_inplace_map;
+  } else if (type == opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove) {
+    OptPassGroupMap view_inplace_map(
+      {{"virtual_view_insert", opt::OptPassConfig(opt::irpass::VirtualViewInsert)},
+       {"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)},
+       {"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
+       {"remove_redundant_virtual_ops", opt::OptPassConfig(opt::irpass::RemoveRedundantVirtualOps)},
+       {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())}});
+    return view_inplace_map;
+  } else if (type == opt::irpass::ViewInplacePassType::OnlyDoInplace) {
+    OptPassGroupMap inplace_map(
+      {{"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
+       {"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)}});
+    return inplace_map;
+  } else if (type == opt::irpass::ViewInplacePassType::EliminateVirtualView) {
+    OptPassGroupMap eliminate_virtual_view_map(
+      {{"eliminate_virtual_view", opt::OptPassConfig({irpass.virtual_view_op_eliminate_})}});
+    return eliminate_virtual_view_map;
+  }
+  MS_LOG(EXCEPTION) << "Unsupported view inplace process type";
 }
 
 static mindspore::HashMap<std::string, std::shared_ptr<Optimizer>> g_pass_opts = {};
@@ -1770,14 +1807,16 @@ bool OptAfterJitGradPass(const ResourcePtr &resource) {
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   opt::irpass::OptimizeIRPassLib irpass;
-  opt::OptPassConfig ad_related_special_op_eliminate = opt::OptPassConfig(
-    {irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_, irpass.dump_gradient_eliminate_});
+  opt::OptPassConfig ad_related_special_op_eliminate =
+    opt::OptPassConfig({irpass.ad_related_special_op_eliminate_, irpass.special_op_eliminate_,
+                        irpass.dump_gradient_eliminate_, irpass.virtual_view_grad_op_eliminate_});
 
   opt::OptPassConfig mutable_op_eliminate = opt::OptPassConfig({
     irpass.mutable_op_eliminate_,
   });
   OptPassGroupMap map({
     {"ad_related_special_op_eliminate", ad_related_special_op_eliminate},
+    {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
     {"mutable_op_eliminate", mutable_op_eliminate},
   });
   if (pynative::GradState::Get().RequiresGrad()) {
@@ -1853,6 +1892,15 @@ bool BackendPass(const ResourcePtr &resource) {
   (void)backend_pass->step(func_graph, false);
   (void)EnvironConversionPass(resource);
   return true;
+}
+
+void ViewInplaceBeforeGradProcessPass(const ResourceBasePtr &resource, const FuncGraphPtr &func_graph,
+                                      opt::irpass::ViewInplacePassType type) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+
+  OptPassGroupMap map = GetViewInplaceProcessMap(type);
+  auto graph_opt = opt::Optimizer::MakeOptimizer("view_inplace", resource, map, true, false, false);
+  (void)graph_opt->step(func_graph, false);
 }
 
 REGISTER_PASS_FUNC_IMPL(CconvPass)

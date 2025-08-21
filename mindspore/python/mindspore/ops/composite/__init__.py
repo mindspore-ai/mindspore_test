@@ -30,6 +30,7 @@ from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
 from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
 from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
 from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+from mindspore.ops.composite.multitype_ops.mod_impl import augassign_mod
 from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like, _ones_like_for_grad
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.function.random_func import normal, laplace, uniform, gamma, poisson, multinomial
@@ -54,6 +55,7 @@ __all__ = [
     'augassign_mul',
     'augassign_div',
     'augassign_floordiv',
+    'augassign_mod',
     'zeros_like',
     'ones_like',
     '_ones_like_for_grad',

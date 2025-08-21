@@ -34,7 +34,8 @@ def teardown_function():
     os.unsetenv('MS_DEV_SAVE_GRAPHS')
     os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-    shutil.rmtree(graph_save_path)
+    if os.path.exists(graph_save_path):
+        shutil.rmtree(graph_save_path)
 
 
 def test_jit_ast_decorator_on_function():

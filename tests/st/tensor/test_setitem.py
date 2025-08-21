@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,7 +83,6 @@ def test_setitem(capture_mode):
     Description: Verify the result of tensor setitem
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -224,7 +223,6 @@ def test_setitem_with_iadd(capture_mode):
     Expectation: success
     """
 
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -337,7 +335,7 @@ def test_setitem_grad(capture_mode):
     Description: Verify the result of tensor setitem grad1
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -491,19 +489,39 @@ def setitem_check_iadd_grad(x, index, value, np_expected, capture_mode=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast',
+                                          pytest.param('bytecode', marks=pytest.mark.skip(reason="Unsupported now"))])
 @pytest.mark.parametrize(
     'index',
     [
-        # 0-3: base index
-        slice(0, 2),
+        # 0-6: base index
+        0,
+        True,
         False,
+        None,
+        slice(0, 2),
         ...,
         [0, 1],
-        # 4-5: tensor index
+        # 7-11: tensor index
+        Tensor(0),
+        Tensor(True),
+        Tensor(False),
         slice(Tensor(0), Tensor(2)),
         Tensor([0, 1]),
-        # 6-9: fancy index
+        # 12-13: tuple index
+        (0, None, ...),
+        (0, slice(0, 2), True),
+        # 14-27: fancy index
+        ([0, 1], 0, [0, 1]),
+        (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+        (0, [0, 1], [0, 1]),
+        (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+        ([0, 1], slice(0, 2), [0, 1]),
+        (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+        ([0, 1], True, [0, 1]),
+        (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+        ([0, 1], None, [0, 1]),
+        (Tensor([0, 1]), None, Tensor([0, 1])),
         ([0, 1], [0, 1]),
         (Tensor([0, 1]), Tensor([0, 1])),
         ([0, 1], ..., [0, 1]),
@@ -516,7 +534,7 @@ def test_setitem_grad_with_iadd(capture_mode, index):
     Description: Verify the result of tensor setitem grad with iadd
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
 
@@ -525,60 +543,6 @@ def test_setitem_grad_with_iadd(capture_mode, index):
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
     value = -1
     setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast',
-                                          pytest.param('bytecode', marks=pytest.mark.skip(reason="Unsupported now"))])
-@pytest.mark.parametrize(
-    'index',
-    [
-        # 0-2: base index
-        0,
-        True,
-        None,
-        # 3-5: tensor index
-        Tensor(0),
-        Tensor(True),
-        Tensor(False),
-        # 6-7: tuple index
-        (0, None, ...),
-        (0, slice(0, 2), True),
-        # 8-17: fancy index
-        ([0, 1], 0, [0, 1]),
-        (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
-        (0, [0, 1], [0, 1]),
-        (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
-        ([0, 1], slice(0, 2), [0, 1]),
-        (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
-        ([0, 1], True, [0, 1]),
-        (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
-        ([0, 1], None, [0, 1]),
-        (Tensor([0, 1]), None, Tensor([0, 1])),
-    ],
-)
-def test_setitem_grad_with_iadd_jit_invalid(capture_mode, index):
-    """
-    Feature: tensor setitem grad
-    Description: Verify the result of tensor setitem grad with iadd
-    Expectation: Raise exception
-    """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
-    if capture_mode is not None:
-        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-
-    np_expected = np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
-                            [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
-    value = -1
-    if capture_mode is None:
-        setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
-    else:
-        with pytest.raises(RuntimeError) as err:
-            setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
-        assert "When performing an in-place operation on an object generated by a view operation, " \
-                "it is currently not supported to compute gradients for the " \
-                "other inputs of this in-place operator" in str(err.value)
 
 
 class NetSetitemImul(nn.Cell):
@@ -616,14 +580,15 @@ def setitem_check_imul_grad(x, index, value, np_expected, capture_mode=None):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('capture_mode', [None, 'ast'])
+@pytest.mark.parametrize('capture_mode', [None, 'ast',
+                                          pytest.param('bytecode', marks=pytest.mark.skip(reason="Unsupported now"))])
 def test_setitem_grad_with_imul(capture_mode):
     """
     Feature: tensor setitem grad
     Description: Verify the result of tensor setitem grad with imul
     Expectation: success
     """
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
     if capture_mode is not None:
         os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
     iadd_indices = [True, None]
@@ -632,14 +597,7 @@ def test_setitem_grad_with_imul(capture_mode):
     for index in iadd_indices:
         ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
         value = 3
-        if capture_mode is None:
-            setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
-        else:
-            with pytest.raises(RuntimeError) as err:
-                setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
-            assert "When performing an in-place operation on an object generated by a view operation, " \
-                   "it is currently not supported to compute gradients for the " \
-                   "other inputs of this in-place operator" in str(err.value)
+        setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -652,7 +610,6 @@ def test_setitem_exception(mode, capture_mode):
     Expectation: success
     """
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
     ms_x = Tensor(np_x)
@@ -758,7 +715,6 @@ def test_setitem_index_dynamic_shape_test(capture_mode, x_shape, index_shape, va
         return ms.grad(net)(x, index, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[-1., -1., -1.], [-1., -1., -1.], [6., 7., 8.]],
                           [[-1., -1., -1.], [-1., -1., -1.], [15., 16., 17.]],
@@ -813,7 +769,6 @@ def test_setitem_index_dynamic_rank_test(capture_mode):
         return ms.grad(net)(x, index1, index2, cond, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[0., 1., 2.], [-1., -1., -1.], [6., 7., 8.]],
                           [[9., 10., 11.], [-1., -1., -1.], [15., 16., 17.]],
@@ -865,7 +820,6 @@ def test_setitem_index_dynamic_rank_test2(capture_mode):
         return ms.grad(net)(x, index1, index2, value)
 
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     pt_result = np.array([[[0., 1., 2.], [3., 4., 5.], [-3., -3., -3.]],
                           [[9., 10., 11.], [12., 13., 14.], [15., 16., 17.]],
@@ -906,7 +860,6 @@ def test_setitem_with_mul(mode):
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
 
     ms_x = Tensor([[0, 0], [2, 0]])
     net = NetWithIndexAndMul()
@@ -924,7 +877,6 @@ def test_setitem_graph_mode(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
     np_x = np.arange(2 * 3).reshape((2, 3)).astype(np.float32)
     ms_x = Tensor(np_x)
     ms_x[0] = -1

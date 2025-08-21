@@ -50,10 +50,11 @@ std::set<std::string> check_invalid_dout_bprop_graph;
 
 namespace {
 using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
-static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
-  prim::kPrimStopGradient, prim::kPrimUpdateState,      prim::kPrimMirror,
-  prim::kPrimVirtualDiv,   prim::kPrimMutable,          prim::kPrimInsertGradientOf,
-  prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType};
+static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {prim::kPrimStopGradient,   prim::kPrimUpdateState,
+                                                             prim::kPrimMirror,         prim::kPrimVirtualDiv,
+                                                             prim::kPrimMutable,        prim::kPrimInsertGradientOf,
+                                                             prim::kPrimHookBackward,   prim::kPrimCellBackwardHook,
+                                                             prim::kPrimPrintShapeType, prim::kPrimLoad};
 
 // Optimizes the forward function graph.
 FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool need_renormalize = false) {
@@ -299,6 +300,16 @@ bool HasRecomputedScope(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto recompute_attr = cnode->GetAttr(kAttrRecompute);
   return recompute_attr != nullptr && recompute_attr->isa<BoolImm>() && GetValue<bool>(recompute_attr);
+}
+
+bool IsViewInplaceAbs(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (!abs->isa<abstract::AbstractRefTensor>()) {
+    return false;
+  }
+  const auto ref_abs = abs->cast_ptr<abstract::AbstractRefTensor>();
+  MS_EXCEPTION_IF_NULL(ref_abs);
+  return ref_abs->is_view() || ref_abs->is_inplace();
 }
 }  // namespace
 
@@ -558,6 +569,16 @@ void BpropGenerator::Init() {
     ReuseCustomBpropForwardOutput(k_fg, primal_fg);
     ReusePrimalCNode(k_fg, primal_fg, top_cell_do_recompute);
   }
+  // Check param, if modified by inplace ops, need insert tensor move
+  const auto &bprop_params = basic_graph_->parameters();
+  const auto &forword_params = primal_fg->parameters();
+  for (size_t i = 0; i < input_abs_.size(); ++i) {
+    if (IsViewInplaceAbs(input_abs_[i])) {
+      (void)fprop_modified_params_.emplace_back(bprop_params[i]);
+      (void)replace_nodes_.emplace_back(forword_params[i]);
+      (void)replace_nodes_abs_.emplace_back(input_abs_[i]);
+    }
+  }
   MS_LOG(INFO) << "Finish init generating basic bprop func graph for " << fprop_graph_->ToString() << ", there are "
                << fprop_sub_fgs_.size() << " forward nodes could be reused.";
 }
@@ -575,6 +596,11 @@ FuncGraphPtr BpropGenerator::GenerateBpropGraph() {
       MS_EXCEPTION_IF_NULL(output_cnode);
       auto forward_output_node = output_cnode->input(kIndex1);
       back_manager->Replace(forward_output_node, param);
+      param->set_abstract(replace_nodes_abs_[index++]);
+    }
+    for (const auto &bprop_param : fprop_modified_params_) {
+      auto param = basic_graph_->add_parameter();
+      back_manager->Replace(bprop_param, param);
       param->set_abstract(replace_nodes_abs_[index++]);
     }
   }
@@ -609,7 +635,11 @@ void BpropGenerator::EraseUnusedReuseCNode(const FuncGraphPtr &bprop_fg) {
       MS_LOG(DEBUG) << "Unused primal cnode in bprop graph: " << replace_nodes_[origin_reuse_index]->DebugString();
       replace_nodes_[origin_reuse_index] = nullptr;
       replace_nodes_abs_[origin_reuse_index] = nullptr;
-      fprop_sub_fgs_[origin_reuse_index] = nullptr;
+      if (fprop_sub_fgs_.size() > origin_reuse_index) {
+        fprop_sub_fgs_[origin_reuse_index] = nullptr;
+      } else {
+        fprop_modified_params_[origin_reuse_index - fprop_sub_fgs_.size()] = nullptr;
+      }
     }
   }
   bprop_fg->set_parameters(new_params);
@@ -643,8 +673,22 @@ FuncGraphPtr BpropGenerator::GenerateForwardGraph(const FuncGraphPtr &jit_forwar
   auto original_output_node = primal_fg->output();
   MS_EXCEPTION_IF_NULL(original_output_node);
   AnfNodePtrList fprop_forward_outputs{NewValueNode(prim::kPrimMakeTuple), original_output_node};
-  (void)std::copy_if(replace_nodes_.begin(), replace_nodes_.end(), std::back_inserter(fprop_forward_outputs),
-                     [](const AnfNodePtr &node) { return node != nullptr; });
+  auto primal_graph_manager = MakeManager({primal_fg}, false);
+  for (size_t i = 0; i < replace_nodes_.size(); ++i) {
+    if (replace_nodes_[i] == nullptr) {
+      continue;
+    }
+    auto &node = replace_nodes_[i];
+    if (!node->isa<Parameter>()) {
+      (void)fprop_forward_outputs.emplace_back(node);
+      continue;
+    }
+    // Reuse load param, insert a tensor move node
+    auto insert_tensor_move = primal_fg->NewCNode({NewValueNode(prim::kPrimTensorMove), node});
+    auto insert_depend_move = primal_fg->NewCNode({NewValueNode(prim::kPrimDepend), node, insert_tensor_move});
+    primal_graph_manager->Replace(node, insert_depend_move);
+    (void)fprop_forward_outputs.emplace_back(insert_tensor_move);
+  }
   auto merge_node = primal_fg->NewCNode(std::move(fprop_forward_outputs));
   primal_fg->set_output(merge_node);
   auto forward_fg = BasicClone(primal_fg);

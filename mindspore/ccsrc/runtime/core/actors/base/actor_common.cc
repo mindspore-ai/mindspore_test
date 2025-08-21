@@ -1164,6 +1164,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                   << device::GetDeviceNameByType(
                        graph_parameter_store->GetParameterDeviceType(outer_index, inner_index))
                   << " outer index:" << outer_index << " inner index:" << inner_index;
+    if (!IsContiguousStorage(tensor_address->GetTensorStorageInfo())) {
+      MS_LOG(EXCEPTION) << "Not support non-contiguous heter graph input index:" << outer_index
+                        << " inner index:" << inner_index << " device address:" << tensor_address->ToString()
+                        << " parameter store device type:"
+                        << graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
+    }
     PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
   }

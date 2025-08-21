@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test graph fallback control flow if after while scenario"""
+import numpy as np
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
@@ -64,3 +65,49 @@ def test_if_after_while_tensor_2():
         return x + y
     res = control_flow_if_after_while()
     assert res == 11
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_if_after_while_tensor_and_numpy():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_while():
+        x = np.array([1, 2, 3, 4])
+        y = Tensor(5)
+        while sum(x) < 20:
+            x += 1
+            y += 1
+        if max(x) == 7:
+            return y
+        y = y - 2
+        return y
+    res = control_flow_if_after_while()
+    assert res == 8
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_if_after_while_tensor_and_numpy_2():
+    """
+    Feature: JIT Fallback
+    Description: Test fallback with control flow.
+    Expectation: No exception.
+    """
+    @jit(backend="ms_backend")
+    def control_flow_if_after_while():
+        x = np.array([1, 2, 3, 4])
+        y = Tensor(5)
+        while sum(x) < 20:
+            x += 1
+            y += 1
+        if max(x) == 6:
+            return y
+        y = y - 2
+        return y
+    res = control_flow_if_after_while()
+    assert res == 6

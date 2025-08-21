@@ -1245,5 +1245,15 @@ REGISTER(FmodScalarInfo);
 REGISTER(MulsInfo);
 REGISTER(FmodTensorInfo);
 REGISTER(InplaceCopyInfo);
+REGISTER(InplaceAddExtInfo);
+REGISTER(InplaceSubExtInfo);
+REGISTER(InplaceMulInfo);
+REGISTER(InplaceDivInfo);
+REGISTER(InplaceFloorDivideInfo);
+REGISTER(InplaceAddsExtInfo);
+REGISTER(InplaceSubScalarInfo);
+REGISTER(InplaceMulsInfo);
+REGISTER(InplaceDivsInfo);
+REGISTER(InplaceFloorDividesInfo);
 }  // namespace parallel
 }  // namespace mindspore

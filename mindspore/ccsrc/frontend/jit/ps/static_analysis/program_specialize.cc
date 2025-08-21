@@ -64,6 +64,34 @@ FuncGraphPtr GetAbstractFuncGraph(const abstract::AbstractFuncAtomPtr &abs) {
   return nullptr;
 }
 
+std::pair<AbstractBasePtrList, AbstractBasePtr> ReCheckAbstractListInCache(
+  const std::vector<AbstractBasePtrList> &args_vector, const AbstractBasePtrList &args_abs_list,
+  const EvalResultCache &origin_eval_cache) {
+  for (size_t index = 0; index < args_vector.size(); ++index) {
+    const auto &args = args_vector[index];
+    if (args.size() != args_abs_list.size()) {
+      continue;
+    }
+    bool all_match = true;
+    for (size_t inner_index = 0; inner_index < args.size(); ++inner_index) {
+      const auto &arg = args[inner_index];
+      if (arg->isa<abstract::AbstractScalar>()) {
+        continue;
+      }
+      if (args_abs_list[inner_index]->hash() != arg->hash()) {
+        all_match = false;
+        break;
+      }
+    }
+    if (all_match) {
+      const auto eval_result = origin_eval_cache.get(args_vector[index]);
+      MS_EXCEPTION_IF_NULL(eval_result);
+      return std::make_pair(args_vector[index], eval_result->abstract());
+    }
+  }
+  return std::make_pair(AbstractBasePtrList(), nullptr);
+}
+
 bool CheckPartialAbstractClosureInCache(const std::vector<AbstractBasePtrList> &args_vector) {
   std::vector<FuncGraphPtr> func_graphs;
   for (const auto &args : args_vector) {
@@ -1512,7 +1540,8 @@ const EvaluatorCacheMgrPtr FuncGraphSpecializer::GetEvalCache(const EvaluatorPtr
   return cache_iter->second;
 }
 
-std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromBroadedArgs(const EvaluatorPtr &eval) {
+std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromBroadedArgs(
+  const EvaluatorPtr &eval, const AbstractBasePtrList &args_abs_list) {
   MS_EXCEPTION_IF_NULL(eval);
   EvalResultPtr res = nullptr;
   AbstractBasePtrList broaded_args_list;
@@ -1540,6 +1569,10 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
       MS_LOG_TRY_CATCH_SCOPE;
       joined_args = abstract::AbstractJoin(joined_args, args_vector[i]);
     } catch (const std::exception &e) {
+      auto [abs_list, abs] = ReCheckAbstractListInCache(args_vector, args_abs_list, origin_eval_cache);
+      if (abs != nullptr) {
+        return std::make_pair(abs_list, abs);
+      }
       MS_LOG(DEBUG) << "Cannot join, args1: " << ::mindspore::ToString(joined_args)
                     << ", args2: " << ::mindspore::ToString(args_vector[i]);
       return std::make_pair(AbstractBasePtrList(), nullptr);
@@ -1979,7 +2012,7 @@ SpecializeStatusCode FuncGraphSpecializer::AcquireUniqueEvalResult(
     }
     MS_LOG(DEBUG) << "Retry poly specialize for " << eval->ToString();
 
-    *res = BuildFromBroadedArgs(eval);
+    *res = BuildFromBroadedArgs(eval, args_abs_list);
     if (!res->first.empty()) {
       MS_LOG(DEBUG) << "Build for generalized args_abs_list successfully.";
       // Synchronize the new evaluated abstract with the abstract from common evaluating routine.

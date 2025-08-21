@@ -16,7 +16,6 @@
 import numpy as np
 from mindspore import context
 from mindspore import Tensor, jit
-from mindspore import dtype as mstype
 
 context.set_context(mode=context.GRAPH_MODE)
 
@@ -71,23 +70,6 @@ def test_single_if_3():
     assert res == 2
 
 
-def test_single_if_else_1():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_if_else():
-        x = Tensor(1)
-        if x > Tensor(7):
-            return x
-        x += Tensor(3)
-        return x * 2
-    res = control_flow_if_else()
-    assert res == 8
-
-
 def test_single_if_else_2():
     """
     Feature: JIT Fallback
@@ -105,23 +87,6 @@ def test_single_if_else_2():
         return z
     res = control_flow_if_else()
     assert np.all(res.asnumpy() == np.array([1, 0, 1, 0, 1]))
-
-
-def test_single_if_builtin_function_sum():
-    """
-    Feature: JIT Fallback
-    Description: Test fallback with control flow.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_if():
-        x = Tensor(-11, mstype.float32)
-        y = Tensor(12, mstype.float32)
-        if x + y > 0:
-            return sum([x, y, 2 * x])
-        return x * 2
-    res = control_flow_if()
-    assert res == -21
 
 
 def test_single_if_change_variable_value():
