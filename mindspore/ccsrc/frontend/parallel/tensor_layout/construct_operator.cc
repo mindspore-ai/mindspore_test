@@ -22,6 +22,7 @@
 #include <memory>
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "include/common/utils/parallel_context.h"
+#include "frontend/parallel/device_manager.h"
 
 namespace mindspore {
 namespace parallel {
@@ -419,7 +420,10 @@ Status ConstructOperator::CreateGroupByDim(size_t axis, std::vector<Group> *grou
     std::vector<Device> dev_list;
     (void)std::transform(group_devices.begin(), group_devices.end(), std::back_inserter(dev_list),
                          [](auto &rank_id) { return Device(rank_id); });
-    (void)g.Init(HCCL_WORLD_GROUP, dev_list);
+    DeviceManager tmp_dm;
+    auto group_name = tmp_dm.GenerateGroupNameByRanks(group_devices);
+    auto rank_list_name = tmp_dm.FindRankListNameByHashName(group_name);
+    (void)g.Init(rank_list_name, dev_list);
     group->push_back(g);
     if (!check_group()) {
       return SUCCESS;
