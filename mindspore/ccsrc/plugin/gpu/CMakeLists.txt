@@ -10,7 +10,9 @@ set(GPU_SUB_COMP
         res_manager)
 
 if(ENABLE_GPU)
-    file(GLOB GPU_DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
+    file(GLOB GPU_DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        "*.cc"
+        "profiler/*.cc")
     list(APPEND GPU_SUB_OBJECTS_SRC ${GPU_DEVICE_SRC_LIST})
     foreach(g_comp ${GPU_SUB_COMP})
         add_subdirectory(${g_comp})
@@ -27,8 +29,7 @@ endif()
 if(ENABLE_GPU)
     set(PLUGIN_GPU_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/gpu/hal")
     file(GLOB_RECURSE GPU_PLUGIN_SRC_LIST
-        "${PLUGIN_GPU_PATH}/device/distribution/*.cc"
-        "${PLUGIN_GPU_PATH}/profiler/*.cc")
+        "${PLUGIN_GPU_PATH}/device/distribution/*.cc")
     list(REMOVE_ITEM GPU_PLUGIN_SRC_LIST
             "${PLUGIN_GPU_PATH}/device/distribution/collective_wrapper.cc"
             "${PLUGIN_GPU_PATH}/device/distribution/mpi_wrapper.cc"

@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
+#include "plugin/gpu/profiler/gpu_profiling.h"
 
 using mindspore::profiler::gpu::ProfilingOp;
 

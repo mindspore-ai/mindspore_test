@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/cpu/hal/profiler/cpu_data_saver.h"
+#include "plugin/cpu/profiler/cpu_data_saver.h"
 #include <fstream>
 #include <numeric>
 #include "utils/log_adapter.h"

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/profiler/feature_mgr.h"
+#include "plugin/ascend/profiler/feature_mgr.h"
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_prof_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

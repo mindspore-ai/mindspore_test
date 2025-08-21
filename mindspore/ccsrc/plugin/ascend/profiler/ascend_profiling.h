@@ -23,7 +23,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "tools/profiler/profiling_data_dumper.h"
 #include "tools/profiler/profiling.h"
-#include "plugin/device/ascend/hal/profiler/feature_mgr.h"
+#include "plugin/ascend/profiler/feature_mgr.h"
 
 namespace mindspore {
 namespace profiler {

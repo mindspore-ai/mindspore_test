@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
+#include "plugin/gpu/profiler/gpu_profiling.h"
 
 #ifndef _WIN32
 #include <cxxabi.h>
@@ -28,8 +28,8 @@
 #include <thread>
 #include <sstream>
 #include "include/backend/kernel_graph.h"
-#include "plugin/device/gpu/hal/profiler/cupti_interface.h"
-#include "plugin/device/gpu/hal/profiler/gpu_data_saver.h"
+#include "plugin/gpu/profiler/cupti_interface.h"
+#include "plugin/gpu/profiler/gpu_data_saver.h"
 #include "include/common/pybind_api/api_register.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/utils.h"

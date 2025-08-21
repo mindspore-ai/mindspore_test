@@ -194,7 +194,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/ascend_res_manager.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/executor/ge_memory_manager.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/*.cc"
+        "../../../mindspore/ccsrc/plugin/ascend/profiler/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/rts/rt_kernel_info.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/backend_common_unify_mindir.cc"
@@ -240,7 +240,7 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/c
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/actor_route_table_proxy.cc")
 
 # list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
-#         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
+#         "../../../mindspore/ccsrc/plugin/ascend/profiler/parallel_strategy_profiling.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
