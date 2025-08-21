@@ -14,13 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" test builtin dict """
+"""test builtin dict"""
 import pytest
 from mindspore import context, jit, Tensor, ops
 
 from tests.mark_utils import arg_mark
-from tests.st.pi_jit.share.utils import assert_equal, assert_no_graph_break, assert_executed_by_graph_mode, \
-    assert_has_graph_break
+from tests.st.pi_jit.share.utils import (
+    assert_equal,
+    assert_no_graph_break,
+    assert_executed_by_graph_mode,
+    assert_has_graph_break,
+)
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 context.set_context(mode=context.PYNATIVE_MODE)
@@ -107,8 +111,14 @@ def test_create_dict_from_duplicate_keys():
         d = dict(kv)
         return ops.sub(d[0], d[1])
 
-    kv = [(0, Tensor([1, 2])), (1, Tensor([2, 3])), (0, Tensor([3, 4])), (2, Tensor([4, 5])), (1, Tensor([5, 6])),
-          (0, Tensor([6, 7]))]
+    kv = [
+        (0, Tensor([1, 2])),
+        (1, Tensor([2, 3])),
+        (0, Tensor([3, 4])),
+        (2, Tensor([4, 5])),
+        (1, Tensor([5, 6])),
+        (0, Tensor([6, 7])),
+    ]
     o1 = fn(kv)
 
     compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
@@ -130,7 +140,7 @@ def test_create_dict_from_dict():
         d2 = dict(d)
         return ops.mul(d2[0], d2[1])
 
-    d = {0: Tensor([1., 2., 3.]), 1: Tensor([3, 4, 5])}
+    d = {0: Tensor([1.0, 2.0, 3.0]), 1: Tensor([3, 4, 5])}
     o1 = fn(d)
 
     compiled_fn = pi_jit_with_config(fn, jit_config=jit_cfg)
@@ -183,3 +193,34 @@ def test_create_dict_from_kwargs():
 
     assert_equal(o1, o2)
     assert_has_graph_break(compiled_fn, break_count=1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dict_getitem_by_user_defined_class_object():
+    """
+    Feature: dict getitem.
+    Description: get item from dict by user-defined class object.
+    Expectation: no graph break.
+    """
+
+    class Key:
+        def __init__(self, value: int):
+            self.value = value
+
+    def fn(d: dict, k: Key, x: Tensor):
+        tensor_list = [ops.ones(2) for _ in range(2)]
+        idx = d[k]  # dict getitem by user-defined class object.
+        tensor_list[idx] = x  # if dict getitem failed, then list setitem will also failed.
+        return ops.cat(tensor_list)
+
+    k1 = Key(1)
+    k2 = Key(2)
+    d = {k1: 0, k2: 1}
+    x = Tensor([1.0, 2.0])
+    o1 = fn(d, k1, x)
+
+    compiled_fn = jit(fn, capture_mode='bytecode', fullgraph=True)
+    o2 = compiled_fn(d, k1, x)
+
+    assert_equal(o1, o2)
+    assert_executed_by_graph_mode(compiled_fn)

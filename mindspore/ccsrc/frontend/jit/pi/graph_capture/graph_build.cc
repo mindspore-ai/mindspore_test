@@ -1385,6 +1385,7 @@ bool GraphBuilder::DoGetItem(const Instr &instr) {
   }
   auto node = BuildMultiOpValueNode(instr, {l, r});
   if (node == nullptr) {
+    MS_LOG(INFO) << "Getitem infer failed, l: " << l->ToString() << ", r: " << r->ToString();
     return false;
   }
   node->SetVobj(l->GetVobj()->GetItem(r->GetVobj()));
@@ -1522,6 +1523,8 @@ static bool SetSlice(std::vector<T> *elements, const std::vector<Py_ssize_t> &co
 ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
   auto index_object = key->GetVobj()->GetPyObject();
   if (index_object.ptr() == nullptr || !key->IsConstantValue()) {
+    MS_LOG(INFO) << "Failed to do list setitem, python object of key is "
+                 << (index_object.ptr() == nullptr ? "null" : "not constant") << ". Key node: " << ToString(key);
     return nullptr;  // only supported constant key
   }
   std::vector<ValueNode *> elements;
@@ -1535,12 +1538,14 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
     elements = {frame().GetStacks().end() - size, frame().GetStacks().end()};
     popn(size);
   } else {
+    MS_LOG(INFO) << "Failed to do list setitem, unsupported list node: " << ToString(map);
     return nullptr;
   }
 
   // compute slice
   auto slice = Utils::FormatSubscript(index_object, elements.size());
   if (slice.empty()) {
+    MS_LOG(INFO) << "Failed to do list setitem, build slice failed: " << ToString(key);
     return nullptr;
   }
   // set(delete) elements
@@ -1556,10 +1561,13 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
     std::vector<ValueNode *> new_elements = {frame_.GetStacks().end() - stack_size, frame_.GetStacks().end()};
     popn(stack_size);
     if (!SetSlice(&elements, slice, &new_elements)) {
+      MS_LOG(INFO) << "Failed to do list setitem, set by slice failed: " << ToString(key);
       return nullptr;
     }
     // set succuss
   } else {
+    MS_LOG(INFO) << "Failed to do list setitem, unsupported scenario. list: " << ToString(map)
+                 << ", index: " << ToString(key) << ", value: " << ToString(value);
     return nullptr;
   }
 
@@ -1583,6 +1591,7 @@ ValueNode *GraphBuilder::MakeTensorCopy(ValueNode *tensor) {
 bool GraphBuilder::DoSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
   // only support constant key
   if (!this->graph_->GuardValueNode(key)) {
+    MS_LOG(INFO) << "Failed to guard setitem key node: " << ToString(key);
     return false;
   }
   // erase side-effect
@@ -1612,6 +1621,7 @@ bool GraphBuilder::DoSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
   }
   // failed transform, restore side-effect
   if (new_node == nullptr) {
+    MS_LOG(INFO) << "Failed to do setitem, src: " << ToString(map) << ", key: " << ToString(key);
     graph_->GetTracedNodes().push_back(side_effect_node);
     return false;
   }

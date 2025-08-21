@@ -516,13 +516,11 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
     {kTypeString, [](const py::object &obj,
                      const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractString>(obj); }},
     {kTypeTensor,
-     [](const py::object &obj, const std::vector<AObject *> &elements) {
-       return Resource::Current()->pool()->New<AbstractTensor>(obj, false);
-     }},
+     [](const py::object &obj, const std::vector<AObject *>
+                                 &elements) { return Resource::Current()->pool()->New<AbstractTensor>(obj, false); }},
     {kTypeTuple,
-     [](const py::object &obj, const std::vector<AObject *> &elements) {
-       return ConstructAbstract<AbstractTuple>(obj, elements);
-     }},
+     [](const py::object &obj,
+        const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractTuple>(obj, elements); }},
     {kTypeNamedTuple, [&tp](const py::object &obj,
                             const std::vector<AObject *>
                               &elements) { return Resource::Current()->pool()->New<AbstractNamedTuple>(obj, tp); }},
@@ -1007,6 +1005,7 @@ AObject *AbstractSequence::GetItem(AObject *k) {
   auto subscript = Utils::FormatSubscript(k->GetPyObject(), size());
   // invalid subscript object
   if (subscript.empty()) {
+    MS_LOG(INFO) << "Failed to do sequence getitem, build slice failed: " << k->ToString();
     return AObject::MakeAObject(kTypeAnyValue);
   }
   // valid subscript object slice, but no element
@@ -1359,12 +1358,10 @@ void AbstractDict::InitKeyValuesListIfNeed() {
 
 AObject *AbstractDict::GetItem(AObject *k) {
   MS_EXCEPTION_IF_NULL(k);
-  if (k->GetType() == kTypeAnyValue) {
-    return MakeAObject(kTypeAnyValue);
-  }
   if (key_values_.empty()) {
     auto key = k->GetPyObject();
     if (key.ptr() == nullptr) {
+      MS_LOG(INFO) << "Dict getitem failed, python object of key is null: " << k->ToString();
       return MakeAObject(kTypeAnyValue);
     }
     auto res = Convert(PyDict_GetItem(value_.ptr(), key.ptr()));
@@ -1379,6 +1376,7 @@ AObject *AbstractDict::GetItem(AObject *k) {
       return value;
     }
   }
+  MS_LOG(INFO) << "Dict getitem failed, key not found: " << k->ToString();
   return MakeAObject(kTypeAnyValue);
 }
 
