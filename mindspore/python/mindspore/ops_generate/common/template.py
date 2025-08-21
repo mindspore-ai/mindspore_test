@@ -521,9 +521,21 @@ py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list
 
         LayoutCacheKey cache_key;
         py::list input_layouts;
+        py::list extra_args;
         bool contain_parallel_args = false;
+        
+        // Collect layout and no layout args
         for (size_t i = 0; i < py_args.size(); ++i) {
+            if (py_args[i].is_none()) {
+                input_layouts.append(py::none());
+                continue;
+            }
             if (!py::hasattr(py_args[i], "_layout")) {
+                py::object arg_str = py::str(py_args[i]);
+                std::string id_str = py::cast<std::string>(arg_str);
+                cache_key.layout_ids.push_back(id_str);
+                extra_args.append(py_args[i]);
+                input_layouts.append(py::none());
                 continue;
             }
             contain_parallel_args = true;
@@ -533,18 +545,19 @@ py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list
             cache_key.layout_ids.push_back(id_str);
             input_layouts.append(layout);
         }
-        
+
         if (!contain_parallel_args) {
             return std::forward<Func>(func)(std::forward<Args>(args)...);
         }
-        
+
         py::object output_layout;
         auto it = layout_cache.find(cache_key);
 
         if (it != layout_cache.end()) {
             output_layout = it->second;
         } else {
-            output_layout = distribute_op.attr("infer_layout")(*input_layouts);
+            py::tuple all_args = py::make_tuple(input_layouts, extra_args);
+            output_layout = distribute_op.attr("infer_layout")(*all_args);
             layout_cache[cache_key] = output_layout;
         }
 

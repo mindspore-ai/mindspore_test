@@ -32,7 +32,7 @@ class DistributedOp:
         self.op_name = op_name
         register_distributed_op(op_name, self)
 
-    def infer_layout(self, *layouts, **kwargs):
+    def infer_layout(self, layouts, extra_args):
         """
         Infer output layouts based on input layouts.
 

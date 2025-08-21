@@ -124,7 +124,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_api_cc_tpl = template.PYBOOST_API_CC_TEMPLATE
         pyboost_api_body_str = ''
         ops_inc_head_set = set()
-        layout_infer_ops = {"matmul_ext", "add_ext", "relu", "add_scalar"}
+        layout_infer_ops = {"matmul", "matmul_ext", "add_ext", "relu", "add_scalar"}
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue

@@ -19,12 +19,12 @@ Distributed implementation for MatMul operator.
 from mindspore.parallel import Layout
 from .parallel_ops import DistributedOp
 
-class MatMulDistributedOp(DistributedOp):
+class MatMulExtDistributedOp(DistributedOp):
     """Distributed implementation for MatMul operator."""
     def __init__(self):
         super().__init__("MatMulExt")
 
-    def infer_layout(self, x_layout, w_layout):
+    def infer_layout(self, layouts, extra_args):
         """
         Infer output layout for MatMul operator.
 
@@ -42,6 +42,12 @@ class MatMulDistributedOp(DistributedOp):
         Returns:
             tuple: Layout for output tensor
         """
+        if len(layouts) != 2:
+            raise ValueError(f"MatMul layout length is not 2, but {len(layouts)}")
+        x_layout = layouts[0]
+        w_layout = layouts[1]
+        if not x_layout or not w_layout:
+            raise ValueError(f"x_layout : {x_layout}, w_layout : {w_layout}")
         x_dict = x_layout.to_dict()
         w_dict = w_layout.to_dict()
         if x_dict["device_matrix"] != w_dict["device_matrix"]:
@@ -95,3 +101,101 @@ class MatMulDistributedOp(DistributedOp):
         )
         out_layout = output_layout(*output_map)
         return out_layout
+
+
+class MatMulDistributedOp(DistributedOp):
+    """Distributed implementation for MatMul operator."""
+    def __init__(self):
+        super().__init__("MatMul")
+
+    def infer_layout(self, input_layouts, extra_args):
+        """
+        Infer output layout for MatMul operator.
+
+        MatMul: output = x @ w, with possible transpose
+
+        Args:
+            input_layouts (tuple): Layouts of input tensors (x_layout, w_layout)
+            extra_args (tuple): Additional arguments (transpose_a, transpose_b)
+
+        Returns:
+            Layout: Layout for output tensor
+        """
+        if len(input_layouts) < 2:
+            raise ValueError("MatMul requires at least two input layouts")
+
+        x_layout, w_layout = input_layouts[:2]
+        transpose_a, transpose_b = False, False
+
+        if len(extra_args) != 2:
+            raise ValueError("MatMul requires two transpose input")
+        transpose_a, transpose_b = extra_args[0], extra_args[1]
+
+        x_dict = x_layout.to_dict()
+        w_dict = w_layout.to_dict()
+
+        if x_dict["device_matrix"] != w_dict["device_matrix"]:
+            raise ValueError("MatMul inputs must have same device_matrix")
+
+        x_map = x_dict["tensor_map"]
+        w_map = w_dict["tensor_map"]
+        x_aliases = x_dict["alias_name"]
+
+        # Determine contracting dimensions based on transpose flags
+        if transpose_a:
+            x_contract_dim = len(x_map) - 2  # Second to last dimension
+        else:
+            x_contract_dim = len(x_map) - 1  # Last dimension
+
+        if transpose_b:
+            w_contract_dim = len(w_map) - 1  # Last dimension
+        else:
+            w_contract_dim = len(w_map) - 2  # Second to last dimension
+
+        # Validate contracting dimensions
+        if x_map[x_contract_dim] != w_map[w_contract_dim]:
+            raise ValueError(f"Contracting dimensions must have same layout. "
+                             f"Got {x_map[x_contract_dim]} and {w_map[w_contract_dim]}")
+
+        # Build output map
+        output_map = []
+
+        # Add non-contracting dimensions from x
+        for i, map_id in enumerate(x_map):
+            if i == x_contract_dim:
+                continue  # Skip contracting dimension
+
+            if isinstance(map_id, tuple):
+                mapped_tuple = tuple(
+                    "None" if id_val < 0 else x_aliases[len(x_aliases) - 1 - id_val]
+                    for id_val in map_id
+                )
+                output_map.append(mapped_tuple)
+            else:
+                output_map.append(
+                    "None" if map_id < 0 else x_aliases[len(x_aliases) - 1 - map_id]
+                )
+
+        # Add non-contracting dimension from w
+        w_output_dim = len(w_map) - 2 if transpose_b else len(w_map) - 1
+        map_id = w_map[w_output_dim]
+
+        if isinstance(map_id, tuple):
+            mapped_tuple = tuple(
+                "None" if id_val < 0 else x_aliases[len(x_aliases) - 1 - id_val]
+                for id_val in map_id
+            )
+            output_map.append(mapped_tuple)
+        else:
+            output_map.append(
+                "None" if map_id < 0 else x_aliases[len(x_aliases) - 1 - map_id]
+            )
+
+        # Create output layout
+        output_layout = Layout(
+            device_matrix=x_dict["device_matrix"],
+            alias_name=x_aliases,
+            rank_list=x_dict["rank_list"]
+        )
+
+        return output_layout(*output_map)

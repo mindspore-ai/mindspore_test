@@ -15,9 +15,10 @@
 """Interfaces for parallel-related functionality"""
 from __future__ import absolute_import
 
-from .parallel_matmul import MatMulDistributedOp
+from .parallel_matmul import MatMulDistributedOp, MatMulExtDistributedOp
 from .parallel_elementwise import ElementWiseDistributedOp
 
+_matmul_ext_dist_op = MatMulExtDistributedOp()
 _matmul_dist_op = MatMulDistributedOp()
 _add_ext_dist_op = ElementWiseDistributedOp("AddExt")
 _add_dist_op = ElementWiseDistributedOp("Add")

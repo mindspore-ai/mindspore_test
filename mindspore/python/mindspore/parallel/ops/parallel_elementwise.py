@@ -24,7 +24,7 @@ class ElementWiseDistributedOp(DistributedOp):
 
     Inherits from DistributedOp and provides element-wise specific implementations.
     """
-    def infer_layout(self, *layouts, **kwargs):
+    def infer_layout(self, layouts, extra_args):
         """
         Infer output layouts for element-wise operations.
 
