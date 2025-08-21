@@ -85,6 +85,7 @@ ORIGIN_METHOD_WITH_SIMU(aclrtMemExportToShareableHandle, aclError, aclrtDrvMemHa
                         uint64_t *)
 ORIGIN_METHOD_WITH_SIMU(aclrtMemSetPidToShareableHandle, aclError, uint64_t, int32_t *, size_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtMemImportFromShareableHandle, aclError, uint64_t, int32_t, aclrtDrvMemHandle *)
+ORIGIN_METHOD_WITH_SIMU(aclrtGetLastError, aclError, aclrtLastErrLevel)
 
 void LoadAclRtApiSymbol(const std::string &ascend_path);
 void LoadSimulationRtApi();

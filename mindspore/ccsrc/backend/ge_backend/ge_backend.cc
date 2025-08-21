@@ -438,9 +438,6 @@ void GEBackend::Init() {
   graph_executor_ = std::make_shared<GeGraphExecutor>();
 
   MS_LOG(INFO) << "Start initializing GE backend.";
-  if (UseSimulationApi()) {
-    device::ascend::LoadSimulationApiSymbols();
-  }
 
   // set overflow mode
   auto ms_context = MsContext::GetInstance();

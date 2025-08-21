@@ -35,6 +35,8 @@
 #define PORTABLE_EXPORT __declspec(dllexport)
 #endif
 
+constexpr char kSimuSocName[] = "MS_DRY_RUN";
+
 template <typename T>
 struct SimuDataFactory {
   static T Data() {
@@ -101,6 +103,18 @@ struct SimuCreateTypeGetter<T **> {
   template <>                                           \
   inline void SimuFuncI##name(__VA_ARGS__) {}           \
   extern name##FunObj name##_;                          \
+  inline void SimuAssignI##name() { name##_ = SimuFuncI##name<return_type>; }
+
+#define ACLRT_GET_SOC_NAME_WITH_SIMU(name, return_type, ...) \
+  ORIGIN_METHOD(name, return_type, __VA_ARGS__)              \
+  template <typename T>                                      \
+  inline T SimuFuncI##name(__VA_ARGS__) {                    \
+    return kSimuSocName;                                     \
+  }                                                          \
+                                                             \
+  template <>                                                \
+  inline void SimuFuncI##name(__VA_ARGS__) {}                \
+  extern name##FunObj name##_;                               \
   inline void SimuAssignI##name() { name##_ = SimuFuncI##name<return_type>; }
 
 #define ORIGIN_METHOD_WITH_SIMU_CREATE(name, return_type, create_type_ptr, ...)          \

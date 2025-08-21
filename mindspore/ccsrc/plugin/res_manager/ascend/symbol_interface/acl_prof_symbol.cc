@@ -51,4 +51,17 @@ void LoadProfApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl prof api success!";
 }
 
+void LoadSimulationProfApi() {
+  ASSIGN_SIMU(aclprofCreateConfig);
+  ASSIGN_SIMU(aclprofDestroyConfig);
+  ASSIGN_SIMU(aclprofFinalize);
+  ASSIGN_SIMU(aclprofInit);
+  ASSIGN_SIMU(aclprofStart);
+  ASSIGN_SIMU(aclprofStop);
+  ASSIGN_SIMU(aclprofCreateStepInfo);
+  ASSIGN_SIMU(aclprofGetStepTimestamp);
+  ASSIGN_SIMU(aclprofDestroyStepInfo);
+  ASSIGN_SIMU(aclprofGetSupportedFeatures);
+  ASSIGN_SIMU(aclprofGetSupportedFeaturesV2);
+}
 }  // namespace mindspore::device::ascend

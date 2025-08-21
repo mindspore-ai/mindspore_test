@@ -83,6 +83,7 @@ aclrtDeviceGetBareTgidFunObj aclrtDeviceGetBareTgid_ = nullptr;
 aclrtMemExportToShareableHandleFunObj aclrtMemExportToShareableHandle_ = nullptr;
 aclrtMemSetPidToShareableHandleFunObj aclrtMemSetPidToShareableHandle_ = nullptr;
 aclrtMemImportFromShareableHandleFunObj aclrtMemImportFromShareableHandle_ = nullptr;
+aclrtGetLastErrorFunObj aclrtGetLastError_ = nullptr;
 
 void LoadAclRtApiSymbol(const std::string &ascend_path) {
   std::string aclrt_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -154,8 +155,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtMemExportToShareableHandle_ = DlsymAscendFuncObj(aclrtMemExportToShareableHandle, handler);
   aclrtMemSetPidToShareableHandle_ = DlsymAscendFuncObj(aclrtMemSetPidToShareableHandle, handler);
   aclrtMemImportFromShareableHandle_ = DlsymAscendFuncObj(aclrtMemImportFromShareableHandle, handler);
-  aclrt_get_last_error = DlsymAscend<int (*)(int)>(handler, "aclrtGetLastError");
-  acl_get_recent_err_msg = DlsymAscend<const char *(*)()>(handler, "aclGetRecentErrMsg");
+  aclrtGetLastError_ = DlsymAscendFuncObj(aclrtGetLastError, handler);
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 
@@ -215,5 +215,14 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtFreePhysical);
   ASSIGN_SIMU(aclrtReleaseMemAddress);
   ASSIGN_SIMU(aclrtCtxSetSysParamOpt);
+  ASSIGN_SIMU(aclrtGetMemUceInfo);
+  ASSIGN_SIMU(aclrtDeviceTaskAbort);
+  ASSIGN_SIMU(aclrtMemUceRepair);
+  ASSIGN_SIMU(aclrtEventGetTimestamp);
+  ASSIGN_SIMU(aclrtDeviceGetBareTgid);
+  ASSIGN_SIMU(aclrtMemExportToShareableHandle);
+  ASSIGN_SIMU(aclrtMemSetPidToShareableHandle);
+  ASSIGN_SIMU(aclrtMemImportFromShareableHandle);
+  ASSIGN_SIMU(aclrtGetLastError);
 }
 }  // namespace mindspore::device::ascend
