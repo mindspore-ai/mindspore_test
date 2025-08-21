@@ -28,6 +28,7 @@ IFS=',' read -r -a array <<< "$RANK_LIST"
 export MS_SIMULATION_LEVEL=1
 export RANK_SIZE="$RANK_SIZE"
 export PYTHONPATH=${BASE_PATH}/../mindformers:${BASE_PATH}/../mindformers/research/deepseek3/:${PYTHONPATH}
+export MS_ALLOC_CONF="memory_tracker:True,memory_tracker_path:$BASE_PATH/$CASE_NAME"
 export MS_DEV_DUMP_IR_PASSES="step_parallel,validate,hwopt_d_after_inline_graph"
 if [ "$CELL_REUSE" = "pp" ]; then
   echo "enable lazy inline in pp"
