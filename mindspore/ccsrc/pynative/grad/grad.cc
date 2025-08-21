@@ -1204,6 +1204,10 @@ void GradExecutor::SetBpropGraphJitLevel(const py::object &obj) const {
     MS_LOG(EXCEPTION) << "JitConfig only support dict!";
   }
   auto jit_config_dict = jit_config.cast<py::dict>();
+  // Default jit config dict, do not replace current jit config set by gradjit
+  if (jit_config_dict.empty()) {
+    return;
+  }
   pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   graph_executor->SetJitConfig(jit_config_dict);

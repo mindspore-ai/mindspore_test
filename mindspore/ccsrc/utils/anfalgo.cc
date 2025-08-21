@@ -296,6 +296,40 @@ bool IsNeededOverlapCommA2a(const CNodePtr &cnode, const std::string &pp_1f1b_va
   }
   return is_target;
 }
+
+void TensorValueToVector(const ValuePtr &value, VectorRef *outputs) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_EXCEPTION_IF_NULL(outputs);
+  if (value->isa<ValueSequence>()) {
+    auto value_tuple = value->cast<ValueSequencePtr>();
+    MS_EXCEPTION_IF_NULL(value_tuple);
+    for (size_t i = 0; i < value_tuple->size(); ++i) {
+      ValuePtr element = value_tuple->value()[i];
+      MS_EXCEPTION_IF_NULL(element);
+      if (element->isa<tensor::Tensor>()) {
+        auto tensor = element->cast<tensor::TensorPtr>();
+        MS_EXCEPTION_IF_NULL(tensor);
+        outputs->emplace_back(tensor);
+      } else if (element->isa<Scalar>()) {
+        auto scalar = element->cast<ScalarPtr>();
+        MS_EXCEPTION_IF_NULL(scalar);
+        outputs->emplace_back(ScalarToTensor(scalar));
+      } else if (element->isa<ValueSequence>()) {
+        VectorRef tuple;
+        TensorValueToVector(element, &tuple);
+        outputs->emplace_back(tuple);
+      }
+    }
+  } else if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    outputs->emplace_back(tensor);
+  } else if (value->isa<Scalar>()) {
+    auto scalar = value->cast<ScalarPtr>();
+    MS_EXCEPTION_IF_NULL(scalar);
+    outputs->emplace_back(ScalarToTensor(scalar));
+  }
+}
 }  // namespace
 
 AnfNodePtr AnfAlgo::GetTupleGetItemRealInput(const CNodePtr &tuple_get_item) {
@@ -3073,6 +3107,52 @@ bool AnfAlgo::IsFusion(const CNodePtr &cnode) {
 bool AnfAlgo::IsRecompute(const CNodePtr &cnode) {
   auto attr_dup = cnode->GetAttr(kAttrDuplicated);
   return attr_dup != nullptr && GetValue<bool>(attr_dup);
+}
+
+bool AnfAlgo::IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
+                                                VectorRef *outputs) {
+  MS_EXCEPTION_IF_NULL(graph_output);
+  MS_EXCEPTION_IF_NULL(outputs);
+  if (graph_output->isa<ValueNode>()) {
+    MS_LOG(INFO) << "Graph's output is a constant. No need to execute.";
+    VectorRef output_tmp;
+    ValuePtr value = GetValueNode(graph_output);
+    TensorValueToVector(value, &output_tmp);
+    MS_EXCEPTION_IF_NULL(value);
+    if (value->isa<ValueSequence>()) {
+      outputs->emplace_back(output_tmp);
+    } else if (value->isa<tensor::Tensor>() || value->isa<Scalar>()) {
+      *outputs = output_tmp;
+    } else {
+      MS_LOG(INFO) << "Graph output is empty!";
+    }
+    return true;
+  }
+
+  if (graph_output->isa<Parameter>()) {
+    MS_LOG(INFO) << "Graph's output is a parameter. If all params are inputs, no need to execute.";
+    // Find the right parameter as ret_val.
+    auto func_graph = graph_output->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto params = func_graph->parameters();
+    if (args.size() != params.size()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Input size " << args.size()
+                                 << " is not equal to graph input size " << params.size();
+    }
+
+    auto it = std::find(params.begin(), params.end(), graph_output);
+    if (it == params.end()) {
+      MS_EXCEPTION(UnknownError) << "When graph output is Parameter, it should be found in graph parameters";
+    }
+    size_t index = static_cast<size_t>(it - params.cbegin());
+    if (index >= args.size()) {
+      MS_EXCEPTION(UnknownError) << "Index " << index << " equal or larger than args size " << args.size();
+    }
+
+    outputs->emplace_back(args[index]);
+    return true;
+  }
+  return false;
 }
 }  // namespace common
 }  // namespace mindspore

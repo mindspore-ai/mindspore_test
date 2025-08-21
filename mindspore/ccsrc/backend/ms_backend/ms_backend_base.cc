@@ -800,11 +800,8 @@ void MSBackendBase::CompileGraphFromSegment(const FuncGraphPtr &func_graph, cons
     AnfNodePtrList outputs;
     std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
 
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     backend_jit_config, ms_execution_mode == kPynativeMode);
+    GraphId graph_id =
+      graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     func_graph_to_sub_segments_[func_graph].emplace_back(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
@@ -1152,7 +1149,7 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, false);
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config);
     return graph_compiler->Fetch(graph_id);
   };
 
@@ -1211,11 +1208,7 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
     return false;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  bool is_pynative_in_kbk_mode =
-    (ms_execution_mode == kPynativeMode) && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_);
+  bool is_pynative_in_kbk_mode = JitPipelineCompiling();
   if (!is_pynative_in_kbk_mode) {
     return false;
   }
@@ -1756,11 +1749,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc();
 
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto ms_execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-  func_graph->set_flag(kFlagPyNativeRunInGraph, ms_execution_mode == kPynativeMode);
-
   // Compile root graph.
   bool load_compile_cache = false;
   if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
@@ -1796,13 +1784,10 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   graph_compiler_info->func_graph_to_kernel_graph_ids_ = func_graph_to_kernel_graph_ids_;
   // Use kernel graph, which output maybe change by backed pass, so backup output
   graph_compiler_info->origin_output_node_ = origin_output_node;
-  graph_compiler_info->is_pynative_mode_ = true;
+  graph_compiler_info->is_pynative_mode_ = JitPipelineCompiling();
 
-  if ((ms_execution_mode == kGraphMode ||
-       (ms_execution_mode == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&
-      ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1)) {
+  if ((!graph_compiler_info->graphs_.empty() || graph_compiler_info->control_nodes_.size() > 1)) {
     MS_LOG(DEBUG) << "Start transform";
-    graph_compiler_info->is_pynative_mode_ = false;
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
@@ -1944,7 +1929,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   auto root_graph = graph_compiler_info.root_func_graph_;
   MS_EXCEPTION_IF_NULL(root_graph);
 
-  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
+  if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
     return kRunningSuccess;
   }
 

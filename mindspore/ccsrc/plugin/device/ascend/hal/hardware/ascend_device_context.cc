@@ -25,6 +25,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
+#include "include/backend/distributed/constants.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
@@ -133,7 +134,11 @@ void AscendDeviceContext::Initialize() {
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
 
-  if (ms_context->GetBackend() == kBackendGE) {
+  // After evolve to pynative+jit, we cannot know if run ge in initialize stage. To avoid the port occupancy conflict
+  // between the initialization of non-global communication group and ge, we initialize ge first if run distributed
+  // program in ascend910. May can be removed after the decoupling with CollectiveManager and DeviceContext.
+  if (ms_context->GetBackend() == kBackendGE ||
+      (soc_version == "ascend910" && !common::GetEnv(mindspore::distributed::kEnvWorkerNum).empty())) {
     InitializeForAclop();
   }
 

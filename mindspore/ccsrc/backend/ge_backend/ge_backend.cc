@@ -1479,7 +1479,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
   MS_EXCEPTION_IF_NULL(graph_executor_);
   auto func_graph = graph_map_[graph_id];
-  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph->output(), inputs, outputs)) {
+  if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph->output(), inputs, outputs)) {
     MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
     return;
   }
