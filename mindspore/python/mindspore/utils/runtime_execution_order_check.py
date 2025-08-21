@@ -623,6 +623,16 @@ def runtime_execution_order_check(folders_, all_rank=None):
     parser = RankFolderParser(folders_)
     result_map = parser.parse()
 
+    if not result_map:
+        logger.error("No valid rank data found. Execution order check aborted.")
+        return
+
+    # Check for any rank with empty execution orders
+    for rank, orders in result_map.items():
+        if not orders:
+            logger.error(f"Rank {rank} has no valid execution orders. Please check the csv file.")
+            return
+
     # Modify execution orders
     modified_orders = modify_execute_orders(result_map)
 
