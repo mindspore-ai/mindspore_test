@@ -590,6 +590,7 @@ class Morph(PrimitiveWithInfer):
         self._infer_dtype = infer_dtype
 
         if bprop_fn:
+            self._check_fn_supported(fn)
             class InnerNet(Cell):
                 """
                 Inner net that wraps fn and bprop inside.
@@ -620,6 +621,14 @@ class Morph(PrimitiveWithInfer):
                     return fn(*args, **kwargs)
 
             self.add_prim_attr('__metamorphosis__', InnerNet())
+
+    def _check_fn_supported(self, fn):
+        fn_sig = inspect.signature(fn)
+        for param in fn_sig.parameters.values():
+            if not (param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD and param.default is inspect.Parameter.empty):
+                raise ValueError(f"When use `bprop` in Morph, Morph `fn` only support positional or keyword parameters "
+                                 f"with default value is empty, but got param '{param.name}' "
+                                 f"of kind '{param.kind.name}' with default value '{param.default}'.")
 
     def infer_shape(self, *args):
         return self._infer_shape(*args)
