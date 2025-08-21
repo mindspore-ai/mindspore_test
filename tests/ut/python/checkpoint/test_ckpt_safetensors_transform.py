@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import os
-import pytest
 import mindspore as ms
 import mindspore.nn as nn
 
@@ -43,11 +42,6 @@ def cleanup_directory(directory):
         os.rmdir(directory)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
 def test_ckpt_to_safetensors():
     """
     Feature: ckpt_to_safetensors
@@ -70,18 +64,13 @@ def test_ckpt_to_safetensors():
     cleanup_directory(save_path)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
 def test_safetensors_to_ckpt():
     """
     Feature: safetensors_to_ckpt
     Description: test ms.safetensors_to_ckpt
     Expectation: success
     """
-    base_dir = create_file("test_safetensors_dir2", file_format="safetensors")
+    base_dir = create_file("test_safetensors_dir1", file_format="safetensors")
     save_path = "test_ckpt_dir2"
 
     ms.safetensors_to_ckpt(file_path=base_dir, save_path=save_path)
@@ -97,18 +86,33 @@ def test_safetensors_to_ckpt():
     cleanup_directory(save_path)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+def test_ckpt_to_safetensors_for_single_file():
+    """
+    Feature: ckpt_to_safetensors for single file
+    Description: test ms.ckpt_to_safetensors args single file.
+    Expectation: success
+    """
+    net = nn.Dense(2, 2)
+    ms.save_checkpoint(net, "ckpt_weight", format="ckpt")
+    ms.ckpt_to_safetensors(file_path="ckpt_weight.ckpt")
+    assert os.path.exists("ckpt_weight.safetensors")
+    os.remove("ckpt_weight.safetensors")
+    os.remove("ckpt_weight.ckpt")
+
+    ms.save_checkpoint(net, "safetensors_weight", format="safetensors")
+    ms.safetensors_to_ckpt(file_path="safetensors_weight.safetensors")
+    assert os.path.exists("safetensors_weight.ckpt")
+    os.remove("safetensors_weight.safetensors")
+    os.remove("safetensors_weight.ckpt")
+
+
 def test_safetensors_to_ckpt_name_map():
     """
     Feature: safetensors_to_ckpt name map
     Description: test ms.safetensors_to_ckpt args name_map
     Expectation: success
     """
-    base_dir = create_file("test_safetensors_dir3", file_format="safetensors")
+    base_dir = create_file("test_safetensors_dir2", file_format="safetensors")
     save_path = "test_ckpt_dir3"
 
     ms.safetensors_to_ckpt(file_path=base_dir, save_path=save_path, name_map={"weight": "weight_2"})
@@ -119,24 +123,17 @@ def test_safetensors_to_ckpt_name_map():
         ckpt_files = [f for f in os.listdir(rank_dir) if f.endswith(".ckpt")]
         assert len(ckpt_files) == 1
 
-    # Clean up
     cleanup_directory(base_dir)
     cleanup_directory(save_path)
 
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
 def test_ckpt_to_safetensors_file_name_regex():
     """
     Feature: ckpt_to_safetensors file_name_regex
     Description: test ms.ckpt_to_safetensors args file_name_regex
     Expectation: success
     """
-    base_dir = create_file("test_ckpt_dir1", file_format="ckpt")
+    base_dir = create_file("test_ckpt_dir2", file_format="ckpt")
     save_path = "test_safetensors_dir1"
 
     ms.ckpt_to_safetensors(file_path=base_dir, save_path=save_path, file_name_regex="checkpoint")
@@ -147,31 +144,5 @@ def test_ckpt_to_safetensors_file_name_regex():
         safetensors_files = [f for f in os.listdir(rank_dir) if f.endswith(".safetensors")]
         assert len(safetensors_files) == 1
 
-    # Clean up
     cleanup_directory(base_dir)
     cleanup_directory(save_path)
-
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
-def test_ckpt_to_safetensors_for_single_file():
-    """
-    Feature: ckpt_to_safetensors for single file
-    Description: test ms.ckpt_to_safetensors args file_name_regex
-    Expectation: success
-    """
-    net = nn.Dense(2, 2)
-    ms.save_checkpoint(net, "ckpt_weight", format="ckpt")
-    ms.ckpt_to_safetensors(file_path="ckpt_weight.ckpt")
-    assert os.path.exists("ckpt_weight.safetensors")
-    os.remove("ckpt_weight.ckpt")
-    os.remove("ckpt_weight.safetensors")
-
-    ms.save_checkpoint(net, "safetensors_weight", format="safetensors")
-    ms.safetensors_to_ckpt(file_path="safetensors_weight.safetensors")
-    assert os.path.exists("safetensors_weight.ckpt")
-    os.remove("safetensors_weight.ckpt")
-    os.remove("safetensors_weight.safetensors")
