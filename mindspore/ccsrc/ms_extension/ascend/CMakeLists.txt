@@ -6,6 +6,5 @@ if(EXISTS ${ASCEND_NNAL_ATB_PATH})
 endif()
 
 if(EXISTS ${ASCEND_NNAL_ASDSIP_PATH})
-    add_definitions(-DASDSIP_PATH="${ASCEND_NNAL_ASDSIP_PATH}")
     add_subdirectory(asdsip)
 endif()
