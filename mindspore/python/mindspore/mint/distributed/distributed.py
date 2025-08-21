@@ -26,6 +26,7 @@ from mindspore.ops import ReduceOp, cat
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops.primitive import _primexpr
+from mindspore.common.api import _pynative_executor
 from mindspore.communication._comm_helper import (
     _destroy_group_helper,
     _get_rank_helper,
@@ -610,6 +611,7 @@ def destroy_process_group(group=None):
     """
 
     if group == GlobalComm.WORLD_COMM_GROUP or group is None:
+        _pynative_executor.sync()
         _finalize_collective()
         _ExistingGroup.ITEMS.clear()
         _ExistingGroup.GROUP_RANKS.clear()
