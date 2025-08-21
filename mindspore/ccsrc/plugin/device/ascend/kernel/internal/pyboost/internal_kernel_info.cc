@@ -22,8 +22,8 @@
 
 namespace mindspore {
 namespace kernel {
-void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist, const TensorPtrList &tensorlist,
-                                             bool is_input) {
+void InternalKernelInfo::TransInternalShapes(internal::ShapeInfoList *shapelist,
+                                             const TensorPtrList &tensorlist, bool is_input) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
     if (tensorlist[i] == nullptr) {
       shapelist->at(i) = internal::ShapeInfo{0};
@@ -80,7 +80,8 @@ void InternalKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutab
   }
 }
 
-bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs, const TensorPtrList *ms_outputs) {
+bool InternalKernelInfo::IsInternalDtypeSupport(const TensorPtrList *ms_inputs,
+                                                const TensorPtrList *ms_outputs) {
   internal_inputs_dtype_.resize(ms_inputs->size());
   internal_outputs_dtype_.resize(ms_outputs->size());
 

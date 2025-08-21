@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_QUANT_GROUPED_MATMUL_DEQUANT_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_QUANT_GROUPED_MATMUL_DEQUANT_H_
-
+#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_APPLY_ROTARY_POS_EMB_EXT_H_
+#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_APPLY_ROTARY_POS_EMB_EXT_H_
+#include <vector>
 #include <memory>
-#include <tuple>
 #include "ir/tensor.h"
-#include "ir/scalar.h"
+#include "ir/value.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void QuantGroupedMatmulDequantAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor, const TensorPtr &weight_tensor,
-  const TensorPtr &weight_scale_tensor, const TensorPtr &group_list_tensor, const std::optional<TensorPtr> &bias_tensor,
-  const std::optional<TensorPtr> &x_scale_tensor, const std::optional<TensorPtr> &x_offset_tensor,
-  const std::optional<TensorPtr> &smmoth_scale_tensor, const mindspore::StringImmPtr &x_quant_mode,
-  const mindspore::BoolImmPtr &transpose_weight);
-
+tensor::TensorPtr ApplyRotaryPosEmbExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &query,
+                                                      const TensorPtr &key, const TensorPtr &cos, const TensorPtr &sin,
+                                                      const Int64ImmPtr &layout);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_QUANT_GROUPED_MATMUL_DEQUANT_H_
+#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_APPLY_ROTARY_POS_EMB_EXT_H_

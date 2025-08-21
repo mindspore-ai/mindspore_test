@@ -13,35 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_GROUPED_MATMUL_DEQUANT_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_GROUPED_MATMUL_DEQUANT_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_APPLY_ROTARY_POS_EMB_ACLNN_KERNEL_H_
+#define MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_APPLY_ROTARY_POS_EMB_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
 #include <string>
 #include "ops/base_operator.h"
+#include "op_def/op_enum.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-namespace quant_grouped_matmul_dequant {
-
-class QuantGroupedMatmulDequantAscend : public AclnnKernelMod {
+class ApplyRotaryPosEmbAclnnKernelMod : public AclnnKernelMod {
  public:
-  QuantGroupedMatmulDequantAscend() : AclnnKernelMod(std::move("aclnnQuantGroupedMatmulDequant")) {}
-  ~QuantGroupedMatmulDequantAscend() = default;
+  ApplyRotaryPosEmbAclnnKernelMod() : AclnnKernelMod(std::move("aclnnApplyRotaryPosEmb")) {}
+  ~ApplyRotaryPosEmbAclnnKernelMod() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-
-  std::string quant_mode_;
-  bool transpose_weight_;
+  int64_t layout_ = 1;
+  static constexpr int64_t bsnd_layout_ = 1;
 };
-}  // namespace quant_grouped_matmul_dequant
 }  // namespace kernel
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_GROUPED_MATMUL_DEQUANT_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_APPLY_ROTARY_POS_EMB_ACLNN_KERNEL_H_

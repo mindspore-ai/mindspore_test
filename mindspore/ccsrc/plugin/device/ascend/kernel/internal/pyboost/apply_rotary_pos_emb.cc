@@ -26,9 +26,10 @@ internal::InternalOpPtr ApplyRotaryPosEmb::CreateKernel(const internal::InputsIm
 }
 
 void ApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                             const uint64_t &tiling_key, const TensorPtr &query_tensor, const TensorPtr &key_tensor,
-                             const TensorPtr &cos_tensor, const TensorPtr &sin_tensor,
-                             const TensorPtr &position_ids_tensor, const int64_t &cos_format) {
+                             const uint64_t &tiling_key, const TensorPtr &query_tensor,
+                             const TensorPtr &key_tensor, const TensorPtr &cos_tensor,
+                             const TensorPtr &sin_tensor, const TensorPtr &position_ids_tensor,
+                             const int64_t &cos_format) {
   TensorPtrList inputs = {query_tensor, key_tensor, cos_tensor, sin_tensor, position_ids_tensor};
   TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);

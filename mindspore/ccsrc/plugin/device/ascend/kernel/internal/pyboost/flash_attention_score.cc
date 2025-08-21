@@ -47,16 +47,18 @@ uint64_t FlashAttentionScore::GetOrGenerateOpTilingKey(const uint64_t &tiling_ke
 void FlashAttentionScore::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
                                const uint64_t &tiling_key, const TensorPtr &query, const TensorPtr &key,
                                const TensorPtr &value, const std::optional<TensorPtr> &real_shift,
-                               const std::optional<TensorPtr> &drop_mask, const std::optional<TensorPtr> &padding_mask,
+                               const std::optional<TensorPtr> &drop_mask,
+                               const std::optional<TensorPtr> &padding_mask,
                                const std::optional<TensorPtr> &attn_mask, const std::vector<int64_t> &prefix,
                                const std::vector<int64_t> &actual_seq_len, const std::vector<int64_t> &actual_seq_kvlen,
                                const int64_t &head_num, const float &keep_prob, const float &scale_value,
                                const int64_t &pre_tokens, const int64_t &next_tokens, const int64_t &inner_precise,
                                const int64_t &input_layout, const int64_t &sparse_mode) {
   TensorPtrList inputs = {query, key, value, real_shift.has_value() ? real_shift.value() : nullptr,
-                          attn_mask.has_value() ? attn_mask.value() : nullptr};
+                                       attn_mask.has_value() ? attn_mask.value() : nullptr};
   TensorPtrList outputs = {op->outputs()[kIndex3]};
   TransInternalShapes(inputs, outputs);
+
   auto attn_mask_tensor = inputs.back();
   if (attn_mask_tensor != nullptr) {
     param_.mask_dims = attn_mask_tensor->shape();

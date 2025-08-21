@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_GROUP_TOPK_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_GROUP_TOPK_H_
 
 #include <memory>
 #include <string>
@@ -25,20 +25,23 @@
 
 namespace mindspore {
 namespace kernel {
-class ReshapeAndCache : public InternalKernelInfo {
+class GroupTopk : public InternalKernelInfo {
  public:
-  explicit ReshapeAndCache(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
-  ~ReshapeAndCache() = default;
+  explicit GroupTopk(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
+
+  ~GroupTopk() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &key, const std::optional<TensorPtr> &value,
-            const std::optional<TensorPtr> &key_cache, const std::optional<TensorPtr> &value_cache,
-            const std::optional<TensorPtr> &slot_mapping);
+            const TensorPtr &token, const TensorPtr &idx_arr, const int64_t &group_num, const int64_t &k,
+            const int64_t &k_inner);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
+
+ private:
+  internal::GroupTopkParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_GROUP_TOPK_H_

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_FAST_GELU_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_FAST_GELU_H_
 
 #include <memory>
 #include <string>
@@ -25,15 +25,13 @@
 
 namespace mindspore {
 namespace kernel {
-class ReshapeAndCache : public InternalKernelInfo {
+class FastGeLU : public InternalKernelInfo {
  public:
-  explicit ReshapeAndCache(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
-  ~ReshapeAndCache() = default;
+  explicit FastGeLU(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
+  ~FastGeLU() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &key, const std::optional<TensorPtr> &value,
-            const std::optional<TensorPtr> &key_cache, const std::optional<TensorPtr> &value_cache,
-            const std::optional<TensorPtr> &slot_mapping);
+            const TensorPtr &input_tensor);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
@@ -41,4 +39,4 @@ class ReshapeAndCache : public InternalKernelInfo {
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_FAST_GELU_H_

@@ -20,3 +20,6 @@ dynamic_ntk:
     disable: True
   class:
     name: DynamicNTK
+  dispatch:
+    enable: True
+    InternalOpAscend: AutoGen

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_DYNAMIC_NTK_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_DYNAMIC_NTK_H_
 
 #include <memory>
 #include <string>
@@ -25,20 +25,23 @@
 
 namespace mindspore {
 namespace kernel {
-class ReshapeAndCache : public InternalKernelInfo {
+class DynamicNTK : public InternalKernelInfo {
  public:
-  explicit ReshapeAndCache(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
-  ~ReshapeAndCache() = default;
+  explicit DynamicNTK(std::string &&kernel_name) : InternalKernelInfo(std::move(kernel_name)) {}
+  ~DynamicNTK() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const TensorPtr &key, const std::optional<TensorPtr> &value,
-            const std::optional<TensorPtr> &key_cache, const std::optional<TensorPtr> &value_cache,
-            const std::optional<TensorPtr> &slot_mapping);
+            const TensorPtr &position_ids_tensor, const TensorPtr &inv_freq_tensor,
+            const TensorPtr &seq_lens_tensor, const TypeId &dtype);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
+  enum class DynamicNTKOutType { Float16 = 0, BFloat16 = 1, Float32 = 2 };
+
+ private:
+  internal::DynamicNTKParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_PYBOOST_RESHAPE_AND_CACHE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_DYNAMIC_NTK_H_
