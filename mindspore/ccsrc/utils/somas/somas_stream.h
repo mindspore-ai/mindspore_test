@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_STREAM_H_
 #define MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_STREAM_H_
 
-#include "backend/common/somas/somas_node.h"
+#include "utils/somas/somas_node.h"
 
 #include <memory>
 #include <set>

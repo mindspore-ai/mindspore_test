@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "backend/common/somas/somas_tensor.h"
+#include "utils/somas/somas_tensor.h"
 #include <map>
 #include <string>
 

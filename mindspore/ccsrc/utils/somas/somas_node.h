@@ -25,8 +25,8 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "backend/common/somas/somas_tensor.h"
-#include "backend/common/somas/somas_parameter.h"
+#include "utils/somas/somas_tensor.h"
+#include "utils/somas/somas_parameter.h"
 
 namespace mindspore {
 namespace somas {

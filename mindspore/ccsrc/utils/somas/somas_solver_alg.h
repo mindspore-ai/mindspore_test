@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 #include <list>
 #include <memory>
 #include <numeric>
@@ -31,7 +32,7 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "backend/common/somas/somas_solver_pre.h"
+#include "utils/log_adapter.h"
 
 using std::pair;
 using std::set;
@@ -41,6 +42,107 @@ using std::vector;
 namespace mindspore {
 namespace somas {
 constexpr auto kDefaultAlignmentSize = 512;
+constexpr char const *sortingNames[7] = {"size(>), index(<)",
+                                         "can_reuse_mem(<), size(>), index(>)",
+                                         "size(>), index(>)",
+                                         "size(>), constraints(<), index(<)",
+                                         "size(>), constraints(<), index(>)",
+                                         "size(>), constraints(>), index(<)",
+                                         "size(>), constraints(>), index(>)"};
+constexpr char const *branchingNames[4] = {"bestfit", "smallest", "largest", "worstfit"};
+constexpr char const *algorithmTypeNames[2] = {"Shared Objects", "Single Object"};
+constexpr auto kParallelComputeSizeThreshold = 2000;
+constexpr auto kHalfByteSize = 4;
+enum Status { FAILED, SUCCESS };
+enum AlgorithmType { kManyObjects = 0, kSingleObject, kNumAlgorithmTypes };
+enum SortingType {
+  kGreaterSizeSmallerIndex = 0,
+  kSmallerReusePeakMemGreaterSizeSmallerIndex,
+#ifdef SOMAS_DEBUG
+  kGreaterSizeGreaterIndex,
+  kGreaterSizeSmallerConstraintsSmallerIndex,
+  kGreaterSizeSmallerConstraintsGreaterIndex,
+  kGreaterSizeGreaterConstraintsSmallerIndex,
+  kGreaterSizeGreaterConstraintsGreaterIndex,
+#endif
+  kNumSortingTypes
+};
+enum FittingType {
+  kBest = 0,
+  kSmallest,
+#ifdef SOMAS_DEBUG
+  kLargest,
+  kWorst,
+#endif
+  kNumFittingTypes
+};
+
+class VectorBitSet {
+ public:
+  explicit VectorBitSet(size_t count) : bit_(count, false), bit_size_(count) {}
+  ~VectorBitSet() = default;
+
+  VectorBitSet(const VectorBitSet &) = default;
+  VectorBitSet &operator=(const VectorBitSet &) = default;
+
+  void SetBitTrue(size_t index) { bit_[index] = true; }
+
+  void SetBitFalse(size_t index) { bit_[index] = false; }
+
+  void SetBit(size_t index, bool value) { bit_[index] = value; }
+
+  bool IsBitTrue(size_t index) const { return bit_[index]; }
+
+  std::vector<bool> bit_;
+  size_t bit_size_;
+};
+
+struct SomasSolverTensorDesc {
+  size_t index_;
+  size_t size_;
+  size_t offset_;
+  bool lifelong_;
+  size_t can_reuse_peak_mem_;
+  bool is_graph_output_;
+  using SomasSolverTensorDescPtr = std::shared_ptr<SomasSolverTensorDesc>;
+  SomasSolverTensorDescPtr right_;
+  SomasSolverTensorDescPtr left_;
+  bool blocked_;
+
+  SomasSolverTensorDesc() = default;
+
+  SomasSolverTensorDesc(size_t index, size_t size, size_t offset, bool blifelong)
+      : index_(index),
+        size_(size),
+        offset_(offset),
+        lifelong_(blifelong),
+        can_reuse_peak_mem_(0),
+        is_graph_output_(false),
+        right_(nullptr),
+        left_(nullptr),
+        blocked_(false) {}
+
+  void Update(size_t index, size_t size, size_t offset, size_t can_reuse_peak_mem, bool is_graph_output,
+              bool blifelong) {
+    index_ = index;
+    size_ = size;
+    offset_ = offset;
+    lifelong_ = blifelong;
+    can_reuse_peak_mem_ = can_reuse_peak_mem;
+    is_graph_output_ = is_graph_output;
+  }
+
+  friend std::ostream &operator<<(std::ostream &out, const SomasSolverTensorDescPtr n) {
+    out << n->index_ << " " << n->size_ << " " << n->offset_ << "\n";
+    return out;
+  }
+  friend std::istream &operator>>(std::istream &in, const SomasSolverTensorDescPtr &n) {
+    in >> n->index_ >> n->size_ >> n->offset_;
+    return in;
+  }
+};
+using SomasSolverTensorDescPtr = std::shared_ptr<SomasSolverTensorDesc>;
+typedef mindspore::HashMap<size_t, SomasSolverTensorDescPtr> TensorsDescMap;
 
 class Interval {
  public:

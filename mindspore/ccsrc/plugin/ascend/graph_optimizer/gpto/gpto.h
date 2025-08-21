@@ -31,7 +31,7 @@
 
 #include "ir/anf.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "mindspore/ccsrc/backend/common/somas/somas_solver_pre.h"
+#include "backend/ms_backend/somas_solver_pre.h"
 
 namespace mindspore {
 namespace gpto {  // Graph Parallel Topology Optimizer

@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "backend/common/somas/somas.h"
+#include "backend/ms_backend/somas.h"
 #include <algorithm>
 #include <fstream>
 #include <iterator>
@@ -27,10 +27,9 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "backend/common/somas/somas_node.h"
-#include "backend/common/somas/somas_solver_pre.h"
-#include "backend/common/somas/somas_stream.h"
-#include "backend/common/somas/somas_tensor.h"
+#include "utils/somas/somas_node.h"
+#include "utils/somas/somas_stream.h"
+#include "utils/somas/somas_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/debug/common.h"
