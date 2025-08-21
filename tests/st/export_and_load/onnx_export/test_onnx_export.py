@@ -1221,7 +1221,6 @@ def test_export_param_keep_initializers():
 class DynamicNetwork(nn.Cell):
     def __init__(self):
         super(DynamicNetwork, self).__init__()
-        # 卷积层: Conv2d + BatchNorm + ReLU
         self.conv1 = nn.Conv2d(3, 2, kernel_size=3, pad_mode='same')
         self.bn1 = nn.BatchNorm2d(2)
         self.relu1 = nn.ReLU()
@@ -1265,7 +1264,7 @@ class LargeModel(nn.Cell):
             relu = nn.ReLU()
             self.conv_layers1.append(conv, relu)
         self.conv_layers = nn.SequentialCell(
-            nn.Conv2d(3, 512, kernel_size=7, stride=2),  # 输入3通道，输出512通道
+            nn.Conv2d(3, 512, kernel_size=7, stride=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=3, stride=2),
 

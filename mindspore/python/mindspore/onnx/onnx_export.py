@@ -36,7 +36,7 @@ PROTO_LIMIT_SIZE = 1024 * 1024 * 2
 def export(net, *inputs, file_name, input_names=None, output_names=None, export_params=True,
            keep_initializers_as_inputs=False, dynamic_axes=None):
     """
-    Export the MindSpore network into an onnx model.
+    Export the MindSpore network into an ONNX model.
 
     Note:
         - Support exporting network larger than 2GB. When the network exceeds 2GB,
@@ -44,12 +44,9 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
         - When `file_name` does not have a suffix, the system will automatically add the suffix `.onnx` .
 
     Args:
-        net (Union[Cell, function]): MindSpore network.
-        inputs (Union[Tensor, Dataset, list, Tuple, Number, bool]): It represents the inputs
-            of the `net`, if the network has multiple inputs, set them together. While its type is Dataset, it
-            represents the preprocess behavior of the `net`, data preprocess operations will be serialized.
-            In second situation, you should adjust batch size of dataset script manually which will impact on the
-            batch size of 'net' input. Only supports parse "image" column from dataset currently.
+        net (Union[Celel, function]): MindSpore network.
+        inputs (Union[Tensor, list, tuple, Number, bool]): It represents the inputs of the `net` , if the network has
+            multiple inputs, set them together.
         file_name (str): File name of the model to be exported.
         input_names (list, optional): Names to assign to the input nodes of the graph, in order. Default: ``None`` .
         output_names (list, optional): Names to assign to the output nodes of the graph, in order. Default: ``None`` .
@@ -61,8 +58,10 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
         dynamic_axes (dict[str, dict[int, str]], optional): To specify axes of input tensors as dynamic (at runtime).
             Default: ``None`` .
 
-            - Set a dict with scheme: {input_node_name: {axis_index:axis_name}}.
-            - By default, the exported model will have same shapes of all input tensors as those given in `inputs` .
+            - Set a dict with scheme: {input_node_name: {axis_index:axis_name}},
+              for example, {"input1": {0:"batch_size", 1: "seq_len"}, "input2": {{0:"batch_size"}}.
+            - By default, the shapes of all input tensors in the exported model exactly match those specified in
+              `inputs`.
 
     Raises:
         ValueError: If the parameter `net` is not :class:`mindspore.nn.Cell`.
