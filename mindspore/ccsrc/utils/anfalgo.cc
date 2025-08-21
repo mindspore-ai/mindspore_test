@@ -1347,7 +1347,8 @@ bool AnfAlgo::IsNaiveCommunicationOp(const std::string &kernel_name) {
     kAllReduceOpName, kAllGatherOpName,   kBroadcastOpName,         kReduceScatterOpName,    kSendOpName,
     kReceiveOpName,   kAlltoAllOpName,    kAllToAllOpName,          kAllToAllvOpName,        kMuxReceiveOpName,
     kMuxSendOpName,   kBarrierOpName,     kCollectiveScatterOpName, kCollectiveGatherOpName, kBatchISendIRecvOpName,
-    kAlltoAllVOpName, kAlltoAllVGEOpName, kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName};
+    kAlltoAllVOpName, kAlltoAllVGEOpName, kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName,
+    kAlltoAllVCOpName};
   return kCommunicationOpNames.find(kernel_name) != kCommunicationOpNames.end();
 }
 

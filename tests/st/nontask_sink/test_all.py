@@ -204,6 +204,30 @@ def test_reduce_scatter_tensor_v():
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
+def test_all_to_all_v_c():
+    """
+    Feature: mpi run 2P case of 'all_to_all_v_c' communication operator.
+    Description: mpi run 2P case of 'all_to_all_v_c' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_all_to_all_v_c.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_func_all_to_all_v_c():
+    """
+    Feature: mpi run 2P case of 'func_all_to_all_v_c' communication operator.
+    Description: mpi run 2P case of 'func_all_to_all_v_c' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_func_all_to_all_v_c.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
 def test_uneven_net():
     """
     Feature: mpi run 2P case of 'reduce_scatter_tensor_v' communication operator.

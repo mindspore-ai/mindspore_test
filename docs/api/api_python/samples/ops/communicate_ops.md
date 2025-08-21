@@ -578,6 +578,62 @@ rank1的结果为：
 [1. 2. 5]
 ```
 
+## AlltoAllVC
+
+`AlltoAllVC`功能与`AlltoAllV`类似，性能表现更优。`AlltoAllVC`会将输入数据在特定的维度按照`send_count_matrix`进行切分和分发。`send_count_matrix`中存储了所有rank的收发参数，`send_count_matrix[i][j]`表示rank i发给rank j的数据量，基本单位是Tensor的数据类型。
+
+示例代码如下：我们使用`AlltoAllVC`算子进行2卡的数据交换，`send_count_matrix`存储0卡发送给1卡的数据量为3，1卡发送给0卡的数据量为3，即两卡进行了数据交换。
+
+```python
+from mindspore.ops.operations.comm_ops import AlltoAllVC
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+init()
+rank = get_rank()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.all_to_all_v_c = AlltoAllVC()
+    def construct(self, x, send_count_matrix):
+        return self.all_to_all_v_c(x, send_count_matrix)
+send_count_matrix = Tensor([[0, 3], [3, 0]])
+send_tensor = Tensor([0, 1, 2.]) * rank
+net = Net()
+output = net(send_tensor, send_count_matrix)
+print(output)
+```
+
+使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+
+```shell
+export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
+export DEVICE_NUM=2
+BASE_PATH=$(cd "$(dirname $0)"; pwd)
+for((i=0; i<$DEVICE_NUM; i++)); do
+    rm -rf ${BASE_PATH}/rank${i}
+    mkdir ${BASE_PATH}/rank${i}
+    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
+    cd ${BASE_PATH}/rank${i}
+    export RANK_ID=${i}
+    export DEVICE_ID=${i}
+    echo "start training for device $i"
+    python alltoallv.py > log.txt 2>&1 &
+done
+```
+
+rank0的结果为：
+
+```text
+[0. 1. 2]
+```
+
+rank1的结果为：
+
+```text
+[0. 0. 0]
+```
+
 ## CollectiveScatter
 
 ![image](./images/collectscatter.png)
