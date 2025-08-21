@@ -45,6 +45,9 @@ def mul_by(*args):
 NUMBER_5 = 5
 NUMBER_2 = 2
 
+def fn(a, b, c, d):
+    return NUMBER_5 * a * b * c * d
+
 def bprop(a, b, c, d, out, dout):
     return (dout * b * c *d * NUMBER_5 * NUMBER_2, dout, dout, dout)
 
@@ -53,11 +56,11 @@ class TestNet0(nn.Cell):
         super(TestNet0, self).__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
-        self.mul_by_5 = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
+        self.morph = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
 
     def construct(self, x):
         o = x * self.weight0
-        o = self.mul_by_5(o, default_b, default_c, default_d)
+        o = self.morph(o, default_b, default_c, default_d)
         out = o * self.weight1
         return out
 
@@ -66,11 +69,11 @@ class TestNet1(nn.Cell):
         super(TestNet1, self).__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
-        self.mul_by_5 = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
+        self.morph = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
 
     def construct(self, x):
         o = x * self.weight0
-        o = self.mul_by_5(o, d=default_d, b=default_b)
+        o = self.morph(o, d=default_d, b=default_b)
         out = o * self.weight1
         return out
 
@@ -79,29 +82,45 @@ class TestNet2(nn.Cell):
         super(TestNet2, self).__init__()
         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
-        self.mul_by_5 = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
+        self.morph = ops.Morph(mul_by(NUMBER_5), infer_shape, infer_dtype, bprop_fn=bprop_fn)
 
     def construct(self, x):
         o = x * self.weight0
-        o = self.mul_by_5(o, d=default_d, b=default_b)
-        o = self.mul_by_5(o, c=default_c)
-        o = self.mul_by_5(o)
+        o = self.morph(o, d=default_d, b=default_b)
+        o = self.morph(o, c=default_c)
+        o = self.morph(o)
         out = o * self.weight1
         return out
 
+class TestNet3(nn.Cell):
+    def __init__(self, bprop_fn=None):
+        super(TestNet3, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+        self.morph = ops.Morph(fn, infer_shape, infer_dtype, bprop_fn=bprop_fn)
+
+    def construct(self, x):
+        o = x * self.weight0
+        o = self.morph(o, default_b, default_c, default_d)
+        o = self.morph(o, default_b, default_c, default_d)
+        o = self.morph(o, default_b, default_c, default_d)
+        out = o * self.weight1
+        return out
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("net, with_bprop_fn, morph_call_time", [
-    (TestNet0(bprop), True, 1),
-    (TestNet1(), False, 1),
-    (TestNet2(), False, 3)])
-def test_morph_graph_mode(net, with_bprop_fn, morph_call_time):
+@pytest.mark.parametrize("net_cls, with_bprop_fn, morph_call_time", [
+    (TestNet0, False, 1),
+    (TestNet1, False, 1),
+    (TestNet2, False, 3),
+    (TestNet3, True, 3)])
+def test_morph_graph_mode(net_cls, with_bprop_fn, morph_call_time):
     """
     Feature: Morph Primitive
     Description: Test morph primitive for graph mode.
     Expectation: Run successfully.
     """
     context.set_context(mode=context.GRAPH_MODE)
+    net = net_cls(bprop_fn=bprop if with_bprop_fn else None)
     input_x = Tensor(np_input_x, ms.float32)
     grad_op = ops.GradOperation(get_all=True, get_by_list=True)
     grad_net = grad_op(net, net.trainable_params())
@@ -119,6 +138,62 @@ def test_morph_graph_mode(net, with_bprop_fn, morph_call_time):
     assert np.allclose(x_grad, expect_x_grad)
     assert np.allclose(weight0_grad, expect_weight0_grad)
     assert np.allclose(weight1_grad, expect_weight1_grad)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_morph_unsupported_cases():
+    """
+    Feature: Morph Primitive
+    Description: Test morph primitive with unsupported cases.
+    Expectation: Correct exception is thrown in unsupported cases.
+    """
+
+    def fn1(x, y):
+        pass
+
+    def bprop_fn1(x, y, out, dout):
+        pass
+
+    _ = ops.Morph(fn1, infer_shape, infer_dtype, bprop_fn1)
+
+    def fn2(x, y=1):
+        pass
+
+    def bprop_fn2(x, y):
+        pass
+
+    def fn3(x, *args):
+        pass
+
+    def bprop_fn3(x, *args, out, dout):
+        pass
+
+    def fn4(x, **kwargs):
+        pass
+
+    def bprop_fn4(x, out, dout):  # Can not pass **kwargs to bprop as out/dout can not be set after **kwargs.
+        pass
+
+    def fn5(x, *args, y, **kwargs):
+        pass
+
+    def bprop_fn5(x, *args, y, out, dout):  # Can not pass **kwargs to bprop as out/dout can not be set after **kwargs.
+        pass
+
+    with pytest.raises(ValueError) as e:
+        _ = ops.Morph(fn2, infer_shape, infer_dtype, bprop_fn2)
+    assert "Morph `fn` only support positional or keyword parameters with default value is empty" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        _ = ops.Morph(fn3, infer_shape, infer_dtype, bprop_fn3)
+    assert "Morph `fn` only support positional or keyword parameters with default value is empty" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        _ = ops.Morph(fn4, infer_shape, infer_dtype, bprop_fn4)
+    assert "Morph `fn` only support positional or keyword parameters with default value is empty" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        _ = ops.Morph(fn5, infer_shape, infer_dtype, bprop_fn5)
+    assert "Morph `fn` only support positional or keyword parameters with default value is empty" in str(e.value)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_morph_pynative_mode():
