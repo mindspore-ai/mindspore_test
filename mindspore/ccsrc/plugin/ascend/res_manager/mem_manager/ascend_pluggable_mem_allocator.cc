@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <functional>
 #include "plugin/ascend/res_manager/mem_manager/ascend_pluggable_mem_allocator.h"
+#include <functional>
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
