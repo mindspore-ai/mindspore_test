@@ -66,3 +66,7 @@ mindspore.parallel提供了大量的自动并行接口，包括并行基础配�
     mindspore.parallel.parameter_broadcast
     mindspore.parallel.restore_group_info_list
     mindspore.parallel.sync_pipeline_shared_parameters
+    mindspore.parallel.strategy.enable_save_strategy_online
+    mindspore.parallel.strategy.get_strategy_metadata
+    mindspore.parallel.strategy.get_current_strategy_metadata
+    mindspore.parallel.strategy.clear_strategy_metadata

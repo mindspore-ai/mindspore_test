@@ -49,6 +49,7 @@
 #include "utils/ms_context.h"
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -715,6 +716,7 @@ bool PipelineInterleave::GetStageByArgument(const CNodePtr &node, size_t index,
       }
     }
   }
+  param_stage_ = *parameter_stage->begin();
   return true;
 }
 
@@ -856,10 +858,24 @@ void PipelineInterleave::HandleSharedParam(int64_t *order) {
   }
 }
 
+mindspore::HashMap<int64_t, std::vector<int64_t>> PipelineInterleave::BuildStageRanksMap() const {
+  mindspore::HashMap<int64_t, std::vector<int64_t>> stage_ranks_map;
+  const auto &pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+  for (int64_t stage_id = 0; stage_id < pipeline_stages; ++stage_id) {
+    std::vector<int64_t> rank_list;
+    for (int64_t i = 0; i < per_stage_rank_num_; ++i) {
+      rank_list.push_back(stage_id * per_stage_rank_num_ + i);
+    }
+    stage_ranks_map[stage_id] = rank_list;
+  }
+  return stage_ranks_map;
+}
+
 void PipelineInterleave::ParameterColoring() {
   auto parameters = root_->parameters();
   auto &node_users_map = manager_->node_users();
   const auto &share_cell_parameters = shared_cell_->parameters();
+  const auto &stage_ranks_map = BuildStageRanksMap();
   for (auto &parameter : parameters) {
     auto loads = GetLoadNodeByParam(parameter);
     std::set<int64_t> parameter_stage;
@@ -886,6 +902,19 @@ void PipelineInterleave::ParameterColoring() {
       }
     }
     parameter_color_map_[parameter] = parameter_stage;
+    const auto &param = parameter->cast<ParameterPtr>();
+    if (param == nullptr) {
+      continue;
+    }
+    const auto &param_name = param->name();
+    auto starts_with = [](const std::string &s, const char *p) { return s.rfind(p, 0) == 0; };
+    bool isParamGradsOpts = starts_with(param_name, "accu_grads.") || starts_with(param_name, "moments.") ||
+                            starts_with(param_name, "adam_m.") || starts_with(param_name, "adam_v.");
+    if (!isParamGradsOpts && param_stage_ != -1) {
+      const int64_t stage_id = param_stage_;
+      const auto &cur_stage_ranks = stage_ranks_map.at(stage_id);
+      StrategyLayout::GetInstance()->SetParamStageIdRanks(param_name, stage_id, cur_stage_ranks);
+    }
   }
 }
 
