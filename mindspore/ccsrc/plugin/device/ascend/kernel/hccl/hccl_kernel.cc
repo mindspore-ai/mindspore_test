@@ -103,15 +103,37 @@ HcclKernel::HcclKernel()
       comm_(nullptr),
       use_lccl_{false} {}
 
-bool IsSupportLccl(const std::string &group_name, const std::string &kernel_name,
-                   const std::unordered_set<std::string> &lccl_enabled_groups) {
+static std::set<std::string> lccl_support_op_names = {
+  kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,       kAllGatherOpName,
+  kBarrierOpName,   kMatMulAllReduceOpName, kAllGatherMatmulOpName, kMatmulReduceScatterOpName};
+bool IsSupportLccl(const std::string &group_name, const std::string &kernel_name) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
-  std::set<std::string> support_lccl_op_names = {
-    kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,       kAllGatherOpName,
-    kBarrierOpName,   kMatMulAllReduceOpName, kAllGatherMatmulOpName, kMatmulReduceScatterOpName};
-  return enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
-         support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end();
+  // Check whether enable LCCL.
+  if (!device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
+    return false;
+  }
+  // Check whether kernel_name in blacklist MS_DISABLE_LCCL_KERNELS_LIST.
+  std::string disable_lccl_op_env = common::GetEnv("MS_DISABLE_LCCL_KERNELS_LIST");
+  if (!disable_lccl_op_env.empty()) {
+    std::set<std::string> disable_lccl_op_list;
+    common::SplitString(disable_lccl_op_env, ',', &disable_lccl_op_list);
+    bool disable_internal_op =
+      (std::find(disable_lccl_op_list.begin(), disable_lccl_op_list.end(), kernel_name) != disable_lccl_op_list.end());
+    if (disable_internal_op) {
+      return false;
+    }
+  }
+  // Check whether LCCL supported kernel.
+  if (lccl_support_op_names.find(kernel_name) == lccl_support_op_names.end()) {
+    return false;
+  }
+  // Check whether LCCL communication group exists.
+  std::unordered_set<std::string> lccl_enabled_groups =
+    MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
+  if (lccl_enabled_groups.find(group_name) == lccl_enabled_groups.end()) {
+    return false;
+  }
+  return true;
 #else
   return false;
 #endif
@@ -159,9 +181,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     // Before calling each hccl operator, we need to wait for communicator to be initialized.
     distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS
-    std::unordered_set<std::string> lccl_enabled_groups =
-      MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
-    use_lccl_ = IsSupportLccl(group_, kernel_name_, lccl_enabled_groups);
+    use_lccl_ = IsSupportLccl(group_, kernel_name_);
     if (use_lccl_) {
       LoadLcclLibrary();
     } else {

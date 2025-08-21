@@ -55,6 +55,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/other_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 
 namespace mindspore {
 namespace device {
@@ -345,18 +347,34 @@ bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::K
   return find_valid;
 }
 
-static std::set<std::string> lcoc_support_kernels = {"AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter"};
+static std::set<std::string> lcoc_support_kernels = {kAllGatherMatmulOpName, kMatMulAllReduceOpName,
+                                                     kMatmulReduceScatterOpName};
 bool IsSupportLcoc(const std::string &group_name, const std::string &op_name) {
 #ifdef ENABLE_INTERNAL_KERNELS
+  // Check whether has attribute group_name.
   if (group_name.empty()) {
     return false;
   }
+  // Check whether enable LCCL.
   if (!device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
     return false;
   }
+  // Check whether kernel_name in blacklist MS_DISABLE_LCCL_KERNELS_LIST.
+  std::string disable_lccl_op_env = common::GetEnv("MS_DISABLE_LCCL_KERNELS_LIST");
+  if (!disable_lccl_op_env.empty()) {
+    std::set<std::string> disable_lccl_op_list;
+    common::SplitString(disable_lccl_op_env, ',', &disable_lccl_op_list);
+    bool disable_internal_op =
+      (std::find(disable_lccl_op_list.begin(), disable_lccl_op_list.end(), op_name) != disable_lccl_op_list.end());
+    if (disable_internal_op) {
+      return false;
+    }
+  }
+  // Check whether LCOC supported kernel.
   if (lcoc_support_kernels.find(op_name) == lcoc_support_kernels.end()) {
     return false;
   }
+  // Check whether LCCL communication group exists.
   std::unordered_set<std::string> lccl_enabled_groups =
     MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
   if (lccl_enabled_groups.find(group_name) == lccl_enabled_groups.end()) {
@@ -369,7 +387,7 @@ bool IsSupportLcoc(const std::string &group_name, const std::string &op_name) {
 
 static std::once_flag kAclnnEnableListInit;
 static std::unordered_set<std::string> kAclnnEnableList;
-bool ReadAclnnEnableEnv(const std::string &op_name, const std::string &group_name) {
+bool ReadAclnnEnableEnv(const std::string &op_name) {
   static auto enable_aclnn_env = common::GetEnv("MS_ENABLE_ACLNN");
   if (enable_aclnn_env == "1") {
     return kernel::IsRegisteredAclnnOp(op_name);
@@ -402,11 +420,6 @@ bool ReadAclnnEnableEnv(const std::string &op_name, const std::string &group_nam
                                                      "QuantBatchMatmulAllReduce",
                                                      "AlltoAllAllGatherBatchMatMul",
                                                      "BatchMatMulReduceScatterAlltoAll"};
-  //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
-  if (IsSupportLcoc(group_name, op_name)) {
-    return false;
-  }
-
   if (kAscendcKernelList.count(op_name) != 0) {
     return true;
   }
@@ -773,8 +786,14 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
   }
 
   if (kernel::IsEnabledAclnnDispatch(op_name)) {
-    bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
-    if (enable_lccl && lcoc_support_kernels.count(op_name) != 0) {
+    std::string group = "";
+    if (primitive->HasAttr(kAttrGroup)) {
+      auto group_attr = primitive->GetAttr(kAttrGroup);
+      if (group_attr != nullptr && group_attr->isa<StringImm>()) {
+        group = GetValue<std::string>(group_attr);
+      }
+    }
+    if (IsSupportLcoc(group, op_name)) {
       return false;
     }
     if (!kernel::IsRegisteredAclnnOp(op_name)) {
@@ -793,14 +812,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
     return true;
   }
 
-  std::string group = "";
-  if (primitive->HasAttr(kAttrGroup)) {
-    auto group_attr = primitive->GetAttr(kAttrGroup);
-    if (group_attr != nullptr && group_attr->isa<StringImm>()) {
-      group = GetValue<std::string>(group_attr);
-    }
-  }
-  bool ret = ReadAclnnEnableEnv(op_name, group);
+  bool ret = ReadAclnnEnableEnv(op_name);
   kIsEnableAclnnMap.insert({op_name, ret});
   return ret;
 }
