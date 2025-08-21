@@ -44,8 +44,8 @@ bool CollectiveNode::Start(const uint32_t &timeout) {
   is_already_stopped_ = false;
 
   SynchronizeAddresses();
-  MS_EXCEPTION_IF_NULL(cgn_);
-  node_info_.rank_id_ = cgn_->rank_id();
+  MS_EXCEPTION_IF_NULL(client_node_);
+  node_info_.rank_id_ = client_node_->rank_id();
   MS_LOG(INFO) << "The cpu collective rank " << node_info_.rank_id_ << " has been started successfully.";
   return true;
 }
@@ -71,57 +71,57 @@ bool CollectiveNode::Finish(const uint32_t &timeout) {
 }
 
 void CollectiveNode::SynchronizeAddresses() {
-  if (cgn_ != nullptr) {
-    // Register the address of this node.
-    auto rank_id = kRankIdPrefix + cgn_->role() + "_" + std::to_string(cgn_->rank_id());
-    auto address = node_info_.ip_ + ":" + std::to_string(node_info_.port_);
+  if (client_node_ == nullptr) {
+    return;
+  }
 
-    const size_t interval = 3;
-    const size_t max_retry = 20;
-    size_t retry = max_retry;
-    bool success = false;
+  // Register the address of this node.
+  auto rank_id = kRankIdPrefix + client_node_->role() + "_" + std::to_string(client_node_->rank_id());
+  auto address = node_info_.ip_ + ":" + std::to_string(node_info_.port_);
+
+  const size_t interval = 3;
+  const size_t max_retry = 20;
+  size_t retry = max_retry;
+  bool success = false;
+  while (!success && --retry > 0) {
+    success = client_node_->PutMetadata(rank_id, address);
+    if (!success) {
+      MS_LOG(WARNING) << "Retry to register the address of rank " << rank_id << "...";
+      (void)sleep(interval);
+    } else {
+      MS_LOG(INFO) << "The address of rank " << rank_id << " has been registered successfully.";
+      break;
+    }
+    MsException::Instance().CheckException();
+  }
+
+  if (!success) {
+    MS_LOG(EXCEPTION) << "Failed to register the address of this mccl collective node(rank id: " << rank_id << ").";
+  }
+
+  // Get the addresses of other nodes.
+  nodes_address_.clear();
+  auto node_num = ClusterContext::instance()->node_num(client_node_->role());
+  for (size_t i = 0; i < node_num; ++i) {
+    success = false;
+    retry = max_retry;
+    auto other_rank_id = kRankIdPrefix + client_node_->role() + "_" + std::to_string(i);
     while (!success && --retry > 0) {
-      success = cgn_->PutMetadata(rank_id, address);
-      if (!success) {
-        MS_LOG(WARNING) << "Retry to register the address of rank " << rank_id << "...";
-        (void)sleep(interval);
+      auto other_address = client_node_->GetMetadata(other_rank_id);
+      if (other_address != "") {
+        auto ip = other_address.substr(0, other_address.find(":"));
+        auto port = std::stoi(other_address.substr(other_address.find(":") + 1, other_address.length() - ip.length()));
+        nodes_address_[std::make_pair(NodeRole::WORKER, i)] = std::make_pair(ip, port);
+        success = true;
       } else {
-        MS_LOG(INFO) << "The address of rank " << rank_id << " has been registered successfully.";
-        break;
+        MS_LOG(INFO) << "Waiting for the address of rank " << other_rank_id << " to be registered, retry " << retry
+                     << " times.";
+        (void)sleep(interval);
       }
       MsException::Instance().CheckException();
     }
-
     if (!success) {
-      MS_LOG(EXCEPTION) << "Failed to register the address of this mccl collective node(rank id: " << rank_id << ").";
-    }
-
-    // Get the addresses of other nodes.
-    nodes_address_.clear();
-    auto node_num = ClusterContext::instance()->node_num(cgn_->role());
-    for (size_t i = 0; i < node_num; ++i) {
-      success = false;
-      retry = max_retry;
-      auto other_rank_id = kRankIdPrefix + cgn_->role() + "_" + std::to_string(i);
-      while (!success && --retry > 0) {
-        auto other_address = cgn_->GetMetadata(other_rank_id);
-        if (other_address != "") {
-          auto ip = other_address.substr(0, other_address.find(":"));
-          auto port =
-            std::stoi(other_address.substr(other_address.find(":") + 1, other_address.length() - ip.length()));
-          nodes_address_[std::make_pair(NodeRole::WORKER, i)] = std::make_pair(ip, port);
-          success = true;
-        } else {
-          MS_LOG(INFO) << "Waiting for the address of rank " << other_rank_id << " to be registered, retry " << retry
-                       << " times.";
-          (void)sleep(interval);
-        }
-        MsException::Instance().CheckException();
-      }
-      if (!success) {
-        MS_LOG(EXCEPTION) << "Failed to fetch the address of the rank " << other_rank_id
-                          << " for mccl collective nodes.";
-      }
+      MS_LOG(EXCEPTION) << "Failed to fetch the address of the rank " << other_rank_id << " for mccl collective nodes.";
     }
   }
 }

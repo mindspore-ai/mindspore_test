@@ -28,6 +28,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_node.h"
 #include "plugin/device/cpu/hal/hardware/allreduce_impl.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/backend/distributed/cluster/topology/tcp_node.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -104,8 +105,8 @@ class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
 
   std::shared_ptr<ps::core::CollectiveNode> node_;
 
-  // This compute graph node is maintained by the clusster context and used for metadata synchronization.
-  std::shared_ptr<distributed::cluster::topology::ComputeGraphNode> cgn_;
+  // This compute graph node is maintained by the cluster context and used for metadata synchronization.
+  std::shared_ptr<distributed::cluster::topology::TcpNodeBase> client_node_;
 
   std::unique_ptr<AllReduceLauncher> launcher_;
 

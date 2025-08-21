@@ -41,6 +41,8 @@ constexpr char kNodeId[] = "MS_NODE_ID";
 // The Indentation to format json information.
 constexpr int kJsonIndentation = 4;
 class ActorRouteTableProxy;
+class TCPStoreClient;
+using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
 // Node role based cluster built by MindSpore communication framework.
 class BACKEND_COMMON_EXPORT ClusterContext {
  public:
@@ -50,6 +52,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
 
   // Initialize the cluster configuration and build network.
   bool Initialize();
+  bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                  TCPStoreClientPtr store);
 
   // Finalize the cluster and process exits. If timeout is set to UINT32_MAX, this method will block without timeout.
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout);
@@ -91,6 +95,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
 
   // Return whether enable cross cluster communication.
   bool enable_cross_cluster() const { return enable_cross_cluster_; }
+
+  bool is_init_by_store() const { return init_by_store_; }
 
   // Return server range of this node.
   const std::pair<uint32_t, uint32_t> &port_range() const { return port_range_; }
@@ -139,6 +145,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
   // The compute graph node or meta server node according to the configuration of this process.
   std::shared_ptr<topology::NodeBase> node_base_;
 
+  TCPStoreClientPtr tcp_store_client_;
+
   // Node id of this process in the cluster.
   std::string node_id_;
 
@@ -155,6 +163,9 @@ class BACKEND_COMMON_EXPORT ClusterContext {
 
   // Indicate whether enable cross cluster communication.
   bool enable_cross_cluster_;
+
+  // Indicate whether initialize with TcpStore.
+  bool init_by_store_{false};
 };
 }  // namespace cluster
 }  // namespace distributed

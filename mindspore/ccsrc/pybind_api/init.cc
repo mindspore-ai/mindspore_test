@@ -356,7 +356,19 @@ PYBIND11_MODULE(_c_expression, m) {
               "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");
-  (void)m.def("init_hccl", &mindspore::pipeline::InitHccl, "Init Hccl");
+  (void)m.def("init_hccl", (void (*)()) & mindspore::pipeline::InitHccl, "Init Hccl");
+  (void)m.def(
+    "_init_hccl_with_store",
+    [](std::optional<std::string> init_method, int64_t timeout, uint32_t world_size, uint32_t node_id,
+       const py::object &store) {
+      std::shared_ptr<TCPStoreClient> store_client = nullptr;
+      if (!store.is_none()) {
+        store_client = store.attr("instance").cast<std::shared_ptr<TCPStoreClient>>();
+      }
+      mindspore::pipeline::InitHccl(init_method, timeout, world_size, node_id, store_client);
+    },
+    py::arg("init_method"), py::arg("timeout"), py::arg("world_size"), py::arg("node_id"), py::arg("store"),
+    "Init Hccl without scheduler process");
   (void)m.def("finalize_hccl", &mindspore::pipeline::FinalizeHccl, "Finalize Hccl");
   (void)m.def("_finalize_collective", &mindspore::distributed::FinalizeCollective, "Finalize Collective");
   (void)m.def("get_hccl_rank_id", &mindspore::pipeline::GetHcclRankId, "Get Hccl Rank Id");
@@ -375,7 +387,16 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("split_dynamic_mindir", &mindspore::pipeline::SplitDynamicMindIR, py::arg("file_name"),
               py::arg("device_num") = py::int_(8), py::arg("rank_id") = py::int_(0), py::arg("sapp") = py::bool_(true),
               "Split single mindir to distributed mindir");
-  (void)m.def("init_cluster", &mindspore::distributed::Initialize, "Init Cluster");
+  (void)m.def("init_cluster", (bool (*)()) & mindspore::distributed::Initialize, "Init Cluster");
+  (void)m.def(
+    "_init_cluster_with_store",
+    [](std::optional<std::string> init_method, int64_t timeout, uint32_t world_size, uint32_t node_id,
+       const py::object &store) {
+      auto store_client = store.attr("instance").cast<std::shared_ptr<TCPStoreClient>>();
+      mindspore::distributed::Initialize(init_method, timeout, world_size, node_id, store_client);
+    },
+    py::arg("init_method"), py::arg("timeout"), py::arg("world_size"), py::arg("node_id"), py::arg("store"),
+    "Init Cluster without scheduler process");
   (void)m.def("set_cluster_exit_with_exception", &mindspore::distributed::set_cluster_exit_with_exception,
               "Set this process exits with exception.");
 
