@@ -1608,10 +1608,14 @@ void AutoDiff::PruningInput(const ValuePtrList &inputs, const GradAttr &grad_att
     auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
     MS_EXCEPTION_IF_NULL(tensor);
     const auto &auto_grad_meta = tensor->auto_grad_meta_data();
-    MS_EXCEPTION_IF_NULL(auto_grad_meta);
-    const auto &grad_node = auto_grad_meta->UnsafeGetGradNodeImpl();
-    gradient_contexts_[grad_node.get()] =
-      GradientContext(false, std::make_unique<GradientContext::CapturedGradient>(auto_grad_meta->output_index()));
+    // Inputs may be inplace detached, so skip setting gradient_context in this case.
+    if (auto_grad_meta != nullptr) {
+      const auto &grad_node = auto_grad_meta->UnsafeGetGradNodeImpl();
+      if (grad_node != nullptr) {
+        gradient_contexts_[grad_node.get()] =
+          GradientContext(false, std::make_unique<GradientContext::CapturedGradient>(auto_grad_meta->output_index()));
+      }
+    }
   };
 
   // Grad all inputs
