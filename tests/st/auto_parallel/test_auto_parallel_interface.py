@@ -152,4 +152,7 @@ def test_union_hccl_create():
             output_lines.append(line)
 
     full_output = ''.join(output_lines)
-    assert "The group 'customed groups 0-1' has been created, the ranks are: 0-1" in full_output
+    assert "The group 'customed groups 0-1, 0' has been created, the ranks are: 0-1" not in full_output
+    assert "The group 'customed groups 0-1, 1' has been created, the ranks are: 0-1" in full_output
+    assert "The group 'customed groups 0-1, 2' has been created, the ranks are: 0-1" not in full_output
+    assert "The group 'customed groups 0-1, 3' has been created, the ranks are: 0-1" in full_output
