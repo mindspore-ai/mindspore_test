@@ -113,6 +113,7 @@ Serialization
     mindspore.load_checkpoint_async
     mindspore.load_mindir
     mindspore.load_param_into_net
+    mindspore.onnx.export
     mindspore.parse_print
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint

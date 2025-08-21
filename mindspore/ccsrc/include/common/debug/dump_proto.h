@@ -209,7 +209,11 @@ class IrExportBuilder {
 
 COMMON_EXPORT std::string GetFuncGraphProtoString(const FuncGraphPtr &func_graph);
 
-std::string GetOnnxProtoString(const FuncGraphPtr &func_graph);
+std::string GetOnnxProtoString(const FuncGraphPtr &func_graph, const std::vector<std::string> &input_names = {},
+                               const std::vector<std::string> &outputs_names = {}, const int &opset_version = 11,
+                               const bool &export_params = true, const bool &keep_initializers_as_inputs = false,
+                               const std::map<std::string, std::map<int, std::string>> &dynamic_axes = {},
+                               const bool &extra_save_params = false, const std::string &save_file_dir = "");
 
 COMMON_EXPORT std::string GetBinaryProtoString(const FuncGraphPtr &func_graph, const bool &incremental = false);
 
