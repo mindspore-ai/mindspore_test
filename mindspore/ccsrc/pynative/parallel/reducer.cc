@@ -20,7 +20,7 @@
 #include <limits>
 #include <algorithm>
 #include "include/backend/distributed/init.h"
-#include "tools/profiler/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/hook_py.h"
 #include "pynative/pynative_utils.h"
@@ -242,7 +242,7 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
     if (current_bucket_size * itemsize >= current_bucket_size_limit) {  // create new according to bucket_cap_mb_
       current_bucket.bucket_size = current_bucket_size;
       current_bucket.gradients =
-        tensor::from_spec(bucket_dtype, ShapeVector({ssize_t(current_bucket_size)}), device_target_);
+        tensor::from_spec(bucket_dtype, ShapeVector({ssize_t(current_bucket_size)}), device::DeviceType::kAscend);
       MS_EXCEPTION_IF_NULL(current_bucket.gradients);
       buckets_.push_back(std::move(current_bucket));
       bucket_indices.push_back(std::move(bucket_indice));  // note
@@ -262,7 +262,7 @@ void Reducer::initialize_buckets(tensor::TensorPtrList &parameters) {
                   << current_bucket_size;
     current_bucket.bucket_size = current_bucket_size;
     current_bucket.gradients =
-      tensor::from_spec(bucket_dtype, ShapeVector({ssize_t(current_bucket_size)}), device_target_);
+      tensor::from_spec(bucket_dtype, ShapeVector({ssize_t(current_bucket_size)}), device::DeviceType::kAscend);
     MS_EXCEPTION_IF_NULL(current_bucket.gradients);
     buckets_.push_back(std::move(current_bucket));
     bucket_indices.push_back(std::move(bucket_indice));

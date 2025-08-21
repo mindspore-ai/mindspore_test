@@ -79,7 +79,7 @@ class PYNATIVE_EXPORT Reducer {
   tensor::TensorPtrList rebuilt_params_;
   tensor::TensorPtr gradient_scaling_factor;
   std::string process_group_;
-  device::DeviceType device_target_;
+  std::string device_target_;
   std::int64_t world_size_;
   size_t buckets_pending;
   size_t bucket_cap_mb_;

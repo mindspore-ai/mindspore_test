@@ -17,15 +17,27 @@ import time
 import numpy as np
 import mindspore.dataset as ds
 import mindspore as ms
-from mindspore import Parameter, Tensor, ops, nn
+from mindspore import Parameter, Tensor, ops, nn, mint
 from mindspore.parallel.distributed import DistributedDataParallel
 from mindspore.mint.optim import AdamW
-from mindspore.mint.distributed.distributed import init_process_group, get_rank
+from mindspore.mint.distributed.distributed import init_process_group, get_rank, get_world_size
 from mindspore.communication import GlobalComm
+import mindspore.communication.comm_func as comm_func
 
 
 def get_data_parallel_group():
     return GlobalComm.WORLD_COMM_GROUP
+
+
+class DistributedGradReducer(nn.Cell):
+    """Custom Reducer"""
+
+    def construct(self, raw_grads):
+        reduced_grads = []
+        for grad in raw_grads:
+            grad = mint.div(grad, get_world_size())
+            reduced_grads.append(comm_func.all_reduce(grad, "sum", get_data_parallel_group())[0])
+        return reduced_grads
 
 
 class Network(nn.Cell):
@@ -81,9 +93,7 @@ class Accumulator:
         assert accumulate_step > 0
         self.accumulate_step = accumulate_step
         self.map = ops.HyperMap()
-        self.grad_reducer = nn.DistributedGradReducer(
-            optimizer.parameters, mean=True, group=get_data_parallel_group()
-        )
+        self.grad_reducer = DistributedGradReducer()
 
     def __call__(self, grads):
         self.map(ops.partial(ops.assign_add), self.inner_grads, grads)
@@ -101,9 +111,7 @@ def train_step_full_batch(net, data_set, grad_fn, optimizer, enable_ddp_flag):
     """
     loss = []
     if not enable_ddp_flag:
-        grad_reducer = nn.DistributedGradReducer(
-            optimizer.parameters, mean=True, group=get_data_parallel_group()
-        )
+        grad_reducer = DistributedGradReducer()
 
     for epoch in range(2):
         i = 0
