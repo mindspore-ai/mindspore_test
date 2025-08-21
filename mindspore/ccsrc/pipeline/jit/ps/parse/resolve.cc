@@ -415,11 +415,7 @@ AnfNodePtr Resolver::ConvertObjectToNode(const AnfNodePtr &origin_node, const py
   }
 
   if (convert_result->isa<FuncGraph>() && has_recompute_scope) {
-    auto converted_fg = convert_result->cast<FuncGraphPtr>();
-    if (converted_fg->has_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE)) {
-      MS_LOG(EXCEPTION) << "The cell passed into the recompute api should be set recomputed only once.";
-    }
-    UpdateRecomputeScope(converted_fg);
+    UpdateRecomputeScope(convert_result->cast<FuncGraphPtr>());
   }
   ConvertLoadedGraph(func_graph, convert_result);
   AnfNodePtr output = NewValueNode(convert_result);
