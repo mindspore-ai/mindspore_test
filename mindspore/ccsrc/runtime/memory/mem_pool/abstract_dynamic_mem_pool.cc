@@ -359,7 +359,7 @@ std::string MemBufAllocator::DumpDebugInfo() const {
   return ss.str();
 }
 
-MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
+inline MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
   size_t remaining_size = candidate->size_ - size;
   // Mmap memory first.
   if (candidate->status_ == MemBufStatus::kMemBufEagerFree) {
@@ -404,7 +404,7 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
   return candidate;
 }
 
-MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
+inline MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
   MemBlock *mem_block = mem_block_expander_(size);
   if (mem_block == nullptr) {
     MS_LOG(WARNING) << "Expand block failed, expand size : " << size << ", memory is not enough.";
@@ -506,8 +506,9 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
  *    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
  *                    If the expansion fails, try to malloc from persistent pool.
  */
-std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
-                                                                           uint32_t stream_id) {
+inline std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size,
+                                                                                  bool from_persistent_mem,
+                                                                                  uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
 
   auto mem_buf = allocator->Malloc(align_size);
@@ -639,7 +640,8 @@ bool AbstractDynamicMemPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
   return false;
 }
 
-MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id) {
+inline MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool from_persistent_mem,
+                                                                   uint32_t stream_id) {
   const AllocatorInfo key{stream_id, from_persistent_mem, UseSmallPool(size, from_persistent_mem)};
   MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Get allocator, " << key.ToString() << ".";
 
