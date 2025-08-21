@@ -20,16 +20,17 @@
 #include "utils/dlopen_macro.h"
 
 namespace mindspore::device::ascend {
-ORIGIN_METHOD(aclrtAllocatorCreateDesc, aclrtAllocatorDesc)
-ORIGIN_METHOD(aclrtAllocatorDestroyDesc, aclError, aclrtAllocatorDesc)
-ORIGIN_METHOD(aclrtAllocatorRegister, aclError, aclrtStream, aclrtAllocatorDesc)
-ORIGIN_METHOD(aclrtAllocatorSetAllocAdviseFuncToDesc, aclError, aclrtAllocatorDesc, aclrtAllocatorAllocAdviseFunc)
-ORIGIN_METHOD(aclrtAllocatorSetAllocFuncToDesc, aclError, aclrtAllocatorDesc, aclrtAllocatorAllocFunc)
-ORIGIN_METHOD(aclrtAllocatorSetFreeFuncToDesc, aclError, aclrtAllocatorDesc, aclrtAllocatorFreeFunc)
-ORIGIN_METHOD(aclrtAllocatorSetGetAddrFromBlockFuncToDesc, aclError, aclrtAllocatorDesc,
-              aclrtAllocatorGetAddrFromBlockFunc)
-ORIGIN_METHOD(aclrtAllocatorSetObjToDesc, aclError, aclrtAllocatorDesc, aclrtAllocator)
-ORIGIN_METHOD(aclrtAllocatorUnregister, aclError, aclrtStream)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorCreateDesc, aclrtAllocatorDesc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorDestroyDesc, aclError, aclrtAllocatorDesc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorRegister, aclError, aclrtStream, aclrtAllocatorDesc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorSetAllocAdviseFuncToDesc, aclError, aclrtAllocatorDesc,
+                        aclrtAllocatorAllocAdviseFunc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorSetAllocFuncToDesc, aclError, aclrtAllocatorDesc, aclrtAllocatorAllocFunc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorSetFreeFuncToDesc, aclError, aclrtAllocatorDesc, aclrtAllocatorFreeFunc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorSetGetAddrFromBlockFuncToDesc, aclError, aclrtAllocatorDesc,
+                        aclrtAllocatorGetAddrFromBlockFunc)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorSetObjToDesc, aclError, aclrtAllocatorDesc, aclrtAllocator)
+ORIGIN_METHOD_WITH_SIMU(aclrtAllocatorUnregister, aclError, aclrtStream)
 
 extern aclrtAllocatorCreateDescFunObj aclrtAllocatorCreateDesc_;
 extern aclrtAllocatorDestroyDescFunObj aclrtAllocatorDestroyDesc_;
@@ -42,6 +43,7 @@ extern aclrtAllocatorSetObjToDescFunObj aclrtAllocatorSetObjToDesc_;
 extern aclrtAllocatorUnregisterFunObj aclrtAllocatorUnregister_;
 
 void LoadAclAllocatorApiSymbol(const std::string &ascend_path);
+void LoadSimulationAclAllocatorApi();
 }  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_RT_ALLOCATOR_SYMBOL_H_
