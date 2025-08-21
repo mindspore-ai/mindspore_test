@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include <unordered_map>
 #include <functional>
 #include <map>
 #include "ir/tensor_new.h"
-#include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
