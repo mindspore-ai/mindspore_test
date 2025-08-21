@@ -440,6 +440,46 @@ def test_inplace_backward():
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
+def test_inplace_backward_param_assign():
+    """
+    Feature: Support inplace param assign in graph mode.
+    Description: Support inplace param assign in graph mode.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.param_a = Parameter(Tensor(2, dtype=mstype.int32), name="a")
+            self.param_b = Parameter(Tensor(1, dtype=mstype.int32), name="b")
+
+        def construct(self, x):
+            out = self.param_a
+            if x > self.param_a:
+                self.param_b = self.param_b.add_(2)
+                x = x.add_(self.param_a)
+            out = out.add_(self.param_b)
+            out = out.mul_(x)
+            return out
+
+    x0 = Tensor(3, dtype=mstype.int32)
+    x1 = Tensor(3, dtype=mstype.int32)
+    graph_forward_res = Net()(x0)
+    grad = ops.GradOperation()
+    graph_backward_res = grad(Net())(x1)
+
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    x2 = Tensor(3, dtype=mstype.int32)
+    x3 = Tensor(3, dtype=mstype.int32)
+    pynative_forward_res = Net()(x2)
+    pynative_backward_res = grad(Net())(x3)
+
+    assert graph_forward_res == pynative_forward_res
+    assert graph_backward_res == pynative_backward_res
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 def test_inplace_gradjit_inplace_node_reuse():
     """
     Feature: Support inplace param assign in graph mode.
