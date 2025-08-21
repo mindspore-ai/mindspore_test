@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_DEBUG_CHECKSUM_KERNEL_H_
-#define MINDSPORE_MINDSPORE_CCSRC_DEBUG_CHECKSUM_KERNEL_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_CHECKSUM_KERNEL_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_CHECKSUM_KERNEL_H_
 
 #include <set>
 #include <vector>

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_PROTO_EXPORTER_H
-#define MINDSPORE_PROTO_EXPORTER_H
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_PROTO_EXPORTER_H
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER_PROTO_EXPORTER_H
 
 #include <map>
 #include <string>

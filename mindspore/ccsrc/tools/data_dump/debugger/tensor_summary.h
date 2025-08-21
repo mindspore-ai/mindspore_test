@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_TENSOR_SUMMARY_H
-#define MINDSPORE_TENSOR_SUMMARY_H
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER__TENSOR_SUMMARY_H
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEBUGGER__TENSOR_SUMMARY_H
 
 #include <vector>
 #include <tuple>

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_DEBUG_DEVICE_STATISTIC_MAX_H_
-#define MINDSPORE_CCSRC_DEBUG_DEVICE_STATISTIC_MAX_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEVICE_STATISTIC_MAX_H_
+#define MINDSPORE_CCSRC_TOOLS_DATA_DUMP_DEVICE_STATISTIC_MAX_H_
 #include <set>
 #include <string>
 #include <vector>
