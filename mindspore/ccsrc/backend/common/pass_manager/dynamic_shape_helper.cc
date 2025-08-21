@@ -38,7 +38,6 @@
 #include "tools/profiler/profiler.h"
 #include "ir/anf.h"
 #include "ir/functor.h"
-#include "backend/operator/ops_backend_infer_function.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "utils/ms_utils.h"
 
@@ -216,9 +215,9 @@ BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<Abstrac
   }
 
   // The old register map for InferShape will be deleted in the future.
-  auto infer_impl = abstract::GetBackendPrimitiveInferImpl(primitive);
-  if (infer_impl.has_value()) {
-    auto infer = infer_impl.value();
+  auto found = abstract::GetPrimitiveInferImpl(primitive);
+  if (found.has_value()) {
+    auto infer = found.value();
     if (infer.IsImplInferShapeAndType()) {
       return infer.InferShape(primitive, input_args);
     }
@@ -268,9 +267,9 @@ abstract::AbstractBasePtr InferShapeAndType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &op_name = primitive->name();
-  auto infer_impl = abstract::GetBackendPrimitiveInferImpl(primitive);
-  if (infer_impl.has_value()) {
-    auto infer = infer_impl.value();
+  auto found = abstract::GetPrimitiveInferImpl(primitive);
+  if (found.has_value()) {
+    auto infer = found.value();
     if (infer.IsImplInferShapeAndType()) {
       return infer.InferShapeAndType(nullptr, primitive, input_args);
     }

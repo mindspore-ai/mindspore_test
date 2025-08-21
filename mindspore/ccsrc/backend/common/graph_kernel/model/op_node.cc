@@ -32,7 +32,6 @@
 #include "utils/check_convert_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/model/node.h"
-#include "backend/operator/ops_backend_infer_function.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
@@ -53,7 +52,7 @@ BaseShapePtr InferShapeWithAbstract(const PrimitivePtr &prim, const AbstractBase
     return shape_optional.value();
   }
 
-  auto found = abstract::GetBackendPrimitiveInferImpl(prim);
+  auto found = abstract::GetPrimitiveInferImpl(prim);
   if (found.has_value()) {
     auto infer = found.value();
     if (infer.IsImplInferShapeAndType()) {
@@ -70,7 +69,7 @@ TypePtr InferTypeWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrLis
     return type_optional.value();
   }
 
-  auto found = abstract::GetBackendPrimitiveInferImpl(prim);
+  auto found = abstract::GetPrimitiveInferImpl(prim);
   if (found.has_value()) {
     auto infer = found.value();
     if (infer.IsImplInferShapeAndType()) {
@@ -87,7 +86,7 @@ tensor::TensorPtr InferValueWithAbstract(const PrimitivePtr &prim, const Abstrac
     return std::static_pointer_cast<tensor::Tensor>(value_optional.value());
   }
 
-  auto found = abstract::GetBackendPrimitiveInferImpl(prim);
+  auto found = abstract::GetPrimitiveInferImpl(prim);
   if (found.has_value()) {
     auto infer = found.value();
     if (infer.IsImplInferValue()) {
