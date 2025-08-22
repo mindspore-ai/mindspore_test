@@ -1610,8 +1610,6 @@ AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph, const C
   return nullptr;
 }
 
-void InferOp(const CNodePtr &node, void *args) { dynamic_shape::InferOp(node, args); }
-
 LaunchHandler launch_py_handler{nullptr};
 void set_launch_handler(const LaunchHandler &handler) { launch_py_handler = handler; }
 

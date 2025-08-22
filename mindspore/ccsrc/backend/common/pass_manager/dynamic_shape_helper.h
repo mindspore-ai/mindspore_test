@@ -40,8 +40,6 @@ BACKEND_COMMON_EXPORT abstract::AbstractBasePtr InferShapeAndType(const Primitiv
 
 BACKEND_COMMON_EXPORT void UpdateKernelTensorType(const TypePtr &type,
                                                   const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
-void InferOp(const CNodePtr &node, void *args = nullptr);
-
 /// \brief The class to implement an InferShape function, which is decoupled from the mindspore/core.
 class BACKEND_COMMON_EXPORT InferShapeFunctor : public Functor {
  public:

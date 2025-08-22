@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pybind_api/hal/memory_py.h"
+#include "pybind_api/runtime/memory_py.h"
 #include <fstream>
 #include <vector>
 #include <map>

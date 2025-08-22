@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pybind_api/hal/event_py.h"
+#include "pybind_api/runtime/event_py.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
