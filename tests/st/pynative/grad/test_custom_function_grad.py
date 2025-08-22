@@ -505,6 +505,43 @@ def test_custom_function_dirty_tensor_not_leaf_need_grad():
     assert np.allclose(grads[1].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+class InplaceMulOp(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        ctx.save_for_backward(x.clone(), y)
+        return x.mul_(y)
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        x, y = ctx.saved_tensors
+        grad_x = grad_out * y if ctx.needs_input_grad[0] else None
+        grad_y = grad_out * x if ctx.needs_input_grad[1] else None
+        return grad_x, grad_y
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_dirty_tensor_is_view():
+    """
+    Feature: Custom autograd function.
+    Description: Input tensor of forward function is not leaf and is a view tensor, need to do grad, can be modified.
+    Expectation: success.
+    """
+    x = Tensor([2.0, 1.0], mindspore.float32)
+    y = Tensor([3.0, 2.0], mindspore.float32)
+
+    def fn(x, y):
+        z = x + y
+        return InplaceMulOp.apply(z[0], y[0])
+
+    grad_op = ops.GradOperation(get_all=True)(fn)
+    grad_x, grad_y = grad_op(x, y)
+    assert np.allclose(grad_x.asnumpy(), np.array([3.0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grad_y.asnumpy(), np.array([8.0], dtype=np.float32), 0.00001, 0.00001)
+
+
 class CustomFunctionNotLeafNet(nn.Cell):
     def construct(self, y):
         x = Tensor([2., 2, 2], mindspore.float32)
