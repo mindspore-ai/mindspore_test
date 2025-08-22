@@ -53,7 +53,8 @@ void SwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
       MS_EXCEPTION(IndexError) << "Given index " << std::to_string(index)
                                << " out of range. Please make sure the value of index in ["
                                << std::to_string(1 - SizeToInt(input_partials_.size())) << ", "
-                               << std::to_string(input_partials_.size() - 1) + "), and the type is int32.";
+                               << std::to_string(input_partials_.size() - 1)
+                               << "), and the type is int32 for switch actor:" << GetAID();
     }
     MS_EXCEPTION_IF_NULL(input_partials_[index + kSwitchCondPos]);
     auto func_graph = input_partials_[index + kSwitchCondPos]->func_graph_;

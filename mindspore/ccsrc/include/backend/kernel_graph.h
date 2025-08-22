@@ -225,6 +225,8 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   mindspore::HashSet<ValueNodePtr> graph_value_nodes() const;
   // add value node to graph
   void AddValueNodeToGraph(const ValueNodePtr &value_node);
+  void AddInputFrontFuncNode(const AnfNodePtr &node) { input_front_func_nodes_.emplace_back(node); }
+  const std::vector<AnfNodePtr> &GetInputFrontFuncNode() const { return input_front_func_nodes_; }
   // remove value node form graph
   bool RemoveValueNodeFromGraph(const ValueNodePtr &value_node);
   void ClearAllValueNode() { graph_value_nodes_.clear(); }
@@ -660,6 +662,8 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   uint32_t current_epoch_;
   mindspore::HashMap<AnfNodePtr, AnfNodePtr> tuple_parameter_to_make_tuple_map_;
   AnfNodePtrList input_nodes_;
+  // The func input would be replace by an const value, and the monad relationship should be record.
+  std::vector<AnfNodePtr> input_front_func_nodes_;
   std::vector<tensor::TensorPtr> input_tensors_;
   KernelMapTensor output_node_to_tensor_;
   std::map<session::KernelWithIndex, session::KernelWithIndex, session::KernelWithIndexCmp> nop_node_output_map_;
