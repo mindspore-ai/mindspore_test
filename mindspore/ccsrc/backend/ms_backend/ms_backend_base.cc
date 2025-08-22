@@ -68,7 +68,7 @@
 #endif
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"

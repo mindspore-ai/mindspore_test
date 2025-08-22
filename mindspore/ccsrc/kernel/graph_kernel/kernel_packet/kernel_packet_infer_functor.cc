@@ -17,7 +17,7 @@
 #include <memory>
 #include <utility>
 #include <mutex>
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
 #include "symbolic_shape/utils.h"
 

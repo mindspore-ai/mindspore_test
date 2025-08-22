@@ -18,7 +18,7 @@
 #define UT_CPP_SYMBOL_ENGINE_OPS_SYMBOLIC_SHAPE_TEST_UTILS_H_
 
 #include "symbolic_shape/symbol.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "symbolic_shape/int_symbol.h"
 #include "common/common_test.h"
 #include "utils/ms_context.h"
