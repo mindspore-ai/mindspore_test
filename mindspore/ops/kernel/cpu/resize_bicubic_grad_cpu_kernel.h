@@ -52,6 +52,10 @@ class ResizeBicubicGradCPUKernelMod : public NativeCpuKernelMod {
                        const std::vector<kernel::KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, ResizeBicubicGradFunc>> func_list_;
   ResizeBicubicGradFunc kernel_func_;
+  std::vector<int64_t> resize_shape_;
+  std::vector<int64_t> origin_shape_;
+  bool align_corners_{false};
+  bool half_pixel_centers_{false};
 };
 }  // namespace resize_bicubic_grad_cpu
 }  // namespace kernel
