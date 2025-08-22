@@ -2148,6 +2148,25 @@ void ControlNodeScheduler::LinkControlArrowByKernelGraphGroup(const GraphCompile
   for (const auto &graph_group : parser->kernel_graph_group_infos_) {
     MS_EXCEPTION_IF_NULL(graph_group);
     if (!graph_group->need_stack_) {
+      MS_LOG(DEBUG) << "Link control arrow for no stack group:" << graph_group->group_name_;
+      // Skip add control arrow for multi graph group to avoid cycle.
+      if (graph_group->graphs_.size() != 1) {
+        continue;
+      }
+      const auto &graph = *(graph_group->graphs_.begin());
+      MS_EXCEPTION_IF_NULL(graph);
+      const auto &to_actor = FetchActor(graph->ToString() + kSuperKernelActorNameSuffix);
+      if (to_actor == nullptr || graph->GetInputFrontFuncNode().empty()) {
+        continue;
+      }
+      for (const auto &control_node : graph->GetInputFrontFuncNode()) {
+        MS_EXCEPTION_IF_NULL(control_node);
+        const auto &from_actor = FetchActor(GetActorName(control_node));
+        if (from_actor != nullptr) {
+          SchedulerHelper::AddControlArrow(from_actor, to_actor);
+          MS_LOG(INFO) << "Add control arrow from actor:" << from_actor->GetAID() << " to:" << to_actor->GetAID();
+        }
+      }
       continue;
     }
     auto stack_actor = FetchActor(graph_group->group_name_ + kStackActorNameSuffix);
