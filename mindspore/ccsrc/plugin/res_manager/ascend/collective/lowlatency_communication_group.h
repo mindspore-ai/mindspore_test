@@ -21,11 +21,11 @@
 #include <vector>
 #include <memory>
 #include "lcal.h"
+#include "lcal_api.h"
 #include "runtime/collective/communication_group.h"
 #include "utils/dlopen_macro.h"
 
 using namespace Lcal;
-using LcalCommClassPtr = std::shared_ptr<LcalComm>;
 using LcclPtr = std::shared_ptr<Lccl>;
 using LcocPtr = std::shared_ptr<Lcoc>;
 
@@ -48,11 +48,11 @@ class LowlatencyCommunicationGroup : public CommunicationGroup {
   // Return communicator for collective communication ops.
   const LcclPtr &lccl_communicator() const;
   // Return communicator of lcal.
-  const LcalCommClassPtr &lcal_comm() const;
+  const LcalCommPtr &lcal_comm() const;
 
  private:
   // Lcal communicator of this group, but this should be encapsulated by 'Lccl' class to use communication operations.
-  LcalCommClassPtr lcal_comm_;
+  LcalCommPtr lcal_comm_;
 
   // 'Lccl' object returned to call communication operations.
   LcclPtr lccl_comm_;
