@@ -1252,10 +1252,10 @@ class CustomOpBuilder:
     Args:
         name (str): The unique name of the custom operator module, used to identify the operator.
         sources (Union[list[str], tuple[str], str]): The source file(s) of the custom operator. It can be a single
-                                    file path or a list of file paths.
+            file path or a list of file paths.
         backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
         include_paths (Union[list[str], tuple[str], str], optional): Additionally included paths needed during
-                                    compilation. Default: ``None``.
+            compilation. Default: ``None``.
         cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
         ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
         kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
