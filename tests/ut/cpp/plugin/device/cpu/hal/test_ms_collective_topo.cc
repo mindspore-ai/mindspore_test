@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
-#include "distributed/cluster/topology/meta_server_node.h"
+#include "cluster/topology/meta_server_node.h"
 #include "plugin/cpu/res_manager/collective/ms_collective_topo.h"
 #include "utils/ms_utils.h"
 #include "common/common_test.h"

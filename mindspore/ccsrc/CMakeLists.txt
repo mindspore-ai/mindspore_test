@@ -130,7 +130,7 @@ endif()
 set(BACKEND_COMMON_SUB_COMP
         ps
         tools
-        distributed
+        cluster
         kernel
         backend/operator
         backend/common/pass_manager

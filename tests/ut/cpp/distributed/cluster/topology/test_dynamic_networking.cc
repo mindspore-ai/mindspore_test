@@ -17,8 +17,7 @@
 #include <vector>
 #include <gtest/gtest.h>
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
-#include "distributed/cluster/topology/meta_server_node.h"
-#include "distributed/persistent/storage/file_io_utils.h"
+#include "cluster/topology/meta_server_node.h"
 #include "utils/ms_utils.h"
 #include "common/common_test.h"
 

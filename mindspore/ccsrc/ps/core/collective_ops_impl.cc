@@ -54,14 +54,6 @@ void calculate(T *output_buff, T *tmp_buff, size_t count, CollectiveOpReduceType
 
 }  // namespace
 
-void CollectiveOpsImpl::Initialize(const std::shared_ptr<ps::core::ServerNode> &server_node) {
-  MS_EXCEPTION_IF_NULL(server_node);
-  server_node_ = server_node;
-  rank_id_ = server_node_->rank_id();
-  server_num_ = server_node->server_num();
-  return;
-}
-
 template <typename T>
 bool CollectiveOpsImpl::RingAllReduce(const void *sendbuff, void *recvbuff, size_t count,
                                       CollectiveOpReduceType reduce_op, const CommunicationGroupInfo &group_info) {
