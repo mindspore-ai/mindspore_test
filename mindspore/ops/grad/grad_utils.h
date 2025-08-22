@@ -26,7 +26,7 @@
 #include "frontend/expander/bprop/common_utils.h"
 #include "mindspore/ops/infer/dynamic_broadcast_gradient_args.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 
 namespace mindspore::expander::bprop {
 constexpr size_t i0 = 0;

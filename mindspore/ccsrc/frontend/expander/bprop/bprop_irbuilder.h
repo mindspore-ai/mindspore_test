@@ -24,8 +24,8 @@
 #include <unordered_set>
 #include <functional>
 
-#include "include/common/expander/core/node.h"
-#include "include/common/expander/core/emitter.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
 
 namespace mindspore {
 namespace expander {

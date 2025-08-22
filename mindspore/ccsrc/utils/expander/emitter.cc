@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/expander/core/emitter.h"
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
 
 #include <algorithm>
 #include <cstdint>

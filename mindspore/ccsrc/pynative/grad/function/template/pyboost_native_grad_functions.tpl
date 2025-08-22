@@ -20,7 +20,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_INFER_H_
-#define MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_INFER_H_
+#ifndef MINDSPORE_CCSRC_UTILS_EXPANDER_INFER_H_
+#define MINDSPORE_CCSRC_UTILS_EXPANDER_INFER_H_
 #include <memory>
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -54,4 +54,4 @@ class COMMON_EXPORT CppInfer : public ExpanderInfer {
 };
 }  // namespace expander
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_INFER_H_
+#endif  // MINDSPORE_CCSRC_UTILS_EXPANDER_INFER_H_

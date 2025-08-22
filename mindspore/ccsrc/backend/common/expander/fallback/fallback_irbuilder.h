@@ -22,19 +22,20 @@
 #include <functional>
 #include <vector>
 
-#include "include/common/expander/core/node.h"
-#include "include/common/expander/core/emitter.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
+#include "mindspore/ccsrc/include/backend/visible.h"
 
 namespace mindspore {
 namespace expander {
 using SelectKernelFunc = std::function<bool(const CNodePtr &)>;
 class FallbackIRBuilder;
 using IRBuilderFunc = std::function<NodePtrList(FallbackIRBuilder *)>;
-struct IRBuilderHandle {
+struct BACKEND_COMMON_EXPORT IRBuilderHandle {
   IRBuilderFunc func;
 };
 
-class FallbackIRBuilder : public IrEmitter {
+class BACKEND_COMMON_EXPORT FallbackIRBuilder : public IrEmitter {
  public:
   FallbackIRBuilder(const std::string &name, const FuncGraphPtr &fg, const SelectKernelFunc &func);
   ~FallbackIRBuilder() override = default;
@@ -70,7 +71,7 @@ class FallbackIRBuilder : public IrEmitter {
   bool success_{true};
 };
 
-class IRBuilderFactory {
+class BACKEND_COMMON_EXPORT IRBuilderFactory {
  public:
   static IRBuilderFactory &Instance() {
     static IRBuilderFactory instance{};
