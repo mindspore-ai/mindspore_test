@@ -229,7 +229,7 @@ void AddNZeroFilter::Visit(const CNodePtr &cnode) {
 
   // If filtered_Xs's size same as inputs, no exclude element, no need generate new node
   if (filtered_Xs_.size() == inputs.size()) {
-    Reset();
+    has_zero_like_ = false;
   }
 }
 
