@@ -13,6 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """Checkpoint strategy info"""
+from __future__ import absolute_import
+
+__all__ = ["get_strategy_metadata", "get_current_strategy_metadata", "enable_save_strategy_online", \
+           "clear_strategy_metadata"]
 
 from itertools import chain
 from typing import Sequence, Union, Tuple, List, Dict
@@ -35,9 +39,9 @@ def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[Lay
     For more information on layouts, please refer to: :class:`mindspore.parallel.Layout`.
 
     Args:
-        network(str): The network name.
-        rank_id (int, optional): The rank id of the process on which this cell will be launched. \
-        Defaults to "None", which means strategy metadata for all ranks will be returned.
+        network (str): The network name.
+        rank_id (int, optional): The rank id of the process on which this cell will be launched.
+            Defaults to ``None``, which means strategy metadata for all ranks will be returned.
 
     Returns:
         Dict. A dictionary containing the parameter slicing strategies for either all ranks or a specific rank.
@@ -53,7 +57,7 @@ def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[Lay
         >>> from mindspore.nn.utils import no_init_parameters
         >>> from mindspore.parallel.auto_parallel import AutoParallel
         >>> from mindspore.train import Model
-        >>> from mindspore.parallel.strategy import get_strategy_metadata, get_current_strategy_metadata, \
+        >>> from mindspore.parallel.strategy import get_strategy_metadata, get_current_strategy_metadata,
         ...     enable_save_strategy_online, clear_strategy_metadata
         >>>
         >>> ms.set_context(mode=ms.GRAPH_MODE)
