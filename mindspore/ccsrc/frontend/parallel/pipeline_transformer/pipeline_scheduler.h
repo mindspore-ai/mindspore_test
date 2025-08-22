@@ -26,7 +26,6 @@
 
 #include "ir/graph_utils.h"
 #include "base/base.h"
-#include "utils/hash_map.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 

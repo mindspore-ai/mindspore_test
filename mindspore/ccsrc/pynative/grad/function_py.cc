@@ -15,10 +15,14 @@
  */
 
 #include "pynative/grad/function_py.h"
+
 #include <string>
 #include <unordered_map>
 #include <utility>
+
+#include "frontend/operator/primitive_py.h"
 #include "utils/log_adapter.h"
+#include "utils/ordered_map.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/grad/function/func_grad.h"

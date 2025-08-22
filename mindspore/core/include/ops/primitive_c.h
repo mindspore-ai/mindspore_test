@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 #ifndef MINDSPORE_CORE_OPS_PRIMITIVE_C_H_
 #define MINDSPORE_CORE_OPS_PRIMITIVE_C_H_
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "ir/primitive.h"
 #include "utils/hash_map.h"
+
 namespace mindspore {
 namespace ops {
 /// \brief PrimitiveC defines the base class for c++ operators.

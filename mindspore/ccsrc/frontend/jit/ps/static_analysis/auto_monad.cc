@@ -15,6 +15,7 @@
  */
 
 #include "frontend/jit/ps/static_analysis/auto_monad.h"
+
 #include <list>
 #include <vector>
 #include <stack>
@@ -22,6 +23,7 @@
 #include <utility>
 #include <memory>
 #include <algorithm>
+
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "utils/hash_map.h"
 #include "include/common/utils/contract.h"
 #include "ir/anf.h"
 #include "base/base_ref.h"

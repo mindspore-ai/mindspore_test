@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+
 #include "frontend/expander/bprop/common_utils.h"
 #include "include/common/expander/core/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/scope.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/sequence_op_name.h"
 #include "infer/tensor_to_scalar.h"
@@ -33,14 +35,6 @@
 namespace mindspore {
 namespace expander {
 namespace bprop {
-NodePtrList BpropBuilder::Run(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,
-                              const BpropHandle &handle, const std::string &instance_name) {
-  inputs_ptr_ = &inputs;
-  attrs_ptr_ = &attrs;
-  instance_name_ = instance_name;
-  return handle.func(this);
-}
-
 void PynativeCallback::DeprecatedFreeDeviceAddress(const mindspore::HashSet<size_t> &indices) const {
   auto &inputs = *GetInputs();
   for (auto idx : indices) {
@@ -125,6 +119,17 @@ class BroadcastGradientArgsShapeCalc : public ShapeCalcFunctor {
   size_t shift_{0};
 };
 REG_FUNCTOR("ShapeCalc_BroadcastGradientArgs", BroadcastGradientArgsShapeCalc);
+
+BpropBuilder::BpropBuilder(const std::string &name, const ExpanderInferPtr &infer)
+    : Emitter(infer, std::make_shared<Scope>(std::string("Bprop/grad") + name)), name_(name) {}
+
+NodePtrList BpropBuilder::Run(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,
+                              const BpropHandle &handle, const std::string &instance_name) {
+  inputs_ptr_ = &inputs;
+  attrs_ptr_ = &attrs;
+  instance_name_ = instance_name;
+  return handle.func(this);
+}
 
 NodePtrList BpropBuilder::BroadcastGradientArgs(const NodePtr &s0, const NodePtr &s1, size_t shift) {
   auto check_shp_valid_func = [shift](size_t, const ShapeVector &shape) -> bool {

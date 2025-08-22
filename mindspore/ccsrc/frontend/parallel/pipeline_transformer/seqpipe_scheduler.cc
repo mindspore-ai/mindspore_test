@@ -27,7 +27,9 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/node_check.h"
+#include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/func_graph_flag.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -38,7 +40,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace parallel {

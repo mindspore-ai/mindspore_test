@@ -24,7 +24,6 @@
 
 #include "ir/map_tensor.h"
 #include "ir/value.h"
-#include "utils/hash_map.h"
 #include "utils/hashing.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

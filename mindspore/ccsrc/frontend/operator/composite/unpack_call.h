@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 #include <set>
 #include <memory>
 
-#include "utils/hash_map.h"
 #include "utils/misc.h"
 #include "utils/any.h"
 #include "ir/dtype.h"

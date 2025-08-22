@@ -22,9 +22,11 @@
 #include <memory>
 #include <utility>
 #include <string>
-#include "ir/anf.h"
+
 #include "base/base.h"
+#include "ir/anf.h"
 #include "ir/manager.h"
+#include "ir/scope.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/ops_info/ops_utils.h"

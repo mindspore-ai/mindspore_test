@@ -39,6 +39,7 @@
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 #include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
+#include "utils/compile_config.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/convert_utils.h"

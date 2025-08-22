@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "proto/anf_ir.pb.h"
 #include "proto/mind_ir.pb.h"
 #include "ir/graph_utils.h"
+#include "ir/scope.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"

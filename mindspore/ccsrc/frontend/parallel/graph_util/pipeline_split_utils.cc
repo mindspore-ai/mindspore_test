@@ -16,6 +16,7 @@
 
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
+
 #include <algorithm>
 #include <list>
 #include <memory>
@@ -23,6 +24,7 @@
 #include <set>
 #include <unordered_map>
 
+#include "abstract/abstract_function.h"
 #include "include/common/utils/comm_manager.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
@@ -34,6 +36,7 @@
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/solve_flash_attention_score_for_seqpipe.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/utils/utils.h"
 #include "ir/value.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

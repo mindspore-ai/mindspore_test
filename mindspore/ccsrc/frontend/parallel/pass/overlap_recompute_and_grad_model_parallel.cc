@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,22 @@
  */
 
 #include "frontend/parallel/pass/overlap_recompute_and_grad_model_parallel.h"
+
 #include <memory>
 #include <list>
 #include <vector>
 #include <string>
 #include <queue>
+
+#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
+#include "include/common/utils/parallel_context.h"
+#include "include/common/utils/utils.h"
+#include "ir/func_graph_flag.h"
+#include "utils/convert_utils_base.h"
+#include "frontend/parallel/step_parallel.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "utils/convert_utils_base.h"
-#include "frontend/parallel/step_parallel.h"
-#include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -33,7 +38,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
-#include "ir/func_graph_flag.h"
 
 namespace mindspore {
 namespace parallel {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include "plugin/ascend/res_manager/op_adapter/custom_op_proto/cust_math_ops.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_declare/op_declare_macro.h"
-#include "utils/hash_map.h"
 
 DECLARE_OP_ADAPTER(ActsULQ)
 DECLARE_OP_USE_OUTPUT(ActsULQ)

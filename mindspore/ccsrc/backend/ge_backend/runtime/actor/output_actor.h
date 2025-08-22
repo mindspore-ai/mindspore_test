@@ -23,7 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include <map>
-#include "utils/hash_map.h"
+
 #include "backend/ge_backend/runtime/control_node_parser.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"

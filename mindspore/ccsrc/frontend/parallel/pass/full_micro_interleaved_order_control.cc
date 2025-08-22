@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/pass/full_micro_interleaved_order_control.h"
+
 #include <memory>
 #include <list>
 #include <vector>
@@ -23,12 +24,14 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
-#include "mindspore/ops/op_def/framework_ops.h"
+
+#include "include/common/utils/anfalgo.h"
+#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {

@@ -26,6 +26,7 @@
 #include <utility>
 #include <set>
 #include <bitset>
+
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "base/base.h"
@@ -91,6 +92,9 @@ class AnfIrVisitor;
 
 class ParamInfo;
 using ParamInfoPtr = std::shared_ptr<ParamInfo>;
+
+class Scope;
+using ScopePtr = std::shared_ptr<Scope>;
 
 // AnfNode is the basic class of the IR definition derived from Base.
 // Only two types of nodes are derived: CNode and ANode.

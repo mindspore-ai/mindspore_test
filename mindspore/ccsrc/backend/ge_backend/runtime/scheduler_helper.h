@@ -24,7 +24,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
-#include "utils/hash_map.h"
+
 #include "utils/hash_set.h"
 #include "backend/ge_backend/runtime/actor/actor_set.h"
 

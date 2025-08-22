@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@
 #include <atomic>
 #include <future>
 
-#include "utils/hash_map.h"
 #include "tools/data_dump/debug_services.h"
 
 namespace mindspore {

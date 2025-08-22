@@ -31,6 +31,7 @@
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "ops/op_def.h"
+#include "ir/scope.h"
 #include "ir/tensor_py_wrapperbase.h"
 #include "utils/ms_utils.h"
 #include "utils/info.h"

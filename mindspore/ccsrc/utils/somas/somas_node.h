@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "utils/hash_map.h"
 #include "utils/somas/somas_tensor.h"
 #include "utils/somas/somas_parameter.h"
 

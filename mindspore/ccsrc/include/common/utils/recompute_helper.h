@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_RECOMPUTE_HELPER_H
 
 #include <vector>
+
 #include "ir/anf.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"

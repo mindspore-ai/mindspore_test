@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include <string>
 #include <memory>
-#include "utils/hash_map.h"
+
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/arithmetic_info.h"
 #include "frontend/parallel/strategy.h"

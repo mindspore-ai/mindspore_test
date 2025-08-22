@@ -19,8 +19,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "utils/hash_map.h"
-#include "ir/anf.h"
+#include "utils/trace_info.h"
 
 namespace mindspore {
 namespace trace {

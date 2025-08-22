@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 
 #include "include/backend/distributed/ps/util.h"
+
 #include <vector>
 #include <memory>
+
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "utils/hash_map.h"

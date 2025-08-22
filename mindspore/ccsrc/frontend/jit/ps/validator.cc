@@ -30,6 +30,7 @@
 #include "ir/manager.h"
 #include "ir/dtype.h"
 #include "utils/anf_utils.h"
+#include "utils/compile_config.h"
 #include "utils/trace_info.h"
 #include "frontend/jit/ps/static_analysis/prim.h"
 #include "frontend/jit/ps/parse/resolve.h"

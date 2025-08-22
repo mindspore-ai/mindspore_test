@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <functional>
 #include <numeric>
 #include <utility>
+
 #include "ir/tensor_new.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/anf_utils.h"

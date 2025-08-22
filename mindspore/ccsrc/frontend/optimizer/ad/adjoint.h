@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "ir/anf.h"
-#include "frontend/optimizer/opt.h"
 #include "mindspore/ccsrc/frontend/jit/ps/resource_base.h"
 
 namespace mindspore {
