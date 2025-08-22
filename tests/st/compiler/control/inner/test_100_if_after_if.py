@@ -195,7 +195,7 @@ def test_if_after_if_03():
     """
     x = Tensor(2, mstype.int32)
     y = Tensor(5, mstype.int32)
-    expect1 = Tensor(19, mstype.int32)
+    expect1 = Tensor(23, mstype.int32)
     expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
     control_flow_if_after_if(IfAfterIfNet3, x, y, expect1, expect2)
 

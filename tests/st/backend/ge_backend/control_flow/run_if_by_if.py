@@ -31,10 +31,10 @@ class IfByIfNet(nn.Cell):
             out = out + self.param_a
             out1 = out1 * self.param_a
         if x > 2:
-            out1 += self.param_a
-            out1 *= out
-            out += self.param_a
-        out1 += self.param_a
+            out1 = out1 + self.param_a
+            out1 = out1 * out
+            out = out + self.param_a
+        out1 = out1 + self.param_a
         out2 = out
         return out, out1, out2
 

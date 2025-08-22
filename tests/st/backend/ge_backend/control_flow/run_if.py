@@ -30,8 +30,8 @@ class IfNet(nn.Cell):
         if x > 0:
             out = out + self.param_a
             out1 = out1 * self.param_a
-        out1 += out
-        out1 *= out
+        out1 = out1 + out
+        out1 = out1 * out
         return out, out1
 
 

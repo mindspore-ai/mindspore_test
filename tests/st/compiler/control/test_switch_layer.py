@@ -120,8 +120,11 @@ def test_cell_in_list():
     t = Tensor(10, mstype.int32)
     x = Tensor(0, mstype.int32)
     out = net(t, x)
+
+    t1 = Tensor(10, mstype.int32)
+    x1 = Tensor(0, mstype.int32)
     grad_net = Grad(net)
-    grad_out = grad_net(t, x)
+    grad_out = grad_net(t1, x1)
 
     assert out == Tensor(160, mstype.int32)
     assert grad_out == Tensor(16, mstype.int32)
