@@ -19,9 +19,10 @@
 #include <algorithm>
 #include <cctype>
 #include <vector>
-#include <iostream>
+#include <utility>
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace tools {
@@ -65,6 +66,80 @@ std::vector<std::string> SplitString(const std::string &str, char delimiter) {
   return tokens;
 }
 }  // namespace
+
+inline nlohmann::json ParserJson(const py::object &obj) {
+  if (obj.is_none()) {
+    return nullptr;
+  } else if (py::isinstance<py::bool_>(obj)) {
+    return obj.cast<bool>();
+  } else if (py::isinstance<py::int_>(obj)) {
+    return obj.cast<int64_t>();
+  } else if (py::isinstance<py::float_>(obj)) {
+    return obj.cast<double>();
+  } else if (py::isinstance<py::str>(obj)) {
+    return obj.cast<std::string>();
+  } else if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
+    nlohmann::json j_array = nlohmann::json::array();
+    py::list list = py::cast<py::list>(py::reinterpret_borrow<py::list>(obj));
+    for (size_t i = 0; i < list.size(); ++i) {
+      j_array.push_back(ParserJson(list[i]));
+    }
+    return j_array;
+  } else if (py::isinstance<py::dict>(obj)) {
+    nlohmann::json j_dict = nlohmann::json::object();
+    for (const auto &item : obj.attr("items")()) {
+      auto pair = py::cast<std::pair<py::object, py::object>>(item);
+      auto key = pair.first.cast<std::string>();
+      j_dict[key] = ParserJson(pair.second);
+    }
+    return j_dict;
+  } else {
+    // unsupported type .....
+    MS_LOG(EXCEPTION) << "Unsupported data type: " << obj;
+  }
+}
+
+std::shared_ptr<TftConfig> TftConfig::GetInstance() {
+  static std::once_flag parser_init_flag_ = {};
+  static std::shared_ptr<TftConfig> inst_parser_ = nullptr;
+  std::call_once(parser_init_flag_, [&]() {
+    if (inst_parser_ == nullptr) {
+      MS_LOG(DEBUG) << "Create new tft parser instance";
+      inst_parser_ = std::make_shared<TftConfig>();
+    }
+  });
+  MS_EXCEPTION_IF_NULL(inst_parser_);
+  return inst_parser_;
+}
+
+void TftConfig::RegisterConfig(const py::object &configs) { config_json_ = ParserJson(configs); }
+
+bool TftConfig::IsEnableWatchdog() {
+  static auto watchdog = ([this]() -> bool {
+    auto context = MsContext::GetInstance();
+    if (context != nullptr && !context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+      return false;
+    }
+    return CheckSupport(kWatchdog, true);
+  })();
+  return watchdog;
+}
+
+bool TftConfig::IsEnableSaveHcclOpStatus() {
+  static bool ccae = CheckSupport(kStatusRecord, false);
+  return ccae;
+}
+
+bool TftConfig::CheckSupport(const std::string &key, bool def_value) {
+  if (mark_check_.count(key) != 0) {
+    return mark_check_[key];
+  }
+  auto v = GetConfigValue<std::string>(key, "");
+  MS_LOG(INFO) << "Get value of ' " << key << " ' is: " << v;
+  auto ret = v == "" ? def_value : v == "1";
+  mark_check_[key] = ret;
+  return ret;
+}
 
 bool TftConfig::IsEnableTRE() {
   static bool enable_tre = []() {

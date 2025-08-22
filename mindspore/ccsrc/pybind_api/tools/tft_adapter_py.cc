@@ -27,6 +27,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/tensor_new.h"
 #include "tools/error_handler/error_handler.h"
+#include "tools/error_handler/error_config.h"
 
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
@@ -335,6 +336,11 @@ std::map<std::string, py::object> GetSnapshotParams() {
   return param_dict;
 }
 
+void RegisterConfig(const py::object &configs) {
+  MS_EXCEPTION_IF_NULL(tools::TftConfig::GetInstance());
+  tools::TftConfig::GetInstance()->RegisterConfig(configs);
+}
+
 void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
@@ -368,5 +374,6 @@ void RegTFT(py::module *m) {
                "Return true when snapshot is valid, otherwise false.");
   (void)m->def("_clear_snapshot_saving_flag", &mindspore::ClearSnapshotSavingFlag, "Clear snapshot saving flag.");
   (void)m->def("_get_snapshot_params", &mindspore::GetSnapshotParams, "Get parameters from snapshot");
+  (void)m->def("tft_register_config", &RegisterConfig, "Register all configs.");
 }
 }  // namespace mindspore

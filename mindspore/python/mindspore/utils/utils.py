@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import json
 from mindspore import log as logger
 from mindspore import context
 from mindspore import _checkparam as Validator
@@ -25,7 +26,7 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 from mindspore.common.api import jit_class
 from mindspore._c_expression import _tft_start_record_threads, _tft_finish_record_threads
-from mindspore._c_expression import set_is_reboot_node
+from mindspore._c_expression import set_is_reboot_node, tft_register_config
 
 
 @jit_class
@@ -71,18 +72,64 @@ class TFTCommValue:
     DISABLE_WATCHDOG = ['ARF:1', 'TSP:1', 'HCCE:1']  # close watchdog
 
 
+def _getenv():
+    """Get env """
+    tft_env = os.getenv("MS_ENABLE_TFT", "").strip()
+    thm_env = os.getenv("MS_ENABLE_THM", "").strip()
+    return tft_env, thm_env
+
+
+def _parser_tft_and_thm_env():
+    """Parser all config: tft, thm ..."""
+    tft_env, thm_env = _getenv()
+    tft_envs = tft_env.replace("{", "").replace("}", "").strip().split(",")
+    thm_envs = thm_env.replace("{", "").replace("}", "").strip().split(",")
+    all_config = {}
+    for item in tft_envs:
+        if item == "":
+            continue
+        key_v = item.split(":")
+        all_config[key_v[0].strip()] = key_v[1].strip()
+
+    for item in thm_envs:
+        if item == "":
+            continue
+        key_v = item.split(":")
+        if key_v[0] == "HCCL_STATUS_SAVE_CONFIG":
+            with open(key_v[1].strip("'\""), 'r', encoding='utf-8') as j:
+                json_values = json.load(j)
+                for key, val in json_values.items():
+                    if key == "HCCL_STATUS_SAVE_PATH" and not os.path.isabs(str(val)):
+                        logger.warning(
+                            f"HCCL_STATUS_SAVE_PATH should be absolute path, but get: {val}, Using default path:'/tmp'")
+                        val = "/tmp"
+                    key = "CCAE_" + key
+                    all_config[key] = val
+            continue
+        all_config[key_v[0].strip()] = key_v[1].strip()
+    if all_config.get("ARF") == "1":
+        logger.warning(f"Disable hccl_watchdog and turn on TTP when using ARF.")
+        all_config["HCCL_WATCHDOG"] = "0"
+        all_config["TTP"] = "1"
+    if all_config.get("HCCL_STATUS_SAVE") == "1":
+        os.environ["HCCL_STATUS_SAVE"] = "1"
+        os.environ["HCCL_STATUS_SAVE_PATH"] = all_config.get("CCAE_HCCL_STATUS_SAVE_PATH")
+        os.environ["HCCL_STATUS_SAVE_INTERVAL"] = str(all_config.get("CCAE_HCCL_STATUS_SAVE_INTERVAL"))
+    tft_register_config(all_config)
+
+
 class RSCPluginHandle:
     """Third party controller handler"""
 
     def __init__(self):
         self.enable = False
+        self.tft_env, _ = _getenv()
         self._check_env()
         self.msmgr = None
 
     def _check_env(self):
         """Check env"""
-        tft_env = os.getenv("MS_ENABLE_TFT", "")
-        self.enable = any(v in tft_env for v in TFTCommValue.ENABLE_MINDX)
+        self.enable = any(v in self.tft_env for v in TFTCommValue.ENABLE_MINDX)
 
     def check_enable(self):
         """Check env"""
@@ -119,6 +166,7 @@ class TftHandle:
 
     def __init__(self):
         super(TftHandle, self).__init__()
+        _parser_tft_and_thm_env()
         self._controller_ip = None
         self._controller_rank_id = None
         self._controller_port = None
@@ -174,13 +222,11 @@ class TftHandle:
         Args:
             **kwargs: Reserved parameters.
         """
-        tft_env = os.getenv("MS_ENABLE_TFT", "")
+        tft_env, _ = _getenv()
         tft_enabled = any([opt in tft_env for opt in TFTCommValue.NEED_MINDIO])
         if not tft_enabled:
             raise ValueError(F"MindIO TFT register need custom switch on one of:{TFTCommValue.NEED_MINDIO}")
         if "ARF:1" in tft_env:
-            logger.warning(f"Disable hccl watchdog when using ARF.")
-            context.set_context(ascend_config={"hccl_watchdog": False})
             if "TTP:1" not in tft_env:
                 logger.warning(f"Turn on TTP config when using ARF.")
                 tft_env = tft_env.replace("{", "").replace("}", "")

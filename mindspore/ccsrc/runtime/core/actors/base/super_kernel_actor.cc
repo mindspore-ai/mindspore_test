@@ -2052,6 +2052,7 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),
     tools::TftConfig::IsEnableStepTRE(),
+    tools::TftConfig::GetInstance() != nullptr && tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus(),
   };
   // When this function returns false, it means performance is not cirtical in this context.
   // Otherwise runtime will launch kernels with high performance.

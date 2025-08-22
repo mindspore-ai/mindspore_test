@@ -36,6 +36,7 @@
 #include "plugin/ascend/graph_optimizer/stream_assign/acl_stream_assign.h"
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/error_manager/param_restore.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
@@ -1329,6 +1330,43 @@ void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   }
 }
 
+bool AscendKernelExecutor::SilentCheckAndPreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod,
+                                                       const std::vector<KernelTensor *> &inputs, void *stream) const {
+  // 1. SilentCheck
+  if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
+      !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
+      kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
+    silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+  }
+  // 2. async ckpt and snap short
+  auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
+  bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
+  if (MS_UNLIKELY(tools::ascend::NeedSaveAsyncCkpt() || tools::ascend::NeedSaveSnapshot())) {
+    if (is_opt_start_kernel) {
+      tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
+      tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
+    }
+  }
+  if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
+    // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
+    return false;
+  }
+
+  bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
+  if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
+    if (is_opt_start_kernel || is_opt_end_kernel) {
+      // insert event for optimizer start and end
+      OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
+    }
+  }
+  if (is_opt_end_kernel) {
+    // skip execute TensorReport op at the end of optimizer, it is just used as a tag
+    return false;
+  }
+  return true;
+}
+
 bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &workspace,
                                         const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
@@ -1345,39 +1383,21 @@ bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vecto
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
-    if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
-        !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
-        kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
-      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
-      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
-    }
-
-    auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
-    bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
-    if (MS_UNLIKELY(tools::ascend::NeedSaveAsyncCkpt() || tools::ascend::NeedSaveSnapshot())) {
-      if (is_opt_start_kernel) {
-        tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
-        tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
-      }
-    }
-    if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
+    if (!SilentCheckAndPreSaveWeight(kernel, kernel_mod, inputs, stream)) {
       // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
+      // skip execute TensorReport op at the end of optimizer, it is just used as a tag
       return true;
     }
-
-    bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
-    if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
-      if (is_opt_start_kernel || is_opt_end_kernel) {
-        // insert event for optimizer start and end
-        OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
-      }
+    bool is_need_record = HcclWatchDogManager::CheckStatusSaveEnable() && common::AnfAlgo::IsCommunicationOp(kernel);
+    auto hccl_work_event = is_need_record ? std::make_unique<HcclWorkEvent>(kernel, stream) : nullptr;
+    if (hccl_work_event != nullptr) {
+      hccl_work_event->RecordStartEvent();
     }
-    if (is_opt_end_kernel) {
-      // skip execute TensorReport op at the end of optimzer, it is just used as a tag
-      return true;
-    }
-
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
+    if (hccl_work_event != nullptr) {
+      hccl_work_event->RecordEndEvent();
+      HcclWatchDogManager::GetInstance().AddHcclWorkEvent(std::move(hccl_work_event));
+    }
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
       SetUceError();

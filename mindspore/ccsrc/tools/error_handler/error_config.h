@@ -18,17 +18,51 @@
 #define MINDSPORE_TOOLS_ERROR_HANDLER_ERROR_CONFIG_H_
 #include <map>
 #include <string>
+#include <memory>
 #include "include/backend/visible.h"
+#include "nlohmann/json.hpp"
+#include "utils/log_adapter.h"
+#include "include/common/pybind_api/api_register.h"
 
 namespace mindspore {
+constexpr auto kStatusRecord = "HCCL_STATUS_SAVE";
+constexpr auto kStatusSavePath = "CCAE_HCCL_STATUS_SAVE_PATH";
+constexpr auto kStatusSaveInterval = "CCAE_HCCL_STATUS_SAVE_INTERVAL";
+constexpr auto kWatchdog = "HCCL_WATCHDOG";
 namespace tools {
 class BACKEND_COMMON_EXPORT TftConfig {
  public:
+  TftConfig() = default;
+  ~TftConfig() = default;
+  static std::shared_ptr<TftConfig> GetInstance();
+  void RegisterConfig(const py::object &configs);
+  bool IsEnableWatchdog();
+  bool IsEnableSaveHcclOpStatus();
+  bool CheckSupport(const std::string &key, bool def_value);
+  template <typename T>
+  T GetConfigValue(const std::string &key, const T &default_value) {
+    if (config_json_.is_null()) {
+      MS_LOG(INFO) << "Config is null, using default value.";
+      return default_value;
+    }
+    if (!config_json_.contains(key)) {
+      MS_LOG(INFO) << "Key:" << key << " not found, using default value.";
+      return default_value;
+    }
+    try {
+      return config_json_[key].get<T>();
+    } catch (const std::exception &e) {
+      MS_LOG(INFO) << "Get value of " << key << " fault, exception info: " << e.what() << ". Using default value";
+    }
+    return default_value;
+  }
   static bool IsEnableTRE();
   static bool IsEnableStepTRE();
   static int GetSnapShotSteps();
 
  private:
+  nlohmann::json config_json_;
+  std::map<std::string, bool> mark_check_;
   static std::map<std::string, std::string> &GetConfigMap();
 };
 }  // namespace tools

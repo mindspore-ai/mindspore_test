@@ -315,19 +315,11 @@ bool HcclAdapter::IsSimulation() {
 }
 
 bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *disable) {
-  if (!init_flag_) {
+  if (!init_flag_ || hccl_get_comm_async_error_ == nullptr || hccl_get_error_string_ == nullptr) {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
     return true;
   }
   MS_EXCEPTION_IF_NULL(disable);
-  if (hccl_get_comm_async_error_ == nullptr) {
-    MS_LOG(INFO) << "Hccl has never been inited, skip.";
-    return true;
-  }
-  if (hccl_get_error_string_ == nullptr) {
-    MS_LOG(INFO) << "Hccl has never been inited, skip.";
-    return true;
-  }
   HcclResult hccl_async_error;
   auto ret = hccl_get_comm_async_error_(comm, &hccl_async_error);
   if (ret != HCCL_SUCCESS) {
@@ -338,8 +330,13 @@ bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, boo
   MS_LOG(DEBUG) << "hccl_get_comm_async_error_ res: " << hccl_async_error << ", comm: " << comm;
   if (hccl_async_error != HCCL_SUCCESS) {
     std::ostringstream oss;
-    oss << "Hccl get comm async error failed, error code is: " << hccl_async_error
-        << ", detail info: " << hccl_get_error_string_(hccl_async_error);
+    // handle special error code, this code is due to a network error or a remote process exiting prematurely.
+    string e_remote_err;
+    if (hccl_async_error == HCCL_E_REMOTE) {
+      e_remote_err = "[ HCCL_E_REMOTE ] ";
+    }
+    oss << "Hccl get comm async error failed, error code is: " << hccl_async_error << ", detail info: " << e_remote_err
+        << hccl_get_error_string_(hccl_async_error);
     *error_info = oss.str();
     return false;
   }

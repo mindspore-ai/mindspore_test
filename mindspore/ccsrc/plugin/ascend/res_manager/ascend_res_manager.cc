@@ -43,6 +43,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "tools/error_handler/error_config.h"
 #include "utils/file_utils.h"
 #include "utils/distributed_meta.h"
 #include "graph/def_types.h"
@@ -435,9 +436,9 @@ void AscendResManager::Destroy() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   // destroy hccl things
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    device::ascend::HcclWatchDogManager::GetInstance().DestoryHandler();
-    ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG, false);
+  if (tools::TftConfig::GetInstance() != nullptr && (tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
+                                                     tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus())) {
+    device::ascend::HcclWatchDogManager::GetInstance().DestroyHandler();
   }
 
   // DestroyHccl must be called before FreeDeviceMemory, watch_hccl_dog and hccl_adapter are in this function
