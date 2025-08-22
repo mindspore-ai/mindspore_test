@@ -43,13 +43,11 @@ bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
 
   // ADDING INPUT GROUP_RANKS
   int group_rank_int = static_cast<int>(group_ranks_[0]);
-  lcal_comm_ = std::make_shared<LcalComm>(group_rank, size_, group_rank_int);
-  CHECK_IF_NULL(lcal_comm_);
-  if (lcal_comm_->Init() != LCAL_SUCCESS) {
+  if (LcalCommInitRankWithDomain(group_rank_int, size_, group_rank, &lcal_comm_) != LCAL_SUCCESS) {
     return false;
   }
-
-  lccl_comm_ = std::make_shared<Lccl>(*(lcal_comm_.get()));
+  CHECK_IF_NULL(lcal_comm_);
+  lccl_comm_ = std::make_shared<Lccl>(*(static_cast<LcalComm *>(lcal_comm_)));
   CHECK_IF_NULL(lccl_comm_);
 
   initialized_ = true;
@@ -71,7 +69,7 @@ void *LowlatencyCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
 
 const LcclPtr &LowlatencyCommunicationGroup::lccl_communicator() const { return lccl_comm_; }
 
-const LcalCommClassPtr &LowlatencyCommunicationGroup::lcal_comm() const { return lcal_comm_; }
+const LcalCommPtr &LowlatencyCommunicationGroup::lcal_comm() const { return lcal_comm_; }
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
