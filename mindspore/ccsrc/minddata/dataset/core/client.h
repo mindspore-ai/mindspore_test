@@ -25,13 +25,13 @@
 #include "minddata/dataset/engine/data_schema.h"
 #include "minddata/dataset/engine/dataset_iterator.h"
 
-#include "minddata/dataset/engine/datasetops/source/mindrecord_op.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
+#include "minddata/dataset/data_source/mindrecord_op.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
 
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/engine/datasetops/barrier_op.h"
 #include "minddata/dataset/engine/datasetops/filter_op.h"
-#include "minddata/dataset/engine/datasetops/source/generator_op.h"
+#include "minddata/dataset/data_source/generator_op.h"
 #include "minddata/dataset/engine/datasetops/build_vocab_op.h"
 #include "minddata/dataset/engine/datasetops/build_sentence_piece_vocab_op.h"
 #endif

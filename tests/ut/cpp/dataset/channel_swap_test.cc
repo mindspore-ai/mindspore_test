@@ -15,7 +15,7 @@
  */
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/image/hwc_to_chw_op.h"
+#include "minddata/dataset/vision/kernels/hwc_to_chw_op.h"
 #include "minddata/dataset/core/data_type.h"
 #include "utils/log_adapter.h"
 

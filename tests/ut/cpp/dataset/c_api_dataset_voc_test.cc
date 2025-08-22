@@ -178,9 +178,9 @@ TEST_F(MindDataTestPipeline, TestVOCDetection) {
   iter->Stop();
 }
 
-// Feature: VOCDataset
-// Description: Create VOCDataset with task="Detection" and count rows
-// Expectation: There should be 9 rows
+/// Feature: VOCDataset
+/// Description: Create VOCDataset with task="Detection" and count rows
+/// Expectation: There should be 9 rows
 TEST_F(MindDataTestPipeline, TestVOCDetection1) {
   std::string dataset_path;
   dataset_path = datasets_root_path_ + "/testVOC2012";
@@ -279,9 +279,9 @@ TEST_F(MindDataTestPipeline, TestVOCSegmentation) {
   iter->Stop();
 }
 
-// Feature: VOCDataset
-// Description: Create VOCDataset with take="Segmentation" and count rows
-// Expectation: There should be 10 rows
+/// Feature: VOCDataset
+/// Description: Create VOCDataset with take="Segmentation" and count rows
+/// Expectation: There should be 10 rows
 TEST_F(MindDataTestPipeline, TestVOCSegmentation1) {
   std::string dataset_path;
   dataset_path = datasets_root_path_ + "/testVOC2012";

@@ -18,9 +18,9 @@
 #include <fstream>
 
 #include "common/common.h"
-#include "lite_cv/lite_mat.h"
-#include "lite_cv/image_process.h"
-#include "minddata/dataset/kernels/image/resize_cubic_op.h"
+#include "minddata/dataset/vision/kernels/lite_cv/lite_mat.h"
+#include "minddata/dataset/vision/kernels/lite_cv/image_process.h"
+#include "minddata/dataset/vision/kernels/resize_cubic_op.h"
 
 using namespace mindspore::dataset;
 class MindDataImageProcess : public UT::Common {

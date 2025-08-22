@@ -26,8 +26,8 @@
 #include "utils/log_adapter.h"
 #include "minddata/dataset/engine/datasetops/batch_op.h"
 #include "minddata/dataset/engine/datasetops/repeat_op.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
-#include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
+#include "minddata/dataset/engine/operation/datasetops/dataset_node.h"
 
 using mindspore::Status;
 using mindspore::StatusCode;

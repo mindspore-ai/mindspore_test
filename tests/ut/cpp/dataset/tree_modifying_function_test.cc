@@ -17,10 +17,10 @@
 #include <memory>
 #include <string>
 #include "common/common.h"
-#include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
-#include "minddata/dataset/engine/ir/datasetops/skip_node.h"
-#include "minddata/dataset/engine/ir/datasetops/take_node.h"
-#include "minddata/dataset/engine/ir/datasetops/repeat_node.h"
+#include "minddata/dataset/engine/operation/datasetops/dataset_node.h"
+#include "minddata/dataset/engine/operation/datasetops/skip_node.h"
+#include "minddata/dataset/engine/operation/datasetops/take_node.h"
+#include "minddata/dataset/engine/operation/datasetops/repeat_node.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 
 using namespace mindspore::dataset;

@@ -21,7 +21,7 @@
 
 #include "minddata/dataset/core/pybind_support.h"
 #include "utils/file_utils.h"
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
 
 namespace mindspore {
 namespace dataset {

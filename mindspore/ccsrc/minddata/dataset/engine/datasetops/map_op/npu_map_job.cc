@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 
 namespace mindspore {
 namespace dataset {

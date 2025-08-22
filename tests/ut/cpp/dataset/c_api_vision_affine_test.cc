@@ -26,6 +26,9 @@ class MindDataTestPipeline : public UT::DatasetOpTesting {
  protected:
 };
 
+/// Feature: Affine
+/// Description: Test basic usage of Affine api
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestAffineAPI) {
   MS_LOG(INFO) << "Doing MindDataTestAffine-TestAffineAPI.";
 
@@ -69,6 +72,9 @@ TEST_F(MindDataTestPipeline, TestAffineAPI) {
   iter->Stop();
 }
 
+/// Feature: Affine
+/// Description: Test basic usage of Affine api fail
+/// Expectation: Expect API fail
 TEST_F(MindDataTestPipeline, TestAffineAPIFail) {
   MS_LOG(INFO) << "Doing MindDataTestAffine-TestAffineAPI.";
 

@@ -27,7 +27,7 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/engine/datasetops/dataset_op.h"
 #include "minddata/dataset/engine/execution_tree.h"
-#include "minddata/dataset/engine/datasetops/source/io_block.h"
+#include "minddata/dataset/data_source/io_block.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {

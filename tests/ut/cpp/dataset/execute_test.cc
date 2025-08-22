@@ -1055,9 +1055,9 @@ TEST_F(MindDataTestExecute, TestDeemphBiquadWithWrongArg) {
   EXPECT_FALSE(s01.IsOk());
 }
 
-// Feature: Gain op
-// Description: Test Gain op in eager mode
-// Expectation: The data is processed successfully
+/// Feature: Gain op
+/// Description: Test Gain op in eager mode
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestExecute, TestGainWithEager) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestGainWithEager.";
   // Original waveform
@@ -1133,9 +1133,9 @@ TEST_F(MindDataTestExecute, TestHighpassBiquadParamCheckSampleRate) {
   ASSERT_FALSE(rc.IsOk());
 }
 
-// Feature: InverseMelScale op
-// Description: Test InverseMelScale op in eager mode
-// Expectation: The data is processed successfully
+/// Feature: InverseMelScale op
+/// Description: Test InverseMelScale op in eager mode
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestExecute, TestInverseMelScale) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestInverseMelScale.";
   // Original waveform
@@ -2462,9 +2462,9 @@ TEST_F(MindDataTestExecute, TestToVectorsWithInvalidParamForCharNGram) {
   EXPECT_FALSE(status02.IsOk());
 }
 
-// Feature: DBToAmplitude op
-// Description: Test DBToAmplitude op in eager mode
-// Expectation: The data is processed successfully
+/// Feature: DBToAmplitude op
+/// Description: Test DBToAmplitude op in eager mode
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestExecute, TestDBToAmplitudeWithEager) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestDBToAmplitudeWithEager.";
   // Original waveform
@@ -3224,9 +3224,9 @@ TEST_F(MindDataTestExecute, TestInverseSpectrogramWrongArgs) {
   EXPECT_TRUE(status.IsError());
 }
 
-// Feature: PitchShift op
-// Description: Test basic usage of PitchShift op
-// Expectation: The data is processed successfully
+/// Feature: PitchShift op
+/// Description: Test basic usage of PitchShift op
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestExecute, TestAdjustPitchShift) {
   MS_LOG(INFO) << "Doing MindDataExecute-TestAdjustPitchShift.";
   // Original waveform
@@ -3243,9 +3243,9 @@ TEST_F(MindDataTestExecute, TestAdjustPitchShift) {
   EXPECT_TRUE(status.IsOk());
 }
 
-// Feature: PitchShift op
-// Description: First test wrong args of PitchShift
-// Expectation: The data is processed successfully
+/// Feature: PitchShift op
+/// Description: First test wrong args of PitchShift
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestExecute, TestPitchShiftWrongArgs1) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestPitchShiftWrongArgs1.";
   std::vector<float> labels = {1, 1, 2, 3, 2, 3, 4, 5, 1, 2, 3, 4, 5, 2, 3,

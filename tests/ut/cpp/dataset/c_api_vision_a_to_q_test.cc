@@ -19,7 +19,7 @@
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/transforms.h"
 #include "minddata/dataset/include/dataset/vision.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 
 using namespace mindspore::dataset;
 using mindspore::dataset::BorderType;
@@ -2612,7 +2612,7 @@ TEST_F(MindDataTestPipeline, TestPosterizeParamCheck) {
   EXPECT_EQ(iter2, nullptr);
 }
 
-/// Feature：AdjustHue op
+/// Feature: AdjustHue op
 /// Description: Test function of operation when hue_factor is 0.2
 /// Expectation: Create an ImageFolder dataset then do auto AjustHue on it
 TEST_F(MindDataTestPipeline, TestAdjustHue) {
@@ -2642,7 +2642,7 @@ TEST_F(MindDataTestPipeline, TestAdjustHue) {
   iter->Stop();
 }
 
-/// Feature：AdjustHue op
+/// Feature: AdjustHue op
 /// Description: Test improper parameters for AdjustHue C implementation
 /// Expectation: Throw ValueError exception and TypeError exception
 TEST_F(MindDataTestPipeline, TestAdjustHueParamCheck) {

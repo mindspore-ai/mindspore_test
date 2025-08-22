@@ -22,7 +22,7 @@
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_shape.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 
 namespace mindspore {
 namespace dataset {

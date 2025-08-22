@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
-#include "minddata/dataset/engine/ir/datasetops/source/dbpedia_node.h"
+#include "minddata/dataset/data_source/operation/dbpedia_node.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 
 using namespace mindspore::dataset;

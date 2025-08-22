@@ -23,7 +23,7 @@
 #include "minddata/dataset/core/pybind_support.h"
 #endif
 
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 #include "minddata/dataset/util/command.h"
 #include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/sig_handler.h"

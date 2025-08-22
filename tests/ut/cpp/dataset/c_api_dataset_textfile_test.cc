@@ -313,9 +313,9 @@ TEST_F(MindDataTestPipeline, TestTextFileDatasetFail7) {
   EXPECT_EQ(iter, nullptr);
 }
 
-// Feature: TextFileDataset
-// Description: Create TextFile dataset with a file that does not exist and check the size of the dataset
-// Expectation: The dataset should have size 0
+/// Feature: TextFileDataset
+/// Description: Create TextFile dataset with a file that does not exist and check the size of the dataset
+/// Expectation: The dataset should have size 0
 TEST_F(MindDataTestPipeline, TestTextFileFileNotExist) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTextFileDatasetFail8.";
 
