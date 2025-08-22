@@ -119,10 +119,9 @@ void RecordInplaceNodes(const CNodePtr &cnode, std::unordered_map<AnfNodePtr, An
  *
  * \param[in] func_graph func graph.
  **/
-void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
+void ChangeInplaceInputInner(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::unordered_map<AnfNodePtr, AnfNodePtr> inplace_input;
-  auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto &node_users_map = manager->node_users();
   auto output_node = func_graph->output();
@@ -176,12 +175,12 @@ bool DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
   if (!exist_inplace_nodes) {
     return false;
   }
-
+  auto manager = func_graph->manager();
   // Do inplace input replace for func_graph and sub_graphs
-  ChangeInplaceInputInner(func_graph);
+  ChangeInplaceInputInner(func_graph, manager);
   auto sub_graphs = func_graph->func_graphs_used_total();
   for (const auto &sub_graph : sub_graphs) {
-    ChangeInplaceInputInner(sub_graph);
+    ChangeInplaceInputInner(sub_graph, manager);
   }
 
   return false;
