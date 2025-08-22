@@ -21,7 +21,7 @@
 #include <algorithm>
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

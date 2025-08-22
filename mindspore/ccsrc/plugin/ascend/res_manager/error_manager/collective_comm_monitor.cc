@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include <signal.h>
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "utils/convert_utils_base.h"

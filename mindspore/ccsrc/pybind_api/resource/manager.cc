@@ -53,7 +53,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "tools/profiler/profiling.h"
-#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
+#include "tools/error_handler/exit_handler.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
@@ -229,7 +229,7 @@ void ClearResPart3() {
 void ClearSingleton() {
   MS_LOG(INFO) << "Start clear singleton...";
   profiler::Profiler::Clear();
-  debug::tft::TFTWaitSem::GetInstance().Clear();
+  tools::TFTWaitSem::GetInstance().Clear();
 #ifdef ENABLE_AKG
   kernel::GraphKernelBuildManager::Instance().Clear();
 #endif

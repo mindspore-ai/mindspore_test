@@ -51,7 +51,7 @@
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/collective/dummy_ascend_collective_comm_lib.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/ascend/res_manager/collective/lowlatency_collective_comm_lib.h"
 #endif

@@ -192,7 +192,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_auto_monad.cc"
-        "${ASCEND_PLUGIN_PATH}/res_manager/collective/hccl_watch_dog_thread.cc"
+        "${ASCEND_PLUGIN_PATH}/res_manager/error_manager/collective_comm_monitor.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/ascend_res_manager.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/executor/ge_memory_manager.cc"

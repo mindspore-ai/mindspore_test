@@ -22,7 +22,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 
 constexpr size_t kPathMax = 4096;
 namespace mindspore {

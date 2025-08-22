@@ -26,14 +26,12 @@
 #include <utility>
 #include <thread>
 #include "hccl/hccl.h"
-#ifndef EXPORT_WRAPPER
-#define EXPORT_WRAPPER __attribute__((visibility("default")))
-#endif
+#include "plugin/ascend/res_manager/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class EXPORT_WRAPPER HcclWatchDogHandler {
+class ASCEND_RES_MANAGER_EXPORT HcclWatchDogHandler {
  public:
   HcclWatchDogHandler(uint32_t global_rank_id, const std::string &group_name, HcclComm hcom);
   ~HcclWatchDogHandler();
@@ -61,7 +59,7 @@ class EXPORT_WRAPPER HcclWatchDogHandler {
   std::atomic<bool> exit_{false};
 };
 
-class EXPORT_WRAPPER HcclWatchDogManager {
+class ASCEND_RES_MANAGER_EXPORT HcclWatchDogManager {
  public:
   static HcclWatchDogManager &GetInstance() {
     static HcclWatchDogManager instance;

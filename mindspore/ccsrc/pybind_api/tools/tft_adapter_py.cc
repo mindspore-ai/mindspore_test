@@ -17,7 +17,7 @@
 #include <vector>
 #include "include/common/pybind_api/api_register.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
+#include "tools/error_handler/exit_handler.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
@@ -277,14 +277,14 @@ void RegTFT(py::module *m) {
   (void)m->def("_get_optimzer_timestamps", &mindspore::GetOptimizerTimestamps,
                "Get optimizer start and finish timestamps.");
   (void)m->def(
-    "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
+    "_tft_sem_post", []() { mindspore::tools::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
   (void)m->def(
-    "_tft_sem_enable", []() { mindspore::debug::tft::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+    "_tft_sem_enable", []() { mindspore::tools::TFTWaitSem::Enable(); }, "TFT enable sem feature");
   (void)m->def(
-    "_tft_start_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().StartRecordThreads(); },
+    "_tft_start_record_threads", []() { mindspore::tools::TFTWaitSem::GetInstance().StartRecordThreads(); },
     "TFT start recording newly created threads");
   (void)m->def(
-    "_tft_finish_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().FinishRecordThreads(); },
+    "_tft_finish_record_threads", []() { mindspore::tools::TFTWaitSem::GetInstance().FinishRecordThreads(); },
     "TFT finish recording newly created threads");
   (void)m->def("_clean_rootinfo", &CleanRootInfo, "Clean comm root info.");
   (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
