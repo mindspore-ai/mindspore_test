@@ -304,6 +304,9 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
   MarkInputsNeedGrad(context, ctx, inputs, &inputs_meta);
+  auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
+  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta);
+  UpdateNextEdges(custom_fn, context->inputs);
   // Get need grad before forward.
   bool need_do_grad = GradState::Get().RequiresGrad() && AutoGradUtil::NeedGrad(context->inputs);
   // Call forward function.
@@ -316,10 +319,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
 
   runtime::Pipeline::Get().WaitFrontend();
   ConstructContextAfterForward(context, ctx, outputs);
-
-  auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
-  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta,
-                                                              context->flatten_outputs.size());
+  custom_fn->SetOutputSize(context->flatten_outputs.size());
   ctx->set_weak_grad_node(custom_fn);
   context->grad_node = std::move(custom_fn);
 
