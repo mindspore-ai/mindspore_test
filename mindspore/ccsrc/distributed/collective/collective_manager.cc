@@ -507,6 +507,14 @@ bool CollectiveManager::Finalize() {
     }
     MS_LOG(INFO) << "End finalizing device communication lib.";
 
+    stop_init_comm_ = true;
+    task_queue_blocker_.notify_one();
+    group_name_to_result_.clear();
+    task_list_.clear();
+    if (run_init_comm_task_thread_.joinable()) {
+      run_init_comm_task_thread_.join();
+    }
+
     inited_ = false;
     finalized_ = true;
     need_init_ = false;
@@ -515,18 +523,11 @@ bool CollectiveManager::Finalize() {
     host_comm_lib_instance_ = nullptr;
     device_comm_lib_instance_ = nullptr;
     comm_lib_instance_ = nullptr;
-    stop_init_comm_ = true;
     local_rank_id_ = 0;
     local_rank_size_ = 1;
-    task_queue_blocker_.notify_one();
-    group_name_to_result_.clear();
-    task_list_.clear();
     group_infos_.clear();
     inited_groups_.clear();
     group_map_.clear();
-    if (run_init_comm_task_thread_.joinable()) {
-      run_init_comm_task_thread_.join();
-    }
     while (!init_comm_task_queue_.empty()) {
       init_comm_task_queue_.pop();
     }
