@@ -163,7 +163,7 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
   // Isolated inplace nodes
   // Return {prim::kPrimDepend, real_output, ...}
   auto real_output_cnode = real_output->cast<CNodePtr>();
-  if (real_output_cnode != nullptr && !IsMonad(real_output_cnode->inputs().back())) {
+  if (IsPrimitiveCNode(real_output_cnode, prim::kPrimMakeTuple)) {
     ReplaceInplaceNodeForCNode(real_output_cnode, inplace_input, manager, func_graph);
   }
   return;
