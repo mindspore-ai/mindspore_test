@@ -416,6 +416,9 @@ class PathManager:
     @classmethod
     def check_path_is_owner_or_root(cls, path):
         """Check path is owner or root."""
+        if not os.path.exists(path):
+            msg = f"The path does not exist: {path}"
+            raise ProfilerPathErrorException(msg)
         file_stat = os.stat(path)
         current_uid = os.getuid()
         file_uid = file_stat.st_uid
@@ -427,3 +430,27 @@ class PathManager:
     def check_path_is_executable(cls, path):
         """Check path is executable"""
         return os.access(path, os.X_OK)
+
+    @classmethod
+    def check_path_is_readable(cls, path):
+        """Check path is readable"""
+        if os.path.islink(path):
+            msg = f"Invalid path is a soft link: {path}"
+            raise ProfilerPathErrorException(msg)
+        if not os.access(path, os.R_OK):
+            msg = f"The path readable permission check failed: {path}."
+            raise ProfilerPathErrorException(msg)
+
+    @classmethod
+    def walk_with_depth(cls, path, *args, max_depth=10, **kwargs):
+        """walk path depth"""
+        if not isinstance(path, str):
+            return
+        base_depth = path.count(os.sep)
+        if path.endswith(os.sep):
+            base_depth -= 1
+        for root, dirs, files in os.walk(path, *args, **kwargs):
+            if root.count(os.sep) - base_depth > max_depth:
+                dirs.clear()
+                continue
+            yield root, dirs, files
