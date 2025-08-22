@@ -743,6 +743,7 @@ void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet
     auto cnode = param_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     if (IsForwardCNode(cnode) && !IsPrimitiveCNode(cnode, prim::kPrimReceive) &&
+        !IsPrimitiveCNode(cnode, prim::kPrimSend) &&
         !(IsPrimitiveCNode(cnode, prim::kPrimDepend) && param_pair.second == INDEX_TWO)) {
       if (insert_flag) {
         // if there are multiple node users, they share one same allgather
