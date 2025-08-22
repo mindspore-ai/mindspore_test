@@ -13,27 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_MATMUL_ADD_ATB_KERNEL_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_MATMUL_ADD_ATB_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_GROUPED_MATMUL_ADD_ATB_KERNEL_H_
+#define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_GROUPED_MATMUL_ADD_ATB_KERNEL_H_
 
 #include <string>
 #include <vector>
 #include <utility>
-#include "plugin/device/ascend/kernel/atb/atb_kernel_mod.h"
+
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "kernel/ascend/atb/atb_kernel_mod.h"
 
-namespace mindspore::kernel {
-class InplaceMatmulAddATBKernelMod : public ATBKernelMod {
+namespace mindspore {
+namespace kernel {
+class InplaceGroupedMatmulAddATBKernelMod : public ATBKernelMod {
  public:
-  InplaceMatmulAddATBKernelMod() : ATBKernelMod(std::move("inplace_matmul_add")) {}
-  ~InplaceMatmulAddATBKernelMod() = default;
+  InplaceGroupedMatmulAddATBKernelMod() : ATBKernelMod(std::move("inplace_grouped_matmul_add")) {}
+  ~InplaceGroupedMatmulAddATBKernelMod() = default;
 
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+
+ private:
+  TensorStorageInfoPtr CreateTensorStorageInfo(const KernelTensor *ori_tensor, const std::vector<int64_t> &new_shape);
+  void SetTensorStorageInfo(const KernelTensorPtr &new_tensor, const KernelTensor *ori_tensor);
+
+  KernelTensorPtr out_tensor_;
 };
-}  // namespace mindspore::kernel
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_MATMUL_ADD_ATB_KERNEL_H_
+}  // namespace kernel
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_KERNEL_INPLACE_GROUPED_MATMUL_ADD_ATB_KERNEL_H_

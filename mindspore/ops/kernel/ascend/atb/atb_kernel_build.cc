@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
+#include "kernel/ascend/atb/atb_kernel_build.h"
 #include <map>
 #include <string>
 #include <utility>
@@ -24,7 +24,7 @@
 #include "kernel/framework_utils.h"
 #include "ops/op_def.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
+#include "kernel/ascend/kernel_plugin.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
+#include "kernel/ascend/kernel_plugin.h"
 
 namespace mindspore::kernel {
 class InternalKernelPlugin : public KernelPlugin {

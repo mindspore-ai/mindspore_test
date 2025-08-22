@@ -16,6 +16,10 @@ foreach(_comp ${ASCEND_KERNEL_COMP})
     endif()
 endforeach()
 
+list(APPEND ASCEND_KERNEL_SRC "atb/atb_kernel_build.cc")
+
+add_subdirectory(atb)
+
 set_property(SOURCE ${ASCEND_KERNEL_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
 add_library(mindspore_ops_ascend SHARED ${ASCEND_KERNEL_SRC})
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
