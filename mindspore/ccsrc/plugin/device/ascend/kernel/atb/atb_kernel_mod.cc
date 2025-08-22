@@ -21,7 +21,11 @@
 #include "utils/ms_context.h"
 
 namespace mindspore::kernel {
-ATBKernelMod::~ATBKernelMod() { atb::DestroyOperation(op_); }
+ATBKernelMod::~ATBKernelMod() {
+  if (!UseSimulationApi()) {
+    atb::DestroyOperation(op_);
+  }
+}
 
 bool ATBKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   MS_LOG(DEBUG) << "ATBKernelMod Init";
