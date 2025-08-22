@@ -144,6 +144,11 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
                                           const Shape &tensor_shape, bool interleaved_parallel, bool check_device_num) {
   auto device_arrangement = device_matrix;
   if (interleaved_parallel) {
+    if (parallel::ParallelContext::GetInstance()->enable_all2all()) {
+      MS_LOG(WARNING) << "The interleaved_parallel does not support enabling alltoall, and will automatically set "
+                         "enable_alltoall to false.";
+      parallel::ParallelContext::GetInstance()->set_enable_all2all(false);
+    }
     if (device_arrangement_interleaved_.Init(device_matrix) != SUCCESS) {
       return FAILED;
     }
