@@ -24,7 +24,6 @@
 #include <functional>
 #include <memory>
 
-#include "utils/hashing.h"
 #include "utils/hash_map.h"
 
 namespace mindspore {

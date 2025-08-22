@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_BIAS_ADD_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_BIAS_ADD_H_
+
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include "mindapi/base/format.h"
+
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {

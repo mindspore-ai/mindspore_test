@@ -36,7 +36,6 @@
 #include "utils/ordered_map.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
-#include "utils/hashing.h"
 #include "base/base_ref.h"
 
 namespace mindspore {

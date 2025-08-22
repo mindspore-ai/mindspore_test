@@ -15,6 +15,13 @@
  */
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 
+#include <algorithm>
+#include <set>
+#include <numeric>
+
+#include "utils/convert_utils_base.h"
+#include "utils/log_adapter.h"
+
 namespace mindspore::parallel {
 const int MAX_PRIME_RANGE = 1e5 + 1;  // 100,001
 void get_prime_table(Shape *prime_arr, const size_t arr_size) {

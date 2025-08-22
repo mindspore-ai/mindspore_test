@@ -28,6 +28,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
+#include "utils/hashing.h"
 #include "kernel/ascend/visible.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"

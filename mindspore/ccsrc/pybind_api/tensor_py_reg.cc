@@ -24,7 +24,6 @@
 #include "pybind_api/ir/tensor/tensor_index_py.h"
 #include "tools/profiler/profiler.h"
 #include "include/backend/mbuf_device_address.h"
-#include "utils/ordered_set.h"
 #include "utils/ms_context.h"
 #include "pybind_api/ir/tensor/tensor_register/tensor_func_reg.h"
 #include "pybind_api/ir/tensor/tensor_register/auto_generate/tensor_py_gen.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,24 @@ StackFramePtr StackFrame::DoJump(const AnalysisEnginePtr &engine, const CNodePtr
   auto new_stack_frame = std::make_shared<StackFrame>(fg_evaluator, fg, new_context, parent_context);
   new_stack_frame->set_args_abs_list(std::move(args_abs_list));
   return new_stack_frame;
+}
+
+void StackFrame::Load() {
+  MS_EXCEPTION_IF_NULL(func_graph_);
+  node_slots_ = TopoSort(func_graph_->get_return(), SuccIncoming, [](const AnfNodePtr &node) -> IncludeType {
+    static const bool enable_pre_lift = (common::GetCompileConfig("PRE_LIFT") == "1");
+    if (node->isa<ValueNode>() || node->isa<Parameter>() ||
+        (enable_pre_lift && IsPrimitiveCNode(node, prim::kPrimPartial))) {
+      return EXCLUDE;
+    }
+    return FOLLOW;
+  });
+  if (node_slots_.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "The func graph is empty, func graph: " << func_graph_ << "/"
+                               << func_graph_->ToString() << ", has return: " << (func_graph_->get_return() != nullptr);
+  }
+  slot_index_ = 0;
+  args_abs_list_.clear();
 }
 
 // Check if we need branch to another func graph.

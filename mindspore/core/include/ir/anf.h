@@ -27,15 +27,15 @@
 #include <set>
 #include <bitset>
 
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "base/base.h"
 #include "base/effect_info.h"
 #include "ir/kernel_info_dev.h"
 #include "ir/scope.h"
 #include "ir/primal_attr.h"
 #include "ir/primal_debug_info.h"
-#include "utils/hashing.h"
+#include "utils/hash_map.h"
+#include "utils/hash_set.h"
+#include "utils/log_adapter.h"
 #include "utils/os.h"
 
 // A MindSpore ANF IR defined here.
