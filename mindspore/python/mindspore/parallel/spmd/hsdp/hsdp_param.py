@@ -124,7 +124,7 @@ class HSDPParam:
 
     def to_unsharded(self):
         """change parameter to unsharded state"""
-        unshared_param_data = self.comm.all_gather(self.sharded_group_name, self.sharded_param)
+        unshared_param_data = self.comm.all_gather(self.sharded_group_name, self.param)
         self.sharded_param.set_data(self.param)
         self.param.set_data(unshared_param_data)
 

@@ -1586,6 +1586,10 @@ class CellBackwardHook(PrimitiveWithInfer):
 
         new_tensors = pyboost_cell_backward_hook(self, (tensors,))
 
+        # Restore layout attribute
+        for new_t, origin_t in zip(new_tensors, tensors):
+            if hasattr(origin_t, "_layout"):
+                new_t.local_to_global(origin_t.layout)
         # Replace the original Tensor arguments with the processed ones
         arg_list = list(args)
         for idx, val in zip(tensors_idx, new_tensors):

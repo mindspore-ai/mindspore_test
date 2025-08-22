@@ -14,7 +14,9 @@
 # ============================================================================
 
 import numpy as np
+from collections import OrderedDict
 import mindspore as ms
+from mindspore.ops.operations import _inner_ops as inner
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
@@ -118,3 +120,28 @@ def test_tensor_parallel():
     target_layout1 = Layout(base_device_matrix, base_alias_name, base_rank_list)
     target_layout1 = target_layout1("dp", "None")
     run_network(x_layout1, w_layout1, target_layout1)
+
+def test_dtensor_with_backward_hook():
+    '''
+    Feature: Simple DistributedMatmul with backward hook.
+    Description: Test Simple DistributedMatmul with backward hook.
+    Expectation: CellBackwardHook actually is an operator, expect it's output layout is same with input layout.
+    '''
+    x_layout1 = Layout(base_device_matrix, base_alias_name, base_rank_list)
+    x_layout1 = x_layout1("dp", "mp")
+
+    w_layout1 = Layout(base_device_matrix, base_alias_name, base_rank_list)
+    w_layout1 = w_layout1("mp", "None")
+    np_x = np.random.randn(4, 8).astype(np.float32)
+    np_w = np.random.randn(8, 2).astype(np.float32)
+    x = create_dtensor(np_x, x_layout1)
+    w = create_dtensor(np_w, w_layout1)
+    print_layout_info(x, "Input_x")
+    print_layout_info(w, "Input_w")
+    bwd_hook_op = inner.CellBackwardHook(hook_dict=OrderedDict())
+    hooked_x = bwd_hook_op(x)
+    assert id(hooked_x) != id(x)
+    assert np.all(hooked_x.equal(x).asnumpy())
+    assert hooked_x.layout
+    assert hooked_x.layout is x.layout
+    ms.mint.matmul(hooked_x, w)
