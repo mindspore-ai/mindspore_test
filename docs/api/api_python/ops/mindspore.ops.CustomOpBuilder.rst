@@ -22,8 +22,8 @@ mindspore.ops.CustomOpBuilder
           - **build_dir** (str, 可选) - 用于生成算子构建文件的目录。如果设置了该参数，将直接使用提供的路径。如果未设置，则会在环境变量 `MS_COMPILER_CACHE_PATH` 指定的路径下（默认为 ``./kernel_meta`` ），创建一个以算子的 `name` 命名的子目录，并将文件放置在该子目录中。默认值： ``None`` 。
           - **enable_atb** (bool, 可选) - 是否调用 ATB (Ascend Transformer Boost) 算子。如果设置为 ``True`` ，则 `backend` 必须为 ``Ascend`` 或留空。默认值： ``False`` 。
           - **enable_asdsip** (bool, 可选) - 是否调用 ASDSIP (Ascend Sip Boost) 算子。如果设置为 ``True`` ，则 `backend` 必须为 ``Ascend`` 或留空。默认值： ``False`` 。
-          - **op_def** (Union[list[str], tuple[str], str], 可选) - 自定义算子定义文件（YAML 格式）的路径，可以是单个文件路径或文件路径列表。在图模式下使用自定义算子时，此参数必须提供。默认值： None 。
-          - **op_doc** (Union[list[str], tuple[str], str], 可选) - 自定义算子文档文件（YAML 格式）的路径，可以是单个文件路径或文件路径列表，用于为算子提供额外说明。默认值： None 。
+          - **op_def** (Union[list[str], tuple[str], str], 可选) - 自定义算子定义文件（YAML 格式）的路径，可以是单个文件路径或文件路径列表。在图模式下使用自定义算子时，此参数必须提供。默认值： ``None`` 。
+          - **op_doc** (Union[list[str], tuple[str], str], 可选) - 自定义算子文档文件（YAML 格式）的路径，可以是单个文件路径或文件路径列表，用于为算子提供额外说明。默认值： ``None`` 。
 
     .. note::
         - 如果提供了 `backend` 参数，编译和链接步骤中会自动添加支持目标后端的默认编译和链接选项。默认选项可参考 `CustomOpBuilder <https://gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/ops/operations/custom_ops.py>`_ 代码中 `get_cflags` 和 `get_ldflags` 接口的实现。
