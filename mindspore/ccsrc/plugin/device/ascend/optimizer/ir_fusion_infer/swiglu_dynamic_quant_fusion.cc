@@ -117,8 +117,9 @@ const AnfNodePtr SwiGLUDynamicQuantFusion::Process(const FuncGraphPtr &graph, co
     return nullptr;
   }
 
-  auto soc = ms_context->ascend_soc_version();
-  if (!soc.empty() && soc.find("ascend910_93") == std::string::npos && soc.find("ascend910b") == std::string::npos) {
+  auto const &soc = ms_context->ascend_soc_version();
+  const std::vector<std::string> valid_soc_version{"ascend910b", "ascend910_93", "ascend310p"};
+  if (!soc.empty() && (std::find(valid_soc_version.begin(), valid_soc_version.end(), soc) == valid_soc_version.end())) {
     MS_LOG(INFO) << "SwiGLUDynamicQuant does not support " << soc;
     return nullptr;
   }

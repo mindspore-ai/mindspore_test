@@ -65,7 +65,7 @@ std::pair<ShapeArray, ShapeArray> GroupedMatmulBaseFuncImpl::FetchInputAndWeight
 void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                         const ShapeVector &x_shape,
                                                                         const ShapeVector &w_shape, int64_t group_type,
-                                                                        bool transpose_b) const {
+                                                                        bool transpose_b, bool is_int4) const {
   const auto &op_name = primitive->name();
   static std::unordered_map<int64_t, std::pair<size_t, size_t>> expect_xw_ranks{
     {0, std::make_pair(2, 3)},  // group_type 0, split_item 3, x_rank = 2, w_rank = 3
@@ -87,6 +87,10 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
   ShapeValueDType w_k = 0;
   if (transpose_b) {
     w_k = w_shape[w_shape.size() - kInputIndex1];
+    if (is_int4) {
+      // int4 is stored as half of int8
+      w_k *= 2;
+    }
   } else {
     w_k = w_shape[w_shape.size() - kInputIndex2];
   }
@@ -113,13 +117,16 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitiveP
   auto is_x_dyn_rank = IsDynamicRank(x_shape);
   auto is_w_dyn_rank = IsDynamicRank(w_shape);
   if (!is_x_dyn_rank && !is_w_dyn_rank) {
-    CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type, transpose_b);
+    CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type, transpose_b, is_int4);
   }
   auto m = is_x_dyn_rank ? abstract::Shape::kShapeDimAny : x_shape[x_shape.size() - 2];
   auto n = abstract::Shape::kShapeDimAny;
   if (!is_w_dyn_rank) {
     n = transpose_b ? w_shape[w_shape.size() - kInputIndex2] : w_shape.back();
-    if (is_int4) {
+    if (is_int4 && !transpose_b) {
+      // if transpose_b, k is the last axis instead of n,
+      // therefore k is stored as k / 2 whereas n remains
+      // unchanged
       n = n << 1;
     }
   }
