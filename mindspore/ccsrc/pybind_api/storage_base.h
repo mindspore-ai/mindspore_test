@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
-#define MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
+#ifndef MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
+#define MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
 
-#include "frontend/ir/storage_base.h"
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 
 namespace mindspore {
-class FRONTEND_EXPORT Storage {
+class StorageBase {
  public:
-  Storage() = default;
-  explicit Storage(const StorageBasePtr &storage_base) : storage_base_(storage_base) {}
-  ~Storage();
+  using StorageBasePtr = std::shared_ptr<StorageBase>;
+  StorageBase() = default;
+  explicit StorageBase(device::DeviceAddressPtr &device_data) : device_data_(device_data) {}
+  explicit StorageBase(const StorageBase &storage_base) : device_data_(storage_base.device_data_) {}
+  ~StorageBase();
 
   uintptr_t DataPtr() const;
   void InplaceReSize(int64_t size);
   int64_t NBytes() const;
-  void InplaceCopy(const Storage &src, bool non_blocking = false);
+  void InplaceCopy(const StorageBasePtr &src, bool non_blocking);
   std::string device() const;
-  const StorageBasePtr get_storage_base() const { return storage_base_; }
-  StorageBasePtr get_mutable_storage_base() const { return storage_base_; }
 
  private:
-  StorageBasePtr storage_base_;
+  device::DeviceAddressPtr device_data_{nullptr};
 };
+using StorageBasePtr = std::shared_ptr<StorageBase>;
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
+#endif  // MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H

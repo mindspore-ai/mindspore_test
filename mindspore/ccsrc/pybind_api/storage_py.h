@@ -19,7 +19,7 @@
 
 #include <Python.h>
 #include "pybind11/pybind11.h"
-#include "frontend/ir/storage.h"
+#include "pybind_api/storage.h"
 
 namespace mindspore {
 
