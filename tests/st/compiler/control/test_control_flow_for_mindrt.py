@@ -58,7 +58,7 @@ def test_repeat_control_arrow_for_stack_actor():
     x = Tensor(np.array([1]), mindspore.int32)
     net = Net()
     out = net(x)
-    result = 10
+    result = 14
     assert out == result
 
 

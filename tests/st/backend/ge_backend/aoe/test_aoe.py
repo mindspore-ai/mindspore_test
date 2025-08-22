@@ -28,7 +28,7 @@ class GraphNet(nn.Cell):
         self.param_a = Parameter(Tensor(10, mstype.float32), name="a")
         self.zero = Parameter(Tensor(0, mstype.float32), name="zero")
 
-    def construct(self, x):
+    def construct(self):
         out = self.zero
         out1 = self.param_a
 
@@ -46,10 +46,9 @@ def aoe_online():
     ms.device_context.ascend.op_tuning.aoe_job_type("2")
     context.set_context(jit_config={"jit_level": "O2"})
     net = GraphNet()
-    x = Tensor(3, mstype.int32)
-    out0, out1 = net(x)
-    assert out0 == Tensor(20, mstype.float32)
-    assert out1 == Tensor(30, mstype.float32)
+    out0, out1 = net()
+    assert out0 == Tensor(30, mstype.float32)
+    assert out1 == Tensor(40, mstype.float32)
 
 
 @arg_mark(
