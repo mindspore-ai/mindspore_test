@@ -166,11 +166,8 @@ set(MS_BACKEND_SUB_COMP
         runtime/device
         runtime/core
         runtime/pynative
-        plugin/device/cpu/hal/device
-        plugin/device/cpu/hal/hardware
-        plugin/device/cpu/optimizer
         plugin/device/cpu/kernel
-        plugin/res_manager/cpu
+        plugin/cpu
         )
 
 foreach(_comp ${MS_BACKEND_SUB_COMP})

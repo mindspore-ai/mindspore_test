@@ -64,7 +64,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"

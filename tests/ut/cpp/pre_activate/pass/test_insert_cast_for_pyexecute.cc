@@ -20,7 +20,7 @@
 #include "ir/manager.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
-#include "plugin/device/cpu/optimizer/insert_cast_to_pyexecute.h"
+#include "plugin/cpu/graph_optimizer/pass/train/insert_cast_to_pyexecute.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

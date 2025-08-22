@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ops/kernel/cpu/pyboost/customize/clamp_tensor.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 

@@ -22,7 +22,7 @@
 #include <functional>
 #include "ir/tensor_storage_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

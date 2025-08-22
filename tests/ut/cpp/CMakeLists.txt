@@ -149,10 +149,9 @@ endif()
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_res_manager.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/ms_collective_topo.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/cpu_res_manager.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/mem_manager/cpu_memory_pool.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/collective/ms_collective_topo.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
         "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"

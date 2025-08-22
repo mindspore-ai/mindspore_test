@@ -16,9 +16,9 @@
 #include "plugin/device/cpu/kernel/rl/tensor_array_write_kernel.h"
 #include <memory>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_tensor_array.h"
+#include "plugin/device/cpu/kernel/rl/cpu_tensor_array.h"
 #include "runtime/device/tensor_array_manager.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
+#include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
 namespace mindspore {
 namespace kernel {
 constexpr size_t kSecondInputIndex = 2;

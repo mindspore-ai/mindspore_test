@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 #include "plugin/device/cpu/kernel/custom/custom_kernel_input_info.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

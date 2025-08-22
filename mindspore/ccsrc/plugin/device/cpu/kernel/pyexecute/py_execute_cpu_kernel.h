@@ -25,7 +25,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/numpy.h"
 #include "include/common/fallback.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 
 namespace py = pybind11;
 namespace mindspore {

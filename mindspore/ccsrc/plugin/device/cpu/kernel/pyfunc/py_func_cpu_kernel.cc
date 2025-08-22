@@ -21,7 +21,7 @@
 #include "Eigen/Core"
 #include "ir/tensor_new.h"
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_common.h"
+#include "plugin/device/cpu/kernel/cpu_common.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "utils/ms_utils_secure.h"
