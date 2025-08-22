@@ -1299,7 +1299,7 @@ static PyMethodDef Tensor_methods[] = {
   {"is_contiguous", (PyCFunction)TensorPython_is_contiguous, METH_NOARGS,
    "Check if the tensor is contiguous in memory."},
   {"is_complex", (PyCFunction)TensorPython_is_complex, METH_NOARGS, R"mydelimiter(
-                              For details, please refer to: func:'mindspore.ops.is_complex'.
+                              For details, please refer to :func:`mindspore.ops.is_complex`.
 
                               Examples
                                   >>> x = mindspore.Tensor([1 + 1j], dtype=mindspore.complex128)

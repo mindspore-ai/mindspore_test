@@ -22,7 +22,7 @@ mindspore.amp.custom_mixed_precision
     关键字参数：
         - **white_list** (list[Primitive, Cell], 可选) - 自定义混合精度的白名单。默认值： ``None`` 。
         - **black_list** (list[Cell], 可选) - 自定义混合精度的黑名单。默认值： ``None`` 。
-        - **dtype** (Type) - 低精度计算时使用的数据类型，可以是 ``mstype.float16`` 或 ``mstype.bfloat16``。默认值： ``mstype.float16`` 。
+        - **dtype** (Type, 可选) - 低精度计算时使用的数据类型，可以是 ``mstype.float16`` 或 ``mstype.bfloat16``。默认值： ``mstype.float16`` 。
 
     返回：
         network (Cell)，支持混合精度的网络。

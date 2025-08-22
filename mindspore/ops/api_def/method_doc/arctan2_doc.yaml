@@ -2,4 +2,4 @@ arctan2:
   description: |
     arctan2(other) -> Tensor
     
-    Alias for :func:`Tensor.atan2`.
+    Alias for :func:`mindspore.Tensor.atan2`.

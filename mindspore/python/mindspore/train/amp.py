@@ -871,8 +871,8 @@ def custom_mixed_precision(network, *, white_list=None, black_list=None, dtype=m
             white list is not used.
         black_list (list[Cell], optional): Black list of custom mixed precision. Defaults: ``None`` , means
             black list is not used.
-        dtype (Type): The type used in lower precision calculations, can be ``mstype.float16`` or ``mstype.bfloat16`` ,
-            default: ``mstype.float16`` .
+        dtype (Type, optional): The type used in lower precision calculations, can be ``mstype.float16`` or
+            ``mstype.bfloat16`` , default: ``mstype.float16`` .
 
     Returns:
         network (Cell), A network supporting mixed precision.
