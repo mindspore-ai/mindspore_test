@@ -21,6 +21,7 @@
 #include <vector>
 #include "hccl/hccl_types.h"
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
+#include "plugin/ascend/res_manager/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -66,7 +67,7 @@ class DataExchangeInfo {
   uint64_t size_max_ = 0;
 };
 
-class ParamReplication {
+class ASCEND_RES_MANAGER_EXPORT ParamReplication {
  public:
   explicit ParamReplication(const AscendResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ParamReplication() = default;

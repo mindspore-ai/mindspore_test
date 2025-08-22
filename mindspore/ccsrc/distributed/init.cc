@@ -23,13 +23,13 @@
 #include <memory>
 #include <map>
 #include <functional>
-#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
+#include "tools/error_handler/exit_handler.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {
-using mindspore::debug::tft::TFTWaitSem;
+using mindspore::tools::TFTWaitSem;
 
 constexpr char kOpExecutorWorkerJoinFunc[] = "OpExecutorWorkerJoin";
 std::map<std::string, std::function<void()>> gDistributedCallbackMap;

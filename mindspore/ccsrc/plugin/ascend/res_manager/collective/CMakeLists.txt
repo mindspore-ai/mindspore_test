@@ -5,7 +5,6 @@ set(ASCEND_COLLECTIVE_SRCS "ascend_collective_comm_lib.cc"
         "ccool_collective_comm_lib.cc"
         "ccool_communication_group.cc"
         "leaper_trans.cc"
-        "hccl_watch_dog_thread.cc"
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/collective_communication_lib.cc
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/dummy_collective_communication_lib.cc
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/communication_group.cc)

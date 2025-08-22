@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
+#include "tools/error_handler/exit_handler.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 #include <unistd.h>
 #include <dirent.h>
@@ -27,8 +27,7 @@
 #include "include/common/utils/utils.h"
 
 namespace mindspore {
-namespace debug {
-namespace tft {
+namespace tools {
 namespace {
 constexpr size_t kMaxPathNameLen = 256;
 constexpr size_t kMaxProcFileLen = 128;
@@ -138,6 +137,5 @@ bool TFTWaitSem::IsEnable() {
 void TFTWaitSem::StartRecordThreads() { RecordThreads(true); }
 
 void TFTWaitSem::FinishRecordThreads() { RecordThreads(false); }
-}  // namespace tft
-}  // namespace debug
+}  // namespace tools
 }  // namespace mindspore

@@ -35,7 +35,7 @@
 #include "plugin/ascend/graph_optimizer/somas/acl_somas.h"
 #include "plugin/ascend/graph_optimizer/stream_assign/acl_stream_assign.h"
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
-#include "plugin/device/ascend/hal/special/parameter_replication.h"
+#include "plugin/ascend/res_manager/error_manager/param_restore.h"
 #include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"

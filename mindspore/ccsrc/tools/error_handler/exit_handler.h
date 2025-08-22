@@ -24,8 +24,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore {
-namespace debug {
-namespace tft {
+namespace tools {
 class BACKEND_COMMON_EXPORT TFTWaitSem {
  public:
   static TFTWaitSem &GetInstance();
@@ -50,7 +49,6 @@ class BACKEND_COMMON_EXPORT TFTWaitSem {
   static bool isEnable_;
   void RecordThreads(bool is_start);
 };
-}  // namespace tft
-}  // namespace debug
+}  // namespace tools
 }  // namespace mindspore
 #endif

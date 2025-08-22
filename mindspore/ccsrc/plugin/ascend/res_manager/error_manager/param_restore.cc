@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/special/parameter_replication.h"
+#include "plugin/ascend/res_manager/error_manager/param_restore.h"
 #include <cstddef>
 #include <algorithm>
 #include <vector>
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "mindspore/ccsrc/plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "include/common/utils/utils.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
