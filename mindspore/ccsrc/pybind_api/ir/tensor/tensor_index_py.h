@@ -24,7 +24,6 @@
 #include <vector>
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
-#include "ir/map_tensor.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/tensor_utils.h"

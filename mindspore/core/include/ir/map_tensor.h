@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CORE_IR_MAP_TENSOR_H_
 #define MINDSPORE_CORE_IR_MAP_TENSOR_H_
 
-#include <tuple>
 #include <memory>
 #include <vector>
 #include <string>

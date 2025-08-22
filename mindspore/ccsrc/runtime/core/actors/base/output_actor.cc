@@ -20,6 +20,7 @@
 #include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
