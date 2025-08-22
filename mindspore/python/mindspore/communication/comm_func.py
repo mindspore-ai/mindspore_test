@@ -733,7 +733,7 @@ def gather_into_tensor(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP):
     Args:
         tensor (Tensor): The tensor to be gathered. The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
         dst(int, optional): Specifies the rank(global rank) of the process that receive the tensor.
-            And only process `dst` will receive the gathered tensor. Default: 0.
+            And only process `dst` will receive the gathered tensor. Default: ``0``.
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``.
 
     Returns:

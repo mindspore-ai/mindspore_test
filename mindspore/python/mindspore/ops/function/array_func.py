@@ -6305,7 +6305,7 @@ def repeat_elements(x, rep, axis=0):
     Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat` .
 
     Note:
-        It is recommended to use :func:'mindspore.mint.repeat_interleave', the dimension of input 'x' can support
+        It is recommended to use :func:`mindspore.mint.repeat_interleave`, the dimension of input 'x' can support
         a maximum of 8, and get better performance.
 
     Args:
