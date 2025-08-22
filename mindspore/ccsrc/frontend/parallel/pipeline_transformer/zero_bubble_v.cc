@@ -35,6 +35,21 @@ bool CompareBorderPair(const BorderPair &bp1, const BorderPair &bp2) {
   return compare_border(bp1.first, bp2.first) && compare_border(bp1.second, bp2.second);
 }
 
+bool CheckChunkAndMicro(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+    return false;
+  }
+  return true;
+}
+
+bool IsSendOrReceive(const AnfNodePtr &node) {
+  if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
+    return false;
+  }
+  return true;
+}
+
 void ZeroBubbleV::InsertCallControlOrder(const std::vector<BorderPair> &borders, const std::string &tags) {
   size_t size = borders.size();
   if (size < kIndexThree) {
@@ -357,15 +372,21 @@ void ZeroBubbleV::GetBorderNode() {
     MS_LOG(EXCEPTION) << "Zero Bubble V scheduler only support chunk_num is 2, but got:" << chunk_num_;
   }
   for (const auto &node : all_nodes) {
-    if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
+    if (!IsSendOrReceive(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+    if (!CheckChunkAndMicro(cnode)) {
       continue;
     }
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       GetBackwardBorder(cnode);
       continue;
     }
@@ -420,17 +441,18 @@ std::queue<BorderPair> ZeroBubbleV::GetTargetBorder(const std::vector<BorderPair
 }
 
 void ZeroBubbleV::ReorderShardedParam(const BorderVecPtr &exec_order) {
-  if (fwd_params_.empty()) {
-    return;
+  if (!fwd_params_.empty()) {
+    std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
+    auto prior = fwd_params_.back();
+    auto last = exec_order->front().first;
+    ControlOrder(prior, last);
   }
-  std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
-  std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
-  auto prior = fwd_params_.back();
-  auto last = exec_order->front().first;
-  ControlOrder(prior, last);
-  auto prior2 = exec_order->back().second;
-  auto last2 = bwd_params_.front();
-  ControlOrder(prior2, last2);
+  if (!bwd_params_.empty()) {
+    std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
+    auto prior2 = exec_order->back().second;
+    auto last2 = bwd_params_.front();
+    ControlOrder(prior2, last2);
+  }
 }
 
 void ZeroBubbleV::ProcessStep1(const PipelineState &state, BorderVecPtr exec_order) {

@@ -924,22 +924,6 @@ AnfNodeIndexSet PipelineTransformer::GetParameterLoadUsers(const AnfNodePtr &nod
   return users;
 }
 
-static bool IsFreezedGradGraph(const AnfNodePtr &node) {
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (IsValueNode<FuncGraph>(cnode->input(0))) {
-    auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
-    MS_EXCEPTION_IF_NULL(graph);
-    if (graph->has_flag(FREEZE)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> PipelineTransformer::HandleSharedParameter() {
   auto parameters = root_->parameters();
   std::vector<AnfNodePtr> sends = {};

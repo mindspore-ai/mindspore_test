@@ -148,6 +148,12 @@ void PipelineScheduler::GetBorderNode() {
     Border border_cell = {nullptr, chunk, micro, seq_chunk};
 
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       GetBackwardBorderNode(cnode);
       continue;
     }
@@ -496,10 +502,12 @@ void InterleavedScheduler::ParameterReorder(const std::vector<BorderPair> &sorte
                                             const std::vector<BorderPair> &sorted_bwd_end) {
   if (!fwd_params_.empty()) {
     std::sort(fwd_params_.begin(), fwd_params_.end(), SortFuncInsideMicro);
-    std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
     auto prior = fwd_params_.back();
     auto last = sorted_fwd_begin.front().first;
     ControlOrder(prior, last);
+  }
+  if (!bwd_params_.empty()) {
+    std::sort(bwd_params_.begin(), bwd_params_.end(), SortFuncInsideMicro);
     auto prior2 = sorted_bwd_end.back().second;
     auto last2 = bwd_params_.front();
     ControlOrder(prior2, last2);

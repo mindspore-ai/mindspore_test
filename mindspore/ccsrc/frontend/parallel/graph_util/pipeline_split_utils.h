@@ -81,6 +81,7 @@ int64_t GetMicroMax(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &for
 int64_t GetSegment(const AnfNodePtr &node);
 std::string GetWorldGroup();
 int64_t GetRank();
+bool IsFreezedGradGraph(const AnfNodePtr &node);
 }  // namespace parallel
 }  // namespace mindspore
 
