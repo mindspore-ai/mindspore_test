@@ -668,7 +668,7 @@ Status ConstructCostGraphNodesByUniqueId(const std::vector<AnfNodePtr> &all_node
   StrategyMap stra_map;
   if (StrategyCheckpoint::GetInstance().LoadCheckPointOn()) {
     if (StrategyCheckpoint::GetInstance().Load(&stra_map) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Load strategy checkpoint failed";
+      MS_LOG(EXCEPTION) << "Load strategy checkpoint failed. Please check if the file exists and the file permission.";
     }
   }
 
@@ -804,7 +804,7 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
   StrategyMap stra_map;
   if (StrategyCheckpoint::GetInstance().LoadCheckPointOn() &&
       StrategyCheckpoint::GetInstance().Load(&stra_map) != SUCCESS) {
-    MS_LOG(WARNING) << "Load strategy checkpoint failed";
+    MS_LOG(WARNING) << "Load strategy checkpoint failed. Please check if the file exists and the file permission.";
     return FAILED;
   }
   for (auto &node : all_nodes) {

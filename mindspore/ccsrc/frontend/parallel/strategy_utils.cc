@@ -245,7 +245,8 @@ void StrategyUtils::ExtractStrategyAndInit(const CNodePtr &cnode, const Primitiv
   StrategyMap stra_map;
   if (StrategyCheckpoint::GetInstance().LoadCheckPointOn() &&
       (StrategyCheckpoint::GetInstance().Load(&stra_map) != SUCCESS)) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Load strategy checkpoint failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << "Load strategy checkpoint failed. Please check if the file exists and the file permission.";
   }
 
   std::string strategy_key_name = "";
