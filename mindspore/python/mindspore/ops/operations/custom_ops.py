@@ -1251,10 +1251,11 @@ class CustomOpBuilder:
 
     Args:
         name (str): The unique name of the custom operator module, used to identify the operator.
-        sources (Union[str, list[str]]): The source file(s) of the custom operator. It can be a single file path or
-                                    a list of file paths.
+        sources (Union[list[str], tuple[str], str]): The source file(s) of the custom operator. It can be a single
+                                    file path or a list of file paths.
         backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
-        include_paths (list[str], optional): Additionally included paths needed during compilation. Default: ``None``.
+        include_paths (Union[list[str], tuple[str], str], optional): Additionally included paths needed during
+                                    compilation. Default: ``None``.
         cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
         ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
         kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
@@ -1270,6 +1271,14 @@ class CustomOpBuilder:
 
             - enable_asdsip (bool, optional): Whether to call ASDSIP (Ascend SiP Boost) operator. If set to ``True``,
               the `backend` must be ``Ascend`` or left empty. Default: ``False``.
+
+            - op_def (Union[list[str], tuple[str], str], optional): Path(s) to the operator definition
+              file(s) (YAML format). When using custom operators in graph mode, this parameter is mandatory.
+              It can be a single file path string or a list of file path strings. Default: ``None``.
+
+            - op_doc (Union[list[str], tuple[str], str], optional): Path(s) to the operator documentation
+              file(s) (YAML format). This parameter is optional and used to provide additional documentation
+              for the operator. It can be a single file path string or a list of file path strings. Default: ``None``.
 
     .. note::
         - If the `backend` argument is provided, additional default flags will be automatically added to
@@ -1324,22 +1333,24 @@ class CustomOpBuilder:
         Validate and normalize all arguments to meet custom-op build requirements.
         """
 
+        def _check_str_or_list_str(key, val):
+            if val is None:
+                return val
+            if isinstance(val, str):
+                val = [val]
+            val = validator.check_value_type(key, val, [list, tuple])
+            val = list(val)
+            validator.check_element_type_of_iterable(key, val, [str])
+            return val
+
         self.name = validator.check_value_type("name", name, [str])
-
-        if isinstance(sources, str):
-            sources = [sources]
-        self.source = validator.check_value_type("sources", sources, [list])
-        validator.check_element_type_of_iterable("sources", sources, [str])
-
+        self.source = _check_str_or_list_str("sources", sources)
         self.backend = validator.check_value_type("backend", backend, [str, type(None)])
         if self.backend is not None and self.backend not in {"CPU", "Ascend"}:
             raise ValueError(
                 f"For 'backend', only 'CPU' or 'Ascend' are allowed, but got '{self.backend}'.")
 
-        self.include_paths = validator.check_value_type("include_paths", include_paths,
-                                                        [list, type(None)])
-        if self.include_paths is not None:
-            validator.check_element_type_of_iterable("include_paths", self.include_paths, [str])
+        self.include_paths = _check_str_or_list_str("include_paths", include_paths)
 
         self.cflags = validator.check_value_type("cflags", cflags, [str, type(None)])
         self.ldflags = validator.check_value_type("ldflags", ldflags, [str, type(None)])
@@ -1350,19 +1361,8 @@ class CustomOpBuilder:
 
         self.debug_mode = validator.check_bool(kwargs.get("debug_mode", False), "debug_mode")
         self.enable_asdsip = validator.check_bool(kwargs.get("enable_asdsip", False), "enable_asdsip")
-
-        def _check_str_or_list_str(key):
-            val = kwargs.get(key)
-            if val is None:
-                return val
-            if isinstance(val, str):
-                return val
-            val = validator.check_value_type(key, val, [list])
-            validator.check_element_type_of_iterable(key, val, [str])
-            return val
-
-        self.yaml = _check_str_or_list_str("op_def")
-        self.doc = _check_str_or_list_str("op_doc")
+        self.yaml = _check_str_or_list_str("op_def", kwargs.get("op_def"))
+        self.doc = _check_str_or_list_str("op_doc", kwargs.get("op_doc"))
 
         self.enable_atb = validator.check_bool(kwargs.get("enable_atb", False))
 

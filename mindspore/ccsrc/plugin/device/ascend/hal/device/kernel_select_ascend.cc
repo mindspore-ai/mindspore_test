@@ -62,8 +62,8 @@ namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
 constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
-constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel",
-                                           "atb kernel",      "hccl kernel",  "host kernel"};
+constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel", "atb kernel",
+                                           "hccl kernel",     "host kernel",  "custom kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
