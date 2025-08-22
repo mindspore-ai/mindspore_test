@@ -132,6 +132,7 @@ mindspore.Tensor
     mindspore.Tensor.asnumpy
     mindspore.Tensor.assign_value
     mindspore.Tensor.astype
+    mindspore.Tensor.as_strided
     mindspore.Tensor.atan
     mindspore.Tensor.atan2
     mindspore.Tensor.atanh

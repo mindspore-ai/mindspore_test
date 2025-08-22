@@ -480,6 +480,9 @@ from mindspore.ops.function.math_func import isnan_ext as isnan
 # 916
 from mindspore.ops.functional_overload import index_add
 
+# 974
+from mindspore.ops.auto_generate import as_strided
+
 # 1007
 from mindspore.ops.auto_generate import t_ext as t
 from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
@@ -2055,6 +2058,9 @@ __all__ = [
 
     # 916
     'index_add',
+
+    # 974
+    'as_strided',
 
     # 1007
     't',

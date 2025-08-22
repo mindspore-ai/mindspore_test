@@ -1,0 +1,7 @@
+as_strided:
+  - op_yaml: as_strided_op.yaml
+    py_method: tensor_as_strided
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

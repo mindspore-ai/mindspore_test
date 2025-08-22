@@ -5,8 +5,10 @@ as_strided:
             dtype: tensor
         size:
             dtype: tuple[int]
+            type_cast: list[int]
         stride:
             dtype: tuple[int]
+            type_cast: list[int]
         storage_offset:
             dtype: int
             default: 0
