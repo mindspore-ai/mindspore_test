@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
-#include "ir/primitive.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "ops/primitive_c.h"

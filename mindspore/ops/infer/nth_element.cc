@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
-#include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"

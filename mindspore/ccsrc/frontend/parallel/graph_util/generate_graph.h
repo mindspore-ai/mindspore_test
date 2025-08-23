@@ -24,7 +24,6 @@
 #include <utility>
 
 #include "ir/anf.h"
-#include "ir/primitive.h"
 #include "ops/op_def.h"
 #include "utils/hash_map.h"
 #include "frontend/parallel/strategy.h"

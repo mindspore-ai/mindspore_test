@@ -1,4 +1,3 @@
-
 /**
  * Copyright 2025 Huawei Technologies Co., Ltd
  *
@@ -29,7 +28,6 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
