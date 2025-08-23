@@ -343,6 +343,15 @@ void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
   runtime::OpExecutor::GetInstance().set_async_for_graph(flag);
 }
 
+void PyNativeExecutor::QueueBackwardFinalCallback(const py::object &callback) const {
+  MS_LOG(DEBUG) << "Begin queue backward final callback";
+  grad_executor()->QueueFinalCallback([inner_callback = callback]() mutable {
+    pybind11::gil_scoped_acquire gil_acquire;
+    (void)inner_callback();
+    inner_callback = py::object();
+  });
+}
+
 void RegPyNativeExecutor(const py::module *m) {
   autograd::RegFunctionBase(m);
 
@@ -387,7 +396,9 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("set_async_for_graph", &PyNativeExecutor::SetAsyncForGraph, py::arg("flag") = py::bool_(false),
          "Executor set async flag.")
     .def("constant_folding", &PyNativeExecutor::CallConstantFolding, "Call Constant Folding Primitive")
-    .def("set_creation_type", &PyNativeExecutor::SetCreationType, "Set tensor's view creation type");
+    .def("set_creation_type", &PyNativeExecutor::SetCreationType, "Set tensor's view creation type")
+    .def("queue_backward_final_callback", &PyNativeExecutor::QueueBackwardFinalCallback,
+         "Queue Backward Final Callback");
 }
 
 struct PyNativeExecutorRegister {

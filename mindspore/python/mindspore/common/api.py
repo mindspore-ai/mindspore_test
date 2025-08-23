@@ -1156,12 +1156,12 @@ def jit(
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
             should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `ast <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#ast>`_ :
+            - `ast`_ :
               Parse Python ast to build graph.
-            - `bytecode <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
+            - `bytecode`_ :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
-            - `trace <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#trace>`_ :
+            - `trace`_ :
               Trace the execution of Python code to build graph. This is an experimental prototype that is
               subject to change and/or deletion.
 
@@ -1935,6 +1935,19 @@ class _PyNativeExecutor:
             None.
         """
         return self._executor.set_creation_type(tensor, creation_type)
+
+    def queue_backward_final_callback(self, callback):
+        """
+        add backward final callback
+
+        Args:
+            callback(Function): callback function.
+
+        Return:
+            None.
+        """
+        return self._executor.queue_backward_final_callback(callback)
+
 
 
 class _CellGraphExecutor:
