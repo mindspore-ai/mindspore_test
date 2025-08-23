@@ -105,8 +105,9 @@ TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
     std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
                    [output_type](const InferInfoPtr &info) { return output_type; });
   } else if (scale_infos->IsNone()) {
+    auto out_type = x_type == kNumberTypeInt8 ? kNumberTypeInt32 : x_type;
     std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
-                   [](const InferInfoPtr &info) { return info->GetType(); });
+                   [=](const InferInfoPtr &info) { return out_type; });
   } else {
     const auto &scale_tensors = scale_infos->GetSequenceElements();
     TypeId scale_type = scale_tensors[0]->GetType();
