@@ -230,16 +230,13 @@ def test_resolve_cust_class():
 def test_resolve_cust_ms_function_call_class():
     """
     Feature: Syntax resolve.
-    Description: Graph syntax resolve support custom class input.
+    Description: support device sync.
     Expectation: No error.
     """
     context.set_context(jit_level='O0')
     net = UNet(UserDefinedMsFunctionCallNet())
     x = np.array([10, 10], np.float32)
-    with pytest.raises(RuntimeError) as err:
-        net(ms.Tensor(x))
-    assert "Nested execution during JIT execution for 'UserDefinedMsFunctionCallNet.__call__' " \
-           "is not supported when 'UNet.construct' compile and execute." in str(err.value)
+    net(ms.Tensor(x))
 
 
 class OuterNet(ms.nn.Cell):
