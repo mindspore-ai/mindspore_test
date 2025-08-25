@@ -76,6 +76,7 @@ void PagedAttention::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ui
   if (q_seq_lens.has_value()) {
     (void)GetSeqLenFromInputTensor(q_seq_lens.value(), &param_.q_seq_len);
   }
+  param_.has_q_seq_lens = q_seq_lens.has_value();
 
   has_attn_mask_ = attn_mask.has_value();
   has_alibi_mask_ = alibi_mask.has_value();
