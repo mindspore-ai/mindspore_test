@@ -126,7 +126,8 @@ class BACKEND_EXPORT MSBackendBase : public BackendBase {
 
   // Backend compile cache interface, handle the control node and graph id in this class.
   bool DumpBackendInfo();
-  bool LoadBackendInfo();
+  bool LoadBackendInfo(const nlohmann::json &data_json);
+  bool CheckBackendInfoValid(nlohmann::json *data_json);
 
   // Check whether this root_graph can enable single op and graph pipeline or not.
   bool CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info);

@@ -880,10 +880,16 @@ bool MSBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, Devi
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   try {
     MS_LOG(INFO) << "Status record: Start load backend kernel graph.";
-    if (!graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context)) {
+    nlohmann::json data_json;
+    if (!CheckBackendInfoValid(&data_json)) {
       return false;
     }
-    if (!LoadBackendInfo()) {
+    if (!graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context)) {
+      MS_LOG(INFO) << "Failed to load kernel graph cache.";
+      return false;
+    }
+    if (!LoadBackendInfo(data_json)) {
+      MS_LOG(INFO) << "Failed to load backend info for compile cache.";
       return false;
     }
     MS_LOG(INFO) << "Status record: End load backend kernel graph.";
@@ -997,25 +1003,46 @@ bool MSBackendBase::DumpBackendInfo() {
   return Common::SaveStringToFile(backinfo_json_real_path.value(), backinfo_json.dump());
 }
 
-bool MSBackendBase::LoadBackendInfo() {
-  MS_LOG(INFO) << "Use compile cache to load control node cache, be ware of correctness risks.";
+bool MSBackendBase::CheckBackendInfoValid(nlohmann::json *data_json) {
+  MS_EXCEPTION_IF_NULL(data_json);
   auto &context = CompileCacheContext::GetInstance();
   auto func_graph = context.FrontGraph();
   if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "The frontend graph to be cached is null";
+    MS_LOG(ERROR) << "The frontend graph to be cached is null";
     return false;
   }
+  MS_LOG(INFO) << "Start check backend compile cache valid for funcgraph:" << func_graph->ToString();
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
   auto json_path = cache_path + kControlNodeJsonSuffix;
   MS_LOG(DEBUG) << "Json path: " << json_path;
-
-  nlohmann::json data_json;
   std::ifstream json_stream(json_path);
   if (!json_stream.is_open()) {
     MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache missed.";
     return false;
   }
-  json_stream >> data_json;
+  json_stream >> (*data_json);
+  json_stream.close();
+  auto control_node_json = (*data_json)[kControlNodeCache];
+  // Load device context.
+  if (control_node_json.contains(kKernelGraphToDeviceContext)) {
+    const auto &kernel_graph_json = control_node_json[kKernelGraphToDeviceContext];
+    for (const auto &kernelgraph : kernel_graph_json) {
+      const auto &graph_id = kernelgraph[kGraphId].get<GraphId>();
+      if (graph_compiler_->Fetch(graph_id) != nullptr) {
+        MS_LOG(INFO) << "The kernel graph id:" << graph_id
+                     << " in compile cache has been used, the cache cannot be load for funcgraph:"
+                     << func_graph->ToString();
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool MSBackendBase::LoadBackendInfo(const nlohmann::json &data_json) {
+  MS_LOG(INFO) << "Use compile cache to load control node cache, be ware of correctness risks.";
+  auto &context = CompileCacheContext::GetInstance();
+  auto func_graph = context.FrontGraph();
   if (!data_json.contains(kControlNodeCache)) {
     MS_LOG(WARNING) << "No control node info in control cache json file.";
     return true;
@@ -1082,11 +1109,10 @@ bool MSBackendBase::LoadBackendInfo() {
     }
     device_name_ = control_node_json[kDeviceName];
     device_id_ = control_node_json[kDeviceId].get<uint32_t>();
-    json_stream.close();
-    MS_LOG(INFO) << "Load control node cache success. Json path: " << json_path;
+    MS_LOG(INFO) << "Load control node cache success for funcgraph:" << func_graph->ToString();
   } catch (std::exception &e) {
-    json_stream.close();
-    MS_LOG(EXCEPTION) << "Fail to load control node cache. Json path: " << json_path << " error info:" << e.what();
+    MS_LOG(EXCEPTION) << "Fail to load control node cache for funcgraph:" << func_graph->ToString()
+                      << ", error info:" << e.what();
     return false;
   }
   return true;

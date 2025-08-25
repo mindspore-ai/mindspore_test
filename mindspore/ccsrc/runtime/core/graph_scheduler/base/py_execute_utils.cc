@@ -33,7 +33,7 @@ void set_pydata_converter(const PyDataConverter &pydata_converter) { py_data_con
 
 namespace {
 
-void TensorToRawMemory(const tensor::TensorPtr &tensor, DeviceAddress *const device_address) {
+void TensorToRawMemory(const tensor::TensorPtr &tensor, const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_address);
   MS_LOG(DEBUG) << "tensor:" << tensor->ToString();
@@ -63,12 +63,9 @@ void TensorToRawMemory(const tensor::TensorPtr &tensor, DeviceAddress *const dev
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-
     host_context->device_res_manager_->SyncAllStreams();
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    host_context->device_res_manager_->Copy(device_address->GetMutablePtr(), tensor->device_address()->GetMutablePtr(),
-                                            device_address->GetSize(), device::CopyType::kH2D,
-                                            device_address->stream_id());
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
   }
 }
 
@@ -327,7 +324,7 @@ abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
 
 void UserDataToRawMemory(KernelTensor *const kernel_tensor) {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_address = kernel_tensor->device_address().get();
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   MS_EXCEPTION_IF_NULL(kernel_tensor->user_data());
   MS_LOG(DEBUG) << "Start sync data from device address:" << device_address
@@ -356,10 +353,10 @@ void UserDataToRawMemory(KernelTensor *const kernel_tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   if (device_address->GetPtr() != nullptr) {
-    device_context->device_res_manager_->FreeMemory(device_address);
+    device_context->device_res_manager_->FreeMemory(device_address.get());
   }
   device_address->set_ptr(nullptr);
-  if (!device_context->device_res_manager_->AllocateMemory(device_address)) {
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
                   << ") memory isn't enough and alloc failed, alloc size: " + std::to_string(device_address->GetSize());
     return;
