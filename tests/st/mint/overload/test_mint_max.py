@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, mint
 from mindspore.common.api import _pynative_executor
 
+
 class MaxNet(nn.Cell):
     def construct(self, x):
         return mint.max(x)
@@ -116,7 +117,25 @@ def test_minimum(mode):
     net = MaximumNet()
 
     x = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), ms.float32)
-    other = Tensor(np.array([[2., 26., 4., 1.], [3., 41., 16., 1.]]), ms.float32)
+    other = Tensor(
+        np.array([[2., 26., 4., 1.], [3., 41., 16., 1.]]), ms.float32)
     output = net(x, other)
-    expect_output = np.array([[2., 26., 5., 7.], [4., 41., 16., 21.]], dtype=np.float32)
+    expect_output = np.array(
+        [[2., 26., 5., 7.], [4., 41., 16., 21.]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_max_empty_input():
+    """
+    Feature: test mint.max
+    Description: mint.max getting empty input
+    Expectation: expect raise value error
+    """
+    x = Tensor([], ms.float32)
+    with pytest.raises(ValueError):
+        ms.mint.max(x)
+        _pynative_executor.sync()

@@ -26,6 +26,14 @@ namespace ops {
 
 BaseShapePtr MaxFuncImpl::InferShape(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  MS_EXCEPTION_IF_NULL(input_shape_ptr);
+  auto x_shape = input_shape_ptr->GetShapeVector();
+  for (auto dim : x_shape) {
+    if (dim == 0) {
+      MS_EXCEPTION(ValueError) << primitive->name() << " cannot deal with empty input. Please try other inputs";
+    }
+  }
   return std::make_shared<abstract::TensorShape>(std::vector<int64_t>());
 }
 
@@ -38,6 +46,14 @@ TypePtrList MaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtr
   return {x_tensor->Dtype()};
 }
 ShapeArray MaxFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  auto x_shape = x_tensor->shape();
+  for (auto dim : x_shape) {
+    if (dim == 0) {
+      MS_EXCEPTION(ValueError) << primitive->name() << " cannot deal with empty input. Please try other inputs";
+    }
+  }
   return {std::vector<int64_t>()};
 }
 REGISTER_SIMPLE_INFER(kNameMax, MaxFuncImpl)
