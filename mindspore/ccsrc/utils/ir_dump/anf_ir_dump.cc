@@ -26,7 +26,6 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/label.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/symbolic.h"
 #include "utils/compile_config.h"
 #include "ir/func_graph.h"

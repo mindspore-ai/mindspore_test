@@ -27,7 +27,6 @@
 #include <fstream>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "runtime/core/graph_scheduler/control_flow/control_node_scheduler.h"
 #include "runtime/core/graph_scheduler/dynamic_type/any_type_graph_scheduler.h"
 #include "runtime/core/actors/base/actor_set.h"

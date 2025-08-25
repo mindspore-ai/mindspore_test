@@ -26,7 +26,6 @@
 #include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"
 #include "ir/device_type.h"
-#include "utils/hash_set.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"

@@ -30,7 +30,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/compact_set.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"

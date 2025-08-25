@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_info.h"
 #include "include/common/utils/utils.h"

@@ -26,7 +26,6 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

@@ -33,7 +33,6 @@
 
 #include "utils/ms_utils.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"
 #include "ir/anf.h"

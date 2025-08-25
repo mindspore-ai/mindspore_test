@@ -23,7 +23,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include "utils/hash_set.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"

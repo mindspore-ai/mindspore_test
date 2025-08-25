@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "frontend/jit/ps/parse/parse_base.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "pynative/pynative_execute.h"
 #include "mindspore/ops/op_def/array_ops.h"

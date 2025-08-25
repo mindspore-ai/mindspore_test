@@ -15,7 +15,6 @@
  */
 
 #include "ir/graph_utils.h"
-#include "utils/hash_set.h"
 #include "ir/visitor.h"
 #include "ir/func_graph.h"
 #include "utils/label.h"

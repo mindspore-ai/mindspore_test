@@ -24,7 +24,6 @@
 
 #include "ir/anf.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::session {

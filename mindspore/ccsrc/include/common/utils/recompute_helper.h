@@ -21,7 +21,6 @@
 
 #include "ir/anf.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "include/common/visible.h"
 
