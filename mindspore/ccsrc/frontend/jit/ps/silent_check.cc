@@ -37,7 +37,6 @@
 #include "ir/dtype/number.h"
 #include "ir/func_graph.h"
 #include "ir/param_info.h"
-#include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"

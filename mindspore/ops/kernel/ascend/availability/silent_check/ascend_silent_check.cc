@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 #include "availability/silent_check/silent_check.h"
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
-#include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
 #include "ir/tensor_new.h"

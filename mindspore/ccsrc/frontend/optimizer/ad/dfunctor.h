@@ -32,6 +32,7 @@
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/primal_attr.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/optimizer/ad/adjoint.h"
 #include "frontend/operator/ops.h"
