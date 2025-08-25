@@ -53,6 +53,7 @@
 #include "frontend/ir/tensor_py.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

@@ -27,7 +27,6 @@
 #include <vector>
 #include <algorithm>
 #include "abstract/dshape.h"
-#include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"

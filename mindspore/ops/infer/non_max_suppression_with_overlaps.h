@@ -23,7 +23,6 @@
 #include <vector>
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

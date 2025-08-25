@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
+#include "abstract/ops/primitive_infer_map.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
