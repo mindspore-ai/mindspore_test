@@ -47,6 +47,7 @@ using IntPtr = std::shared_ptr<Int>;
 using UIntPtr = std::shared_ptr<UInt>;
 using ComplexPtr = std::shared_ptr<Complex>;
 using ModelProtoPtr = std::shared_ptr<mind_ir::ModelProto>;
+class QuantizationParam;
 constexpr const size_t TOTAL_SAVE = 1024 * 1024 * 1024;
 constexpr const int64_t OFFSET = 64;
 constexpr const size_t PARA_ROUND = 1024;

@@ -23,7 +23,6 @@
 #include <vector>
 #include <set>
 #include "mindapi/base/macros.h"
-#include "ir/meta_tensor.h"
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
 

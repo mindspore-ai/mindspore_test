@@ -24,6 +24,7 @@
 #include "proto/anf_ir.pb.h"
 #include "proto/mind_ir.pb.h"
 #include "ir/graph_utils.h"
+#include "ir/quantization_param.h"
 #include "ir/scope.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"

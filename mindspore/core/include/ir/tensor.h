@@ -32,11 +32,8 @@
 #include "ir/device_type.h"
 #include "utils/log_adapter.h"
 #include "base/bfloat16.h"
-#include "base/float8_e5m2.h"
-#include "base/hifloat8.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
-#include "base/complex_storage.h"
 #include "ir/quantization_param.h"
 #include "ir/dtype/op_dtype.h"
 
@@ -67,6 +64,7 @@ enum TensorCompressionType {
 using ShapeValueDType = int64_t;
 using ShapeVector = std::vector<ShapeValueDType>;
 using ShapeArray = std::vector<ShapeVector>;
+class QuantizationParam;
 
 // Pinned memory register interface.
 class MS_CORE_API PinnedMemRegister {
