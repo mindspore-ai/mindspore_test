@@ -141,7 +141,6 @@ from mindspore.mindrecord.shardindexgenerator import ShardIndexGenerator
 from mindspore.mindrecord.shardwriter import ShardWriter
 from mindspore.mindrecord.shardheader import ShardHeader
 from mindspore.mindrecord.config import encrypt, decrypt
-from mindspore.parallel.mpi._mpi_config import _MpiConfig
 from mindspore.parallel._ps_context import ps_context
 from mindspore.parallel.algo_parameter_config import _AlgoParameterConfig
 from mindspore.parallel._utils import _reset_op_id
@@ -572,7 +571,6 @@ _func_map = {
     function_id(ShardHeader.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(encrypt): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(decrypt): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(_MpiConfig.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(ps_context): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_AlgoParameterConfig.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_reset_op_id): FUNC_KEY_PIJIT_FORBIDDEN,

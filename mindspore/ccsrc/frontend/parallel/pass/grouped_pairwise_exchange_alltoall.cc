@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/optimizer/grouped_pairwise_exchange_alltoall.h"
+#include "frontend/parallel/pass/grouped_pairwise_exchange_alltoall.h"
 #include <memory>
 #include <queue>
 #include <utility>
