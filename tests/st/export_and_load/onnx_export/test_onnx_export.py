@@ -837,7 +837,7 @@ def test_export_argmaxwithvalue():
     for i in range(4):
         ms_output = net(x, i)
         onnx_file = './argmaxwithvalue_onnx'
-        export(net, x, i, file_name=onnx_file)
+        export(net, x, i, file_name=onnx_file, output_names=["out1"])
         onnx_file = onnx_file + '.onnx'
         if os.path.isfile(onnx_file):
             session = ort.InferenceSession(onnx_file)

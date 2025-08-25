@@ -1480,6 +1480,7 @@ class OnnxExporter {
   std::string GenerateUniqueName() { return std::to_string(++onnx_node_index_); }
 
   std::string GenerateUniqueName(const AnfNodePtr &node) {
+    MS_EXCEPTION_IF_NULL(node);
     std::string node_scope = node->fullname_with_scope();
     std::string name = std::to_string(++onnx_node_index_) + "-" + node_scope;
     return name;
@@ -1498,6 +1499,17 @@ class OnnxExporter {
                                  [&node_name](const auto &pair) { return pair.second == node_name; });
     if (dup_iter != node_map_ptr->end()) {
       node_name = GenerateUniqueName(node) + node_name;
+    }
+    return node_name;
+  }
+
+  std::string GenerateInputNames(const ParameterPtr &node, std::map<AnfNodePtr, std::string> *node_map_ptr) {
+    auto node_name = node->ToString();
+    MS_EXCEPTION_IF_CHECK_FAIL(node_name != "", "Cannot get the name of an ignored parameter");
+    auto dup_iter = std::find_if(node_map_ptr->begin(), node_map_ptr->end(),
+                                 [&node_name](const auto &pair) { return pair.second == node_name; });
+    if (dup_iter != node_map_ptr->end()) {
+      MS_LOG(EXCEPTION) << "The input name " << node_name << " is already exist, duplicate names are not allowed.";
     }
     return node_name;
   }
@@ -1647,7 +1659,7 @@ void OnnxExporter::ExportInputs(const FuncGraphPtr &func_graph, std::map<AnfNode
         name = rename_input_names.front();
         rename_input_names.erase(rename_input_names.begin());
       } else {
-        name = GenerateUniqueParameterName(param_ptr, node_map_ptr);
+        name = GenerateInputNames(param_ptr, node_map_ptr);
       }
       (*node_map_ptr)[param_ptr] = name;
     }
@@ -2517,11 +2529,12 @@ void OnnxExporter::ExportPrimTopkExt(const FuncGraphPtr &, const CNodePtr &node,
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("TopK");
+  node_proto->set_name(node_name + "TopK");
   node_proto->add_input(x_input_name);
   node_proto->add_input(k_input_name);
   node_proto->add_output(MakeOutputName(node_name, kZeroNum));
   auto indices_name = MakeOutputName(node_name, kOneNum);
-  auto indices_cast_name = GenerateUniqueName(node) + indices_name + "cast";
+  auto indices_cast_name = indices_name + "_cast";
   node_proto->add_output(indices_cast_name);
 
   onnx::AttributeProto *axis_attr_proto = node_proto->add_attribute();
@@ -2882,6 +2895,7 @@ void OnnxExporter::ExportPrimSplitTensor(const FuncGraphPtr &, const CNodePtr &n
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Split");
+  node_proto->set_name(node_name + "Split");
   node_proto->add_input(x_input_name);
   for (int64_t i = 0; i < num_outputs; i++) {
     node_proto->add_output(MakeOutputName(node_name, i));
@@ -2963,6 +2977,7 @@ void OnnxExporter::ExportPrimBatchNormExt(const FuncGraphPtr &, const CNodePtr &
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("BatchNormalization");
+  node_proto->set_name(node_name + "BatchNormalization");
   node_proto->add_input(x_input_name);
   node_proto->add_input(scale_input_name);
   node_proto->add_input(bias_input_name);
@@ -4086,6 +4101,7 @@ void OnnxExporter::ExportPrimTupleGetItem(const FuncGraphPtr &, const CNodePtr &
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Identity");
+  node_proto->set_name(node_name + "Identity");
   node_proto->add_input(input_name);
   node_proto->add_output(node_name);
 }
@@ -4103,11 +4119,12 @@ void OnnxExporter::ExportPrimTopK(const FuncGraphPtr &, const CNodePtr &node,
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("TopK");
+  node_proto->set_name(node_name + "TopK");
   node_proto->add_input(x_input_name);
   node_proto->add_input(k_input_name);
   node_proto->add_output(MakeOutputName(node_name, kZeroNum));  // Values
   auto indices_name = MakeOutputName(node_name, kOneNum);
-  auto indices_cast_name = GenerateUniqueName(node) + indices_name + "_cast";
+  auto indices_cast_name = indices_name + "_cast";
   node_proto->add_output(indices_cast_name);
 
   onnx::AttributeProto *sorted_attr_proto = node_proto->add_attribute();
@@ -4321,6 +4338,7 @@ void OnnxExporter::ExportPrimSplit(const FuncGraphPtr &, const CNodePtr &node,
 
   onnx::NodeProto *split_proto = graph_proto->add_node();
   split_proto->set_op_type("Split");
+  split_proto->set_name(node_name + "Split");
   split_proto->add_input(input_name);
   for (int64_t i = 0; i < output_num; ++i) {
     split_proto->add_output(MakeOutputName(node_name, i));
@@ -4461,11 +4479,10 @@ void OnnxExporter::ExportPrimOnesLike(const FuncGraphPtr &, const CNodePtr &node
 void OnnxExporter::ExportPrimScatterNd(const FuncGraphPtr &, const CNodePtr &node,
                                        std::map<AnfNodePtr, std::string> *node_map_ptr,
                                        onnx::GraphProto *const graph_proto) {
-  auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
   auto input_indices_name = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
   auto input_update_name = GetNodeInputName(node->input(kTwoNum), node_map_ptr, graph_proto);
   auto input_shape_name = GetNodeInputName(node->input(kThreeNum), node_map_ptr, graph_proto);
-  auto node_zero_tensor_name = node_name + "_zero";
+  auto node_zero_tensor_name = GenerateUniqueName(node) + "_zero";
   auto dtype = node->input(kTwoNum)->Type();
   MS_EXCEPTION_IF_NULL(dtype);
   auto dtype_tensor_type = dyn_cast<TensorType>(dtype);
@@ -4497,8 +4514,10 @@ void OnnxExporter::ExportPrimScatterNd(const FuncGraphPtr &, const CNodePtr &nod
   AddCastOp(input_indices_name, int64_indices_name, onnx::TensorProto_DataType_INT64, graph_proto);
 
   // Create ScatterND node
+  auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
   onnx::NodeProto *scatternd_proto = graph_proto->add_node();
   scatternd_proto->set_op_type("ScatterND");
+  scatternd_proto->set_name(node_name + "ScatterND");
   scatternd_proto->add_input(node_zero_tensor_name);
   scatternd_proto->add_input(int64_indices_name);
   scatternd_proto->add_input(input_update_name);
@@ -4544,6 +4563,7 @@ void OnnxExporter::ExportPrimArgMaxWithValue(const FuncGraphPtr &func_graph, con
     auto indices_output_name = MakeOutputName(node_name, kZeroNum);
     onnx::NodeProto *argmax_proto = graph_proto->add_node();
     argmax_proto->set_op_type("ArgMax");
+    argmax_proto->set_name(indices_output_name + "ArgMax");
     argmax_proto->add_input(input_x_name);
     argmax_proto->add_output(indices_output_name);
     onnx::AttributeProto *argmax_axis_attr_proto = argmax_proto->add_attribute();
@@ -4571,10 +4591,11 @@ void OnnxExporter::ExportPrimArgMinWithValue(const FuncGraphPtr &, const CNodePt
   auto keep_dims = GetOpAttribute<bool>(node, "keep_dims");
 
   auto indices_output_name = MakeOutputName(node_name, kZeroNum);
-  auto indices_cast_name = GenerateUniqueName(node) + indices_output_name + "_cast";
+  auto indices_cast_name = indices_output_name + "_cast";
 
   onnx::NodeProto *argmax_proto = graph_proto->add_node();
   argmax_proto->set_op_type("ArgMin");
+  argmax_proto->set_name(indices_output_name + "ArgMin");
   argmax_proto->add_input(input_x_name);
   argmax_proto->add_output(indices_cast_name);
   onnx::AttributeProto *argmax_axis_attr_proto = argmax_proto->add_attribute();
@@ -4618,6 +4639,7 @@ void OnnxExporter::ExportPrimOneHot(const FuncGraphPtr &, const CNodePtr &node,
 
   onnx::NodeProto *one_hot_proto = graph_proto->add_node();
   one_hot_proto->set_op_type("OneHot");
+  one_hot_proto->set_name(node_name + "OneHot");
   one_hot_proto->add_input(indices_input_name);
   one_hot_proto->add_input(depth_input_name);
   one_hot_proto->add_input(on_off_name);
@@ -4808,6 +4830,7 @@ void OnnxExporter::ExportPrimSqueeze(const FuncGraphPtr &, const CNodePtr &node,
 
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Squeeze");
+  node_proto->set_name(node_name + "Squeeze");
   node_proto->add_input(input_name);
   node_proto->add_output(node_name);
 
@@ -5384,7 +5407,7 @@ void OnnxExporter::ExportPrimSort(const FuncGraphPtr &, const CNodePtr &node,
 
   node_proto->add_output(MakeOutputName(node_name, kZeroNum));
   auto indices_output_name = MakeOutputName(node_name, kOneNum);
-  auto indices_cast_name = GenerateUniqueName(node) + indices_output_name + "_cast";
+  auto indices_cast_name = indices_output_name + "_cast";
   node_proto->add_output(indices_cast_name);
   AddCastOp(indices_cast_name, indices_output_name, onnx::TensorProto_DataType_INT32, graph_proto);
 
@@ -6221,14 +6244,6 @@ void OnnxExporter::ExportMergeDynamicGRUV2(const FuncGraphPtr &, const CNodePtr 
 
  */
 
-int extract_first_number(const std::string &s) {
-  int num;
-  if (sscanf(s.c_str(), "%d", &num) == 1) {
-    return num;
-  }
-  return -1;
-}
-
 void OnnxExporter::ExportOutput(const FuncGraphPtr &func_graph, const AnfNodePtr &return_arg,
                                 std::map<AnfNodePtr, std::string> *node_map_ptr, onnx::GraphProto *const graph_proto) {
   AnfNodePtr arg = GetRealInput(return_arg);
@@ -6262,15 +6277,18 @@ void OnnxExporter::ExportOutput(const FuncGraphPtr &func_graph, const AnfNodePtr
     auto arg_name = GetNodeInputName(arg, node_map_ptr, graph_proto);
     auto tuple = dyn_cast<Tuple>(arg->Type());
     MS_EXCEPTION_IF_NULL(tuple);
-    auto node_index = extract_first_number(arg_name) - 1;
-    auto *node = graph_proto->mutable_node(node_index);
-
     for (size_t i = 0; i < tuple->size(); ++i) {
       auto output_name = MakeOutputName(arg_name, i);
-      if (!rename_output_names.empty() && i < (size_t)node->output_size()) {
-        output_name = rename_output_names.front();
-        node->set_output(i, output_name);
-        rename_output_names.erase(rename_output_names.begin());
+      for (int j = 0; j < graph_proto->node_size(); j++) {
+        auto *node = graph_proto->mutable_node(j);
+        if (node->name().find(output_name) != std::string::npos) {
+          if (!rename_output_names.empty()) {
+            output_name = rename_output_names.front();
+            node->set_output(0, output_name);
+            rename_output_names.erase(rename_output_names.begin());
+          }
+          break;
+        }
       }
       onnx::ValueInfoProto *output_proto = graph_proto->add_output();
       output_proto->set_name(output_name);
@@ -6282,10 +6300,14 @@ void OnnxExporter::ExportOutput(const FuncGraphPtr &func_graph, const AnfNodePtr
     if (!rename_output_names.empty()) {
       auto output_rename = rename_output_names.front();
       rename_output_names.erase(rename_output_names.begin());
-      auto node_index = extract_first_number(arg_name) - 1;
-      auto *node = graph_proto->mutable_node(node_index);
-      node->clear_output();
-      node->add_output(output_rename);
+      for (int j = 0; j < graph_proto->node_size(); j++) {
+        auto *node = graph_proto->mutable_node(j);
+        if (node->name().find(arg_name) != std::string::npos) {
+          node->clear_output();
+          node->add_output(output_rename);
+          break;
+        }
+      }
       output_proto->set_name(output_rename);
     } else {
       output_proto->set_name(arg_name);
