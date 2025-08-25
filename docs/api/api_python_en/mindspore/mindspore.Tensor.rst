@@ -390,6 +390,7 @@ mindspore.Tensor
     mindspore.Tensor.short
     mindspore.Tensor.sigmoid
     mindspore.Tensor.sign
+    mindspore.Tensor.sign_
     mindspore.Tensor.signbit
     mindspore.Tensor.sin
     mindspore.Tensor.sinc
