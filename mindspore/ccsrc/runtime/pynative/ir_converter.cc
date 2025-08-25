@@ -22,8 +22,9 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 
 namespace mindspore {
 namespace pynative {

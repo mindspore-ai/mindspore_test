@@ -26,7 +26,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/runtime/pynative/op_runner.h"
 #include "mindspore/core/include/utils/ms_utils.h"
-#include "mindspore/ccsrc/runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "mindspore/ccsrc/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/core/include/utils/ms_context.h"
 
@@ -120,7 +120,7 @@ inner::MemBlockPtr PyboostRunner::_MallocDeviceAddress() {
       if (!inp.is_defined()) {
         continue;
       }
-      mindspore::runtime::DeviceAddressUtils::MallocForInput(_device_context_, inp.tensor(), false);
+      mindspore::kernel::pyboost::PyBoostUtils::MallocForInput(_device_context_, inp.tensor(), false);
     }
   }
   {

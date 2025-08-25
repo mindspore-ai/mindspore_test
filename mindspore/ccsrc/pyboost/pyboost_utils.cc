@@ -16,13 +16,14 @@
 
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include <algorithm>
+#include <functional>
 #include <utility>
 #include <unordered_map>
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"
@@ -276,6 +277,72 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   output_tensor->set_device_address(output_device_address);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString() << " with " << storage_info->ToString();
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view) {
+  if (tensor == nullptr) {
+    return;
+  }
+  const auto &device_sync = tensor->device_address();
+  auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
+
+  auto mem_type =
+    tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
+                                                 device_address.get());
+  if (device_address->GetMutablePtr() != nullptr) {
+    return;
+  }
+
+  if (device_address->size() == 0) {
+    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+    if (shape_size != 0) {
+      return;
+    }
+  }
+
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    MS_LOG(EXCEPTION) << "Allocate memory failed";
+  }
+
+  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
+    runtime::OpExecutor::DispatchLaunchTask([tensor]() {
+      MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+      runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
+    });
+  } else {
+    MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+    runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
+  }
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
+                                  bool is_view) {
+  for (const auto &tensor : tensors) {
+    MallocForInput(device_context, tensor, is_view);
+  }
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto &values = value_tuple->value();
+  std::vector<tensor::TensorPtr> tensors;
+  for (size_t i = 0; i < values.size(); ++i) {
+    const auto &value = values[i];
+    if (value != nullptr && value->isa<tensor::Tensor>()) {
+      tensors.push_back(GetValue<tensor::TensorPtr>(value));
+    }
+  }
+  return PyBoostUtils::MallocForInput(device_context, tensors, is_view);
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const std::optional<tensor::TensorPtr> &val,
+                                  bool is_view) {
+  if (!val.has_value()) {
+    return;
+  }
+  MallocForInput(device_context, val.value(), is_view);
 }
 
 AbstractBasePtr PyBoostUtils::InferByOpDef(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_abs) {

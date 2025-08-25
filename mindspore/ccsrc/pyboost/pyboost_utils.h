@@ -26,7 +26,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "mindspore/ccsrc/pyboost/pyboost_kernel_extra_func.h"
 #include "utils/simple_info.h"
@@ -78,7 +78,7 @@ class PYBOOST_API PyBoostUtils {
   static void MallocOpInputs(const DeviceContext *device_context, const T &... args) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
                                        runtime::ProfilerRecorder::kNoName, false);
-    (runtime::DeviceAddressUtils::MallocForInput(device_context, args, false), ...);
+    (PyBoostUtils::MallocForInput(device_context, args, false), ...);
   }
 
   static void MallocInternalOpInputs(const DeviceContext *device_context,
@@ -87,7 +87,7 @@ class PYBOOST_API PyBoostUtils {
                                        runtime::ProfilerRecorder::kNoName, false);
     for (const auto &tensor : tensors) {
       if (tensor != nullptr) {
-        runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
+        PyBoostUtils::MallocForInput(device_context, tensor, false);
       }
     }
   }
@@ -96,7 +96,7 @@ class PYBOOST_API PyBoostUtils {
   static void MallocOpInputsForView(const DeviceContext *device_context, const T &... args) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostMallocInput,
                                        runtime::ProfilerRecorder::kNoName, false);
-    (runtime::DeviceAddressUtils::MallocForInput(device_context, args, true), ...);
+    (PyBoostUtils::MallocForInput(device_context, args, true), ...);
   }
 
   template <typename... T, std::size_t... Index>
@@ -126,6 +126,13 @@ class PYBOOST_API PyBoostUtils {
     }
     return std::make_pair(kernel_tensor_list, kernel_tensor_ptr_list);
   }
+
+  static void MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, const std::optional<tensor::TensorPtr> &val,
+                             bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
+                             bool is_view);
+  static void MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view);
 
   static void LaunchKernel(const PrimitivePtr &primitive, const device::DeviceContext *device_context,
                            const AddressInfoPair &input_address_info, const AddressInfoPair &output_address_info,

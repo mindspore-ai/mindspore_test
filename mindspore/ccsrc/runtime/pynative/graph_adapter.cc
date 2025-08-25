@@ -30,7 +30,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 
 namespace mindspore::pynative {
 namespace {
@@ -277,7 +277,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     MS_EXCEPTION_IF_NULL(tensor);
 
     auto device_address = HandleAddressForHeterogeneous(tensor, value_node, device_context);
-    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_address, true);
+    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_address);
     auto abs = tensor->ToAbstract()->Broaden();
     MS_EXCEPTION_IF_NULL(abs);
     auto shape = abs->GetShape();

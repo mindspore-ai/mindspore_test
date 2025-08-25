@@ -25,7 +25,7 @@ add_library(mindspore_ops_ascend SHARED ${ASCEND_KERNEL_SRC})
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     target_compile_definitions(mindspore_ops_ascend PRIVATE OPS_ASCEND_DLL)
 endif()
-target_link_libraries(mindspore_ops_ascend PRIVATE mindspore_core mindspore_ops mindspore_common mindspore_ms_backend
+target_link_libraries(mindspore_ops_ascend PRIVATE mindspore_core mindspore_ops mindspore_common
                       mindspore_pyboost mindspore_backend_common mindspore_hardware_abstract
                       mindspore_ascend_res_manager mindspore_runtime_utils)
 set_target_properties(mindspore_ops_ascend PROPERTIES INSTALL_RPATH "$ORIGIN:$ORIGIN/..")

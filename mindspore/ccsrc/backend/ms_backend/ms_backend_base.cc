@@ -45,7 +45,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "runtime/hardware_abstract/utils.h"

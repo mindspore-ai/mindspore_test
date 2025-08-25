@@ -17,7 +17,7 @@
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "ir/map_tensor.h"
@@ -98,7 +98,7 @@ device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &addre
   if (storage == nullptr) {
     return dev_address;
   }
-  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address, true);
+  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address);
 }
 
 void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const DeviceTensorPtr &device_tensor,

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 
 #include <algorithm>
 #include <functional>
@@ -33,11 +33,10 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/pynative/op_runner.h"
-#include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "runtime/pynative/op_executor.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "frontend/ir/tensor_py.h"
@@ -612,60 +611,6 @@ size_t DeviceAddressUtils::GetTensorDeviceSize(const DeviceContext *device_conte
   return tensor_size;
 }
 
-std::vector<KernelTensorPtr> DeviceAddressUtils::CreateGraphOutputKernelTensor(
-  const OpCompilerInfoPtr &op_compiler_info, const abstract::AbstractBasePtr &out_abstract, size_t stream_id) {
-  MS_EXCEPTION_IF_NULL(op_compiler_info);
-  auto device_context = op_compiler_info->device_context_;
-  const auto &output_edges = op_compiler_info->simple_graph_->outputs_;
-  size_t output_num = output_edges.size();
-
-  std::vector<KernelTensorPtr> output_kernel_tensor_list;
-  output_kernel_tensor_list.reserve(output_num);
-
-  for (size_t i = 0; i < output_num; ++i) {
-    const auto &edge = output_edges[i];
-    MS_EXCEPTION_IF_NULL(edge);
-    auto kernel_tensor = edge->kernel_tensor_;
-    if (kernel_tensor != nullptr) {
-      MS_LOG(DEBUG) << "Already have output kernel tensor for ref output";
-      output_kernel_tensor_list.push_back(kernel_tensor);
-      continue;
-    }
-
-    const auto &[output_node, index] = edge->node_with_index_;
-    auto cache_output_kernel_tensor = edge->origin_kernel_tensor_;
-
-    auto real_abstract = out_abstract;
-    if (out_abstract->isa<abstract::AbstractSequence>()) {
-      auto abstract_tuple = out_abstract->cast<abstract::AbstractSequencePtr>();
-      if (i >= abstract_tuple->elements().size()) {
-        MS_LOG(EXCEPTION) << "abstract_tuple size is " << abstract_tuple->elements().size() << " ,but get index is"
-                          << i;
-      }
-      real_abstract = abstract_tuple->elements()[i];
-    }
-    auto output_shape_ptr = real_abstract->BuildShape();
-    MS_EXCEPTION_IF_NULL(output_shape_ptr);
-    auto shape_vector = output_shape_ptr->cast<abstract::ShapePtr>();
-    MS_EXCEPTION_IF_NULL(shape_vector);
-    const auto &shape = shape_vector->shape();
-    MS_EXCEPTION_IF_NULL(cache_output_kernel_tensor->device_address());
-    auto output_type = cache_output_kernel_tensor->device_address()->type_id();
-    const auto &output_format = kernel::GetFormatFromEnumToStr(cache_output_kernel_tensor->format());
-    auto address_size = GetTensorDeviceSize(device_context, output_node, shape, output_format, output_type, index);
-    const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
-      real_abstract->GetShape()->Clone(), real_abstract->GetType()->Clone(), real_abstract->GetValue(), nullptr,
-      address_size, output_format, output_type, shape, device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_, cache_output_kernel_tensor->user_data());
-    new_kernel_tensor->set_stream_id(stream_id);
-    MS_LOG(DEBUG) << "Create addr for node:" << output_node->DebugString()
-                  << " kernel tensor:" << new_kernel_tensor->ToString();
-    output_kernel_tensor_list.push_back(new_kernel_tensor);
-    edge->kernel_tensor_ = new_kernel_tensor;
-  }
-  return output_kernel_tensor_list;
-}
-
 void DeviceAddressUtils::CreateKernelWorkspaceDeviceAddress(const DeviceContext *device_context,
                                                             const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(device_context);
@@ -880,10 +825,19 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(old_kernel_tensor);
   MS_EXCEPTION_IF_NULL(device_context);
 
-  auto new_kernel_tensor = SchedulerHelper::CloneKernelTensorWithDeviceInfo(old_kernel_tensor, device_context);
+  auto device_address = old_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_address);
+  auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
+    device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
+    old_kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
+    device_address->stream_id());
+  new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
+  auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
+  new_kernel_tensor->set_user_data(old_kernel_tensor->user_data());
+  new_kernel_tensor->set_need_sync_user_data(old_kernel_tensor->need_sync_user_data());
+  new_kernel_tensor->set_device_address(new_device_address);
+
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
-  auto &new_device_address = new_kernel_tensor->device_address();
-  MS_EXCEPTION_IF_NULL(new_device_address);
   auto &old_device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(old_device_address);
 
@@ -1003,74 +957,6 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   CreateInputTensorAddress(device_context, stream_id, index, tensors);
 }
 
-void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor,
-                                        bool is_view) {
-  if (tensor == nullptr) {
-    return;
-  }
-  const auto &device_sync = tensor->device_address();
-  auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
-  MS_EXCEPTION_IF_NULL(device_address);
-
-  auto mem_type =
-    tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
-                                                 device_address.get());
-  if (device_address->GetMutablePtr() != nullptr) {
-    return;
-  }
-
-  if (device_address->size() == 0) {
-    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
-    if (shape_size != 0) {
-      return;
-    }
-  }
-
-  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-    MS_LOG(EXCEPTION) << "Allocate memory failed";
-  }
-
-  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
-    OpExecutor::DispatchLaunchTask([tensor]() {
-      MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
-      LazyCopy(tensor, CurrentStream::id());
-    });
-  } else {
-    MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
-    LazyCopy(tensor, CurrentStream::id());
-  }
-}
-
-void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context,
-                                        const std::vector<tensor::TensorPtr> &tensors, bool is_view) {
-  for (const auto &tensor : tensors) {
-    MallocForInput(device_context, tensor, is_view);
-  }
-}
-
-void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple,
-                                        bool is_view) {
-  MS_EXCEPTION_IF_NULL(value_tuple);
-  const auto &values = value_tuple->value();
-  std::vector<tensor::TensorPtr> tensors;
-  for (size_t i = 0; i < values.size(); ++i) {
-    const auto &value = values[i];
-    if (value != nullptr && value->isa<tensor::Tensor>()) {
-      tensors.push_back(GetValue<tensor::TensorPtr>(value));
-    }
-  }
-  return DeviceAddressUtils::MallocForInput(device_context, tensors, is_view);
-}
-
-void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context,
-                                        const std::optional<tensor::TensorPtr> &val, bool is_view) {
-  if (!val.has_value()) {
-    return;
-  }
-  MallocForInput(device_context, val.value(), is_view);
-}
-
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                                   const std::optional<tensor::TensorPtr> &val) {
   if (!val.has_value()) {
@@ -1099,7 +985,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetPtr() != nullptr) {
-      auto kernel_tensor = std::make_shared<KernelTensor>(shape, type, nullptr);
+      auto kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, nullptr);
       kernel_tensor->set_device_address(device_address);
       device_address->SetShapeVector(tensor->shape());
       MS_LOG(DEBUG) << "Input tensor already have address " << device_address.get() << " and device Ptr "
@@ -1359,18 +1245,22 @@ void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::TensorPtr &te
   }
 
   MS_LOG(DEBUG) << "Tensor storage_info is not nullptr, need to contiguous, id:" << tensor->id();
-  const auto &new_device_address = ConvertContiguousDeviceAddress(
-    nullptr, std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), true);
+  const auto &new_device_address =
+    ConvertContiguousDeviceAddress(nullptr, std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()));
   MS_EXCEPTION_IF_NULL(new_device_address);
   tensor->set_device_address(new_device_address);
 }
 
 device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
-  const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address, bool is_sync) {
+  const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address) {
   MS_EXCEPTION_IF_NULL(old_device_address);
-  const DeviceContext *device_context = input_device_context == nullptr
-                                          ? runtime::OpRunner::GetDeviceContext(old_device_address->GetDeviceType())
-                                          : input_device_context;
+  const DeviceContext *device_context = input_device_context;
+  if (device_context == nullptr) {
+    auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  }
+
   MS_EXCEPTION_IF_NULL(device_context);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 
@@ -1391,25 +1281,14 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   auto new_device_address = kernel_tensor->device_address();
   new_device_address->set_new_ref_count(SIZE_MAX);
   MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
-  if (is_sync) {
-    // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.
-    runtime::Pipeline::Get().WaitForward();
-    if (!device_context->GetKernelExecutor()->ExecuteKernelTask(
-          runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
-      MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
-    }
-    runtime::Pipeline::Get().WaitForward();
-  } else {
-    auto async_task = [device_context, old_device_address, new_device_address, stream_id]() {
-      if (!device_context->GetKernelExecutor()->ExecuteKernelTask(
-            runtime::KernelTaskType::kCONTIGUOUS_TASK, {old_device_address}, {new_device_address}, stream_id)) {
-        MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
-      }
-    };
 
-    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-      std::make_shared<runtime::PassthroughDeviceTask>(async_task));
+  // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.
+  runtime::Pipeline::Get().WaitForward();
+  if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                              {old_device_address}, {new_device_address}, stream_id)) {
+    MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << runtime::KernelTaskType::kCONTIGUOUS_TASK;
   }
+  runtime::Pipeline::Get().WaitForward();
 
   return new_device_address;
 }

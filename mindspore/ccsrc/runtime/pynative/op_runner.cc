@@ -33,7 +33,7 @@
 #include "ir/map_tensor.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"

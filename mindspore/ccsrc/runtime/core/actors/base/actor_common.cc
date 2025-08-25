@@ -33,7 +33,7 @@
 #include "runtime/core/actors/dynamic_shape/kernel_async_infer_actor.h"
 #include "runtime/core/actors/dynamic_shape/kernel_async_resize_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
