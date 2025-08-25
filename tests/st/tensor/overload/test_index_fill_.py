@@ -95,7 +95,7 @@ def index_fill__binary_case2(input_binary_data=None, output_binary_data=None):
 
 
 @arg_mark(
-    plat_marks=['platform_ascend', 'platform_ascend910b'],
+    plat_marks=['platform_ascend'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='essential')
@@ -116,7 +116,7 @@ def test_tensor_index_fill__normal(mode):
 
 
 @arg_mark(
-    plat_marks=['platform_ascend', 'platform_ascend910b'],
+    plat_marks=['platform_ascend'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/inner_unique_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/inner_unique_aclnn_kernel.h"
 #include <functional>
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"

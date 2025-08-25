@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/inplace_index_fill_tensor.h"
+#include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_index_fill_tensor.h"
 #include <memory>
 #include <string>
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
+#include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {

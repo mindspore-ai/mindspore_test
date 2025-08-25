@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/inplace_index_fill_tensor_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/inplace_index_fill_tensor_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
