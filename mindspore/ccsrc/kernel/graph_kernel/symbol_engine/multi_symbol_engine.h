@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include <map>
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 
 namespace mindspore {
 namespace graphkernel {

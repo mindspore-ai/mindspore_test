@@ -31,7 +31,7 @@
 #include "symbolic_shape/operation_builder.h"
 #include "symbolic_shape/operation.h"
 #include "include/common/visible.h"
-#include "include/common/symbol_engine/utils.h"
+#include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 
 namespace mindspore {
 namespace symshape {

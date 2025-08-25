@@ -100,7 +100,6 @@ set(COMMON_SUB_COMP
         common
         common/debug
         common/expander
-        common/symbol_engine
         common/amp
         )
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/symbol_engine/symbol_engine_impl_pi.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl_pi.h"
 #include <algorithm>
 #include <ostream>
 #include "ir/anf.h"

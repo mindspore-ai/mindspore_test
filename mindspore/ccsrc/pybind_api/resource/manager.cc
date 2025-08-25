@@ -57,7 +57,7 @@
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "frontend/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"

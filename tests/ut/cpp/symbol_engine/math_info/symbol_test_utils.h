@@ -19,7 +19,7 @@
 
 #include "symbolic_shape/int_symbol.h"
 #include "symbolic_shape/symbol_info.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "common/common_test.h"
 
 namespace mindspore::symshape::test {
