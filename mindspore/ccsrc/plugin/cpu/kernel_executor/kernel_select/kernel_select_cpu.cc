@@ -36,7 +36,7 @@
 #include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
-#include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyfunc/py_func_cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
