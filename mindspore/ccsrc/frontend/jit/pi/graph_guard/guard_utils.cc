@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace pijit {

@@ -18,7 +18,6 @@
 #include "infer/ops_func_impl/matmul_fusion_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {

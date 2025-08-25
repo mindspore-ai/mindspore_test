@@ -35,6 +35,7 @@
 #include "frontend/jit/pi/graph_build/build_graph_utils.h"
 #include "frontend/jit/pi/graph_capture/graph_arguments_optimizer.h"
 #include "utils/compile_config.h"
+#include "utils/convert_utils_base.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \

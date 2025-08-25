@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@
 #include "ps/core/communicator/message.h"
 #include "proto/comm.pb.h"
 #include "proto/ps.pb.h"
-#include "utils/convert_utils_base.h"
 #include "include/backend/distributed/ps/constants.h"
 
 namespace mindspore {

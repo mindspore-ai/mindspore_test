@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "frontend/jit/pi/python_adapter/py_frame.h"
 #include "frontend/jit/pi/graph_capture/graph.h"
 #include "frontend/jit/pi/graph_build/func_graph_builder.h"
-#include "utils/convert_utils_base.h"
 #include "frontend/jit/pi/utils/utils.h"
 
 namespace mindspore {

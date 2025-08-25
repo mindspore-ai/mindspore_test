@@ -28,6 +28,7 @@
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/pi/utils/opcode_declare.h"
 #include "include/common/utils/tensor_py.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace pijit {
