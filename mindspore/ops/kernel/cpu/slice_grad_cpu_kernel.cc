@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@
 #include <complex>
 #include <utility>
 #include "mindspore/ops/op_def/array_ops.h"
-
-#include "ir/primitive.h"
 #include "ir/dtype/type.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
