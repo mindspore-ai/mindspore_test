@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from mindspore.parallel import Layout
-from mindspore.parallel.ops.parallel_layout import get_distributed_op
+from mindspore.parallel.spmd.ops.parallel_ops_register import get_distributed_op
 
 op = get_distributed_op("MatMul")
 

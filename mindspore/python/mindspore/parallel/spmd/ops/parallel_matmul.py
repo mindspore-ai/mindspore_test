@@ -21,9 +21,6 @@ from .parallel_ops import DistributedOp
 
 class MatMulExtDistributedOp(DistributedOp):
     """Distributed implementation for MatMul operator."""
-    def __init__(self):
-        super().__init__("MatMulExt")
-
     def infer_layout(self, layouts, extra_args):
         """
         Infer output layout for MatMul operator.
@@ -105,9 +102,6 @@ class MatMulExtDistributedOp(DistributedOp):
 
 class MatMulDistributedOp(DistributedOp):
     """Distributed implementation for MatMul operator."""
-    def __init__(self):
-        super().__init__("MatMul")
-
     def infer_layout(self, input_layouts, extra_args):
         """
         Infer output layout for MatMul operator.

@@ -31,6 +31,7 @@ WORK_DIR = os.path.normpath(os.path.join(
 PY_MS_DIR = "mindspore/python/mindspore"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
+PY_PARALLEL_OPS_PATH = "mindspore/python/mindspore/parallel/spmd/ops"
 
 # op_def
 OP_DEF_AUTO_GENERATE_PATH = "op_def/auto_generate"
@@ -52,6 +53,7 @@ TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 TENSOR_PY_CC_PATH = "mindspore/ccsrc/pybind_api/ir/tensor/tensor_register/auto_generate"
+PARALLEL_OP_YAML_PATH = "mindspore/python/mindspore/parallel/spmd/ops/yaml"
 
 # yaml keys def
 OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'graph_view', 'dispatch', 'labels',

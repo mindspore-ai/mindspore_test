@@ -26,7 +26,7 @@ import os
 import common.template as template
 import common.gen_constants as K
 from common.template import Template
-from common.gen_utils import save_file
+from common.gen_utils import save_file, safe_load_yaml_from_dir
 from common.base_generator import BaseGenerator
 from common.op_proto import OpProto
 from pyboost.op_template_parser import OpTemplateParser
@@ -84,7 +84,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
-        self.layout_infer_ops = ["add_scalar", "add_ext", "sub_scalar", "sub_ext"]
+        ops_data = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
+        self.layout_infer_ops = list(ops_data.keys())
         self.pyboost_with_layout_infer_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name} with LayoutInfer";\n'
@@ -483,7 +484,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
             convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
             self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
-            if func_proto.op_proto.op_name in self.layout_infer_ops:
+            if func_proto.op_proto.op_class.name in self.layout_infer_ops:
                 num_args = len(func_proto.op_proto.op_args)
                 lambda_params = ""
                 lambda_args = ""

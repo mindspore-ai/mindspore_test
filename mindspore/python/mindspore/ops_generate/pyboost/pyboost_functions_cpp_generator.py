@@ -25,7 +25,7 @@ import os
 import common.template as template
 import common.gen_constants as K
 from common.template import Template
-from common.gen_utils import save_file
+from common.gen_utils import save_file, safe_load_yaml_from_dir
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
@@ -57,6 +57,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.OP_DEF_INC_HEAD_TEMPLATE = template.OP_DEF_INC_HEAD_TEMPLATE
         self.MARK_SIDE_EFFECT_STR = "PyNativeAlgo::PyBoost::MarkSideEffect(PyList_GetItem(args, 0));"
         self.pyboost_api_body_template = template.PYBOOST_API_BODY_CC_TEMPLATE
+        ops_data = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
+        self.layout_infer_ops = list(ops_data.keys())
 
     def generate(self, work_path, op_protos):
         """
@@ -124,7 +126,6 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_api_cc_tpl = template.PYBOOST_API_CC_TEMPLATE
         pyboost_api_body_str = ''
         ops_inc_head_set = set()
-        layout_infer_ops = {"matmul", "matmul_ext", "add_ext", "relu", "add_scalar"}
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
@@ -135,7 +136,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
             side_effect_str = self._generate_mark_side_effect_str(op_proto)
 
-            if op_proto.op_name in layout_infer_ops:
+            if op_proto.op_class.name in self.layout_infer_ops:
                 input_args = [arg.arg_name for arg in op_proto.op_args]
                 lambda_params = []
                 lambda_args = []

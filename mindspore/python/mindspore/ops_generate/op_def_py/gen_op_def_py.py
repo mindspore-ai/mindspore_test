@@ -20,6 +20,7 @@ import shutil
 
 from op_def_py.op_prim_py_generator import OpPrimPyGenerator
 from op_def_py.op_def_py_generator import OpDefPyGenerator
+from op_def_py.distributed_op_register_generator import DistributedOpGenerator
 from resources.resource_list import ResourceType
 from common import gen_constants as K
 
@@ -43,5 +44,8 @@ def generate_ops_py_files(resource_mgr, file_pre='gen'):
     doc_dict = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
     generate_ops_prim_file(K.WORK_DIR, op_protos, doc_dict, file_pre)
     generate_ops_def_file(K.WORK_DIR, op_protos, doc_dict, file_pre)
+    distributed_op_generator = DistributedOpGenerator()
+    distributed_op_generator.generate(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH),
+                                      os.path.join(K.WORK_DIR, K.PY_PARALLEL_OPS_PATH))
     shutil.copy(os.path.join(K.WORK_DIR, K.PY_OPS_GEN_PATH, 'ops_auto_generate_init.txt'),
                 os.path.join(K.WORK_DIR, K.PY_AUTO_GEN_PATH, "__init__.py"))

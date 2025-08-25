@@ -16,7 +16,7 @@
 Distributed operator implementation.
 """
 
-from .parallel_layout import register_distributed_op
+from .parallel_ops_register import register_distributed_op
 
 class DistributedOp:
     """

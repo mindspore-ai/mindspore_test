@@ -27,7 +27,9 @@ class SimpleNet(nn.Cell):
     """Net with MatMul and ReLU"""
     def construct(self, x, w):
         x = ms.ops.MatMul()(x, w)
+        x = x * 2
         x = ms.mint.nn.ReLU()(x)
+        x = x / 10
         x = x + 1
         return x
 
