@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <string>
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/func_op/conv1d_padding.h"
+#include <string>
 #include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
 #include "utils/core_op_utils.h"
@@ -37,7 +37,8 @@
 
 namespace mindspore::prim {
 namespace {
-constexpr auto kConv1dPaddingGap2 = 2;
+constexpr auto kConv1dPaddingNum3 = 3;
+constexpr auto kConv1dPaddingNum2 = 2;
 constexpr auto kConv1dPaddingSize1 = 1;
 }  // namespace
 inline void CheckConv1DPaddingPositiveVector(const string &arg_name, const ArrayValue<int64_t> &array,
@@ -136,7 +137,7 @@ void CheckConv1DPaddingInputs(const PrimitivePtr &primitive, const AbstractBaseP
 
 NodePtr Conv1DPaddingMetaImpl::ProcessDims(const NodePtr &input) {
   auto input_rank = Rank(input);
-  auto is_3d = Equal(input_rank, Value(3));
+  auto is_3d = Equal(input_rank, Value(kConv1dPaddingNum3));
 
   auto process_2d_input_branch = [&]() { Return(Call(Prim(ExpandDims), input, Value(0))); };
   auto input_branch = [&]() { Return(input); };
@@ -170,11 +171,11 @@ NodePtr Conv1DPaddingMetaImpl::CalcPadding(const NodePtr &in_shape, const NodePt
       Return(res);
     };
     auto total_pad_no_need_calc_branch = [&]() { Return(total_pad); };
-    auto total_pad_need_calc_condition =
-      And(Greater(stride_value, Value(2)), Equal(ScalarMod(total_pad, Value(2)), Value(1)));
+    auto total_pad_need_calc_condition = And(Greater(stride_value, Value(kConv1dPaddingNum2)),
+                                             Equal(ScalarMod(total_pad, Value(kConv1dPaddingNum2)), Value(1)));
     auto total_pad_new = If(total_pad_need_calc_condition, total_pad_need_calc_branch, total_pad_no_need_calc_branch);
 
-    auto left = ScalarFloorDiv(total_pad_new, Value(2));
+    auto left = ScalarFloorDiv(total_pad_new, Value(kConv1dPaddingNum2));
     auto right = ScalarSub(total_pad_new, left);
     auto left_equal_right = Equal(left, right);
 
@@ -183,17 +184,17 @@ NodePtr Conv1DPaddingMetaImpl::CalcPadding(const NodePtr &in_shape, const NodePt
     auto left_equal_right_value = If(left_equal_right, true_branch, false_branch);
     auto padding_l = GetItem(res_out, Value(0));
     auto padding_r = GetItem(res_out, Value(1));
-    auto is_symmetric_list = GetItem(res_out, Value(2));
+    auto is_symmetric_list = GetItem(res_out, Value(kConv1dPaddingNum2));
     padding_l = Call(Prim(ListAppend), padding_l, left);
     padding_r = Call(Prim(ListAppend), padding_r, right);
     is_symmetric_list = Call(Prim(ListAppend), is_symmetric_list, left_equal_right_value);
     Return(List(padding_l, padding_r, is_symmetric_list));
   };
 
-  res_list = For(calc_dim_padding, Tuple(Value(2)), res_list);
+  res_list = For(calc_dim_padding, Tuple(Value(kConv1dPaddingNum2)), res_list);
   padding_l = GetItem(res_list, Value(0));
   padding_r = GetItem(res_list, Value(1));
-  is_symmetric_list = GetItem(res_list, Value(2));
+  is_symmetric_list = GetItem(res_list, Value(kConv1dPaddingNum2));
   auto is_symmetric = GetItem(is_symmetric_list, Value(0));
 
   auto true_branch = [&]() { Return(Value(1)); };
@@ -220,7 +221,7 @@ BeginFunction(Conv1DPadding, input, weight, bias, stride, padding, dilation, gro
       auto pad_l_pad_r_is_sym = CalcPadding(Shape(processed_input), weight_shape, stride, dilation);
       auto pad_l = GetItem(pad_l_pad_r_is_sym, Value(0));
       auto pad_r = GetItem(pad_l_pad_r_is_sym, Value(1));
-      auto is_sym = GetItem(pad_l_pad_r_is_sym, Value(2));
+      auto is_sym = GetItem(pad_l_pad_r_is_sym, Value(kConv1dPaddingNum2));
       auto is_sym_branch = [&]() {
         auto pad_nd = Tuple(GetItem(pad_l, Value(0)), GetItem(pad_r, Value(0)));
         Return(Tuple(pad_l, pad_nd, Value(1)));
@@ -229,7 +230,6 @@ BeginFunction(Conv1DPadding, input, weight, bias, stride, padding, dilation, gro
         auto pad_nd = List(Value(0), Value(0));
         auto calc_pad_nd = [&](const NodePtr &index, const NodePtr &item, const NodePtr &res) {
           auto delta_pad = ScalarSub(GetItem(pad_r, Value(0)), GetItem(pad_l, Value(0)));
-          // auto pad_idx = Value(0);
           auto true_branch = [&]() { Return(Value(1)); };
           auto false_branch = [&]() { Return(Value(0)); };
           auto real_pad_idx = If(Greater(delta_pad, Value(0)), true_branch, false_branch);
@@ -246,7 +246,7 @@ BeginFunction(Conv1DPadding, input, weight, bias, stride, padding, dilation, gro
     auto pad_params_and_is_symmetric = If(Equal(padding, Value(1)), same_mode_branch, valid_mode_branch);
     auto pad_params = GetItem(pad_params_and_is_symmetric, Value(0));
     auto pad_nd = GetItem(pad_params_and_is_symmetric, Value(1));
-    auto is_symmetric = GetItem(pad_params_and_is_symmetric, Value(2));
+    auto is_symmetric = GetItem(pad_params_and_is_symmetric, Value(kConv1dPaddingNum2));
     // call convolution
     auto is_symmetric_branch = [&]() {
       auto output = Call(Prim(Convolution), processed_input, weight, bias, stride, pad_params, dilation, Value(false),
@@ -266,8 +266,8 @@ BeginFunction(Conv1DPadding, input, weight, bias, stride, padding, dilation, gro
     Return(If(needs_squeeze, is_needs_squeeze, not_needs_squeeze));
   };
 
-  Return(If(Or(Equal(padding, Value(1)),   // same
-               Equal(padding, Value(2))),  // valid
+  Return(If(Or(Equal(padding, Value(1)),                    // same
+               Equal(padding, Value(kConv1dPaddingNum2))),  // valid
             compute_conv, invalid_padding));
 }
 EndFunction(Conv1DPadding)
