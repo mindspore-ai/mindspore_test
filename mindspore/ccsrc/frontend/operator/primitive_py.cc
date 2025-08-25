@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include "include/common/pybind_api/api_register.h"
 #include "frontend/jit/ps/parse/parse_flags.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"
-#include "utils/convert_utils_base.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/primitive_utils.h"

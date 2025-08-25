@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include <unordered_set>
 
 #include "pybind11/pybind11.h"
-#include "utils/convert_utils_base.h"
 #include "utils/any.h"
 #include "base/base_ref.h"
 #include "base/base.h"

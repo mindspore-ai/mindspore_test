@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
-#include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"
 #include "utils/log_adapter.h"
 #include "ir/primitive.h"

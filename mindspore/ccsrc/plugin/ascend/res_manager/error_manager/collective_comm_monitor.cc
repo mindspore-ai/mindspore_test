@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include <signal.h>
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
-#include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 

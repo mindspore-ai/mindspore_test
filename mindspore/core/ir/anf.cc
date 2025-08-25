@@ -35,6 +35,8 @@
 #include "ir/tensor_py_wrapperbase.h"
 #include "utils/ms_utils.h"
 #include "utils/info.h"
+#include "ir/primal_attr.h"
+#include "ir/primal_debug_info.h"
 
 namespace mindspore {
 namespace {

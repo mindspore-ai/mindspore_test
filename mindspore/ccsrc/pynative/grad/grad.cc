@@ -24,7 +24,6 @@
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/named.h"
-#include "ir/primal_attr.h"
 #include "ir/value.h"
 #include "ir/tensor_new.h"
 #include "frontend/optimizer/ad/grad.h"

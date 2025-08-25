@@ -17,7 +17,6 @@
 #include <memory>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "utils/convert_utils_base.h"
 #include "view/split_with_size_strides_calc.h"
 #include "view/split_with_size_view_strides_calc.h"
 
