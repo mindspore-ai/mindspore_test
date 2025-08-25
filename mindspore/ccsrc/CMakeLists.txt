@@ -163,7 +163,6 @@ target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_
 
 set(MS_BACKEND_SUB_COMP
         backend/ms_backend
-        runtime/device
         runtime/core
         runtime/pynative
         plugin/device/cpu/kernel

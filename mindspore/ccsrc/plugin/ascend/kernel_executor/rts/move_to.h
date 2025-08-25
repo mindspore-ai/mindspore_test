@@ -54,23 +54,9 @@ class MoveTo : public RtKernel {
   static bool D2H(void *host_ptr, const void *device_ptr, void *stream_ptr, size_t size);
   static bool H2D(void *device_ptr, const void *host_ptr, void *stream_ptr, size_t size);
 
-  static bool F2H(void *host_ptr, const string &file_name, size_t size, const device::SwapManagerPtr &swap_manager,
-                  device::AsyncIOToken *token);
-  static bool H2F(const string &file_name, const void *host_ptr, size_t size,
-                  const device::SwapManagerPtr &swap_manager, device::AsyncIOToken *token);
-
-  static bool WaitAioFinish(const KernelTensor *tensor);
-
   // Move Func
   bool MoveFromDToH(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-  bool MoveFromDToF(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-
   bool MoveFromHToD(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-  bool MoveFromHToF(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-
-  bool MoveFromFToH(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-  bool MoveFromFToD(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
-
   bool EmptyMove(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr);
 
  private:

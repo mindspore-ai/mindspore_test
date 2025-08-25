@@ -129,7 +129,6 @@ from .random_ops import (RandomChoiceWithMask, StandardNormal, Gamma, RandomGamm
                          LogUniformCandidateSampler, TruncatedNormal, LogNormalReverse, NonDeterministicInts,
                          ParameterizedTruncatedNormal, RandomPoisson, MultinomialWithReplacement, RandomShuffle,
                          RandpermV2)
-from .rl_ops import (BufferAppend, BufferGetItem, BufferSample)
 from .sparse_ops import (
     SparseToDense, SparseTensorDenseMatmul, SparseTensorDenseAdd, SparseSlice)
 from .spectral_ops import (BartlettWindow, BlackmanWindow)
@@ -532,9 +531,6 @@ __all__ = [
     "HShrink",
     "PyExecute",
     "PyFunc",
-    "BufferAppend",
-    "BufferGetItem",
-    "BufferSample",
     "Erfinv",
     "Conj",
     "Real",

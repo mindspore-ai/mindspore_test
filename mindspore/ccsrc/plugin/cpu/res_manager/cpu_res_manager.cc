@@ -23,7 +23,6 @@
 #include "utils/ms_context.h"
 #include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 
-#include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/convert_tensor_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

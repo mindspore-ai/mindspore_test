@@ -56,10 +56,6 @@ bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const Devi
       device_context->device_res_manager_->swap_manager() == nullptr) {
     return false;
   }
-  const auto &hete_info = device_tensor->heterogeneous_info();
-  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
-    return true;
-  }
   return false;
 }
 

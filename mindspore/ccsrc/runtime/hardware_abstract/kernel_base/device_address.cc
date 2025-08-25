@@ -139,9 +139,6 @@ std::string DeviceAddress::ToString() const {
   } else {
     ofs << pointer_ref_count_->ToString();
   }
-  if (hete_info_ != nullptr) {
-    ofs << " hete info:" << hete_info_->ToString();
-  }
   const auto &node_index = GetNodeIndex();
   if (node_index.first != nullptr) {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
@@ -300,15 +297,7 @@ int32_t DeviceAddress::DecreaseDynamicRefCount(const std::string &op_object) {
   return pointer_ref_count_->DecreaseDynamicRefCount(op_object);
 }
 
-bool DeviceAddress::IsPtrValid() const {
-  if (GetDevicePtr() != nullptr) {
-    return true;
-  }
-  if (hete_info_ == nullptr) {
-    return false;
-  }
-  return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
-}
+bool DeviceAddress::IsPtrValid() const { return GetDevicePtr() != nullptr; }
 
 void DeviceAddress::Swap(DeviceAddress *other) {
   MS_EXCEPTION_IF_NULL(other);
@@ -321,10 +310,6 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
 }
-
-HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return hete_info_; }
-
-void DeviceAddress::set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
 
 std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return node_index_; }
 

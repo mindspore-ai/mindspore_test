@@ -1421,10 +1421,10 @@ bool AnfAlgo::IsCommunicationFusionOp(const AnfNodePtr &node) {
 
 bool AnfAlgo::IsNaiveCommunicationOp(const std::string &kernel_name) {
   static const std::set<std::string> kCommunicationOpNames = {
-    kAllReduceOpName, kAllGatherOpName,   kBroadcastOpName,         kReduceScatterOpName,    kSendOpName,
-    kReceiveOpName,   kAlltoAllOpName,    kAllToAllOpName,          kAllToAllvOpName,        kMuxReceiveOpName,
-    kMuxSendOpName,   kBarrierOpName,     kCollectiveScatterOpName, kCollectiveGatherOpName, kBatchISendIRecvOpName,
-    kAlltoAllVOpName, kAlltoAllVGEOpName, kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName};
+    kAllReduceOpName,         kAllGatherOpName,        kBroadcastOpName,       kReduceScatterOpName, kSendOpName,
+    kReceiveOpName,           kAlltoAllOpName,         kAllToAllOpName,        kAllToAllvOpName,     kBarrierOpName,
+    kCollectiveScatterOpName, kCollectiveGatherOpName, kBatchISendIRecvOpName, kAlltoAllVOpName,     kAlltoAllVGEOpName,
+    kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName};
   return kCommunicationOpNames.find(kernel_name) != kCommunicationOpNames.end();
 }
 

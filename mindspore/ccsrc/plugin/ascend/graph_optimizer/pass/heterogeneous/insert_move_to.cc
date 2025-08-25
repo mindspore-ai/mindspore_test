@@ -164,10 +164,6 @@ bool InsertMoveTo::HandleParameter() {
   if (offloaded_parameters_.empty()) {
     return false;
   }
-  if (OffloadContext::GetInstance()->auto_offload() || !OffloadContext::GetInstance()->offload_param().empty()) {
-    MS_LOG(EXCEPTION) << "Setting \"CPU\" device for parameter is not supported when \"offload_param\" is not empty"
-                      << " string or \"auto_offload\" is True in offload_context";
-  }
   OffloadContext::GetInstance()->set_specific_param_offload(true);
 
   bool changed = false;
