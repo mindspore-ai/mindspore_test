@@ -32,7 +32,6 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
-#include "utils/ordered_set.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"

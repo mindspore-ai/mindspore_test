@@ -25,7 +25,6 @@
 
 #include <type_traits>
 #include <unordered_map>
-#include "utils/hashing.h"
 #include "utils/hash_map.h"
 
 namespace mindspore {

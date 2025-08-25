@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 #include <string>
 #include <utility>
 #include <optional>
+
 #include "utils/simple_info.h"
-#include "base/base.h"
 #include "ir/anf.h"
 #include "ops/op_def.h"
 #include "ops/ops_func_impl/op_func_impl.h"

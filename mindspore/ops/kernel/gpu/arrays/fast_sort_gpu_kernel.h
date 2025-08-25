@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/tensor_layout_helper.cuh"
 #include "kernel/gpu/arrays/sort_key_value_inplace.h"
-#include "ir/dtype/type_id.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

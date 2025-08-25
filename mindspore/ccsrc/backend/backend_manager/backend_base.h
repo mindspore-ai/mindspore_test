@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "mindspore/core/include/base/base.h"
+
 #include "mindspore/core/include/base/base_ref.h"
 #include "backend/backend_manager/visible.h"
 #include "backend/backend_manager/backend_jit_config.h"

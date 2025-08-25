@@ -17,11 +17,12 @@
  */
 
 #include "ir/func_graph.h"
+
 #include <algorithm>
+
 #include "ir/core_ops_primitive.h"
 #include "utils/trace_base.h"
 #include "ir/manager.h"
-#include "utils/ordered_set.h"
 #include "utils/convert_utils_base.h"
 #include "utils/label.h"
 #include "abstract/abstract_function.h"
