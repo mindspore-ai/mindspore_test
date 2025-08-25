@@ -75,12 +75,16 @@ def get_cann_version():
     ascend_home_path = os.environ.get("ASCEND_HOME_PATH", "")
     cann_version = "not known"
     try:
-        PathManager.check_directory_path_readable(os.path.realpath(ascend_home_path))
-        for dirpath, _, filenames in os.walk(os.path.realpath(ascend_home_path)):
+        if not PathManager.check_path_is_owner_or_root(ascend_home_path):
+            raise PermissionError(f"PermissionError, CANN package user id: {os.stat(ascend_home_path).st_uid}, "
+                                  f"current user id: {os.getuid()}. "
+                                  f"Ensure CANN package user id and current user id consistency")
+        PathManager.check_path_is_readable(os.path.realpath(ascend_home_path))
+        for dirpath, _, filenames in PathManager.walk_with_depth(os.path.realpath(ascend_home_path)):
             install_files = [file for file in filenames if re.match(r"ascend_.{1,20}_install\.info", file)]
             if install_files:
                 filepath = os.path.realpath(os.path.join(dirpath, install_files[0]))
-                PathManager.check_directory_path_readable(filepath)
+                PathManager.check_path_is_readable(filepath)
                 with open(filepath, "r") as f:
                     for line in f:
                         if line.find("version") != -1:
