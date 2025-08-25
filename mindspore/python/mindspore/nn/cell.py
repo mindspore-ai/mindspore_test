@@ -504,7 +504,8 @@ class Cell(Cell_):
             raise TypeError(f"For 'Cell', 'compile_phase' must be string type, but got type {type(value)}.")
         self._compile_phase = value
         for cell in self._cells.values():
-            cell.compile_phase = value
+            if cell is not None:
+                cell.compile_phase = value
 
     @property
     def parameter_layout_dict(self):
