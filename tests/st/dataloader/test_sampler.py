@@ -18,6 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore.dataset.dataloader import (
+    BatchSampler,
     DataLoader,
     Dataset,
     IterableDataset,
@@ -25,6 +26,7 @@ from mindspore.dataset.dataloader import (
     RandomSampler,
     DistributedSampler,
 )
+
 from tests.mark_utils import arg_mark
 
 
@@ -113,7 +115,6 @@ def test_dataloader_sequential_sampler():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="RandomSampler is not supported.")
 def test_dataloader_random_sampler():
     """
     Feature: Test DataLoader sampler.
@@ -123,23 +124,26 @@ def test_dataloader_random_sampler():
 
     dataset = MyDataset(10)
 
-    # get_seed returns None by default
-    # ops.randint's seed parameter can accept None and can compute
+    ms.set_seed(40)
+    expected_value = [ms.Tensor(6), ms.Tensor(6), ms.Tensor(7), ms.Tensor(9), ms.Tensor(0),
+                      ms.Tensor(2), ms.Tensor(7), ms.Tensor(1), ms.Tensor(8), ms.Tensor(3)]
     sampler = RandomSampler(dataset, replacement=True)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
-    print(result)
+    assert result == expected_value
 
-    # define num_samples
+    expected_value = [ms.Tensor(4), ms.Tensor(4), ms.Tensor(5)]
     sampler = RandomSampler(dataset, replacement=True, num_samples=3)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
-    print(result)
+    assert result == expected_value
 
-    # but ops.randperm's seed parameter does not accept None, causing random sampler to report an error
+    expected_value = [ms.Tensor(9), ms.Tensor(5), ms.Tensor(0), ms.Tensor(3), ms.Tensor(1),
+                      ms.Tensor(2), ms.Tensor(7), ms.Tensor(8), ms.Tensor(4), ms.Tensor(6)]
     sampler = RandomSampler(dataset, replacement=False)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
+    assert result == expected_value
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -286,21 +290,228 @@ def test_dataloader_distributed_sampler_drop_last():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_dataloader_distributed_sampler_exception():
+def test_sequential_sampler():
     """
-    Feature: Test DataLoader sampler.
-    Description: Test the DataLoader with DistributedSampler parameters error.
-    Expectation: Raise ValueError.
+    Feature: Sequential Sampler
+    Description: Verify the functionality of the sequential sampler
+    Expectation: Success
     """
+    dataset = MyDataset(10)
+
+    result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    sequential_sampler = SequentialSampler(dataset)
+    assert list(sequential_sampler) == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_random_sampler():
+    """
+    Feature: Random Sampler
+    Description: Verify the functionality of the random sampler
+    Expectation: Success
+    """
+    ms.set_seed(40)
 
     dataset = MyDataset(10)
 
-    error_msg = "num_replicas should be greater than 0."
-    with pytest.raises(ValueError) as raise_info:
-        _ = DistributedSampler(dataset, shuffle=False, num_replicas=0, rank=0)
-    assert error_msg in str(raise_info.value)
+    # Default parameters
+    result = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6]
+    random_sampler = RandomSampler(dataset)
+    assert list(random_sampler) == result
 
-    error_msg = "rank should be in the interval"
-    with pytest.raises(ValueError) as raise_info:
-        _ = DistributedSampler(dataset, shuffle=False, num_replicas=2, rank=2)
-    assert error_msg in str(raise_info.value)
+    # replacement is True
+    result_1 = [6, 6, 7, 9, 0, 2, 7, 1, 8, 3]
+    random_sampler_1 = RandomSampler(dataset, replacement=True)
+    assert list(random_sampler_1) == result_1
+
+    # replacement is True and num_samples is 15
+    result_2 = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6, 9, 5, 0, 3, 1]
+    random_sampler_2 = RandomSampler(dataset, replacement=False, num_samples=15)
+    assert list(random_sampler_2) == result_2
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dataloader_random_sampler_exception():
+    """
+    Feature: Random sampling of abnormal scenarios
+    Description: Verify abnormal scenarios in random sampling
+    Expectation: Success
+    """
+    dataset = MyDataset(10)
+
+    # 1.Verify scenarios where the replacement parameter is not of type bool.
+    error_msssage = "replacement must be bool, but got: int"
+    with pytest.raises(TypeError) as error_info:
+        replacement = 1
+        _ = RandomSampler(dataset, replacement=replacement)
+    assert error_msssage in str(error_info.value)
+
+    # 2.Verify scenarios where the num_samples parameter is not of type int.
+    error_msssage = "num_samples must be int, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        num_samples = "test"
+        _ = RandomSampler(dataset, num_samples=num_samples)
+    assert error_msssage in str(error_info.value)
+
+    # 3.Verify scenarios where the num_samples parameter is less than or equal to 0.
+    error_msssage = "num_samples must be a positive integer value, but got num_samples = 0"
+    with pytest.raises(ValueError) as error_info:
+        num_samples = 0
+        _ = RandomSampler(dataset, num_samples=num_samples)
+    assert error_msssage in str(error_info.value)
+
+    # 4.Verify that the generator parameter is not of type mindspore.Generator.
+    error_msssage = "generator must be mindspore.Generator, but got: int"
+    with pytest.raises(TypeError) as error_info:
+        generator = 0
+        _ = RandomSampler(dataset, generator=generator)
+    assert error_msssage in str(error_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_batch_sampler():
+    """
+    Feature: Batch Sampler
+    Description: Verify the functionality of the batch sampler
+    Expectation: Success
+    """
+    dataset = MyDataset(10)
+
+    result = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    sampler = SequentialSampler(dataset)
+    batch_sampler = BatchSampler(sampler, batch_size=3, drop_last=False)
+    assert list(batch_sampler) == result
+
+    result_1 = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+    sampler_1 = SequentialSampler(dataset)
+    batch_sampler_1 = BatchSampler(sampler_1, batch_size=3, drop_last=True)
+    assert list(batch_sampler_1) == result_1
+
+    result_2 = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+    sampler_2 = SequentialSampler(dataset)
+    batch_sampler_2 = BatchSampler(sampler_2, batch_size=11, drop_last=False)
+    assert list(batch_sampler_2) == result_2
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dataloader_batch_sampler_exception():
+    """
+    Feature: Batch sampling of abnormal scenarios
+    Description: Verify abnormal scenarios in batch sampling
+    Expectation: Success
+    """
+    dataset = MyDataset(10)
+
+    sampler = SequentialSampler(dataset)
+
+    # 1.Verify that the batch_size parameter is an integer type.
+    error_msssage = "batch_size must be int, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        batch_size = "test"
+        _ = BatchSampler(sampler, batch_size=batch_size, drop_last=False)
+    assert error_msssage in str(error_info.value)
+
+    # 2.Verify that the batch_size parameter is less than or equal to 0.
+    error_msssage = "batch_size must be positive, but got batch_size = 0"
+    with pytest.raises(ValueError) as error_info:
+        batch_size = 0
+        _ = BatchSampler(sampler, batch_size, drop_last=False)
+    assert error_msssage in str(error_info.value)
+
+    # 3.Verify that the drop_last parameter is a boolean type.
+    error_msssage = "drop_last must be bool, but got: int"
+    with pytest.raises(TypeError) as error_info:
+        drop_last = 1
+        _ = BatchSampler(sampler, batch_size=2, drop_last=drop_last)
+    assert error_msssage in str(error_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_distributed_sampler():
+    """
+    Feature: Distribute Sampler
+    Description: Verify the functionality of the distribute sampler
+    Expectation: Success
+    """
+    dataset = MyDataset(10)
+
+    result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    distributed_sampler = DistributedSampler(dataset, shuffle=False, num_replicas=None, rank=None)
+    assert list(distributed_sampler) == result
+
+    result_1 = [0, 3, 6, 9]
+    distributed_sampler_1 = DistributedSampler(dataset, shuffle=False, num_replicas=3, rank=0)
+    assert list(distributed_sampler_1) == result_1
+
+    result_2 = [0, 3, 6]
+    distributed_sampler_2 = DistributedSampler(dataset, shuffle=False, num_replicas=3, rank=0, drop_last=True)
+    assert list(distributed_sampler_2) == result_2
+
+    result_3 = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6]
+    distributed_sampler_3 = DistributedSampler(dataset, shuffle=True, seed=40)
+    assert list(distributed_sampler_3) == result_3
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dataloader_distributed_sampler_exception():
+    """
+    Feature: Distribute sampling of abnormal scenarios
+    Description: Verify abnormal scenarios in distribute sampling
+    Expectation: Success
+    """
+    dataset = MyDataset(10)
+
+    # 1.Verify that the num_replicas parameter is not an integer type.
+    error_msssage = "num_replicas must be int, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        num_replicas = "test"
+        _ = DistributedSampler(dataset, num_replicas=num_replicas)
+    assert error_msssage in str(error_info.value)
+
+    # 2.Verify that the rank parameter is not an integer type.
+    error_msssage = "rank must be int, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        rank = "test"
+        _ = DistributedSampler(dataset, rank=rank)
+    assert error_msssage in str(error_info.value)
+
+    # 3.Verify that the seed parameter is not an integer type.
+    error_msssage = "seed must be int, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        seed = "test"
+        _ = DistributedSampler(dataset, seed=seed)
+    assert error_msssage in str(error_info.value)
+
+    # 4.Verify that the shuffle parameter is not an boolean type.
+    error_msssage = "shuffle must be bool, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        shuffle = "test"
+        _ = DistributedSampler(dataset, shuffle=shuffle)
+    assert error_msssage in str(error_info.value)
+
+    # 5.Verify that the drop_last parameter is not an boolean type.
+    error_msssage = "drop_last must be bool, but got: str"
+    with pytest.raises(TypeError) as error_info:
+        drop_last = "test"
+        _ = DistributedSampler(dataset, drop_last=drop_last)
+    assert error_msssage in str(error_info.value)
+
+    # 6.Verify scenarios where the num_replicas parameter is less than or equal to 0.
+    error_msssage = "Invalid num_replicas: 0, num_replicas should be greater than 0"
+    with pytest.raises(ValueError) as error_info:
+        num_replicas = 0
+        _ = DistributedSampler(dataset, num_replicas=num_replicas)
+    assert error_msssage in str(error_info.value)
+
+    # 7.Verify that the rank parameter is less than 0 or not in the range [0, num_replicas-1].
+    error_msssage = "Invalid rank: 5, rank should be in the interval [0, 3]"
+    with pytest.raises(ValueError) as error_info:
+        rank = 5
+        _ = DistributedSampler(dataset, num_replicas=4, rank=rank)
+    assert error_msssage in str(error_info.value)
+
+    error_msssage = "Invalid rank: -1, rank should be in the interval [0, 3]"
+    with pytest.raises(ValueError) as error_info:
+        rank = -1
+        _ = DistributedSampler(dataset, num_replicas=4, rank=rank)
+    assert error_msssage in str(error_info.value)

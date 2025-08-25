@@ -25,11 +25,29 @@ _T_co = TypeVar("_T_co", covariant=True)
 
 
 class Sampler(Generic[_T_co]):
+    """
+    Base Class of the Sampler
+
+    Args:
+        data_source (Dataset, optional): Dataset to be sampled. Default: ``None`` .
+    """
     def __init__(self, data_source=None) -> None:
         pass
 
 
 class SequentialSampler(Sampler):
+    """
+    Samples the dataset elements sequentially.
+
+    Args:
+        data_source (Dataset): Dataset to be sampled.
+
+    Examples:
+        >>> from mindspore.dataset.dataloader import SequentialSampler
+        >>>
+        >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        >>> sampler = SequentialSampler(dataset)
+    """
     def __init__(self, data_source) -> None:
         super().__init__(data_source)
         self.data_source = data_source
@@ -37,19 +55,26 @@ class SequentialSampler(Sampler):
     def __iter__(self) -> Iterator[int]:
         yield from range(len(self.data_source))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data_source)
 
 
 class RandomSampler(Sampler[int]):
     """
-    Sampler that samples elements randomly.
+    Samples the dataset elements randomly.
 
     Args:
-        data_source (Dataset): The data source to sample from.
-        replacement (bool, optional): Whether to put the element back for the next draw. Default: False.
-        num_samples (int, optional): The number of samples to draw. Default: None, set to the length of `data_source`.
-        generator (mindspore.Generator, optional): The generator to use in sampling. Default: None, not deterministic.
+        data_source (Dataset): Dataset to be sampled.
+        replacement (bool, optional): Whether to enable the return sampling. Default: ``False`` .
+        num_samples (Union[int, None], optional): Number of samples to be drawn. Default: ``None`` ,
+            will be set to the length of `data_source` .
+        generator (mindspore.Generator, optional): Generator used during sampling. Default: ``None`` .
+
+    Examples:
+        >>> from mindspore.dataset.dataloader import RandomSampler
+        >>>
+        >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        >>> sampler = RandomSampler(dataset)
     """
 
     def __init__(
@@ -60,6 +85,14 @@ class RandomSampler(Sampler[int]):
             generator=None,
     ) -> None:
         super().__init__(data_source)
+        if not isinstance(replacement, bool):
+            raise TypeError(f"replacement must be bool, but got: {type(replacement).__name__}")
+        if num_samples is not None and not isinstance(num_samples, int):
+            raise TypeError(f"num_samples must be int, but got: {type(num_samples).__name__}")
+        if num_samples is not None and num_samples <= 0:
+            raise ValueError(f"num_samples must be a positive integer value, but got num_samples = {num_samples}")
+        if generator is not None and not isinstance(generator, ms.Generator):
+            raise TypeError(f"generator must be mindspore.Generator, but got: {type(generator).__name__}")
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
@@ -67,23 +100,21 @@ class RandomSampler(Sampler[int]):
 
     @property
     def num_samples(self) -> int:
-        # dataset size might change at runtime
         if self._num_samples is None:
             return len(self.data_source)
         return self._num_samples
 
     def __iter__(self) -> Iterator[int]:
         n = len(self.data_source)
+        seed = ms.get_seed()
         if self.generator is None:
-            seed = ms.get_seed()
             if seed is not None:
                 generator = ms.Generator()
                 generator.manual_seed(seed)
         else:
-            # no need to use custom generator
             generator = self.generator
+            seed = generator.initial_seed()
 
-        # with replacement
         if self.replacement:
             for _ in range(self.num_samples // 32):
                 yield from ms.ops.randint(
@@ -92,8 +123,9 @@ class RandomSampler(Sampler[int]):
             yield from ms.ops.randint(
                 low=0, high=n, size=(self.num_samples % 32,), dtype=ms.int64, seed=seed
             ).tolist()
-        # without replacement
         else:
+            if seed is None:
+                seed = -1
             for _ in range(self.num_samples // n):
                 yield from ms.ops.randperm(n, seed=seed).tolist()
             yield from ms.ops.randperm(n, seed=seed).tolist()[: self.num_samples % n]
@@ -104,12 +136,19 @@ class RandomSampler(Sampler[int]):
 
 class BatchSampler(Sampler[list[int]]):
     """
-    Sampler that yields a mini-batch of indices at a time.
+    A sampler that generates mini-batch indices each time.
 
     Args:
-        sampler (Union[Sampler, Iterable]): The base sampler used to yield indices.
-        batch_size (int): The size of the mini-batch.
-        drop_last (bool): Whether to drop the last batch if it is less than `batch_size`.
+        sampler (Union[Sampler, Iterable]): Sampler for generating indices.
+        batch_size (int): The size of the mini batch.
+        drop_last (bool): Whether to discard the last batch of data if the batch is smaller than `batch_size` .
+
+    Examples:
+        >>> from mindspore.dataset.dataloader import BatchSampler, SequentialSampler
+        >>>
+        >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        >>> sequential_sampler = SequentialSampler(dataset)
+        >>> batch_sampler = BatchSampler(sequential_sampler, 2, False)
     """
 
     def __init__(self, sampler: Union[Sampler, Iterable], batch_size: int, drop_last: bool) -> None:
@@ -117,9 +156,9 @@ class BatchSampler(Sampler[list[int]]):
         if not isinstance(batch_size, int) or isinstance(batch_size, bool):
             raise TypeError(f"batch_size must be int, but got: {type(batch_size).__name__}")
         if batch_size <= 0:
-            raise ValueError(f"batch_size must be positive, but got: {batch_size}")
+            raise ValueError(f"batch_size must be positive, but got batch_size = {batch_size}")
         if not isinstance(drop_last, bool):
-            raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}.")
+            raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}")
 
         self.sampler = sampler
         self.batch_size = batch_size
@@ -134,7 +173,6 @@ class BatchSampler(Sampler[list[int]]):
             for batch_droplast in zip(*args):
                 yield [*batch_droplast]
         else:
-            # auto slicing with itertools
             batch = [*itertools.islice(sampler_iter, self.batch_size)]
             while batch:
                 yield batch
@@ -147,7 +185,7 @@ class BatchSampler(Sampler[list[int]]):
 
 
 class InfiniteSampler(Sampler):
-    r"""
+    """
     Used as sampler for :class:`~mindspore.dataset.dataloader.IterableDataset`.
     """
 
