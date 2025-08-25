@@ -35,6 +35,7 @@
 #include "utils/compact_set.h"
 #include "utils/ordered_map.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "base/base_ref.h"
 
 namespace mindspore {
