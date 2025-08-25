@@ -19,7 +19,7 @@ mindspore.ops.ReduceSum
         - **axis** (Union[int, tuple(int), list(int), Tensor]) - 要减少的维度。默认值:  ``()`` ，当 `skip_mode` 为 ``False`` 时，缩小所有维度。只允许常量值，取值范围[-rank(`x`), rank(`x`))。
 
     输出：
-        Tensor，具有与输入 `x` 相同的shape。
+        Tensor。
 
         - 如果 `axis` 为 ``()`` ，且 `keep_dims` 为 ``False`` ， `skip_mode` 为 ``False`` ，则输出一个零维Tensor，表示输入Tensor中所有元素的和。
 
