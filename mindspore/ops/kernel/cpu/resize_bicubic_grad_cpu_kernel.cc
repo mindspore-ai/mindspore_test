@@ -36,6 +36,11 @@ constexpr int64_t kCalnum5 = 5;
 constexpr int64_t kCalnum4 = 4;
 constexpr int64_t kCalnum3 = 3;
 constexpr int64_t kCalnum2 = 2;
+constexpr size_t i0 = 0;
+constexpr size_t i1 = 1;
+constexpr size_t i2 = 2;
+constexpr size_t i3 = 3;
+constexpr size_t kResizeBicubicGradRank = 4;
 static const int64_t kTableSize = (1 << 10);
 const int64_t kParallelDataNum = 1024 * 256;
 }  // namespace
@@ -74,8 +79,8 @@ class ResizeBicubicGradWeightsInfo {
  public:
   ResizeBicubicGradWeightsInfo() : weights{}, indices{}, advance(0) {}
 
-  std::array<float, 4> weights;
-  std::array<int64_t, 4> indices;
+  std::array<float, kResizeBicubicGradRank> weights;
+  std::array<int64_t, kResizeBicubicGradRank> indices;
   size_t advance;
 
   inline void SetWeightsAndIndices(const int64_t in_loc, const int64_t limit, const int64_t offset,
@@ -131,7 +136,7 @@ class CachedInterpolationCalculator {
  public:
   CachedInterpolationCalculator() : indexes_{-1, -1, -1, -1} {}
   inline size_t Advance(const int64_t x_0, const int64_t x_1, const int64_t x_2, const int64_t x_3) {
-    const std::array<int64_t, 4> new_x_indices{{x_0, x_1, x_2, x_3}};
+    const std::array<int64_t, kResizeBicubicGradRank> new_x_indices{{x_0, x_1, x_2, x_3}};
     size_t cached_values_hand = 0;
     size_t new_indices_hand = 0;
     while (cached_values_hand < kCachedValuesHandMax) {
@@ -150,7 +155,7 @@ class CachedInterpolationCalculator {
   }
 
  private:
-  std::array<int64_t, 4> indexes_;
+  std::array<int64_t, kResizeBicubicGradRank> indexes_;
 };
 
 const std::vector<float> &GetCoeffsTable(const bool use_keys_cubic) {
@@ -194,14 +199,14 @@ static void ComputeGradientXWeightsAndIndices(const ResizerGradState &stat, cons
       GetWeightsAndIndicesGrad<HalfPixelScalerGrad, true>(stat.width_scale, x, stat.original_width,
                                                           &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.SetAdvance(calc.Advance(x_wai.indices[0], x_wai.indices[1], x_wai.indices[2], x_wai.indices[3]));
+      x_wai.SetAdvance(calc.Advance(x_wai.indices[i0], x_wai.indices[i1], x_wai.indices[i2], x_wai.indices[i3]));
     }
   } else {
     for (int64_t x = 0; x < stat.resized_width; ++x) {
       GetWeightsAndIndicesGrad<LegacyScalerGrad, false>(stat.width_scale, x, stat.original_width,
                                                         &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.SetAdvance(calc.Advance(x_wai.indices[0], x_wai.indices[1], x_wai.indices[2], x_wai.indices[3]));
+      x_wai.SetAdvance(calc.Advance(x_wai.indices[i0], x_wai.indices[i1], x_wai.indices[i2], x_wai.indices[i3]));
     }
   }
 }
@@ -210,29 +215,29 @@ template <typename T>
 void ResizeCommomCalc(const ResizerGradState &stat, const bool half_pixel_centers,
                       const std::vector<ResizeBicubicGradWeightsInfo> &x_wais, const float *input_grad, T *output_grad,
                       int64_t b, int64_t c, int64_t y) {
-#define UNROLL_4X4_LOOP(y_wai, x_wai, curr_input_grad, output_grad_index, b, c, output_grad)                       \
-  do {                                                                                                             \
-    const float grad_val = curr_input_grad;                                                                        \
-    const auto &y_weights = y_wai.weights;                                                                         \
-    const auto &y_indices = y_wai.indices;                                                                         \
-    const auto &x_weights = x_wai.weights;                                                                         \
-    const auto &x_indices = x_wai.indices;                                                                         \
-    output_grad[output_grad_index(b, c, y_indices[0], x_indices[0])] += T(grad_val * y_weights[0] * x_weights[0]); \
-    output_grad[output_grad_index(b, c, y_indices[0], x_indices[1])] += T(grad_val * y_weights[0] * x_weights[1]); \
-    output_grad[output_grad_index(b, c, y_indices[0], x_indices[2])] += T(grad_val * y_weights[0] * x_weights[2]); \
-    output_grad[output_grad_index(b, c, y_indices[0], x_indices[3])] += T(grad_val * y_weights[0] * x_weights[3]); \
-    output_grad[output_grad_index(b, c, y_indices[1], x_indices[0])] += T(grad_val * y_weights[1] * x_weights[0]); \
-    output_grad[output_grad_index(b, c, y_indices[1], x_indices[1])] += T(grad_val * y_weights[1] * x_weights[1]); \
-    output_grad[output_grad_index(b, c, y_indices[1], x_indices[2])] += T(grad_val * y_weights[1] * x_weights[2]); \
-    output_grad[output_grad_index(b, c, y_indices[1], x_indices[3])] += T(grad_val * y_weights[1] * x_weights[3]); \
-    output_grad[output_grad_index(b, c, y_indices[2], x_indices[0])] += T(grad_val * y_weights[2] * x_weights[0]); \
-    output_grad[output_grad_index(b, c, y_indices[2], x_indices[1])] += T(grad_val * y_weights[2] * x_weights[1]); \
-    output_grad[output_grad_index(b, c, y_indices[2], x_indices[2])] += T(grad_val * y_weights[2] * x_weights[2]); \
-    output_grad[output_grad_index(b, c, y_indices[2], x_indices[3])] += T(grad_val * y_weights[2] * x_weights[3]); \
-    output_grad[output_grad_index(b, c, y_indices[3], x_indices[0])] += T(grad_val * y_weights[3] * x_weights[0]); \
-    output_grad[output_grad_index(b, c, y_indices[3], x_indices[1])] += T(grad_val * y_weights[3] * x_weights[1]); \
-    output_grad[output_grad_index(b, c, y_indices[3], x_indices[2])] += T(grad_val * y_weights[3] * x_weights[2]); \
-    output_grad[output_grad_index(b, c, y_indices[3], x_indices[3])] += T(grad_val * y_weights[3] * x_weights[3]); \
+#define UNROLL_4X4_LOOP(y_wai, x_wai, curr_input_grad, output_grad_index, b, c, output_grad)                           \
+  do {                                                                                                                 \
+    const float grad_val = curr_input_grad;                                                                            \
+    const auto &y_weights = y_wai.weights;                                                                             \
+    const auto &y_indices = y_wai.indices;                                                                             \
+    const auto &x_weights = x_wai.weights;                                                                             \
+    const auto &x_indices = x_wai.indices;                                                                             \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i0])] += T(grad_val * y_weights[i0] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i1])] += T(grad_val * y_weights[i0] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i2])] += T(grad_val * y_weights[i0] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i3])] += T(grad_val * y_weights[i0] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i0])] += T(grad_val * y_weights[i1] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i1])] += T(grad_val * y_weights[i1] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i2])] += T(grad_val * y_weights[i1] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i3])] += T(grad_val * y_weights[i1] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i0])] += T(grad_val * y_weights[i2] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i1])] += T(grad_val * y_weights[i2] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i2])] += T(grad_val * y_weights[i2] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i3])] += T(grad_val * y_weights[i2] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i0])] += T(grad_val * y_weights[i3] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i1])] += T(grad_val * y_weights[i3] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i2])] += T(grad_val * y_weights[i3] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i3])] += T(grad_val * y_weights[i3] * x_weights[i3]); \
   } while (0)
 
   auto input_grad_index = [&stat](int64_t x1, int64_t x2, int64_t x3, int64_t x4) -> int64_t {

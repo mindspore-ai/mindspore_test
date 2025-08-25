@@ -31,6 +31,10 @@ constexpr size_t kScaleAndTranslateOutputsNum = 1;
 constexpr size_t kScaleAndTranslateGradInputsNum = 4;
 constexpr size_t kScaleAndTranslateGradOutputsNum = 1;
 constexpr float kScaleAndTranslateBlock = 1000.0f;
+constexpr size_t i0 = 0;
+constexpr size_t i1 = 1;
+constexpr size_t i2 = 2;
+constexpr size_t i3 = 3;
 }  // namespace
 
 bool ScaleAndTranslateCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -120,9 +124,9 @@ void ScaleAndTranslateCpuKernelMod::GatherRows(int64_t span_size, const int64_t 
           const int64_t n_unrolled = n - (n % unroll_step);
           for (int64_t idx = 0; idx < n_unrolled; idx += unroll_step) {
             out_vec[idx] += w * static_cast<float>(in_vec[idx]);
-            out_vec[idx + 1] += w * static_cast<float>(in_vec[idx + 1]);
-            out_vec[idx + 2] += w * static_cast<float>(in_vec[idx + 2]);
-            out_vec[idx + 3] += w * static_cast<float>(in_vec[idx + 3]);
+            out_vec[idx + i1] += w * static_cast<float>(in_vec[idx + i1]);
+            out_vec[idx + i2] += w * static_cast<float>(in_vec[idx + i2]);
+            out_vec[idx + i3] += w * static_cast<float>(in_vec[idx + i3]);
           }
           for (int64_t idx = n_unrolled; idx < n; ++idx) {
             out_vec[idx] += w * static_cast<float>(in_vec[idx]);
@@ -182,9 +186,9 @@ void ScaleAndTranslateCpuKernelMod::GatherColumns(int64_t span_size, const int64
             const int64_t n_unrolled = n - (n % unroll_step);
             for (int64_t idx = 0; idx < n_unrolled; idx += unroll_step) {
               out_vec[idx] += w * static_cast<float>(in_vec[idx]);
-              out_vec[idx + 1] += w * static_cast<float>(in_vec[idx + 1]);
-              out_vec[idx + 2] += w * static_cast<float>(in_vec[idx + 2]);
-              out_vec[idx + 3] += w * static_cast<float>(in_vec[idx + 3]);
+              out_vec[idx + i1] += w * static_cast<float>(in_vec[idx + i1]);
+              out_vec[idx + i2] += w * static_cast<float>(in_vec[idx + i2]);
+              out_vec[idx + i3] += w * static_cast<float>(in_vec[idx + i3]);
             }
             for (int64_t idx = n_unrolled; idx < n; ++idx) {
               out_vec[idx] += w * static_cast<float>(in_vec[idx]);

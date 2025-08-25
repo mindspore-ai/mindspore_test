@@ -36,6 +36,7 @@ constexpr int64_t kCalnum5 = 5;
 constexpr int64_t kCalnum4 = 4;
 constexpr int64_t kCalnum3 = 3;
 constexpr int64_t kCalnum2 = 2;
+constexpr size_t kResizeBicubicRank = 4;
 constexpr int64_t kTableSize = (1 << 10);
 
 void ResizerState::CalculateSize(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
@@ -66,8 +67,8 @@ struct LegacyScaler {
 
 class ResizeBicubicWeightsInfo {
  public:
-  std::array<float, 4> weights;
-  std::array<int64_t, 4> indices;
+  std::array<float, kResizeBicubicRank> weights;
+  std::array<int64_t, kResizeBicubicRank> indices;
   size_t advance;
 
   inline void SetWeightsAndIndices(const int64_t in_loc, const int64_t limit, const int64_t offset,
@@ -105,8 +106,6 @@ class ResizeBicubicWeightsInfo {
                      [one_over_weight_sum](float w) { return w * one_over_weight_sum; });
     }
   }
-
-
 };
 
 inline float InterpolateFromArray(const std::array<float, 4> &weights, const float *values) {
@@ -114,7 +113,7 @@ inline float InterpolateFromArray(const std::array<float, 4> &weights, const flo
 }
 
 template <typename T>
-inline float InterpolateYAtX(const std::array<float, 4> &weights, size_t which, const T *y_ptr_0, const T *y_ptr_1, 
+inline float InterpolateYAtX(const std::array<float, 4> &weights, size_t which, const T *y_ptr_0, const T *y_ptr_1,
                              const T *y_ptr_2, const T *y_ptr_3, const std::array<int64_t, 4> &x_indices) {
   const size_t clamped = which <= kIndex3 ? which : kIndex3;
   const int x_index = static_cast<int>(x_indices[clamped]);
@@ -127,7 +126,7 @@ class CachedInterpolationCalculator {
  public:
   CachedInterpolationCalculator() : indexes_{-1, -1, -1, -1} {}
   inline size_t Advance(const int64_t x_0, const int64_t x_1, const int64_t x_2, const int64_t x_3) {
-    const std::array<int64_t, 4> new_x_indices{{x_0, x_1, x_2, x_3}};
+    const std::array<int64_t, kResizeBicubicRank> new_x_indices{{x_0, x_1, x_2, x_3}};
     size_t cached_values_hand = 0;
     size_t new_indices_hand = 0;
     while (cached_values_hand < kCachedValuesHandMax) {
@@ -147,7 +146,7 @@ class CachedInterpolationCalculator {
   }
 
  private:
-  std::array<int64_t, 4> indexes_;
+  std::array<int64_t, kResizeBicubicRank> indexes_;
 };
 
 const std::vector<float> &GetCoeffsTable(const bool use_keys_cubic) {
@@ -187,9 +186,8 @@ static void PrepareHorizontalInterpolationWeights(const ResizerState &resizer_st
   CachedInterpolationCalculator calc;
   if (half_pixel_centers_) {
     for (int64_t x = 0; x < resizer_state.out_width; ++x) {
-      ComputeInterpolationWeightsForPosition<HalfPixelScaler, true>(resizer_state.width_scale, x,
-                                                                    resizer_state.in_width,
-                                                                    &(*x_wais)[static_cast<size_t>(x)]);
+      ComputeInterpolationWeightsForPosition<HalfPixelScaler, true>(
+        resizer_state.width_scale, x, resizer_state.in_width, &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
       x_wai.SetAdvance(
         calc.Advance(x_wai.indices[kIndex0], x_wai.indices[kIndex1], x_wai.indices[kIndex2], x_wai.indices[kIndex3]));
