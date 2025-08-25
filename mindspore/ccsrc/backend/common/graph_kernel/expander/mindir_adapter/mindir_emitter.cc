@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 #include "backend/common/graph_kernel/expander/mindir_adapter/mindir_emitter.h"
 #include <algorithm>
-#include "ir/primitive.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
 #include "backend/common/graph_kernel/model/op_register.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
-#include "ir/primitive.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/ps/ps_context.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include "ir/meta_func_graph.h"
-#include "ir/primitive.h"
 #include "ir/graph_utils.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"

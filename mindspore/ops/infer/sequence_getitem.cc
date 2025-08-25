@@ -26,7 +26,6 @@
 #include "abstract/utils.h"
 #include "base/base.h"
 #include "ir/anf.h"
-#include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
 #include "mindapi/helper.h"

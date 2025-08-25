@@ -29,7 +29,6 @@
 #include "utils/hash_set.h"
 #include "utils/symbolic.h"
 #include "utils/compile_config.h"
-#include "ir/primitive.h"
 #include "ir/func_graph.h"
 #include "ir/graph_utils.h"
 #include "ir/value.h"

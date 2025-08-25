@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,12 @@
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "include/common/utils/convert_utils.h"
-#include "symbolic_shape/symbol_engine.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttrPtr;
 using kernel::OpInfoPtr;
+class SymbolEngine;
+using SymbolEnginePtr = std::shared_ptr<symshape::SymbolEngine>;
 
 // dump option
 struct DumpOption {

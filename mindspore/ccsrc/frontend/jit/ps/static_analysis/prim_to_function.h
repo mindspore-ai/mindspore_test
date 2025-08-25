@@ -26,7 +26,6 @@
 
 #include "utils/hash_map.h"
 #include "ir/anf.h"
-#include "ir/primitive.h"
 #include "ir/dtype.h"
 
 namespace mindspore {
