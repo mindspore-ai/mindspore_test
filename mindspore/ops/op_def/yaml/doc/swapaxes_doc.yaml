@@ -4,3 +4,6 @@ swapaxes:
         and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
 
         Refer to :func:`mindspore.mint.transpose` for more details.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.

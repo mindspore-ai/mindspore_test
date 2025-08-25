@@ -3,6 +3,7 @@ isinf:
         Return a boolean tensor indicating which elements are +/- inifnity.
 
         .. warning::
+            - This is an experimental API that is subject to change or deletion.
             - For Ascend, it is only supported on platforms above Atlas A2.
 
         Args:

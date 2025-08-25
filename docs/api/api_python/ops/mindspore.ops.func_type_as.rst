@@ -5,6 +5,9 @@ mindspore.ops.type_as
 
     将第一个input的数据类型转换为other的数据类型。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     .. note::
         将复数转换为bool类型的时候，不考虑复数的虚部，只要实部不为零，返回True，否则返回False。
 

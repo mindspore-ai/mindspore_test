@@ -147,9 +147,6 @@ class LogSigmoid(Cell):
     .. image:: ../images/LogSigmoid.png
         :align: center
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Inputs:
         - **input** (Tensor) - The input of LogSigmoid with data type of bfloat16, float16 or float32.
           The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
