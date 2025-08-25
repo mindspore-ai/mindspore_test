@@ -5,9 +5,6 @@ empty_like:
     Returns an uninitialized Tensor with the same shape as the `input`. Its dtype is specified by `dtype` and its
     device is specified by `device`.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): Tensor of any dimension.
 

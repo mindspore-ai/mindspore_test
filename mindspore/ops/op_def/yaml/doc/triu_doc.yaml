@@ -2,9 +2,6 @@ triu:
     description: |
         Zero the input tensor below the diagonal specified.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Args:
             input (Tensor): The input tensor.
             diagonal (int, optional): The diagonal specified of 2-D tensor. Default ``0`` represents the main diagonal.

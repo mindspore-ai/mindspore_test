@@ -3484,9 +3484,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         r"""
         Return a tensor filled with zeros.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Returns:
             Return a tensor. Fill self tensor with zeros.
 

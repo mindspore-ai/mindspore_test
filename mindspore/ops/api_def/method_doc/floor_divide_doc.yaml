@@ -17,9 +17,6 @@ floor_divide:
     where the :math:`floor` indicates the Floor operator. For more details,
     please refer to the :class:`mindspore.mint.floor` operator.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         other (Union[Tensor, Number, bool]): The other input is a number or
             a bool or a tensor whose data type is number or bool.

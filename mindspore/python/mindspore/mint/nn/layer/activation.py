@@ -313,9 +313,6 @@ class Tanh(Cell):
     .. image:: ../images/Tanh.png
         :align: center
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Inputs:
         - **input** (Tensor) - Tensor of any dimension, input with data type of float16 or float32.
 

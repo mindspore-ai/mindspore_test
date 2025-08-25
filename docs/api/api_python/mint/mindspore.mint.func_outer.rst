@@ -5,9 +5,6 @@ mindspore.mint.outer
 
     计算 `input` 和 `vec2` 的外积。如果向量 `input` 长度为 :math:`n` ， `vec2` 长度为 :math:`m` ，则输出矩阵shape为 :math:`(n, m)` 。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     .. note::
         该函数不支持广播。
 

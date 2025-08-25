@@ -4,9 +4,6 @@ transpose:
     
     Interchange two axes of a tensor.
     
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-    
     Args:
         dim0 (int): Specifies the first dimension to be transposed.
         dim1 (int): Specifies the second dimension to be transposed.

@@ -3,9 +3,6 @@ outer:
     Return outer product of `input` and `vec2`. If `input` is a vector of size :math:`n`
     and `vec2` is a vector of size :math:`m` , then output must be a matrix of shape :math:`(n, m)` .
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     .. note::
         This function does not broadcast.
 

@@ -6644,9 +6644,6 @@ def type_as(input, other):
     r"""
     Returns input cast to the type of the with the other.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Note:
         When converting complex numbers to boolean type, the imaginary part of the complex number is not
         taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.

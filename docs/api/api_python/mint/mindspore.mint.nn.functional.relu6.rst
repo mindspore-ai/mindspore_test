@@ -15,9 +15,6 @@ mindspore.mint.nn.functional.relu6
     .. image:: ../images/ReLU6.png
         :align: center
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。数据类型为int8、int16、int32、int64、uint8、float16、float32、bfloat16。
         - **inplace** (bool, 可选) - 是否采用原地更新模式，默认值为 ``False``。

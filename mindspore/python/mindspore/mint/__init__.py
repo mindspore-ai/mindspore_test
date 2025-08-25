@@ -657,9 +657,6 @@ def concat(tensors, dim=0):
     r"""
     Alias for :func:`mindspore.mint.cat`.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
     """
@@ -743,9 +740,6 @@ def equal(input, other):
 
     Note:
         `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The first input.
@@ -1324,9 +1318,6 @@ def swapaxes(input, axis0, axis1):
     and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
 
     For more details, see :func:`mindspore.mint.transpose` .
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Examples:
         >>> import numpy as np

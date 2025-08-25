@@ -5,5 +5,3 @@ mindspore.mint.concat
 
     :func:`mindspore.mint.cat` 的别名。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。

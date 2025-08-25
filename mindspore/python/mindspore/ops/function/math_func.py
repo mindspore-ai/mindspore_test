@@ -5102,9 +5102,6 @@ def bernoulli_ext(input, *, generator=None):
     .. math::
         output_{i} \sim Bernoulli(p=input_{i})
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input tensor of Bernoulli distribution, where the i^{th} element 'input_{i}' represents the
             probability that the corresponding output element 'output_{i}' is set to '1', therefore each element in
@@ -7704,9 +7701,6 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     `'nuc'`                 nuclear norm                     -- not supported --
     other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{p})^{(1 / p)}`
     ====================== ================================ ==========================================
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The shape is :math:`(*)` or :math:`(*, m, n)`

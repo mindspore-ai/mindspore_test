@@ -16,9 +16,6 @@ repeat:
         repeats_{i} & \text{if } input.{rank} \le i < n \\
         \end{cases}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     .. note::
         If need to specify the number of repetition times for each element of a single dimension, please
         refer to :func:`mindspore.Tensor.repeat_interleave`.
