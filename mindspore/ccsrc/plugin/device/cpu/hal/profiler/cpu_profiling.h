@@ -29,7 +29,6 @@
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/data_saver.h"
 #include "actor/actormgr.h"
-#include "abstract/dshape.h"
 #include "ir/anf.h"
 #include "include/common/visible.h"
 

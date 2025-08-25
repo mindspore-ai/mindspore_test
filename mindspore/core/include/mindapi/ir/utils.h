@@ -20,7 +20,6 @@
 #include "mindapi/base/base.h"
 #include "mindapi/base/type_traits.h"
 #include "mindapi/ir/anf.h"
-#include "mindapi/ir/value.h"
 #include "mindapi/ir/func_graph.h"
 
 namespace mindspore::api::utils {

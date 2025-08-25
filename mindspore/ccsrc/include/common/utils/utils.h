@@ -31,13 +31,13 @@
 #include <vector>
 #include <tuple>
 
+#include "base/base.h"
 #include "include/common/visible.h"
 #include "include/common/utils/stream_util.h"
 #include "ir/dtype/type_id.h"
 #include "utils/log_adapter.h"
 
 #include "ops_utils/op_constants.h"
-#include "ir/meta_grad_data.h"
 
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER

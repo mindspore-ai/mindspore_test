@@ -21,11 +21,11 @@
 #include <memory>
 #include <utility>
 #include "ir/anf.h"
-#include "ir/meta_grad_data.h"
 #include "ir/dtype/tensor_type.h"
 #include "include/common/visible.h"
 
 namespace mindspore {
+enum class InputType;
 namespace expander {
 class Emitter;
 using DAttr = std::vector<std::pair<std::string, ValuePtr>>;

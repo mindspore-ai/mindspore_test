@@ -21,11 +21,12 @@
 #include <utility>
 #include <unordered_map>
 #include "ir/primitive.h"
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation.h"
 
 namespace mindspore {
 namespace symshape {
+class Symbol;
+using SymbolPtr = std::shared_ptr<Symbol>;
 class OperationBuilder;
 enum class DependOn : int { kShape, kValue, kNone };
 

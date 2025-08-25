@@ -19,7 +19,6 @@
 #include <vector>
 #include <string>
 #include <optional>
-#include "symbolic_shape/symbol.h"
 #include "abstract/abstract_value.h"
 
 namespace mindspore {

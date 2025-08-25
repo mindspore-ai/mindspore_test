@@ -20,7 +20,6 @@
 #include <vector>
 #include <string>
 #include "ir/anf.h"
-#include "ir/meta_grad_data.h"
 #include "abstract/abstract_value.h"
 #include "utils/simple_info.h"
 

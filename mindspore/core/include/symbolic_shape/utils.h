@@ -19,11 +19,14 @@
 #include <vector>
 #include <string>
 #include <set>
-#include "symbolic_shape/symbol.h"
+#include <memory>
 #include "abstract/abstract_value.h"
 
 namespace mindspore {
 namespace symshape {
+class Symbol;
+using SymbolPtr = std::shared_ptr<Symbol>;
+
 /// \brief Build constant symbolic value.
 MS_CORE_API SymbolPtr ConstValueToSymbol(const ValuePtr &v, bool to_scalar = false);
 
