@@ -26,10 +26,10 @@
 namespace mindspore {
 namespace kernel {
 
-class CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
+class BACKEND_EXPORT CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
  public:
-  CustomOpPluginCpuKernelMod() : handle_(nullptr), resize_func_(nullptr), aot_func_(nullptr) {}
-  ~CustomOpPluginCpuKernelMod();
+  CustomOpPluginCpuKernelMod() = default;
+  ~CustomOpPluginCpuKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -46,10 +46,6 @@ class CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
 
   std::string file_path_;
   std::string func_name_;
-  void *handle_{nullptr};
-  // int (*init_func_)(int *, int64_t **, const char **, KernelInputInfo *);
-  int (*resize_func_)(int *, int64_t **, const char **, KernelInputInfo *);
-  int (*aot_func_)(int, void **, int *, int64_t **, const char **, void *, void *);
 
   KernelInputInfoImpl kernel_info_;
 

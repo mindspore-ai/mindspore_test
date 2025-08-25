@@ -174,24 +174,37 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   const auto &key = with_prim_attr ? cache_helper.GetPrimAttrKernelModKey(prim, device_name, inputs)
                                    : cache_helper.GetKernelModKey(op_name, device_name, inputs);
   auto kernel_mod = cache_helper.GetKernelMod(key);
-  if (kernel_mod == nullptr) {
-    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
-    if (kernel_mod == nullptr) {
-      if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
-        // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-        const std::string custom_op_name = "CustomOpPlugin";
-        kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
-        MS_EXCEPTION_IF_NULL(kernel_mod);
-      } else {
-        MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
-      }
-    }
-    if (!kernel_mod->Init(prim, inputs, outputs)) {
-      MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
+  if (kernel_mod != nullptr) {
+    return kernel_mod;
+  }
+
+  static const auto ms_op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (ms_op_plugin_path != nullptr) {
+    // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+    constexpr auto custom_op_name = "CustomOpPlugin";
+    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+
+    if (kernel_mod->Init(prim, inputs, outputs)) {
+      // use op plugin when init success
+      cache_helper.SetCache(key, kernel_mod);
+      PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
+      return kernel_mod;
     }
     cache_helper.SetCache(key, kernel_mod);
     PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
   }
+
+  kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
+  if (kernel_mod == nullptr) {
+    MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+  }
+
+  if (!kernel_mod->Init(prim, inputs, outputs)) {
+    MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
+  }
+  cache_helper.SetCache(key, kernel_mod);
+  PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
 
   return kernel_mod;
 }
@@ -368,6 +381,32 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   for (const auto &tensor : tensors) {
     // input_abs is not used in GetKernelTensor when value is TensorPtr.
     GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+  }
+}
+
+void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                   const abstract::AbstractBasePtr &input_abs, size_t index,
+                                   std::vector<kernel::KernelTensor *> *kernel_tensor_list,
+                                   std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                                   const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto values = value_tuple->value();
+  size_t tensor_num = std::count_if(values.cbegin(), values.cend(), [](const ValuePtr &value) {
+    return value != nullptr && value->isa<tensor::Tensor>();
+  });
+  if (tensor_num == values.size() && tensor_num != 0) {
+    for (const auto &value : values) {
+      const auto &tensor = value->cast<tensor::TensorPtr>();
+      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+    }
+  } else {
+    auto kernel_tensor =
+      runtime::DeviceAddressUtils::CreateInputKernelTensor(device_context, stream_id, input_abs, index, value_tuple);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_list);
+    (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
+    (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
   }
 }
 

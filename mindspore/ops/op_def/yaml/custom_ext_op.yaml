@@ -14,5 +14,4 @@ custom_ext:
   dispatch:
     enable: False
     Ascend: CustomExtAscend
-    CPU: None
     GPU: None

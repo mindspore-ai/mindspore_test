@@ -23,5 +23,4 @@ var:
   dispatch:
     enable: True
     Ascend: VarAscend
-    CPU: None
     GPU: None

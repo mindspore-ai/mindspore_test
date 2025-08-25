@@ -91,5 +91,4 @@ flash_attention_score_grad:
   dispatch:
     enable: True
     Ascend: FlashAttentionScoreGradAscend
-    CPU: None
     GPU: None

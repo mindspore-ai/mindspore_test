@@ -38,5 +38,4 @@ batch_norm_ext:
     dispatch:
         enable: True
         Ascend: BatchNormExtAscend
-        CPU: None
         GPU: None

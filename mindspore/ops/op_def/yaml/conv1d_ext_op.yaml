@@ -33,5 +33,4 @@ conv1d_ext:
   dispatch:
     enable: True
     Ascend: Conv1DExtAscend
-    CPU: None
     GPU: None

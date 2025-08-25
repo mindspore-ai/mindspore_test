@@ -74,6 +74,8 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
+#include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -446,6 +448,9 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
 }
 
 kernel::KernelModPtr CPUKernelExecutor::CreateKernelMod(const std::string &op_name) const {
+  if (kernel::IsOpPluginKernel(op_name)) {
+    return kernel::Factory<kernel::CustomOpPluginCpuKernelMod>::Instance().Create(op_name);
+  }
   return kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Create(op_name);
 }
 
@@ -469,7 +474,7 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
     std::string kernel_name = common::AnfAlgo::GetCNodeName(node);
 
     std::shared_ptr<kernel::NativeCpuKernelMod> cpu_kernel =
-      kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Create(kernel_name);
+      std::dynamic_pointer_cast<kernel::NativeCpuKernelMod>(CreateKernelMod(kernel_name));
 
     if (cpu_kernel == nullptr) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#Build cpu operator[" << node->fullname_with_scope()
