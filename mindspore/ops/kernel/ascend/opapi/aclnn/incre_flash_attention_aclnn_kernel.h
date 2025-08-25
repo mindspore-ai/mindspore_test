@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INCRE_FLASH_ATTENTION_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INCRE_FLASH_ATTENTION_ACLNN_KERNEL_MOD_H_
 #include <vector>
+#include <string>
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
@@ -29,12 +30,25 @@ class IncreFlashAttentionAscend : public AclnnKernelMod {
  public:
   IncreFlashAttentionAscend() : AclnnKernelMod(std::move("aclnnIncreFlashAttentionV4")) {}
   ~IncreFlashAttentionAscend() = default;
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  void SetScalarParam(const std::vector<KernelTensor *> &inputs);
+
+  int64_t num_heads_ = 0;
+  double scale_value_d_ = 0;
+  std::string input_layout_str_ = "";
+  int64_t num_key_value_heads_ = 0;
+  int64_t inner_precise_ = 0;
+  int64_t block_size_ = 0;
+  std::vector<KernelTensor *> value_vector_;
+  std::vector<KernelTensor *> key_vector_;
+  std::pair<std::vector<int64_t>, bool> actual_kv_lengths_vector_pair_;
 };
 }  // namespace incre_flash_attention
 }  // namespace kernel

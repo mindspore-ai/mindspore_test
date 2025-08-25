@@ -18,11 +18,13 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "infer/ops_func_impl/prompt_flash_attention.h"
+#include "utils/llm_manager.h"
 
 namespace mindspore {
 using mindspore::device::ascend::FASInputLayoutMode;
@@ -43,62 +45,25 @@ class PromptFlashAttentionAscend : public AclnnKernelMod {
     if (outputs[kIndex0]->type_id() != kObjectTypeTensorType) {
       MS_LOG(EXCEPTION) << "now only support tensor type for EmptyKernelTensor in " << op_type_;
     }
+    auto &llm_manager = LLMManager::GetInstance();
+    llm_manager.add_force_resize_kernel(kernel_name_);
     return true;
   }
 
  protected:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-
-  auto PFAGenerate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-    auto actual_seq_qlen = inputs[kIndex4];
-    MS_EXCEPTION_IF_NULL(actual_seq_qlen);
-    std::vector<int64_t> actual_seq_qlen_array;
-    if (actual_seq_qlen->type_id() != kMetaTypeNone) {
-      actual_seq_qlen_array = actual_seq_qlen->GetValueWithCheck<std::vector<int64_t>>();
-    }
-    auto actual_seq_kvlen = inputs[kIndex5];
-    MS_EXCEPTION_IF_NULL(actual_seq_kvlen);
-    std::vector<int64_t> actual_seq_kvlen_array;
-    if (actual_seq_kvlen->type_id() != kMetaTypeNone) {
-      actual_seq_kvlen_array = actual_seq_kvlen->GetValueWithCheck<std::vector<int64_t>>();
-    }
-    auto num_heads = inputs[kIndex12];
-    MS_EXCEPTION_IF_NULL(num_heads);
-    auto num_heads_value = num_heads->GetValueWithCheck<int64_t>();
-
-    auto scale_value = inputs[kIndex13];
-    MS_EXCEPTION_IF_NULL(scale_value);
-    auto scale_value_value = static_cast<double>(scale_value->GetValueWithCheck<float>());
-
-    auto pre_tokens = inputs[kIndex14];
-    MS_EXCEPTION_IF_NULL(pre_tokens);
-    auto pre_tokens_value = pre_tokens->GetValueWithCheck<int64_t>();
-    auto next_tokens = inputs[kIndex15];
-    MS_EXCEPTION_IF_NULL(next_tokens);
-    auto next_tokens_value = next_tokens->GetValueWithCheck<int64_t>();
-
-    auto input_layout = inputs[kIndex16];
-    MS_EXCEPTION_IF_NULL(input_layout);
-    auto input_layout_value = input_layout->GetValueWithCheck<int64_t>();
-    auto input_layout_string = FASInputLayoutMode::ConvertEnumToString(input_layout_value);
-
-    auto num_key_value_heads = inputs[kIndex17];
-    MS_EXCEPTION_IF_NULL(num_key_value_heads);
-    auto num_key_value_heads_value = num_key_value_heads->GetValueWithCheck<int64_t>();
-
-    auto sparse_mode = inputs[kIndex18];
-    MS_EXCEPTION_IF_NULL(sparse_mode);
-    auto sparse_mode_value = sparse_mode->GetValueWithCheck<int64_t>();
-
-    auto inner_precise = inputs[kIndex19];
-    MS_EXCEPTION_IF_NULL(inner_precise);
-    auto inner_precise_value = inner_precise->GetValueWithCheck<int64_t>();
-    RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex6], inputs[kIndex3],
-          actual_seq_qlen_array, actual_seq_kvlen_array, inputs[kIndex7], inputs[kIndex8], inputs[kIndex9],
-          inputs[kIndex10], inputs[kIndex11], num_heads_value, scale_value_value, pre_tokens_value, next_tokens_value,
-          input_layout_string, num_key_value_heads_value, sparse_mode_value, inner_precise_value, outputs[kIndex0]);
-  }
+  void SetScalarParam(const std::vector<KernelTensor *> &inputs);
+  int64_t num_heads_ = 0;
+  double scale_value_d_ = 0;
+  int64_t pre_tokens_ = 0;
+  int64_t next_tokens_ = 0;
+  std::string input_layout_str_ = "";
+  int64_t num_key_value_heads_ = 0;
+  int64_t sparse_mode_ = 0;
+  int64_t inner_precise_ = 0;
+  std::pair<std::vector<int64_t>, bool> actual_q_lengths_vector_pair_;
+  std::pair<std::vector<int64_t>, bool> actual_kv_lengths_vector_pair_;
+  std::pair<std::vector<int64_t>, bool> actual_shared_prefix_lengths_vector_pair_;
 };
 }  // namespace prompt_flash_attention
 }  // namespace kernel
