@@ -4365,7 +4365,7 @@ def sign(x):
 
 def sign_(input):
     r"""
-    Tensor In-place version of sign(), for details, please refer to :func:`mindspore.ops.sign`.
+    In-place version of :func:`mindspore.mint.sign`.
     """
     return inplace_sign_op(input)
 
