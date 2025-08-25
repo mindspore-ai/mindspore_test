@@ -875,10 +875,7 @@ void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &input
       const auto &tensor = value->cast<tensor::TensorPtr>();
       auto auto_grad_meta_data = tensor->auto_grad_meta_data();
       // Get scalar tensor
-      if (auto_grad_meta_data == nullptr) {
-        continue;
-      }
-      if (auto_grad_meta_data->input_type() == InputType::kParameter && !AutoGradUtil::IsParamRequiresGrad(tensor)) {
+      if (auto_grad_meta_data == nullptr || !auto_grad_meta_data->requires_grad()) {
         continue;
       }
       auto fn = SafeGetGradNodeImpl(tensor);
