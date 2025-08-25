@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyfunc/py_func_cpu_kernel.h"
 
 #include <memory>
 #include <vector>
@@ -29,6 +29,13 @@
 namespace mindspore {
 namespace kernel {
 namespace {
+#define CHECK_RET_WITH_EXCEPT(expression, status, message) \
+  do {                                                     \
+    auto ret = (expression);                               \
+    if (ret != (status)) {                                 \
+      MS_LOG(EXCEPTION) << (message);                      \
+    }                                                      \
+  } while (0)
 py::object RawMemoryToScalar(const void *data, const TypeId &type) {
   switch (type) {
     case kNumberTypeBool:

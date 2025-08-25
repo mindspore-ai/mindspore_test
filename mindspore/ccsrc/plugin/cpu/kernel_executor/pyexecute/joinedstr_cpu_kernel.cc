@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/kernel/pyexecute/joinedstr_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyexecute/joinedstr_cpu_kernel.h"
 
 #include <algorithm>
 #include <memory>

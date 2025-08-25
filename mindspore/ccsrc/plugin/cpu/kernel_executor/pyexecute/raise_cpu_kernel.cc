@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/kernel/pyexecute/raise_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyexecute/raise_cpu_kernel.h"
 
 #include <algorithm>
 #include <memory>
@@ -26,7 +26,7 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"
-#include "plugin/device/cpu/kernel/pyexecute/joinedstr_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyexecute/joinedstr_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
