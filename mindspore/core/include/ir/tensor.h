@@ -34,6 +34,7 @@
 #include "base/bfloat16.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
+#include "ir/quantization_param.h"
 #include "ir/dtype/op_dtype.h"
 
 // brief mindspore namespace.
