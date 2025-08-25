@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
-#include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"

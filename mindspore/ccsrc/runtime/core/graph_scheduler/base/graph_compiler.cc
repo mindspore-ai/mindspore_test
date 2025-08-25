@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License"){}
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@
 #endif
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/compile_cache_context.h"
-#include "utils/phase.h"
 #include "frontend/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

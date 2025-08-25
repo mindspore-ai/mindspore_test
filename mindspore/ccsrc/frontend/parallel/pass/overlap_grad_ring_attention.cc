@@ -30,7 +30,6 @@
 #include "op_def/math_ops.h"
 #include "op_def/framework_ops.h"
 #include "infer/make_tuple.h"
-#include "utils/anf_utils.h"
 #include "ir/tensor.h"
 #include "utils/trace_base.h"
 #include "ir/anf.h"

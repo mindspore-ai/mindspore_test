@@ -35,7 +35,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace ops {

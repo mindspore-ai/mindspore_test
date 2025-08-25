@@ -30,7 +30,6 @@
 #include "ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "ops/base_operator.h"
 #include "infer/list_getitem.h"
 #include "ops/primitive_c.h"
 #include "infer/real_tuple_getitem.h"

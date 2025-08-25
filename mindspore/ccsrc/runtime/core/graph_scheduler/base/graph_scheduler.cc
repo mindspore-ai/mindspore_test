@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,11 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/optimizer/helper.h"
-#include "utils/anf_utils.h"
 #include "include/common/utils/config_manager.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "utils/profile.h"
-#include "utils/phase.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"

@@ -20,7 +20,6 @@
 #include "abstract/param_validator.h"
 #include "infer/deprecated_infer/infer_functions.h"
 #include "abstract/utils.h"
-#include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "utils/shape_utils.h"

@@ -24,7 +24,6 @@
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
-#include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 #include "op_def/framework_ops.h"
