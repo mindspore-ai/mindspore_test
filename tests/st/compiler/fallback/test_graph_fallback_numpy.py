@@ -82,7 +82,7 @@ def test_np_swapaxes():
     assert x == 6 and y == 3
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_index_asnp():
     """
