@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/atb/add_atb_kernel.h"
+#include "kernel/ascend/atb/add_atb_kernel.h"
 #include <vector>
 
 namespace mindspore::kernel {

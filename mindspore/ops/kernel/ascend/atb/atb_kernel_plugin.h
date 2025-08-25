@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ATB_KERNEL_BUILD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ATB_KERNEL_BUILD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_
+
 #include <memory>
 #include <string>
-#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/backend/kernel_graph.h"
+#include <vector>
+#include "kernel/ascend/kernel_plugin.h"
 
-namespace mindspore {
-namespace kernel {
-KernelModPtr AtbKernelBuild(const AnfNodePtr &anf_node);
-bool IsEnableAtb(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node);
+namespace mindspore::kernel {
+class AtbKernelPlugin : public KernelPlugin {
+ public:
+  AtbKernelPlugin() = default;
+  ~AtbKernelPlugin() = default;
 
-}  // namespace kernel
-}  // namespace mindspore
+  KernelModPtr BuildKernel(const AnfNodePtr &anf_node) override;
+  bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
+};
+}  // namespace mindspore::kernel
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ATB_KERNEL_BUILD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_ATB_ATB_KERNEL_PLUGIN_H_

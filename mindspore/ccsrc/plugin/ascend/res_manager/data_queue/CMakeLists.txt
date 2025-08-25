@@ -2,6 +2,5 @@ if(ENABLE_D OR ENABLE_ACL)
   file(GLOB _ASCEND_DATA_QUEUE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
   set_property(SOURCE ${_ASCEND_DATA_QUEUE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
     SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
-  list(REMOVE_ITEM _ASCEND_DATA_QUEUE_SRC_LIST "ascend_host_queue.cc")
   add_library(_mindspore_ascend_data_queue_obj OBJECT ${_ASCEND_DATA_QUEUE_SRC_LIST})
 endif()

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/atb/atb_kernel_mod.h"
+#include "kernel/ascend/atb/atb_kernel_mod.h"
 #include <algorithm>
 #include <vector>
 #include <functional>
