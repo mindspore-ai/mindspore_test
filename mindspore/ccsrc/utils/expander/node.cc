@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include "include/common/expander/core/node.h"
-#include "include/common/expander/core/emitter.h"
-#include "include/common/expander/core/infer.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
+#include <algorithm>
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
+#include "mindspore/ccsrc/include/utils/expander/infer.h"
 
 namespace mindspore {
 namespace expander {

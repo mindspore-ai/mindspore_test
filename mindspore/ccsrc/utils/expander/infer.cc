@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "include/common/expander/core/infer.h"
-
+#include "mindspore/ccsrc/include/utils/expander/infer.h"
+#include <algorithm>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"

@@ -25,7 +25,7 @@
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/functor.h"
 #include "op_def/op_enum.h"
 #include "op_def/math_ops.h"

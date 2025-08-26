@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_NODE_H_
-#define MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_NODE_H_
+#ifndef MINDSPORE_CCSRC_UTILS_EXPANDER_NODE_H_
+#define MINDSPORE_CCSRC_UTILS_EXPANDER_NODE_H_
 #include <vector>
 #include <string>
 #include <memory>
@@ -126,4 +126,4 @@ class COMMON_EXPORT FuncNode : public Node {
 using FuncNodePtr = std::shared_ptr<FuncNode>;
 }  // namespace expander
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_NODE_H_
+#endif  // MINDSPORE_CCSRC_UTILS_EXPANDER_NODE_H_

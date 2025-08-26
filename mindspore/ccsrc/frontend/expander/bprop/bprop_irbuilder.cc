@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "frontend/expander/bprop/common_utils.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/scope.h"

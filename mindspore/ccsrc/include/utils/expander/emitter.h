@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_EMITTER_H_
-#define MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_EMITTER_H_
+#ifndef MINDSPORE_CCSRC_UTILS_EXPANDER_EMITTER_H_
+#define MINDSPORE_CCSRC_UTILS_EXPANDER_EMITTER_H_
 #include <map>
 #include <memory>
 #include <string>
@@ -23,8 +23,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include "include/common/expander/core/infer.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/infer.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/func_graph.h"
 #include "ir/functor.h"
 #include "ir/tensor_new.h"
@@ -1093,4 +1093,4 @@ class PureShapeCalc : public ShapeCalcBaseFunctor {
 
 }  // namespace expander
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_COMMON_EXPANDER_CORE_EMITTER_H_
+#endif  // MINDSPORE_CCSRC_UTILS_EXPANDER_EMITTER_H_
