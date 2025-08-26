@@ -358,3 +358,20 @@ def test_runtime_vmm_close_multi_model_train():
         for i in res:
             assert i.get()
     del os.environ['MS_ALLOC_CONF']
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_enable_mem_huge_1g():
+    """
+    Feature: Use 1G huge page size when environment variable enable_mem_huge_1g is enabled.
+    Description: Test whether 1G huge page is used when enable_mem_huge_1g is enabled.
+    Expectation: The total reserved memory equals 1GB after enabling 1G huge page allocation.
+    """
+    os.environ["MS_ALLOC_CONF"] = "enable_mem_huge_1g:true"
+    set_device()
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    input1 = ms.Tensor(np.random.random([1, 2]), ms.float32)
+    transpose = ms.ops.Transpose()
+    transpose(input1, (1, 0))
+
+    assert ms.runtime.memory_stats()["total_reserved_memory"] == 1024 * 1024 * 1024
