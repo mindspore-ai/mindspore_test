@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "ir/kernel_info_dev.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/visible.h"
 namespace mindspore {

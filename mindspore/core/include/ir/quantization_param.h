@@ -19,7 +19,7 @@
 
 #include <string>
 #include <memory>
-#include "ir/named.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 /// \brief QuantizationParam defines tensor quantization param of MindSpore.

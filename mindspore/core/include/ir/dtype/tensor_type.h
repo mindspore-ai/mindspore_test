@@ -24,7 +24,6 @@
 #include <algorithm>
 
 #include "base/base.h"
-#include "ir/named.h"
 #include "ir/dtype/type.h"
 #include "ir/dtype/number.h"
 
