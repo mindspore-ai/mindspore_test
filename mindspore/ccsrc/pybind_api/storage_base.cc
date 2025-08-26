@@ -38,7 +38,7 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
   ShapeVector shape = {static_cast<int64_t>(device_address->size())};
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_address->GetMutablePtr(), device_address->size(), shape,
-    kernel::GetFormatFromStrToEnum(device_address->format()), device_address->type_id(),
+    kernel::GetFormatFromStrToEnum(device_address->format()), kNumberTypeUInt8,
     device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->stream_id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
@@ -115,18 +115,13 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
   MS_EXCEPTION_IF_NULL(src->device_data_);
   pynative::DispatchOp(std::make_shared<StorageCopyTask>(
     [dst_address = device_data_, src_address = src->device_data_, non_blocking = non_blocking]() {
-      device::DeviceAddressPtr dst = dst_address;
-      device::DeviceAddressPtr src = src_address;
-      if (dst_address->GetShapeVector() != src_address->GetShapeVector()) {
-        dst = CreateTempDeviceAddress(dst_address);
-        src = CreateTempDeviceAddress(src_address);
-      }
-
+      device::DeviceAddressPtr dst = CreateTempDeviceAddress(dst_address);
+      device::DeviceAddressPtr src = CreateTempDeviceAddress(src_address);
       ShapeVector src_shape = {static_cast<int64_t>(src->size())};
-      auto src_tensor = tensor::from_spec(src->type_id(), src_shape, device::DeviceType::kNone);
+      auto src_tensor = tensor::from_spec(kNumberTypeUInt8, src_shape, device::DeviceType::kNone);
       src_tensor->set_device_address(src);
       ShapeVector dst_shape = {static_cast<int64_t>(dst->size())};
-      auto dst_tensor = tensor::from_spec(dst->type_id(), dst_shape, device::DeviceType::kNone);
+      auto dst_tensor = tensor::from_spec(kNumberTypeUInt8, dst_shape, device::DeviceType::kNone);
       dst_tensor->set_device_address(dst);
       auto non_blocking_value = std::make_shared<mindspore::BoolImm>(non_blocking);
       kernel::pyboost::inplace_copy(dst_tensor, src_tensor, non_blocking_value);
