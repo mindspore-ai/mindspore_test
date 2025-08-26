@@ -22,9 +22,6 @@ from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
 
-context.set_context(device_target="Ascend")
-
-
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()

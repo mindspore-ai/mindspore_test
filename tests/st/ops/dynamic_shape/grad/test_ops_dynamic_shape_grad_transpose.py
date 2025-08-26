@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore import Tensor
