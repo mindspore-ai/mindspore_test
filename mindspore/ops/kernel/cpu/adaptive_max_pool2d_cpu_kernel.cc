@@ -21,7 +21,6 @@
 #include <set>
 #include <map>
 #include <functional>
-#include "abstract/utils.h"
 
 #include "mindspore/ops/infer/ops_func_impl/adaptive_max_pool2d.h"
 

@@ -18,7 +18,6 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/apply_adagrad_v2.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adagrad_v2_impl.cuh"
 

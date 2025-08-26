@@ -25,7 +25,6 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

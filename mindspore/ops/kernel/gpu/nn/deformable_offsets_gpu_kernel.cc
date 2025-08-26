@@ -18,7 +18,6 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/deformable_offsets_impl.cuh"
 
 namespace mindspore {

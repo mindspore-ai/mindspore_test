@@ -23,7 +23,6 @@
 #include "mindapi/base/types.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/base_operator.h"
-#include "ops/primitive_c.h"
 
 namespace mindspore {
 namespace ops {

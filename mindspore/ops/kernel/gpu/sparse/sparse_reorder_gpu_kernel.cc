@@ -23,7 +23,6 @@
 #include <complex>
 #include "include/curand.h"
 #include "mindspore/ops/infer/sparse_reorder.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_reorder_impl.cuh"
 
 namespace mindspore {

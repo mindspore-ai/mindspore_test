@@ -20,7 +20,6 @@
 #include <functional>
 #include <algorithm>
 #include "base/float16.h"
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/fills.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fills_impl.cuh"
 namespace mindspore {

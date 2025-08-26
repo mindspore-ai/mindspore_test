@@ -21,7 +21,6 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/grad/deformable_offsets_grad.h"
 
 namespace mindspore {

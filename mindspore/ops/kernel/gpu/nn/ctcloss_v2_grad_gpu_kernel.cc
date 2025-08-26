@@ -16,7 +16,6 @@
 
 #include "kernel/gpu/nn/ctcloss_v2_grad_gpu_kernel.h"
 #include <memory>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/ctc_loss_v2_grad.h"
 namespace mindspore {
 namespace kernel {

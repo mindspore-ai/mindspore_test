@@ -17,7 +17,6 @@
 #include "kernel/gpu/nn/apply_proximal_gradient_descent_gpu_kernel.h"
 #include <algorithm>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_proximal_gradient_descent_impl.cuh"
 namespace mindspore {
 namespace kernel {

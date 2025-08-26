@@ -16,7 +16,6 @@
 
 #include "backend/ge_backend/runtime/actor/control_flow/switch_actor.h"
 #include "backend/ge_backend/runtime/actor/control_flow/entrance_actor.h"
-#include "abstract/utils.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "utils/log_adapter.h"
 #include "ir/tensor_new.h"

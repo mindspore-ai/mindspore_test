@@ -26,7 +26,6 @@
 #include <map>
 #include <iostream>
 #include "mindspore/ops/infer/apply_add_sign.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"

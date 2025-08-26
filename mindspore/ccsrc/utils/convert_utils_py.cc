@@ -28,7 +28,6 @@
 #include "Eigen/Core"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
-#include "abstract/utils.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "ir/value.h"

@@ -16,7 +16,6 @@
 
 #include "kernel/cpu/isnan_cpu_kernel.h"
 #include <cmath>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

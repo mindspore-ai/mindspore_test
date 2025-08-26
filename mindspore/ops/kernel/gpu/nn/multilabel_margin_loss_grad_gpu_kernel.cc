@@ -22,7 +22,6 @@
 #include <memory>
 #include "include/curand.h"
 #include "mindspore/ops/infer/grad/multilabel_margin_loss_grad.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/multilabel_margin_loss_grad_impl.cuh"
 
 namespace mindspore {

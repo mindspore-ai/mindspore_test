@@ -22,7 +22,6 @@
 #include "abstract/abstract_value.h"
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ir/anf.h"

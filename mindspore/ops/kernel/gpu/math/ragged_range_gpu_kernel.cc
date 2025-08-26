@@ -19,7 +19,6 @@
 #include <utility>
 #include "kernel/gpu/cuda_impl/cuda_ops/ragged_range_impl.cuh"
 #include "mindspore/ops/infer/ragged_range.h"
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

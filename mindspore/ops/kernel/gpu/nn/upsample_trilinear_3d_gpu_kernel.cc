@@ -22,7 +22,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_trilinear_3d_impl.cuh"

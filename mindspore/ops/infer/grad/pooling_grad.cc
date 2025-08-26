@@ -16,7 +16,6 @@
 
 #include "infer/grad/pooling_grad.h"
 
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -25,7 +24,6 @@
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "mindapi/base/shape_vector.h"

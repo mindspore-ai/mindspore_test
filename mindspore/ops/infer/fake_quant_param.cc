@@ -24,7 +24,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "base/base.h"
 #include "ir/anf.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"

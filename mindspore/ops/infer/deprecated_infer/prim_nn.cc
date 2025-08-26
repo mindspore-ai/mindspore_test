@@ -15,7 +15,6 @@
  */
 
 #include "infer/deprecated_infer/infer_functions.h"
-#include "abstract/utils.h"
 #include "abstract/param_validator.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"

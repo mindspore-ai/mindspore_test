@@ -19,7 +19,6 @@
 #include <random>
 #include <ctime>
 #include <iostream>
-#include "abstract/utils.h"
 
 #include "Eigen/Core"
 

@@ -31,7 +31,6 @@
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/base/types.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"

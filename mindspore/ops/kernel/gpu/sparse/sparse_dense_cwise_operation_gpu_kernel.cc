@@ -17,7 +17,6 @@
 #include <functional>
 #include <vector>
 
-#include "abstract/utils.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_add.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_div.h"

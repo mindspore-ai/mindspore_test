@@ -20,8 +20,6 @@
 #include <map>
 #include <algorithm>
 
-#include "abstract/utils.h"
-
 namespace mindspore {
 namespace kernel {
 namespace pdist_grad_cpu {

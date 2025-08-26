@@ -31,7 +31,6 @@
 #include "utils/value_utils.h"
 #include "utils/core_op_utils.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_constants.h"

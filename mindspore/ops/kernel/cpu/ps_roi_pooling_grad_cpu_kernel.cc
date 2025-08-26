@@ -19,7 +19,6 @@
 #include <map>
 #include "kernel/cpu/ps_roi_pooling_grad_cpu_kernel.h"
 
-#include "abstract/utils.h"
 #include "kernel/cpu/atomic_add.h"
 
 namespace mindspore {

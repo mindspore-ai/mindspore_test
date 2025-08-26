@@ -30,7 +30,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/tril_triu_impl.cuh"

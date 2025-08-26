@@ -23,7 +23,6 @@
 #include <memory>
 #include "include/curand.h"
 #include "mindspore/ops/infer/bernoulli.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/bernoulli_impl.cuh"
 #include "include/common/utils/anfalgo.h"
 

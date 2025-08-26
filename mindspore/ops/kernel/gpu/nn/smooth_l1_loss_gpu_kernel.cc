@@ -20,7 +20,6 @@
 #include <functional>
 #include <algorithm>
 #include <utility>
-#include "abstract/utils.h"
 
 namespace {
 constexpr size_t kSmoothL1LossInputsNum = 4;
