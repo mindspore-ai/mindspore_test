@@ -1,7 +1,7 @@
 mindspore.dataset.dataloader.DataLoader
 =======================================
 
-.. py:class:: mindspore.dataset.dataloader.DataLoader(dataset, batch_size=1, shuffle=None, sampler=None, batch_sampler=None, num_workers=0, collate_fn=None, pin_memory=False, drop_last=False, timeout=0., worker_init_fn=None, multiprocessing_context=None, generator=None, *, prefetch_factor=None, persistent_workers=False, pin_memory_device="", in_order=True)
+.. py:class:: mindspore.dataset.dataloader.DataLoader(dataset, batch_size=1, shuffle=None, sampler=None, batch_sampler=None, num_workers=0, collate_fn=None, pin_memory=False, drop_last=False, timeout=0., worker_init_fn=None, multiprocessing_context=None, generator=None, *, prefetch_factor=None, persistent_workers=False, in_order=True)
 
     数据加载器为给定的数据集提供迭代器。
 
@@ -25,5 +25,4 @@ mindspore.dataset.dataloader.DataLoader
     关键字参数：
         - **prefetch_factor** (Union[int, None], 可选) - 工作进程预取样本数。默认值： ``None`` ，当 `num_workers` 大于 ``0`` 时使用 ``2`` 。
         - **persistent_workers** (bool, 可选) - 是否在迭代数据集完成后保持工作进程存活。默认值： ``False`` 。
-        - **pin_memory_device** (str, 可选) - 拷贝数据至锁页内存的目标设备。默认值： ``""`` ，由当前设备确定。
         - **in_order** (bool, 可选) - 在多进程加载时是否保持样本顺序。默认值： ``True`` 。
