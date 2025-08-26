@@ -371,9 +371,9 @@ Value Range:
     2: Choose new scheme.
     Default: 2
 """
+ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '2'
 
 """
-ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '2'
 Name: GRAD_JIT_FILTER
 Function: Whether to filter grad jit graph.
 Value Range:
