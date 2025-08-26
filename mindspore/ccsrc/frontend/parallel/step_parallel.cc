@@ -132,7 +132,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
       root->set_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY, true);
       MS_EXCEPTION_IF_NULL(processor_context);
       const auto &all_nodes = processor_context->all_nodes;
-      CheckpointStrategy(all_nodes, root);
+      CheckpointOnline(all_nodes, root);
     }
     return false;
   }
