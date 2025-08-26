@@ -27,7 +27,6 @@
 #include <fstream>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "backend/ge_backend/runtime/control_node_scheduler.h"
 #include "backend/ge_backend/runtime/actor/actor_set.h"
 #include "backend/ge_backend/runtime/graph_compiler.h"

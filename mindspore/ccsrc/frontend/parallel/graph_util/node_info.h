@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "base/base.h"
 #include "ir/anf.h"
 #include "frontend/parallel/ops_info/operator_info.h"

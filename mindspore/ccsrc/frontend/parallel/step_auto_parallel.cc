@@ -52,7 +52,6 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/ms_context.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"

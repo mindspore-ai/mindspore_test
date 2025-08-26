@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "utils/hash_set.h"
 #include "ir/anf.h"
 #include "frontend/parallel/allreduce_fusion/allreduce_node.h"
 #include "frontend/parallel/status.h"

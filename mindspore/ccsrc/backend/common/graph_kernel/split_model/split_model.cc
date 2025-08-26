@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 #include <algorithm>
 #include "backend/common/graph_kernel/split_model/split_model.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "utils/hash_set.h"
 #include "symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {

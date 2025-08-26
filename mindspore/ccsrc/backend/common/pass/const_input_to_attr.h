@@ -20,7 +20,6 @@
 
 #include "ir/anf.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 

@@ -24,7 +24,6 @@
 #include <algorithm>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "frontend/operator/composite/composite.h"
 #include "ir/tensor.h"
 #include "include/common/debug/common.h"

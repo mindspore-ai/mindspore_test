@@ -26,7 +26,6 @@
 #include "ir/anf.h"
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/trace_info.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

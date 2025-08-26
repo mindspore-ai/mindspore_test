@@ -38,7 +38,6 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ordered_map.h"
 #include "utils/ordered_set.h"

@@ -23,7 +23,6 @@
 #include <set>
 
 #include "ir/anf.h"
-#include "utils/hash_set.h"
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/visible.h"

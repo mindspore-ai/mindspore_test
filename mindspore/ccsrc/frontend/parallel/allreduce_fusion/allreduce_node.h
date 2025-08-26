@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "ir/anf.h"
 #include "frontend/parallel/status.h"
 

@@ -54,7 +54,6 @@
 #include "frontend/jit/ps/static_analysis/builtin_prim.h"
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "frontend/jit/trace/trace_recorder.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/symbolic.h"
 #include "utils/trace_info.h"

@@ -27,7 +27,6 @@
 #include "ir/func_graph.h"
 #include "ir/manager.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/trace_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
