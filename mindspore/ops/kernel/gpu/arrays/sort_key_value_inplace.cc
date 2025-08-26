@@ -19,7 +19,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/sort_fixed_size.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/broadcast_to_impl.cuh"
 #include "kernel/gpu/math/broadcast_public.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 
 constexpr int MAX_DIMS = 8;
 

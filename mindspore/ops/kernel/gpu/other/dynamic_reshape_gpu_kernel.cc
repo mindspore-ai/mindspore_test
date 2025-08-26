@@ -15,7 +15,7 @@
  */
 #include "kernel/gpu/other/dynamic_reshape_gpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {

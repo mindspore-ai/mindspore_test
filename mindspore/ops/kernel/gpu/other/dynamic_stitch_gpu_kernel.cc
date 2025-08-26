@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dynamic_stitch_impl.cuh"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "plugin/gpu/kernel_executor/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {
