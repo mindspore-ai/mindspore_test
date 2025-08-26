@@ -909,7 +909,8 @@ void FilterForwardOutput(const std::vector<bool> &need_filter, const std::string
   MS_EXCEPTION_IF_CHECK_FAIL(IsPrimitiveCNode(forward_graph_output, prim::kPrimMakeTuple), "Invalid output");
   const auto &forward_graph_output_elements = forward_graph_output->cast<CNodePtr>()->inputs();
   // one for kPrimMakeTuple, one for real graph output.
-  MS_EXCEPTION_IF_CHECK_FAIL(forward_graph_output_elements.size() - 2 == add_args_size, "Size not match");
+  constexpr auto output_arg_diff = 2;
+  MS_EXCEPTION_IF_CHECK_FAIL(forward_graph_output_elements.size() - output_arg_diff == add_args_size, "Size not match");
   AnfNodePtrList new_forward_output_elements = {NewValueNode(prim::kPrimMakeTuple), forward_graph_output_elements[1]};
   auto forward_graph_output_elements_abstract = forward_graph_output->abstract();
   MS_EXCEPTION_IF_NULL(forward_graph_output_elements_abstract);
@@ -920,7 +921,7 @@ void FilterForwardOutput(const std::vector<bool> &need_filter, const std::string
   for (size_t i = 0; i < add_args_size; ++i) {
     bool cur_need_filter = need_filter[i];
     if (!cur_need_filter) {
-      (void)new_forward_output_elements.emplace_back(forward_graph_output_elements[i + 2]);
+      (void)new_forward_output_elements.emplace_back(forward_graph_output_elements[i + output_arg_diff]);
       (void)new_forward_output_abstract_elements.emplace_back(forward_graph_output_elements_abstract_elements[i + 1]);
     }
   }
@@ -1029,7 +1030,6 @@ VectorRef FilterGraphInputOutput(bool is_filtered, const std::pair<VectorRef, Ve
   const auto &need_filter = filter_msg.first;
   auto skip_filter_size = filter_msg.second;
   auto add_args_size = need_filter.size();
-
   if (add_args_size == 0 || std::all_of(need_filter.begin(), need_filter.end(), [](auto e) { return !e; })) {
     MS_LOG(INFO) << "No need to filter grad input";
     return added_args;
