@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
 
@@ -59,6 +60,31 @@ std::vector<PPInfo> InferNeedDetachInfo(int64_t stage, int64_t micro_size) {
     need_detach_info.emplace_back(info);
   }
   return need_detach_info;
+}
+
+AnfNodePtr GetAssignAddRealInput(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto assign_add_input = node;
+  auto is_redistribe_node = [](const AnfNodePtr &n) {
+    auto prim = GetCNodePrimitive(n);
+    if (prim == nullptr) {
+      return false;
+    }
+    const auto &prim_name = prim->instance_name();
+    if (prim_name.find(parallel::REDISTRIBUTION_OP) != std::string::npos) {
+      return true;
+    }
+    return false;
+  };
+  auto bypass_op = [is_redistribe_node](const AnfNodePtr &n) {
+    return IsOneOfPrimitiveCNode(n, {prim::kPrimCast, prim::kPrimTranspose, prim::kPrimReshape, prim::kPrimDepend,
+                                     prim::kPrimUpdateState}) ||
+           is_redistribe_node(n);
+  };
+  while (bypass_op(assign_add_input)) {
+    assign_add_input = assign_add_input->cast<CNodePtr>()->input(1);
+  }
+  return assign_add_input;
 }
 
 void DetachBackward::Init() {
@@ -131,12 +157,10 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
     MS_EXCEPTION_IF_NULL(assign_add_c);
     // case1: MatMul(Dw)->assign_add->depend
     auto assign_add_input = assign_add_c->input(kIndex2);
+    assign_add_input = GetAssignAddRealInput(assign_add_input);
     MS_EXCEPTION_IF_NULL(assign_add_input);
-    while (IsPrimitiveCNode(assign_add_input, prim::kPrimCast) ||
-           IsPrimitiveCNode(assign_add_input, prim::kPrimReshape)) {
-      assign_add_input = assign_add_input->cast<CNodePtr>()->input(1);
-    }
     if (!IsPrimitiveCNode(assign_add_input, prim::kPrimMatMul) &&
+        !IsPrimitiveCNode(assign_add_input, prim::kPrimMatMulExt) &&
         !IsPrimitiveCNode(assign_add_input, prim::kPrimTupleGetItem)) {
       dx_out_inputs.emplace_back(cur_input);
       continue;
