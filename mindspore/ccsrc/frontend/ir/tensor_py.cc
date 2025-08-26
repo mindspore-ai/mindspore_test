@@ -23,7 +23,6 @@
 #include "pybind11/complex.h"
 
 #include "include/common/pybind_api/api_register.h"
-#include "abstract/abstract_value.h"
 #include "utils/cache_embedding_hashmap_struct.h"
 #include "include/common/utils/python_adapter.h"
 #include "tools/profiler/profiler.h"
