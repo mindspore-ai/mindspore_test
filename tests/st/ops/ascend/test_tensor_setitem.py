@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-
-""" test_tensor_setitem """
-import pytest
 import numpy as np
+import mindspore as ms
 from mindspore import Tensor
+from mindspore.nn import Cell
+from mindspore.common import dtype as mstype
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -50,3 +50,31 @@ def test_tensor_slice_by_bool_nan():
     index = Tensor(np.array([False, False]))
     data[index] = Tensor([np.nan])
     assert np.allclose(data.asnumpy(), np.ones([2, 3, 4], np.float32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_setitem_empty_tuple():
+    """
+    Feature: Tensor setitem which index is empty tuple.
+    Description: Tensor setitem.
+    Expectation: success.
+    """
+
+    class Net16(Cell):
+        def __init__(self):
+            super().__init__()
+            self.idx = ()
+
+        def construct(self, x):
+            x[self.idx] = 2
+            out = x
+            return out
+
+    ms.set_context(mode=ms.GRAPH_MODE)
+    net = Net16()
+    x = Tensor(np.random.rand(3, 3, 2), dtype=mstype.float32)
+    graph_out = net(x)
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    y = Tensor(np.random.rand(3, 3, 2), dtype=mstype.float32)
+    pynative_out = net(y)
+    assert (graph_out == pynative_out).all()
