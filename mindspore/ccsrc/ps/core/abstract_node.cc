@@ -17,7 +17,6 @@
 #include "ps/core/abstract_node.h"
 
 #include "include/common/debug/common.h"
-#include "ps/core/communicator/http_communicator.h"
 #include "ps/core/communicator/tcp_communicator.h"
 #include "ps/core/node_recovery.h"
 

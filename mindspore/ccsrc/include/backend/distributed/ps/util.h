@@ -44,8 +44,6 @@ class BACKEND_COMMON_EXPORT Util {
   static int64_t LocalShard(int64_t first_dim, int64_t rank_id, int64_t server_num);
   static std::map<int64_t, int64_t> AllRankLocalShard(int64_t first_dim, int64_t rank_id, int64_t server_num);
   static bool FuseServerCommOps(const FuncGraphPtr &func_graph);
-  static WeightPtr MakeWeightPtr(const std::shared_ptr<std::vector<float>> &data, bool enable_recovery,
-                                 const std::shared_ptr<std::vector<int>> &shape = nullptr);
   static std::string GetPrimitiveName(const CNodePtr &cnode);
 
  private:

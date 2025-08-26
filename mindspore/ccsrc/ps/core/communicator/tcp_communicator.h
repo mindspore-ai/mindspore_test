@@ -23,7 +23,6 @@
 #include <memory>
 #include <unordered_map>
 #include "proto/ps.pb.h"
-#include "ps/core/server_node.h"
 #include "ps/core/cluster_metadata.h"
 #include "ps/core/cluster_config.h"
 #include "include/backend/distributed/ps/ps_context.h"

@@ -101,10 +101,9 @@ file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./com
 
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-            ./distributed/persistent/*.cc
-            ./distributed/rpc/tcp/*.cc
-            ./distributed/cluster/*.cc
-            ./distributed/cluster/topology/*.cc)
+            ./cluster/persistent/*.cc
+            ./cluster/rpc/tcp/*.cc
+            ./cluster/topology/*.cc)
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
 
@@ -147,8 +146,8 @@ if(Python3_FOUND)
 endif()
 
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
+        "../../../mindspore/ccsrc/cluster/topology/*.cc"
+        "../../../mindspore/ccsrc/cluster/rpc/tcp/*.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/cpu_res_manager.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/mem_manager/cpu_memory_pool.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/collective/ms_collective_topo.cc"
@@ -238,6 +237,8 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_mod.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_build.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/cluster_context.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/actor_route_table_proxy.cc")
 
 # list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 #         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
