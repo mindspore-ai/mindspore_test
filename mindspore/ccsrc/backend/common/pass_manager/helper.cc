@@ -43,7 +43,6 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "backend/common/pass/const_input_to_attr.h"
-#include "backend/operator/ops_backend_infer_function.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "tools/profiler/profiler.h"
@@ -1016,7 +1015,7 @@ inline AbstractBasePtr InferShapeWithCheck(const PrimitivePtr &prim, const Primi
   if (auto shape_optional = abstract::InferShapeByFuncImpl(prim_clone, infer_spec_list); shape_optional.has_value()) {
     out_abs = orig_abs->Clone();
     out_abs->set_shape(shape_optional.value());
-  } else if (auto found = abstract::GetBackendPrimitiveInferImpl(prim_clone); found.has_value()) {
+  } else if (auto found = abstract::GetPrimitiveInferImpl(prim_clone); found.has_value()) {
     auto infer = found.value();
     MS_EXCEPTION_IF_CHECK_FAIL(infer.IsImplInferShapeAndType(), "There is no infer-shape implement for backend!");
     MS_EXCEPTION_IF_NULL(cnode);
@@ -1252,7 +1251,7 @@ AbstractBasePtr CppInferShapeAndType(const PrimitivePtr &prim, const AbstractBas
   if (auto abstract_optional = abstract::InferAbstractByFuncImpl(prim_clone, args_spec_list);
       abstract_optional.has_value()) {
     ret = abstract_optional.value();
-  } else if (auto found = abstract::GetBackendPrimitiveInferImpl(prim_clone); found.has_value()) {
+  } else if (auto found = abstract::GetPrimitiveInferImpl(prim_clone); found.has_value()) {
     auto infer = found.value();
     MS_EXCEPTION_IF_CHECK_FAIL(infer.IsImplInferShapeAndType(), "There is no infer-abstract implement!");
     auto infer_spec_list = RectifyAbstract(prim_clone, args_spec_list);
@@ -1630,7 +1629,7 @@ AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<A
     return shape_optional.value();
   }
 
-  auto infer_impl = abstract::GetBackendPrimitiveInferImpl(primitive);
+  auto infer_impl = abstract::GetPrimitiveInferImpl(primitive);
   if (infer_impl.has_value()) {
     auto infer = infer_impl.value();
     if (infer.IsImplInferShapeAndType()) {

@@ -131,7 +131,6 @@ set(BACKEND_COMMON_SUB_COMP
         tools
         distributed
         kernel
-        backend/operator
         backend/common/pass_manager
         backend/common/pass
         backend/common/kernel_graph
