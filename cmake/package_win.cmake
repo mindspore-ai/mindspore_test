@@ -272,6 +272,7 @@ install(
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/utils
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/runtime
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
+  ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/onnx
   DESTINATION ${INSTALL_PY_DIR}
   COMPONENT mindspore
 )
