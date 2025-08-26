@@ -28,7 +28,6 @@
 
 #include "abstract/dshape.h"
 #include "base/base.h"
-#include "base/bfloat16.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/device_manager.h"

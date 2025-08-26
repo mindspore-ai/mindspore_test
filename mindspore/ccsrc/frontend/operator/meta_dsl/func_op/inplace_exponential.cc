@@ -31,7 +31,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
-#include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"
 
 namespace mindspore::prim {
