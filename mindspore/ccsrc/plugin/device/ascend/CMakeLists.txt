@@ -51,6 +51,7 @@ file(GLOB_RECURSE ASCEND_SRC_LIST
 
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_SRC_LIST})
 list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_hal_device_910b_obj>)
+set_property(SOURCE ${ASCEND_910B_OBJ_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 
