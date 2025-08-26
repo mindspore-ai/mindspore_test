@@ -40,7 +40,6 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "ops/primitive_c.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"

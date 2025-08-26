@@ -26,7 +26,6 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "ops/primitive_c.h"
 #include "ir/manager.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"

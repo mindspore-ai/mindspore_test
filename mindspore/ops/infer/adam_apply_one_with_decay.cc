@@ -25,7 +25,6 @@
 #include "ir/dtype/number.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/mul.h"
 #include "infer/ops_func_impl/real_div.h"

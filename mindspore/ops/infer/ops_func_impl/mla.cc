@@ -22,7 +22,6 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "utils/check_convert_utils.h"
-#include "ops/primitive_c.h"
 #include "mindapi/helper.h"
 #include "include/api/data_type.h"
 

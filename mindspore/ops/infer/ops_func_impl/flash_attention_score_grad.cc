@@ -23,7 +23,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
-#include "ops/primitive_c.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

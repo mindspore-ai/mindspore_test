@@ -31,7 +31,6 @@
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "infer/ops_func_impl/less_equal.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "ops/ops_func_impl/simple_infer.h"
