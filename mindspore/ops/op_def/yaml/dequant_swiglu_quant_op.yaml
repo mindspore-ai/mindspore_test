@@ -1,0 +1,40 @@
+#operator DequantSwigluQuant
+dequant_swiglu_quant:
+  args:
+    x:
+      dtype: tensor
+    weight_scale:
+      dtype: tensor
+    activation_scale:
+      dtype: tensor
+    bias:
+      dtype: tensor
+      default: None
+    quant_scale:
+      dtype: tensor
+      default: None
+    quant_offset:
+      dtype: tensor
+      default: None
+    group_index:
+      dtype: tensor
+      default: None
+    activate_left:
+      dtype: bool
+      default: False
+    quant_mode:
+      dtype: int
+      default: "'static'"
+      arg_handler: str_to_enum
+  returns:
+    y:
+      dtype: tensor
+    scale:
+      dtype: tensor
+  function:
+    name: dequant_swiglu_quant
+  class:
+    name: DequantSwigluQuant
+  dispatch:
+    enable: True
+    Ascend: DequantSwigluQuantAscend
