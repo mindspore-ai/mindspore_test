@@ -31,7 +31,6 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
 #include "ir/scalar.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"

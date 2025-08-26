@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "infer/grad/de_conv2d_grad_filter.h"

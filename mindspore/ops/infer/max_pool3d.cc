@@ -31,7 +31,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/value.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"

@@ -31,7 +31,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"

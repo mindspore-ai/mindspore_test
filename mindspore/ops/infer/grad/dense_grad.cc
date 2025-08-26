@@ -33,7 +33,6 @@
 #include "ir/dtype/type.h"
 #include "mindapi/base/format.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"
