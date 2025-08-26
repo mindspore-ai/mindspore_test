@@ -755,7 +755,6 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     MS_LOG(EXCEPTION) << "set_device_address now only support Ascend backend!";
   }
-  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
   if (type_ptr == nullptr) {
     MS_LOG(EXCEPTION) << "Dtype to be set is nullptr.";
@@ -780,8 +779,7 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   auto device_sync_ = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_sync_);
   if (device_sync_->GetDeviceType() != device::DeviceType::kAscend) {
-    auto device_address =
-      std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice, device_id);
+    auto device_address = std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);

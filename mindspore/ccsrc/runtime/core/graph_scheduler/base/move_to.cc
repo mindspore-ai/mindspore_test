@@ -127,7 +127,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, device_id, 0);
+      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

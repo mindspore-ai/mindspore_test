@@ -286,14 +286,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
 
   explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name);
   explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name);
-
-  explicit DeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id);
-  explicit DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id, const std::string &device_name,
-                         uint32_t device_id);
   explicit DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId type_id,
-                         const std::string &device_name, uint32_t device_id, uint32_t stream_id);
+                         const std::string &device_name, uint32_t stream_id);
   explicit DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                         const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id);
+                         const KernelWithIndex &node_index, const std::string &device_name);
   explicit DeviceAddress(const DeviceAddress &other);
   DeviceAddress &operator=(const DeviceAddress &) = delete;
   ~DeviceAddress();
@@ -334,7 +330,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   void SetDeviceType(const device::DeviceType &device_type);
 
   uint32_t device_id() const;
-  void set_device_id(uint32_t device_id);
 
   void set_stream_id(uint32_t stream_id);
   const uint32_t stream_id() const override;
@@ -388,8 +383,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   const PointerRefCountPtr &pointer_ref_count() const;
   void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt);
 
-  void set_is_view(bool is_view);
-  bool is_view() const;
   size_t size() const { return size_; }
 
   void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
@@ -424,10 +417,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // The padding type corresponds to data format.
   std::string padding_type_;
 
-  // Indicating whether the address is the input of view op.
-  // If yes, the device address cannot be reused with the host address in CPU.
-  bool is_view_{false};
-
   // the data for numpy object.
   tensor::TensorDataPtr data_;
 
@@ -440,8 +429,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   TypeId dtype_id_{kTypeUnknown};
   // The device target name, such as "GPU","Ascend".
   device::DeviceType device_type_{device::DeviceType::kUnknown};
-  // Represents the device card id associated with the KernelTensor.
-  uint32_t device_id_{0};
   // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
   // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
   // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.

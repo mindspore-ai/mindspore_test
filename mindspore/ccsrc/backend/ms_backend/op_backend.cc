@@ -583,7 +583,6 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
 
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
-  device_address->set_is_view(true);
 
   if (device_address->GetPtr() != nullptr) {
     MS_LOG(DEBUG) << "Input device address already allocated.";

@@ -32,7 +32,7 @@ DeviceSyncPtr MakeGPUDeviceAddress(TypeId data_type, const ShapeVector &shape, v
   device_context->Initialize();
 
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "GPU", device_id, 0);
+    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "GPU", 0);
   if (deleter != nullptr) {
     device_address->SetPointerRefCountDeleter(std::move(deleter));
   }

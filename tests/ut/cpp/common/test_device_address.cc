@@ -34,7 +34,7 @@ DeviceSyncPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shape, 
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", device_id, 0);
+    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
   device_address->SetPointerRefCountDeleter(std::move(deleter));
   return device_address;
 }
