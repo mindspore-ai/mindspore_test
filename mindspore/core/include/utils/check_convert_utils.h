@@ -27,6 +27,7 @@
 #include "abstract/param_validator.h"
 #include "base/base.h"
 #include "ir/anf.h"
+#include "ir/primitive.h"
 #include "utils/log_adapter.h"
 #if __has_include("include/mindapi/base/types.h")
 #include "include/mindapi/base/types.h"

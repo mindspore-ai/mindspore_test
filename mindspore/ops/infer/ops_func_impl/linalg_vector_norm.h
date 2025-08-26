@@ -17,7 +17,6 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LINALG_VECTOR_NORM_H_
 
 #include <memory>
-#include "ir/primitive.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "mindspore/ops/infer/ops_func_impl/norm.h"
 

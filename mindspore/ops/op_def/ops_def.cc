@@ -15,7 +15,6 @@
  */
 
 #include "op_def/ops_def.h"
-#include "ir/signature.h"
 #include "infer/ops_func_impl/ge_graph_op.h"
 
 namespace mindspore::ops {

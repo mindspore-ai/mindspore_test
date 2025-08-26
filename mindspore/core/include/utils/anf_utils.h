@@ -17,12 +17,12 @@
 #ifndef MINDSPORE_CORE_UTILS_ANF_UTILS_H_
 #define MINDSPORE_CORE_UTILS_ANF_UTILS_H_
 #include <functional>
+#include <memory>
 #include <vector>
 #include <string>
 #include <utility>
 #include "ir/anf.h"
 #include "base/base.h"
-#include "ir/primitive.h"
 
 namespace mindspore {
 constexpr auto kInfer = "DS_Infer";
@@ -61,6 +61,11 @@ class MS_CORE_API AbstractScope {
  private:
   std::recursive_mutex *mu_;
 };
+
+namespace abstract {
+class TensorShape;
+using ShapePtr = std::shared_ptr<TensorShape>;
+}  // namespace abstract
 
 class MS_CORE_API AnfUtils {
  public:

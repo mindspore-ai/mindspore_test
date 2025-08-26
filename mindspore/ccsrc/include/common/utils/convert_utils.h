@@ -31,6 +31,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/kernel_tensor_value.h"
+#include "ir/signature.h"
 #include "include/common/visible.h"
 #include "mindspore/core/include/ir/signature.h"
 #include "utils/simple_info.h"
