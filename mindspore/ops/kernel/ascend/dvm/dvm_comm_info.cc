@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/dvm/dvm_comm_info.h"
+#include "kernel/ascend/dvm/dvm_comm_info.h"
 
 #include <string>
 #include <unordered_set>
@@ -55,6 +55,10 @@ bool EnableDvmComm() {
   }
   return false;
 }
+
+DvmCommInfo::DvmCommInfo() = default;
+
+DvmCommInfo::~DvmCommInfo() = default;
 
 bool DvmCommInfo::EnableComm() {
   static bool enable_comm = EnableDvmComm();

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
+#include "kernel/ascend/dvm/lazy_fusion_kernel.h"
 #include <utility>
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/lazy_fusion_flags.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "tools/profiler/profiling.h"
 #include "runtime/pipeline/pipeline.h"

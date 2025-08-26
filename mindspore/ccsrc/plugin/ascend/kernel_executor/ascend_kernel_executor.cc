@@ -43,13 +43,13 @@
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
-#include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
+#include "kernel/ascend/kernel_packet/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #ifdef ENABLE_DVM
-#include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
+#include "kernel/ascend/dvm/dvm_kernel_build.h"
 #endif
 
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"

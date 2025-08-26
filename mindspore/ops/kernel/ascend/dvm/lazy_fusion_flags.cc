@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/lazy_fusion_flags.h"
 
 #include <string>
 #include <utility>

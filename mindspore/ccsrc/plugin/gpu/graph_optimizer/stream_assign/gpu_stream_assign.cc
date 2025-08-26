@@ -22,10 +22,10 @@
 #include <utility>
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "kernel/graph_kernel_info.h"
 #include "plugin/gpu/gpu_device_context.h"
 #include "plugin/gpu/kernel_executor/gpu_common.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
+#include "kernel/graph_kernel_info.h"
 
 namespace mindspore {
 namespace device {

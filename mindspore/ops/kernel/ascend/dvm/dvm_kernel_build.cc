@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
+#include "kernel/ascend/dvm/dvm_kernel_build.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "base/bfloat16.h"
-#include "plugin/device/ascend/kernel/dvm/dvm_kernel_mod.h"
+#include "kernel/ascend/dvm/dvm_kernel_mod.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

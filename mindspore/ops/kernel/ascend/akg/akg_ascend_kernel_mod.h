@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "plugin/device/ascend/kernel/akg/akg_utils.h"
+#include "kernel/ascend/akg/akg_utils.h"
 
 using AkgKernelManager = mindspore::kernel::akg::KernelManager;
 using AkgKernelManagerPtr = std::shared_ptr<AkgKernelManager>;

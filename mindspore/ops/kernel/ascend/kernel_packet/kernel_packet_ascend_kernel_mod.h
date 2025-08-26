@@ -18,10 +18,11 @@
 
 #include <vector>
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT KernelPacketAscendKernelMod : public KernelPacketKernelMod {
+class OPS_ASCEND_API KernelPacketAscendKernelMod : public KernelPacketKernelMod {
  public:
   using KernelPacketKernelMod::KernelPacketKernelMod;
   ~KernelPacketAscendKernelMod() = default;

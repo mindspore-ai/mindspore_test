@@ -27,7 +27,7 @@
 
 namespace mindspore {
 namespace graphkernel {
-class GraphKernelCommInfo {
+class BACKEND_COMMON_EXPORT GraphKernelCommInfo {
  public:
   GraphKernelCommInfo() = default;
   virtual ~GraphKernelCommInfo() = default;
@@ -50,7 +50,7 @@ class BACKEND_COMMON_EXPORT GraphKernelCommInfoManager {
   std::map<std::string, GraphKernelCommInfoCreator> comm_info_map_;
 };
 
-class GraphKernelCommInfoRegister {
+class BACKEND_COMMON_EXPORT GraphKernelCommInfoRegister {
  public:
   GraphKernelCommInfoRegister(const std::string &device_type, GraphKernelCommInfoCreator &&creator) {
     GraphKernelCommInfoManager::Instance().Register(device_type, std::move(creator));

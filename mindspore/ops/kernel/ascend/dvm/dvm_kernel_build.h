@@ -16,10 +16,11 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_KERNEL_BUILD_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_KERNEL_BUILD_H_
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
-KernelModPtr DvmOpBuild(const AnfNodePtr &anf_node);
+KernelModPtr OPS_ASCEND_API DvmOpBuild(const AnfNodePtr &anf_node);
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_KERNEL_BUILD_H_

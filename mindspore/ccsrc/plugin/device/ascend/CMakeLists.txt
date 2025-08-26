@@ -3,24 +3,6 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
 
-### check dvm binary file ###
-set(DVM_LIB)
-if(ENABLE_DVM)
-    set(DVM_LIB $ENV{DVM_LIB})
-    message(STATUS "DVM module is enabled")
-    message(STATUS "DVM library file: ${DVM_LIB}")
-else()
-    message(WARNING "The binary files tracked by git lfs have not been downloaded, and Graph Kernel Fusion can not "
-            "be enabled on Ascend! Please perform the following steps:\n"
-            "1. Install git lfs, refer https://github.com/git-lfs/git-lfs/wiki/installation\n"
-            "2. After installing git lfs, do not forget executing the following command:\n"
-            "   git lfs install\n"
-            "3. Download the files tracked by git lfs, executing the following commands:\n"
-            "   cd ${CMAKE_SOURCE_DIR}\n"
-            "   git lfs pull\n"
-            "4. Re-compile the source codes")
-endif()
-
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
@@ -70,10 +52,6 @@ set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH})
 
 include(${CMAKE_SOURCE_DIR}/cmake/dependency_metadef.cmake)
-
-if(DVM_LIB)
-    target_link_libraries(mindspore_ascend PRIVATE ${DVM_LIB})
-endif()
 
 if(ENABLE_DEBUGGER)
     # debugger: link grpc

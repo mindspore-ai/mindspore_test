@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/akg/akg_utils.h"
+#include "kernel/ascend/akg/akg_utils.h"
 
 #include <dlfcn.h>
 #include <string>
