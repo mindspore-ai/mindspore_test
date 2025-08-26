@@ -28,7 +28,8 @@
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/scalar.h"
-#include "ir/dtype/ref.h"
+#include "ir/dtype/container.h"
+#include "ir/dtype/monad_type.h"
 #include "utils/hashing.h"
 
 namespace mindspore {

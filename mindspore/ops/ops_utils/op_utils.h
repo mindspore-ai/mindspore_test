@@ -25,6 +25,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include "ir/dtype/tensor_type.h"
 #include "include/api/visible.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/value_utils.h"

@@ -32,6 +32,7 @@
 #include "ir/tensor.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/dtype/tensor_type.h"
 #include "kernel/framework_utils.h"
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
 #include "kernel/graph_kernel/fake_abstract_shape.h"

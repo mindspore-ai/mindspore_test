@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "ir/dtype/tensor_type.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/kernel_graph.h"

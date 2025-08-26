@@ -22,7 +22,6 @@
 #include <string>
 #include <utility>
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/param_info.h"
 #include "ir/scalar.h"

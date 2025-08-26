@@ -27,6 +27,7 @@
 #include <utility>
 
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"

@@ -26,6 +26,8 @@
 #include "ir/graph_utils.h"
 #include "ir/quantization_param.h"
 #include "ir/scope.h"
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"

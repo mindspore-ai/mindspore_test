@@ -28,6 +28,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/flags.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"

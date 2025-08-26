@@ -26,6 +26,8 @@
 #include <utility>
 #include <vector>
 
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/convert_utils.h"

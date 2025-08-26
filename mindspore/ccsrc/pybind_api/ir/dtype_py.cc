@@ -15,6 +15,7 @@
  */
 
 #include "ir/dtype.h"
+#include "ir/dtype/ref.h"
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "include/common/pybind_api/api_register.h"

@@ -31,6 +31,7 @@
 #include "frontend/jit/ps/static_analysis/prim_utils.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
+#include "ir/dtype/ref.h"
 #include "ir/core_ops_primitive.h"
 #include "ops/op_def.h"
 #include "utils/flags.h"

@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"

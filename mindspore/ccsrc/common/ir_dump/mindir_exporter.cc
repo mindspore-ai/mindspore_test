@@ -23,6 +23,8 @@
 
 #include "ir/map_tensor.h"
 #include "ir/quantization_param.h"
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "ops/op_def.h"

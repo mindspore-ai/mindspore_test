@@ -36,6 +36,7 @@
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/flags.h"
 #include "utils/log_adapter.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace abstract {

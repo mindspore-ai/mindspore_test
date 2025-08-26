@@ -22,7 +22,6 @@
 #include <utility>
 #include <map>
 #include "base/base.h"
-#include "ir/dtype/type.h"
 
 namespace mindspore {
 namespace amp {

@@ -21,6 +21,7 @@
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace stub {

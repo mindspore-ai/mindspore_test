@@ -24,7 +24,6 @@
 
 #include "utils/hash_map.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "graph/tensor.h"
 #include "ge/ge_api.h"

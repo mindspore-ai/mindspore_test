@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "utils/trace_info.h"
 #include "frontend/operator/composite/do_signature.h"

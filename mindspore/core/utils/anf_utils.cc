@@ -20,6 +20,7 @@
 #include <list>
 #include <algorithm>
 #include "ir/core_ops_primitive.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/trace_base.h"
 #include "utils/os.h"
 #include "utils/ms_context.h"

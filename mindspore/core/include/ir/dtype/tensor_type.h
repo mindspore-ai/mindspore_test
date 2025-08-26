@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_IR_DTYPE_TENSORTYPE_H_
-#define MINDSPORE_CORE_IR_DTYPE_TENSORTYPE_H_
+#ifndef MINDSPORE_CORE_IR_DTYPE_TENSOR_TYPE_H_
+#define MINDSPORE_CORE_IR_DTYPE_TENSOR_TYPE_H_
 
-#include <cstddef>
-#include <iostream>
-#include <initializer_list>
-#include <map>
-#include <memory>
-#include <utility>
-#include <sstream>
 #include <string>
 #include <vector>
+#include <memory>
 #include <type_traits>
 #include <algorithm>
 
 #include "base/base.h"
 #include "ir/named.h"
 #include "ir/dtype/type.h"
+#include "ir/dtype/number.h"
 
 namespace mindspore {
 /// \brief UndeterminedType defines interface for tensor undetermined data type.
@@ -343,6 +338,20 @@ class MS_CORE_API MapTensorType final : public Object {
   TypePtr value_dtype_;
 };
 using MapTensorTypePtr = std::shared_ptr<MapTensorType>;
+
+GVAR_DEF(TypePtr, kTensorType, std::make_shared<TensorType>());
+GVAR_DEF(TypePtr, kTensorTypeFP16, std::make_shared<TensorType>(std::make_shared<Float>(16)));
+GVAR_DEF(TypePtr, kTensorTypeFP32, std::make_shared<TensorType>(std::make_shared<Float>(32)));
+GVAR_DEF(TypePtr, kTensorTypeFP64, std::make_shared<TensorType>(std::make_shared<Float>(64)));
+GVAR_DEF(TypePtr, kTensorTypeFP8E4M3FN,
+         std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeFloat8E4M3FN, 8)));
+GVAR_DEF(TypePtr, kTensorTypeFP8E5M2, std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeFloat8E5M2, 8)));
+GVAR_DEF(TypePtr, kTensorTypeHiF8, std::make_shared<TensorType>(std::make_shared<Float>(kNumberTypeHiFloat8, 8)));
+GVAR_DEF(TypePtr, kTensorTypeBF16, std::make_shared<TensorType>(std::make_shared<BFloat>(16)));
+GVAR_DEF(TypePtr, kCSRTensorType, std::make_shared<CSRTensorType>());
+GVAR_DEF(TypePtr, kCOOTensorType, std::make_shared<COOTensorType>());
+GVAR_DEF(TypePtr, kRowTensorType, std::make_shared<RowTensorType>());
+GVAR_DEF(TypePtr, kMapTensorType, std::make_shared<MapTensorType>());
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_IR_DTYPE_TENSORTYPE_H_
+#endif  // MINDSPORE_CORE_IR_DTYPE_TENSOR_TYPE_H_

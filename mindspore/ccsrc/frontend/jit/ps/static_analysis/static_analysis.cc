@@ -39,6 +39,7 @@
 #include "utils/ms_exception.h"
 #include "utils/compile_config.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/dtype/tensor_type.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "include/common/fallback.h"

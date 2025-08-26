@@ -28,6 +28,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore::compile {

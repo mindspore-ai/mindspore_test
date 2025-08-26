@@ -21,7 +21,6 @@
 #include <string>
 #include <utility>
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "base/base.h"
 #include "ir/primitive.h"
 

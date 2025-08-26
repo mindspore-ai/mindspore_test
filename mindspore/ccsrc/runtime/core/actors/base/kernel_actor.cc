@@ -31,6 +31,7 @@
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"

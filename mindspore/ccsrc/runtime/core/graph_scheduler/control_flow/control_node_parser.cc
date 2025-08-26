@@ -19,6 +19,7 @@
 #include <functional>
 #include <map>
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

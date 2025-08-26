@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <complex>
 #include "ir/dtype/type_id.h"
-#include "ir/dtype.h"
 #include "base/float16.h"
 #include "base/bfloat16.h"
 

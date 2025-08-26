@@ -28,6 +28,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
 #include "include/common/debug/common.h"
 #include "mindapi/base/type_id.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace kernel {

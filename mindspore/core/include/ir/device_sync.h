@@ -22,7 +22,6 @@
 #include <string>
 #include <utility>
 
-#include "ir/dtype/type.h"
 #include "utils/shape_utils.h"
 #include "ir/tensor_storage_info.h"
 #include "ir/tensor_data.h"

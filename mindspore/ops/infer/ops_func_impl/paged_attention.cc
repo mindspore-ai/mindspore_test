@@ -15,6 +15,7 @@
  */
 
 #include "infer/ops_func_impl/paged_attention.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/common_infer_fns.h"
 #include "utils/ms_context.h"

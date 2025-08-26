@@ -19,6 +19,7 @@
 #include <map>
 #include <functional>
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 namespace mindspore {
 tensor::TensorPtr TensorConstructUtils::CreateZerosTensor(const TypePtr &type, const std::vector<int64_t> &shape) {
   MS_EXCEPTION_IF_NULL(type);

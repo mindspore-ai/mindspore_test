@@ -29,7 +29,6 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/data_dump/dump_utils.h"
 #endif
-#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace runtime {

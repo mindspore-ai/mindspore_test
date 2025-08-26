@@ -22,6 +22,7 @@
 #include "utils/ms_utils.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

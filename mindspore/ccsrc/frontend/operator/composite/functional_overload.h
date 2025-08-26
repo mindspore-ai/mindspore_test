@@ -23,7 +23,6 @@
 #include <string>
 #include <memory>
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/meta_func_graph.h"
 #include "ops/op_def.h"
 #include "include/common/visible.h"

@@ -40,6 +40,7 @@
 #include "include/common/utils/primfunc_utils.h"
 #include "ir/anf.h"
 #include "ir/cell.h"
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
