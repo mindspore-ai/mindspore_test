@@ -678,8 +678,11 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   tensor->set_device_address(device_tensor);
   UpdateRefCount(kernel_tensor, true);
 
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -841,8 +844,11 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
   UpdateTracker("PrepareDataForSequenceAndScalarValue", node, graph_str, memory::mem_pool::MemType::kConstantValue,
                 device_tensor);
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -919,18 +925,20 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = false;
   if (host_tensor_address != device_tensor) {
-    auto device_id = DeviceManagerConf::GetInstance()->device_id();
-    const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
-    device::DeviceContextKey host_key = {device_type, device_id};
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-    if (host_tensor_address->GetDeviceType() != device_type) {
-      if (device_tensor->GetDeviceType() != device_type) {
+    if (host_tensor_address->GetDeviceType() != device::GetDeviceTypeByName(device_name)) {
+      if (device_tensor->GetDeviceType() != device::GetDeviceTypeByName(device_name)) {
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
           {backend_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-          device_tensor->GetShapeVector(), device::GetDeviceNameByType(device_type), device_id);
+          device_tensor->GetShapeVector(), device_name, device_id);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         host_kernel_tensor = kernel_tensor;
         host_tensor_address = host_kernel_tensor->device_address();

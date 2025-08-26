@@ -591,7 +591,8 @@ bool KernelRunner::ConvertInputContiguousForSingleKernelTensor(OpContext<KernelT
     auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
-      device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+      device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_name_),
+      device_contexts_[0]->device_context_key().device_id_);
     kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
     kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
     kernel_tensor->set_stream_id(stream_id);

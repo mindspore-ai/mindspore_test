@@ -20,7 +20,7 @@
 #include "ir/map_tensor.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "ir/dtype/tensor_type.h"
+
 #include "ir/tensor_new.h"
 namespace mindspore {
 namespace ge_backend {
@@ -353,9 +353,11 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     return nullptr;
   }
 
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
-  device::DeviceContextKey host_key = {device_type, device_id};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -363,7 +365,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
-  if (device_type != device_tensor->GetDeviceType()) {
+  if (device::GetDeviceTypeByName(device_name) != device_tensor->GetDeviceType()) {
     MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got "
                       << device::GetDeviceNameByType(device_tensor->GetDeviceType());
   }
@@ -374,7 +376,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), device_tensor->GetShapeVector(), device::GetDeviceNameByType(device_type), device_id);
+      device_tensor->type_id(), device_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
@@ -453,8 +455,11 @@ void OutputActor::UpdateOutputDeviceAddress() {
       continue;
     }
 
-    auto device_id = DeviceManagerConf::GetInstance()->device_id();
-    device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

@@ -62,9 +62,6 @@ KernelTensorPtr CreateKernelTensorForScalarAndString(const DeviceContext *device
   KernelTensorPtr kernel_tensor = nullptr;
   const auto &node_value = value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
-  MS_EXCEPTION_IF_NULL(device_context);
-  const auto &device_name = device::GetDeviceNameByType(device_context->device_context_key().device_name_);
-  const auto &device_id = device_context->device_context_key().device_id_;
   if (node_value->isa<StringImm>()) {
     auto value = GetValue<std::string>(node_value);
     // Allocate one more byte to '/0'
@@ -75,9 +72,10 @@ KernelTensorPtr CreateKernelTensorForScalarAndString(const DeviceContext *device
       // NOTE: on Ascend, string type need a head of type ge::StringHead
       tensor_size += GE_STRING_HEAD_SIZE;
     }
-    kernel_tensor =
-      AnfAlgo::CreateOutputKernelTensorWithDeviceInfo({value_node, 0}, nullptr, tensor_size, kOpFormat_DEFAULT,
-                                                      kObjectTypeString, ShapeVector(), device_name, device_id);
+    kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+      {value_node, 0}, nullptr, tensor_size, kOpFormat_DEFAULT, kObjectTypeString, ShapeVector(),
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
   } else if (node_value->isa<Scalar>()) {
     auto scalar_value = node_value->cast<ScalarPtr>();
@@ -87,11 +85,14 @@ KernelTensorPtr CreateKernelTensorForScalarAndString(const DeviceContext *device
     TypeId type_id = data_type->type_id();
     kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, GetTypeByte(TypeIdToType(type_id)), kOpFormat_DEFAULT, type_id, ShapeVector(),
-      device_name, device_id);
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
   } else if (node_value->isa<None>()) {
     kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-      {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kTypeNone->type_id(), ShapeVector(), device_name, device_id);
+      {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kTypeNone->type_id(), ShapeVector(),
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
   }
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());

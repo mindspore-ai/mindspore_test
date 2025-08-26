@@ -507,8 +507,9 @@ py::object ConvertCppTensorToMsTensor(const py::object &any) {
 }
 
 size_t DeviceAvailableMemSize() {
-  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
-  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
+  const auto &context = MsContext::GetInstance();
+  uint32_t device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_target = device::GetDeviceTypeByName(context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   const auto &m = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
   MS_EXCEPTION_IF_NULL(m);
   MS_EXCEPTION_IF_NULL(m->device_res_manager_);

@@ -660,8 +660,11 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
                                                   KernelTensorPtr *kernel_tensor) {
   // Create device address for empty tuple.
   // Fetch the default device context for empty sequence.
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {DeviceManagerConf::GetInstance()->device_type(), DeviceManagerConf::GetInstance()->device_id()});
+    {device::GetDeviceTypeByName(context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
+     context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 

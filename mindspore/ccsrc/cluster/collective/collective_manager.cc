@@ -598,13 +598,13 @@ bool CollectiveManager::InitHostCommlib() {
 }
 
 bool CollectiveManager::InitDeviceCommLib() {
-  auto device_type = DeviceManagerConf::GetInstance()->device_type();
-  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
+  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   // If library on device side is not supported, replace it with host library.
   if (!device_lib_supported_) {
-    device_type = device::DeviceType::kCPU;
+    device_type = kCPUDevice;
   }
-  device::DeviceContextKey device_key = {device_type, device_id};
+  device::DeviceContextKey device_key = {device::GetDeviceTypeByName(device_type), device_id};
   device_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // We can initialize device context now because device id(local_rank_id_) is already assigned.

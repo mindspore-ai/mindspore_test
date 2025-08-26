@@ -42,7 +42,8 @@ DeviceBuffer::DeviceBuffer(const std::vector<size_t> &shape)
       MS_EXCEPTION(RuntimeError) << "Get ms context failed by MsContext::GetInstance().";
     }
     device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {DeviceManagerConf::GetInstance()->device_type(), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      {device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
+       ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     if (device_context_ == nullptr) {
       MS_EXCEPTION(RuntimeError) << "Get device context failed by ms context.";
     }

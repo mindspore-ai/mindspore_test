@@ -24,9 +24,10 @@ DataQueue::DataQueue(const std::string &channel_name, const size_t capacity)
     : channel_name_(channel_name), head_(0), tail_(0), size_(0), capacity_(capacity), device_context_(nullptr) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
-  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
-  device_context_ = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
+  const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device_context_ = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device::GetDeviceTypeByName(device_target), device_id});
   device_context_->Initialize();
 }
 }  // namespace device

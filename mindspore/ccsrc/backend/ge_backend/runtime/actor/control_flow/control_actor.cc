@@ -444,8 +444,11 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_ptr(nullptr);
   new_kernel_tensor->SetShape(input_kernel_tensor->GetShape());
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -789,18 +792,20 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
                                                   KernelTensorPtr *kernel_tensor) {
   // Create device address for empty tuple.
   // Fetch the default device context for empty sequence.
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
-  device::DeviceContextKey host_key{device_type, device_id};
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   auto tuple_shape = std::make_shared<abstract::TupleShape>();
   auto tuple_type = std::make_shared<Tuple>();
-  const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
-    tuple_shape, tuple_type, nullptr, nullptr, 0, kOpFormat_DEFAULT, TypeId::kNumberTypeInt64, ShapeVector(),
-    device::GetDeviceNameByType(device_type), device_id);
+  const auto &new_kernel_tensor =
+    AnfAlgo::CreateKernelTensor(tuple_shape, tuple_type, nullptr, nullptr, 0, kOpFormat_DEFAULT,
+                                TypeId::kNumberTypeInt64, ShapeVector(), device_name, device_id);
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
   new_kernel_tensor->set_dynamic_ref_count(0);

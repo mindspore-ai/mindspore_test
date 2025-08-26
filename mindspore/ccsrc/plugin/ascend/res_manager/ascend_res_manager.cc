@@ -1529,8 +1529,10 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     MS_LOG(DEBUG) << "Clear ptr:" << device_ptr_list[i] << ", size:" << after_padding_sizes[i];
   }
 
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
   // create device for all tensor in tensor list
   for (size_t i = 0; i < tensor_list.size(); ++i) {
@@ -1538,12 +1540,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     const auto &ptr = device_ptr_list[i];
     auto format = GetFormat(tensor);
     auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), format,
-                                              tensor->data_type(), GetDeviceNameByType(device_type), stream_id);
+                                              tensor->data_type(), device_name, stream_id);
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    device::DeviceContextKey host_key = {device_type, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

@@ -802,9 +802,10 @@ void TensorPybind::Load(const Tensor &tensor) {
     return;
   }
 
-  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
+  auto ms_context = MsContext::GetInstance();
+  const auto &device_target = device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_target, DeviceManagerConf::GetInstance()->device_id()});
+    {device_target, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
   auto new_device_address = std::static_pointer_cast<device::DeviceAddress>(

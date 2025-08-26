@@ -80,8 +80,11 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
 void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int total_running_count, int sink_size) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count;
   step_count_ = total_running_count;
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  device::DeviceContextKey host_key = {DeviceManagerConf::GetInstance()->device_type(), device_id};
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

@@ -27,13 +27,14 @@ namespace mindspore {
 namespace hal {
 namespace {
 device::DeviceResManager *GetResManager() {
-  auto device_id = DeviceManagerConf::GetInstance()->device_id();
-  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
-  device::DeviceContextKey host_key = {device_type, device_id};
+  auto ms_context = MsContext::GetInstance();
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   if (!host_context->device_res_manager_) {
-    MS_LOG(EXCEPTION) << "Device  " << device::GetDeviceNameByType(device_type) << " is not created yet.";
+    MS_LOG(EXCEPTION) << "Device  " << device_name << " is not created yet.";
   }
   auto res_manager = dynamic_cast<device::DeviceResManager *>(host_context->device_res_manager_.get());
   MS_EXCEPTION_IF_NULL(res_manager);

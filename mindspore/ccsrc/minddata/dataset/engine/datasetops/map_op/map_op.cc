@@ -253,7 +253,8 @@ Status MapOp::InitResource(const std::vector<std::vector<std::shared_ptr<TensorO
         RETURN_STATUS_UNEXPECTED("Get ms context failed by MsContext::GetInstance()");
       }
       *device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {DeviceManagerConf::GetInstance()->device_type(), DeviceManagerConf::GetInstance()->device_id()});
+        {device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
+         ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
       if ((*device_context) == nullptr) {
         RETURN_STATUS_UNEXPECTED("Get device context failed by ms context");
       }

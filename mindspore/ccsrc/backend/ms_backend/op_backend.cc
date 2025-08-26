@@ -557,8 +557,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   device::DeviceAddressPtrList output_addr_list;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {base_op_run_info.device_target,
-     device::GetDeviceTypeByName(MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID))});
+    {base_op_run_info.device_target, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
 
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {

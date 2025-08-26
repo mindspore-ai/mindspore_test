@@ -1025,11 +1025,14 @@ void ControlNodeParser::Parse(
   MS_LOG(INFO) << "Control node parse start.";
 
   // Fetch default device context.
-  const auto &device_type = DeviceManagerConf::GetInstance()->device_type();
-  uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   DeviceContext *default_context = nullptr;
   if (device_contexts.empty()) {
-    default_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_type, device_id});
+    default_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device::GetDeviceTypeByName(device_name), device_id});
   } else {
     default_context = device_contexts[0];
   }
