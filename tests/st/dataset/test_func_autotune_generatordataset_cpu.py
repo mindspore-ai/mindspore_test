@@ -25,6 +25,7 @@ from mindspore.train import Model
 from mindspore.train.callback import Callback
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
+from tests.mark_utils import arg_mark
 
 class Net(nn.Cell):
     """simple network"""

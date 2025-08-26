@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 import mindspore.common.dtype as mstype
@@ -22,9 +21,6 @@ from mindspore.common import ParameterTuple
 import torch
 import torch.nn as nn_pt
 from tests.mark_utils import arg_mark
-
-context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
-
 
 class GradofAllInputsAndParams(nn.Cell):
     def __init__(self, net, sens=False):

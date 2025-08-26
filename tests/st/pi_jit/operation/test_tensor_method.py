@@ -16,6 +16,7 @@
 
 from mindspore import context, ops, jit
 
+import pytest
 from tests.st.pi_jit.share.utils import assert_equal, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
