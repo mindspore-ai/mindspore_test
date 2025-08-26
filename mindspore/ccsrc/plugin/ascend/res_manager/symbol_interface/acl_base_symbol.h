@@ -32,7 +32,7 @@ ORIGIN_METHOD_WITH_SIMU(aclSetTensorDescName, void, aclTensorDesc *, const char 
 ORIGIN_METHOD_WITH_SIMU(aclSetTensorFormat, aclError, aclTensorDesc *, aclFormat)
 ORIGIN_METHOD_WITH_SIMU(aclSetTensorPlaceMent, aclError, aclTensorDesc *, aclMemType)
 ORIGIN_METHOD_WITH_SIMU(aclSetTensorShape, aclError, aclTensorDesc *, int, const int64_t *)
-ORIGIN_METHOD_WITH_SIMU(aclrtGetSocName, const char *)
+ACLRT_GET_SOC_NAME_WITH_SIMU(aclrtGetSocName, const char *)
 ORIGIN_METHOD_WITH_SIMU(aclUpdateDataBuffer, aclError, aclDataBuffer *, void *, size_t)
 ORIGIN_METHOD_WITH_SIMU(aclGetDataBufferAddr, void *, const aclDataBuffer *)
 ORIGIN_METHOD_WITH_SIMU(aclGetTensorDescSize, size_t, const aclTensorDesc *)

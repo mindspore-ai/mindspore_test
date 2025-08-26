@@ -48,4 +48,15 @@ void LoadAclAllocatorApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl allocator api success!";
 }
 
+void LoadSimulationAclAllocatorApi() {
+  ASSIGN_SIMU(aclrtAllocatorCreateDesc);
+  ASSIGN_SIMU(aclrtAllocatorDestroyDesc);
+  ASSIGN_SIMU(aclrtAllocatorRegister);
+  ASSIGN_SIMU(aclrtAllocatorSetAllocAdviseFuncToDesc);
+  ASSIGN_SIMU(aclrtAllocatorSetAllocFuncToDesc);
+  ASSIGN_SIMU(aclrtAllocatorSetFreeFuncToDesc);
+  ASSIGN_SIMU(aclrtAllocatorSetGetAddrFromBlockFuncToDesc);
+  ASSIGN_SIMU(aclrtAllocatorSetObjToDesc);
+  ASSIGN_SIMU(aclrtAllocatorUnregister);
+}
 }  // namespace mindspore::device::ascend

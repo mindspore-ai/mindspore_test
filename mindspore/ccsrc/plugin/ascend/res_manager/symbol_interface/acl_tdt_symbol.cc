@@ -96,6 +96,7 @@ void LoadSpecialSimulationTdtApi() {
 
 void LoadSimulationTdtApi() {
   ASSIGN_SIMU(acltdtAddDataItem);
+  ASSIGN_SIMU(acltdtCleanChannel);
   ASSIGN_SIMU(acltdtCreateChannel);
   ASSIGN_SIMU(acltdtCreateChannelWithCapacity);
   ASSIGN_SIMU(acltdtCreateDataItem);

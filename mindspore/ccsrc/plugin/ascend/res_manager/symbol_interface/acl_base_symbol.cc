@@ -77,6 +77,7 @@ void LoadSimulationAclBaseApi() {
   ASSIGN_SIMU(aclSetTensorPlaceMent);
   ASSIGN_SIMU(aclSetTensorShape);
   ASSIGN_SIMU(aclUpdateDataBuffer);
+  ASSIGN_SIMU(aclrtGetSocName);
   ASSIGN_SIMU(aclGetDataBufferAddr);
   ASSIGN_SIMU(aclGetTensorDescSize);
   ASSIGN_SIMU(aclGetRecentErrMsg);
