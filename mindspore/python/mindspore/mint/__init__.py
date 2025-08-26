@@ -1319,6 +1319,9 @@ def swapaxes(input, axis0, axis1):
 
     For more details, see :func:`mindspore.mint.transpose` .
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Examples:
         >>> import numpy as np
         >>> from mindspore import mint
