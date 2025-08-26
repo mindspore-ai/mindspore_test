@@ -504,26 +504,29 @@ def init_process_group(backend="hccl",
         and the instantiation and execution of any operation and net.
 
     Args:
-        backend (str, optional): The backend to ues. default is hccl and now only support hccl.
-        init_method (str, optional): URL specifying how to init collective communication group. Provides parameters
-            consistent with pytorch, but is not currently support, setting is invalid.
-        timeout (timedelta, optional): Timeout for API executed. Provides parameters consistent with pytorch, but is not
-            currently support, setting is invalid.
-        world_size (int, optional): Number of the processes participating in the job.
-        rank (int, optional): Rank of the current process. Provides parameters consistent with pytorch, but is not
-            currently support, setting is invalid.
-        store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address
-            information. Provides parameters consistent with pytorch, but is not currently support,
-            setting is invalid.
+        backend (str, optional): The backend to ues. Default is ``"hccl"`` and now only support hccl.
+        init_method (str, optional): URL specifying how to init collective communication group. Default is ``None``.
+        timeout (timedelta, optional): Timeout for API executed. Default is ``None``. Currently, this parameter is
+            only supported for host-side cluster network configuration using `init_method` or `store`.
+        world_size (int, optional): Number of the processes participating in the job. Default is ``-1``.
+        rank (int, optional): Rank of the current process. Default is ``-1``.
+        store (Store, optional): An object that stores key/value data, facilitating the exchange of inter-process
+            communication addresses and connection information. Default is ``None``. Currently, only the
+            ``TCPStore`` type is supported.
         pg_options (ProcessGroupOptions, invalid): process group options specifying what additional options need to be
-            passed in during the construction of specific process group. Provides parameters consistent with pytorch,
-            but is not currently support, setting is invalid.
-        device_id (int, invalid): the device id to exeute. Provides parameters consistent with pytorch, but is not
-            currently support, setting is invalid.
+            passed in during the construction of specific process group. The provided parameter is a reserved
+            parameter, and the current setting does not take effect.
+        device_id (int, invalid): the device id to exeute. The provided parameter is a reserved parameter,
+            and the current setting does not take effect.
 
     Raises:
         ValueError: If `backend` is not hccl.
         ValueError: If `world_size` is not equal to -1 or process group number.
+        ValueError: If both `init_method` and `store` are set.
+        ValueError: `world_size` is not correctly set as a positive integer value, when using the initialization
+            method `init_method` or `store`.
+        ValueError: `rank` is not correctly set as a non-negative integer, when using the initialization method
+            `init_method` or `store`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails,
             or the environment variables RANK_ID/MINDSPORE_HCCL_CONFIG_PATH
             have not been exported when backend is HCCL.

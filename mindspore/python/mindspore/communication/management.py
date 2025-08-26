@@ -233,12 +233,14 @@ def _init_without_sched(backend_name=None, init_method=None, timeout=None, world
             ``"nccl"`` for GPU hardware platforms and ``"mccl"`` for CPU hardware platforms.
             If not set, inference is automatically made based on the hardware platform type (device_target).
             Default: ``None`` .
-        init_method (str, optional): URL specifying how to init collective communication group.
-        timeout (timedelta, optional): Timeout for API executed.
-        world_size (int, optional): Number of the processes participating in the job.
-        rank (int, optional): Rank of the current process.
-        store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address
-            information.
+        init_method (str, optional): URL specifying how to init collective communication group. Default is ``None``.
+        timeout (timedelta, optional): Timeout for API executed. Default is ``None``. Currently, this parameter is
+            only supported for host-side cluster network configuration using `init_method` or `store`.
+        world_size (int, optional): Number of the processes participating in the job. Default is ``-1``.
+        rank (int, optional): Rank of the current process. Default is ``-1``.
+        store (Store, optional): An object that stores key/value data, facilitating the exchange of inter-process
+            communication addresses and connection information. Default is ``None``. Currently, only the
+            ``TCPStore`` type is supported.
 
     Raises:
         TypeError: If `backend_name` is not a string.
