@@ -183,13 +183,6 @@ if(ENABLE_MPI)
           COMPONENT mindspore
         )
     endif()
-    if(ENABLE_D)
-        install(
-                TARGETS _ascend_mpi
-                DESTINATION ${INSTALL_BASE_DIR}
-                COMPONENT mindspore
-        )
-    endif()
 endif()
 
 if(ENABLE_GPU)
@@ -241,7 +234,7 @@ if(ENABLE_D)
     endif()
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective d_collective
+                TARGETS d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
