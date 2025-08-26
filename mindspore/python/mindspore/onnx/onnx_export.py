@@ -19,14 +19,12 @@ from __future__ import division
 
 import os
 import stat
-import numpy as np
 
 import mindspore.nn as nn
 from mindspore import log as logger
 from mindspore._checkparam import check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common.api import _cell_graph_executor as _executor
-from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import _calculation_net_size
 from mindspore.dataset.engine.datasets import Dataset
 
@@ -96,21 +94,7 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
     extra_save_params = False
 
     if check_input_dataset(*inputs, dataset_type=Dataset):
-        if len(inputs) != 1:
-            raise RuntimeError(
-                f"You can not only serialize one dataset into ONNX, got " + str(len(inputs)) + " datasets")
-        shapes, types, columns = inputs[0].output_shapes(), inputs[0].output_types(), inputs[0].get_col_names()
-        only_support_col = "image"
-
-        inputs_col = list()
-        for c, s, t in zip(columns, shapes, types):
-            if only_support_col != c:
-                continue
-            inputs_col.append(Tensor(np.random.uniform(-1.0, 1.0, size=s).astype(t)))
-        if not inputs_col:
-            raise RuntimeError(f"Only supports parse \"image\" column from dataset now, given dataset has columns: "
-                               + str(columns))
-        inputs = tuple(inputs_col)
+        raise ValueError(f"Can not support dataset as inputs to export ONNX model.")
 
     file_name = os.path.realpath(file_name)
 

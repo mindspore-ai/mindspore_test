@@ -399,7 +399,6 @@ py::bytes ExecutorPy::GetOnnxFuncGraphProto(const std::string &phase, const std:
                                             const std::string &save_file_dir) {
   FuncGraphPtr fg_ptr = GetFuncGraph(phase);
   std::map<std::string, std::map<int, std::string>> dynamic_axes_map;
-
   if (!dynamic_axes.empty()) {
     for (auto item : dynamic_axes) {
       std::string input_name = py::cast<std::string>(item.first);
@@ -413,7 +412,6 @@ py::bytes ExecutorPy::GetOnnxFuncGraphProto(const std::string &phase, const std:
       dynamic_axes_map[input_name] = dim_name_map;
     }
   }
-
   std::string proto_str =
     GetOnnxProtoString(fg_ptr, input_names, outputs_names, opset_version, export_params, keep_initializers_as_inputs,
                        dynamic_axes_map, extra_save_params, save_file_dir);
