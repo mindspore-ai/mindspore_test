@@ -39,6 +39,65 @@ constexpr size_t kShapeSize4 = 4;
 constexpr size_t kNumber0 = 0;
 constexpr float kFloatNum0 = 0.0;
 constexpr float kFloatNum1 = 1.0;
+
+inline bool IsValidRandomCropParams(int original_width, int original_height, float min_relative_crop_area,
+                                    float max_relative_crop_area, float aspect_ratio) {
+  if (original_width <= 0 || original_height <= 0) {
+    return false;
+  }
+  if (max_relative_crop_area <= 0.0f) {
+    return false;
+  }
+  if (aspect_ratio <= 0.0f) {
+    return false;
+  }
+  if (min_relative_crop_area > max_relative_crop_area) {
+    return false;
+  }
+  return true;
+}
+
+inline int AdjustMaxHeightByWidth(int max_height, float aspect_ratio, int original_width) {
+  const float kEps = 0.0000001f;
+  const float kRoundBias = 0.5f;
+  if (lrintf(static_cast<float>(max_height) * aspect_ratio) > original_width) {
+    int adjusted = static_cast<int>((original_width + kRoundBias - kEps) / aspect_ratio);
+    if (lrintf(static_cast<float>(adjusted) * aspect_ratio) > original_width) {
+      adjusted -= 1;
+    }
+    return adjusted;
+  }
+  return max_height;
+}
+
+inline void AdjustHeightWidthToArea(int *height, int *width, float *area, float aspect_ratio, float min_area,
+                                    float max_area) {
+  *width = static_cast<int>(lrintf(static_cast<float>(*height) * aspect_ratio));
+  *area = static_cast<float>(*width) * static_cast<float>(*height);
+  if (*area < min_area) {
+    ++(*height);
+    *width = static_cast<int>(lrintf(static_cast<float>(*height) * aspect_ratio));
+    *area = static_cast<float>(*width) * static_cast<float>(*height);
+  } else if (*area > max_area) {
+    --(*height);
+    *width = static_cast<int>(lrintf(static_cast<float>(*height) * aspect_ratio));
+    *area = static_cast<float>(*width) * static_cast<float>(*height);
+  }
+}
+
+inline bool IsGeometryValid(int width, int height, float area, int original_width, int original_height, float min_area,
+                            float max_area) {
+  if (area < min_area || area > max_area) {
+    return false;
+  }
+  if (width > original_width || height > original_height) {
+    return false;
+  }
+  if (width <= 0 || height <= 0) {
+    return false;
+  }
+  return true;
+}
 }  // namespace
 
 const uint64_t SampleDistortedBoundingBoxV2CPUKernelMod::New64() {
@@ -95,99 +154,70 @@ uint32_t SampleDistortedBoundingBoxV2CPUKernelMod::GenerateSingle() {
 
 bool SampleDistortedBoundingBoxV2CPUKernelMod::SatisfiesOverlapConstraints(
   const Region &crop, float minimum_object_covered, const std::vector<Region> &bounding_boxes) const {
-  const float kMinArea = 1.0;
-  if (crop.Area() < kMinArea) {
+  constexpr float kMinValidArea = 1.0f;
+  const float crop_area = crop.Area();
+  if (crop_area < kMinValidArea) {
     return false;
   }
 
-  bool is_object_covered = false;
+  // Check whether the crop covers at least one object by the required fraction.
   for (const auto &bbox : bounding_boxes) {
     const float object_area = bbox.Area();
-    if (object_area < kMinArea) {
+    if (object_area < kMinValidArea) {
       continue;
     }
-
-    const float object_covered = object_area != 0 ? crop.Intersect(bbox).Area() / object_area : 0;
-    if (object_covered >= minimum_object_covered) {
-      is_object_covered = true;
-      break;
+    const float intersection_area = crop.Intersect(bbox).Area();
+    if (intersection_area >= minimum_object_covered * object_area) {
+      return true;
     }
   }
-  return is_object_covered;
+  return false;
 }
 
-bool TestGenerateRandomCropInput(int ms_original_width, int ms_original_height, float ms_min_relative_crop_area,
-                                 float ms_max_relative_crop_area, float ms_aspect_ratio) {
-  if (ms_max_relative_crop_area <= 0.0 || ms_aspect_ratio < 0.0 || ms_original_width <= 0 || ms_original_height <= 0 ||
-      ms_min_relative_crop_area > ms_max_relative_crop_area) {
-    return false;
-  }
-  return true;
+void SampleDistortedBoundingBoxV2CPUKernelMod::PickRandomOffsets(int width, int height, int original_width,
+                                                                 int original_height, int *x, int *y) {
+  *x = width < original_width ? static_cast<int>(Uniform(static_cast<uint32_t>(original_width - width))) : 0;
+  *y = height < original_height ? static_cast<int>(Uniform(static_cast<uint32_t>(original_height - height))) : 0;
 }
 
 bool SampleDistortedBoundingBoxV2CPUKernelMod::GenerateRandomCrop(int ms_original_width, int ms_original_height,
                                                                   float ms_min_relative_crop_area,
                                                                   float ms_max_relative_crop_area,
                                                                   float ms_aspect_ratio, Region *ms_crop_rect) {
-  if (TestGenerateRandomCropInput(ms_original_width, ms_original_height, ms_min_relative_crop_area,
-                                  ms_max_relative_crop_area, ms_aspect_ratio) == false) {
+  if (!IsValidRandomCropParams(ms_original_width, ms_original_height, ms_min_relative_crop_area,
+                               ms_max_relative_crop_area, ms_aspect_ratio)) {
     return false;
   }
 
   const float ms_min_area = ms_min_relative_crop_area * ms_original_width * ms_original_height;
   const float ms_max_area = ms_max_relative_crop_area * ms_original_width * ms_original_height;
-  const float ms_bias = 0.5;
 
-  if (common::IsFloatEqual(ms_aspect_ratio, 0.0f)) {
-    return false;
-  }
   int height = static_cast<int>(lrintf(std::sqrt(ms_min_area / ms_aspect_ratio)));
   int max_height = static_cast<int>(lrintf(std::sqrt(ms_max_area / ms_aspect_ratio)));
-  if (lrintf(max_height * ms_aspect_ratio) > ms_original_width) {
-    const float kEps = 0.0000001;
-    max_height = static_cast<int>((ms_original_width + ms_bias - kEps) / ms_aspect_ratio);
-    if (lrintf(max_height * ms_aspect_ratio) > ms_original_width) {
-      max_height -= 1;
-    }
-  }
+  max_height = AdjustMaxHeightByWidth(max_height, ms_aspect_ratio, ms_original_width);
 
   max_height = std::min(max_height, ms_original_height);
   height = std::min(height, max_height);
   if (height < max_height) {
     height += static_cast<int>(Uniform(static_cast<uint32_t>(max_height - height + 1)));
   }
-  int width = static_cast<int>(lrintf(height * ms_aspect_ratio));
-  float area = static_cast<float>(width * height);
-  if (area < ms_min_area) {
-    height += 1;
-    width = static_cast<int>(lrintf(height * ms_aspect_ratio));
-    area = width * height;
-  }
 
-  if (area > ms_max_area) {
-    height -= 1;
-    width = static_cast<int>(lrintf(height * ms_aspect_ratio));
-    area = width * height;
-  }
+  int width = 0;
+  float area = 0.0f;
+  AdjustHeightWidthToArea(&height, &width, &area, ms_aspect_ratio, ms_min_area, ms_max_area);
 
-  if (area < ms_min_area || area > ms_max_area || width > ms_original_width || height > ms_original_height ||
-      width <= 0 || height <= 0) {
+  if (!IsGeometryValid(width, height, area, ms_original_width, ms_original_height, ms_min_area, ms_max_area)) {
     return false;
   }
 
-  int y = 0;
-  if (height < ms_original_height) {
-    y = static_cast<int>(Uniform(static_cast<uint32_t>(ms_original_height - height)));
-  }
   int x = 0;
-  if (width < ms_original_width) {
-    x = static_cast<int>(Uniform(static_cast<uint32_t>(ms_original_width - width)));
-  }
+  int y = 0;
+  PickRandomOffsets(width, height, ms_original_width, ms_original_height, &x, &y);
 
-  ms_crop_rect->min_x_ = x;
-  ms_crop_rect->min_y_ = y;
-  ms_crop_rect->max_x_ = x + width;
-  ms_crop_rect->max_y_ = y + height;
+  ms_crop_rect->x_min_ = x;
+  ms_crop_rect->y_min_ = y;
+  ms_crop_rect->x_max_ = x + width;
+  ms_crop_rect->y_max_ = y + height;
   return true;
 }
 
@@ -301,26 +331,14 @@ bool SampleDistortedBoundingBoxV2CPUKernelMod::Launch(const std::vector<kernel::
 }
 
 template <typename T>
-void SampleDistortedBoundingBoxV2CPUKernelMod::CheckSDBBExt2(T *inputs0, float *inputs1, float *inputs2, T *outputs0,
-                                                             T *outputs1, float *outputs2) {
-  MS_EXCEPTION_IF_NULL(inputs0);
-  MS_EXCEPTION_IF_NULL(inputs1);
-  MS_EXCEPTION_IF_NULL(inputs2);
-  MS_EXCEPTION_IF_NULL(outputs0);
-  MS_EXCEPTION_IF_NULL(outputs1);
-  MS_EXCEPTION_IF_NULL(outputs2);
-}
-
-template <typename T>
 void SampleDistortedBoundingBoxV2CPUKernelMod::LaunchSDBBExt2(const std::vector<KernelTensor *> &inputs,
                                                               const std::vector<KernelTensor *> &outputs) {
-  auto image_size = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto bounding_boxes = reinterpret_cast<float *>(inputs[kIndex1]->device_ptr());
-  auto min_object_covered = reinterpret_cast<float *>(inputs[kIndex2]->device_ptr());
-  auto begin = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
-  auto size = reinterpret_cast<T *>(outputs[kIndex1]->device_ptr());
-  auto bboxes = reinterpret_cast<float *>(outputs[kIndex2]->device_ptr());
-  CheckSDBBExt2(image_size, bounding_boxes, min_object_covered, begin, size, bboxes);
+  auto image_size = GetDeviceAddress<T>(inputs, kIndex0);
+  auto bounding_boxes = GetDeviceAddress<float>(inputs, kIndex1);
+  auto min_object_covered = GetDeviceAddress<float>(inputs, kIndex2);
+  auto begin = GetDeviceAddress<T>(outputs, kIndex0);
+  auto size = GetDeviceAddress<T>(outputs, kIndex1);
+  auto bboxes = GetDeviceAddress<float>(outputs, kIndex2);
 
   const int32_t height = static_cast<int32_t>(image_size[kIndex0]);
   const int32_t width = static_cast<int32_t>(image_size[kIndex1]);
@@ -398,10 +416,10 @@ void SampleDistortedBoundingBoxV2CPUKernelMod::LaunchSDBBExt2(const std::vector<
   }
 
   // Determine the cropping parameters from the bounding box.
-  const int target_width = ms_crop_rect.max_x_ - ms_crop_rect.min_x_;
-  const int target_height = ms_crop_rect.max_y_ - ms_crop_rect.min_y_;
-  const int offset_width = ms_crop_rect.min_x_;
-  const int offset_height = ms_crop_rect.min_y_;
+  const int target_width = ms_crop_rect.x_max_ - ms_crop_rect.x_min_;
+  const int target_height = ms_crop_rect.y_max_ - ms_crop_rect.y_min_;
+  const int offset_width = ms_crop_rect.x_min_;
+  const int offset_height = ms_crop_rect.y_min_;
 
   if (width < target_width + offset_width) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', width must be >= target_width + offset_width: [" << width
@@ -418,10 +436,10 @@ void SampleDistortedBoundingBoxV2CPUKernelMod::LaunchSDBBExt2(const std::vector<
   begin[kIndex1] = static_cast<T>(offset_width);
   size[kIndex1] = static_cast<T>(target_width);
 
-  bboxes[kIndex0] = static_cast<float>(ms_crop_rect.min_y_) / static_cast<float>(height);
-  bboxes[kIndex1] = static_cast<float>(ms_crop_rect.min_x_) / static_cast<float>(width);
-  bboxes[kIndex2] = static_cast<float>(ms_crop_rect.max_y_) / static_cast<float>(height);
-  bboxes[kIndex3] = static_cast<float>(ms_crop_rect.max_x_) / static_cast<float>(width);
+  bboxes[kIndex0] = static_cast<float>(ms_crop_rect.y_min_) / static_cast<float>(height);
+  bboxes[kIndex1] = static_cast<float>(ms_crop_rect.x_min_) / static_cast<float>(width);
+  bboxes[kIndex2] = static_cast<float>(ms_crop_rect.y_max_) / static_cast<float>(height);
+  bboxes[kIndex3] = static_cast<float>(ms_crop_rect.x_max_) / static_cast<float>(width);
 
   // Retain all of the channels.
   begin[kIndex2] = static_cast<T>(0);

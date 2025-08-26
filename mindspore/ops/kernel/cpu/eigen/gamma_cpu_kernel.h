@@ -45,10 +45,37 @@ class GammaCpuKernelMod : public NativeCpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
+  using Normal = random::MSNormalDistribution<random::PhiloxRandom, double>;
+  using Uniform = random::MSUniformDistribution<random::PhiloxRandom, double>;
+
   template <typename T>
   void Generate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   template <typename T>
   void InferShape(const std::vector<KernelTensor *> &inputs);
+
+  template <typename T>
+  void GenerateSamplesForRange(int64_t start_output, int64_t limit_output, int64_t samples_per_alpha,
+                               int64_t num_alphas, const random::PhiloxRandom &rng, T *samples_flat,
+                               const T *alpha_flat);
+
+  template <typename T>
+  void GenerateExponentialSamples(int64_t *output_idx, int64_t limit_output, int64_t samples_per_alpha,
+                                  int64_t num_alphas, const random::PhiloxRandom &rng, T *samples_alpha_offset,
+                                  Uniform *uniform, typename Uniform::ResType *uniform_res);
+
+  template <typename T>
+  void GenerateGammaSamples(int64_t *output_idx, int64_t limit_output, int64_t samples_per_alpha, int64_t num_alphas,
+                            const random::PhiloxRandom &rng, T *samples_alpha_offset, double alpha_value,
+                            Normal *normal, Uniform *uniform, typename Normal::ResType *norm_res,
+                            typename Uniform::ResType *uniform_res);
+
+  double GenerateSingleGammaSample(random::PhiloxRandom *gen, double alpha_value, bool alpha_less_than_one, double su,
+                                   double cut, Normal *normal, Uniform *uniform, typename Normal::ResType *norm_res,
+                                   typename Uniform::ResType *uniform_res);
+
+  double GetNextUniformRandom(Uniform *uniform, random::PhiloxRandom *gen, typename Uniform::ResType *uniform_res,
+                              int64_t *uniform_remaining);
+
   int64_t seed_{0};
   int64_t seed2_{0};
 

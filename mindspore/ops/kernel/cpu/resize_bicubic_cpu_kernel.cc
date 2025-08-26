@@ -16,9 +16,11 @@
 
 #include "kernel/cpu/resize_bicubic_cpu_kernel.h"
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <utility>
 #include <memory>
+#include <numeric>
 #include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
@@ -26,52 +28,31 @@
 namespace mindspore {
 namespace kernel {
 namespace resize_bicubic_cpu {
-constexpr size_t kIndex0 = 0;
-constexpr size_t kIndex1 = 1;
-constexpr size_t kIndex2 = 2;
-constexpr size_t kIndex3 = 3;
 constexpr size_t kResizeBicubicInputsNum = 4;
 constexpr size_t kResizeBicubicOutputsNum = 1;
-constexpr int64_t cached_values_hand_max = 4;
-constexpr size_t caseid2 = 2;
-constexpr size_t caseid3 = 3;
-constexpr int64_t calnum8 = 8;
-constexpr int64_t calnum5 = 5;
-constexpr int64_t calnum4 = 4;
-constexpr int64_t calnum3 = 3;
-constexpr int64_t calnum2 = 2;
+constexpr int64_t kCachedValuesHandMax = 4;
+constexpr int64_t kCalnum8 = 8;
+constexpr int64_t kCalnum5 = 5;
+constexpr int64_t kCalnum4 = 4;
+constexpr int64_t kCalnum3 = 3;
+constexpr int64_t kCalnum2 = 2;
+constexpr size_t kResizeBicubicRank = 4;
 constexpr int64_t kTableSize = (1 << 10);
-std::vector<int64_t> x_shape;
-std::vector<int64_t> y_shape;
-bool align_corners = false;
-bool half_pixel_centers = false;
-struct ResizerState {
-  void CalculateSize() {
-    batch_size = x_shape[kIndex0];
-    channels = x_shape[kIndex1];
-    in_height = x_shape[kIndex2];
-    in_width = x_shape[kIndex3];
-    out_height = y_shape[kIndex2];
-    out_width = y_shape[kIndex3];
-    out_hw_size = out_height * out_width;
-    in_hw_size = in_height * in_width;
-    bchw_size = in_hw_size * channels * batch_size;
-    height_scale = Scaling(in_height, out_height, align_corners);
-    width_scale = Scaling(in_width, out_width, align_corners);
-  }
-  int64_t batch_size;
-  int64_t out_height;
-  int64_t out_width;
-  int64_t in_height;
-  int64_t in_width;
-  int64_t channels;
-  float height_scale;
-  float width_scale;
-  int64_t out_hw_size;
-  int64_t in_hw_size;
-  int64_t bchw_size;
-};
-ResizerState sta;
+
+void ResizerState::CalculateSize(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
+                                 bool align_corners_flag) {
+  batch_size = x_shape[kIndex0];
+  channels = x_shape[kIndex1];
+  in_height = x_shape[kIndex2];
+  in_width = x_shape[kIndex3];
+  out_height = y_shape[kIndex2];
+  out_width = y_shape[kIndex3];
+  out_hw_size = out_height * out_width;
+  in_hw_size = in_height * in_width;
+  bchw_size = in_hw_size * channels * batch_size;
+  height_scale = Scaling(in_height, out_height, align_corners_flag);
+  width_scale = Scaling(in_width, out_width, align_corners_flag);
+}
 
 struct HalfPixelScaler {
   HalfPixelScaler() {}
@@ -84,26 +65,71 @@ struct LegacyScaler {
   inline float operator()(const int64_t x, const float scale) const { return static_cast<float>(x) * scale; }
 };
 
-struct WeightsAndIndices {
-  float weight_0;
-  float weight_1;
-  float weight_2;
-  float weight_3;
-  int64_t index_0;
-  int64_t index_1;
-  int64_t index_2;
-  int64_t index_3;
-  size_t advance;  // advance value.
+class ResizeBicubicWeightsInfo {
+ public:
+  std::array<float, kResizeBicubicRank> weights;
+  std::array<int64_t, kResizeBicubicRank> indices;
+  size_t advance;
+
+  inline void SetWeightsAndIndices(const int64_t in_loc, const int64_t limit, const int64_t offset,
+                                   const std::vector<float> &coeffs_table, const bool use_keys_cubic) {
+    auto clamp = [&](int64_t v) -> int64_t { return std::min(limit - 1, std::max<int64_t>(0, v)); };
+    if (use_keys_cubic) {
+      indices[0] = clamp(in_loc - 1);
+      indices[1] = clamp(in_loc);
+      indices[2] = clamp(in_loc + 1);
+      indices[3] = clamp(in_loc + kCalnum2);
+      weights[0] = (indices[0] == in_loc - 1 ? coeffs_table[offset * kCalnum2 + 1] : 0.0f);
+      weights[1] = (indices[1] == in_loc ? coeffs_table[offset * kCalnum2] : 0.0f);
+      weights[2] = (indices[2] == in_loc + 1 ? coeffs_table[(kTableSize - offset) * kCalnum2] : 0.0f);
+      weights[3] = (indices[3] == in_loc + kCalnum2 ? coeffs_table[(kTableSize - offset) * kCalnum2 + 1] : 0.0f);
+      NormalizeWeightsIfNeeded();
+    } else {
+      weights[0] = coeffs_table[offset * kCalnum2 + 1];
+      weights[1] = coeffs_table[offset * kCalnum2];
+      weights[2] = coeffs_table[(kTableSize - offset) * kCalnum2];
+      weights[3] = coeffs_table[(kTableSize - offset) * kCalnum2 + 1];
+      indices[0] = clamp(in_loc - 1);
+      indices[1] = clamp(in_loc);
+      indices[2] = clamp(in_loc + 1);
+      indices[3] = clamp(in_loc + kCalnum2);
+    }
+  }
+
+  inline void SetAdvance(const size_t v) { advance = v; }
+
+  inline void NormalizeWeightsIfNeeded() {
+    const float weight_sum = weights[0] + weights[1] + weights[2] + weights[3];
+    if (std::abs(weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
+      const float one_over_weight_sum = 1.0f / weight_sum;
+      std::transform(weights.begin(), weights.end(), weights.begin(),
+                     [one_over_weight_sum](float w) { return w * one_over_weight_sum; });
+    }
+  }
 };
+
+inline float InterpolateFromArray(const std::array<float, 4> &weights, const float *values) {
+  return std::inner_product(weights.begin(), weights.end(), values, 0.0f);
+}
+
+template <typename T>
+inline float InterpolateYAtX(const std::array<float, 4> &weights, size_t which, const T *y_ptr_0, const T *y_ptr_1,
+                             const T *y_ptr_2, const T *y_ptr_3, const std::array<int64_t, 4> &x_indices) {
+  const size_t clamped = which <= kIndex3 ? which : kIndex3;
+  const int x_index = static_cast<int>(x_indices[clamped]);
+  const float vals[4] = {static_cast<float>(y_ptr_0[x_index]), static_cast<float>(y_ptr_1[x_index]),
+                         static_cast<float>(y_ptr_2[x_index]), static_cast<float>(y_ptr_3[x_index])};
+  return std::inner_product(std::begin(vals), std::end(vals), weights.begin(), 0.0f);
+}
 
 class CachedInterpolationCalculator {
  public:
   CachedInterpolationCalculator() : indexes_{-1, -1, -1, -1} {}
   inline size_t Advance(const int64_t x_0, const int64_t x_1, const int64_t x_2, const int64_t x_3) {
-    const std::array<int64_t, 4> new_x_indices{{x_0, x_1, x_2, x_3}};
+    const std::array<int64_t, kResizeBicubicRank> new_x_indices{{x_0, x_1, x_2, x_3}};
     size_t cached_values_hand = 0;
     size_t new_indices_hand = 0;
-    while (cached_values_hand < cached_values_hand_max) {
+    while (cached_values_hand < kCachedValuesHandMax) {
       if (indexes_[cached_values_hand] == new_x_indices[new_indices_hand]) {
         if (new_indices_hand < cached_values_hand) {
           indexes_[new_indices_hand] = indexes_[cached_values_hand];
@@ -114,158 +140,97 @@ class CachedInterpolationCalculator {
         cached_values_hand++;
       }
     }
-    std::vector<int64_t> x_values = {x_0, x_1, x_2, x_3};
-    for (size_t i = new_indices_hand; i < x_values.size(); ++i) {
-      indexes_[i] = x_values[i];
-    }
+    std::copy(new_x_indices.begin() + new_indices_hand, new_x_indices.end(), indexes_.begin() + new_indices_hand);
 
     return new_indices_hand;
   }
 
  private:
-  int64_t indexes_[kIndex4];
+  std::array<int64_t, kResizeBicubicRank> indexes_;
 };
 
-inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
+const std::vector<float> &GetCoeffsTable(const bool use_keys_cubic) {
+  auto init_coeffs_table = [](const double val) -> std::vector<float> {
+    constexpr float kInvTableSize = 1.0f / kTableSize;
+    std::vector<float> coeffs_table((kTableSize + 1) * kCalnum2, 0);
 
-std::vector<float> InitCoeffsTable(const double a) {
-  std::vector<float> coeffs_table((kTableSize + 1) * calnum2, 0);
-  for (int i = 0; i <= kTableSize; ++i) {
-    float x = i * 1.0 / kTableSize;
-    coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
-    x += 1.0;
-    coeffs_table[i * calnum2 + 1] = ((a * x - calnum5 * a) * x + calnum8 * a) * x - calnum4 * a;
-  }
-  return coeffs_table;
-}
+    for (int i = 0; i <= kTableSize; ++i) {
+      float x = i * kInvTableSize;
+      auto base_position = i * kCalnum2;
+      coeffs_table[base_position] = ((val + kCalnum2) * x - (val + kCalnum3)) * x * x + 1;
+      x += 1.0f;
+      coeffs_table[base_position + 1] = ((val * x - kCalnum5 * val) * x + kCalnum8 * val) * x - kCalnum4 * val;
+    }
+    return coeffs_table;
+  };
 
-std::vector<float> GetCoeffsTable(const bool use_keys_cubic) {
-  return use_keys_cubic ? InitCoeffsTable(-0.5f) : InitCoeffsTable(-0.75f);
+  static const std::vector<float> keys_coeffs_table = init_coeffs_table(-0.5f);
+  static const std::vector<float> mitchell_coeffs_table = init_coeffs_table(-0.75f);
+  return use_keys_cubic ? keys_coeffs_table : mitchell_coeffs_table;
 }
 
 template <typename Scaler, bool use_keys_cubic>
-inline void GetWeightsAndIndices(const float scale, const int64_t out_loc, const int64_t limit,
-                                 WeightsAndIndices *out) {
+inline void ComputeInterpolationWeightsForPosition(const float scale, const int64_t out_loc, const int64_t limit,
+                                                   ResizeBicubicWeightsInfo *out) {
   const Scaler scaler;
   const float in_loc_f = scaler(out_loc, scale);
   const int64_t in_loc = std::floor(in_loc_f);
   const float delta = in_loc_f - in_loc;
   const int64_t offset = lrintf(delta * kTableSize);
-  auto coeffs_table = GetCoeffsTable(use_keys_cubic);
-  if (use_keys_cubic) {
-    out->index_0 = Bound(in_loc - 1, limit);
-    out->weight_0 = (out->index_0 == in_loc - 1 ? coeffs_table[offset * calnum2 + 1] : 0.0f);
-    out->index_1 = Bound(in_loc, limit);
-    out->weight_1 = (out->index_1 == in_loc ? coeffs_table[offset * calnum2] : 0.0f);
-    out->index_2 = Bound(in_loc + 1, limit);
-    out->weight_2 = (out->index_2 == in_loc + 1 ? coeffs_table[(kTableSize - offset) * calnum2] : 0.0f);
-    out->index_3 = Bound(in_loc + calnum2, limit);
-    out->weight_3 = (out->index_3 == in_loc + calnum2 ? coeffs_table[(kTableSize - offset) * calnum2 + 1] : 0.0f);
-
-    const float weight_sum = out->weight_0 + out->weight_1 + out->weight_2 + out->weight_3;
-    if (std::abs(weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
-      const float one_over_weight_sum = 1.0f / weight_sum;
-      out->weight_0 *= one_over_weight_sum;
-      out->weight_1 *= one_over_weight_sum;
-      out->weight_2 *= one_over_weight_sum;
-      out->weight_3 *= one_over_weight_sum;
-    }
-  } else {
-    out->weight_0 = coeffs_table[offset * calnum2 + 1];
-    out->weight_1 = coeffs_table[offset * calnum2];
-    out->weight_2 = coeffs_table[(kTableSize - offset) * calnum2];
-    out->weight_3 = coeffs_table[(kTableSize - offset) * calnum2 + 1];
-    out->index_0 = Bound(in_loc - 1, limit);
-    out->index_1 = Bound(in_loc, limit);
-    out->index_2 = Bound(in_loc + 1, limit);
-    out->index_3 = Bound(in_loc + calnum2, limit);
-  }
+  const auto &coeffs_table = GetCoeffsTable(use_keys_cubic);
+  out->SetWeightsAndIndices(in_loc, limit, offset, coeffs_table, use_keys_cubic);
 }
 
-static void ComputeXWeightsAndIndices(const ResizerState &resizer_state, const bool half_pixel_centers_,
-                                      std::vector<WeightsAndIndices> *x_wais) {
+static void PrepareHorizontalInterpolationWeights(const ResizerState &resizer_state, const bool half_pixel_centers_,
+                                                  std::vector<ResizeBicubicWeightsInfo> *x_wais) {
   CachedInterpolationCalculator calc;
   if (half_pixel_centers_) {
     for (int64_t x = 0; x < resizer_state.out_width; ++x) {
-      GetWeightsAndIndices<HalfPixelScaler, true>(resizer_state.width_scale, x, resizer_state.in_width,
-                                                  &(*x_wais)[static_cast<size_t>(x)]);
+      ComputeInterpolationWeightsForPosition<HalfPixelScaler, true>(
+        resizer_state.width_scale, x, resizer_state.in_width, &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.advance = calc.Advance(x_wai.index_0, x_wai.index_1, x_wai.index_2, x_wai.index_3);
+      x_wai.SetAdvance(
+        calc.Advance(x_wai.indices[kIndex0], x_wai.indices[kIndex1], x_wai.indices[kIndex2], x_wai.indices[kIndex3]));
     }
   } else {
     for (int64_t x = 0; x < resizer_state.out_width; ++x) {
-      GetWeightsAndIndices<LegacyScaler, false>(resizer_state.width_scale, x, resizer_state.in_width,
-                                                &(*x_wais)[static_cast<size_t>(x)]);
+      ComputeInterpolationWeightsForPosition<LegacyScaler, false>(resizer_state.width_scale, x, resizer_state.in_width,
+                                                                  &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.advance = calc.Advance(x_wai.index_0, x_wai.index_1, x_wai.index_2, x_wai.index_3);
+      x_wai.SetAdvance(
+        calc.Advance(x_wai.indices[kIndex0], x_wai.indices[kIndex1], x_wai.indices[kIndex2], x_wai.indices[kIndex3]));
     }
   }
 }
 
-template <typename T>
-inline float Interpolate1D(const float weight_0, const float weight_1, const float weight_2, const float weight_3,
-                           const T value_0, const T value_1, const T value_2, const T value_3) {
-  return static_cast<float>(value_0) * weight_0 + static_cast<float>(value_1) * weight_1 +
-         static_cast<float>(value_2) * weight_2 + static_cast<float>(value_3) * weight_3;
-}
-
-template <typename T>
-static float ComputeYInterpolation(int which, const WeightsAndIndices &y_wai, const T *y_ptr_0, const T *y_ptr_1,
-                                   const T *y_ptr_2, const T *y_ptr_3, const WeightsAndIndices &x_wai) {
-  int x_index;  // w
-  switch (which) {
-    case 0:
-      x_index = x_wai.index_0;
-      break;
-    case 1:
-      x_index = x_wai.index_1;
-      break;
-    case caseid2:
-      x_index = x_wai.index_2;
-      break;
-    default:
-      x_index = x_wai.index_3;
-      break;
-  }
-  return Interpolate1D<T>(y_wai.weight_0, y_wai.weight_1, y_wai.weight_2, y_wai.weight_3, y_ptr_0[x_index],
-                          y_ptr_1[x_index], y_ptr_2[x_index], y_ptr_3[x_index]);
-}
-
-static float Compute_1D(const float *values_, const float xw_0, const float xw_1, const float xw_2, const float xw_3) {
-  return Interpolate1D<float>(xw_0, xw_1, xw_2, xw_3, values_[kIndex0], values_[kIndex1], values_[kIndex2],
-                              values_[kIndex3]);
-}
-
 template <typename T1>
-void CalSwitch(const WeightsAndIndices &x_wai, float *cached_value, const WeightsAndIndices &y_wai, const T1 *y_ptr_0,
-               const T1 *y_ptr_1, const T1 *y_ptr_2, const T1 *y_ptr_3) {
+void CalSwitch(const ResizeBicubicWeightsInfo &x_wai, float *cached_value, const ResizeBicubicWeightsInfo &y_wai,
+               const T1 *y_ptr_0, const T1 *y_ptr_1, const T1 *y_ptr_2, const T1 *y_ptr_3) {
   switch (x_wai.advance) {
-    case caseid3:
-      cached_value[static_cast<size_t>(0)] = cached_value[static_cast<size_t>(1)];
-      cached_value[static_cast<size_t>(1)] = cached_value[static_cast<size_t>(calnum2)];
-      cached_value[static_cast<size_t>(calnum2)] = cached_value[static_cast<size_t>(calnum3)];
+    case kIndex3:
+      cached_value[kIndex0] = cached_value[kIndex1];
+      cached_value[kIndex1] = cached_value[kIndex2];
+      cached_value[kIndex2] = cached_value[kIndex3];
       break;
-    case caseid2:
-      cached_value[static_cast<size_t>(0)] = cached_value[static_cast<size_t>(calnum2)];
-      cached_value[static_cast<size_t>(1)] = cached_value[static_cast<size_t>(calnum3)];
+    case kIndex2:
+      cached_value[kIndex0] = cached_value[kIndex2];
+      cached_value[kIndex1] = cached_value[kIndex3];
       break;
-    case 1:
-      cached_value[static_cast<size_t>(0)] = cached_value[static_cast<size_t>(calnum3)];
+    case kIndex1:
+      cached_value[kIndex0] = cached_value[kIndex3];
       break;
   }
   // Set the remaining '4-advance' values by computing.
-  for (size_t i = x_wai.advance; i <= caseid3; i++) {
-    cached_value[i] = ComputeYInterpolation(i, y_wai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, x_wai);
+  for (size_t i = x_wai.advance; i <= kIndex3; i++) {
+    cached_value[i] = InterpolateYAtX(y_wai.weights, i, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, x_wai.indices);
   }
-  return;
 }
 
 template <typename T1, typename T2>
-void ResizeBicubicCPUKernelMod::interpolate_with_caching(const T1 *input_data, const bool half_pixel_centers_,
-                                                         T2 *output_data) {
-  const ResizerState &RS = sta;
-  std::vector<WeightsAndIndices> x_wais(RS.out_width);
-  ComputeXWeightsAndIndices(RS, half_pixel_centers_, &x_wais);
+void ResizeBicubicCPUKernelMod::InterpolateWithCache(const T1 *input_data, T2 *output_data) {
+  const ResizerState &RS = state_info_;
+  std::vector<ResizeBicubicWeightsInfo> x_wais(RS.out_width);
+  PrepareHorizontalInterpolationWeights(RS, half_pixel_centers_, &x_wais);
   const int64_t in_row_width = RS.in_width * RS.in_height;    // hw
   const int64_t in_batch_width = RS.channels * in_row_width;  // chw
   const int64_t out_ch = RS.out_height * RS.channels;
@@ -278,29 +243,27 @@ void ResizeBicubicCPUKernelMod::interpolate_with_caching(const T1 *input_data, c
       const int64_t b = SizeToLong(i) / out_ch;
       const int64_t c = SizeToLong(i) % out_ch / RS.out_height;
       const int64_t y = SizeToLong(i) % RS.out_height;
-      WeightsAndIndices y_wai;
+      ResizeBicubicWeightsInfo y_wai;
       if (half_pixel_centers_) {
-        GetWeightsAndIndices<HalfPixelScaler, true>(RS.height_scale, y, RS.in_height, &y_wai);
+        ComputeInterpolationWeightsForPosition<HalfPixelScaler, true>(RS.height_scale, y, RS.in_height, &y_wai);
       } else {
-        GetWeightsAndIndices<LegacyScaler, false>(RS.height_scale, y, RS.in_height, &y_wai);
+        ComputeInterpolationWeightsForPosition<LegacyScaler, false>(RS.height_scale, y, RS.in_height, &y_wai);
       }
       const T1 *input_b_ptr = input_data + b * in_batch_width + c * in_row_width;
       T2 *output_y_ptr = output_data + b * out_chw + c * out_hw + y * RS.out_width;
       // Make pointers represent offsets of data in input_b_ptr
-      const T1 *y_ptr_0 = input_b_ptr + y_wai.index_0 * RS.in_width;
-      const T1 *y_ptr_1 = input_b_ptr + y_wai.index_1 * RS.in_width;
-      const T1 *y_ptr_2 = input_b_ptr + y_wai.index_2 * RS.in_width;
-      const T1 *y_ptr_3 = input_b_ptr + y_wai.index_3 * RS.in_width;
+      const T1 *y_ptr_0 = input_b_ptr + y_wai.indices[kIndex0] * RS.in_width;
+      const T1 *y_ptr_1 = input_b_ptr + y_wai.indices[kIndex1] * RS.in_width;
+      const T1 *y_ptr_2 = input_b_ptr + y_wai.indices[kIndex2] * RS.in_width;
+      const T1 *y_ptr_3 = input_b_ptr + y_wai.indices[kIndex3] * RS.in_width;
       for (int64_t x = 0; x < RS.out_width; ++x) {
-        const WeightsAndIndices &x_wai = x_wais[static_cast<size_t>(x)];
+        const ResizeBicubicWeightsInfo &x_wai = x_wais[static_cast<size_t>(x)];
         CalSwitch(x_wai, cached_value.data(), y_wai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3);
-        output_y_ptr[x] = static_cast<T2>(
-          Compute_1D(cached_value.data(), x_wai.weight_0, x_wai.weight_1, x_wai.weight_2, x_wai.weight_3));
+        output_y_ptr[x] = static_cast<T2>(InterpolateFromArray(x_wai.weights, cached_value.data()));
       }
     }
   };
   ParallelLaunchAutoSearch(task, parallel_num, this, &parallel_search_info_);
-  return;
 }
 
 bool ResizeBicubicCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -322,11 +285,11 @@ int ResizeBicubicCPUKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  x_shape = inputs.at(kIndex0)->GetDeviceShapeVector();
-  y_shape = outputs.at(kIndex0)->GetDeviceShapeVector();
-  align_corners = inputs.at(kIndex2)->GetValueWithCheck<bool>();
-  half_pixel_centers = inputs.at(kIndex3)->GetValueWithCheck<bool>();
-  sta.CalculateSize();
+  const auto x_shape = inputs.at(kIndex0)->GetDeviceShapeVector();
+  const auto y_shape = outputs.at(kIndex0)->GetDeviceShapeVector();
+  const bool align_corners = inputs.at(kIndex2)->GetValueWithCheck<bool>();
+  half_pixel_centers_ = inputs.at(kIndex3)->GetValueWithCheck<bool>();
+  state_info_.CalculateSize(x_shape, y_shape, align_corners);
   return KRET_OK;
 }
 
@@ -337,15 +300,15 @@ bool ResizeBicubicCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   MS_EXCEPTION_IF_NULL(out);
   auto input = GetDeviceAddress<T1>(inputs, kIndex0);
   MS_EXCEPTION_IF_NULL(input);
-  if (sta.out_height == sta.in_height && sta.out_width == sta.in_width) {
+  if (state_info_.out_height == state_info_.in_height && state_info_.out_width == state_info_.in_width) {
     auto task = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; ++i) {
         out[i] = static_cast<T2>(input[i]);
       }
     };
-    ParallelLaunchAutoSearch(task, static_cast<size_t>(sta.bchw_size), this, &parallel_search_info_);
+    ParallelLaunchAutoSearch(task, static_cast<size_t>(state_info_.bchw_size), this, &parallel_search_info_);
   } else {
-    interpolate_with_caching(input, half_pixel_centers, out);
+    InterpolateWithCache(input, out);
   }
 
   return true;
