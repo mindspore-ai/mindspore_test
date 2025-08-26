@@ -49,6 +49,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/add_rms_norm_quant_fusion.cc"
         "./ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.cc"
         "./ir_fusion_infer/add_cast_rms_norm_cast_fusion.cc"
+        "./ir_fusion_infer/addext_cast_rms_norm_cast_fusion.cc"
         "./ir_fusion_infer/matmul_allreduce_fusion.cc"
         "./ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.cc"
         "./ir_fusion_infer/qbmm_allreduce_convert_bias.cc"
@@ -61,6 +62,10 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/transpose_batch_matmul_transpose_fusion.cc"
         "./ir_fusion_infer/moe_init_routing_dyn_quantv2_fusion.cc"
         "./enhancer/eliminate_maketuple_getitem.cc"
+        "./ir_fusion_infer/matmul_split_base.cc"
+        "./ir_fusion_infer/matmul_split_fusion.cc"
+        "./ir_fusion_infer/matmul_add_split_fusion.cc"
+        "./ir_fusion_infer/matmul_addext_split_fusion.cc"
         )
 
 set_property(SOURCE ${MS_OPTIMIZER_910B} PROPERTY COMPILE_DEFINITIONS
