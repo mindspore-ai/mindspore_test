@@ -9,9 +9,10 @@ mindspore.lazy_inline
     详细功能说明可参考 `使用lazy_inline装饰器 <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph_expert_programming.html#%E4%BD%BF%E7%94%A8lazy-inline%E8%A3%85%E9%A5%B0%E5%99%A8>`_ 。
 
     .. warning::
-        该特性仅支持Ascend，其他硬件不支持。
-        cell的construct函数参数必须是位置参数或者关键字参数，且不能有默认值。
-        lazy inline 装饰的cell不包含控制流。
+        - 该特性仅支持Ascend，其他硬件不支持。
+        - cell的construct函数参数必须是位置参数或者关键字参数，且不能有默认值。
+        - lazy inline 装饰的cell不包含控制流。
+        - 梯度累加场景下，推荐使用@lazy_inline装饰器来缩短编译时间，并且仅支持将@lazy_inline装饰器配置在最外层的Cell上。
 
     参数：
         - **fn** (function) - cell的 `__init__` 函数。
