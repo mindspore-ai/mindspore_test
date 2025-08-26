@@ -1,14 +1,14 @@
 mindspore.parallel.strategy.get_strategy_metadata
 ============================================================================
 
-.. py:function:: mindspore.parallel.strategy.get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[LayoutInfo]]]
+.. py:function:: mindspore.parallel.strategy.get_strategy_metadata(network, rank_id=None)
 
     获取当前网络的所有卡的在线策略信息。
     关于 `Layout` 的解释，请参考 :class:`mindspore.parallel.Layout`。
 
     参数：
         - **network** (str) - 训练网络的名称。
-        - **rank_id** (int, optional) - 指定卡号。默认为 ``None``，表示返回所有卡的策略。
+        - **rank_id** (int, 可选) - 指定卡号。默认为 ``None``，表示返回所有卡的策略。
 
     返回：
         Dict，返回一个字典，包含所有卡或特定卡的参数切分策略信息。
