@@ -32,7 +32,6 @@
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "ops/base_operator.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"

@@ -31,7 +31,6 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "ops/base_operator.h"
 #include "infer/list_to_tensor.h"
 #include "ops/primitive_c.h"
 #include "infer/ops_func_impl/tuple_to_tensor.h"

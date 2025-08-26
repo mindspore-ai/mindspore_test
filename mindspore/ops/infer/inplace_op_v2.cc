@@ -32,7 +32,6 @@
 #include "mindapi/base/macros.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "ops/base_operator.h"
 #include "infer/inplace_update_v2.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

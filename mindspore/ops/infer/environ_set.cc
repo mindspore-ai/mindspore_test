@@ -27,7 +27,6 @@
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "ops/base_operator.h"
 #include "utils/symbolic.h"
 #include "ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"

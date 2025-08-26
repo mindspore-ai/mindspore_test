@@ -27,7 +27,6 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
-#include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

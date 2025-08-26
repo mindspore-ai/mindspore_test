@@ -33,7 +33,6 @@
 #include "ir/value.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/parse_base.h"
 #include "utils/log_adapter.h"
-#include "utils/anf_utils.h"
 #include "ops_utils/op_utils.h"
 #include "ops/op_def.h"
 

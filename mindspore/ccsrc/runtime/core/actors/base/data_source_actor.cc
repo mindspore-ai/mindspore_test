@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@
 #include "runtime/core/actors/base/debug_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "utils/phase.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

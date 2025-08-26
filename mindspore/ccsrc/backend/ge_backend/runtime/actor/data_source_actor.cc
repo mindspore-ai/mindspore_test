@@ -21,7 +21,6 @@
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "utils/phase.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
