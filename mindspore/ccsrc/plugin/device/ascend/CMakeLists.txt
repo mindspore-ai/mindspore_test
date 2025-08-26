@@ -117,8 +117,3 @@ target_link_libraries(mindspore_ascend PRIVATE ${RUNTIME_LIB} ${TSDCLIENT} ${DAT
         ${PROFILING} ${CANN_KB} ${COMPRESS} ${OPSKERNEL} ${HOST_CPU_ENGINE} ${SLICE} ${AOE_EXECUTOR}
         ${ACL_DVPP_OP} ${ACL_DVPP_MPI})
 target_link_libraries(mindspore_ascend PRIVATE ${adump_server})
-
-if(ENABLE_MPI)
-    set_target_properties(_ascend_mpi PROPERTIES INSTALL_RPATH
-        ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/)
-endif()
