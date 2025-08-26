@@ -28,7 +28,6 @@
 #include "mindspore/ops/infer/apply_adagrad_v2.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/curand.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"

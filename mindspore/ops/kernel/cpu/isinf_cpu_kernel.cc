@@ -16,7 +16,6 @@
 
 #include "kernel/cpu/isinf_cpu_kernel.h"
 #include <cmath>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

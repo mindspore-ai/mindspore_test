@@ -24,7 +24,6 @@
 #include <functional>
 #include <map>
 #include "mindspore/ops/infer/data_format_vec_permute.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

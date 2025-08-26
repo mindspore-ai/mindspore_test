@@ -29,7 +29,6 @@
 #include "ir/manager.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "base/base_ref_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"

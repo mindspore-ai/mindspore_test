@@ -17,7 +17,6 @@
 #include "runtime/core/actors/control_flow/switch_actor.h"
 #include "runtime/core/actors/control_flow/entrance_actor.h"
 #include "plugin/cpu/kernel_executor/pyexecute/py_execute_cpu_kernel.h"
-#include "abstract/utils.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "utils/log_adapter.h"

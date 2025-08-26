@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <map>
 #include "mindapi/base/type_id.h"
-#include "abstract/utils.h"
 #include "abstract/abstract_value.h"
 #include "base/complex_storage.h"
 #include "utils/log_adapter.h"

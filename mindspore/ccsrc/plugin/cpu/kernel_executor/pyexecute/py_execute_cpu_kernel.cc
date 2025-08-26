@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "abstract/utils.h"
 #include "ir/anf.h"
 #include "plugin/device/cpu/kernel/cpu_common.h"
 #include "include/common/fallback.h"

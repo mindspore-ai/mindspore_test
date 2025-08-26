@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/celu_impl.cuh"
 
 namespace mindspore {

@@ -26,7 +26,6 @@
 #include <utility>
 #include <vector>
 
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/fill_diagonal.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_diagonal_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"

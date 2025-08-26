@@ -17,7 +17,6 @@
 #include "kernel/cpu/assert_cpu_kernel.h"
 #include <utility>
 #include <algorithm>
-#include "abstract/utils.h"
 namespace mindspore {
 namespace kernel {
 namespace assert_cpu {

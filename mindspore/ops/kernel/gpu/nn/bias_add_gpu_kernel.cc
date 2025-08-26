@@ -17,7 +17,6 @@
 #include "kernel/gpu/nn/bias_add_gpu_kernel.h"
 
 #include <map>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

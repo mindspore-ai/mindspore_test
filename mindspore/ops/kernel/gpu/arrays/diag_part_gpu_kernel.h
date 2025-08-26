@@ -27,7 +27,6 @@
 #include <vector>
 #include <complex>
 
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/diag_part.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/diag_part_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"

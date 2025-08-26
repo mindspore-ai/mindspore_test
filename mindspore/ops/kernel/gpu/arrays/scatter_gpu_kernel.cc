@@ -15,7 +15,6 @@
  */
 
 #include "kernel/gpu/arrays/scatter_gpu_kernel.h"
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

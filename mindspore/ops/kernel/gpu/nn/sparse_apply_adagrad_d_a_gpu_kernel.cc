@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "abstract/utils.h"
 
 #include "kernel/gpu/nn/sparse_apply_adagrad_d_a_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_apply_adagrad_d_a_impl.cuh"

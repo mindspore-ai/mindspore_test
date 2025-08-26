@@ -22,7 +22,6 @@
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"

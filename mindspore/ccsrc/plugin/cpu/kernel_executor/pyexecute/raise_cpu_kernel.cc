@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "abstract/utils.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/log_adapter.h"

@@ -18,7 +18,6 @@
 #include <utility>
 #include <memory>
 #include <algorithm>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

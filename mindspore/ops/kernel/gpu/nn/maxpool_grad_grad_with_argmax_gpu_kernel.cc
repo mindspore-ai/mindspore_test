@@ -17,7 +17,6 @@
 #include "kernel/gpu/nn/maxpool_grad_grad_with_argmax_gpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_grad_grad_with_argmax_impl.cuh"
 

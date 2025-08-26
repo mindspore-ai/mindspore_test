@@ -23,7 +23,6 @@
 #include "include/curand.h"
 #include "ir/dtype/empty.h"
 #include "mindspore/ops/infer/grad/multi_margin_loss_grad.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/multi_margin_loss_grad_impl.cuh"
 
 namespace mindspore {
