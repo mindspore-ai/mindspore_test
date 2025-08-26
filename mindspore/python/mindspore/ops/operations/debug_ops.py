@@ -610,6 +610,7 @@ class Morph(PrimitiveWithInfer):
 
         if bprop_fn:
             self._check_fn_supported(fn)
+
             class InnerNet(Cell):
                 """
                 Inner net that wraps fn and bprop inside.
@@ -623,6 +624,9 @@ class Morph(PrimitiveWithInfer):
 
                 @wraps(bprop_fn)
                 def bprop(self, *args):
+                    """
+                    Bprop function of Morph.
+                    """
                     return bprop_fn(*args)
 
             self.add_prim_attr('__metamorphosis__', InnerNet())
