@@ -56,7 +56,6 @@ namespace mindspore {
 using tensor::TensorPtr;
 namespace runtime {
 namespace {
-constexpr auto kParameterDeviceUserDataName = "parameter_device";
 
 KernelTensorPtr CreateKernelTensorForScalarAndString(const DeviceContext *device_context,
                                                      const ValueNodePtr &value_node) {
@@ -107,7 +106,7 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
   if (origin_device_context == nullptr) {
     return origin_device_context;
   }
-  auto device_str = DeviceAddressUtils::GetParameterDeviceStr(node);
+  auto device_str = AnfAlgo::GetParameterDeviceStr(node);
   if (device_str.empty()) {
     return origin_device_context;
   }
@@ -122,28 +121,6 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
   }
 }
 }  // namespace
-
-std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
-  constexpr auto kParameterDeviceUserDataName = "parameter_device";
-  if (!node->isa<Parameter>()) {
-    return "";
-  }
-  const auto &parameter = node->cast<ParameterPtr>();
-  MS_EXCEPTION_IF_NULL(parameter);
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return "";
-  }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return "";
-  }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
-  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
-    return "";
-  }
-  return py::cast<std::string>(user_data->obj);
-}
 
 bool DeviceAddressUtils::NodeDeviceAddressExist(const DeviceContext *device_context, const AnfNodePtr &node,
                                                 size_t index) {

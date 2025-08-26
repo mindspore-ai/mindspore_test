@@ -16,18 +16,76 @@
 
 #include "plugin/ascend/graph_optimizer/pass/heterogeneous/insert_move_to.h"
 
+#include <utility>
+#include <stack>
+#include <memory>
+#include <algorithm>
+
 #include "plugin/ascend/graph_optimizer/pass/heterogeneous/move_to_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/offload_context.h"
-#include "frontend/ir/tensor_py.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace opt {
-constexpr auto kParamterDiskUserDataName = "parameter_device";
+namespace {
+std::vector<std::pair<CNodePtr, size_t>> GetAllUserNode(const AnfNodePtr &node, int index,
+                                                        const NodeUsersMap &node_users,
+                                                        const mindspore::HashMap<CNodePtr, size_t> &node_exec_order) {
+  std::vector<std::pair<CNodePtr, size_t>> ret;
+  std::stack<std::pair<AnfNodePtr, int>> to_visit;
+  std::stack<int> make_tuple_idx;
+  to_visit.emplace(node, index);
+  while (!to_visit.empty()) {
+    auto [user, idx] = to_visit.top();
+    to_visit.pop();
+    if (IsPrimitiveCNode(user, prim::kPrimMakeTuple)) {
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+      make_tuple_idx.push(idx);
+    } else if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem)) {
+      const auto get_item_idx = common::AnfAlgo::GetTupleGetItemOutIndex(user->cast<CNodePtr>());
+      if (SizeToInt(get_item_idx) != make_tuple_idx.top()) {
+        continue;
+      }
+      make_tuple_idx.pop();
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+    } else if (IsPrimitiveCNode(user, prim::kPrimDepend) || IsPrimitiveCNode(user, prim::kPrimLoad)) {
+      if (idx != kIndex1) {
+        continue;
+      }
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+    } else {
+      const auto &exec_idx_iter = node_exec_order.find(user->cast<CNodePtr>());
+      if (exec_idx_iter == node_exec_order.end()) {
+        continue;
+      }
+      ret.emplace_back(exec_idx_iter->first, exec_idx_iter->second);
+    }
+  }
+  return ret;
+}
+}  // namespace
 
 bool InsertMoveTo::Run(const FuncGraphPtr &graph) {
   Init(graph);
@@ -57,56 +115,86 @@ bool InsertMoveTo::BackendInlineNode(const CNodePtr &node) {
 }
 
 void InsertMoveTo::CollectOffloadedParameter() {
-  const auto &execution_order = kernel_graph_->execution_order();
-  for (size_t execution_idx = 0; execution_idx < execution_order.size(); ++execution_idx) {
-    auto cnode = execution_order[execution_idx];
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (BackendInlineNode(cnode)) {
+  const std::vector<CNodePtr> &exec_order = kernel_graph_->execution_order();
+  mindspore::HashMap<CNodePtr, size_t> node_exec_order;
+  for (size_t idx = 0; idx < exec_order.size(); idx += 1) {
+    node_exec_order[exec_order[idx]] = idx;
+  }
+  const auto &node_users = manager_->node_users();
+  const auto &parameters = kernel_graph_->parameters();
+  for (const auto &node : parameters) {
+    const auto &parameter = node->cast<ParameterPtr>();
+    auto device_str = AnfAlgo::GetParameterDeviceStr(parameter);
+    if (device_str.empty() || device_str != kToCpu) {
       continue;
     }
-    const size_t input_size = common::AnfAlgo::GetInputTensorNum(cnode);
-    for (size_t idx = 1; idx <= input_size; ++idx) {
-      auto kernel_with_idx = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(idx), 0, true);
-      auto input = kernel_with_idx.first;
-      if (input == nullptr || !input->isa<Parameter>()) {
+    const auto &users_iter = node_users.find(parameter);
+    if (users_iter == node_users.end()) {
+      continue;
+    }
+    for (const auto &[user_node, user_idx] : users_iter->second) {
+      const auto &user_cnode = user_node->cast<CNodePtr>();
+      if (user_cnode == nullptr) {
         continue;
       }
-      auto parameter = input->cast<ParameterPtr>();
-      const auto value = parameter->default_param();
-      if (value == nullptr) {
+      if (BackendInlineNode(user_cnode)) {
+        MS_LOG(WARNING) << "Skip backend inline node: " << user_cnode->DebugString();
         continue;
       }
-      const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-      if (meta_tensor == nullptr) {
-        continue;
+      const auto &exec_iter = node_exec_order.find(user_node->cast<CNodePtr>());
+      if (exec_iter != node_exec_order.end()) {
+        const auto is_side_effect = common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, user_cnode) &&
+                                    common::AnfAlgo::GetNodeAttr<bool>(user_cnode, GRAPH_FLAG_SIDE_EFFECT_MEM);
+        OffloadParamInfo info{user_cnode,        IntToSize(user_idx), exec_iter->second,
+                              exec_iter->second, is_side_effect,      device_str};
+        MS_LOG(INFO) << "Offloaded parameter is used by " << user_cnode->fullname_with_scope()
+                     << ", input index: " << user_idx << ", kernel execution order: " << exec_iter->second
+                     << ", side effect: " << is_side_effect;
+        offloaded_parameters_[parameter].emplace_back(info);
+      } else {
+        if (IsPrimitiveCNode(user_node, prim::kPrimLoad)) {
+          auto depend_prim = NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name()));
+          manager_->SetEdge(user_node, kIndex0, depend_prim);
+          user_node->cast<CNodePtr>()->AddAttr("changed_from_load", MakeValue(true));
+        }
+        const auto &all_exec_user = GetAllUserNode(user_node, user_idx, node_users, node_exec_order);
+        if (all_exec_user.empty()) {
+          continue;
+        }
+        size_t first_execution_order = exec_order.size();
+        size_t last_side_effect_execution_order = kIndex0;
+        bool side_effect = false;
+        for (const auto &[n, i] : all_exec_user) {
+          if (i < first_execution_order) {
+            first_execution_order = i;
+          }
+          const auto is_side_effect = common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, n) &&
+                                      common::AnfAlgo::GetNodeAttr<bool>(n, GRAPH_FLAG_SIDE_EFFECT_MEM);
+          if (is_side_effect && i > last_side_effect_execution_order) {
+            last_side_effect_execution_order = i;
+            side_effect = true;
+          }
+        }
+        OffloadParamInfo info{user_cnode,  IntToSize(user_idx), first_execution_order, last_side_effect_execution_order,
+                              side_effect, device_str};
+        MS_LOG(INFO) << "Offloaded parameter is used by " << user_cnode->fullname_with_scope()
+                     << ", input index: " << user_idx
+                     << ", first user kernel execution order: " << first_execution_order << "["
+                     << exec_order[first_execution_order] << "], side effect: " << side_effect
+                     << (side_effect ? ", last side effect user: " +
+                                         exec_order[last_side_effect_execution_order]->fullname_with_scope()
+                                     : ".");
+        offloaded_parameters_[parameter].emplace_back(info);
       }
-      const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDiskUserDataName);
-      if (user_data == nullptr) {
-        continue;
-      }
-      if (!py::isinstance<py::str>(user_data->obj)) {
-        continue;
-      }
-      std::string device_str = py::cast<std::string>(user_data->obj);
-      if (device_str.empty() || device_str == "Npu") {
-        continue;
-      }
-      const auto is_side_effect = common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, cnode) &&
-                                  common::AnfAlgo::GetNodeAttr<bool>(cnode, GRAPH_FLAG_SIDE_EFFECT_MEM);
-      OffloadParamInfo info{cnode, idx, execution_idx, is_side_effect, device_str};
-      MS_LOG(INFO) << "Offloaded parameter is used by " << cnode->fullname_with_scope() << ", input index: " << idx
-                   << ", kernel execution order: " << execution_idx << ", side effect: " << is_side_effect;
-      offloaded_parameters_[parameter].emplace_back(info);
     }
   }
 }
 
 CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const OffloadParamInfo &info) const {
   MS_EXCEPTION_IF_NULL(parameter);
-
   // Get control previous and following node.
   const auto pre_load_execution_order_l =
-    info.execution_order_ > load_lead_dh_ ? info.execution_order_ - load_lead_dh_ : 0;
+    info.first_execution_order_ > load_lead_dh_ ? info.first_execution_order_ - load_lead_dh_ : 0;
   auto pre_node = kernel_graph_->execution_order()[pre_load_execution_order_l];
   if (pre_node == info.user_node_) {
     pre_node = nullptr;
@@ -123,7 +211,7 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
 
   if (info.offload_device_ == kToDisk) {
     const auto load_lead = load_lead_dh_ + load_lead_hf_;
-    const auto l = info.execution_order_ > load_lead ? info.execution_order_ - load_lead : 0;
+    const auto l = info.first_execution_order_ > load_lead ? info.first_execution_order_ - load_lead : 0;
     const auto l_node = kernel_graph_->execution_order()[l];
     MS_EXCEPTION_IF_NULL(l_node);
     const auto r = l + 1;
@@ -142,15 +230,16 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
 void InsertMoveTo::InsertParamMoveAssign(const ParameterPtr &parameter, const OffloadParamInfo &info,
                                          const CNodePtr &move_to) const {
   MS_EXCEPTION_IF_NULL(parameter);
-
-  auto next_node = kernel_graph_->get_return();
   const auto &execution_order = kernel_graph_->execution_order();
-  if (info.execution_order_ + 1 < execution_order.size()) {
-    next_node = execution_order[info.execution_order_ + 1];
+  auto pre_node = execution_order[info.last_side_effect_execution_order_];
+  MS_EXCEPTION_IF_NULL(pre_node);
+  auto next_node = kernel_graph_->get_return();
+  if (info.last_side_effect_execution_order_ + 1 < execution_order.size()) {
+    next_node = execution_order[info.last_side_effect_execution_order_ + 1];
   }
   MS_EXCEPTION_IF_NULL(next_node);
 
-  const MoveAssignInfo move_assign_info{info.offload_device_.c_str(), parameter, move_to, info.user_node_, next_node};
+  const MoveAssignInfo move_assign_info{info.offload_device_.c_str(), parameter, move_to, pre_node, next_node};
   const auto &move_assign_node = MoveToUtils::InsertMoveAssign(kernel_graph_, move_assign_info);
   MS_EXCEPTION_IF_NULL(move_assign_node);
 
@@ -176,18 +265,23 @@ bool InsertMoveTo::HandleParameter() {
   for (const auto &iter : offloaded_parameters_) {
     auto parameter = iter.first;
     MS_EXCEPTION_IF_NULL(parameter);
-    auto parameter_abstract = parameter->abstract();
     CNodePtr move_to = nullptr;
     size_t pre_user_idx = kIndex0;
-    OffloadParamInfo last_size_effect_user;
-    for (const auto &user : iter.second) {
-      if (move_to == nullptr || user.execution_order_ - pre_user_idx > kReuseThreshold) {
+    OffloadParamInfo last_size_effect_user{nullptr, kIndex0, kIndex0, kIndex0, false, ""};
+    auto offload_info = iter.second;
+    const auto &compare = [](const OffloadParamInfo &l, const OffloadParamInfo &r) {
+      return l.first_execution_order_ < r.first_execution_order_;
+    };
+    std::sort(offload_info.begin(), offload_info.end(), compare);
+    for (const auto &user : offload_info) {
+      if (move_to == nullptr || user.first_execution_order_ - pre_user_idx > kReuseThreshold) {
         move_to = InsertParamMoveTo(parameter, user);
       } else {
         manager_->SetEdge(user.user_node_, SizeToInt(user.input_index_), move_to);
       }
-      pre_user_idx = user.execution_order_;
-      if (user.side_effect_) {
+      pre_user_idx = user.first_execution_order_;
+      if (user.side_effect_ &&
+          user.last_side_effect_execution_order_ > last_size_effect_user.last_side_effect_execution_order_) {
         last_size_effect_user = user;
       }
       changed = true;

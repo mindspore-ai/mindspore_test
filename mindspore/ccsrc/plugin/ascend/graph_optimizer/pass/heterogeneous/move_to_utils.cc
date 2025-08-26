@@ -60,6 +60,7 @@ CNodePtr MoveToUtils::InsertMoveTo(const KernelGraphPtr &kernel_graph, const Mov
       NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())), to_input, info.control_previous_node_};
     auto move_to_depend_node = kernel_graph->NewCNode(move_to_depend_input);
     MS_EXCEPTION_IF_NULL(move_to_depend_node);
+    move_to_depend_node->AddAttr("move_to_pre_control", MakeValue(true));
     move_to_depend_node->set_scope(to_input->scope());
     move_to_depend_node->set_abstract(to_input->abstract());
     to_input = move_to_depend_node;
@@ -117,6 +118,7 @@ CNodePtr MoveToUtils::InsertMoveAssign(const KernelGraphPtr &kernel_graph, const
                                                   info.value_, info.control_previous_node_};
     auto input_depend_node = kernel_graph->NewCNode(input_depend_input);
     MS_EXCEPTION_IF_NULL(input_depend_node);
+    input_depend_node->AddAttr("move_assign_pre_control", MakeValue(true));
     input_depend_node->set_scope(info.control_previous_node_->scope());
     input_depend_node->set_abstract(info.value_->abstract());
     value_input = input_depend_node;
@@ -156,6 +158,7 @@ CNodePtr MoveToUtils::InsertDependNode(const KernelGraphPtr &kernel_graph, const
                                                 origin_input, pre_node};
   auto depend_node = kernel_graph->NewCNode(depend_input);
   MS_EXCEPTION_IF_NULL(depend_node);
+  depend_node->AddAttr("move_post_control", MakeValue(true));
   depend_node->set_scope(post_node->scope());
   depend_node->set_abstract(origin_input->abstract());
   auto manager = kernel_graph->manager();

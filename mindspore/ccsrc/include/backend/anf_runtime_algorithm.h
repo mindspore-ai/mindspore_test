@@ -347,6 +347,9 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                             const ShapeVector &host_shape, const string &device_name,
                                             uint32_t device_id, const UserDataPtr &user_data = nullptr);
+
+  // Get device attr string from Parameter.
+  static std::string GetParameterDeviceStr(const mindspore::AnfNodePtr &node);
   // check if is GE backend
   static bool IsBackendGe();
   // check if is ms_backend backend

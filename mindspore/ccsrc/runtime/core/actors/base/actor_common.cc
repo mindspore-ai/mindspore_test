@@ -1096,8 +1096,9 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
   }
 }
 
-void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &tensor_address,
-                               const KernelTensorPtr &kernel_tensor, const device::DeviceAddressPtr &device_address) {
+device::DeviceAddressPtr PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &tensor_address,
+                                                   const KernelTensorPtr &kernel_tensor,
+                                                   const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(tensor_address);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -1111,15 +1112,26 @@ void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &t
   }
   auto allocator = device_address->allocator();
   const auto size = device_address->GetSize();
-  if (device_address->GetDeviceType() == device::DeviceType::kCPU && allocator != nullptr) {
-    tensor_address->set_allocator(allocator);
-    auto pin_mem_ptr = allocator->Alloc(size, kDefaultStreamIndex);
-    if (pin_mem_ptr != nullptr) {
-      memcpy_s(pin_mem_ptr, size, tensor_address->GetPtr(), size);
-    }
-    tensor_address->set_ptr(pin_mem_ptr);
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU || allocator == nullptr) {
+    return tensor_address;
   }
+
+  auto pinned_tensor_address = std::static_pointer_cast<device::DeviceAddress>(
+    MakeDeviceAddress(tensor_address->type_id(), tensor_address->GetShapeVector(), false, device::DeviceType::kCPU));
+  pinned_tensor_address->set_allocator(allocator);
+  auto pin_mem_ptr = allocator->Alloc(size, kDefaultStreamIndex);
+  if (pin_mem_ptr != nullptr && tensor_address->GetPtr() != nullptr) {
+    errno_t ret = memcpy_s(pin_mem_ptr, size, tensor_address->GetPtr(), size);
+    if (ret != EOK) {
+      MS_LOG(EXCEPTION) << "Copy from origin host ptr[" << tensor_address->GetPtr() << "] to pin memory[" << pin_mem_ptr
+                        << "failed, size: " << size;
+    }
+  }
+  pinned_tensor_address->set_ptr(pin_mem_ptr);
+  tensor->set_device_address(pinned_tensor_address);
   kernel_tensor->set_device_address(tensor_address);
+  MS_LOG(INFO) << "User pin memory for offloaded parameter.";
+  return pinned_tensor_address;
 }
 
 void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
@@ -1155,8 +1167,10 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   }
   auto device_tensor = kernel_tensor->device_address();
 
-  if (graph_parameter_store->GetOffloaded(outer_index, inner_index)) {
-    PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
+  if (graph_parameter_store->GetOffloaded(outer_index, inner_index) &&
+      !graph_parameter_store->GetPinned(outer_index, inner_index)) {
+    tensor_address = PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
+    graph_parameter_store->SetPinned(outer_index, inner_index, true);
     MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
   }
   if (tensor_address->GetDeviceType() != graph_parameter_store->GetParameterDeviceType(outer_index, inner_index)) {

@@ -35,6 +35,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"
@@ -2913,6 +2914,28 @@ kernel::KernelAttr AnfRuntimeAlgorithm::GetKernelAttrFromNode(const AnfNodePtr &
   MS_EXCEPTION_IF_NULL(kernel_node);
   auto build_info = GetSelectKernelBuildInfo(kernel_node);
   return GetKernelAttrFromBuildInfo(build_info);
+}
+
+std::string AnfRuntimeAlgorithm::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
+  constexpr auto kParameterDeviceUserDataName = "parameter_device";
+  if (!node->isa<Parameter>()) {
+    return "";
+  }
+  const auto &parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return "";
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return "";
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPyUserData>(kParameterDeviceUserDataName);
+  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
+    return "";
+  }
+  return py::cast<std::string>(user_data->obj);
 }
 
 bool AnfRuntimeAlgorithm::IsBackendGe() {
