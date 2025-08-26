@@ -9,6 +9,9 @@ mindspore/mindspore/ccsrc/minddata/dataset/engine/datasetops/data_queue_op.cc:mi
 mindspore/mindspore/ccsrc/minddata/dataset/core/tensor_row.cc:mindspore::dataset::RowTimer::Summary
 mindspore/mindspore/ccsrc/minddata/dataset/audio/kernels/audio_utils.h:mindspore::dataset::Vad
 mindspore/mindspore/python/mindspore/dataset/engine/datasets.py:_worker_loop
+mindspore/mindspore/python/mindspore/dataset/dataloader/_utils/collate.py:default_convert, collate
+mindspore/mindspore/python/mindspore/dataset/dataloader/_utils/pin_memory.py:pin_memory_fn
+mindspore/mindspore/python/mindspore/dataset/dataloader/dataloader.py:__init__
 mindspore/mindspore/python/mindspore/mindrecord/filewriter.py:write_raw_data, _parallel_commit
 mindspore/mindspore/core/abstract/ops/primitive_infer_map.cc:mindspore::abstract::GetPrimitiveInferMap
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::NewData
