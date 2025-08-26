@@ -38,6 +38,7 @@
 #include "plugin/ascend/res_manager/error_manager/param_restore.h"
 #include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
+#include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
@@ -1000,33 +1001,6 @@ void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
   }
   graph->set_execution_order(execution_order);
 }
-
-void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream) {
-  for (const auto &node : weights) {
-    if (!node->isa<Parameter>()) {
-      continue;
-    }
-    auto param = node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param);
-    if (common::AnfAlgo::IsParameterWeight(param)) {
-      auto tensor = param->default_param()->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      auto out_addr = AnfAlgo::GetMutableOutputAddr(param, 0, false);
-      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
-        // skip async copy if addr is nullptr.
-        // special format need convert to default format at host, so skip async copy if format is a special format.
-        continue;
-      }
-      auto size = tensor->Size();
-      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, tensor->data_c(), size, out_addr->GetMutablePtr(), size,
-                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
-      if (ret != ACL_ERROR_NONE) {
-        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
-      }
-      tensor->set_copy_done_flag(true);
-    }
-  }
-}
 }  // namespace
 
 void AscendKernelExecutor::Initialize() {
@@ -1329,34 +1303,29 @@ bool AscendKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vect
 }
 
 void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
-  static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
-  if (MS_LIKELY(disable_ckpt_d2h_async)) {
+  if (!IsGraphPipelineCompiled()) {
     return;
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto need_async_ckpt = ms_context->get_param<bool>(MS_CTX_NEED_CKPT);
-  if (!IsGraphPipelineCompiled() || !need_async_ckpt) {
-    return;
-  }
+
   MS_EXCEPTION_IF_NULL(kernel);
   auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
-  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
-  auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
-  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
-  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
-                << ", last_triggered_step:" << last_triggered_step;
-  if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
-    AscendResManager *ascend_res_manager = dynamic_cast<AscendResManager *>(res_manager_);
-    if (SkipOrResetCopyAction()) {
-      MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), ascend_res_manager->GetCopyDataStream());
-    }
-    if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
-        common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
-      MS_LOG(INFO) << "Ref op sync once action";
-      AscendStreamMng::GetInstance().SyncStream(ascend_res_manager->GetCopyDataStream());
-    }
+  if (kg == nullptr) {
+    return;
+  }
+
+  if (!tools::ascend::NeedSaveAsyncCkpt() && !tools::ascend::NeedSaveSnapshot()) {
+    return;
+  }
+
+  AscendResManager *ascend_res_manager = dynamic_cast<AscendResManager *>(res_manager_);
+  if (!tools::ascend::AscendSnapshotMgr::GetInstance()->IsSavingSnapshot()) {
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SetSavingSnapshot(true);
+    MS_LOG(INFO) << "Enable async d2h copy";
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SaveParameters(kg->GetRootWeights(),
+                                                                    ascend_res_manager->GetCopyDataStream());
+    tools::ascend::AscendSnapshotMgr::GetInstance()->RecordEvent(ascend_res_manager->GetCopyDataStream());
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SaveLastSaveStep(
+      MsContext::GetInstance()->get_param<int>(MS_CTX_CUR_STEP_NUM));
   }
 }
 
@@ -1383,17 +1352,29 @@ bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vecto
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
     }
 
+    auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
+    bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
+    if (MS_UNLIKELY(tools::ascend::NeedSaveAsyncCkpt() || tools::ascend::NeedSaveSnapshot())) {
+      if (is_opt_start_kernel) {
+        tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
+        tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
+      }
+    }
+    if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
+      // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
+      return true;
+    }
+
+    bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
     if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
-      bool is_opt_start_kernel = OptimizerEventInfo::GetInstance().IsOptimizerStartKernelMod(kernel_mod, kernel);
-      bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
       if (is_opt_start_kernel || is_opt_end_kernel) {
         // insert event for optimizer start and end
         OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
       }
-      if (is_opt_end_kernel) {
-        // skip execute TensorReport op at the end of optimzer, it is just used as a tag
-        return true;
-      }
+    }
+    if (is_opt_end_kernel) {
+      // skip execute TensorReport op at the end of optimzer, it is just used as a tag
+      return true;
     }
 
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);

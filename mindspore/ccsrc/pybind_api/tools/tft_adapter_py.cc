@@ -18,12 +18,15 @@
 #include "include/common/pybind_api/api_register.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/error_handler/exit_handler.h"
+#include "include/common/utils/tensor_py.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "ir/tensor_new.h"
+#include "tools/error_handler/error_handler.h"
 
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
@@ -269,6 +272,69 @@ void RePreLaunchSendRecv(int32_t device_id) {
   MS_LOG(WARNING) << "Pre-launch send recv success";
 }
 
+int RegSnapshotParams(const std::map<std::string, py::object> &param_dict) {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto &mem_ckpt_params = tools::SnapshotMgr::GetInstance(device_name)->GetSavedParams();
+  if (!mem_ckpt_params.empty()) {
+    // parameters has already been registered
+    MS_LOG(INFO) << "Parameters has already been registered.";
+    return 1;
+  }
+  for (auto &[name, param] : param_dict) {
+    mem_ckpt_params[name] = nullptr;
+    auto tensor = tensor::ConvertToTensor(param);
+    MS_ERROR_IF_NULL(tensor);
+    MS_LOG(DEBUG) << name << " shape: " << tensor->shape_c() << " size: " << tensor->Size();
+  }
+
+  MS_LOG(INFO) << "Parameters has been registered successfully.";
+  return 0;
+}
+
+void ResetSnapshotState() {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  tools::SnapshotMgr::GetInstance(device_name)->Reset();
+}
+
+void ClearSnapshotSavingFlag() {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  tools::SnapshotMgr::GetInstance(device_name)->SetSavingSnapshot(false);
+}
+
+bool IsSnapshotValid() {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  return tools::SnapshotMgr::GetInstance(device_name)->IsSnapshotValid();
+}
+
+std::map<std::string, py::object> GetSnapshotParams() {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto snapshot_mgr = tools::SnapshotMgr::GetInstance(device_name);
+  MS_EXCEPTION_IF_NULL(snapshot_mgr);
+
+  // if parameter snapshot has not been generated, return an empty map
+  if (!snapshot_mgr->IsSnapshotValid()) {
+    return std::map<std::string, py::object>();
+  }
+
+  std::map<std::string, py::object> param_dict;
+  for (auto &[name, tensor] : snapshot_mgr->GetSavedParams()) {
+    if (tensor == nullptr) {
+      MS_LOG(WARNING) << "Value of parameter " << name << " is null, skip it.";
+      continue;
+    }
+    param_dict[name] = tensor::PackTensorToPyObject(tensor);
+  }
+
+  // append step_num to param_dict for resuming training
+  constexpr char kStepNum[] = "step_num";
+  // since snapshot was saved before optimizer, so here minus 1
+  int step_num = snapshot_mgr->LastSaveStep() - 1;
+  auto tensor = tensor::from_buffer(kNumberTypeInt32, ShapeVector{}, &step_num, sizeof(step_num));
+  param_dict[kStepNum] = tensor::PackTensorToPyObject(tensor);
+
+  return param_dict;
+}
+
 void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
@@ -295,5 +361,12 @@ void RegTFT(py::module *m) {
   (void)m->def("set_is_reboot_node", &SetIsRebootNode, "Set reboot node flag for arf.");
   (void)m->def("check_is_arf", &GetIsArf, "Get arf flag.");
   (void)m->def("set_is_arf", &SetIsArf, "Set arf flag.");
+  (void)m->def("_reg_snapshot_params", &mindspore::RegSnapshotParams, "Register parameters for snapshot",
+               py::arg("param_dict"));
+  (void)m->def("_reset_snapshot_state", &mindspore::ResetSnapshotState, "Reset snapshot state");
+  (void)m->def("_is_snapshot_valid", &mindspore::IsSnapshotValid,
+               "Return true when snapshot is valid, otherwise false.");
+  (void)m->def("_clear_snapshot_saving_flag", &mindspore::ClearSnapshotSavingFlag, "Clear snapshot saving flag.");
+  (void)m->def("_get_snapshot_params", &mindspore::GetSnapshotParams, "Get parameters from snapshot");
 }
 }  // namespace mindspore

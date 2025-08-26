@@ -33,6 +33,12 @@ namespace mindspore::device::ascend {
 ORIGIN_METHOD(TFT_StartUpdatingOs, int, int64_t);
 const std::pair<string, string> tensorreport_mapping{"ms_tensor_report", "TensorReport"};
 
+enum class OptStartType {
+  OPT_START_TYPE_NONE = 0,  // means not a optimizer start flag
+  OPT_START_TYPE_REPORT,    // start type for reporting info to MINDIO
+  OPT_START_TYPE_SNAPSHOT,  // start type for snapshot
+};
+
 class ASCEND_RES_MANAGER_EXPORT OptimizerEventInfo {
  public:
   static OptimizerEventInfo &GetInstance();
@@ -43,7 +49,7 @@ class ASCEND_RES_MANAGER_EXPORT OptimizerEventInfo {
 
   void GetOptimizerTimestamp(bool is_optimizer_start);
 
-  bool IsOptimizerStartKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel);
+  OptStartType GetOptimizerStartType(kernel::KernelMod *kernel_mod, const CNodePtr &kernel);
 
   bool IsOptimizerEndKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel);
 
@@ -71,6 +77,7 @@ class ASCEND_RES_MANAGER_EXPORT OptimizerEventInfo {
 
   // buffering kernel_mod pointers for speed up
   kernel::KernelMod *optimizer_start_kernel_mod_ = nullptr;
+  OptStartType opt_start_type_ = OptStartType::OPT_START_TYPE_NONE;
   kernel::KernelMod *optimizer_end_kernel_mod_ = nullptr;
 };
 

@@ -29,6 +29,7 @@ from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _f
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import _pre_launch_send_recv
 from mindspore._c_expression import send_recv, reset_params
+from mindspore._c_expression import _reg_snapshot_params, _reset_snapshot_state, _clear_snapshot_saving_flag
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 from mindspore._c_expression import TensorPy as Tensor_
@@ -157,6 +158,7 @@ def _tft_clean_callback(is_uce_error, args, ctx):
     CollectiveManager.get_instance().resume_hccl_comm()
     logger.warning("Finish _tft_clean_callback, ret: {}".format(ret))
     if ctx.tft.tft_get_repair_type() == "recover":
+        _reset_snapshot_state()
         logger.warning(f"Destroy hcom")
         _finalize_comm()
         logger.warning(f"Destroy hcom end")
@@ -328,7 +330,7 @@ class TrainFaultTolerance(Callback):
         # `def load_checkpoint() -> tuple(dict, bool)`, the return value is a tuple containing 2 values,
         # i.e. (param_dict, remove_redundancy)
         self.ckpt_load_func = kwargs.get("ckpt_load_fn", None)
-        if self._only_enable_tre():
+        if self._only_enable_tre() or self._only_enable_ckpt_d2h_async():
             return
         self.tft = _tft_handler.get_tft()
         self._check_init()
@@ -352,7 +354,21 @@ class TrainFaultTolerance(Callback):
         non_tre_flags = ["TTP:1", "UCE:1", "ARF:1"]
         if any(flag in env_enable for flag in non_tre_flags):
             return False
-        return "TRE:1" in env_enable
+        return "TRE:1" in env_enable or "TRE:2" in env_enable
+
+    @staticmethod
+    def _only_enable_ckpt_d2h_async():
+        """Check whether only set MS_ENABLE_CKPT_D2H_ASYNC=1 without setting MS_ENABLE_TFT"""
+        if os.getenv("MS_ENABLE_TFT", "") != "":
+            return False
+        return os.getenv("MS_ENABLE_CKPT_D2H_ASYNC") == "1"
+
+    @staticmethod
+    def _enable_snapshot():
+        """Check whether parameter snapshot enabled"""
+        enable_step_tre = "TRE:2" in os.getenv("MS_ENABLE_TFT", "")
+        enable_ckpt_d2h_async = os.getenv("MS_ENABLE_CKPT_D2H_ASYNC") == "1"
+        return enable_step_tre or enable_ckpt_d2h_async
 
     def _only_enable_tsp(self):
         """Check if only configured MS_ENABLE_TFT='{TSP:1}'"""
@@ -434,7 +450,7 @@ class TrainFaultTolerance(Callback):
                 super(TFTOptSubCls, self).__init__(*args, **kwargs)
                 self.report = TensorReport()
                 self.report_end = TensorReport()
-                self.report_end.add_prim_attr("side_effect_mem", True).add_prim_attr("optimizer_end", True)
+                self.report_end.add_prim_attr("optimizer_end", True)
                 self.depend = ops.Depend()
                 self.allreduce_sum = ops.AllReduce()
                 self.allreduce_sum.add_prim_attr("tft_report_before", True)
@@ -448,7 +464,27 @@ class TrainFaultTolerance(Callback):
                 self.report_end("tft_report", self.tft_g_one_flag)
                 return opt_ret
 
-        return TFTOptSubCls
+        class TFTOptSnapShotCls(origin_opt_cls):
+            """
+            Optimizer wrapper class when using tft.
+            """
+
+            def __init__(self, *args, **kwargs):
+                super(TFTOptSnapShotCls, self).__init__(*args, **kwargs)
+                self.report = TensorReport()
+                self.report.add_prim_attr("side_effect_mem", True).add_prim_attr("snapshot", True)
+                self.dummy_input = Tensor([1], dtype=mstype.int32)
+
+            def construct(self, gradients, **kwargs):
+                """Add fake op TensorReport to insert wait event for copying parameters"""
+                self.report("tft_report", self.dummy_input)
+                opt_ret = super(TFTOptSnapShotCls, self).construct(gradients, **kwargs)
+                return opt_ret
+
+        env_tft = os.getenv('MS_ENABLE_TFT', '')
+        features = ['TTP:1', 'UCE:1', 'ARF:1']
+        need_redundancy = any([env_tft.find(feat) >= 0 for feat in features])
+        return TFTOptSubCls if need_redundancy else TFTOptSnapShotCls
 
     def _tft_register(self):
         """Register callback functions."""
@@ -476,6 +512,17 @@ class TrainFaultTolerance(Callback):
             _clean_rootinfo()
             self.clean_unique_id = True
 
+    def on_train_step_begin(self, run_context):
+        """
+        Clear saving snapshot state at each step begin.
+
+        Args:
+            run_context (RunContext): Context of the train running. Refer to
+                                      :class:`mindspore.train.RunContext` for detail.
+        """
+        if self._enable_snapshot():
+            _clear_snapshot_saving_flag()
+
     def on_train_step_end(self, run_context):
         """
         Report status to MindIO TFT after every step finished.
@@ -484,7 +531,7 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
-        if self._only_enable_tre():
+        if self._only_enable_tre() or self._only_enable_ckpt_d2h_async():
             return
 
         cb_params = run_context.original_args()
@@ -524,10 +571,15 @@ class TrainFaultTolerance(Callback):
             run_context (RunContext): Context of the train running. Refer to
                                       :class:`mindspore.train.RunContext` for detail.
         """
+        cb_params = run_context.original_args()
+        if self._enable_snapshot():
+            param_dict = {}
+            for param in cb_params.train_network.trainable_params():
+                param_dict[param.name] = param
+            _reg_snapshot_params(param_dict)
         if self._only_enable_tsp():
             return
-        cb_params = run_context.original_args()
-        if self._only_enable_tre():
+        if self._only_enable_tre() or self._only_enable_ckpt_d2h_async():
             self.cb_params = cb_params
             return
         sink_size = cb_params.get("sink_size", 0)

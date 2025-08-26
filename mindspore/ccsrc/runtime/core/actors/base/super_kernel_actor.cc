@@ -36,6 +36,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
+#include "tools/error_handler/error_config.h"
 
 namespace mindspore {
 namespace runtime {
@@ -2050,6 +2051,7 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex1),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),
+    tools::TftConfig::IsEnableStepTRE(),
   };
   // When this function returns false, it means performance is not cirtical in this context.
   // Otherwise runtime will launch kernels with high performance.
