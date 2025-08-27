@@ -746,3 +746,28 @@ def test_view_inplace_on_view_base():
     grad_op = ops.GradOperation(get_all=True)
     grad = grad_op(fn)(input_tensor)
     np.allclose(grad[0].asnumpy(), np.array([0.0, 1.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_with_unsafe_view():
+    """
+    Feature: Test view inplace valid.
+    Description: Test reshape ops.
+    Expectation: The calculation result is correct.
+    """
+
+    def fn(input_tensor):
+        x = input_tensor + 1.0
+        x_t = x.transpose(1, 0)
+        x_r = x_t.reshape(1, 4)
+        x_r_v = x_r[0][1]
+        x_r_v.mul_(2.0)
+        return x_r_v
+
+    input_tensor = Tensor(([1.0, 2.0], [1.0, 2.0]))
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_tensor)
+    assert np.allclose(grad.asnumpy(), np.array([[0., 0.], [2., 0.]], dtype=np.float32), 0.000001, 0.000001)

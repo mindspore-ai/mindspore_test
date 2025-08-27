@@ -88,6 +88,10 @@ struct AutoGradUtil {
                                   const tensor::TensorPtr &view_base = nullptr);
   // Multi inputs and multi outputs view op enter here, temp code need discard.
   static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, const ValueTuplePtr &base_view);
+  static ValuePtr MakeOutput(bool requires_grad, const tensor::TensorPtr &output_tensor,
+                             const tensor::TensorPtr &base_view = nullptr);
+  static ValuePtr MakeOutput(bool requires_grad, const std::vector<tensor::TensorPtr> &output_tensors,
+                             const tensor::TensorPtr &base_view = nullptr);
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);

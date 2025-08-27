@@ -85,7 +85,7 @@ def test_transpose_error():
             return self.value.transpose(0, 2, 1)
 
     net = Net()
-    with pytest.raises(ValueError):
+    with pytest.raises((TypeError, ValueError)):
         net()
 
 

@@ -116,6 +116,7 @@ class COMMON_EXPORT AutoGradMetaData : public AutoGradMetaInterface {
     output_index_ = 0;
     input_type_ = InputType::kUnkown;
   }
+  bool is_view() const override { return false; }
   ~AutoGradMetaData() override = default;
 
  private:
@@ -163,6 +164,7 @@ class ViewAutoGradMetaData final : public AutoGradMetaData {
   void set_version_attr(uint32_t version) { version_attr_ = version; }
   CreationType creation_type() { return creation_type_; }
   void set_creation_type(const CreationType &creation_type) { creation_type_ = creation_type; }
+  bool is_view() const override { return true; }
 
  private:
   ViewInfo view_info_;

@@ -713,7 +713,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         if self.ndim <= 1:
             return self
-        return self.transpose()
+        return self.transpose(-1, -2)
 
     @staticmethod
     def from_numpy(array):
@@ -1201,35 +1201,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('angle')(self)
 
-    def view(self, *shape):
-        """
-        Reshape the tensor according to the input shape. It's the same as :func:`mindspore.Tensor.reshape`,
-        implemented by the underlying reshape operator.
-
-        Args:
-            shape (Union[tuple(int), int]): Dimension of the output tensor.
-
-        Returns:
-            Tensor, which dimension is the input shape's value.
-
-        Examples:
-            >>> from mindspore import Tensor
-            >>> import numpy as np
-            >>> a = Tensor(np.array([[1, 2, 3], [2, 3, 4]], dtype=np.float32))
-            >>> output = a.view((3, 2))
-            >>> print(output)
-            [[1. 2.]
-            [3. 2.]
-            [3. 4.]]
-        """
-        if not shape:
-            raise ValueError("The shape variable should not be empty")
-        if isinstance(shape[0], tuple):
-            if len(shape) != 1:
-                raise ValueError(f"Only one tuple is needed, but got {shape}")
-            shape = shape[0]
-        return tensor_operator_registry.get('reshape')(self, shape)
-
     def bitwise_left_shift(self, other):
         """
         For details, please refer to :func:`mindspore.ops.bitwise_left_shift`.
@@ -1261,12 +1232,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.ger`.
         """
         return tensor_operator_registry.get('ger')(self, vec2)
-
-    def broadcast_to(self, shape):
-        """
-        For details, please refer to :func:`mindspore.ops.broadcast_to`.
-        """
-        return tensor_operator_registry.get('broadcast_to')(self, shape)
 
     def real(self):
         r"""
@@ -1498,8 +1463,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             >>> print(output.shape)
             (24,)
         """
-        reshape_op = tensor_operator_registry.get('reshape')
-        return reshape_op(self, (-1,))
+        return self.reshape((-1,))
 
     def rot90(self, k, dims):
         r"""
@@ -1537,15 +1501,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return self._size
 
-    def permute(self, *axis):
-        """
-        Tensor.permute supports unpacking the `axis` argument automatically when it is passed as an indefinite number of
-        positional arguments, which has a slight difference from the input parameter of :func:`mindspore.ops.permute`.
-        For details, please refer to :func:`mindspore.ops.permute`.
-        """
-        perm = validator.check_transpose_axis(axis, self.ndim)
-        return tensor_operator_registry.get('permute')(self, perm)
-
     def positive(self):
         """
         For details, please refer to :func:`mindspore.ops.positive`.
@@ -1581,12 +1536,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.swapdims`.
         """
         return tensor_operator_registry.get('swapdims')(self, dim0, dim1)
-
-    def squeeze(self, axis=None):
-        """
-        For details, please refer to :func:`mindspore.ops.squeeze`.
-        """
-        return tensor_operator_registry.get('squeeze')(self, axis)
 
     def slogdet(self):
         """
@@ -3273,14 +3222,12 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('unfold')(self, kernel_size, dilation, padding, stride)
 
-    def expand(self, size):
+    def expand(self, *size):
         r"""
         For details, please refer to :func:`mindspore.ops.broadcast_to`.
         The parameter `size` of the current interface is the same as the parameter `shape` of the reference interface.
         """
-        if isinstance(size, Tensor):
-            size = tensor_operator_registry.get('tensortotuple')()(size)
-        return tensor_operator_registry.get('expand')(self, size)
+        return self.broadcast_to(*size)
 
     def cumprod(self, dim, dtype=None):
         r"""

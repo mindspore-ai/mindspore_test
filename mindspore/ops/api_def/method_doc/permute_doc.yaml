@@ -1,0 +1,12 @@
+permute:
+    description: |
+        permute(*dims) -> Tensor
+
+        For details, please refer to :func:`mindspore.mint.permute`.
+
+        .. method:: Tensor.permute(*axis) -> Tensor
+              :noindex:
+
+        Tensor.permute supports unpacking the `axis` argument automatically when it is passed as an indefinite number of
+        positional arguments, which has a slight difference from the input parameter of :func:`mindspore.ops.permute`.
+        For details, please refer to :func:`mindspore.ops.permute`.

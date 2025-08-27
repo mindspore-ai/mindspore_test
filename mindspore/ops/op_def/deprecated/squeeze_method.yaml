@@ -1,0 +1,12 @@
+#deprecated squeeze
+squeeze:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+      default: None
+  returns:
+    output:
+      dtype: tensor

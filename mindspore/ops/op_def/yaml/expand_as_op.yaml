@@ -9,6 +9,7 @@ expand_as:
     output:
       dtype: tensor
   view: True
+  bprop_expander: False
   dispatch:
     enable: True
     GPU: None

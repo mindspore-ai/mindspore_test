@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include <tuple>
 #include "include/common/utils/tensor_future.h"
 #include "include/common/utils/convert_utils.h"
 #include "runtime/pynative/op_executor.h"
@@ -411,6 +412,102 @@ class PyboostKernelExtraFuncRegistrar {
   static PyboostKernelExtraFuncRegistrar g_##op_name##PyboostKernelExtraFunc(device::DeviceType::k##DEVICE, \
                                                                              std::make_shared<func>());
 
+class PYBOOST_API ProfileTracker {
+ public:
+  static bool ProfileTrackerTask(const PrimitivePtr &primitive);
+
+  template <typename... Args>
+  static void ProfileTrackerInput(const PrimitivePtr &primitive, bool skip_tracker, const Args &... args) {
+    if (MS_UNLIKELY(mindspore::runtime::ProfilerAnalyzer::GetInstance().profiler_enable())) {
+      static auto ascend_profiler = mindspore::profiler::Profiler::GetInstance(kAscendDevice);
+      if (ascend_profiler != nullptr && ascend_profiler->EnableRecordShapes()) {
+        std::vector<tensor::TensorPtr> tensors;
+        (CollectTrackerTensor(args, &tensors), ...);
+        std::vector<ShapeVector> input_shapes;
+        std::vector<std::string> input_types;
+        for (const auto &tensor : tensors) {
+          input_shapes.emplace_back(tensor->shape_c());
+          input_types.emplace_back(tensor->Dtype()->ToString());
+        }
+        mindspore::runtime::ProfilerAnalyzer::GetInstance().RecordShapesData(primitive->name(), input_shapes,
+                                                                             input_types);
+      }
+    }
+    if (MS_LIKELY(skip_tracker)) {
+      return;
+    }
+    std::vector<tensor::TensorPtr> tensors;
+    (CollectTrackerTensor(args, &tensors), ...);
+    TrackerInputTensors(primitive, tensors);
+  }
+
+  template <typename... Args>
+  static void ProfileTrackerOutput(const PrimitivePtr &primitive, bool skip_tracker, const std::tuple<Args...> &tuple) {
+    if (MS_LIKELY(skip_tracker)) {
+      return;
+    }
+    std::vector<tensor::TensorPtr> tensors;
+    std::apply([&tensors](const Args &... args) { (CollectTrackerTensor(args, &tensors), ...); }, tuple);
+    TrackerOutputTensors(primitive, tensors);
+  }
+
+  template <typename T>
+  static void ProfileTrackerOutput(const PrimitivePtr &primitive, bool skip_tracker, const std::vector<T> &vals) {
+    if (MS_LIKELY(skip_tracker)) {
+      return;
+    }
+    std::vector<tensor::TensorPtr> tensors;
+    for (const auto &val : vals) {
+      CollectTrackerTensor(val, &tensors);
+    }
+    TrackerOutputTensors(primitive, tensors);
+  }
+
+  static void ProfileTrackerOutput(const PrimitivePtr &primitive, bool skip_tracker, const ValuePtr &val) {
+    if (MS_LIKELY(skip_tracker)) {
+      return;
+    }
+    std::vector<tensor::TensorPtr> tensors;
+    CollectTrackerTensor(val, &tensors);
+    TrackerOutputTensors(primitive, tensors);
+  }
+
+ private:
+  inline static void CollectTrackerTensor(const ValuePtr &val, std::vector<tensor::TensorPtr> *tensors) {
+    auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(val);
+    if (tensor != nullptr) {
+      tensors->emplace_back(tensor);
+    }
+  }
+
+  inline static void CollectTrackerTensor(const tensor::TensorPtr &tensor, std::vector<tensor::TensorPtr> *tensors) {
+    if (tensor != nullptr) {
+      tensors->emplace_back(tensor);
+    }
+  }
+
+  inline static void CollectTrackerTensor(const ValueTuplePtr &tensor_tuple, std::vector<tensor::TensorPtr> *tensors) {
+    for (const auto &val : tensor_tuple->value()) {
+      CollectTrackerTensor(val, tensors);
+    }
+  }
+
+  template <typename T>
+  static void CollectTrackerTensor(const std::optional<T> &opt, std::vector<tensor::TensorPtr> *tensors) {
+    if (opt.has_value()) {
+      CollectTrackerTensor(opt.value(), tensors);
+    }
+  }
+
+  template <typename T>
+  static void CollectTrackerTensor(const T &opt, std::vector<tensor::TensorPtr> *tensors) {
+    return;
+  }
+
+  static void TrackerInputTensors(const PrimitivePtr &primitive, const std::vector<tensor::TensorPtr> &tensors);
+
+  static void TrackerOutputTensors(const PrimitivePtr &primitive, const std::vector<tensor::TensorPtr> &tensors);
+};
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

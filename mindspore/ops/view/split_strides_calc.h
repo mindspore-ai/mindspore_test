@@ -21,8 +21,7 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList SplitBasicTypeCalc(const PrimitivePtr &prim,
-                                                    const mindspore::tensor::TensorPtr &input_tensor,
+OPS_API TensorStorageInfoPtrList SplitBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                     const int64_t &axis, const int64_t &output_num);
 OPS_API TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 OPS_API TensorStorageInfoPtrList SplitProcess(const OldTensorInfoPtr &input_tensor, const int64_t &axis,

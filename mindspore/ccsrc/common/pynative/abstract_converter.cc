@@ -15,6 +15,9 @@
  */
 
 #include "include/common/pynative/abstract_converter.h"
+#include <algorithm>
+#include <iterator>
+#include <memory>
 #include <vector>
 #include "abstract/abstract_value.h"
 
@@ -38,9 +41,18 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const ValuePtr &t) {
 // Tensor is held by Abstract, may lead to memory leak.
 AbstractBasePtr AbstractConverter::ConvertAbstract(const tensor::TensorPtr &t) {
   MS_EXCEPTION_IF_NULL(t);
-  auto abs = t->ToAbstract();
+  AbstractBasePtr abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(t->data_type()), t->shape());
   abs->set_value(kValueAny);
   return abs;
+}
+
+AbstractBasePtr AbstractConverter::ConvertAbstract(const std::vector<tensor::TensorPtr> &t) {
+  AbstractBasePtrList abs_list;
+  abs_list.reserve(t.size());
+  for (size_t i = 0; i < t.size(); ++i) {
+    abs_list.push_back(ConvertAbstract(t[i]));
+  }
+  return std::make_shared<abstract::AbstractTuple>(abs_list);
 }
 
 AbstractBasePtr AbstractConverter::ConvertAbstract(const ValueTuplePtr &t) {

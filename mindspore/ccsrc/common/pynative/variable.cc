@@ -147,7 +147,7 @@ AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor) {
   if (auto_grad_meta == nullptr) {
     return nullptr;
   }
-  return std::dynamic_pointer_cast<AutoGradMetaData>(auto_grad_meta);
+  return std::static_pointer_cast<AutoGradMetaData>(auto_grad_meta);
 }
 
 ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor) {
@@ -156,7 +156,10 @@ ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor)
     return nullptr;
   }
   const auto &meta_data = tensor->auto_grad_meta_data();
-  auto view_meta_data = std::dynamic_pointer_cast<ViewAutoGradMetaData>(meta_data);
+  if (!meta_data->is_view()) {
+    return nullptr;
+  }
+  auto view_meta_data = std::static_pointer_cast<ViewAutoGradMetaData>(meta_data);
   return view_meta_data;
 }
 

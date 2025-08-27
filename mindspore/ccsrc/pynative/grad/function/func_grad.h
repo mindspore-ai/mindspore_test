@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_FUNC_GRAD_H_
 #define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_FUNC_GRAD_H_
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <map>

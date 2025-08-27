@@ -31,7 +31,7 @@ void ChunkView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs
   auto dim = inputs[kIndex2]->GetValueWithCheck<int64_t>();
 
   auto storage_info = inputs[kIndex0]->tensor_storage_info();
-  info_ = ops::ChunkStridesCalc(old_info, storage_info, chunks, dim);
+  info_ = ops::ChunkStridesCalc(old_info->old_shape, old_info->old_strides, storage_info, chunks, dim);
   for (size_t i = 0; i < outputs.size(); i++) {
     outputs[i]->set_tensor_storage_info(info_[i]);
   }

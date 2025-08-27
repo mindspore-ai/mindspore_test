@@ -33,8 +33,10 @@
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
+#include "utils/value_utils.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
+
 namespace mindspore {
 namespace tensor {
 namespace {
@@ -574,51 +576,42 @@ py::object TensorPybind::ToList(const TensorPtr &tensor) {
 }
 
 py::object TensorPybind::Item(const TensorPtr &tensor) {
-  auto tensor_element_count = tensor->DataSize();
-  if (tensor_element_count != 1) {
-    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
-                             << " more than one element is ambiguous.";
-  }
-  auto cpu_tensor = tensor->cpu();
-  auto data_type = cpu_tensor->data_type();
-  auto data = cpu_tensor->data_c();
+  auto data_type = tensor->data_type();
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return py::int_(py::cast(*static_cast<const int8_t *>(data)));
+      return py::int_(py::cast(TensorItem<int8_t>(tensor)));
     case TypeId::kNumberTypeUInt8:
-      return py::int_(py::cast(*static_cast<const uint8_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint8_t>(tensor)));
     case TypeId::kNumberTypeInt16:
-      return py::int_(py::cast(*static_cast<const int16_t *>(data)));
+      return py::int_(py::cast(TensorItem<int16_t>(tensor)));
     case TypeId::kNumberTypeUInt16:
-      return py::int_(py::cast(*static_cast<const uint16_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint16_t>(tensor)));
     case TypeId::kNumberTypeInt:
     case TypeId::kNumberTypeInt32:
-      return py::int_(py::cast(*static_cast<const int *>(data)));
+      return py::int_(py::cast(TensorItem<int32_t>(tensor)));
     case TypeId::kNumberTypeUInt32:
-      return py::int_(py::cast(*static_cast<const uint32_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint32_t>(tensor)));
     case TypeId::kNumberTypeInt64:
-      return py::int_(py::cast(*static_cast<const int64_t *>(data)));
+      return py::int_(py::cast(TensorItem<int64_t>(tensor)));
     case TypeId::kNumberTypeUInt64:
-      return py::int_(py::cast(*static_cast<const uint64_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint64_t>(tensor)));
     case TypeId::kNumberTypeFloat16:
-      return py::float_(py::cast(*static_cast<const float16 *>(data)));
+      return py::float_(py::cast(TensorItem<float16>(tensor)));
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32:
-      return py::float_(py::cast(*static_cast<const float *>(data)));
+      return py::float_(py::cast(TensorItem<float>(tensor)));
     case TypeId::kNumberTypeDouble:
     case TypeId::kNumberTypeFloat64:
-      return py::float_(py::cast(*static_cast<const double *>(data)));
+      return py::float_(py::cast(TensorItem<double>(tensor)));
     case TypeId::kNumberTypeBFloat16:
-      return py::float_(py::cast(*static_cast<const bfloat16 *>(data)));
+      return py::float_(py::cast(TensorItem<bfloat16>(tensor)));
     case TypeId::kNumberTypeBool:
-      return py::bool_(py::cast(*static_cast<const bool *>(data)));
+      return py::bool_(py::cast(TensorItem<bool>(tensor)));
     case TypeId::kNumberTypeComplex64:
     case TypeId::kNumberTypeComplex:
-      return py::cast(
-        std::complex<double>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))});
+      return py::cast(std::complex<double>{TensorItem<std::complex<float>>(tensor)});
     case TypeId::kNumberTypeComplex128:
-      return py::cast(
-        std::complex<long double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))});
+      return py::cast(std::complex<long double>{TensorItem<std::complex<double>>(tensor)});
     default:
       MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
       break;

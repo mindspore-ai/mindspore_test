@@ -15,20 +15,22 @@
  */
 
 #include <memory>
+#include <utility>
 #include "infer/ops_func_impl/not_equal.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr NotEqualFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) const {
-  return BroadCastInferShape(primitive->name(), input_args);
+ShapeArray NotEqualFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &input_shape = input_infos[kIndex0]->GetShape();
+  const auto &other_shape = input_infos[kIndex1]->GetShape();
+  auto output_shape = CalBroadCastShape(input_shape, other_shape, primitive->name(), "input", "other");
+  return {std::move(output_shape)};
 }
 
-TypePtr NotEqualFuncImpl::InferType(const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const {
-  return std::make_shared<TensorType>(kBool);
+TypeIdList NotEqualFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {kNumberTypeBool};
 }
 }  // namespace ops
 }  // namespace mindspore

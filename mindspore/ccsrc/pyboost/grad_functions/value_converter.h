@@ -55,6 +55,8 @@ class PYBOOST_API ValueConverter {
   static TypePtr ToDtype(const ValuePtr &input);
   static ValueTuplePtr ToValueTuple(const ValuePtr &input);
 
+  static ValuePtr ToValue(const tensor::TensorPtr &tensor);
+  static ValuePtr ToValue(const std::vector<tensor::TensorPtr> &tensors);
   static std::vector<int64_t> ToBasicIntVector(const ValuePtr &input);
   static int64_t ToBasicInt(const ValuePtr &input);
 

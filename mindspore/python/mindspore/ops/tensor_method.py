@@ -366,7 +366,7 @@ from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext
 from mindspore.ops.function.math_func import median
 
 # 156
-
+from mindspore.ops.function.math_func import permute
 # 157
 from mindspore.ops.auto_generate import xlogy_op
 
@@ -1183,6 +1183,9 @@ def deprecated_tensor_transpose(input, *axes):
     perm = validator.check_transpose_axis(axes, input.ndim)
     return transpose(input, perm)
 
+def deprecated_tensor_permute(input, *axis):
+    perm = validator.check_transpose_axis(axis, input.ndim)
+    return permute(input, perm)
 
 # 112 tril
 def deprecated_tensor_tril(input, diagonal=0):
@@ -1929,8 +1932,17 @@ def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias
 def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
     raise NotImplementedError("gmm has not been implemented by python.")
 
+
 def raise_func(*args, **kwargs):
     raise NotImplementedError("this func has not been implemented.")
 
+
 def tensor_masked_scatter(input, mask, source):
     return masked_scatter(input, mask, source)
+
+
+def tensor_broadcast_to(x, shape):
+    return F.broadcast_to(x, shape)
+
+def tensor_squeeze(input, axis=None):
+    return F.squeeze(input, axis)

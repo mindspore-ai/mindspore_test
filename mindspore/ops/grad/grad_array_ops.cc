@@ -1444,17 +1444,11 @@ REG_BPROP_BUILDER("FlattenExt").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib
   return {ib->Reshape(dout, x_shape), ib->OutZeros(start), ib->OutZeros(end)};
 });
 
-REG_BPROP_BUILDER("Reshape").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Reshape").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto shp = ib->GetInput(i1);
   auto dout = ib->GetInput(i3);
-  auto shape_x = ib->GetShape(x);
-  NodePtr dx;
-  if (!IsDynamic(shape_x)) {
-    dx = ib->Reshape(dout, shape_x);
-  } else {
-    dx = ib->Reshape(dout, ib->Shape(x));
-  }
+  NodePtr dx = ib->Reshape(dout, ib->Shape(x));
   return {dx, ib->OutZeros(shp)};
 });
 

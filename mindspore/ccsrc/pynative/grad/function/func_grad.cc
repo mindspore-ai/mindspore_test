@@ -17,6 +17,7 @@
 #include "pynative/grad/function/func_grad.h"
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>

@@ -34,7 +34,6 @@ class ReshapeView : public AclnnKernelMod {
   void UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 
  private:
-  mindspore::TensorStorageInfoPtrList info_;
   bool is_input_not_contiguous_{false};
 };
 }  // namespace kernel

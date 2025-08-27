@@ -81,12 +81,18 @@ bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides)
   return true;
 }
 
-int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr) {
-  if (dim_post_expr * -1 <= dim && dim < dim_post_expr) {
+int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr, bool wrap_scalar) {
+  if (MS_LIKELY(dim_post_expr * -1 <= dim && dim < dim_post_expr)) {
     if (dim < 0) {
       return dim + dim_post_expr;
     }
     return dim;
+  }
+  if (dim_post_expr == 0) {
+    if ((!wrap_scalar)) {
+      MS_EXCEPTION(ValueError) << "dim value specified as " << dim << ", but tensor has no dimensions";
+    }
+    return DynamicDimWrap(dim, 1, false);
   }
   MS_EXCEPTION(ValueError) << "dim value error. dim:" << dim << ", dim value should be in [" << -dim_post_expr << ", "
                            << dim_post_expr << ").";

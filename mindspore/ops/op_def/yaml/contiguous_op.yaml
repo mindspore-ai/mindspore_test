@@ -6,7 +6,6 @@ contiguous:
   returns:
     output:
       dtype: tensor
-  view: True
   dispatch:
     enable: True
     Ascend: ContiguousAscend

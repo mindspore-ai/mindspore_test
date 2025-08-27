@@ -137,6 +137,7 @@
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "superfluous-parens"
 "mindspore/mindspore/python/mindspore/mint/nn/layer/conv.py"
 "mindspore/mindspore/python/mindspore/nn/layer/container.py"                                         "access-member-before-definition"
+"mindspore/mindspore/python/mindspore/ops_generate/common/template.py"                              "line-too-long"
 
 
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"

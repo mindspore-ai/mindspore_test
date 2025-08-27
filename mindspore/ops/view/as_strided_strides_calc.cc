@@ -20,13 +20,12 @@
 
 namespace mindspore::ops {
 constexpr size_t kAsStridedInputsNum = 4;
-TensorStorageInfoPtrList AsStridedBasicTypeCalc(const PrimitivePtr &prim,
-                                                const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList AsStridedBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                 const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
                                                 const int64_t &storage_offset) {
-  if (std::any_of(size.begin(), size.end(), [](const int64_t &shape_i) { return shape_i < -1; })) {
-    MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
-                             << "], the component of shape can't be less than -1, but got " << size;
+  if (std::any_of(size.begin(), size.end(), [](const int &shape_i) { return shape_i < -1; })) {
+    MS_EXCEPTION(ValueError) << "For primitive[AsStrided], the component of shape can't be less than -1, but got "
+                             << size;
   }
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   // To do check
@@ -43,6 +42,6 @@ TensorStorageInfoPtrList AsStridedCalc(const PrimitivePtr &prim, const std::vect
   auto shape = GetValue<std::vector<int64_t>>(inputs[1]);
   auto stride = GetValue<std::vector<int64_t>>(inputs[2]);
   auto storage_offset = GetValue<int64_t>(inputs[3]);
-  return AsStridedBasicTypeCalc(prim, input_tensor, shape, stride, storage_offset);
+  return AsStridedBasicTypeCalc(input_tensor, shape, stride, storage_offset);
 }
 }  // namespace mindspore::ops

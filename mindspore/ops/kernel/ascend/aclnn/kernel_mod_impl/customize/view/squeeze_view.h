@@ -32,9 +32,6 @@ class SqueezeView : public AclnnKernelMod {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   void UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-
- private:
-  mindspore::TensorStorageInfoPtrList info_;
 };
 }  // namespace kernel
 }  // namespace mindspore

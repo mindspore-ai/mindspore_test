@@ -27,7 +27,8 @@ void SelectExtViewAscend::UpdateOutputTensorInfo(const std::vector<KernelTensor 
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   const auto dim = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto index = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  info_ = ops::SelectExtStridesCalc(old_info, dim, index);
+  info_ = ops::SelectExtStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(),
+                                    dim, index);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 

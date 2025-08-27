@@ -29,7 +29,8 @@ void NarrowViewAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
   const auto dim = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto start = inputs[kIndex2]->GetValueWithCheck<int64_t>();
   const auto end = inputs[kIndex3]->GetValueWithCheck<int64_t>();
-  info_ = ops::SliceExtStridesCalc(old_info, dim, start, start + end, 1);
+  info_ = ops::SliceExtStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(),
+                                   dim, start, start + end, 1);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 

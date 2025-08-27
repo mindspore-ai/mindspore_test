@@ -179,7 +179,7 @@ deprecated_tensor_method_map = {
     # 80 outer
     "outer": "deprecated_tensor_outer",
     # 81 permute
-
+    "permute": "deprecated_tensor_permute",
     # 82 pow
     "pow": "deprecated_tensor_pow",
     # 83 prod
@@ -221,7 +221,7 @@ deprecated_tensor_method_map = {
     # 100 square
 
     # 101 squeeze
-
+    "squeeze": "tensor_squeeze",
     # 102 std
     "std": "deprecated_tensor_std",
     # 103 sub

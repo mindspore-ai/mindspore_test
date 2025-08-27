@@ -20,6 +20,7 @@
 #include <exception>
 #include <iomanip>
 #include <functional>
+#include <type_traits>
 #include <utility>
 #include <algorithm>
 #include <map>

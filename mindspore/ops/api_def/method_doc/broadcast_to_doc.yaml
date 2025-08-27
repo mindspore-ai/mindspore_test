@@ -1,0 +1,6 @@
+broadcast_to:
+    description: |
+
+        broadcast_to(*shape) -> Tensor
+
+        For details, please refer to :func:`mindspore.ops.broadcast_to`.

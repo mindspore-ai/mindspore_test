@@ -27,7 +27,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void FlattenExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
-                               const Int64ImmPtr &start_dim, const Int64ImmPtr &end_dim);
+                               const int64_t &start_dim, const int64_t &end_dim);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

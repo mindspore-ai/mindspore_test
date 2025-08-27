@@ -161,7 +161,7 @@ def test_method_transpose_pyboost(mode):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
-def test_tensor_transpose_dynamic():
+def test_tensor_transpose_overload_0_dynamic():
     """
     Feature: Test transpose op.
     Description: Test transpose dynamic shape.
@@ -173,13 +173,23 @@ def test_tensor_transpose_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     dim0_2 = 1
     dim1_2 = 2
-    if ms.get_context('device_target') != 'Ascend':
-        with pytest.raises(RuntimeError) as error_info:
-            TEST_OP(transpose_ext_forward_func, [[ms_data1, dim0_1, dim1_1], [ms_data2, dim0_2, dim1_2]],
-                    disable_case=['ScalarTensor'],
-                    disable_mode=['GRAPH_MODE_GE'])
-        assert "Unsupported op [TransposeExtView] on " in str(error_info.value)
+    TEST_OP(transpose_ext_forward_func, [[ms_data1, dim0_1, dim1_1], [ms_data2, dim0_2, dim1_2]],
+            disable_case=['ScalarTensor'],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_transpose_overload_1_dynamic():
+    """
+    Feature: Test transpose op.
+    Description: Test transpose dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     axes1 = (0, 1)
     axes2 = (0, 2, 1, 3)
     TEST_OP(transpose_forward_func, [[ms_data1, axes1], [ms_data2, axes2]],

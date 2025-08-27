@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::ops {
@@ -24,52 +25,51 @@ namespace {
 constexpr size_t kSqueezeCalcInputsNum = 2;
 constexpr auto kSqueezedNum = 1;
 }  // namespace
-TensorStorageInfoPtrList SqueezeBasicTypeCalc(const PrimitivePtr &prim,
-                                              const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList SqueezeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                               const std::vector<int64_t> &axis) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  auto oldShape = old_tensor_info->old_shape;
-  auto oldStrides = old_tensor_info->old_strides;
-  auto oldStorageOffset = old_tensor_info->old_offset;
-  const auto ndims = oldShape.size();
+  const auto &old_shape = input_tensor->shape();
+  const auto &old_strides = input_tensor->stride();
+  auto [ori_shape, ori_strides, storage_offset] =
+    GetOriShapeStridesAndOffset(old_shape, old_strides, input_tensor->storage_info());
 
+  const auto ndims = old_shape.size();
+  TensorStorageInfoPtrList newStorageInfoList{};
   if (ndims == 0) {
-    bool is_contiguous = IsContiguous(oldShape, oldStrides);
-    auto newStorageInfo = std::make_shared<TensorStorageInfo>(
-      oldShape, oldStrides, oldStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
-    return {newStorageInfo};
+    bool is_contiguous = IsContiguous(old_shape, old_strides);
+    newStorageInfoList.push_back(std::make_shared<TensorStorageInfo>(
+      old_shape, old_strides, storage_offset, std::move(ori_shape), std::move(ori_strides), is_contiguous));
+    return newStorageInfoList;
   }
 
   std::vector<bool> seen_dims(ndims, false);
-
   if (axis.empty()) {
     for (size_t i = 0; i < ndims; i++) {
       seen_dims[i] = true;
     }
   } else {
     for (int64_t dim : axis) {
-      CheckAndConvertUtils::CheckInRange<int64_t>("element or value of axis", dim, kIncludeLeft, {-ndims, ndims},
-                                                  "Squeeze");
       const auto wrap_dim = DynamicDimWrap(dim, ndims);
       seen_dims[wrap_dim] = true;
     }
   }
 
   // delete shape dim if it equals one in seen dimension.
-  ShapeVector newShape;
-  StridesVecotr newStrides;
+  ShapeVector new_shape;
+  StridesVecotr new_strides;
   for (size_t i = 0; i < ndims; i++) {
-    if (!seen_dims[i] || oldShape[i] != kSqueezedNum) {
-      newShape.push_back(oldShape[i]);
-      newStrides.push_back(oldStrides[i]);
+    if (!seen_dims[i] || old_shape[i] != kSqueezedNum) {
+      new_shape.push_back(old_shape[i]);
+      new_strides.push_back(old_strides[i]);
     }
   }
 
-  bool is_contiguous = IsContiguous(newShape, newStrides);
-  auto newStorageInfo = std::make_shared<TensorStorageInfo>(
-    newShape, newStrides, oldStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
-  return {newStorageInfo};
+  bool is_contiguous = IsContiguous(new_shape, new_strides);
+  newStorageInfoList.push_back(std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides),
+                                                                   storage_offset, std::move(ori_shape),
+                                                                   std::move(ori_strides), is_contiguous));
+
+  return newStorageInfoList;
 }
 
 TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -80,7 +80,8 @@ TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector
   auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
-  return SqueezeBasicTypeCalc(prim, tensor, axis);
+  return SqueezeBasicTypeCalc(tensor, axis);
 }
+
 REG_VIEW_STRIDES_CALC_FUN(Squeeze, SqueezeCalc);
 }  // namespace mindspore::ops
