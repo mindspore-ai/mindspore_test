@@ -723,6 +723,10 @@ void Parameter::set_dynamic_len(bool flag) { is_dynamic_len_ = flag; }
 
 bool Parameter::dynamic_len() const { return is_dynamic_len_; }
 
+void Parameter::set_format(std::string format) { format_attrs_.format = format; }
+
+std::string Parameter::format() const { return format_attrs_.format; }
+
 void Parameter::set_fracz_group(int64_t fracz_group) { format_attrs_.fracz_group = fracz_group; }
 
 int64_t Parameter::fracz_group() const { return format_attrs_.fracz_group; }

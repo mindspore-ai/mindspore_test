@@ -33,10 +33,6 @@ class GraphAdapter {
   void UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
                                        bool no_control_flow);
   void GenerateBackoffValueNodeOwners(const KernelGraphPtr &graph);
-  static void ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
-                                              const std::vector<tensor::TensorPtr> &input_tensors,
-                                              const device::DeviceContext *device_context);
-  static void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph);
   static void RemoveUnusedValueNodes(const KernelGraphPtr &graph);
   static void HandleHeterogeneousTensors(const std::vector<std::vector<tensor::TensorPtr>> &tensors,
                                          const std::vector<device::DeviceContext *> &device_contexts,

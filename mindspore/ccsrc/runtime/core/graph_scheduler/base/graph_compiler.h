@@ -136,16 +136,15 @@ class GraphCompiler {
   GraphCompiler() { session_ = session::SessionFactory::Get().Create(kSessionBasic); }
   ~GraphCompiler() = default;
 
-  // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
+  // Construct kernel graph from anf nodes list and compile kernel graph,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config,
-                       bool run_in_pynative = false);
+                       const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, bool run_in_pynative);
+                       const DeviceContext *device_context);
 
-  // Construct kernel graph from function graph and compile kernel graph in Graph mode,
+  // Construct kernel graph from function graph and compile kernel graph,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   bool CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
 
@@ -165,10 +164,9 @@ class GraphCompiler {
   // Execute graph summary.
   void Summary(const std::vector<KernelGraphPtr> &graphs) const;
 
-  // The implementation of compiling graph in Graph Mode, including optimizing graph,
+  // The implementation of compiling graph, including optimizing graph,
   // setting operator info, creating kernel and transforming kernel graph to ActorSet.
-  GraphId CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
-                           bool run_in_pynative = true) const;
+  GraphId CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context) const;
   const session::SessionPtr &session_ptr() const { return session_; }
 
  private:
