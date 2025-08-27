@@ -16,6 +16,7 @@
 
 #include "graph_kernel/kernel_packet/kernel_packet_common_test_suite.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {
 /// Feature: KernelPacket

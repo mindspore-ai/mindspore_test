@@ -31,6 +31,7 @@
 #include "frontend/jit/ps/action.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
+#include "ir/graph_utils.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "backend/ms_backend/segment_runner.h"
