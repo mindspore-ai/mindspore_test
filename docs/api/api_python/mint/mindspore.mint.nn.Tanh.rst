@@ -17,9 +17,6 @@ mindspore.mint.nn.Tanh
     .. image:: ../images/Tanh.png
         :align: center
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     输入：
         - **input** (Tensor) - 任意维度的Tensor，数据类型为float16或float32的输入。
 

@@ -280,9 +280,6 @@ def adaptive_avg_pool2d_ext(input, output_size):
         * (w_{end}- w_{start})}
         \end{align}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input of adaptive_avg_pool2d, which is a 3D or 4D tensor,
             with float16 or float32 data type.
@@ -2907,9 +2904,6 @@ def interpolate_ext(input,
     r"""
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     .. note::
         - In 'linear' mode, the scenarios, where `scale_factor` is not None and `align_corners` is False,
           is not supported.
@@ -3494,9 +3488,6 @@ def logsigmoid_ext(input):
 
     .. image:: ../images/LogSigmoid.png
         :align: center
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The input of LogSigmoid with data type of bfloat16, float16 or float32.
@@ -4481,9 +4472,6 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
         \sum_{n=1}^{N} \frac{1}{\sum_{n=1}^{N} w_{t n}} l_{n}, & \text { if reduction }=\text { 'mean', } \\
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` , `N = batch size` ,

@@ -2971,9 +2971,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         r"""
         Returns self tensor cast to the type of the with the input other tensor.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Note:
             When converting complex numbers to boolean type, the imaginary part of the complex number is not
             taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
@@ -3483,9 +3480,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def zero_(self):
         r"""
         Return a tensor filled with zeros.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
 
         Returns:
             Return a tensor. Fill self tensor with zeros.

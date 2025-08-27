@@ -23,7 +23,6 @@ mindspore.mint.nn.functional.adaptive_avg_pool3d
 
     .. warning::
         对于Ascend，仅支持 Atlas A2 训练系列产品。
-        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **input** (Tensor) - adaptive_avg_pool3d的输入，是4D或者5D的Tensor。

@@ -1262,9 +1262,6 @@ def randn_ext(*size, generator=None, dtype=None):
     Returns a new tensor filled with numbers from the normal distribution over an interval :math:`[0, 1)`
     based on the given shape and dtype.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)` or :math:`2`.
 
@@ -1340,9 +1337,6 @@ def randint_ext(*args, generator=None, dtype=None):
 
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given shape and dtype.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         low (int, optional): the lower bound of the generated random number. Default: ``0``.
@@ -1679,9 +1673,6 @@ def randint_like(input, low, high, seed=None, *, dtype=None):
 def randperm_ext(n, *, generator=None, dtype=mstype.int64):
     r"""
     Generates random permutation of integers from 0 to n-1.
-
-    .. warning::
-        - This is an experimental API that is subject to change or deletion.
 
     Args:
         n (Union[Tensor, int]): size of the permutation. int or Tensor with shape: () or (1,) and

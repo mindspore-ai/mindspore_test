@@ -5,9 +5,6 @@ mindspore.mint.empty_like
 
     创建一个未初始化的Tesnor，shape和 `input` 相同，dtype由 `dtype` 决定，Tensor使用的内存由 `device` 决定。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 任意维度的Tensor。
 

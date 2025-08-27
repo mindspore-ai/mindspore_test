@@ -5,9 +5,6 @@ mindspore.mint.clone
 
     返回一个输入Tensor的副本。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     .. note::
         该函数是可微分的，梯度将直接从该函数的计算结果流向 `input`。
 

@@ -3,9 +3,6 @@ count_nonzero:
     count_nonzero(dim=None) -> Tensor
 
     Counts the number of non-zero values in the tensor input along the given dim. If no dim is specified then all non-zeros in the tensor are counted.
-    
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         dim (Union[None, int, tuple(int), list(int)], optional): The dimension to reduce. Default value: ``None``, which indicates that the number of non-zero elements is calculated. If `dim` is ``None``, all elements in the tensor are summed up.
