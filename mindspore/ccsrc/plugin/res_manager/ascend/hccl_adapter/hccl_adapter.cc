@@ -261,12 +261,7 @@ bool HcclAdapter::InitHccl(uint32_t device_id, std::string_view rank_id) {
     return true;
   }
   InitPlugin();
-  auto options = GenHcclOptions(device_id, rank_id);
-  bool ret = InitKernelInfoStore(options);
-  if (!ret) {
-    return false;
-  }
-  ret = InitHcclExec();
+  bool ret = InitHcclExec();
   if (!ret) {
     return false;
   }
