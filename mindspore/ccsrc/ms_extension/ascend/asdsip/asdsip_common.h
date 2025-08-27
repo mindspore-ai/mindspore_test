@@ -34,7 +34,7 @@ namespace ms::pynative {
 class EXTENSION_API AsdSipFFTOpRunner : public PyboostRunner {
  public:
   explicit AsdSipFFTOpRunner(std::string op_name) : PyboostRunner(op_name) {}
-  inner::MemBlockPtr _MallocDeviceAddress() override;
+  void _MallocDeviceAddress() override;
   size_t CalcWorkspace() override;
   void LaunchKernel() override;
   /// \brief [API] Initializes the ASDSIP operation with the given parameters.
