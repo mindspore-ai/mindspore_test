@@ -26,7 +26,6 @@ from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
-from mindspore.nn.cell import Cell
 
 SUMMARY_TENSOR_CACHE = []
 
@@ -589,42 +588,12 @@ class Morph(PrimitiveWithInfer):
         self._infer_shape = infer_shape
         self._infer_dtype = infer_dtype
 
+        self.add_prim_attr('__metamorphosis__', True)
+        self.__morph_fn__ = fn
+        self.__morph_bprop_fn__ = None
         if bprop_fn:
             self._check_fn_supported(fn)
-
-            class InnerNet(Cell):
-                """
-                Inner net that wraps fn and bprop inside.
-                """
-                def __init__(self) -> None:
-                    super().__init__()
-
-                @wraps(fn)
-                def construct(self, *args, **kwargs):
-                    return fn(*args, **kwargs)
-
-                @wraps(bprop_fn)
-                def bprop(self, *args):
-                    """
-                    Bprop function of Morph.
-                    """
-                    return bprop_fn(*args)
-
-            self.add_prim_attr('__metamorphosis__', InnerNet())
-
-        else:
-            class InnerNet(Cell):
-                """
-                Inner net that wraps fn inside.
-                """
-                def __init__(self) -> None:
-                    super().__init__()
-
-                @wraps(fn)
-                def construct(self, *args, **kwargs):
-                    return fn(*args, **kwargs)
-
-            self.add_prim_attr('__metamorphosis__', InnerNet())
+            self.__morph_bprop_fn__ = bprop_fn
 
     def _check_fn_supported(self, fn):
         fn_sig = inspect.signature(fn)
