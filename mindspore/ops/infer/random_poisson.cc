@@ -30,7 +30,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
-#include "ir/named.h"
 #include "ir/value.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"

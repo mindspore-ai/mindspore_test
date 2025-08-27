@@ -32,7 +32,6 @@
 #include "include/common/visible.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "ir/kernel_info_dev.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

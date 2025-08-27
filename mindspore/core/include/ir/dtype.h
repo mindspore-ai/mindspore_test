@@ -21,7 +21,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "ir/named.h"
 #include "ir/dtype/type.h"
 #include "ir/dtype/type_id.h"
 #include "ir/dtype/tensor_type.h"

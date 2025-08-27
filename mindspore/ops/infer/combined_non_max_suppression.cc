@@ -29,7 +29,6 @@
 #include "ir/dtype/container.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
-#include "ir/named.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "mindapi/base/shape_vector.h"

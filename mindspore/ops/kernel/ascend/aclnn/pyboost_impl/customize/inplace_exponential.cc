@@ -27,7 +27,6 @@
 #include "pyboost/functions/auto_generate/functions.h"
 #include "pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"
 
 namespace mindspore {

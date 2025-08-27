@@ -28,7 +28,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/container.h"
 #include "ir/dtype/number.h"
-#include "ir/named.h"
 #include "ir/value.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"

@@ -24,7 +24,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "base/base.h"
 #include "ir/dtype/number.h"
-#include "ir/named.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "mindapi/base/shape_vector.h"

@@ -24,7 +24,6 @@
 #include <type_traits>
 #include <algorithm>
 #include "base/base.h"
-#include "ir/named.h"
 #include "ir/dtype/type.h"
 
 namespace mindspore {

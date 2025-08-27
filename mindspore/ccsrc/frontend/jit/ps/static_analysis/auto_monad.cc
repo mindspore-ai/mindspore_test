@@ -42,7 +42,6 @@
 #include "utils/ordered_map.h"
 #include "utils/ordered_set.h"
 #include "utils/trace_info.h"
-#include "base/effect_info.h"
 #include "abstract/abstract_value.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

@@ -21,7 +21,6 @@
 #include <tuple>
 #include <algorithm>
 #include "ir/tensor_new.h"
-#include "base/bfloat16.h"
 #include "infer/ops_func_impl/tile.h"
 #include "kernel/ascend/dvm/lazy_fusion_kernel.h"
 #include "kernel/ascend/dvm/lazy_fusion_flags.h"
