@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 """test Fmax forward and backward broadcast"""
 
-import pytest
 import numpy as np
+import pytest
 
 import mindspore
-from mindspore import context
-from mindspore import Tensor, ops
-from mindspore import nn
+from mindspore import context, ops, Tensor, nn
 from mindspore.ops import composite as C
+
+from tests.mark_utils import arg_mark
 
 
 class FmaxForward(nn.Cell):
@@ -47,7 +45,7 @@ class FmaxGrad(nn.Cell):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [np.int, np.float32, np.float64])
+@pytest.mark.parametrize('dtype', [np.int64, np.float32, np.float64])
 @pytest.mark.parametrize("context_mode", [mindspore.GRAPH_MODE, mindspore.PYNATIVE_MODE])
 def test_fmax_cpu_broadcast_shape(dtype, context_mode):
     """
