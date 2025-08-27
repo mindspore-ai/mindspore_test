@@ -130,11 +130,7 @@ set(BACKEND_COMMON_SUB_COMP
         tools
         cluster
         kernel
-        backend/common/pass_manager
-        backend/common/pass
-        backend/common/kernel_graph
-        backend/common/graph_kernel
-        backend/common/expander
+        backend/common
         )
 
 foreach(_comp ${BACKEND_COMMON_SUB_COMP})

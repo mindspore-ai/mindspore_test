@@ -23,7 +23,7 @@
 #include <list>
 #include <regex>
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"

@@ -12,4 +12,4 @@ endif()
 
 set_property(SOURCE ${_PREACTIVATE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
   SUBMODULE_ID=mindspore::SubModuleId::SM_PRE_ACT)
-add_library(_mindspore_backend_common_pass_obj OBJECT ${_PREACTIVATE_SRC_LIST})
+add_library(_mindspore_backend_common_obj OBJECT ${_PREACTIVATE_SRC_LIST})

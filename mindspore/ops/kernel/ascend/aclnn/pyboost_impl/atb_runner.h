@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include "atb/operation.h"
+#include "runtime/pynative/op_executor.h"
 #include "kernel/ascend/atb/atb_adapter.h"
 #include "kernel/ascend/aclnn/pyboost_impl/atb_runner_base.h"
 

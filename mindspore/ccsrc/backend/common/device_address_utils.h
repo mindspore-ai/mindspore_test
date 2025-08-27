@@ -22,7 +22,6 @@
 #include <memory>
 #include <utility>
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/pynative/op_compiler.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -38,7 +37,7 @@ using device::DeviceContext;
 using KernelTensorPtr = kernel::KernelTensorPtr;
 namespace runtime {
 // Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
-class BACKEND_EXPORT DeviceAddressUtils {
+class BACKEND_COMMON_EXPORT DeviceAddressUtils {
  public:
   static void CopyNoneTensorDataToDevice(const device::DeviceContext *device_context,
                                          const KernelTensorPtr &kernel_tensor, const ShapeVector &shape = {});
@@ -49,10 +48,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void CreateValueNodeDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static void CreateKernelOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph,
                                               bool is_gradient_out);
-
-  static std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info,
-                                                                    const abstract::AbstractBasePtr &out_abstract,
-                                                                    size_t stream_id);
 
   static void CreateKernelWorkspaceDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static void UpdateDeviceAddressForInplaceNode(const KernelGraphPtr &graph);
@@ -72,12 +67,6 @@ class BACKEND_EXPORT DeviceAddressUtils {
   // Overloading
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                        const tensor::TensorPtr &tensor);
-  static void MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view);
-  static void MallocForInput(const DeviceContext *device_context, const std::optional<tensor::TensorPtr> &val,
-                             bool is_view);
-  static void MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
-                             bool is_view);
-  static void MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view);
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                        const std::optional<tensor::TensorPtr> &val);
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
@@ -157,8 +146,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
 
   // Convert old_device_address to contiguous device address.
   static device::DeviceAddressPtr ConvertContiguousDeviceAddress(const DeviceContext *device_context,
-                                                                 const device::DeviceAddressPtr &old_device_address,
-                                                                 bool is_sync);
+                                                                 const device::DeviceAddressPtr &old_device_address);
 
   // Convert view tensor to contiguous tensor.
   static tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor);
@@ -253,7 +241,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
   }
 };
 
-void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor);
+BACKEND_COMMON_EXPORT void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &tensor);
 }  // namespace runtime
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_COMMON_UTILS_H_

@@ -20,7 +20,6 @@
 #include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"

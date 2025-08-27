@@ -244,7 +244,7 @@ void LazyFusionKernelAscend::Flush() {
       // Malloc for input tensors
       for (size_t i = 0; i < input_used_; ++i) {
         auto input = inputs_[i];
-        runtime::DeviceAddressUtils::MallocForInput(device_context_, input->tensor, false);
+        pyboost::PyBoostUtils::MallocForInput(device_context_, input->tensor, false);
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(input->tensor->device_address());
         MS_EXCEPTION_IF_NULL(device_address);
         auto storage_info = device_address->GetTensorStorageInfo();

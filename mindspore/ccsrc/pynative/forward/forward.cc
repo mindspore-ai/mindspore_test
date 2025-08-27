@@ -37,7 +37,7 @@
 using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "pynative/grad/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
@@ -78,7 +78,7 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
   runtime::Pipeline::Get().launch_stage()->Wait();
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", op_run_info->base_op_run_info.op_name, "");
-  runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
+  kernel::pyboost::PyBoostUtils::MallocForInput(device_context, tensor, false);
   static bool enable_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
   if (MS_UNLIKELY(enable_tracker)) {
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
@@ -961,7 +961,7 @@ device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceS
   }
 
   // as_numpy sync promise contiguous run_sync
-  return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr, true);
+  return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr);
 }
 
 void ForwardExecutor::PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info) {
