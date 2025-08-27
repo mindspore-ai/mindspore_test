@@ -18,6 +18,7 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
+#include <unordered_set>
 #include "tools/dump/npy_header.h"
 #include "tools/data_dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"

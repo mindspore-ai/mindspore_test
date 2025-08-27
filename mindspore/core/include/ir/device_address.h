@@ -26,10 +26,10 @@
 #include <mutex>
 #include <optional>
 #include "ir/dtype.h"
+#include "utils/ms_utils.h"
 #include "utils/shape_utils.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor_storage_info.h"
-#include "ir/tensor_data.h"
 #include "mindapi/base/format.h"
 #include "mindapi/base/types.h"
 #include "ir/device_type.h"
@@ -37,6 +37,10 @@
 using std::string;
 
 namespace mindspore {
+namespace tensor {
+class TensorData;
+using TensorDataPtr = std::shared_ptr<TensorData>;
+}  // namespace tensor
 class AddressAllocator {
  public:
   /**
