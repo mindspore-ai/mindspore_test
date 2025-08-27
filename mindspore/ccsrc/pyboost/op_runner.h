@@ -29,7 +29,6 @@
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
-#include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops/infer_info/infer_info_utils.h"

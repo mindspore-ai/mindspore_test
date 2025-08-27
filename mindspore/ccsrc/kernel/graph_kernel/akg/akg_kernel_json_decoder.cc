@@ -38,6 +38,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/core/include/ops/primitive_c.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

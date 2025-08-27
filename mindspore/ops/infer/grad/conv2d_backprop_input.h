@@ -20,9 +20,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "abstract/ops/op_infer.h"
 #include "mindapi/base/format.h"
 #include "mindapi/base/types.h"
+#include "ir/anf.h"
 #include "ops/base_operator.h"
 
 namespace mindspore {

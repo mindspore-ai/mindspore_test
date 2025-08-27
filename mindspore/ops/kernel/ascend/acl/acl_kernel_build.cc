@@ -16,6 +16,7 @@
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include <vector>
 #include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"

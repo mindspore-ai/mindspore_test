@@ -23,7 +23,6 @@
 #include <string>
 
 #include "frontend/jit/ps/static_analysis/evaluator.h"
-#include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace abstract {
