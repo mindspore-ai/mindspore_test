@@ -15,6 +15,7 @@
 import mindspore as ms
 from mindspore import Tensor
 import pytest
+import numpy as np
 from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -117,6 +118,11 @@ def test_storage_cpu_and_npu_copy():
     ms.runtime.synchronize()
     assert b.item() == 2.0
 
+    a = Tensor(np.ones(1000))
+    b = Tensor(np.ones(1000)) * 3
+    b.untyped_storage().copy_(a.untyped_storage())
+    assert b.sum().item() == 1000
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_storage_view():
@@ -211,3 +217,23 @@ def test_storage_copy_cpu():
     storage_b.copy_(storage_c)
 
     assert b.item() == 6.0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_storage_copy_cpu_big_size():
+    """
+    Feature: storage copy over size
+    Description: Verify the result after coping storage
+    Expectation: success
+    """
+    ms.set_device("CPU")
+    a = Tensor(np.zeros(1000))
+    b = Tensor(np.ones(1000)*3)
+    c = Tensor(np.zeros(1000))
+    storage_a = a.untyped_storage()
+    storage_b = b.untyped_storage()
+
+    storage_b.copy_(storage_a)
+
+    assert b.sum().item() == 0
+    assert c.sum().item() == 0
