@@ -28,6 +28,7 @@
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 constexpr auto kTsaInputIndex = 2;

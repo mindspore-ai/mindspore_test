@@ -17,6 +17,7 @@
 
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

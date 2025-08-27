@@ -27,6 +27,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/profiler/profiling.h"
 #include "include/backend/optimizer/graph_optimizer.h"
+#include "ir/graph_utils.h"
 #include "backend/ge_backend/pass/scalar_ops_output_unify_mindir.h"
 #include "backend/ge_backend/pass/shape_unify_mindir.h"
 #include "backend/ge_backend/pass/maketuple_unify_mindir.h"

@@ -30,6 +30,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

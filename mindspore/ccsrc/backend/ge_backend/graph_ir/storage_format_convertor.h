@@ -21,7 +21,7 @@
 #include <string>
 #include "backend/ge_backend/graph_ir/types.h"
 #include "include/common/utils/utils.h"
-#include "ir/manager.h"
+#include "mindspore/core/include/ir/manager.h"
 
 namespace mindspore::backend::ge_backend {
 extern AnfNodePtr GetMomentumVarByAccum(const AnfNodePtr &node, const NodeUsersMap &node_users);

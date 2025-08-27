@@ -30,6 +30,7 @@
 #include "utils/hash_map.h"
 #include "utils/ordered_map.h"
 #include "abstract/abstract_value.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"

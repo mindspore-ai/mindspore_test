@@ -30,6 +30,7 @@
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
+#include "ir/graph_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"

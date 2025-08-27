@@ -46,6 +46,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/anf.h"
 #include "ir/value.h"
+#include "ir/graph_utils.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "utils/hash_map.h"

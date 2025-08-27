@@ -19,6 +19,7 @@
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "ir/device_type.h"
+#include "ir/graph_utils.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"

@@ -28,6 +28,7 @@
 #include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore::parallel {

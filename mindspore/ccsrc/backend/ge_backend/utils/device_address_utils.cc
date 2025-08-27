@@ -24,6 +24,7 @@
 #include "ops/op_def.h"
 #include "ir/tensor.h"
 #include "ir/dtype/tensor_type.h"
+#include "ir/graph_utils.h"
 #include "utils/shape_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "frontend/ir/tensor_py.h"

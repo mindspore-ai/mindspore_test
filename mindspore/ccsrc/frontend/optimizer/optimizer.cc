@@ -32,6 +32,7 @@
 #include "frontend/jit/ps/action.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "utils/ms_context.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

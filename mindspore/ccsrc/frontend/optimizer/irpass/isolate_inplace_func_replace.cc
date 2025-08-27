@@ -25,6 +25,7 @@
 #include "mindspore/core/include/utils/trace_base.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

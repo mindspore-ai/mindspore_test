@@ -65,6 +65,7 @@
 #include "frontend/parallel/parallel_optimizer/opt_param_mgr.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "utils/trace_base.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"

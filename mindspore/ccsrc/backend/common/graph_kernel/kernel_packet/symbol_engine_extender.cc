@@ -28,6 +28,7 @@
 #include "symbolic_shape/operation_builder.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
+#include "ir/graph_utils.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"

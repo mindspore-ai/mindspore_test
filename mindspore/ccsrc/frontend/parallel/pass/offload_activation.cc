@@ -23,6 +23,7 @@
 #include "mindspore/core/include/ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace parallel {

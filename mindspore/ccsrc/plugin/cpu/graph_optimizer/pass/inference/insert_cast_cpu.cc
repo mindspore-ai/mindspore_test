@@ -27,6 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "plugin/cpu/kernel_executor/cpu_kernel.h"

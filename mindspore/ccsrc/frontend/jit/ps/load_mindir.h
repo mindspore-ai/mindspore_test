@@ -21,7 +21,6 @@
 #include <set>
 
 #include "base/base.h"
-#include "ir/manager.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "frontend/jit/ps/resource.h"

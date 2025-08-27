@@ -22,6 +22,7 @@
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "ir/graph_utils.h"
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/utils.h"
 #include "mindapi/base/type_id.h"

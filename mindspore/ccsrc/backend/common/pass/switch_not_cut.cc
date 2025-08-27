@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

@@ -21,6 +21,7 @@
 #include <utility>
 #include <map>
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/trace_info.h"
 

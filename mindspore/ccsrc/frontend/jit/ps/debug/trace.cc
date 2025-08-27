@@ -26,6 +26,7 @@
 #include "utils/hash_map.h"
 #include "frontend/operator/composite/composite.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "include/common/debug/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"

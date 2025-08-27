@@ -27,6 +27,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace ps {

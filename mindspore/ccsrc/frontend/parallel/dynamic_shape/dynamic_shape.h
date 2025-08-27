@@ -22,8 +22,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-
-#include "ir/graph_utils.h"
 #include "base/base.h"
 #include "symbolic_shape/symbol.h"
 #include "symbolic_shape/symbol_info.h"

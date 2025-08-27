@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 void StitchAtomicCleanInserter::CorrectKernelBuildInfo(

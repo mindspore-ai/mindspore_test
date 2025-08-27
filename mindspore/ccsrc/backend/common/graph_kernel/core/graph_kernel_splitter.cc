@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"
 #include "utils/trace_info.h"

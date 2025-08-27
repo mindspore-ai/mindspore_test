@@ -22,6 +22,7 @@
 #include <stack>
 #include <string>
 #include "include/common/utils/anfalgo.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

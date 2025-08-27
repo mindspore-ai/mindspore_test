@@ -17,6 +17,7 @@
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include <vector>
 #include "ops_utils/op_constants.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

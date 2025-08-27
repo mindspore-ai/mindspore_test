@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include "ir/tensor_new.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

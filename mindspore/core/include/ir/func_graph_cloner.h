@@ -29,6 +29,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"
+#include "ir/graph_utils.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore {

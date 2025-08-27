@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/costmodel_context.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/status.h"

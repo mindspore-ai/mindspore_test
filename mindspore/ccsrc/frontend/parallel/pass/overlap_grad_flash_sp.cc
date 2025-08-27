@@ -24,6 +24,7 @@
 #include <string>
 #include <queue>
 #include "ir/tensor_new.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

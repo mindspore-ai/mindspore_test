@@ -17,6 +17,8 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
+#include "ir/graph_utils.h"
+
 namespace mindspore::opt {
 bool BindValueToGraph::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
