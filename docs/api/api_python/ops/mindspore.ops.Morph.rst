@@ -1,7 +1,7 @@
 mindspore.ops.Morph
 ==============================
 
-.. py:class:: mindspore.ops.Morph(fn, infer_shape, infer_dtype)
+.. py:class:: mindspore.ops.Morph(fn, infer_shape, infer_dtype, bprop_fn=None)
 
     `Morph` 算子用于对用户自定义函数 `fn` 进行封装，允许其被当做自定义算子使用。
 
@@ -21,7 +21,7 @@ mindspore.ops.Morph
         - **fn** (Function) - MindSpore Function，用户自定义函数。
         - **infer_shape** (Function) - Mindspore Function，用户自定义 `infer_shape` 函数。
         - **infer_dtype** (Function) - Mindspore Function，用户自定义 `infer_dtype` 函数。
-        - **bprop_fn** (Function) - MindSpore Function，用户自定义的反向函数。
+        - **bprop_fn** (Function, 可选) - MindSpore Function，用户自定义的反向函数。默认值： ``None``。
 
     输入：
         用户自定义 `fn` 的输入。

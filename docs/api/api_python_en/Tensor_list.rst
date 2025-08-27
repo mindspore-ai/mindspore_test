@@ -95,6 +95,13 @@
     :exclude-members: tft_register
     :members:
 
+{% elif fullname=="mindspore.ops.CustomOpBuilder" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: generate_custom_op_def, get_op_def
+    :members:
+
 {% elif objname[0].istitle() %}
 {{ fullname | underline }}
 

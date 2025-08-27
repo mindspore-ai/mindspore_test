@@ -540,7 +540,7 @@ class Morph(PrimitiveWithInfer):
         fn (Function): MindSpore's function, user-defined function.
         infer_shape (Function): MindSpore's function, user-defined infer_shape function.
         infer_dtype (Function): MindSpore's function, user-defined infer_dtype function.
-        bprop_fn (Function): MindSpore's function, user-defined bprop function, default: ``None``.
+        bprop_fn (Function, optional): MindSpore's function, user-defined bprop function, default: ``None``.
 
     Inputs:
         The inputs of user-defined `fn`.

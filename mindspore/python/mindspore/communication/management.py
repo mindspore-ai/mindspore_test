@@ -650,9 +650,10 @@ def create_group(group, rank_ids, options=None):
                 }
 
             `hccl_config` currently only supports "hccl_buffer_size" or "hccl_comm".
-            hccl_buffer_size (uint32): specifies the size of the HCCL communication buffer.
-            hccl_comm (int64): specifies an existing HcclComm pointer. If "hccl_comm" is set,
-            "hccl_buffer_size" will be ignored.
+
+            - hccl_buffer_size (uint32): specifies the size of the HCCL communication buffer.
+            - hccl_comm (int64): specifies an existing HcclComm pointer. If "hccl_comm" is set,
+              "hccl_buffer_size" will be ignored.
 
     Raises:
         TypeError: If group is not a string or `rank_ids` is not a list.
