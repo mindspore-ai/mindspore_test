@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "plugin/device/cpu/kernel/akg/akg_kernel_loader.h"
 
 namespace mindspore {
 namespace kernel {
