@@ -1,7 +1,7 @@
 mindspore.parallel.strategy.get_current_strategy_metadata
 ============================================================================
 
-.. py:function:: mindspore.parallel.strategy.get_current_strategy_metadata(network) -> Dict[int, Dict[str, List[LayoutInfo]]]
+.. py:function:: mindspore.parallel.strategy.get_current_strategy_metadata(network)
 
     获取当前网络的当前卡的在线策略信息。
 
