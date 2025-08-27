@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/akg/akg_ascend_kernel_build.h"
+#include "kernel/ascend/akg/akg_ascend_kernel_build.h"
 #include <memory>
 #include "ir/func_graph.h"
 #include "kernel/framework_utils.h"
-#include "plugin/device/ascend/kernel/akg/akg_utils.h"
-#include "plugin/device/ascend/kernel/akg/akg_ascend_kernel_mod.h"
+#include "kernel/ascend/akg/akg_utils.h"
+#include "kernel/ascend/akg/akg_ascend_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

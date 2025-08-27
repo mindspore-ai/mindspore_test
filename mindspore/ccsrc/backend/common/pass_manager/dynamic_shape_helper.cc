@@ -29,6 +29,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "utils/anf_utils.h"
 #include "kernel/framework_utils.h"
 #include "ops/op_def.h"
 #include "utils/ms_context.h"

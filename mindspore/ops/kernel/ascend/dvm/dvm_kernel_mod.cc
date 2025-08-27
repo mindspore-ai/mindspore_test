@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/dvm/dvm_kernel_mod.h"
+#include "kernel/ascend/dvm/dvm_kernel_mod.h"
 #include <algorithm>
 #include <vector>
 #include <string>

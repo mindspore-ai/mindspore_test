@@ -22,14 +22,14 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "include/backend/visible.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 constexpr unsigned int OptLevel_0 = 0;  // Disabled
 constexpr unsigned int OptLevel_1 = 1;  // Basic functions
 constexpr unsigned int OptLevel_2 = 2;  // Default functions
 
-class BACKEND_EXPORT LazyFusionFlags {
+class OPS_ASCEND_API LazyFusionFlags {
  public:
   static const LazyFusionFlags &GetInstance();
   LazyFusionFlags();

@@ -17,13 +17,14 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_COMM_INFO_H_
 #include "backend/common/graph_kernel/adapter/graph_kernel_comm_info_manager.h"
 #include "utils/ms_context.h"
+#include "kernel/ascend/visible.h"
 namespace mindspore {
 namespace graphkernel {
-bool EnableDvmComm();
-class DvmCommInfo : public GraphKernelCommInfo {
+bool OPS_ASCEND_API EnableDvmComm();
+class OPS_ASCEND_API DvmCommInfo : public GraphKernelCommInfo {
  public:
-  DvmCommInfo() = default;
-  ~DvmCommInfo() = default;
+  DvmCommInfo();
+  ~DvmCommInfo();
   bool EnableComm() override;
   bool IsTargetCommOp(const AnfNodePtr op) override;
 };

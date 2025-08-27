@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_dump.h"
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/lazy_fusion_dump.h"
+#include "kernel/ascend/dvm/lazy_fusion_flags.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

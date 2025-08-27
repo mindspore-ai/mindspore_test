@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_op.h"
+#include "kernel/ascend/dvm/lazy_fusion_op.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -23,8 +23,8 @@
 #include "ir/tensor_new.h"
 #include "base/bfloat16.h"
 #include "infer/ops_func_impl/tile.h"
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/lazy_fusion_kernel.h"
+#include "kernel/ascend/dvm/lazy_fusion_flags.h"
 #include "runtime/pipeline/pipeline.h"
 #include "view/view_strides_calculator.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

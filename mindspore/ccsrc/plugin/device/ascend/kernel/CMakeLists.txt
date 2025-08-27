@@ -6,8 +6,6 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "acl/*.cc"
         "hccl/*.cc"
         "simu/*.cc"
-        "akg/*.cc"
-        "graph_kernel/*.cc"
         "utils/*.cc"
         "internal/internal_kernel_build.cc"
         "internal/internal_ascend_adapter.cc"
@@ -16,11 +14,6 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     # only support in internal kernel
     list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_all_reduce.cc")
-endif()
-
-if(ENABLE_DVM)
-    file(GLOB_RECURSE DVM_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "dvm/*.cc")
-    list(APPEND SRC_IN_910B "${DVM_SRC}")
 endif()
 
 set_property(SOURCE ${SRC_IN_910B}

@@ -24,12 +24,12 @@
 #include <mutex>
 #include <utility>
 #include "ir/tensor_new.h"
-#include "plugin/ascend/res_manager/dvm/dvm.h"
+#include "kernel/ascend/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pynative/lazy_fusion.h"
-#include "plugin/device/ascend/kernel/dvm/lazy_fusion_dump.h"
+#include "kernel/ascend/dvm/lazy_fusion_dump.h"
 
 namespace mindspore {
 namespace kernel {
