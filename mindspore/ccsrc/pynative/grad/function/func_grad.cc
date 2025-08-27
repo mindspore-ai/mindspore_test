@@ -707,6 +707,11 @@ void KPynativeOp(const GradParamPtr &grad_param) {
     auto output_tensor = grad_param->op_grad_info->out_value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(output_tensor);
     RebaseVariable(grad_param->op_grad_info, fn, output_tensor, kIndex0);
+    if (impl::GetViewAutogradMetaImpl(output_tensor) != nullptr) {
+      auto grad_node = std::dynamic_pointer_cast<FuncBackwardNode>(fn);
+      MS_EXCEPTION_IF_NULL(grad_node);
+      grad_node->set_saved_output(SavedNode::ConstructSavedNode(output_tensor, true));
+    }
   }
   ClearMetaInfofPlaceHolder(flatten_inputs);
 }
@@ -846,10 +851,6 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
     }
     auto_grad_meta_data->set_grad_node(copy_slice);
     (void)SafeGetGradNodeImpl(output_tensor);
-    // We need set weak_ptr node pf output tensor to inplace func.
-    auto grad_node = std::dynamic_pointer_cast<FuncBackwardNode>(func_node);
-    MS_EXCEPTION_IF_NULL(grad_node);
-    grad_node->set_saved_output(SavedNode::ConstructSavedNode(output_tensor, true));
     MS_LOG(DEBUG) << "End update next edge for " << copy_slice->ToString();
     return;
   }
@@ -874,10 +875,7 @@ void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &input
       const auto &tensor = value->cast<tensor::TensorPtr>();
       auto auto_grad_meta_data = tensor->auto_grad_meta_data();
       // Get scalar tensor
-      if (auto_grad_meta_data == nullptr) {
-        continue;
-      }
-      if (auto_grad_meta_data->input_type() == InputType::kParameter && !AutoGradUtil::IsParamRequiresGrad(tensor)) {
+      if (auto_grad_meta_data == nullptr || !auto_grad_meta_data->requires_grad()) {
         continue;
       }
       auto fn = SafeGetGradNodeImpl(tensor);
