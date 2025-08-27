@@ -17,7 +17,7 @@
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 
-#include "minddata/dataset/engine/ir/datasetops/source/ag_news_node.h"
+#include "minddata/dataset/data_source/operation/ag_news_node.h"
 
 using namespace mindspore::dataset;
 

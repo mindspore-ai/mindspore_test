@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include "common.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 
 namespace UT {
 namespace CVOP {

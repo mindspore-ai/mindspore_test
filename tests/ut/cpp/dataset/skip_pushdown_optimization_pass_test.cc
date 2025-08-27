@@ -18,7 +18,7 @@
 #include <string>
 
 #include "common/common.h"
-#include "minddata/dataset/engine/opt/pre/skip_pushdown_pass.h"
+#include "minddata/dataset/engine/pass/pre/skip_pushdown_pass.h"
 #include "minddata/dataset/include/dataset/samplers.h"
 #include "minddata/dataset/include/dataset/vision.h"
 

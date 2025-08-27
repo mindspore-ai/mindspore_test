@@ -59,9 +59,9 @@ TEST_F(MindDataTestPipeline, DISABLED_TestAlbumBasic) {
   iter->Stop();
 }
 
-// Feature: Test Album dataset
-// Description: Create Album dataset without column names to load, iterate over dataset and count rows
-// Expectation: Ensure dataset is created and has 7 rows
+/// Feature: Test Album dataset
+/// Description: Create Album dataset without column names to load, iterate over dataset and count rows
+/// Expectation: Ensure dataset is created and has 7 rows
 TEST_F(MindDataTestPipeline, DISABLED_TestAlbumNoOrder) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestAlbumBasic.";
 
@@ -92,9 +92,9 @@ TEST_F(MindDataTestPipeline, DISABLED_TestAlbumNoOrder) {
   iter->Stop();
 }
 
-// Feature: Test Album dataset
-// Description: Create Album dataset with floatSchema.json, iterate over dataset and count rows
-// Expectation: Ensure dataset is created and has 7 rows
+/// Feature: Test Album dataset
+/// Description: Create Album dataset with floatSchema.json, iterate over dataset and count rows
+/// Expectation: Ensure dataset is created and has 7 rows
 TEST_F(MindDataTestPipeline, DISABLED_TestAlbumWithSchemaFloat) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestAlbumWithSchemaFloat.";
 
@@ -125,9 +125,9 @@ TEST_F(MindDataTestPipeline, DISABLED_TestAlbumWithSchemaFloat) {
   iter->Stop();
 }
 
-// Feature: Test Album dataset
-// Description: Create Album dataset with fullSchema.json, iterate over dataset and count rows
-// Expectation: Ensure dataset is created and has 7 rows
+/// Feature: Test Album dataset
+/// Description: Create Album dataset with fullSchema.json, iterate over dataset and count rows
+/// Expectation: Ensure dataset is created and has 7 rows
 TEST_F(MindDataTestPipeline, DISABLED_TestAlbumWithFullSchema) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestAlbumWithFullSchema.";
 

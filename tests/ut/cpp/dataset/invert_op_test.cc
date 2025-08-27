@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "minddata/dataset/kernels/image/invert_op.h"
+#include "minddata/dataset/vision/kernels/invert_op.h"
 #include "common/common.h"
 #include "common/cvop_common.h"
 #include "utils/log_adapter.h"

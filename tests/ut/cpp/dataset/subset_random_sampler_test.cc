@@ -19,8 +19,8 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/tensor.h"
 
-#include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/subset_random_sampler.h"
+#include "minddata/dataset/data_source/sampler/sampler.h"
+#include "minddata/dataset/data_source/sampler/subset_random_sampler.h"
 
 #include <vector>
 #include <unordered_set>

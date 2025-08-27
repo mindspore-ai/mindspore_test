@@ -1,6 +1,6 @@
 add_subdirectory(datasetops)
-add_subdirectory(opt)
-add_subdirectory(ir)
+add_subdirectory(pass)
+add_subdirectory(operation)
 add_subdirectory(perf)
 add_subdirectory(cache)
 
@@ -35,8 +35,7 @@ endif()
 
 add_dependencies(engine
     engine-datasetops
-    engine-datasetops-source
-    engine-opt
+    engine-pass
     engine-cache-client
     engine-datasetops-mapop
     )

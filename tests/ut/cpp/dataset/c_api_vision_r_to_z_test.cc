@@ -1575,8 +1575,7 @@ TEST_F(MindDataTestPipeline, TestWritePngException) {
 }
 
 #ifdef ENABLE_FFMPEG
-/// Description: a function used by the test cases for ReadVideoTimestamps
-/// Expectation: create the timestamps according to the vector_length, video_fps, start_index
+/// A function used by the test cases for ReadVideoTimestamps
 void create_expected_video_timestamps(std::tuple<std::vector<float>, float> *output, int vector_length, float video_fps,
                                       int start_index=0) {
   std::vector<float> pts_float_vector;
@@ -1587,8 +1586,7 @@ void create_expected_video_timestamps(std::tuple<std::vector<float>, float> *out
   *output = std::make_tuple(pts_float_vector, video_fps);
 }
 
-/// Description: a function used by the test cases for ReadVideoTimestamps
-/// Expectation: the difference between the mindspore_data and expected_data should be less than error_rate_limit
+/// A function used by the test cases for ReadVideoTimestamps
 void check_video_timestamps(const std::tuple<std::vector<float>, float> &mindspore_data,
                             const std::tuple<std::vector<float>, float> &expected_data,
                             float timestamp_unit, float error_rate_limit=0.0005) {

@@ -24,8 +24,8 @@
 #include <vector>
 #include "minddata/dataset/engine/dataset_iterator.h"
 #include "minddata/dataset/engine/datasetops/pipeline_op.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/distributed_sampler.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/random_sampler.h"
+#include "minddata/dataset/data_source/sampler/distributed_sampler.h"
+#include "minddata/dataset/data_source/sampler/random_sampler.h"
 
 namespace mindspore {
 namespace dataset {

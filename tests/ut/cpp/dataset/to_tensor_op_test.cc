@@ -18,8 +18,8 @@
 #include <string>
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/image/to_tensor_op.h"
-#include "minddata/dataset/kernels/data/type_cast_op.h"
+#include "minddata/dataset/vision/kernels/to_tensor_op.h"
+#include "minddata/dataset/general/kernels/type_cast_op.h"
 #include "minddata/dataset/core/client.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"

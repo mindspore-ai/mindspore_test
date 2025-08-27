@@ -15,7 +15,7 @@
  */
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/image/random_solarize_op.h"
+#include "minddata/dataset/vision/kernels/random_solarize_op.h"
 #include "minddata/dataset/core/cv_tensor.h"
 #include "minddata/dataset/util/status.h"
 #include "utils/log_adapter.h"

@@ -560,9 +560,9 @@ TEST_F(MindDataTestPipeline, TestIncorrectTFrecordFile) {
   EXPECT_EQ(itr, nullptr);
 }
 
-// Feature: Test TFRecord with a schema file
-// Description: Create TFRecord with datasetSchema1Row.json
-// Expectation: There should be 1 row in the dataset
+/// Feature: Test TFRecord with a schema file
+/// Description: Create TFRecord with datasetSchema1Row.json
+/// Expectation: There should be 1 row in the dataset
 TEST_F(MindDataTestPipeline, TestTFRecordDatasetBasic1Row) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordDatasetBasic.";
 
@@ -593,9 +593,9 @@ TEST_F(MindDataTestPipeline, TestTFRecordDatasetBasic1Row) {
   iter->Stop();
 }
 
-// Feature: Test TFRecord with a schema file
-// Description: Create TFRecord with datasetSchema7Rows.json
-// Expectation: There should be 7 rows in the dataset
+/// Feature: Test TFRecord with a schema file
+/// Description: Create TFRecord with datasetSchema7Rows.json
+/// Expectation: There should be 7 rows in the dataset
 TEST_F(MindDataTestPipeline, TestTFRecordDatasetBasic7Row) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordDatasetBasic.";
 

@@ -18,7 +18,7 @@
 #include "minddata/dataset/core/client.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/engine/datasetops/shuffle_op.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
 #include "minddata/dataset/engine/jagged_connector.h"
 #include "common/common.h"
 #include "gtest/gtest.h"

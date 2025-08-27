@@ -22,7 +22,7 @@
 #include "utils/ms_utils.h"
 #include "gtest/gtest.h"
 #include "utils/log_adapter.h"
-#include "minddata/dataset/engine/datasetops/source/csv_op.h"
+#include "minddata/dataset/data_source/csv_op.h"
 #include "minddata/dataset/util/status.h"
 
 

@@ -279,6 +279,9 @@ TEST_F(MindDataTestPipeline, TestEMnistIteratorWrongColumn) {
   EXPECT_EQ(iter, nullptr);
 }
 
+/// Feature: EMnistDataset
+/// Description: Test basic usage of EMnistTrainDataset with train dataset
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestGetEMnistTrainDatasetSize) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestGetEMnistTrainDatasetSize.";
 
@@ -295,6 +298,9 @@ TEST_F(MindDataTestPipeline, TestGetEMnistTrainDatasetSize) {
   EXPECT_EQ(ds2->GetDatasetSize(), 10);
 }
 
+/// Feature: EMnistDataset
+/// Description: Test basic usage of EMnistTrainDataset with train dataset
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestGetEMnistTestDatasetSize) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestGetEMnistTestDatasetSize.";
 

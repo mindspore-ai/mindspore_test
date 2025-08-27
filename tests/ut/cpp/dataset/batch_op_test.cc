@@ -16,7 +16,7 @@
 #include <memory>
 #include <string>
 #include "minddata/dataset/core/client.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
 #include "common/common.h"
 #include "gtest/gtest.h"
 #include "utils/log_adapter.h"
@@ -33,9 +33,9 @@ class MindDataTestBatchOp : public UT::DatasetOpTesting {
 };
 
 // This test has been disabled because PadInfo is not currently supported in the C++ API.
-// Feature: Test Batch op with padding on TFReader
-// Description: Create Batch operation with padding on a TFReader dataset
-// Expectation: The data within the created object should match the expected data
+/// Feature: Test Batch op with padding on TFReader
+/// Description: Create Batch operation with padding on a TFReader dataset
+/// Expectation: The data within the created object should match the expected data
 TEST_F(MindDataTestBatchOp, DISABLED_TestSimpleBatchPadding) {
   std::string schema_file = datasets_root_path_ + "/testBatchDataset/test.data";
   PadInfo m;

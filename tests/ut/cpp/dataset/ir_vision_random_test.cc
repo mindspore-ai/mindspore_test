@@ -16,25 +16,25 @@
 
 #include <memory>
 #include "common/common.h"
-#include "minddata/dataset/kernels/ir/vision/random_affine_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_color_adjust_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_color_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_crop_decode_resize_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_crop_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_crop_with_bbox_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_horizontal_flip_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_horizontal_flip_with_bbox_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_posterize_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_resized_crop_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_resized_crop_with_bbox_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_resize_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_resize_with_bbox_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_rotation_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_select_subpolicy_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_sharpness_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_solarize_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_vertical_flip_ir.h"
-#include "minddata/dataset/kernels/ir/vision/random_vertical_flip_with_bbox_ir.h"
+#include "minddata/dataset/vision/transform/random_affine_ir.h"
+#include "minddata/dataset/vision/transform/random_color_adjust_ir.h"
+#include "minddata/dataset/vision/transform/random_color_ir.h"
+#include "minddata/dataset/vision/transform/random_crop_decode_resize_ir.h"
+#include "minddata/dataset/vision/transform/random_crop_ir.h"
+#include "minddata/dataset/vision/transform/random_crop_with_bbox_ir.h"
+#include "minddata/dataset/vision/transform/random_horizontal_flip_ir.h"
+#include "minddata/dataset/vision/transform/random_horizontal_flip_with_bbox_ir.h"
+#include "minddata/dataset/vision/transform/random_posterize_ir.h"
+#include "minddata/dataset/vision/transform/random_resized_crop_ir.h"
+#include "minddata/dataset/vision/transform/random_resized_crop_with_bbox_ir.h"
+#include "minddata/dataset/vision/transform/random_resize_ir.h"
+#include "minddata/dataset/vision/transform/random_resize_with_bbox_ir.h"
+#include "minddata/dataset/vision/transform/random_rotation_ir.h"
+#include "minddata/dataset/vision/transform/random_select_subpolicy_ir.h"
+#include "minddata/dataset/vision/transform/random_sharpness_ir.h"
+#include "minddata/dataset/vision/transform/random_solarize_ir.h"
+#include "minddata/dataset/vision/transform/random_vertical_flip_ir.h"
+#include "minddata/dataset/vision/transform/random_vertical_flip_with_bbox_ir.h"
 
 using namespace mindspore::dataset;
 
@@ -43,9 +43,9 @@ class MindDataTestIRVision : public UT::DatasetOpTesting {
   MindDataTestIRVision() = default;
 };
 
-// Feature: RandomColor IR
-// Description: Test RandomColorOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomColor IR
+/// Description: Test RandomColorOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomColorIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomColorIRFail.";
 
@@ -60,9 +60,9 @@ TEST_F(MindDataTestIRVision, TestRandomColorIRFail) {
   EXPECT_ERROR(rc2);
 }
 
-// Feature: RandomColorAdjust IR
-// Description: Test RandomColorAdjustOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomColorAdjust IR
+/// Description: Test RandomColorAdjustOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomColorAdjustIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomColorAdjustIRFail.";
 
@@ -103,9 +103,9 @@ TEST_F(MindDataTestIRVision, TestRandomColorAdjustIRFail) {
   EXPECT_ERROR(rc6);
 }
 
-// Feature: RandomHorizontalFlip IR
-// Description: Test RandomHorizontalFlipOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomHorizontalFlip IR
+/// Description: Test RandomHorizontalFlipOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomHorizontalFlipIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomHorizontalFlipIRFail.";
 
@@ -120,9 +120,9 @@ TEST_F(MindDataTestIRVision, TestRandomHorizontalFlipIRFail) {
   EXPECT_ERROR(rc2);
 }
 
-// Feature: RandomHorizontalFlipWithBBox IR
-// Description: Test RandomHorizontalFlipWithBBoxOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomHorizontalFlipWithBBox IR
+/// Description: Test RandomHorizontalFlipWithBBoxOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomHorizontalFlipWithBBoxIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomHorizontalFlipWithBBoxIRFail.";
 
@@ -138,9 +138,9 @@ TEST_F(MindDataTestIRVision, TestRandomHorizontalFlipWithBBoxIRFail) {
   EXPECT_ERROR(rc2);
 }
 
-// Feature: RandomPosterize IR
-// Description: Test RandomPosterizeOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomPosterize IR
+/// Description: Test RandomPosterizeOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomPosterizeIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomPosterizeIRFail.";
 
@@ -165,9 +165,9 @@ TEST_F(MindDataTestIRVision, TestRandomPosterizeIRFail) {
   EXPECT_ERROR(rc4);
 }
 
-// Feature: RandomResize IR
-// Description: Test RandomResizeOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomResize IR
+/// Description: Test RandomResizeOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomResizeIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomResizeIRFail.";
 
@@ -192,9 +192,9 @@ TEST_F(MindDataTestIRVision, TestRandomResizeIRFail) {
   EXPECT_ERROR(rc4);
 }
 
-// Feature: RandomResizeWithBBox IR
-// Description: Test RandomResizeWithBBoxOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomResizeWithBBox IR
+/// Description: Test RandomResizeWithBBoxOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomResizeWithBBoxIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomResizeWithBBoxIRFail.";
 
@@ -217,9 +217,9 @@ TEST_F(MindDataTestIRVision, TestRandomResizeWithBBoxIRFail) {
   EXPECT_ERROR(rc3);
 }
 
-// Feature: RandomSharpness IR
-// Description: Test RandomSharpnessOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomSharpness IR
+/// Description: Test RandomSharpnessOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomSharpnessIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomSharpnessIRFail.";
 
@@ -234,9 +234,9 @@ TEST_F(MindDataTestIRVision, TestRandomSharpnessIRFail) {
   EXPECT_ERROR(rc2);
 }
 
-// Feature: RandomSolarize IR
-// Description: Test RandomSolarizeOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomSolarize IR
+/// Description: Test RandomSolarizeOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomSolarizeIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomSolarizeIRFail.";
 
@@ -261,9 +261,9 @@ TEST_F(MindDataTestIRVision, TestRandomSolarizeIRFail) {
   EXPECT_ERROR(rc4);
 }
 
-// Feature: RandomVerticalFlip IR
-// Description: Test RandomVerticalFlipOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomVerticalFlip IR
+/// Description: Test RandomVerticalFlipOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomVerticalFlipIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomVerticalFlipIRFail.";
 
@@ -278,9 +278,9 @@ TEST_F(MindDataTestIRVision, TestRandomVerticalFlipIRFail) {
   EXPECT_ERROR(rc2);
 }
 
-// Feature: RandomVerticalFlipWithBBox IR
-// Description: Test RandomVerticalFlipWithBBoxOperation with invalid parameters
-// Expectation: Throw correct error and message
+/// Feature: RandomVerticalFlipWithBBox IR
+/// Description: Test RandomVerticalFlipWithBBoxOperation with invalid parameters
+/// Expectation: Throw correct error and message
 TEST_F(MindDataTestIRVision, TestRandomVerticalFlipWithBBoxIRFail) {
   MS_LOG(INFO) << "Doing MindDataTestIRVision-TestRandomVerticalFlipWithBBoxIRFail.";
 

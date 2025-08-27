@@ -15,17 +15,17 @@
  */
 
 #include "minddata/dataset/engine/tree_adapter_lite.h"
-#include "minddata/dataset/engine/ir/datasetops/root_node.h"
-#include "minddata/dataset/engine/opt/pass.h"
-#include "minddata/dataset/engine/opt/pre/node_offload_pass.h"
-#include "minddata/dataset/engine/opt/post/repeat_pass.h"
-#include "minddata/dataset/engine/opt/pre/debug_mode_pass.h"
-#include "minddata/dataset/engine/opt/pre/deep_copy_pass.h"
-#include "minddata/dataset/engine/opt/pre/epoch_ctrl_pass.h"
-#include "minddata/dataset/engine/opt/pre/getter_pass.h"
-#include "minddata/dataset/engine/opt/pre/input_validation_pass.h"
-#include "minddata/dataset/engine/opt/pre/insert_map_pass.h"
-#include "minddata/dataset/engine/opt/pre/node_removal_pass.h"
+#include "minddata/dataset/engine/operation/datasetops/root_node.h"
+#include "minddata/dataset/engine/pass/pass.h"
+#include "minddata/dataset/engine/pass/pre/node_offload_pass.h"
+#include "minddata/dataset/engine/pass/post/repeat_pass.h"
+#include "minddata/dataset/engine/pass/pre/debug_mode_pass.h"
+#include "minddata/dataset/engine/pass/pre/deep_copy_pass.h"
+#include "minddata/dataset/engine/pass/pre/epoch_ctrl_pass.h"
+#include "minddata/dataset/engine/pass/pre/getter_pass.h"
+#include "minddata/dataset/engine/pass/pre/input_validation_pass.h"
+#include "minddata/dataset/engine/pass/pre/insert_map_pass.h"
+#include "minddata/dataset/engine/pass/pre/node_removal_pass.h"
 
 namespace mindspore {
 namespace dataset {

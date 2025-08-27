@@ -1011,9 +1011,9 @@ TEST_F(MindDataTestCacheOp, DISABLED_TestCApiCacheShareFailure1) {
   EXPECT_EQ(iter2, nullptr);
 }
 
-// Feature: Test RandomData with Cache and Repeat
-// Description: Iterate through dataset and count rows
-// Expectation: There should be 200 rows in the dataset
+/// Feature: Test RandomData with Cache and Repeat
+/// Description: Iterate through dataset and count rows
+/// Expectation: There should be 200 rows in the dataset
 TEST_F(MindDataTestCacheOp, DISABLED_TestCacheRandomDataCApi1) {
   session_id_type env_session;
   Status s = GetSessionFromEnv(&env_session);
@@ -1056,9 +1056,9 @@ TEST_F(MindDataTestCacheOp, DISABLED_TestCacheRandomDataCApi1) {
   iter->Stop();
 }
 
-// Feature: Test RandomData with Cache and Repeat
-// Description: Set mem_sz such that spill occurs, iterate through dataset and count rows
-// Expectation: There should be 40 rows in the dataset
+/// Feature: Test RandomData with Cache and Repeat
+/// Description: Set mem_sz such that spill occurs, iterate through dataset and count rows
+/// Expectation: There should be 40 rows in the dataset
 TEST_F(MindDataTestCacheOp, DISABLED_TestCacheRandomDataSpillCApi) {
   session_id_type env_session;
   Status s = GetSessionFromEnv(&env_session);

@@ -18,7 +18,7 @@
 #include <string>
 #include "common/common.h"
 #include "minddata/dataset/engine/execution_tree.h"
-#include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
+#include "minddata/dataset/engine/operation/datasetops/dataset_node.h"
 #include "minddata/dataset/engine/tree_adapter.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/transforms.h"

@@ -19,8 +19,8 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/tensor.h"
 
-#include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/distributed_sampler.h"
+#include "minddata/dataset/data_source/sampler/sampler.h"
+#include "minddata/dataset/data_source/sampler/distributed_sampler.h"
 #include "utils/log_adapter.h"
 
 #include <vector>
