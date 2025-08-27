@@ -20,6 +20,7 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "abstract/abstract_value.h"
+#include "ir/graph_utils.h"
 #include "common/graph_optimizer_test_framework.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_expander_cloud.h"
