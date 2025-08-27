@@ -27,8 +27,8 @@ mindspore.communication.create_group
 
           `hccl_config` 当前仅支持 "hccl_buffer_size" 和 "hccl_comm" 两个参数。
 
-          - **hccl_buffer_size** (uint32): 指定HCCL通信缓冲区的大小。
-          - **hccl_comm** (int64): 指定已存在的HcclComm指针。如果设置了 "hccl_comm"，则 "hccl_buffer_size" 无效。
+          - **hccl_buffer_size** (uint32)：指定HCCL通信缓冲区的大小。
+          - **hccl_comm** (int64)：指定已存在的HcclComm指针。如果设置了 "hccl_comm"，则 "hccl_buffer_size" 无效。
 
     异常：
         - **TypeError** - 参数 `group` 不是字符串或参数 `rank_ids` 不是列表。
