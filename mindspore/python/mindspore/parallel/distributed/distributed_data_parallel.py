@@ -57,6 +57,9 @@ class DistributedDataParallel(nn.Cell):
     Parameters' gradients will be combined into multiple buckets which are the unit to conduct all-reduce
     communication among data parallel group to overlap communication latency.
 
+    .. warning::
+        The method is currently only supported in PyNative mode.
+
     Args:
         module (nn.Cell): the module to be wrapped with DDP.
         init_sync (bool, optional): whether to sync params from rank0 of process_group when init. Default: ``True``.
@@ -81,6 +84,8 @@ class DistributedDataParallel(nn.Cell):
     Examples:
         .. note:
             - Current API does not support GPU/CPU version of MindSpore
+            - When enabling recomputation or gradient freezing, the model should be wrapped by
+              `DistributedDataParallel` at the outermost layer.
             - Before running the following examples, you need to configure the communication environment variables.
               For Ascend devices, it is recommended to use the msrun startup method
               without any third-party or configuration file dependencies. For detailed information, refer to
