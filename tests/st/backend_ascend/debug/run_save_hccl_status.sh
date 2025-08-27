@@ -14,10 +14,5 @@
 # limitations under the License.
 # ============================================================================
 
-export MS_ENABLE_RECOVERY=1
-export MS_DEV_RUNTIME_CONF="async_init_comm:False"
-export MS_ENABLE_TFT="{RSC:1}"
-export MS_ENABLE_THM="{HCCL_WATCHDOG:0}"
-
-msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10971 --join=True --log_dir=./logs "resuming_interface.py"
-
+export MS_ENABLE_THM="{HCCL_STATUS_SAVE:1,HCCL_STATUS_SAVE_CONFIG:'./ccae_config.json',HCCL_WATCHDOG:1}"
+msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10972 --join=True --log_dir=./logs "hccl_op_status_case.py"

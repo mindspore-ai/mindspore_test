@@ -19,6 +19,7 @@
 #include <variant>
 #include <unordered_map>
 #include <algorithm>
+#include "tools/error_handler/error_config.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
@@ -94,13 +95,15 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   }
   initialized_ = true;
 
-  // Initialize watch dog for global communication group.
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG) && common::GetEnv(kSimulationLevel).empty()) {
+  // Initialize watch dog for every group.
+  if (common::GetEnv(kSimulationLevel).empty() && tools::TftConfig::GetInstance() != nullptr &&
+      (tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
+       tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus())) {
     MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
                  << ", rank: " << global_rank_;
-    HcclWatchDogManager::GetInstance().AddHandler(std::make_unique<HcclWatchDogHandler>(global_rank_, name_, comm_));
-    auto handle_size = HcclWatchDogManager::GetInstance().HandleSize();
-    (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
+    HcclWatchDogManager::GetInstance().AddHandler(
+      std::make_unique<HcclWatchDogHandler>(global_rank_, device_id, name_, comm_, group_ranks_));
+    (void)HcclWatchDogManager::GetInstance().InitHandler(name_);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   distributed::collective::CollectiveManager::instance()->CacheInitedGroups(name_);

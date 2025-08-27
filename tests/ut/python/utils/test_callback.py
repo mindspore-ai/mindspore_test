@@ -693,7 +693,6 @@ def test_mindio_ttp_adapter():
         os.environ["MS_NODE_ID"] = "0"
         key_value = {"any": 0}
         _tft_handler.init(config=key_value)
-        assert context.get_context("hccl_watchdog") is False
 
         # case 4: if sink_size > 1, raise error
         os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1,TSP:1}'
@@ -753,7 +752,7 @@ def test_taskd_plugin():
     handle = RSCPluginHandle()
     enable = handle.check_enable()
     assert enable is False
-    os.environ["MS_ENABLE_TFT"] = "{RSC:1}"
+    handle.tft_env = "{RSC:1}"
     handle._check_env()  # pylint: disable=W0212
     enable = handle.check_enable()
     assert enable is True
