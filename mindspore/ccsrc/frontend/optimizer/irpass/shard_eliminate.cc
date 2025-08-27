@@ -21,11 +21,14 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 namespace internal {
-AnfNodePtr ExpandShard(const CNodePtr &node) {
+AnfNodePtr ExpandShard(const CNodePtr &node, bool preserve_defer_inline = false) {
   auto vnode = node->input(1)->cast<ValueNodePtr>();
   auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
   MS_EXCEPTION_IF_NULL(func_graph);
   func_graph->erase_flag(FUNC_GRAPH_FLAG_DEFER_INLINE);
+  if (preserve_defer_inline) {
+    func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+  }
   return NewValueNode(func_graph);
 }
 
@@ -42,7 +45,23 @@ bool ExpandShardPrim::operator()(const FuncGraphPtr &func_graph, const Optimizer
   auto manager = optimizer->manager();
   MS_EXCEPTION_IF_NULL(manager);
   for (auto &shard_node : prim_nodes_) {
-    auto expanded_shard = internal::ExpandShard(shard_node);
+    auto shard_node_fg = shard_node->func_graph();
+    // Preserve 'defer_inline' flag for shard node in the root graph to avoid premature inlining.
+    bool preserve_defer_inline = (shard_node_fg == func_graph);
+    auto expanded_shard = internal::ExpandShard(shard_node, preserve_defer_inline);
+
+    if (preserve_defer_inline) {
+      for (const auto &node : func_graph->nodes()) {
+        auto cnode = node->cast<CNodePtr>();
+        if (cnode == nullptr) {
+          continue;
+        }
+        if (IsPrimitiveCNode(cnode, prim::kPrimJ)) {
+          manager->SetEdge(cnode, kIndex1, expanded_shard);
+        }
+      }
+    }
+
     (void)manager->Replace(shard_node, expanded_shard);
     change = true;
   }
