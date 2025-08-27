@@ -142,11 +142,12 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
                                             const ShapeVector &real_shape, const size_t &stream_id);
 
   // Convert tensor to contiguous tensor.
-  static void ConvertContiguousTensorSync(const tensor::TensorPtr &tensor);
+  static void ConvertContiguousTensorSync(const tensor::TensorPtr &tensor, size_t stream_id = SIZE_MAX);
 
   // Convert old_device_address to contiguous device address.
   static device::DeviceAddressPtr ConvertContiguousDeviceAddress(const DeviceContext *device_context,
-                                                                 const device::DeviceAddressPtr &old_device_address);
+                                                                 const device::DeviceAddressPtr &old_device_address,
+                                                                 size_t stream_id = SIZE_MAX);
 
   // Convert view tensor to contiguous tensor.
   static tensor::TensorPtr TensorContiguous(const tensor::TensorPtr &tensor);

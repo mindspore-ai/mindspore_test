@@ -20,6 +20,7 @@
 #include "runtime/core/graph_scheduler/heterogeneous/device_tensor_copy_store.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/ms_context.h"
@@ -262,6 +263,26 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
     MS_LOG(DEBUG) << "Add input tensor data for input parameter: " << origin_parameter->fullname_with_scope();
   }
   return isDyn;
+}
+
+void GraphParameterStore::ConvertNormalInputContiguous(const std::vector<size_t> &input_index) {
+  for (size_t l = 0; l < input_index.size(); ++l) {
+    auto i = input_index[l];
+    if (i >= buffers_.size()) {
+      MS_LOG(EXCEPTION) << "Index " << i << " is out of range of buffers size: " << buffers_.size();
+    }
+    auto buffer_inner_size = buffers_[i].size();
+
+    if (buffer_inner_size != 1) {
+      if (buffers_[i][0] != nullptr && buffers_[i][0]->storage_info() != nullptr) {
+        MS_LOG(EXCEPTION) << "The input of tuple type contains non-contiguous inputs, which is not supported in the "
+                             "inference scenario.";
+      }
+    } else {
+      const auto &input_tensor = buffers_[i][0];
+      DeviceAddressUtils::ConvertContiguousTensorSync(input_tensor, 0);
+    }
+  }
 }
 
 DeviceTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, size_t inner_index) {

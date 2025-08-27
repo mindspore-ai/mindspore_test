@@ -1240,20 +1240,20 @@ KernelTensorPtr DeviceAddressUtils::CreateWorkspaceKernelTensor(const DeviceCont
 
 tensor::TensorPtr DeviceAddressUtils::TensorContiguous(const tensor::TensorPtr &tensor) { return nullptr; }
 
-void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::TensorPtr &tensor) {
+void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::TensorPtr &tensor, size_t stream_id) {
   if (tensor == nullptr || tensor->storage_info() == nullptr) {
     return;
   }
 
   MS_LOG(DEBUG) << "Tensor storage_info is not nullptr, need to contiguous, id:" << tensor->id();
-  const auto &new_device_address =
-    ConvertContiguousDeviceAddress(nullptr, std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()));
+  const auto &new_device_address = ConvertContiguousDeviceAddress(
+    nullptr, std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), stream_id);
   MS_EXCEPTION_IF_NULL(new_device_address);
   tensor->set_device_address(new_device_address);
 }
 
 device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
-  const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address) {
+  const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(old_device_address);
   const DeviceContext *device_context = input_device_context;
   if (device_context == nullptr) {
@@ -1263,7 +1263,9 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   }
 
   MS_EXCEPTION_IF_NULL(device_context);
-  auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  if (stream_id == SIZE_MAX) {
+    stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  }
 
   GilReleaseWithCheck release_gil;
   const auto &old_storage_info = old_device_address->GetTensorStorageInfo();
