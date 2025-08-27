@@ -5,6 +5,9 @@ mindspore.parallel.distributed.DistributedDataParallel
 
     分布式数据并行封装类。该类为梯度分配连续显存，各参数的梯度将被分入多个桶，该桶是在数据并行域执行 all-reduce 通信以实现通信掩盖的基本单元。
 
+    .. warning::
+        该方法当前仅支持在PyNative模式下使用。
+
     参数：
         - **module** (nn.Cell) - 需要进行分布式梯度规约的网络。
         - **init_sync** (bool，可选) - 初始化时，是否进行rank0网络参数广播同步。默认值： ``True``。
@@ -22,4 +25,5 @@ mindspore.parallel.distributed.DistributedDataParallel
 
     .. note::
         - 当前接口不支持GPU、CPU版本的MindSpore调用。
+        - 使能重计算、梯度冻结时，必须在最外层使用 DistributedDataParallel 类进行封装。
         - 在运行以下示例之前，您需要配置通信环境变量。针对Ascend设备，推荐使用msrun启动方式，无第三方以及配置文件依赖。详见 `msrun启动 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/msrun_launcher.html>`_ 。
