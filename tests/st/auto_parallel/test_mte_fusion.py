@@ -24,10 +24,8 @@ def test_all_gather_matmul_forward():
     Description: Test all_gather-matmul fusion in forward.
     Expectation: Run success
     '''
-    os.environ['ENABLE_LCCL'] = '1'
     ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
                     "pytest -s mte_fusion.py::test_all_gather_matmul_forward")
-    os.environ['ENABLE_LCCL'] = '0'
     assert ret == 0
 
 
@@ -38,8 +36,18 @@ def test_matmul_reduce_scatter_forward():
     Description: Test matmul-reduce_scatter fusion in forward.
     Expectation: Run success
     '''
-    os.environ['ENABLE_LCCL'] = '1'
     ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
                     "pytest -s mte_fusion.py::test_matmul_reduce_scatter_forward")
-    os.environ['ENABLE_LCCL'] = '0'
+    assert ret == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_ms_disable_lccl_kernels_list():
+    '''
+    Feature: MTE fusion.
+    Description: Test environment MS_DISABLE_LCCL_KERNELS_LIST in dyrun mode.
+    Expectation: Run success
+    '''
+    ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
+                    "pytest -s mte_fusion.py::test_ms_disable_lccl_kernels_list")
     assert ret == 0

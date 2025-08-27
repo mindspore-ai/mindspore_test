@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import subprocess
 import numpy as np
 
 import mindspore.common.dtype as mstype
@@ -25,14 +26,21 @@ from mindspore import context, Tensor
 grad = C.GradOperation(get_all=True)
 
 
+def check_keyword_in_ir(ir_path, kernel, keyword):
+    cmd = f"grep '= {kernel}' {ir_path}"
+    print(f'===== cmd: {cmd}', flush=True)
+    result = subprocess.getoutput(cmd)
+    return result.find(keyword) != -1
+
+
 class AllGatherMatmulNet(nn.Cell):
     def __init__(self, seq_len, hidden_size, dp, mp):
         super(AllGatherMatmulNet, self).__init__()
-        self.gelu1 = P.Gelu()
+        self.gelu1 = P.GeLU()
         self.dense1 = nn.Dense(in_channels=hidden_size,
                                out_channels=hidden_size,
                                weight_init="ones").to_float(mstype.float16)
-        self.gelu2 = P.Gelu()
+        self.gelu2 = P.GeLU()
         self.dense2 = nn.Dense(in_channels=hidden_size,
                                out_channels=hidden_size,
                                weight_init="ones").to_float(mstype.float16)
@@ -56,8 +64,8 @@ class MatmulReduceScatterNet(nn.Cell):
         self.dense1 = nn.Dense(in_channels=hidden_size,
                                out_channels=hidden_size,
                                weight_init="ones").to_float(mstype.float16)
-        self.gelu1 = P.Gelu()
-        self.gelu2 = P.Gelu()
+        self.gelu1 = P.GeLU()
+        self.gelu2 = P.GeLU()
 
         self.gelu1.shard((((dp, 1),)))
         self.dense1.matmul.shard(((dp, mp), (1, mp)), out_strategy=((dp * mp, 1),))
@@ -127,3 +135,114 @@ def test_matmul_reduce_scatter_forward():
     print("====================================================="
           f"\n expect_out:\n{expect_out}, \n mte_out:\n{mte_out},", flush=True)
     assert np.allclose(expect_out, mte_out, 1e-2, 1e-2)
+
+
+def test_ms_disable_lccl_kernels_list():
+    """
+    Feature: MTE fusion.
+    Description: Test environment MS_DISABLE_KERNELS_LIST.
+    Expectation: Run success
+    """
+    os.environ['MS_ENABLE_LCCL'] = "on"
+    os.environ['MS_DEV_SAVE_GRAPHS'] = str(2)
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = './graph_lccl_kernels_list'
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'graph_build'
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
+    context.set_context(compute_communicate_fusion_level=3)
+    D.init()
+    seq_len, hidden_size = 4096, 12288
+    dp, mp = 1, 4
+    x = Tensor(np.random.uniform(-3, 3, [seq_len, hidden_size]), dtype=mstype.float16)
+
+    kernel_allgather = 'AllGather'
+    kernel_allgathermatmul = 'PrimFunc_AllGatherMatmul'
+    keyword_lccl = 'collective_comm_lib: "LCCL"'
+    keyword_hccl = 'collective_comm_lib: "HCCL"'
+
+    # Unset black list, AllGather go lccl, AllGatherMatmul go lccl.
+    net0 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net0(x)[0].asnumpy()
+    out1 = net0(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_0_*'
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_0 +++', flush=True)
+
+    # Blank black list, AllGather go lccl, AllGatherMatmul go lccl.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = ""
+    net1 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net1(x)[0].asnumpy()
+    out1 = net1(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_1_*'
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_1 +++', flush=True)
+
+    # Black list for only 'AllGather', AllGather go hccl, AllGatherMatmul go lccl.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "AllGather,"
+    net2 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net2(x)[0].asnumpy()
+    out1 = net2(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_2_*'
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_2 +++', flush=True)
+
+    # Black list for non kernels, AllGather go lccl, AllGatherMatmul go lccl.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = ","
+    net3 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net3(x)[0].asnumpy()
+    out1 = net3(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_3_*'
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_3 +++', flush=True)
+
+    # Black list for wrong spelling 'Allgather' and correct 'AllGatherMatmul',
+    # Allgather go lccl, AllGatherMatmul go aclnn(no 'collective_comm_lib' tag).
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "Allgather,AllGatherMatmul"
+    net4 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net4(x)[0].asnumpy()
+    out1 = net4(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_4_*'
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_4 +++', flush=True)
+
+    # Black list for correct 'AllGather' and  'AllGatherMatmul', Allgather go hccl, AllGatherMatmul go aclnn.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "AllGather,AllGatherMatmul"
+    net5 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net5(x)[0].asnumpy()
+    out1 = net5(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_5_*'
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_5 +++', flush=True)
+
+    os.environ['MS_DEV_SAVE_GRAPHS'] = str(0)
