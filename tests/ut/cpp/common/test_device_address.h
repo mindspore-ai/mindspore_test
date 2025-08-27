@@ -60,14 +60,15 @@ class TestDeviceAddress : public DeviceAddress {
   TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
       : DeviceAddress(ptr, size, device_name) {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
-      : DeviceAddress(ptr, size, format, type_id, device_name) {}
+      : DeviceAddress(ptr, size, format, type_id, device_name) {
+  }
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
   bool IsPtrValid() const {
     return GetDevicePtr() != nullptr;
   }
-  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
+  DeviceType GetDeviceType() const { return device_type_; }
 
   void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
 
@@ -139,6 +140,19 @@ class TestResManager : public device::DeviceResManager {
   }
   bool LoadCollectiveCommLib() { return false; }
   device::CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
+
+  bool SyncStream(size_t stream_id) const override {
+    sync_stream_counts_[stream_id] += 1;
+    return true;
+  }
+
+  bool SyncAllStreams(bool sync_device = true) const override {
+    sync_all_stream_count_ += 1;
+    return true;
+  }
+
+  mutable std::map<size_t, size_t> sync_stream_counts_;
+  mutable size_t sync_all_stream_count_{0};
 };
 
 class TestKernelExecutor : public device::KernelExecutor {

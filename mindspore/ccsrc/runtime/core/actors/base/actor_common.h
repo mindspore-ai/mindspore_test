@@ -520,7 +520,11 @@ inline bool EnableRuntimeNewPipeline() {
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish = true);
 
-bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor);
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &dst_device_tensor, const DeviceTensorPtr &src_device_tensor,
+                                   uint32_t stream_id = kDefaultStreamIndex, bool sync_stream_on_demand = true);
+bool SyncStreamOnDemandForDeviceAddress(const DeviceTensorPtr &dst_device_tensor,
+                                        const DeviceTensorPtr &src_device_tensor,
+                                        uint32_t stream_id = kDefaultStreamIndex);
 size_t GetDefragMemoryStepFreq();
 
 // Use async copy should use callback to avoid src device tenor released.
@@ -553,7 +557,7 @@ bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
 KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
                                bool is_first_user = true, size_t stream_id = SIZE_MAX,
-                               bool enable_parallel_dispath = false, bool *has_h2d_copy = nullptr);
+                               bool enable_parallel_dispatch = false, bool *has_h2d_copy = nullptr);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
 
