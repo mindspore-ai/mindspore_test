@@ -93,9 +93,7 @@ void ControlActor::IncreaseNewRefCountForPartial(const OpPartialPtr &op_partial)
   GetAllKernelTensors(op_partial, &partial_kernel_tensors);
   for (auto &partial_kernel_tensor : partial_kernel_tensors) {
     MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    const auto &partial_device_tensor = partial_kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
+    partial_kernel_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase new ref count for kernel tensor:" << partial_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
@@ -106,9 +104,7 @@ void ControlActor::IncreaseNewRefCountForRealParameter(const OpRealParameterWith
   GetAllKernelTensors(op_real_parameter, &partial_kernel_tensors);
   for (auto &partial_kernel_tensor : partial_kernel_tensors) {
     MS_EXCEPTION_IF_NULL(partial_kernel_tensor);
-    const auto &partial_device_tensor = partial_kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(partial_device_tensor);
-    partial_device_tensor->IncreaseNewRefCount(GetAID().Name());
+    partial_kernel_tensor->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase new ref count for kernel tensor:" << partial_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
@@ -608,6 +604,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());
   }
+  static std::string name = "Alloc memory";
+  new_kernel_tensor->IncreaseNewRefCount(name);
   MS_EXCEPTION_IF_NULL(new_device_tensor->GetMutablePtr());
 
   // Create a new real maketuple node for new device address.
@@ -682,6 +680,8 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());
   }
+  static std::string name = "Alloc memory";
+  new_kernel_tensor->IncreaseNewRefCount(name);
   created_kernel_tensors_.emplace_back(new_kernel_tensor);
   (*kernel_tensor) = new_kernel_tensor;
   MS_LOG(DEBUG) << "actor:" << GetAID() << " create new kernel tensor:" << new_kernel_tensor->ToString()
@@ -701,20 +701,20 @@ void ControlActor::ResetState(OpContext<KernelTensor> *const context) {
       }
       auto device_tensor = kernel_tensor->device_address().get();
       // Weight can not be free.
-      if (device_tensor->new_ref_count() == SIZE_MAX) {
+      if (kernel_tensor->new_ref_count() == SIZE_MAX) {
         continue;
       }
       auto held_by_nodes = device_tensor->held_by_nodes();
       if (!held_by_nodes.empty()) {
         FreeMemoryByValueNode(held_by_nodes, device_tensor);
-        device_tensor->set_new_ref_count(0);
+        kernel_tensor->set_new_ref_count(0);
         continue;
       }
       const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
       MS_EXCEPTION_IF_NULL(device_context);
       FreeMemoryByDeviceContext(device_tensor, device_context);
-      device_tensor->set_new_ref_count(0);
+      kernel_tensor->set_new_ref_count(0);
     }
   }
   MS_LOG(INFO) << "End free control actor " << GetAID();

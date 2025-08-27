@@ -260,7 +260,7 @@ void LazyFusionKernelAscend::Flush() {
       bool has_store = false;
       for (auto &out : outputs_) {
         auto &device_address = out.dev_addr;
-        if (device_address.use_count() == 1 && device_address->pointer_ref_count().use_count() == 1) {
+        if (device_address.use_count() == 1 && device_address->device_pointer().use_count() == 1) {
           out.skip = true;
           continue;
         }

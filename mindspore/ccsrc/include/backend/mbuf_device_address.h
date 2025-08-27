@@ -32,7 +32,6 @@ class MbufDeviceAddress : public device::DeviceAddress {
     auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));
   }
   void SetData(void *data) { set_ptr(data); }
-  void ClearDeviceMemory() {}
   device::DeviceType GetDeviceType() const { return DeviceType::kAscend; }
 };
 }  // namespace device

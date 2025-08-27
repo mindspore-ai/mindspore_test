@@ -469,7 +469,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
-  if (address->pointer_ref_count()->ptr() != nullptr) {
+  if (address->device_pointer()->ptr() != nullptr) {
     MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
@@ -493,7 +493,6 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_from_mem_pool(true);
   address->set_ptr(device_ptr);
-  address->IncreaseNewRefCount();
   if (enable_memory_tracker_) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }
@@ -662,7 +661,7 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, c
   return device_address;
 }
 
-bool AscendResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool AscendResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                 size_t stream_id) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -675,7 +674,7 @@ bool AscendResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const Devi
   return SyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
 }
 
-bool AscendResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool AscendResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                  size_t stream_id, bool keep_src) const {
   MS_EXCEPTION_IF_NULL(dst_device_sync);
   MS_EXCEPTION_IF_NULL(src_device_sync);
@@ -707,24 +706,24 @@ bool SyncStreamForCopy(const AscendResManager *const res_manager, size_t stream_
 }
 }  // namespace
 
-bool AscendResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                        size_t stream_id) const {
+bool AscendResManager::SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync,
+                                        const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   if (!AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id)) {
     return false;
   }
   return SyncStreamForCopy(this, stream_id);
 }
 
-bool AscendResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                        size_t stream_id) const {
+bool AscendResManager::SyncHostToDevice(const DeviceAddressPtr &dst_device_sync,
+                                        const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   if (!AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id, false)) {
     return false;
   }
   return SyncStreamForCopy(this, stream_id);
 }
 
-bool AscendResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                          size_t stream_id) const {
+bool AscendResManager::SyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync,
+                                          const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   if (!AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id)) {
     return false;
   }
@@ -838,7 +837,7 @@ bool AscendResManager::CopyDirectly(void *dst, size_t dst_size, const void *src,
 }
 
 bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-                                const DeviceSyncPtr src_device_sync) const {
+                                const DeviceAddressPtr src_device_sync) const {
   if (size == 0 || common::IsCompileSimulation()) {
     return true;
   }
@@ -971,8 +970,8 @@ bool AscendResManager::CopyDeviceToHostForDiffType(const DeviceAddress *dst_devi
   return true;
 }
 
-bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                         size_t stream_id) const {
+bool AscendResManager::AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync,
+                                         const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -1003,7 +1002,7 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
 bool AscendResManager::CopyHostToDevice(const DeviceAddress *dst_device_address,
                                         const DeviceAddress *src_device_address, const void *src, uint64_t size,
                                         aclrtMemcpyKind kind, size_t stream_id,
-                                        const DeviceSyncPtr src_device_sync) const {
+                                        const DeviceAddressPtr src_device_sync) const {
   if (dst_device_address->type_id() != kObjectTypeString) {
     return BaseCopy(dst_device_address->GetDevicePtr(), src, size, kind, stream_id, src_device_sync);
   }
@@ -1145,8 +1144,9 @@ bool AscendResManager::CopyHostToDeviceForDiffType(const DeviceAddress *dst_devi
   return true;
 }
 
-bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                         size_t stream_id, bool keep_src) const {
+bool AscendResManager::AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync,
+                                         const DeviceAddressPtr &src_device_sync, size_t stream_id,
+                                         bool keep_src) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -1181,8 +1181,8 @@ bool AscendResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, c
                           keep_src ? src_device_sync : nullptr);
 }
 
-bool AscendResManager::SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync,
-                                                            const DeviceSyncPtr &src_device_sync,
+bool AscendResManager::SyncDeviceToDeviceWithDiffFormatType(const DeviceAddressPtr &dst_device_sync,
+                                                            const DeviceAddressPtr &src_device_sync,
                                                             size_t stream_id) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
@@ -1222,8 +1222,8 @@ bool AscendResManager::SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr 
   return true;
 }
 
-bool AscendResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                           size_t stream_id) const {
+bool AscendResManager::AsyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync,
+                                           const DeviceAddressPtr &src_device_sync, size_t stream_id) const {
   const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
@@ -1883,7 +1883,7 @@ size_t AscendResManager::GetCommunicationStreamIDByGroup(const std::string &grou
 
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kAscend,
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -1894,7 +1894,8 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
+      bool keep_src) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);

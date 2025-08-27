@@ -27,14 +27,15 @@
 #include <vector>
 #include <algorithm>
 #include "abstract/dshape.h"
+#include "ir/format_utils.h"
 #include "include/api/format.h"
 #include "ir/anf.h"
+#include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "ops/base_operator.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "runtime/hardware_abstract/visible.h"
 

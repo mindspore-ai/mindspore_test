@@ -214,7 +214,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
 
   void UpdateOutputShape(const TensorPtr &tensor, const ShapeVector &shape) {
     tensor->set_shape(shape);
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    auto device_address = tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetShapeVector(shape);
   }
@@ -289,8 +289,7 @@ class PYBOOST_API OpRunner : public std::enable_shared_from_this<OpRunner> {
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
       for (const auto &tensor : tensors) {
         MS_EXCEPTION_IF_NULL(tensor);
-        const auto &device_sync = tensor->device_address();
-        auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+        const auto &device_address = tensor->device_address();
         if (device_address == nullptr) {
           MS_LOG(WARNING) << "Tracker: input tensor device address is nullptr, primitive: " << primitive->name();
           continue;

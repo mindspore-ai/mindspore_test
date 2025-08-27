@@ -278,6 +278,8 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get())) {
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
       << " for value node:" << node->DebugString();

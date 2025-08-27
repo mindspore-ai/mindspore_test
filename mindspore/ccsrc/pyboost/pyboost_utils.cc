@@ -211,13 +211,13 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   return kernel_mod;
 }
 
-DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync) {
+DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr &device_sync) {
   const auto &storage_info = device_sync->GetTensorStorageInfo();
   if (storage_info == nullptr) {
     return device_sync;
   }
 
-  auto old_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  auto old_device_address = device_sync;
 
   MS_EXCEPTION_IF_NULL(old_device_address);
   MS_EXCEPTION_IF_NULL(storage_info);
@@ -232,7 +232,6 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
     device_context->device_context_key().device_name_, stream_id);
-  new_device_address->set_new_ref_count(SIZE_MAX);
 
   if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
                                                               {old_device_address}, {new_device_address}, stream_id)) {
@@ -262,10 +261,11 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
                                      runtime::ProfilerRecorder::kNoName, false);
   auto output_tensor = tensor::from_spec(input->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  output_tensor->set_contiguous_callback(
-    [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });
+  output_tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
+    return ContiguousByDeviceAddress(device_address);
+  });
 
-  auto input_device_address = std::static_pointer_cast<device::DeviceAddress>(input->device_address());
+  auto input_device_address = input->device_address();
   MS_EXCEPTION_IF_NULL(input_device_address);
 
   // Create view output address
@@ -274,7 +274,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
     device_context->device_context_key().device_name_, input_device_address->stream_id());
   MS_EXCEPTION_IF_NULL(output_device_address);
   output_device_address->set_tensor_storage_info(storage_info);
-  output_device_address->set_pointer_ref_count(input_device_address->pointer_ref_count());
+  output_device_address->set_device_pointer(input_device_address->device_pointer());
   output_tensor->set_device_address(output_device_address);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString() << " with " << storage_info->ToString();
@@ -411,7 +411,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   MS_EXCEPTION_IF_NULL(kernel_tensor_list);
   MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
 
-  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto tmp_abs = input_abs;
   if (input_abs == nullptr) {

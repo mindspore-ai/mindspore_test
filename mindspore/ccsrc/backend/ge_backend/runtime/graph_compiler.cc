@@ -24,7 +24,7 @@
 #include <regex>
 #include "backend/ge_backend/runtime/graph_scheduler.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
@@ -67,10 +67,10 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
   for (const auto &item : summary_nodes) {
     const AnfNodePtr &node = item.second.first;
     size_t index = IntToSize(item.second.second);
-    auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->set_original_ref_count(SIZE_MAX);
-    device_address->ResetRefCount();
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    kernel_tensor->set_original_ref_count(SIZE_MAX);
+    kernel_tensor->ResetRefCount();
   }
 }
 

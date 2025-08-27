@@ -342,7 +342,8 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
                 << " backend node:" << backend_node->DebugString() << " index:" << front_node_with_index.second
                 << " addr:" << address << " size:" << tensor_size;
   AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node);
-  UpdateRefCount(address.get(), true);
+  auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(front_node, front_node_with_index.second, false);
+  UpdateRefCount(node_kernel_tensor, true);
 }
 
 // Create a device tensor for front node.
@@ -406,8 +407,7 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   if (is_map_parameter) {
     backend::ge_backend::DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(front_node_with_index.first,
                                                                                 front_node_with_index.second);
-    UpdateRefCount(AnfAlgo::GetMutableOutputAddr(front_node_with_index.first, front_node_with_index.second).get(),
-                   true);
+    UpdateRefCount(AnfAlgo::GetOutputKernelTensor(front_node_with_index.first, front_node_with_index.second), true);
     return;
   }
 
@@ -444,7 +444,8 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
                << common::AnfAlgo::GetNodeDebugString(node) << " addr:" << address << " size:" << size
                << ", type id:" << type_id;
   AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node);
-  UpdateRefCount(address.get(), true);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, front_node_with_index.second, false);
+  UpdateRefCount(kernel_tensor, true);
 }
 
 // Fetch all funcgraph by a seed graph, if a calls b, b calls c, and c calls a, return a set of a, b, c.

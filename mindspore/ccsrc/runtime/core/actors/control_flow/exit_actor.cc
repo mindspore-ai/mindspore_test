@@ -211,7 +211,7 @@ void ExitActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
     }
     const auto &input_device_tensor = input_kernel_tensors_[i]->device_address().get();
     if ((input_device_tensor != nullptr) && input_device_tensor->GetPtr() != nullptr &&
-        input_device_tensor->new_ref_count() == 0 && (device_contexts_[i] != nullptr)) {
+        input_kernel_tensors_[i]->new_ref_count() == 0 && (device_contexts_[i] != nullptr)) {
       MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
       // Update the real used device context by the input data.
       if (device_contexts_[i]->GetDeviceType() != input_device_tensor->GetDeviceType()) {
@@ -290,13 +290,17 @@ void ExitActor::MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const cont
   }
 }
 
-bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index) {
+bool ExitActor::IsNeedCopyDeviceAddress(const KernelTensorPtr &input_kernel_tensor, size_t index) {
+  if (input_kernel_tensor == nullptr) {
+    return false;
+  }
+  auto input_device_tensor = input_kernel_tensor->device_address();
   if ((input_device_tensor == nullptr) || (is_need_copy_device_tensors_[index] == CopyStat::COPY_DISABLE)) {
     return false;
   }
 
   if (is_need_dynamic_checks_[index]) {
-    if (input_device_tensor->new_ref_count() != INT32_MAX) {
+    if (input_kernel_tensor->new_ref_count() != INT32_MAX) {
       return false;
     }
     const auto &node = input_device_tensor->GetNodeIndex().first;
@@ -358,7 +362,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     auto input_device_tensor =
       input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address();
-    if (!IsNeedCopyDeviceAddress(input_device_tensor.get(), i)) {
+    if (!IsNeedCopyDeviceAddress(input_kernel_tensors_[i], i)) {
       (void)new_kernel_tensors.emplace_back(input_kernel_tensors_[i]);
       continue;
     }
@@ -391,7 +395,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     new_device_tensor->set_from_persistent_mem(input_device_tensor->from_persistent_mem());
 
     // If the address ptr can't be changed, then alloc the new device memory and copy the data.
-    if (input_device_tensor->is_ptr_persisted()) {
+    if (input_kernel_tensors_[i]->is_ptr_persisted()) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "CopyDeviceAddress", "", false);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      new_device_tensor->GetSize(), new_device_tensor.get());
@@ -399,6 +403,8 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
         SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                     GetAID().Name(), new_device_tensor->GetSize());
       }
+      static std::string name = "Alloc memory";
+      new_kernel_tensor->IncreaseNewRefCount(name);
       MS_LOG(DEBUG) << "Sync device address from:" << input_kernel_tensors_[i]->ToString()
                     << " to:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
       if (!SyncCopy(new_device_tensor, input_device_tensor, kDefaultStreamIndex)) {
@@ -413,17 +419,16 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
         }
         MS_EXCEPTION_IF_NULL(new_kernel_tensors[iter->second]);
         MS_EXCEPTION_IF_NULL(new_kernel_tensors[iter->second]->device_address());
-        new_device_tensor->set_pointer_ref_count(
-          new_kernel_tensors[iter->second]->device_address()->pointer_ref_count());
+        new_kernel_tensor->set_pointer_ref_count(new_kernel_tensors[iter->second].get());
         MS_LOG(DEBUG) << "Exit actor share the same pointer ref count:"
-                      << new_kernel_tensors[iter->second]->device_address()->pointer_ref_count()
-                      << " between device address:" << new_device_tensor
-                      << " and:" << new_kernel_tensors[iter->second]->device_address();
+                      << new_kernel_tensors[iter->second]->device_address()->device_pointer()
+                      << " between kernel tensor:" << new_kernel_tensor->ToString()
+                      << " and:" << new_kernel_tensors[iter->second]->ToString();
         continue;
       } else if (is_need_copy_device_tensors_[i] == CopyStat::COPY_POINTER_REF_COUNT) {
         MS_LOG(DEBUG) << "Set pointer ref count from kernel tensor:" << input_kernel_tensors_[i]->ToString()
                       << " to:" << new_kernel_tensor->ToString() << " for actor:" << GetAID();
-        new_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
+        new_kernel_tensor->set_pointer_ref_count(input_kernel_tensors_[i].get());
         continue;
       }
       // Move the device ptr from input_device_tensor to new_device_tensor.

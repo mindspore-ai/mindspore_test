@@ -20,7 +20,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
@@ -64,7 +64,7 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
+  DeviceAddressPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {

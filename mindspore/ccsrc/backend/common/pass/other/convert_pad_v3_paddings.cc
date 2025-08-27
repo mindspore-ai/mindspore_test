@@ -27,6 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/sequence_op_name.h"
+#include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {

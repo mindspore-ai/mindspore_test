@@ -30,6 +30,8 @@
 #include "utils/trace_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
+#include "ops_utils/op_constants.h"
+#include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

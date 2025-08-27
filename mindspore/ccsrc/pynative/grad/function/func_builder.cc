@@ -30,6 +30,7 @@
 #include "include/common/pynative/common_utils.h"
 #include "pynative/pynative_utils.h"
 #include "utils/core_op_utils.h"
+#include "utils/check_convert_utils.h"
 #include "pynative/grad/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"

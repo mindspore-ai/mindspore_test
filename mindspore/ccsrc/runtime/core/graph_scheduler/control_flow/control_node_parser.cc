@@ -413,7 +413,8 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
                 << " backend node:" << backend_node->DebugString() << " index:" << front_node_with_index.second
                 << " addr:" << address << " size:" << tensor_size;
   AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node);
-  address->set_new_ref_count(SIZE_MAX);
+  auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(front_node, front_node_with_index.second, false);
+  node_kernel_tensor->set_new_ref_count(SIZE_MAX);
 }
 
 // Create a device tensor for front node.
@@ -499,7 +500,9 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
     MS_LOG(INFO) << "Create kernel tensor:" << kernel_tensor->ToString()
                  << " for node that has no corresponding backend node:" << node->DebugString();
     MS_EXCEPTION_IF_NULL(address);
-    address->set_new_ref_count(SIZE_MAX);
+    auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, front_node_with_index.second, false);
+    MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+    node_kernel_tensor->set_new_ref_count(SIZE_MAX);
   } else {
     // Create device tensor.
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(

@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "runtime/hardware_abstract/memory_manager/io_handle.h"
 #include "runtime/hardware_abstract/memory_manager/pin_mem_pool.h"
 #include "runtime/hardware_abstract/visible.h"

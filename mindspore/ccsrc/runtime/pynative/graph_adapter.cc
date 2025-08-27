@@ -147,7 +147,7 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(device_context);
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
 
   MS_EXCEPTION_IF_NULL(device_address);
@@ -313,7 +313,7 @@ void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tens
     MS_EXCEPTION_IF_NULL(device_context);
     for (auto &tensor : tensors) {
       if (tensor != nullptr && tensor->device_address() != nullptr) {
-        auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+        auto device_address = tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_address);
         if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
           actor_set->data_prepare_actor_->set_heter_weights(true);
@@ -340,7 +340,7 @@ void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
       const auto &input_tensor = input_tensors[index++];
       MS_EXCEPTION_IF_NULL(input_tensor);
       const auto &tensor_address = input_tensor->device_address();
-      auto address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor_address);
+      auto address = std::dynamic_pointer_cast<DeviceAddress>(tensor_address);
       if (address == nullptr || address->GetDeviceType() != device_context->GetDeviceType()) {
         // Need to discard input tensor properties in heterogeneous scenarios.
         // For example, the format of device_address in input_tensor is 5D format,

@@ -675,7 +675,7 @@ tensor::TensorPtr Common::ConvertToContiguousTensor(const tensor::TensorPtr &ten
   MS_EXCEPTION_IF_NULL(tensor);
 
   // Tensor with storage info, need convert to contiguous in no-view op.
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
 
@@ -689,7 +689,7 @@ tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_c
     return tensor;
   }
 
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
   if (device_target == device::DeviceType::kAscend) {

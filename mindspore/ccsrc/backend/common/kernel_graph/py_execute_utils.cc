@@ -360,8 +360,11 @@ void UserDataToRawMemory(KernelTensor *const kernel_tensor) {
     MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
                   << ") memory isn't enough and alloc failed, alloc size: " + std::to_string(device_address->GetSize());
     return;
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
-  device_address->DecreaseNewRefCount("Pyexecute sync");
+  kernel_tensor->DecreaseNewRefCount("Pyexecute sync");
   tensor::TensorPtr tensor = GetValueByPyObj(obj);
   TensorToRawMemory(tensor, device_address);
 }

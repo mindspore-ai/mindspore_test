@@ -15,20 +15,20 @@
  */
 
 #include "ir/device_type.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "ir/device_address_maker.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-DeviceSyncPtr MakeCPUDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
-                                   DeviceAddressDeleter &&deleter) {
+DeviceAddressPtr MakeCPUDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
+                                      DeviceAddressDeleter &&deleter) {
   auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
   auto device_address =
     std::make_shared<DeviceAddress>(data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
   if (deleter != nullptr) {
-    device_address->SetPointerRefCountDeleter(std::move(deleter));
+    device_address->SetDevicePointerDeleter(std::move(deleter));
   }
   return device_address;
 }

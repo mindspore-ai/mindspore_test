@@ -298,8 +298,7 @@ void AbstractActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context)
 void AbstractActor::IncreaseNewRefCount(const OpData<KernelTensor> *op_data) const {
   MS_EXCEPTION_IF_NULL(op_data);
   MS_EXCEPTION_IF_NULL(op_data->data_);
-  MS_EXCEPTION_IF_NULL(op_data->data_->device_address());
-  op_data->data_->device_address()->IncreaseNewRefCount(GetAID().Name());
+  op_data->data_->IncreaseNewRefCount(GetAID().Name());
   MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count for:" << op_data->data_
                 << " count:" << op_data->data_->new_ref_count();
 }
@@ -316,15 +315,16 @@ void AbstractActor::HandleWaitMessage(OpContext<KernelTensor> *const context, co
   ActorDispatcher::Send(from_aid, &AbstractActor::HandleNotifyMessage, context, GetAID());
 }
 
-bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_tensor,
+bool AbstractActor::IsOutputAddressPersisted(const KernelTensorPtr &output_kernel_tensor,
                                              const KernelWithIndex &output_node, bool *need_release_mem) {
   MS_EXCEPTION_IF_NULL(output_node.first);
-  MS_EXCEPTION_IF_NULL(output_device_tensor);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Check persist for device address:" << output_device_tensor << " for node:" << output_node.first->DebugString()
-    << " full name:" << output_node.first->fullname_with_scope() << " index:" << output_node.second;
+    << "Check persist for kernel tensor:" << output_kernel_tensor->ToString()
+    << " for node:" << output_node.first->DebugString() << " full name:" << output_node.first->fullname_with_scope()
+    << " index:" << output_node.second;
   // The persisted address can't be replaced.
-  if (output_device_tensor->is_ptr_persisted()) {
+  if (output_kernel_tensor->is_ptr_persisted()) {
     return true;
   }
 
@@ -356,9 +356,9 @@ bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_t
       return true;
     }
   }
-  if (output_device_tensor->new_ref_count() == SIZE_MAX) {
+  if (output_kernel_tensor->new_ref_count() == SIZE_MAX) {
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Ref count of device address:" << output_device_tensor << " is max, should copy output.";
+      << "Ref count of kernel tensor:" << output_kernel_tensor->ToString() << " is max, should copy output.";
     return true;
   }
   return false;

@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/gpu/res_manager/gpu_res_manager.h"
+#include "plugin/res_manager/gpu/gpu_res_manager.h"
 #include <libgen.h>
 #include <cuda.h>
 #include <utility>
 #include <vector>
 #include <string>
-#include "plugin/gpu/res_manager/gpu_device_manager.h"
-#include "plugin/gpu/res_manager/event_manager/gpu_event.h"
-#include "plugin/gpu/res_manager/mem_manager/gpu_pin_mem_pool.h"
-#include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"
-#include "plugin/gpu/res_manager/device_context_conf/op_precision_conf.h"
-#include "plugin/gpu/res_manager/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

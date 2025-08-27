@@ -57,6 +57,9 @@ KernelTensorPtr CreateOutPutKernelTensor(const DeviceContext *device_context, co
                                                  device_addr->GetSize(), device_addr.get());
   if (!device_context->device_res_manager_->AllocateMemory(device_addr.get(), kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "CheckSum allocate outputs memory failed";
+  } else {
+    static std::string name = "Alloc memory";
+    tensor->IncreaseNewRefCount(name);
   }
   return tensor;
 }
@@ -76,6 +79,9 @@ KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context,
                                                  device_address->GetSize(), device_address.get());
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "CheckSum allocate dynamic workspace memory failed";
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   MS_LOG(DEBUG) << "Create workspace device address:" << device_address;
   return kernel_tensor;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include <algorithm>
 #include "utils/log_adapter.h"
 

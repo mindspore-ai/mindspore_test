@@ -31,7 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/graph_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/common/utils/anfalgo.h"
@@ -149,9 +149,13 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
                                                  device_address->GetSize(), device_address.get());
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  if ((device_address->GetPtr() == nullptr) &&
-      (!device_context->device_res_manager_->AllocateMemory(device_address.get()))) {
-    MS_LOG(EXCEPTION) << "Allocate memory failed";
+  if ((device_address->GetPtr() == nullptr)) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
+    }
   }
 
   // Copy data from host to device.
@@ -680,8 +684,8 @@ void DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(const KernelGraphPtr 
     auto node_primitive = common::AnfAlgo::GetCNodePrimitive(group_nodes[0]);
     MS_EXCEPTION_IF_NULL(node_primitive);
     auto output_index = GetValue<uint32_t>(node_primitive->GetAttr("inplace_output_index"));
-    auto device_address = AnfAlgo::GetMutableOutputAddr(group_nodes[0], output_index, false);
-    MS_EXCEPTION_IF_NULL(device_address);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(group_nodes[0], output_index, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
 
     // Update the device address of other nodes using device address of the first node in the inplace group.
     for (size_t i = 1; i < group_nodes.size(); ++i) {
@@ -689,10 +693,10 @@ void DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(const KernelGraphPtr 
       auto prim = common::AnfAlgo::GetCNodePrimitive(group_node);
       MS_EXCEPTION_IF_NULL(prim);
       auto index = GetValue<uint32_t>(prim->GetAttr("inplace_output_index"));
-      auto group_node_device_address = AnfAlgo::GetMutableOutputAddr(group_node, index, false);
-      MS_EXCEPTION_IF_NULL(group_node_device_address);
+      auto group_node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(group_node, index, false);
+      MS_EXCEPTION_IF_NULL(group_node_kernel_tensor);
       // Update the reference count of device address.
-      group_node_device_address->set_pointer_ref_count(device_address->pointer_ref_count());
+      group_node_kernel_tensor->set_pointer_ref_count(kernel_tensor.get());
     }
   }
 }
@@ -724,7 +728,9 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
   MS_EXCEPTION_IF_NULL(origin_node_output_kt);
   auto origin_node_output_addr = origin_node_output_kt->device_address();
   MS_EXCEPTION_IF_NULL(origin_node_output_addr);
-  auto cur_node_output_addr = AnfAlgo::GetMutableOutputAddr(cur_pair.first, cur_pair.second, false);
+  auto cur_node_output_kt = AnfAlgo::GetOutputKernelTensor(cur_pair.first, cur_pair.second, false);
+  MS_EXCEPTION_IF_NULL(cur_node_output_kt);
+  auto cur_node_output_addr = cur_node_output_kt->device_address();
   MS_EXCEPTION_IF_NULL(cur_node_output_addr);
   auto origin_stream_id = origin_node_output_addr->stream_id();
   auto cur_stream_id = cur_node_output_addr->stream_id();
@@ -736,7 +742,7 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
   // Update the device address flag.
   origin_node_output_kt->UpdateFlag(device::kDeviceAddressFlagRefNode);
 
-  if (origin_node_output_addr->pointer_ref_count() != cur_node_output_addr->pointer_ref_count()) {
+  if (origin_node_output_addr->device_pointer() != cur_node_output_addr->device_pointer()) {
     // Check the device target whether consistent.
     if (origin_node_output_addr->GetDeviceType() != cur_node_output_addr->GetDeviceType()) {
       MS_LOG(INFO) << "Device target is not consistent: ref origin device address " << origin_node_output_addr
@@ -752,7 +758,7 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
                  << origin_pair.first->fullname_with_scope() << ", index is " << origin_pair.second
                  << "; cur device address " << cur_node_output_addr << " kernel is "
                  << cur_pair.first->fullname_with_scope() << ", index is " << cur_pair.second;
-    cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
+    cur_node_output_kt->set_pointer_ref_count(origin_node_output_kt.get());
     origin_node_output_kt->UpdateFlag(device::kDeviceAddressFlagRefNode);
   } else {
     MS_LOG(DEBUG) << "No need update device address: ref origin kernel is " << origin_pair.first->fullname_with_scope()
@@ -829,7 +835,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   auto device_address = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
+    device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
     old_kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
     device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
@@ -932,7 +938,6 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->SetShapeVector(tensor->shape());
   device_address->set_from_persistent_mem(tensor->is_parameter());
-  device_address->set_new_ref_count(SIZE_MAX);
 
   // keep origin device_address and execute in another thread.
   tensor->set_implicit_copy_address(addr);
@@ -1013,6 +1018,9 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
                                                  device_address.get());
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   if (!AsyncCopy(device_address, addr, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "Copy host data to device failed";
@@ -1123,7 +1131,6 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetShapeVector(tensor->shape());
     tensor->set_device_address(device_address);
-    device_address->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Create output tensor device address " << device_address << " for " << i
                   << "th output, Shape: " << tensor->shape()
                   << ", Type: " << TypeIdToType(tensor->data_type())->ToString() << ", Size:" << tensor_size;
@@ -1230,9 +1237,13 @@ KernelTensorPtr DeviceAddressUtils::CreateWorkspaceKernelTensor(const DeviceCont
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "WorkspaceAddress", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kWorkSpace,
                                                  device_address->GetSize(), device_address.get());
-  if (device_address->GetPtr() == nullptr &&
-      !device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-    MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
+  if (device_address->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+      MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
+    }
   }
   MS_LOG(DEBUG) << "Create workspace kernel tensor:" << kernel_tensor->ToString();
   return kernel_tensor;
@@ -1280,7 +1291,7 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   kernel_tensor->set_stream_id(stream_id);
 
   auto new_device_address = kernel_tensor->device_address();
-  new_device_address->set_new_ref_count(SIZE_MAX);
+  kernel_tensor->set_new_ref_count(SIZE_MAX);
   MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
 
   // ExecuteKernelTask sync, need to wait until all tasks in queue are complete.
