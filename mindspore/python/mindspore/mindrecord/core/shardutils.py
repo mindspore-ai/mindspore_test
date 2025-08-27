@@ -25,7 +25,7 @@ from functools import wraps
 
 import numpy as np
 import mindspore._c_mindrecord as ms
-from .common.exceptions import ParamValueError, MRMUnsupportedSchemaError
+from mindspore.mindrecord.common.exceptions import ParamValueError, MRMUnsupportedSchemaError
 
 SUCCESS = ms.MSRStatus.SUCCESS
 FAILED = ms.MSRStatus.FAILED

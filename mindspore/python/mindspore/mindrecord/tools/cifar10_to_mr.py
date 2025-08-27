@@ -23,7 +23,7 @@ from mindspore import log as logger
 from .cifar10 import Cifar10
 from ..common.exceptions import PathNotExistsError
 from ..filewriter import FileWriter
-from ..shardutils import check_filename, ExceptionThread, SUCCESS
+from ..core.shardutils import check_filename, ExceptionThread, SUCCESS
 
 
 __all__ = ['Cifar10ToMR']

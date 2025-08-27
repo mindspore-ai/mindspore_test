@@ -17,7 +17,8 @@ This module is to write data into mindrecord.
 """
 import mindspore._c_mindrecord as ms
 from mindspore import log as logger
-from .common.exceptions import MRMAddSchemaError, MRMAddIndexError, MRMBuildSchemaError, MRMGetMetaError
+from mindspore.mindrecord.common.exceptions import MRMAddSchemaError, MRMAddIndexError, MRMBuildSchemaError, \
+    MRMGetMetaError
 
 __all__ = ['ShardHeader']
 

@@ -30,7 +30,7 @@ import time
 
 from mindspore import log as logger
 from mindspore._c_expression import _encrypt, _decrypt_data
-from .shardutils import MIN_FILE_SIZE
+from .core.shardutils import MIN_FILE_SIZE
 
 
 __all__ = ['set_enc_key',

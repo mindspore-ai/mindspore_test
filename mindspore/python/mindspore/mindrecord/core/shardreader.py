@@ -17,7 +17,8 @@ This module is to read data from mindrecord.
 """
 import mindspore._c_mindrecord as ms
 from mindspore import log as logger
-from .common.exceptions import MRMOpenError, MRMLaunchError
+from mindspore.mindrecord.common.exceptions import MRMOpenError, MRMLaunchError
+
 __all__ = ['ShardReader']
 
 
