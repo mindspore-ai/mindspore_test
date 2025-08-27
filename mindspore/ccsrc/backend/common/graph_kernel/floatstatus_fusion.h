@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,15 +31,6 @@ namespace mindspore::graphkernel {
  *     %4 = Sub(1, %3)
  *     return %4
  *   }
- *  or
- *   main_graph {
- *     %1 = IsFinite(%0)
- *     %2 = ReduceAll(%1)
- *     %3 = Cast(%2)
- *     %4 = Sub(1, %3)
- *     %5 = Reshape(%4, (1,))
- *     return %5
- *   }
  *   ---------->
  *   main_graph {
  *     %1 = FloatStatus(%0)
@@ -69,6 +60,23 @@ class FloatStatusBaseFusion : public opt::PatternProcessPass {
   VarPtr isfinite_prim_;
 };
 
+/**
+ * @brief Fuse IsFinite and its user to FloatStatus
+ * @example
+ *   main_graph {
+ *     %1 = IsFinite(%0)
+ *     %2 = ReduceAll(%1)
+ *     %3 = Cast(%2)
+ *     %4 = Sub(1, %3)
+ *     %5 = Reshape(%4, (1,))
+ *     return %5
+ *   }
+ *   ---------->
+ *   main_graph {
+ *     %1 = FloatStatus(%0)
+ *     return %1
+ *   }
+ */
 class FloatStatusReshapeFusion : public FloatStatusBaseFusion {
  public:
   explicit FloatStatusReshapeFusion(const std::string &pass_name, bool multigraph = true)
@@ -80,6 +88,23 @@ class FloatStatusReshapeFusion : public FloatStatusBaseFusion {
   VarPtr to_shape_;
 };
 
+/**
+ * @brief Fuse IsFinite and its user to FloatStatus
+ * @example
+ *   main_graph {
+ *     %1 = Cast(%0)
+ *     %2 = IsFinite(%1)
+ *     %3 = ReduceAll(%2)
+ *     %4 = Cast(%3)
+ *     %5 = Sub(1, %4)
+ *     return %5
+ *   }
+ *   ---------->
+ *   main_graph {
+ *     %1 = FloatStatus(%0)
+ *     return %1
+ *   }
+ */
 class CastFloatStatusBaseFusion : public FloatStatusBaseFusion {
  public:
   explicit CastFloatStatusBaseFusion(const std::string &pass_name, bool multigraph = true)
@@ -91,6 +116,24 @@ class CastFloatStatusBaseFusion : public FloatStatusBaseFusion {
   VarPtr type_fp32_;
 };
 
+/**
+ * @brief Fuse IsFinite and its user to FloatStatus
+ * @example
+ *   main_graph {
+ *     %1 = Cast(%0)
+ *     %2 = IsFinite(%1)
+ *     %3 = ReduceAll(%2)
+ *     %4 = Cast(%3)
+ *     %5 = Sub(1, %4)
+ *     %6 = Reshape(%5, (1,))
+ *     return %6
+ *   }
+ *   ---------->
+ *   main_graph {
+ *     %1 = FloatStatus(%0)
+ *     return %1
+ *   }
+ */
 class CastFloatStatusReshapeFusion : public CastFloatStatusBaseFusion {
  public:
   explicit CastFloatStatusReshapeFusion(const std::string &pass_name, bool multigraph = true)
