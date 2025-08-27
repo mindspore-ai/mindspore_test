@@ -45,6 +45,7 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "kernel/ascend/kernel_packet/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
@@ -194,6 +195,8 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
     } else if (kernel_type == KernelType::ATB_KERNEL) {
       kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
+    } else if (kernel_type == KernelType::CUSTOM_KERNEL) {
+      kernel_mod_ptr = kernel::CustomKernelBuild(kernel);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "The kernel: " << kernel->fullname_with_scope()

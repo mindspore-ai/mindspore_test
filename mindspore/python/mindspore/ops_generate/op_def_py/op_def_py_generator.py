@@ -22,7 +22,7 @@ import common.gen_constants as K
 import common.gen_utils as gen_utils
 
 # refactored
-import common.template as template
+import common.template_utils as template
 
 from common.base_generator import BaseGenerator
 
@@ -57,11 +57,23 @@ class OpDefPyGenerator(BaseGenerator):
         the provided operation prototypes and documentation. It saves the code in a file
         with the given prefix in the specified work path.
         """
+
+        gen_py = self._generate_func_code(op_protos, doc_dict)
+        res_str = template.PY_LICENSE_STR + \
+                  template.OPS_PY_DEF_HEADER + gen_py[:-len(template.NEW_LINE)]
+        save_path = os.path.join(work_path, K.PY_AUTO_GEN_PATH)
+        file_name = f"{file_pre}_ops_def.py"
+        gen_utils.save_file(save_path, file_name, res_str)
+
+    def _generate_func_code(self, op_protos, doc_dict):
+        """
+        Generate Python source code for operator functions based on a list of
+        operator protocols and their documentation.
+        """
         gen_py = "\n"
         for op_proto in op_protos:
             if op_proto.op_function.disable:
                 continue
-
             class_name = op_proto.op_class.name
             func_name = op_proto.op_function.name
             op_args = op_proto.op_args
@@ -93,11 +105,7 @@ class OpDefPyGenerator(BaseGenerator):
             gen_py += func_code
             gen_py += "\n"
 
-        res_str = template.PY_LICENSE_STR + \
-            template.OPS_PY_DEF_HEADER + gen_py[:-len(template.NEW_LINE)]
-        save_path = os.path.join(work_path, K.PY_AUTO_GEN_PATH)
-        file_name = f"{file_pre}_ops_def.py"
-        gen_utils.save_file(save_path, file_name, res_str)
+        return gen_py
 
     def get_op_args(self, op_args):
         """
@@ -130,3 +138,42 @@ class OpDefPyGenerator(BaseGenerator):
             else:
                 prim_call_args.append(op_arg.arg_name)
         return func_args, prim_call_args, prim_init_args
+
+
+class CustomOpDefPyGenerator(OpDefPyGenerator):
+    """
+    This class is responsible for generating Python operator definitions based on provided
+    operation prototypes and documentation strings. It generates the code for the operator
+    functions that can be used in Python scripts to interact with the underlying operations.
+    """
+
+    def __init__(self):
+        """
+        Initializes the generator with the template for primitive class definitions.
+        """
+        super(CustomOpDefPyGenerator).__init__()
+        self.op_prim_class_define_template = template.OP_PRIM_CLASS_DEFINE_TEMPLATE
+
+    def generate(self, work_path, op_protos, doc_dict, file_pre):
+        """
+        Generates Python code for operator definitions and saves it to a file.
+
+        Args:
+            work_path (str): The base directory where the generated files will be saved.
+            op_protos (list): A list of operation prototypes to generate Python code for.
+            doc_dict (dict): A dictionary containing documentation strings for the operators.
+            file_pre (str): The prefix for the generated Python files.
+
+        Returns:
+            None
+
+        The generated Python code includes function definitions for each operator, using
+        the provided operation prototypes and documentation. It saves the code in a file
+        with the given prefix in the specified work path.
+        """
+
+        gen_py = self._generate_func_code(op_protos, doc_dict)
+        res_str = template.PY_LICENSE_STR + \
+                  template.CUSTOM_OPS_PY_DEF_HEADER + gen_py[:-len(template.NEW_LINE)]
+        file_name = f"{file_pre}_ops_def.py"
+        gen_utils.save_file(work_path, file_name, res_str)

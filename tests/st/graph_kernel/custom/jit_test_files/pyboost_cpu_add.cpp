@@ -95,6 +95,7 @@ auto pyboost_add2(const ms::Tensor &x, const ms::Tensor &y) {
 class CustomAdd3 : public ms::pynative::PyboostRunner {
  public:
   using PyboostRunner::PyboostRunner;
+  CustomAdd3(const std::string &name) : PyboostRunner(name) {}
   size_t CalcWorkspace() override { return inputs()[0].numel() * sizeof(int32_t); }
   void LaunchKernel() override {
     auto &x = inputs()[0];
@@ -122,12 +123,44 @@ class CustomAdd3 : public ms::pynative::PyboostRunner {
   }
 };
 
-auto pyboost_add3(const ms::Tensor &x, const ms::Tensor &y, const ms::Tensor &z) {
-  return ms::pynative::PyboostRunner::Call<1>(CustomAdd3::Eval, x, y, z);
-}
+class CustomAdd4 : public CustomAdd3 {
+ public:
+  CustomAdd4(const std::string &name) : CustomAdd3(name) {}
+  static ms::Tensor Eval(const ms::Tensor &x, const ms::Tensor &y, const std::vector<ms::Tensor> &z) {
+    // assume the shapes of x, y and z are same.
+    auto out = ms::Tensor(x.data_type(), x.shape());
+    auto runner = std::make_shared<CustomAdd4>("Add4");
+    runner->Run({x, y, z[0]}, {out});
+    return out;
+  }
+};
+
+class CustomAdd5 : public CustomAdd3 {
+ public:
+  CustomAdd5(const std::string &name) : CustomAdd3(name) {}
+  static ms::Tensor Eval(const ms::Tensor &x, const ms::Tensor &y, const std::vector<std::vector<ms::Tensor>> &z) {
+    // assume the shapes of x, y and z are same.
+    auto out = ms::Tensor(x.data_type(), x.shape());
+    auto runner = std::make_shared<CustomAdd5>("Add5");
+    runner->Run({x, y, z[0][0]}, {out});
+    return out;
+  }
+};
+
+class CustomAdd6 : public CustomAdd3 {
+ public:
+  CustomAdd6(const std::string &name) : CustomAdd3(name) {}
+  static void Eval(const ms::Tensor &x, const ms::Tensor &y, const ms::Tensor &z, const std::vector<ms::Tensor> &out) {
+    auto runner = std::make_shared<CustomAdd5>("Add6");
+    runner->Run({x, y, z}, {out[0]});
+  }
+};
 
 PYBIND11_MODULE(MS_EXTENSION_NAME, m) {
   m.def("add_uncontiguous", &pyboost_add1, "add, support uncontiguous", pybind11::arg("x"), pybind11::arg("y"));
   m.def("add_contiguous", &pyboost_add2, "add, only support contiguous", pybind11::arg("x"), pybind11::arg("y"));
-  m.def("add3", &pyboost_add3, "the result of 'x + y + z'", pybind11::arg("x"), pybind11::arg("y"), pybind11::arg("z"));
+  m.def("add3", PYBOOST_CALLER(1, CustomAdd3::Eval));
+  m.def("add4", PYBOOST_CALLER(1, CustomAdd4::Eval));
+  m.def("add5", PYBOOST_CALLER(1, CustomAdd5::Eval));
+  m.def("add6", PYBOOST_CALLER(0, CustomAdd6::Eval));
 }
