@@ -20,12 +20,16 @@
 #include <map>
 #include <string>
 
+#include "frontend/ir/primitive_py.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "pybind11/pybind11.h"
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "ir/func_graph_flag.h"
+
+namespace py = pybind11;
 
 namespace mindspore {
 namespace opt {
@@ -140,6 +144,30 @@ void AddMonadParameterForFuncGraph(const FuncGraphPtr &fg, size_t target_fg_para
   fg->set_attr(kFlagMonadParameterSize, MakeValue(SizeToLong(monad_param_size)));
 }
 
+FuncGraphPtr CreateMorphGraph(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  auto prim_py = prim->cast_ptr<PrimitivePy>();
+  if (prim_py == nullptr) {
+    return nullptr;
+  }
+
+  auto py_obj = prim_py->GetPyObj();
+  auto fn = py::getattr(py_obj, "__morph_fn__", py::none());
+  if (fn.is_none()) {
+    MS_LOG(EXCEPTION) << "Primitive " << prim->name() << " does not have __morph_fn__ attribute.";
+  }
+  auto bprop_fn = py::getattr(py_obj, "__morph_bprop_fn__", py::none());
+
+  auto morph_cell =
+    python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_WRAP_FN_AS_CELL, fn, bprop_fn);
+  ValuePtr morph_value = nullptr;
+  bool succ = parse::ConvertData(morph_cell, &morph_value);
+  if (!succ || morph_value == nullptr || !morph_value->isa<FuncGraph>()) {
+    MS_LOG(EXCEPTION) << "Failed to convert morph cell to funcgraph.";
+  }
+
+  return morph_value->cast<FuncGraphPtr>();
+}
 }  // namespace
 
 AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
@@ -149,11 +177,20 @@ AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
     return nullptr;
   }
 
-  auto fn = prim->GetAttr("__metamorphosis__");
-  MS_EXCEPTION_IF_NULL(fn);
+  auto metamorphosis_value = prim->GetAttr("__metamorphosis__");
+  if (metamorphosis_value == nullptr) {
+    return nullptr;
+  }
 
-  auto fg = GetValue<FuncGraphPtr>(fn);
-  MS_EXCEPTION_IF_NULL(fg);
+  auto metamorphosis = GetValue<bool>(metamorphosis_value);
+  if (!metamorphosis) {
+    return nullptr;
+  }
+
+  auto fg = CreateMorphGraph(prim);
+  if (fg == nullptr) {
+    return nullptr;
+  }
 
   bool has_recompute_scope =
     (node->scope() != nullptr && node->scope()->name().compare(0, strlen(kAttrRecompute), kAttrRecompute) == 0);

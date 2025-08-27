@@ -108,19 +108,18 @@ class TestNet3(nn.Cell):
         return out
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("net_cls, with_bprop_fn, morph_call_time", [
-    (TestNet0, False, 1),
-    (TestNet1, False, 1),
-    (TestNet2, False, 3),
-    (TestNet3, True, 3)])
-def test_morph_graph_mode(net_cls, with_bprop_fn, morph_call_time):
+@pytest.mark.parametrize("net, with_bprop_fn, morph_call_time", [
+    (TestNet0(), False, 1),
+    (TestNet1(), False, 1),
+    (TestNet2(), False, 3),
+    (TestNet3(bprop_fn=bprop), True, 3)])
+def test_morph_graph_mode(net, with_bprop_fn, morph_call_time):
     """
     Feature: Morph Primitive
     Description: Test morph primitive for graph mode.
     Expectation: Run successfully.
     """
     context.set_context(mode=context.GRAPH_MODE)
-    net = net_cls(bprop_fn=bprop if with_bprop_fn else None)
     input_x = Tensor(np_input_x, ms.float32)
     grad_op = ops.GradOperation(get_all=True, get_by_list=True)
     grad_net = grad_op(net, net.trainable_params())
