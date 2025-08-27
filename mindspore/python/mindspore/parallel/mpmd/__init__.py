@@ -12,6 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Interfaces for pipeline parallel-related"""
-from .stage import PipelineStage, P2PInfo
-from .schedule import Schedule1F1B, ScheduleGPipe

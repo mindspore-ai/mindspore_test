@@ -271,7 +271,6 @@ class PipelineStage(ABC):
             return
         self._init_recv_buffer(micro_index)
         for recv_info in self.args_recv_info[micro_index]:
-            global_rank = get_global_rank(self.pp_group, stage_index)
             global_rank = get_global_rank(self.pp_group, recv_info.source_stage)
             handle = irecv(recv_info.buffer, global_rank)
             handle.wait()
