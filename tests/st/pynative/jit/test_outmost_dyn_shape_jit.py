@@ -15,6 +15,7 @@
 
 import platform
 import numpy as np
+import mindspore as ms
 from mindspore import nn
 from mindspore import ops
 from mindspore import context, Tensor

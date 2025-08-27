@@ -18,6 +18,7 @@ import shutil
 import numpy as np
 import pytest
 
+import mindspore as ms
 from mindspore import nn
 from mindspore.common.initializer import TruncatedNormal
 from mindspore import save_checkpoint, load_checkpoint
