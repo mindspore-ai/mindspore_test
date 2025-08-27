@@ -176,7 +176,7 @@ class FunctionsGenerator(BaseGenerator):
         function_body_template = self.FUNCTION_VIEW_BODY_TEMPLATE
         pyboost_func_include_header = self.pyboost_view_func_include_header_template.\
             replace(operator_name=op_proto.op_name)
-        if not op_proto.bprop_expander or op_proto.op_name in ["reshape"]:
+        if not op_proto.bprop_expander or op_proto.op_name in ["reshape", "real_view", "imag_view"]:
             function_body_template = self.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE
             pyboost_func_include_header = ""
         op_parser = OpTemplateParser(op_proto)

@@ -1,7 +1,7 @@
 mindspore.mint.imag
-==================
+====================
 
-.. py:function:: mindspore.mint.imag(input)
+.. py:function:: mindspore.mint.imag(input) -> Tensor
 
     返回一个新tensor，包含输入tensor的虚部。
 
@@ -9,11 +9,10 @@ mindspore.mint.imag
 
     .. note::
         - 仅支持Pynative模式。
-        - 仅支持Ascend平台。
         - 仅支持complex64和complex128类型的tensor。
 
     参数：
-        - **input** (Tensor) - 输入tensor。
+        - **input** (Tensor) - 输入tensor。数据类型只支持complex64和complex128。
 
     返回：
         Tensor，输出shape与 `input` 相同。如果输入为complex64，则输出为float32，如果输入为complex128，则输出为float64。

@@ -3876,14 +3876,14 @@ REG_BPROP_BUILDER("Imag").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("RealView").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i2);
-  auto zero = ib->ZerosLike(dout);
+  auto zero = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
   return {ib->Complex(dout, zero)};
 });
 
 REG_BPROP_BUILDER("ImagView").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto dout = ib->GetInput(i2);
-  auto zero = ib->ZerosLike(dout);
+  auto zero = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
   auto x_dtype_id = ib->GetDtypeId(x);
   auto dx = ib->Complex(zero, dout);
   if (x_dtype_id != kNumberTypeComplex64 && x_dtype_id != kNumberTypeComplex128) {

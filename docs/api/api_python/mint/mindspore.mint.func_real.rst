@@ -1,15 +1,14 @@
 mindspore.mint.real
-==================
+====================
 
-.. py:function:: mindspore.mint.real(input)
+.. py:function:: mindspore.mint.real(input) -> Tensor
 
     返回一个新tensor，包含输入tensor的实部。如果输入tensor是实数，则返回输入tensor不变。
 
     返回的tensor和输入tensor共享相同的底层存储。
 
     .. note::
-        - 仅支持Pynative模式。
-        - 仅支持Ascend平台。
+        仅支持Pynative模式。
 
     参数：
         - **input** (Tensor) - 输入tensor。
