@@ -239,13 +239,21 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
                                       const TensorStorageInfoPtr &storage_info,
                                       std::vector<tensor::TensorPtr> *outputs) {
   MS_EXCEPTION_IF_NULL(input);
+  auto data_type = input->data_type();
+  CreateOutputTensor(device_context, input, storage_info, outputs, data_type);
+}
+
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                      const TensorStorageInfoPtr &storage_info, std::vector<tensor::TensorPtr> *outputs,
+                                      TypeId data_type) {
+  MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(storage_info);
   MS_EXCEPTION_IF_NULL(device_context);
 
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
-  auto output_tensor = tensor::from_spec(input->data_type(), storage_info->shape, device::DeviceType::kNone);
+  auto output_tensor = tensor::from_spec(data_type, storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback(
     [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });

@@ -59,6 +59,9 @@ class PYBOOST_API PyBoostUtils {
   static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                  const TensorStorageInfoPtr &storage_info, std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                 const TensorStorageInfoPtr &storage_info, std::vector<tensor::TensorPtr> *outputs,
+                                 TypeId data_type);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                  const TensorStorageInfoPtrList &storage_info_list,
                                  std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const ValueSimpleInfoPtr &output_value_simple_info,

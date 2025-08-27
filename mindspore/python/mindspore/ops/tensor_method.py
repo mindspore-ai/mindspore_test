@@ -1934,3 +1934,9 @@ def raise_func(*args, **kwargs):
 
 def tensor_masked_scatter(input, mask, source):
     return masked_scatter(input, mask, source)
+
+def tensor_real(input):
+    return ops.real(input)
+
+def tensor_imag(input):
+    return ops.imag(input)

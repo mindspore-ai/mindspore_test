@@ -90,6 +90,14 @@ Tensor
 数学运算
 ------------------
 
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.real
+    mindspore.mint.imag
+
 逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^
 

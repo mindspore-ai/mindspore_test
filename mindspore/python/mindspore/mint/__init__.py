@@ -486,6 +486,11 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 
+# 1101
+from mindspore.ops.functional_overload import real
+# 1102
+from mindspore.ops.functional_overload import imag
+
 # 1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
 
@@ -2061,6 +2066,11 @@ __all__ = [
 
     # 1100
     'diff',
+
+    # 1101
+    'real',
+    # 1102
+    'imag',
 ]
 
 __all__.extend(functional.__all__)
