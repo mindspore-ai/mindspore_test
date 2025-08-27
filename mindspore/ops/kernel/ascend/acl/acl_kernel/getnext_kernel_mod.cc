@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/kernel/acl/acl_kernel/getnext_kernel_mod.h"
+#include "kernel/ascend/acl/acl_kernel/getnext_kernel_mod.h"
 #include <memory>
 #include "plugin/ascend/res_manager/data_queue/ascend_data_queue.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
