@@ -47,6 +47,10 @@ update_submodule()
     export INTERRT_DIR="mindspore/ccsrc/backend/ms_infer_backend/inferrt"
     git submodule add --force -b ms_inferrt https://gitee.com/mindspore/vllm-mindspore.git ${INTERRT_DIR}
     git submodule update --init ${INTERRT_DIR}
+    cd ${INTERRT_DIR}
+    git fetch
+    git checkout ms_inferrt_v0.1.0
+    cd -
   fi
 
   if [[ "X$ENABLE_AKG" = "Xon" ]]; then
