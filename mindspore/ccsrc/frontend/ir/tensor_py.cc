@@ -37,6 +37,7 @@
 #include "ir/tensor_new.h"
 #include "runtime/pynative/op_runner.h"
 #include "utils/ms_utils_secure.h"
+#include "utils/misc.h"
 
 namespace mindspore {
 namespace tensor {

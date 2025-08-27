@@ -28,7 +28,6 @@
 #include <memory>
 #include <algorithm>
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
-#include "utils/misc.h"
 #include "ir/meta_func_graph.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 
