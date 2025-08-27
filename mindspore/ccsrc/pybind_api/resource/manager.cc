@@ -33,7 +33,7 @@
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/info.h"

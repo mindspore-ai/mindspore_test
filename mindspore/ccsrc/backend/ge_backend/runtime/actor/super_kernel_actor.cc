@@ -16,7 +16,7 @@
 
 #include <set>
 #include <algorithm>
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "backend/ge_backend/runtime/actor/super_kernel_actor.h"
 #include "backend/ge_backend/runtime/scheduler_helper.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"

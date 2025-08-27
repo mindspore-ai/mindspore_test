@@ -39,7 +39,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/fallback.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

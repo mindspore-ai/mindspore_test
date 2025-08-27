@@ -33,7 +33,7 @@
 #include <string>
 #include <tuple>
 
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/stream_util.h"
 #include "runtime/hardware_abstract/event/device_event.h"

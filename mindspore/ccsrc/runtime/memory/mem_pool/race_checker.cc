@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/mem_reuse/race_checker.h"
+#include "include/runtime/memory/mem_pool/race_checker.h"
 
 namespace mindspore {
 namespace device {

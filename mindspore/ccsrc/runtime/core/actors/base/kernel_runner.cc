@@ -32,7 +32,7 @@
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

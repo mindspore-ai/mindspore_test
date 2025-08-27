@@ -40,7 +40,7 @@
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_adapter.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"

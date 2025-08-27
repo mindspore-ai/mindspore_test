@@ -22,7 +22,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "mindspore/ccsrc/include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/pipeline/task/task.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"

@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "common/common_test.h"
-#include "include/backend/mem_reuse/mem_pool_util.h"
+#include "include/runtime/memory/mem_pool/mem_pool_util.h"
 
 namespace mindspore {
 namespace memory {

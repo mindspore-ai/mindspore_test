@@ -25,7 +25,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/core/actors/base/actor_common.h"

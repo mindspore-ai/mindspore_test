@@ -17,7 +17,7 @@
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/data_source_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

@@ -27,7 +27,7 @@
 #include "plugin/gpu/res_manager/device_context_conf/op_tuning_conf.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/tensor_new.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

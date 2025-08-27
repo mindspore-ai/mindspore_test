@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 namespace runtime {

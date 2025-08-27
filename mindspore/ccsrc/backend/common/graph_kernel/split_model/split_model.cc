@@ -188,8 +188,7 @@ void SplitModel::LimitAreaSize(const AreaPtr &dom, std::vector<AreaPtr> *areas) 
     return;
   }
   // fuse the smaller area in priority
-  std::sort(areas->begin(), areas->end(),
-            [max_size](const AreaPtr &a, const AreaPtr &b) { return a->size() < b->size(); });
+  std::sort(areas->begin(), areas->end(), [](const AreaPtr &a, const AreaPtr &b) { return a->size() < b->size(); });
   auto iter = std::find_if(areas->begin(), areas->end(), [cur_size = dom->size(), max_size](const AreaPtr &a) mutable {
     cur_size += a->size();
     return cur_size > max_size;

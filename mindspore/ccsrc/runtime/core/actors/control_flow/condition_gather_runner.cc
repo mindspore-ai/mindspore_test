@@ -16,7 +16,7 @@
 
 #include "runtime/core/actors/control_flow/condition_gather_runner.h"
 #include <utility>
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 
 namespace mindspore {

@@ -21,10 +21,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/backend/mem_reuse/tracker_graph.h"
-#include "include/backend/mem_reuse/address_discretizer.h"
-#include "include/backend/mem_reuse/max_segment_tree.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/tracker_graph.h"
+#include "include/runtime/memory/mem_pool/address_discretizer.h"
+#include "include/runtime/memory/mem_pool/max_segment_tree.h"
 
 namespace mindspore {
 namespace device {

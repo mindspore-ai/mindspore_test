@@ -8,32 +8,38 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
 endif()
 
-
 ########### mindspore_ascend.so #####
-set(ASCEND_SUB_COMP
-        hal
-        kernel
+file(GLOB_RECURSE ASCEND_910B_OBJ_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_context.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_address_maker.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/graph_optimizer/*.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/kernel_executor/*.cc")
+
+set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/ascend")
+
+file(GLOB_RECURSE HAL_SRC_910B "${ASCEND_PLUGIN_PATH}/hal/*.cc")
+
+file(GLOB_RECURSE KENREL_SRC_910B
+        "${ASCEND_PLUGIN_PATH}/kernel/acl/*.cc"
+        "${ASCEND_PLUGIN_PATH}/kernel/hccl/*.cc"
+        "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
+        "${ASCEND_PLUGIN_PATH}/kernel/custom/*.cc"
+        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_kernel_build.cc"
+        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_ascend_adapter.cc"
         )
 
-foreach(a_comp ${ASCEND_SUB_COMP})
-    add_subdirectory(${a_comp})
-    string(REPLACE "/" "_" sub ${a_comp})
-    if(TARGET _mindspore_plugin_device_ascend_${sub}_910b_obj)
-        list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_${sub}_910b_obj>)
-        add_dependencies(_mindspore_plugin_device_ascend_${sub}_910b_obj proto_input)
-    endif()
-endforeach()
+if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    # only support in internal kernel
+    list(REMOVE_ITEM KENREL_SRC_910B "${ASCEND_PLUGIN_PATH}/kernel/hccl/hcom_matmul_all_reduce.cc")
+endif()
 
-set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../ascend")
-file(GLOB_RECURSE ASCEND_SRC_LIST
-  "${ASCEND_PLUGIN_PATH}/ascend_device_context.cc"
-  "${ASCEND_PLUGIN_PATH}/ascend_device_address_maker.cc"
-  "${ASCEND_PLUGIN_PATH}/graph_optimizer/*.cc"
-  "${ASCEND_PLUGIN_PATH}/kernel_executor/*.cc")
+set_property(SOURCE ${KENREL_SRC_910B}
+        PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
 
-list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_SRC_LIST})
-list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_ascend_hal_device_910b_obj>)
-set_property(SOURCE ${ASCEND_910B_OBJ_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
+list(APPEND ASCEND_910B_OBJ_SRC ${HAL_SRC_910B})
+set_property(SOURCE ${ASCEND_910B_OBJ_SRC}
+        PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
+list(APPEND ASCEND_910B_OBJ_SRC ${KENREL_SRC_910B})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 

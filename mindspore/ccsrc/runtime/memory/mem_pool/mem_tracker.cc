@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 #include <cstdint>
 #include <fstream>
@@ -24,8 +24,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "include/backend/mem_reuse/tracker_graph.h"
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/tracker_graph.h"
+#include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

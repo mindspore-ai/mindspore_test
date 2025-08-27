@@ -32,7 +32,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops/infer_info/infer_info_utils.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "mindspore/ccsrc/pyboost/comm_handle.h"
 #include "runtime/pipeline/pipeline.h"
 
