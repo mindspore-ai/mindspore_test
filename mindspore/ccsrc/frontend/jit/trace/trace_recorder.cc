@@ -506,20 +506,23 @@ FuncGraphPtr TraceRecorder::BuildEndGraph(const py::list &file_names, const py::
   return func_graph;
 }
 
-void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args) {
+void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos, const py::dict &jit_config,
+                             const py::args &output_args) {
   const auto &func_graph = BuildEndGraph(file_names, linenos, output_args);
   // Run compile pipeline with func graph.
   auto graph_executor = pipeline::GetExecutor();
+  graph_executor->SetJitConfig(jit_config);
   (void)graph_executor->CompileInner(func_graph, args_, py::dict(), phase_, true);
   MS_LOG(DEBUG) << "End compile pipeline.";
   graph_stack_.pop();
   Clear();
 }
 
-py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &args) {
+py::object TraceRecorder::RunGraph(const py::object &phase, const py::dict &jit_config, const py::tuple &args) {
   MS_LOG(DEBUG) << "Run graph, arg size: " << args.size() << ", args: " << py::str(py::cast<py::object>(args))
                 << ", phase: " << phase;
   auto graph_executor = pipeline::GetExecutor();
+  graph_executor->SetJitConfig(jit_config);
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object res;
   if (pynative::GradState::Get().RequiresGrad()) {

@@ -903,7 +903,7 @@ def test_trace_8():
     assert res == 6
 
 
-@arg_mark(plat_marks=["platform_ascend910b", "platform_gpu"], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_trace_setitem():
     """
@@ -1024,8 +1024,8 @@ def test_nested_trace_with_kwargs():
         def construct(self, x, y, flag):
             a = ms.Tensor(2)
             if flag:
-                return trace_func(a = a, x = x, y = y, self_x = self.x)
-            return jit_func(a = a, x = x, y = y, self_x = self.x)
+                return trace_func(a=a, x=x, y=y, self_x=self.x)
+            return jit_func(a=a, x=x, y=y, self_x=self.x)
 
     net = Net()
     res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
