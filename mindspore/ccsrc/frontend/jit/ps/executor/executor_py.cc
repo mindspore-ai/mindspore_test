@@ -37,7 +37,6 @@
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/python_utils.h"
 #include "include/common/utils/tensor_py_wrapper.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
 
 #include "frontend/jit/ps/compile_cache_manager.h"
 #include "frontend/jit/ps/debug/trace.h"
@@ -53,6 +52,7 @@
 #include "symbolic_shape/symbol_info.h"
 
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
+#include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
