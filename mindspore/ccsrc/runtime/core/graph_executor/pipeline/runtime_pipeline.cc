@@ -67,6 +67,7 @@ void RuntimePipeline::ChildAfterFork() {
     (void)launch_queue_.release();
     launch_queue_ = std::make_unique<AsyncLFQueue>("launch_queue");
   }
+  device_contexts_.clear();
   MS_LOG(DEBUG) << "RuntimePipeline reinitialize after fork end.";
 }
 

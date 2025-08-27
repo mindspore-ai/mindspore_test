@@ -38,6 +38,8 @@ class SparseCountSparseOutputCpuKernelMod : public NativeCpuKernelMod {
   }
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
+  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
+
  protected:
   std::vector<KernelAttr> GetOpSupport() override;
 
