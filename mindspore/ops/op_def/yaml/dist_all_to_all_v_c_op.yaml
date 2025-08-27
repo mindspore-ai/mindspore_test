@@ -1,0 +1,26 @@
+#operator dist all to all v
+dist_comm_all_to_all_v_c:
+    args:
+        other:
+            dtype: tensor
+        input:
+            dtype: tensor
+        group:
+            dtype: str
+        send_count_matrix:
+            dtype: tuple[int]
+            type_cast: list[int]
+        rank_size:
+            dtype: int
+        rank_id:
+            dtype: int
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommAllToAllVCAscend
+    non-differentiable: True
