@@ -36,6 +36,7 @@
 #include "runtime/device/move_to.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
+
 namespace mindspore {
 namespace tensor {
 namespace {
@@ -749,6 +750,65 @@ void TensorPybind::Load(const Tensor &tensor) {
   device_ctx->device_res_manager_->SyncAllStreams();
   SyncCopy(new_device_address, device_address, new_device_address->stream_id());
   const_cast<tensor::Tensor &>(tensor).set_device_address(new_device_address);
+}
+
+bool TensorPybind::SharedMemory(const TensorPtr &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  MS_LOG(INFO) << "Tensor shared memory allocation start";
+
+  // get tensor info
+  auto data_type = tensor->data_type();
+  auto shape = tensor->shape_c();
+  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+
+  // get shared mem allocator
+  std::string device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  auto shared_mem_allocator = device_context->device_res_manager_->shared_mem_allocator();
+
+  if (!device_address) {
+    MS_LOG(WARNING) << "Tensor does not have a device address, creation failed";
+    return false;
+  }
+
+  auto device_type = device_address->GetDeviceType();
+  MS_LOG(INFO) << "Src tensor ptr: " << device_address->GetPtr();
+
+  if (device_type == device::DeviceType::kCPU) {
+    // create device address
+    auto device_address_ = DeviceAddressMaker(nullptr, data_type, shape)
+                             .set_maker(GetDeviceAddressMaker(device::DeviceType::kAscend))
+                             .make_device_address();
+
+    MS_EXCEPTION_IF_NULL(device_address_);
+    tensor->set_device_address(device_address_);
+    const auto &device_address_new = std::dynamic_pointer_cast<device::DeviceAddress>(device_address_);
+    device_address_new->set_allocator(shared_mem_allocator);
+
+    if (device_address->GetPtr()) {
+      if (!device_context->device_res_manager_->AllocateMemory(device_address_new.get())) {
+        MS_LOG(WARNING) << "Tensor shared memory allocation error";
+        return false;
+      }
+
+      auto new_host_ptr = shared_mem_allocator->GetHostPtrByDevicePtr(const_cast<void *>(device_address_new->GetPtr()));
+      MS_LOG(INFO) << "Target tensor device ptr: " << device_address_new->GetPtr();
+      MS_LOG(INFO) << "Target tensor host ptr: " << new_host_ptr;
+
+      auto ret =
+        memcpy_s(new_host_ptr, device_address_new->GetSize(), device_address->GetPtr(), device_address->GetSize());
+      if (ret != EOK) {
+        MS_LOG(EXCEPTION) << "memcpy_s errno: " << ret;
+        return false;
+      }
+    }
+  } else if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
+    MS_LOG(WARNING) << "Tensor is on Ascend device, creation failed";
+    return false;
+  }
+  MS_LOG(INFO) << "Tensor shared memory allocation end";
+  return true;
 }
 
 void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,
