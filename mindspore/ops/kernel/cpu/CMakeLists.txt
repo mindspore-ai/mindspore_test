@@ -17,6 +17,8 @@ file(GLOB CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "map_tensor/*.cc"
     "sequence/*.cc"
     "custom/*.cc"
+    "native/sequence/*.cc"
+    "native/environ/*.cc"
 )
 
 set(IGNORE_LIST "")
@@ -49,8 +51,9 @@ list(APPEND CPU_SRC_LIST "${PYBOOST_CPU_SRC_LIST}")
 
 # merge cpu kernel files, NOT recursively
 if(NOT BUILD_LITE)
-    set(CPU_KERNEL_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/kernel/cpu)
-    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR} ${CPU_KERNEL_MERGE_DIR} cpu_kernel_merge "${EXCLUDE_PATTERN}" TRUE)
+    set(CPU_KERNEL_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/kernel/cpu/native)
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/native ${CPU_KERNEL_MERGE_DIR} cpu_kernel_merge
+        "${EXCLUDE_PATTERN}" TRUE)
     file(GLOB_RECURSE CPU_KERNEL_MERGE_FILES ${CPU_KERNEL_MERGE_DIR}/*.cc)
     list(APPEND CPU_SRC_LIST ${CPU_KERNEL_MERGE_FILES})
 endif()

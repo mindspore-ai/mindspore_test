@@ -1,0 +1,179 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/adam_delta_cpu_kernel.h"
+
+#include <vector>
+#include <string>
+#include <memory>
+#include <map>
+
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+#include "kernel/cpu/nnacl/fp32/adam_fp32.h"
+
+namespace mindspore {
+namespace kernel {
+namespace adam_delta_cpu {
+namespace {
+constexpr size_t kSizeFloat32 = sizeof(float);
+constexpr size_t kAdamDeltaInputsNum = 9;
+constexpr size_t kAdamDeltaOutputsNum = 1;
+constexpr size_t kMIndex = 0;
+constexpr size_t kVIndex = 1;
+constexpr size_t kBeta1PowIndex = 2;
+constexpr size_t kBeta2PowIndex = 3;
+constexpr size_t kLRIndex = 4;
+constexpr size_t kBeta1Index = 5;
+constexpr size_t kBeta2Index = 6;
+constexpr size_t kEpsIndex = 7;
+constexpr size_t kGradIndex = 8;
+}  // namespace
+
+template <typename T>
+void AdamDeltaCpuKernelMod::LaunchAdamDelta(T *delta, T *m, T *v, float lr, float beta1, float beta2, float epsilon,
+                                            const T *gradient, size_t size) {
+  std::function<void(size_t, size_t)> task;
+  if (dtype_ == kNumberTypeFloat32) {
+    task = [this, delta, m, v, lr, beta1, beta2, epsilon, gradient](size_t start, size_t end) {
+      (void)AdamDeltaFp32(delta, m, v, lr, beta1, beta2, epsilon, gradient, start, end, use_nesterov_);
+    };
+  } else {
+    task = [this, delta, m, v, lr, beta1, beta2, epsilon, gradient](size_t start, size_t end) {
+      for (size_t c1 = start; c1 < end; ++c1) {
+        m[c1] *= beta1;
+        m[c1] += (1 - beta1) * gradient[c1];
+        v[c1] *= beta2;
+        v[c1] += (1 - beta2) * gradient[c1] * gradient[c1];
+        if (use_nesterov_) {
+          delta[c1] = -lr * (m[c1] * beta1 + (1 - beta1) * gradient[c1]) / (std::sqrt(v[c1]) + epsilon);
+        } else {
+          delta[c1] = -lr * m[c1] / (std::sqrt(v[c1]) + epsilon);
+        }
+      }
+    };
+  }
+  ParallelLaunchAutoSearch(task, size, this, &parallel_search_info_);
+}
+
+bool AdamDeltaCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                 const std::vector<KernelTensor *> &outputs) {
+  dtype_ = inputs[0]->dtype_id();
+  return true;
+}
+
+int AdamDeltaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &outputs) {
+  if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  if (inputs.empty()) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the inputs's size is 0!";
+  }
+  MS_EXCEPTION_IF_NULL(inputs[0]);
+  auto delta_shape = outputs[0]->GetDeviceShapeVector();
+  if (delta_shape.empty()) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'delta' must be at least 1-D, but got empty shape!";
+  }
+  elem_num_ = 1;
+  for (size_t i = 0; i < delta_shape.size(); ++i) {
+    elem_num_ *= static_cast<size_t>(delta_shape[i]);
+  }
+  if (elem_num_ < 1) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'delta' must be at least 1-D, but got empty shape!";
+  }
+  auto use_nesterov_ptr = primitive_->GetAttr("use_nesterov");
+  if (use_nesterov_ptr != nullptr) {
+    use_nesterov_ = GetValue<bool>(use_nesterov_ptr);
+  }
+  return KRET_OK;
+}
+
+void AdamDeltaCpuKernelMod::CheckParams(const std::vector<kernel::KernelTensor *> &inputs,
+                                        const std::vector<kernel::KernelTensor *> &outputs) const {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kAdamDeltaInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kAdamDeltaOutputsNum, kernel_name_);
+
+  size_t elem_size = elem_num_ * kSizeFloat32;
+  std::vector<size_t> expect_sizes = {elem_size,    elem_size,    kSizeFloat32, kSizeFloat32, kSizeFloat32,
+                                      kSizeFloat32, kSizeFloat32, kSizeFloat32, elem_size};
+  std::vector<std::string> input_names = {"m",     "v",     "beta1_power", "beta2_power", "lr",
+                                          "beta1", "beta2", "epsilon",     "grad"};
+  for (size_t i = 0; i < kAdamDeltaInputsNum; ++i) {
+    if (inputs[i]->size() != expect_sizes[i]) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the address size of input '" << input_names[i]
+                        << "' must be equal to " << expect_sizes[i] << ", but got address size: " << inputs[i]->size();
+    }
+  }
+  if (outputs.size() < 1) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the size of outputs must be at least 1, but got "
+                      << outputs.size();
+  }
+  if (outputs[0]->size() != elem_size) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the address size of 'outputs[0]' must be equal to " << elem_size
+                      << ", but got " << outputs[0]->size();
+  }
+}
+
+bool AdamDeltaCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
+                                   const std::vector<kernel::KernelTensor *> &,
+                                   const std::vector<kernel::KernelTensor *> &outputs) {
+  CheckParams(inputs, outputs);
+  auto m = GetDeviceAddress<float>(inputs, kMIndex);
+  auto v = GetDeviceAddress<float>(inputs, kVIndex);
+  auto beta1_power_ptr = GetDeviceAddress<float>(inputs, kBeta1PowIndex);
+  auto beta1_power = beta1_power_ptr[0];
+  if (std::abs(beta1_power - 1) < FLT_EPSILON) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'beta1_power' can not be 1.";
+  }
+  auto beta2_power_ptr = GetDeviceAddress<float>(inputs, kBeta2PowIndex);
+  auto beta2_power = beta2_power_ptr[0];
+  auto lr_ptr = GetDeviceAddress<float>(inputs, kLRIndex);
+  auto lr = lr_ptr[0];
+  auto beta1_ptr = GetDeviceAddress<float>(inputs, kBeta1Index);
+  auto beta1 = beta1_ptr[0];
+  auto beta2_ptr = GetDeviceAddress<float>(inputs, kBeta2Index);
+  auto beta2 = beta2_ptr[0];
+  auto epsilon_ptr = GetDeviceAddress<float>(inputs, kEpsIndex);
+  auto epsilon = epsilon_ptr[0];
+  auto grad = GetDeviceAddress<float>(inputs, kGradIndex);
+  auto delta = GetDeviceAddress<float>(outputs, kIndex0);
+
+  lr = lr * std::sqrt(1 - beta2_power) / (1 - beta1_power);
+  // multithreading
+  size_t lens = inputs[0]->size() > 0 ? static_cast<size_t>(inputs[0]->size() / sizeof(float)) : 1;
+  LaunchAdamDelta<float>(delta, m, v, lr, beta1, beta2, epsilon, grad, lens);
+  return true;
+}
+
+std::vector<KernelAttr> AdamDeltaCpuKernelMod::GetOpSupport() {
+  static std::vector<KernelAttr> kernel_attr_list = {KernelAttr()
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddInputAttr(kNumberTypeFloat32)
+                                                       .AddOutputAttr(kNumberTypeFloat32)};
+  return kernel_attr_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdamNoUpdateParam, AdamDeltaCpuKernelMod);
+}  // namespace adam_delta_cpu
+}  // namespace kernel
+}  // namespace mindspore

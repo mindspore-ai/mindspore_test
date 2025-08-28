@@ -49,6 +49,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu/native)
 
 include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 MESSAGE("check  ut_test ${CMAKE_BINARY_DIR}")

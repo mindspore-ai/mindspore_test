@@ -1,0 +1,200 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/cdist_grad_cpu_kernel.h"
+#include <utility>
+#include <algorithm>
+#include "kernel/cpu/nnacl/op_base.h"
+namespace mindspore {
+namespace kernel {
+namespace cdist_grad_cpu {
+namespace {
+constexpr size_t kCdistInputDimsMin = 2;
+
+const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddOutputAttr(kNumberTypeFloat32)}};
+}  // namespace
+
+inline float DistSign(float val) {
+  return std::min(std::max(0.f, std::ceil(val)), (1.f)) + std::min(std::max((-1.f), std::floor(val)), (0.f));
+}
+
+float CdistOneNormalcompute(float diff, float grad, float dist, float p) { return grad * DistSign(diff); }
+
+float CdistLessTwoNormalcompute(float diff, float grad, float dist, float p) {
+  if (diff == 0.0 || p < 1.0) {
+    return 0.f;
+  }
+  return (DistSign(diff) * std::pow(std::abs(diff), (p - 1)) * grad / std::pow(dist, (p - 1)));
+}
+
+float CdistTwoNormalcompute(float diff, float grad, float dist, float p) {
+  return dist == 0.0 ? 0.f : grad * diff / dist;
+}
+
+float CdistInfNormalcompute(float diff, float grad, float dist, float p) {
+  return grad * DistSign(diff) * (1 - std::min(1.f, std::ceil(std::abs(std::abs(diff) - dist))));
+}
+
+float CdistPNormalcompute(float diff, float grad, float dist, float p) {
+  float result;
+
+  if (dist == 0.0) {
+    result = 0.f;
+  } else {
+    result = diff * std::pow(std::abs(diff), (p - 2)) * grad / std::pow(dist, (p - 1));
+  }
+  return result;
+}
+
+void CdistGradCpuKernelMod::InitFunc(float p) {
+  if (p == 0.0) {
+    dist_func_ = nullptr;
+  } else if (p == 1.0) {
+    dist_func_ = CdistOneNormalcompute;
+  } else if (p < 2.0) {
+    dist_func_ = CdistLessTwoNormalcompute;
+  } else if (p == 2.0) {
+    dist_func_ = CdistTwoNormalcompute;
+  } else if (std::isinf(p)) {
+    dist_func_ = CdistInfNormalcompute;
+  } else {
+    dist_func_ = CdistPNormalcompute;
+  }
+}
+
+bool CdistGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                 const std::vector<KernelTensor *> &outputs) {
+  return true;
+}
+
+int CdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &outputs) {
+  auto ret = KernelMod::Resize(inputs, outputs);
+  if (ret != 0) {
+    MS_LOG(WARNING) << "For " << kernel_name_ << " Resize failed. ret " << ret;
+    return ret;
+  }
+  p_ = inputs[kIndex4]->GetValueWithCheck<float>();
+  auto input_type_id = inputs[kIndex0]->dtype_id();
+  switch (input_type_id) {
+    case kNumberTypeFloat32:
+      InitFunc(p_);
+      break;
+    default:
+      MS_LOG(ERROR) << "cdist grad kernel does not support " << TypeIdToString(input_type_id);
+      return false;
+  }
+  std::vector<int64_t> in_shape0 = inputs[kIndex1]->GetShapeVector();
+  std::vector<int64_t> in_shape1 = inputs[kIndex2]->GetShapeVector();
+  auto in_shape_size = in_shape0.size();
+  if (in_shape1.size() != in_shape_size || in_shape_size < kCdistInputDimsMin) {
+    MS_LOG(ERROR) << "For " << kernel_name_ << ",invalid input shape, input0 shape size " << in_shape_size
+                  << ", input1 shape size " << in_shape1.size();
+    return KRET_RESIZE_FAILED;
+  }
+  for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
+    if (in_shape0[i] != in_shape1[i]) {
+      MS_LOG(ERROR) << "invalid input shape, the batch shape of input0 must be the same as the shape of input1 ,but "
+                       "got 'input0_shape["
+                    << i << "]': " << in_shape0[i] << " and 'input1_shape[" << i << "]': " << in_shape1[i]
+                    << ", kernel_name_ " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
+  }
+  batch_ = 0;
+  for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
+    batch_ += in_shape0[i];
+  }
+  batch_ = (batch_ <= 0) ? 1 : batch_;
+
+  r0_ = in_shape0[in_shape_size - kIndex2];
+  m_ = in_shape0[in_shape_size - kIndex1];
+  r1_ = in_shape1[in_shape_size - kIndex2];
+
+  l1_size = r0_ * m_;
+  l2_size = r1_ * m_;
+
+  return 0;
+}
+
+std::vector<KernelAttr> CdistGradCpuKernelMod::GetOpSupport() { return kernel_attr; }
+
+bool CdistGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &workspace,
+                                   const std::vector<KernelTensor *> &outputs) {
+  float *grad_start = GetDeviceAddress<float>(inputs, kIndex0);
+  float *dist_start = GetDeviceAddress<float>(inputs, kIndex3);
+  float *t1_start = GetDeviceAddress<float>(inputs, kIndex1);
+  float *t2_start = GetDeviceAddress<float>(inputs, kIndex2);
+  float *res_start = GetDeviceAddress<float>(outputs, kIndex0);
+  auto ret = memset_s(res_start, outputs[kIndex0]->size(), 0, outputs[kIndex0]->size());
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
+  }
+  if (p_ == 0.0) {
+    return true;
+  }
+
+  auto task = [this, grad_start, dist_start, t1_start, t2_start, res_start](size_t b_start, size_t b_end) {
+    const float *i = t1_start + b_start;
+    const float *j = t2_start + b_start;
+    float *res_l = res_start + b_start;
+    float *res_end = res_start + b_end;
+    for (; res_l != res_end; i += 1, j += 1, res_l += 1) {
+      const float *t1 = i;
+      const float *t2 = j;
+      float *res = res_l;
+      const float *t1_end = t1 + l1_size;
+      const float *t2_end = t2 + l2_size;
+      auto grad_k = grad_start;
+      auto dist_k = dist_start;
+
+      for (int64_t l = 0; l < batch_; l++) {
+        for (; t1 != t1_end; t1 += m_, res += m_) {
+          float t1_tmp = *t1;
+          float res_tmp = *res;
+
+          for (const float *t2_curr = t2; t2_curr != t2_end; t2_curr += m_, grad_k += 1, dist_k += 1) {
+            auto diff = t1_tmp - *t2_curr;
+            float res_curr = dist_func_(diff, (*grad_k), (*dist_k), p_);
+            res_tmp = res_tmp + res_curr;
+          }
+
+          *res = res_tmp;
+        }
+        t1_end += l1_size;
+        t2_end += l2_size;
+        t2 += l2_size;
+      }
+    }
+  };
+  ParallelLaunchAutoSearch(task, m_, this, &parallel_search_info_, pool_);
+
+  return true;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CdistGrad, CdistGradCpuKernelMod);
+
+}  // namespace cdist_grad_cpu
+};  // namespace kernel
+
+}  // namespace mindspore
