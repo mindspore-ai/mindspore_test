@@ -15,20 +15,19 @@
 """HSDP communication interface"""
 from mindspore.communication import create_group
 from mindspore import ops
+HSDP_GROUP_CACHE = set()
+
 
 class HSDPComm:
     """
     HSDP communication interface.
     """
-    def __init__(self):
-        self.group_created = set()
-
     def create_group(self, group_name, rank_list):
         """create communication group with group name and rank list."""
-        if group_name in self.group_created:
+        if group_name in HSDP_GROUP_CACHE:
             return
         create_group(group_name, rank_list)
-        self.group_created.add(group_name)
+        HSDP_GROUP_CACHE.add(group_name)
 
     def all_gather(self, group_name, data):
         """all gather data with group group_name."""

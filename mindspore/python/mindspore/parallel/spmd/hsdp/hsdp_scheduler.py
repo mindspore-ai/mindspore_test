@@ -13,46 +13,37 @@
 # limitations under the License.
 # ============================================================================
 """HSDP scheduler"""
-from enum import auto, Enum
-from mindspore import Parameter, Tensor
+from mindspore import Parameter, Tensor, ops
+from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel, HSDPConfig
 from mindspore.parallel.spmd.hsdp.hsdp_state import HSDPState
 from mindspore.parallel.spmd.hsdp.hsdp_comm import HSDPComm
 
-class OptimizerLevel(Enum):
-    """
-        Optimizer level:
-                - SHARD_OPT:
-                  Splitting is performed on optimizer state.
-                - SHARD_OPT_GRAD:
-                  Splitting is performed on optimizer state, and gradients.
-                - SHARD_OPT_GRAD_PARAM:
-                  Splitting is performed on optimizer state, gradients and weights.
-    """
-    SHARD_OPT = auto()
-    SHARD_OPT_GRAD = auto()
-    SHARD_OPT_GRAD_PARAM = auto()
 
 class HSDPScheduler:
     """HSDPShceduler is used to imply optimizer level."""
 
     def __init__(self, cell, shard_size, threshold, shard_level, accumulate_grad_step):
+        """init hsdp scheduler."""
         self.cell = cell
-        self.shard_size = shard_size
-        self.shard_param_threshold = threshold
         self.shard_level = shard_level
-        self.is_shard_level1 = (self.shard_level == OptimizerLevel.SHARD_OPT)
-        self.no_param_sharded = False
+        self.no_param_sharded = (shard_size == 1)
+        self.use_cell_hook = True
         if accumulate_grad_step > 1:
             self.requires_acc_grad = True
             self.acc_grad_factor = 1.0 / accumulate_grad_step
         else:
             self.requires_acc_grad = False
             self.acc_grad_factor = 1.0
+        self.config = HSDPConfig(shard_size, threshold, self.requires_acc_grad, shard_level, self.use_cell_hook)
+
         self.requires_grad_sync = Parameter(Tensor(False), name="hsdp_requires_grad_sync", requires_grad=False)
         self.comm = HSDPComm()
-        self.hsdp_state = HSDPState(cell, self.comm, shard_size, threshold,
-                                    self.requires_acc_grad, self.is_shard_level1)
-        self._register_hsdp_hooks()
+        self.hsdp_state = HSDPState(cell, self.comm, self.config)
+
+        if self.use_cell_hook:
+            self._register_cell_hooks()
+        else:
+            self._register_param_hook()
 
     def set_requires_grad_sync(self, requires_grad_sync):
         """set requires grad sync flag to control gradient sync."""
@@ -64,8 +55,36 @@ class HSDPScheduler:
             for hsdp_param in self.hsdp_state.hsdp_params:
                 hsdp_param.zero_acc_grad()
 
-    def _register_hsdp_hooks(self):
-        """register process hooks."""
+    def _get_hsdp_param_forward_hook(self, param):
+        """get param forward hook."""
+
+        def stateless_param_forward_hook(origin_param):
+            return self.comm.all_gather(param.unsharded_group_name, origin_param)
+
+        def stateful_param_forward_hook(origin_param):
+            if param.unsharded_param_available:
+                return param.unsharded_param
+
+            unshared_data = self.comm.all_gather(param.unsharded_group_name, origin_param)
+            ops.assign(param.unsharded_param, unshared_data)
+            ops.assign(param.unsharded_param_available, Tensor(True))
+            return param.unsharded_param
+
+        if self.shard_level == OptimizerLevel.SHARD_OPT_GRAD_PARAM:
+            return stateless_param_forward_hook
+        return stateful_param_forward_hook
+
+    def _register_param_hook(self):
+        """register param forward and grad hook."""
+        for hsdp_param in self.hsdp_state.hsdp_params:
+            if not hsdp_param.sharded:
+                hsdp_param.param.register_hook(self._get_hsdp_param_grad_hook(hsdp_param))
+            else:
+                hsdp_param.param.register_hsdp_hook(self._get_hsdp_param_forward_hook(hsdp_param),
+                                                    self._get_hsdp_param_grad_hook(hsdp_param))
+
+    def _register_cell_hooks(self):
+        """register cell process hooks."""
         for hsdp_param in self.hsdp_state.hsdp_params:
             hsdp_param.param.register_hook(self._get_hsdp_param_grad_hook(hsdp_param))
         if self.no_param_sharded:
@@ -98,7 +117,7 @@ class HSDPScheduler:
         self.hsdp_state.shard()
 
     def _hsdp_acc_backward_hook(self, cell, grad_inputs, grad_outputs):
-        """backward hook to shard parameter for accumunication grad only when requires_grad_sync is True."""
+        """backward hook to shard parameter for grad accumulation when requires_grad_sync is True."""
         if self.requires_grad_sync:
             self.hsdp_state.shard()
 
@@ -138,7 +157,7 @@ class HSDPScheduler:
 
         if not self.requires_acc_grad:
             return grad_reduce_scatter_hook
-        if self.is_shard_level1:
+        if self.shard_level == OptimizerLevel.SHARD_OPT:
             return grad_acc_reduce_scatter_hook
         return grad_reduce_scatter_acc_hook
 
@@ -166,7 +185,7 @@ class HSDPScheduler:
 
         if not self.requires_acc_grad:
             return grad_reduce_scatter_hook
-        if self.is_shard_level1:
+        if self.shard_level == OptimizerLevel.SHARD_OPT:
             return grad_acc_reduce_scatter_hook
 
         return grad_reduce_scatter_acc_hook

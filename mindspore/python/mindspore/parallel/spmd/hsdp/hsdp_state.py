@@ -16,15 +16,13 @@
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
 from mindspore import Parameter, Tensor
 
+
 class HSDPState:
     """HSDP state for cell"""
-    def __init__(self, cell, comm, shard_size, threshold, requires_acc_grad, is_shard_level1):
+    def __init__(self, cell, comm, config):
         self.cell = cell
         self.comm = comm
-        self.shard_size = shard_size
-        self.threshold = threshold
-        self.requires_acc_grad = requires_acc_grad
-        self.is_shard_level1 = is_shard_level1
+        self.config = config
         self.hsdp_params = []
         self.sharded_hsdp_params = []
         self._init_hsdp_params()
@@ -40,7 +38,7 @@ class HSDPState:
                     continue
                 if hasattr(param, "has_hsdp_param"):
                     continue
-                hsdp_param = HSDPParam(sub_cell, param_name, param, self)
+                hsdp_param = HSDPParam(sub_cell, param_name, param, self.comm, self.config)
                 param.has_hsdp_param = True
                 self.hsdp_params.append(hsdp_param)
                 if hsdp_param.sharded:
