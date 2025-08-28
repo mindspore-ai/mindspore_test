@@ -18,6 +18,7 @@
 
 #include <string>
 #include "ir/core_ops_primitive.h"
+#include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"

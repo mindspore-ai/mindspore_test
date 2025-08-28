@@ -15,7 +15,6 @@
  */
 
 #include "infer/cxx_api/full_connection.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/op_name.h"

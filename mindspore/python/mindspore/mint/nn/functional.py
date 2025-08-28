@@ -500,9 +500,6 @@ def relu6(input, inplace=False):
     .. image:: ../images/ReLU6.png
         :align: center
 
-    .. warning::
-        This is an experimental optimizer API that is subject to change.
-
     Args:
         input (Tensor): input Tensor. Dtype is in int8, int16, int32, int64, uint8, float16, float32, bfloat16.
         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
@@ -768,9 +765,6 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
     Here :math:`\text{beta}` controls the point where the loss function changes from quadratic to linear.
     :math:`\text{beta} \geq 0` , its default value is ``1.0`` . :math:`N` is the batch size.
 
-    .. warning::
-        This is an experimental optimizer API that is subject to change.
-
     Note:
         - Arg `input` and `target` comply with the implicit type conversion rules to make the data types consistent.
           If they have different data types, the lower precision data type will be converted to relatively the
@@ -960,7 +954,6 @@ def adaptive_avg_pool3d(input, output_size):
 
     .. warning::
         For Ascend, it is only supported on Atlas A2 Training Series Products.
-        This is an experimental optimizer API that is subject to change or deletion.
 
     Args:
         input (Tensor): The input of adaptive_avg_pool3d, which is a 4D or 5D Tensor.

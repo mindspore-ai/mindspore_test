@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include "ops/base_operator.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

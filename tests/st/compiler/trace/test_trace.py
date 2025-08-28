@@ -903,7 +903,7 @@ def test_trace_8():
     assert res == 6
 
 
-@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=["platform_ascend910b", "platform_gpu"], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_trace_setitem():
     """
@@ -916,7 +916,7 @@ def test_trace_setitem():
             super(TraceNet, self).__init__()
             self.x = ms.Tensor(1)
 
-        @ms.jit(capture_mode="trace")
+        @ms.jit(capture_mode="trace", backend="ms_backend")
         def construct(self, x, y):
             a = ms.Tensor(2)
             x[0] = y[2]

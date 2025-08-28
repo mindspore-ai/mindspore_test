@@ -18,6 +18,7 @@ Parallel Base Configuration
     :template: classtemplate.rst
 
     mindspore.parallel.auto_parallel.AutoParallel
+    mindspore.parallel.distributed.DistributedDataParallel
     mindspore.parallel.nn.GradAccumulation
     mindspore.parallel.nn.MicroBatchInterleaved
     mindspore.parallel.nn.Pipeline
@@ -66,3 +67,7 @@ Others
     mindspore.parallel.parameter_broadcast
     mindspore.parallel.restore_group_info_list
     mindspore.parallel.sync_pipeline_shared_parameters
+    mindspore.parallel.strategy.enable_save_strategy_online
+    mindspore.parallel.strategy.get_strategy_metadata
+    mindspore.parallel.strategy.get_current_strategy_metadata
+    mindspore.parallel.strategy.clear_strategy_metadata

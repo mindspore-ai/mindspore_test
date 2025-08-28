@@ -16,7 +16,7 @@
 
 #include "backend/ge_backend/executor/ge_device_res_manager.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
@@ -85,8 +85,6 @@ bool GeDeviceResManager::AllocateMemory(device::DeviceAddress *const &address, u
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  static std::string name = "Alloc memory";
-  address->IncreaseNewRefCount(name);
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }
@@ -200,7 +198,6 @@ device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress() const {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, kAscendDevice);
   device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
-  device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
 

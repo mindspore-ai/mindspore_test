@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_FUNC_GRAD_H_
 #define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_FUNC_GRAD_H_
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <map>
@@ -221,6 +222,9 @@ void CallCustomCFunction(const ValuePtrList &flatten_outputs, const TensorPtrSet
                          const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
                          const BackwardNodePtr &node);
 
+PYNATIVE_EXPORT tensor::TensorPtrList SearchUnusedParameters(const tensor::TensorPtrList &outputs,
+                                                             const tensor::TensorPtrList &total_params);
+
 struct GradientContext {
   struct CapturedGradient {
     explicit CapturedGradient(size_t input_index) : input_index(input_index) {}
@@ -276,6 +280,11 @@ class AutoDiff : public AutoDiffInterface {
   /// Add the given node to exec grad graph.
   /// \param node
   void AddNodeToExecGraph(const BackwardNodePtr &node) override;
+  /// Add final callback
+  /// \param callback
+  void AddFinalCallback(std::function<void()> callback);
+  /// Run final callback
+  void RunFinalCallback() const;
   /// Clear resource of AutoDiff engine.
   void Clear();
 
@@ -386,6 +395,7 @@ class AutoDiff : public AutoDiffInterface {
   std::unordered_map<BackwardNode *, GradientContext> gradient_contexts_;
   std::unordered_map<BackwardNode *, int32_t> dependencies_;
   std::unordered_set<BackwardNode *> node_used_in_graph_;
+  std::vector<std::function<void()>> final_callbacks_{};
   ValuePtrList flatten_sens_out_{};
   ValuePtr output_{nullptr};
   ValuePtrList root_gradients_{};

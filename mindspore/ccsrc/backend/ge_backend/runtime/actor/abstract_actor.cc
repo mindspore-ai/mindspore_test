@@ -202,12 +202,12 @@ void AbstractActor::SendOutput(OpContext<KernelTensor> *const context) {
   SendRecorderInfo(context);
 }
 
-bool AbstractActor::IsOutputAddressPersisted(const DeviceTensor *output_device_tensor,
+bool AbstractActor::IsOutputAddressPersisted(const KernelTensorPtr &output_kernel_tensor,
                                              const KernelWithIndex &output_node) {
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   MS_EXCEPTION_IF_NULL(output_node.first);
-  MS_EXCEPTION_IF_NULL(output_device_tensor);
   // The persisted address can't be replaced.
-  if (output_device_tensor->is_ptr_persisted()) {
+  if (output_kernel_tensor->is_ptr_persisted()) {
     return true;
   }
 

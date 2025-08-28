@@ -5,8 +5,6 @@ copy_:
     Copies the elements from `src` into `self` tensor and returns `self`.
 
     .. warning::
-        This is an experimental API that is subject to change or deletion.
-
         If Copying is performed between Ascend and Ascend, the `src` tensor must be broadcastable with the `self` tensor,
         and they can be of different data types.
         Copying is performed between CPU and Ascend or CPU and CPU are only supported if `self` and `src` have

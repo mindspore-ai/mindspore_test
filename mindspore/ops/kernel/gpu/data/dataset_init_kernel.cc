@@ -18,7 +18,7 @@
 #include "kernel/gpu/data/dataset_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 #include "include/common/utils/convert_utils.h"
 
 namespace mindspore {

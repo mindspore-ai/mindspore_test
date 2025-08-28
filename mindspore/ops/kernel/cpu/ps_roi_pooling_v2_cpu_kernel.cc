@@ -19,7 +19,6 @@
 #include <map>
 #include "kernel/cpu/ps_roi_pooling_v2_cpu_kernel.h"
 
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/ps_roi_pooling.h"
 
 namespace mindspore {

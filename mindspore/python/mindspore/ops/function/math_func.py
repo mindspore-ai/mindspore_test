@@ -44,7 +44,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, redu
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.auto_generate import multi_scale_deformable_attn_op
-from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
+from mindspore.ops.operations.array_ops import MatrixSetDiagV3
 # 1
 from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub,
                                          cos,
@@ -58,7 +58,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, inplace_erfinv_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
-                                         addbmm_op, addmm_op, pow_scalar_tensor_op)
+                                         addbmm_op, addmm_op, pow_scalar_tensor_op, transpose_op)
 # 2
 from mindspore.ops.functional_overload import gmm
 # 3
@@ -183,7 +183,6 @@ tensor_muls = muls
 tensor_pow = P.Pow()
 pows = tensor_pow
 tensor_sub = P.Sub()
-transpose_ = P.Transpose()
 xdivy_ = P.Xdivy()
 tensor_div_ = P.Div()
 tensor_divmod_ = DivMod()
@@ -707,7 +706,7 @@ def permute(input, axis):
           [ 8. 11.]
           [ 9. 12.]]]
     """
-    return transpose_(input, axis)
+    return transpose_op(input, axis)
 
 
 def subtract(input, other, *, alpha=1):
@@ -1595,7 +1594,7 @@ def t(input):
          [3, 4]])
     """
     if input.ndim == 2:
-        return transpose_(input, (1, 0))
+        return transpose_op(input, (1, 0))
     return input
 
 
@@ -5102,9 +5101,6 @@ def bernoulli_ext(input, *, generator=None):
     .. math::
         output_{i} \sim Bernoulli(p=input_{i})
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input tensor of Bernoulli distribution, where the i^{th} element 'input_{i}' represents the
             probability that the corresponding output element 'output_{i}' is set to '1', therefore each element in
@@ -5436,10 +5432,10 @@ def cummin(input, axis):
     else:
         x_shape = shape_(input)
         prem = _create_cummin_perm(axis, x_shape)
-        input = transpose_(input, prem)
+        input = transpose_op(input, prem)
         out1, out2 = cummin_op(input)
-        out1 = transpose_(out1, prem)
-        out2 = transpose_(out2, prem)
+        out1 = transpose_op(out1, prem)
+        out2 = transpose_op(out2, prem)
     return (out1, out2)
 
 
@@ -7705,9 +7701,6 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{p})^{(1 / p)}`
     ====================== ================================ ==========================================
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The shape is :math:`(*)` or :math:`(*, m, n)`
             where :math:`*` means, any number of additional dimensions.
@@ -8323,12 +8316,9 @@ def stft(x, n_fft, hop_length=None, win_length=None, window=None, center=True,
         >>> print(output.shape)
         (2, 33, 450, 2)
     """
-    if hop_length is None:
-        hop_length = int(n_fft // 4)
-    if win_length is None:
-        win_length = int(n_fft // 1)
-    if window is None:
-        window = ops.ones(win_length, mstype.float32)
+    hop_length = int(n_fft // 4) if hop_length is None else hop_length
+    win_length = int(n_fft // 1) if win_length is None else win_length
+    window = ops.ones(win_length, mstype.float32) if window is None else window
 
     def _is_complex(x):
         return dtype_(x) in [mstype.complex64, mstype.complex128]
@@ -10348,8 +10338,6 @@ def diag_embed(input, offset=0, dim1=-2, dim2=-1):
          [[0, 0, 0], [0, 0, 0], [0, 0, 0], [3, 6, 9]],
          [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]])
     """
-
-    transpose_op = Transpose()
     matrix_set_diag_op = MatrixSetDiagV3(align="LEFT_RIGHT")
     zeros = ops.Zeros()
     if not isinstance(input, (Tensor, Tensor_)):
@@ -10742,7 +10730,7 @@ def _permute_input(input, input_dim, ret_dim):
     dim_permute = dim_permute_a + dim_permute_b
 
     # permute
-    input = transpose_(input, tuple(dim_permute))
+    input = transpose_op(input, tuple(dim_permute))
 
     return input, dim_permute
 
@@ -11452,8 +11440,8 @@ def tensor_dot(x1, x2, axes):
     x2_reshape_fwd, x2_transpose_fwd, x2_ret = _calc_new_shape(x2_shape, axes, 1)
     output_shape = x1_ret + x2_ret  # combine free axes from both inputs
     # run tensor_dot op
-    x1_transposed = transpose_(x1, x1_transpose_fwd)
-    x2_transposed = transpose_(x2, x2_transpose_fwd)
+    x1_transposed = transpose_op(x1, x1_transpose_fwd)
+    x2_transposed = transpose_op(x2, x2_transpose_fwd)
     x1_reshaped = reshape_(x1_transposed, x1_reshape_fwd)
     x2_reshaped = reshape_(x2_transposed, x2_reshape_fwd)
     mul_result = matmul_op(x1_reshaped, x2_reshaped)
@@ -11621,7 +11609,7 @@ def dot(input, other):
 
     if len(input_shape) > 2 or len(other_shape) > 2:
         other_shape_transpose = _get_transpose_shape(other_shape)
-        other_transpose = transpose_(other, other_shape_transpose)
+        other_transpose = transpose_op(other, other_shape_transpose)
         input_reshape = reshape_(input, (-1, input_shape[-1]))
         other_reshape = reshape_(other_transpose, (other_shape[-2], -1))
         mul_result = matmul_op(input_reshape, other_reshape)
@@ -11854,8 +11842,8 @@ def batch_dot(x1, x2, axes=None):
     x2_reshape_fwd, x2_transpose_fwd, x2_ret = _calc_new_shape_batchdot(x2_shape, axes, 1)
     output_shape = _get_output_shape(x1_batch_size, x1_ret, x2_ret)
 
-    x1_transposed = transpose_(x1, x1_transpose_fwd)
-    x2_transposed = transpose_(x2, x2_transpose_fwd)
+    x1_transposed = transpose_op(x1, x1_transpose_fwd)
+    x2_transposed = transpose_op(x2, x2_transpose_fwd)
     x1_reshaped = reshape_(x1_transposed, x1_reshape_fwd)
     x2_reshaped = reshape_(x2_transposed, x2_reshape_fwd)
 

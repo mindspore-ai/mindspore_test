@@ -24,7 +24,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/grad/mvlgamma_grad.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/mvlgamma_grad_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"

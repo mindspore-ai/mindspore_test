@@ -17,7 +17,6 @@
 #include "kernel/gpu/arrays/spacetodepth_gpu_kernel.h"
 #include <map>
 #include <utility>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 namespace mindspore {

@@ -13,45 +13,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "view/unstack_strides_calc.h"
+
 #include <vector>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
+
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList UnstackStridesCalc(const std::vector<int64_t> &old_shape,
+                                            const std::vector<int64_t> &old_strides,
+                                            const TensorStorageInfoPtr &old_storage_info, const int64_t &dim) {
+  auto [ori_shape, ori_strides, old_storage_offset] =
+    GetOriShapeStridesAndOffset(old_shape, old_strides, old_storage_info);
 
-TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim) {
-  auto oldShape = old_tensor_info->old_shape;
-  auto oldStrides = old_tensor_info->old_strides;
-  auto oldStorageOffset = old_tensor_info->old_offset;
-  const auto ndims = oldShape.size();
-
-  (void)CheckAndConvertUtils::CheckInteger("x_rank", SizeToLong(ndims), kGreaterEqual, 1, "Unstack");
-  CheckAndConvertUtils::CheckInRange("axis value", dim, kIncludeLeft, {-ndims, ndims}, "Unstack");
+  const auto ndims = old_shape.size();
+  MS_CHECK_VALUE(ndims >= 1,
+                 "For 'Unstack', input's rank should be greater equal to 1, but got " + std::to_string(ndims));
   auto dim_new = DynamicDimWrap(dim, ndims);
-  int64_t size = oldShape[dim_new];
-  (void)CheckAndConvertUtils::CheckInteger("output_num", size, kGreaterEqual, 0, "Unstack");
+  int64_t output_num = old_shape[dim_new];
+  MS_CHECK_VALUE(output_num > 0,
+                 "For 'Unstack', output_num should be greater than 0, but got " + std::to_string(output_num));
 
-  std::vector<TensorStorageInfoPtr> res_storage_info(size);
-  for (int64_t d = 0; d < size; d++) {
-    ShapeVector newShape(oldShape.begin(), oldShape.end());
-    StridesVecotr newStrides(oldStrides.begin(), oldStrides.end());
-    auto newStorageOffset = oldStorageOffset + LongToSize(d * newStrides[dim_new]);
+  std::vector<TensorStorageInfoPtr> storage_info_list;
+  storage_info_list.reserve(output_num);
+  for (int64_t i = 0; i < output_num; i++) {
+    ShapeVector newShape(old_shape);
+    StridesVecotr newStrides(old_strides);
+    auto new_storage_offset = old_storage_offset + LongToSize(i * newStrides[dim_new]);
 
     newShape.erase(newShape.begin() + dim_new);
     newStrides.erase(newStrides.begin() + dim_new);
     bool is_contiguous = IsContiguous(newShape, newStrides);
 
-    auto newStorageInfo = std::make_shared<TensorStorageInfo>(
-      newShape, newStrides, newStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
-    res_storage_info[d] = newStorageInfo;
+    auto new_storage_info = std::make_shared<TensorStorageInfo>(
+      std::move(newShape), std::move(newStrides), new_storage_offset, ori_shape, ori_strides, is_contiguous);
+    storage_info_list.push_back(std::move(new_storage_info));
   }
-  return res_storage_info;
+
+  return storage_info_list;
 }
-OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+
+TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
@@ -62,9 +70,8 @@ OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std
   auto axis_value_ptr = prim->GetAttr(kAxis);
   MS_EXCEPTION_IF_NULL(axis_value_ptr);
   auto dim = GetValue<int64_t>(axis_value_ptr);
-
-  auto old_tensor_info = GetOldTensorInfo(tensor);
-  return UnstackStridesCalc(old_tensor_info, dim);
+  return UnstackStridesCalc(tensor->shape(), tensor->stride(), tensor->storage_info(), dim);
 }
+
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Unstack, UnstackCalc);
 }  // namespace mindspore::ops

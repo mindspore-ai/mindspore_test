@@ -30,12 +30,12 @@
 #include "pybind11/stl_bind.h"
 #include "minddata/dataset/api/python/pybind_register.h"
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/engine/ir/cache/pre_built_dataset_cache.h"
-#include "minddata/dataset/engine/ir/datasetops/source/csv_node.h"
+#include "minddata/dataset/engine/operation/cache/pre_built_dataset_cache.h"
+#include "minddata/dataset/data_source/operation/csv_node.h"
 #include "minddata/dataset/include/dataset/datasets.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/prebuilt_sampler_ir.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/samplers_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/prebuilt_sampler_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 #include "minddata/dataset/kernels/py_func_op.h"
 namespace py = pybind11;
 

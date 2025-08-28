@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "utils/hash_map.h"
+
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -44,8 +44,6 @@ class BACKEND_COMMON_EXPORT Util {
   static int64_t LocalShard(int64_t first_dim, int64_t rank_id, int64_t server_num);
   static std::map<int64_t, int64_t> AllRankLocalShard(int64_t first_dim, int64_t rank_id, int64_t server_num);
   static bool FuseServerCommOps(const FuncGraphPtr &func_graph);
-  static WeightPtr MakeWeightPtr(const std::shared_ptr<std::vector<float>> &data, bool enable_recovery,
-                                 const std::shared_ptr<std::vector<int>> &shape = nullptr);
   static std::string GetPrimitiveName(const CNodePtr &cnode);
 
  private:

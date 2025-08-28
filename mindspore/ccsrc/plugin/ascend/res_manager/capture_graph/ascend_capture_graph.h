@@ -31,7 +31,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendCaptureGraph : public CaptureGraph {
   void CaptureGetInfo(uint32_t stream_id) override;
   void CaptureEnd(uint32_t stream_id) override;
   void ExecuteCaptureGraph(uint32_t stream_id) override;
-  bool HasCapturedGraph() const override;
 
  protected:
   aclrtStream capture_stream_{nullptr};

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include <memory>
 #include <queue>
 #include <utility>
-#include "utils/hash_map.h"
+
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/base/debug_aware_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
@@ -119,7 +119,7 @@ class HostQueueDataSourceActor : public DataSourceActor {
   // The index of different device context for the same parameter.
   std::vector<std::pair<size_t, size_t>> heter_index_pair_;
   // The ref relationship of device address.
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors_;
 
   // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
   bool is_infer_phase_;

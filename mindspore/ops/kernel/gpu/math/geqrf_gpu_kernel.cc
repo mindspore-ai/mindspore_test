@@ -19,7 +19,6 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "abstract/utils.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

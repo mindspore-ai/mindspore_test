@@ -25,7 +25,6 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "ir/dtype.h"
 #include "utils/anf_utils.h"
 #include "utils/shape_utils.h"
 #include "abstract/abstract_value.h"

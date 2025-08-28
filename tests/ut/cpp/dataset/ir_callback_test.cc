@@ -21,11 +21,11 @@
 #include "minddata/dataset/callback/ds_callback.h"
 #include "minddata/dataset/core/client.h"
 #include "minddata/dataset/engine/datasetops/epoch_ctrl_op.h"
-#include "minddata/dataset/engine/datasetops/source/random_data_op.h"
+#include "minddata/dataset/data_source/random_data_op.h"
 #include "minddata/dataset/engine/tree_adapter.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/transforms.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 #include "utils/log_adapter.h"
 
 using namespace mindspore::dataset;

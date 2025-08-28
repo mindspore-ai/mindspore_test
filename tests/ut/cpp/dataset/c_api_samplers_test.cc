@@ -15,8 +15,8 @@
  */
 #include "common/common.h"
 #include "minddata/dataset/include/dataset/constants.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
+#include "minddata/dataset/data_source/sampler/sampler.h"
+#include "minddata/dataset/data_source/operation/samplers/samplers_ir.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include <functional>
 
@@ -92,10 +92,10 @@ TEST_F(MindDataTestPipeline, TestImageFolderWithSamplers) {
   iter->Stop();
 }
 
-// Feature: Test ImageFolder with WeightedRandomSampler
-// Description: Create ImageFolder dataset with WeightedRandomRampler given num_samples=12,
-// iterate through dataset and count rows
-// Expectation: There should be 12 rows
+/// Feature: Test ImageFolder with WeightedRandomSampler
+/// Description: Create ImageFolder dataset with WeightedRandomRampler given num_samples=12,
+/// iterate through dataset and count rows
+/// Expectation: There should be 12 rows
 TEST_F(MindDataTestPipeline, TestWeightedRandomSamplerImageFolder) {
   std::vector<double> weights = {0.9, 0.8, 0.68, 0.7, 0.71, 0.6, 0.5, 0.4, 0.3, 0.5, 0.2, 0.1};
   std::shared_ptr<Sampler> sampl = std::make_shared<WeightedRandomSampler>(weights, 12);
@@ -290,10 +290,10 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess4) {
   iter->Stop();
 }
 
-// Feature: Test ImageFolder with DistributedSampler
-// Description: Create ImageFolder dataset with DistributedSampler given num_shards=11 and shard_id=10,
-// count rows in dataset
-// Expectation: There should be 4 rows (44 rows in original data/11 = 4)
+/// Feature: Test ImageFolder with DistributedSampler
+/// Description: Create ImageFolder dataset with DistributedSampler given num_shards=11 and shard_id=10,
+/// count rows in dataset
+/// Expectation: There should be 4 rows (44 rows in original data/11 = 4)
 TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess5) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestDistributedSamplerSuccess5.";
   // Test basic setting of distributed_sampler
@@ -324,10 +324,10 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess5) {
   iter->Stop();
 }
 
-// Feature: Test ImageFolder with DistributedSampler
-// Description: Create ImageFolder dataset with DistributedSampler given num_shards=4 and shard_id=3,
-// count rows in dataset
-// Expectation: There should be 11 rows (44 rows in original data/4 = 11)
+/// Feature: Test ImageFolder with DistributedSampler
+/// Description: Create ImageFolder dataset with DistributedSampler given num_shards=4 and shard_id=3,
+/// count rows in dataset
+/// Expectation: There should be 11 rows (44 rows in original data/4 = 11)
 TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess6) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestDistributedSamplerSuccess6.";
   // Test basic setting of distributed_sampler
@@ -752,9 +752,9 @@ TEST_F(MindDataTestPipeline, TestSubsetSamplerFail) {
   iter->Stop();
 }
 
-// Feature: Test ImageFolder with PKSampler
-// Description: Create ImageFolder dataset with DistributedSampler given num_val=3 and count rows
-// Expectation: There should be 12 rows
+/// Feature: Test ImageFolder with PKSampler
+/// Description: Create ImageFolder dataset with DistributedSampler given num_val=3 and count rows
+/// Expectation: There should be 12 rows
 TEST_F(MindDataTestPipeline, TestPKSamplerImageFolder) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestPKSamplerImageFolder.";
 

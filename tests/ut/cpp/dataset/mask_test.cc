@@ -23,8 +23,8 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/cv_tensor.h"
 #include "minddata/dataset/core/data_type.h"
-#include "minddata/dataset/kernels/data/mask_op.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/mask_op.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 
 using namespace mindspore::dataset;
 

@@ -26,7 +26,6 @@
 #include "ir/tensor.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/visible.h"
-#include "frontend/ir/storage_base.h"
 #include "frontend/np_dtypes/np_dtypes.h"
 
 namespace py = pybind11;
@@ -139,6 +138,8 @@ class FRONTEND_EXPORT TensorPybind {
   /// \param[in] input [py::array] Data value of the tensor.
   static TensorPtr MakeTensorOfNumpy(const py::array &input);
 
+  static TensorPtr MakePinMemoryTensor(const TensorPy &tensor);
+
   static py::bytes GetBytes(const Tensor &tensor);
 
   static py::buffer_info GetPyBufferFromPyArray(const py::array &input);
@@ -151,6 +152,8 @@ class FRONTEND_EXPORT TensorPybind {
   static py::object Item(const TensorPtr &tensor);
 
   static py::array SyncAsNumpy(const Tensor &tensor);
+
+  static py::array NumpyNonBlocking(const Tensor &tensor);
 
   static py::array AsNumpy(const Tensor &tensor);
 
@@ -177,17 +180,6 @@ class FRONTEND_EXPORT TensorPybind {
   static uintptr_t DataPtr(const TensorPtr &tensor);
 
   static std::string GetDevice(const TensorPtr &tensor);
-
-  static std::shared_ptr<StorageBase> GetStorage(const TensorPtr &tensor);
-
-  struct TensorPyUserData {
-    py::object obj;
-    ~TensorPyUserData() {
-      // cppcheck-suppress unreadVariable
-      py::gil_scoped_acquire acquire_gil;
-      obj = py::object();
-    }
-  };
 
   static void SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value);
 

@@ -16,6 +16,7 @@
 
 #include "graph_kernel/kernel_packet/kernel_packet_common_test_suite.h"
 #include "ir/functor.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {
 class StubConcatShapeCalcFunctor : public ShapeCalcFunctor {

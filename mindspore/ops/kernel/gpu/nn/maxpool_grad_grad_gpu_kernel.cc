@@ -19,7 +19,6 @@
 #include <functional>
 #include <string>
 #include "mindspore/ops/infer/grad/max_pool_grad_grad.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_grad_grad_impl.cuh"
 

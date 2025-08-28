@@ -15,6 +15,7 @@
  */
 
 #include "base/base.h"
+#include "utils/compile_config.h"
 
 namespace mindspore {
 Base::Base(const Base &other) : std::enable_shared_from_this<Base>(other) {}

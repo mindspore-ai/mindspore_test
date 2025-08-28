@@ -19,7 +19,6 @@
 #include <limits>
 #include <string>
 #include <cmath>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/ctc_loss_v2_grad.h"
 namespace mindspore {
 namespace kernel {

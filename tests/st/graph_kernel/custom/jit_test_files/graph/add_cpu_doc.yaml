@@ -1,0 +1,37 @@
+add4:
+  description: |
+    Adds scaled other value to input Tensor.
+    
+    .. math::
+    
+        out_{i} = input_{i} + alpha \times other_{i}
+    
+    Note:
+        - When the two inputs have different shapes,
+          they must be able to broadcast to a common shape.
+        - The two inputs and alpha comply with the implicit type conversion rules to make the data types
+          consistent.
+    
+    Args:
+        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+    
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
+        and the data type is the one with higher precision or higher digits among the two inputs and alpha.
+    
+    Raises:
+        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
+        TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+  

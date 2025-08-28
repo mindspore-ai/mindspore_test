@@ -24,15 +24,17 @@
 #include <memory>
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "ir/device_sync.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
+using DeviceAddress = device::DeviceAddress;
+using DeviceAddressPtr = device::DeviceAddressPtr;
 // KernelTensorValue stores values in continuous memory and supports values of the types ValueSequence, Tensor, Scalar,
 // and String.
 class MS_CORE_API KernelTensorValue : public Value {
  public:
   // This constructor is used to construct the KernelTensorValue to hold the Tensor.
-  KernelTensorValue(const DeviceSyncPtr &device_sync, const TypePtr &t);
+  KernelTensorValue(const DeviceAddressPtr &device_sync, const TypePtr &t);
 
   // This constructor is used to construct the KernelTensorValue to hold the ValueSequence.
   KernelTensorValue(std::vector<uint8_t> &&array_data, const TypePtr &t);
@@ -87,7 +89,7 @@ class MS_CORE_API KernelTensorValue : public Value {
  private:
   // Used to store values in continuous memory for the types ValueSequence, Tensor, Scalar and String.
   // The const_data_ is read-only after assignment.
-  std::variant<std::vector<uint8_t>, DeviceSyncPtr, StringImmPtr> const_data_;
+  std::variant<std::vector<uint8_t>, DeviceAddressPtr, StringImmPtr> const_data_;
 
   // The object type id for the types ValueSequence, Tensor, Scalar and String.
   TypeId obj_type_id_{TypeId::kTypeUnknown};

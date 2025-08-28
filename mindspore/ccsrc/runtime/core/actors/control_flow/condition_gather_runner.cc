@@ -16,7 +16,7 @@
 
 #include "runtime/core/actors/control_flow/condition_gather_runner.h"
 #include <utility>
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 
 namespace mindspore {
@@ -253,11 +253,9 @@ void ConditionGatherRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *cons
     MS_EXCEPTION_IF_NULL(input_kernel_tensors_[input_index]->device_address());
     output_kernel_tensors_[i]->device_address()->set_tensor_storage_info(
       input_kernel_tensors_[input_index]->device_address()->GetTensorStorageInfo());
-    output_kernel_tensors_[i]->device_address()->set_pointer_ref_count(
-      input_kernel_tensors_[input_index]->device_address()->pointer_ref_count());
-    output_kernel_tensors_[i]->device_address()->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Actor:" << GetAID()
-                  << " increase new ref count:" << output_kernel_tensors_[i]->device_address()->new_ref_count()
+    output_kernel_tensors_[i]->set_pointer_ref_count(input_kernel_tensors_[input_index].get());
+    output_kernel_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
+    MS_LOG(DEBUG) << "Actor:" << GetAID() << " increase new ref count:" << output_kernel_tensors_[i]->new_ref_count()
                   << " and set ref kernel tensor:" << output_kernel_tensors_[i]->ToString()
                   << " ref input kernel tensor:" << input_kernel_tensors_[input_index]->ToString();
   }

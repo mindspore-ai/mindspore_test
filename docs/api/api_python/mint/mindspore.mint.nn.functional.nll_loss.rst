@@ -23,9 +23,6 @@ mindspore.mint.nn.functional.nll_loss
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` ， :math:`C` 表示类的数量， :math:`N` 表示batch size，
           或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。

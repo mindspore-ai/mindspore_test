@@ -26,9 +26,9 @@ namespace pyexecute {
 using DeviceAddress = device::DeviceAddress;
 using KernelTensor = kernel::KernelTensor;
 using PyDataConverter = bool (*)(const py::object &, ValuePtr *);
-BACKEND_EXPORT void set_pydata_converter(const PyDataConverter &set_pydata_converter);
-tensor::TensorPtr GetValueByPyObj(const py::object &obj);
-abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj);
+BACKEND_COMMON_EXPORT void set_pydata_converter(const PyDataConverter &set_pydata_converter);
+BACKEND_COMMON_EXPORT tensor::TensorPtr GetValueByPyObj(const py::object &obj);
+BACKEND_COMMON_EXPORT abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj);
 void UserDataToRawMemory(KernelTensor *const kernel_tensor);
 ValuePtr GetValueFromUserData(const UserDataPtr &user_data);
 }  // namespace pyexecute

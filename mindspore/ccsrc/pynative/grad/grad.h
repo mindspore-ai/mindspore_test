@@ -123,6 +123,7 @@ class PYNATIVE_EXPORT GradExecutor {
   inline bool IsHighOrderTopCell() const {
     return !input_args_info_stack_.empty() && IsNestedGrad() && top_cell()->grad_order() != grad_order_;
   }
+  void QueueFinalCallback(std::function<void()> callback) const;
 
  private:
   ForwardExecutorPtr forward() const;

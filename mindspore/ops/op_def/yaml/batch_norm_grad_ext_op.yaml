@@ -43,5 +43,4 @@ batch_norm_grad_ext:
   dispatch:
     enable: True
     Ascend: BatchNormGradExtAscend
-    CPU: None
     GPU: None

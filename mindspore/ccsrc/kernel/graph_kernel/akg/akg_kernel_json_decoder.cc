@@ -38,6 +38,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/core/include/ops/primitive_c.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -347,7 +348,17 @@ ParameterPtr AkgKernelJsonDecoder::DecodeParameter(const nlohmann::json &paramet
 CNodePtr AkgKernelJsonDecoder::DecodeCNode(const nlohmann::json &cnode_json, const FuncGraphPtr &func_graph,
                                            const std::string &processor) {
   CNodeDecoder decoder(&nodes_map_);
-  Processor p = kernel::GetProcessor(processor);
+  Processor p;
+  if (processor == kProcessorAiCore) {
+    p = Processor::AICORE;
+  } else if (processor == kProcessorAiCpu) {
+    p = Processor::AICPU;
+  } else if (processor == kProcessorCuda) {
+    p = Processor::CUDA;
+  } else {
+    MS_LOG(DEBUG) << "Unknown processor type.";
+    p = Processor::UNKNOWN;
+  }
   return decoder.DecodeCNode(cnode_json, func_graph, p);
 }
 

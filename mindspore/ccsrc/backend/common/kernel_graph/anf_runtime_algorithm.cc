@@ -28,17 +28,19 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/log_adapter.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/shape_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
@@ -176,40 +178,6 @@ bool ContainScalarOut(const AbstractBasePtr &abs) {
     return has_scalar_out;
   }
   return false;
-}
-
-void TensorValueToVector(const ValuePtr &value, VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(value);
-  MS_EXCEPTION_IF_NULL(outputs);
-  if (value->isa<ValueSequence>()) {
-    auto value_tuple = value->cast<ValueSequencePtr>();
-    MS_EXCEPTION_IF_NULL(value_tuple);
-    for (size_t i = 0; i < value_tuple->size(); ++i) {
-      ValuePtr element = value_tuple->value()[i];
-      MS_EXCEPTION_IF_NULL(element);
-      if (element->isa<tensor::Tensor>()) {
-        auto tensor = element->cast<tensor::TensorPtr>();
-        MS_EXCEPTION_IF_NULL(tensor);
-        outputs->emplace_back(tensor);
-      } else if (element->isa<Scalar>()) {
-        auto scalar = element->cast<ScalarPtr>();
-        MS_EXCEPTION_IF_NULL(scalar);
-        outputs->emplace_back(ScalarToTensor(scalar));
-      } else if (element->isa<ValueSequence>()) {
-        VectorRef tuple;
-        TensorValueToVector(element, &tuple);
-        outputs->emplace_back(tuple);
-      }
-    }
-  } else if (value->isa<tensor::Tensor>()) {
-    auto tensor = value->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    outputs->emplace_back(tensor);
-  } else if (value->isa<Scalar>()) {
-    auto scalar = value->cast<ScalarPtr>();
-    MS_EXCEPTION_IF_NULL(scalar);
-    outputs->emplace_back(ScalarToTensor(scalar));
-  }
 }
 }  // namespace
 
@@ -1121,13 +1089,12 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0);
+    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, 0);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
-  auto kernel_tensor =
-    std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size, format, dtype_id,
-                                           host_shape, device_name, device_id, user_data);
+  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size,
+                                                              format, dtype_id, host_shape, device_name, user_data);
   return kernel_tensor;
 }
 
@@ -1139,7 +1106,7 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto device_address = host_context->device_res_manager_->CreateDeviceAddress(device_ptr, size, host_shape, format,
-                                                                               dtype_id, device_name, device_id, 0);
+                                                                               dtype_id, device_name, 0);
   auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape, user_data);
   return kernel_tensor;
 }
@@ -2051,6 +2018,7 @@ bool AnfRuntimeAlgorithm::IsNeedContinuesMemoryOp(const AnfNodePtr &kernel) {
     kAlltoAllVOpName,
     kAllGatherVOpName,
     kReduceScatterVOpName,
+    kAlltoAllVCOpName,
   };
   bool flag =
     (common::AnfAlgo::IsNaiveCommunicationOp(kernel)) && (names.count(common::AnfAlgo::GetCNodeName(kernel)) == 0);
@@ -2547,52 +2515,6 @@ bool AnfRuntimeAlgorithm::IsGraphOutputValueNodeOrParameterForCompile(const AnfN
   return false;
 }
 
-bool AnfRuntimeAlgorithm::IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
-                                                            VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(graph_output);
-  MS_EXCEPTION_IF_NULL(outputs);
-  if (graph_output->isa<ValueNode>()) {
-    MS_LOG(INFO) << "Graph's output is a constant. No need to execute.";
-    VectorRef output_tmp;
-    ValuePtr value = GetValueNode(graph_output);
-    TensorValueToVector(value, &output_tmp);
-    MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<ValueSequence>()) {
-      outputs->emplace_back(output_tmp);
-    } else if (value->isa<tensor::Tensor>() || value->isa<Scalar>()) {
-      *outputs = output_tmp;
-    } else {
-      MS_LOG(INFO) << "Graph output is empty!";
-    }
-    return true;
-  }
-
-  if (graph_output->isa<Parameter>()) {
-    MS_LOG(INFO) << "Graph's output is a parameter. If all params are inputs, no need to execute.";
-    // Find the right parameter as ret_val.
-    auto func_graph = graph_output->func_graph();
-    MS_EXCEPTION_IF_NULL(func_graph);
-    auto params = func_graph->parameters();
-    if (args.size() != params.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Input size " << args.size()
-                                 << " is not equal to graph input size " << params.size();
-    }
-
-    auto it = std::find(params.begin(), params.end(), graph_output);
-    if (it == params.end()) {
-      MS_EXCEPTION(UnknownError) << "When graph output is Parameter, it should be found in graph parameters";
-    }
-    size_t index = static_cast<size_t>(it - params.cbegin());
-    if (index >= args.size()) {
-      MS_EXCEPTION(UnknownError) << "Index " << index << " equal or larger than args size " << args.size();
-    }
-
-    outputs->emplace_back(args[index]);
-    return true;
-  }
-  return false;
-}
-
 bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_mod = GetKernelMod(node);
@@ -2912,6 +2834,28 @@ kernel::KernelAttr AnfRuntimeAlgorithm::GetKernelAttrFromNode(const AnfNodePtr &
   MS_EXCEPTION_IF_NULL(kernel_node);
   auto build_info = GetSelectKernelBuildInfo(kernel_node);
   return GetKernelAttrFromBuildInfo(build_info);
+}
+
+std::string AnfRuntimeAlgorithm::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
+  constexpr auto kParameterDeviceUserDataName = "parameter_device";
+  if (!node->isa<Parameter>()) {
+    return "";
+  }
+  const auto &parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return "";
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return "";
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPyUserData>(kParameterDeviceUserDataName);
+  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
+    return "";
+  }
+  return py::cast<std::string>(user_data->obj);
 }
 
 bool AnfRuntimeAlgorithm::IsBackendGe() {

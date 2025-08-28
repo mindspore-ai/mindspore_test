@@ -24,7 +24,7 @@
 #include <utility>
 #include <functional>
 #include "mindspore/ops/infer/clip_by_norm.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {

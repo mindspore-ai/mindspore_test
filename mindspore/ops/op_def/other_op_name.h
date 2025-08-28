@@ -54,6 +54,7 @@ constexpr auto kAlltoAllOpName = "AlltoAll";
 constexpr auto kAllToAllOpName = "AllToAll";
 constexpr auto kAllToAllvOpName = "AllToAllv";
 constexpr auto kAlltoAllVOpName = "AlltoAllV";
+constexpr auto kAlltoAllVCOpName = "AlltoAllVC";
 constexpr auto kAllGatherVOpName = "AllGatherV";
 constexpr auto kReduceScatterVOpName = "ReduceScatterV";
 constexpr auto kAlltoAllVGEOpName = "AlltoAllVGE";

@@ -19,7 +19,7 @@
 #include <algorithm>
 
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 #include "ir/dtype/type_id.h"
 
 namespace mindspore {

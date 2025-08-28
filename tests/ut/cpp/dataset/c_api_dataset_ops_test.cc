@@ -19,7 +19,7 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/vision.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 
 using namespace mindspore::dataset;
 using mindspore::dataset::Tensor;
@@ -910,10 +910,7 @@ TEST_F(MindDataTestPipeline, TestFilterFail3) {
   EXPECT_EQ(iter, nullptr);
 }
 
-/// Feature: Test ImageFolder with Batch and Repeat operations
-/// Description: Perform Repeat and Batch ops based on repeat_count, batch_size, num_samples, and replacement,
-///     iterate through dataset and count rows
-/// Expectation: Output is equal to the expected output
+/// Test ImageFolder with Batch and Repeat operations
 void ImageFolderBatchAndRepeat(int32_t repeat_count, int32_t batch_size, int64_t num_samples, 
                                bool replacement, std::string datasets_root_path) {
   // Create an ImageFolder Dataset
@@ -1585,9 +1582,7 @@ TEST_F(MindDataTestPipeline, TestShuffleDataset) {
   iter->Stop();
 }
 
-/// Feature: Test shuffle operation on TFRecord dataset
-/// Description: Iterate through dataset with a shuffle size of shuffle_size and count the number of rows
-/// Expectation: There should be 10 rows in the dataset
+/// Test shuffle operation on TFRecord dataset
 void TestShuffleTFRecord(int32_t shuffle_size, std::string dataset_root_path) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestShuffleTFRecord.";
 
@@ -1629,6 +1624,9 @@ TEST_F(MindDataTestPipeline, TestShuffleTFRecord) {
  TestShuffleTFRecord(100, datasets_root_path_);
 }
 
+/// Feature: Test skip operation on TFRecord dataset
+/// Description: Iterate through dataset with skip op
+/// Expectation: Success
 TEST_F(MindDataTestPipeline, TestSkipDataset) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestSkipDataset.";
 
@@ -2197,9 +2195,9 @@ TEST_F(MindDataTestPipeline, TestNumWorkersValidate) {
   }
 }
 
-// Feature: Test Concat operation on TFRecord dataset
-// Description: Perform Concat on two identical datasets, iterate through the product and count rows
-// Expectation: There should be 2 rows in the concatenated dataset (2 times original size)
+/// Feature: Test Concat operation on TFRecord dataset
+/// Description: Perform Concat on two identical datasets, iterate through the product and count rows
+/// Expectation: There should be 2 rows in the concatenated dataset (2 times original size)
 TEST_F(MindDataTestPipeline, TestConcatTFRecord) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestConcatSuccess.";
 
@@ -2243,9 +2241,9 @@ TEST_F(MindDataTestPipeline, TestConcatTFRecord) {
   iter->Stop();
 }
 
-// Feature: Test ImageFolder with Sequential Sampler and Decode 
-// Description: Create ImageFolder dataset with decode=true, iterate through dataset and count rows
-// Expectation: There should be 20 rows in the dataset (# of samples taken)
+/// Feature: Test ImageFolder with Sequential Sampler and Decode 
+/// Description: Create ImageFolder dataset with decode=true, iterate through dataset and count rows
+/// Expectation: There should be 20 rows in the dataset (# of samples taken)
 TEST_F(MindDataTestPipeline, TestImageFolderDecode) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestImageFolderDecode.";
 
@@ -2273,9 +2271,9 @@ TEST_F(MindDataTestPipeline, TestImageFolderDecode) {
   iter->Stop();
 }
 
-// Feature: Test TFRecord with Take operation
-// Description: Perform Take operation with count = 5, iterate through dataset and count rows
-// Expectation: There should be 5 rows in the dataset
+/// Feature: Test TFRecord with Take operation
+/// Description: Perform Take operation with count = 5, iterate through dataset and count rows
+/// Expectation: There should be 5 rows in the dataset
 TEST_F(MindDataTestPipeline, TestTFRecordTake) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordTake.";
 
@@ -2312,9 +2310,9 @@ TEST_F(MindDataTestPipeline, TestTFRecordTake) {
   iter->Stop();
 }
 
-// Feature: Test Skip operation on TFRecord dataset
-// Description: Perform skip operation with count = 5, iterate through dataset and count rows
-// Expectation: There should be 7 rows, (12 rows initially and 5 are skipped)
+/// Feature: Test Skip operation on TFRecord dataset
+/// Description: Perform skip operation with count = 5, iterate through dataset and count rows
+/// Expectation: There should be 7 rows, (12 rows initially and 5 are skipped)
 TEST_F(MindDataTestPipeline, TestTFRecordSkip) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordSkip.";
 
@@ -2351,9 +2349,9 @@ TEST_F(MindDataTestPipeline, TestTFRecordSkip) {
   iter->Stop();
 }
 
-// Feature: Test Rename operation on TFRecord
-// Description: Rename columns in dataset, iterate through dataset and count rows
-// Expectation: The columns should have a new name after the Rename op and there should be 3 rows in the dataset
+/// Feature: Test Rename operation on TFRecord
+/// Description: Rename columns in dataset, iterate through dataset and count rows
+/// Expectation: The columns should have a new name after the Rename op and there should be 3 rows in the dataset
 TEST_F(MindDataTestPipeline, TestTFRecordRename) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordRename.";
 
@@ -2394,10 +2392,10 @@ TEST_F(MindDataTestPipeline, TestTFRecordRename) {
   iter->Stop();
 }
 
-// Feature: Test TFRecord with Zip and Repeat operation
-// Description: Create two datasets and apply Zip operation on them.
-//     Apply Repeat operation on resulting dataset and count rows
-// Expectation: There should be 9 rows in the dataset
+/// Feature: Test TFRecord with Zip and Repeat operation
+/// Description: Create two datasets and apply Zip operation on them.
+///     Apply Repeat operation on resulting dataset and count rows
+/// Expectation: There should be 9 rows in the dataset
 TEST_F(MindDataTestPipeline, TestTFRecordZip) {
   // Testing the member zip() function
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestTFRecordZip.";
@@ -2442,9 +2440,9 @@ TEST_F(MindDataTestPipeline, TestTFRecordZip) {
   iter->Stop();
 }
 
-// Feature: Test Repeat and Map with decode and resize ops on TFRecord
-// Description: Iterate through dataset and count the number of rows and check the shape of the image data
-// Expectation: There should be 6 rows in the dataset and shape is {30,30}
+/// Feature: Test Repeat and Map with decode and resize ops on TFRecord
+/// Description: Iterate through dataset and count the number of rows and check the shape of the image data
+/// Expectation: There should be 6 rows in the dataset and shape is {30,30}
 TEST_F(MindDataTestPipeline, TestTFRecordDecodeRepeatResize) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.TestTFRecordDecodeRepeatResize";
 
@@ -2500,9 +2498,9 @@ TEST_F(MindDataTestPipeline, TestTFRecordDecodeRepeatResize) {
   iter->Stop();
 }
 
-// Feature: Test Batch on TFRecord
-// Description: Iterate through dataset, count the number of rows and verify the data in the row
-// Expectation: There should be 1 row in the dataset and the data should the expected data
+/// Feature: Test Batch on TFRecord
+/// Description: Iterate through dataset, count the number of rows and verify the data in the row
+/// Expectation: There should be 1 row in the dataset and the data should the expected data
 TEST_F(MindDataTestPipeline, TestBatch) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestBatch.";
 
@@ -2548,9 +2546,7 @@ TEST_F(MindDataTestPipeline, TestBatch) {
   iter->Stop();
 }
 
-/// Feature: Test Repeat and Batch on TFRecord
-/// Description: Apply repeat then batch with drop=drop, count rows in the dataset
-/// Expectation: The number of rows should equal the expected_rows
+/// Test Repeat and Batch on TFRecord
 void TestRepeatBatch(bool drop, uint64_t expected_rows, std::string datasets_root_path) {
   // Create a TFRecord Dataset
   std::string file_path = datasets_root_path + "/testBatchDataset/test.data";
@@ -2597,9 +2593,7 @@ TEST_F(MindDataTestPipeline, TestRepeatBatchDrop) {
   TestRepeatBatch(false, 4, datasets_root_path_);
 }
 
-/// Feature: Test Batch and Repeat on TFRecord
-/// Description: Apply batch then repeat with drop=drop, count rows in the dataset
-/// Expectation: The number of rows should equal the expected_rows
+/// Test Batch and Repeat on TFRecord
 void TestBatchRepeat(bool drop, uint64_t expected_rows, std::string datasets_root_path) {
   // Create a TFRecord Dataset
   std::string file_path = datasets_root_path + "/testBatchDataset/test.data";
@@ -2646,9 +2640,9 @@ TEST_F(MindDataTestPipeline, TestBatchDropRepeat) {
   TestBatchRepeat(false, 4, datasets_root_path_);
 }
 
-// Feature: Test Map on TFRecord
-// Description: Apply Map with a TensorOp that does noting but swaps input columns with output column
-// Expectation: "Image" column is replaced with "X"
+/// Feature: Test Map on TFRecord
+/// Description: Apply Map with a TensorOp that does noting but swaps input columns with output column
+/// Expectation: "Image" column is replaced with "X"
 TEST_F(MindDataTestPipeline, TestMap) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.TestMap";
 
@@ -2690,9 +2684,9 @@ TEST_F(MindDataTestPipeline, TestMap) {
   iter->Stop();
 }
 
-// Feature: Test Map on TFRecord
-// Description: Apply Map with a TensorOp that swaps 3 input columns with 1 output column
-// Expectation: "Image", "A", "B" are replaced with "X"
+/// Feature: Test Map on TFRecord
+/// Description: Apply Map with a TensorOp that swaps 3 input columns with 1 output column
+/// Expectation: "Image", "A", "B" are replaced with "X"
 TEST_F(MindDataTestPipeline, Test3to1) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.Test3to1";
 
@@ -2734,9 +2728,9 @@ TEST_F(MindDataTestPipeline, Test3to1) {
   iter->Stop();
 }
 
-// Feature: Test Map on TFRecord
-// Description: Apply Map with a TensorOp that swaps 1 input column with 3 output columns
-// Expectation: "Image" is replaced with "X", "Y", "Z"
+/// Feature: Test Map on TFRecord
+/// Description: Apply Map with a TensorOp that swaps 1 input column with 3 output columns
+/// Expectation: "Image" is replaced with "X", "Y", "Z"
 TEST_F(MindDataTestPipeline, Test1to3) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.Test1to3";
 
@@ -2788,9 +2782,9 @@ TEST_F(MindDataTestPipeline, Test1to3) {
   iter->Stop();
 }
 
-// Feature: Test Map on TFRecord
-// Description: Apply 3to1 and then 1to3 to replace 3 input columns with 3 output columns
-// Expectation: "Image", "A", "B" are replaced with "X", "y", "Z"
+/// Feature: Test Map on TFRecord
+/// Description: Apply 3to1 and then 1to3 to replace 3 input columns with 3 output columns
+/// Expectation: "Image", "A", "B" are replaced with "X", "y", "Z"
 TEST_F(MindDataTestPipeline, TestMultiTensorOp) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.TestMultiTensorOp";
 
@@ -2840,9 +2834,9 @@ TEST_F(MindDataTestPipeline, TestMultiTensorOp) {
   iter->Stop();
 }
 
-// Feature: Test Repeat and Map on TFRecord
-// Description: Apply Map with NoOp and Repeat with num_repeats=3, iterate through dataset and count rows
-// Expectation: There should  be 10 rows in the dataset
+/// Feature: Test Repeat and Map on TFRecord
+/// Description: Apply Map with NoOp and Repeat with num_repeats=3, iterate through dataset and count rows
+/// Expectation: There should  be 10 rows in the dataset
 TEST_F(MindDataTestPipeline, TestTFReaderRepeatMap) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline.TestTFReaderRepeatMap";
 

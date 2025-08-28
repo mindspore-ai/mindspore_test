@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "ir/graph_utils.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
@@ -32,7 +33,6 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel/symbol_engine/multi_symbol_engine.h"
-
 namespace mindspore::graphkernel {
 namespace {
 void GetTopoValidNodes(const FuncGraphPtr &func_graph, CNodePtrList *topo_valid_nodes) {

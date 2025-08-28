@@ -20,7 +20,7 @@
 #include "kernel/gpu/data/dataset_utils.h"
 #include "kernel/gpu/trt/trt_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "plugin/device/gpu/hal/device/trt_loader.h"
+#include "plugin/gpu/graph_optimizer/pass/inference/trt_pass/trt_loader.h"
 
 namespace mindspore {
 namespace kernel {

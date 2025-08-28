@@ -57,7 +57,7 @@ BeginFunction(GmmV2Backward, grad, x, weight, group_list, group_list_type) {
     auto act_type = Value(0);
     auto none = NewValueNode(kNone);
     return Call(Prim(GroupedMatmulV4), x, weight, none, none, none, none, none, none, group_list, none, none, none,
-                split_item, group_type, group_list_type, act_type);
+                split_item, group_type, group_list_type, act_type, none);
   };
 
   const auto &primitive = prim();

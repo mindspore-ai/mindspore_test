@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "ir/scalar.h"

@@ -21,12 +21,13 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                            const mindspore::tensor::TensorPtr &input_tensor,
+OPS_API TensorStorageInfoPtrList SelectExtStridesCalc(const std::vector<int64_t> &old_shape,
+                                                      const std::vector<int64_t> &old_strides,
+                                                      const TensorStorageInfoPtr &old_storage_info,
+                                                      const int64_t ori_dim, const int64_t ori_index);
+OPS_API TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                             const int64_t &dim, const int64_t &index);
 OPS_API TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
-                                                      const int64_t ori_index);
 }  // namespace ops
 }  // namespace mindspore
 

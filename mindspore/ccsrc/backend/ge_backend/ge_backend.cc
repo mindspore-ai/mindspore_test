@@ -24,12 +24,14 @@
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
+#include "ir/graph_utils.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 #include "utils/file_utils.h"
@@ -49,7 +51,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/scoped_long_running.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "backend/ge_backend/runtime/segment_runner.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -73,7 +75,7 @@
 #include "plugin/ascend/res_manager/mbuf_manager/tensorsummary_utils.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "ir/func_graph_flag.h"
 
 namespace mindspore {
@@ -438,9 +440,6 @@ void GEBackend::Init() {
   graph_executor_ = std::make_shared<GeGraphExecutor>();
 
   MS_LOG(INFO) << "Start initializing GE backend.";
-  if (UseSimulationApi()) {
-    device::ascend::LoadSimulationApiSymbols();
-  }
 
   // set overflow mode
   auto ms_context = MsContext::GetInstance();
@@ -1256,7 +1255,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
         // for weight value update in python
         SetTensorUpdateCallback(flatten_tensors[j]);
 
-        device_tensor->set_is_ptr_persisted(true);
+        kernel_tensor->set_is_ptr_persisted(true);
         if (host_tensor_address == device_tensor) {
           continue;
         }
@@ -1400,7 +1399,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
   auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(func_graph->output());
   // map of output_node ptr and corresponding tensor, for same output condition
   // 1. same device_address; 2. io_index, same pointer_ref_count
-  mindspore::HashMap<PointerRefCountPtr, device::DeviceAddressPtr> output_node_tensor_map;
+  mindspore::HashMap<DevicePointerPtr, KernelTensorPtr> output_node_tensor_map;
   for (size_t i = 0; i < graph_outputs.size(); ++i) {
     const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
     if (HasAbstractMonad(output_node)) {
@@ -1427,32 +1426,31 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     kernel_tensor->set_stream_id(output_addr->stream_id());
     // SetShape will calculate a default size by host shape, need to set real device size for special format.
     kernel_tensor->set_size(output_addr->GetSize());
-    auto tensor_device_address = graph_executor_->CreateDeviceAddress(kernel_tensor, output_addr->is_ptr_persisted());
+    auto tensor_device_address =
+      graph_executor_->CreateDeviceAddress(kernel_tensor, output_kernel_tensor->is_ptr_persisted());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
 
-    if (output_addr->is_ptr_persisted()) {
+    if (output_kernel_tensor->is_ptr_persisted()) {
       // device_tensor persisted or format not same -> device_copy
       if (!Copy(tensor_device_address, output_addr)) {
         MS_LOG(EXCEPTION) << "Sync data error.";
       }
-    } else if (output_node_tensor_map[output_addr->pointer_ref_count()] != nullptr) {
+    } else if (output_node_tensor_map[output_addr->device_pointer()] != nullptr) {
       // create new device_address because they may have same ptr but different shape
-      auto device_address = output_node_tensor_map[output_addr->pointer_ref_count()];
-      tensor_device_address->set_pointer_ref_count(device_address->pointer_ref_count());
+      auto tmp_kernel_tensor = output_node_tensor_map[output_addr->device_pointer()];
+      kernel_tensor->set_pointer_ref_count(tmp_kernel_tensor.get());
     } else {
-      output_node_tensor_map[output_addr->pointer_ref_count()] = tensor_device_address;
-      MS_LOG(DEBUG) << "Swap from device tensor:" << output_addr->ToString()
-                    << " to: " << tensor_device_address->ToString()
-                    << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
-                    << " in funcgraph:" << func_graph->ToString();
-      output_addr->Swap(tensor_device_address.get());
+      output_node_tensor_map[output_addr->device_pointer()] = kernel_tensor;
+      MS_LOG(DEBUG) << "Swap from kernel tensor:" << output_kernel_tensor->ToString()
+                    << " to: " << kernel_tensor->ToString() << ", output node:" << output_node->fullname_with_scope()
+                    << " output index:" << idx << " in funcgraph:" << func_graph->ToString();
+      output_kernel_tensor->Swap(kernel_tensor.get());
       kernel_tensor->set_managed_by_somas(output_kernel_tensor->managed_by_somas());
     }
 
-    MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
-                  << ", type:" << tensor_device_address->type_id() << ", ptr: " << tensor_device_address->GetPtr()
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString()
                   << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
-                  << ", origin output device tensor: " << output_addr;
+                  << ", origin output kernel tensor: " << output_kernel_tensor->ToString();
 
     tensor_device_address->SetShapeVector(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
@@ -1480,7 +1478,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
   MS_EXCEPTION_IF_NULL(graph_executor_);
   auto func_graph = graph_map_[graph_id];
-  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph->output(), inputs, outputs)) {
+  if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(func_graph->output(), inputs, outputs)) {
     MS_LOG(INFO) << "Status record: end run graph: " << graph_id;
     return;
   }

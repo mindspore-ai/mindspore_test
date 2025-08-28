@@ -22,13 +22,17 @@
 #include "view/broadcast_to_strides_calc.h"
 
 namespace mindspore::ops {
-constexpr size_t kExpandAsInputsNum = 2;
+OPS_API TensorStorageInfoPtrList ExpandAsBasicTypeCalc(const mindspore::tensor::TensorPtr &input,
+                                                       const mindspore::tensor::TensorPtr &other) {
+  return BroadcastToBasicTypeCalc(input, other->shape());
+}
 
 TensorStorageInfoPtrList ExpandAsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   auto self_tensor = inputs[0]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(self_tensor);
   auto other_tensor = inputs[1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(other_tensor);
-  return BroadCastToProcess(prim, self_tensor, other_tensor->shape());
+  return ExpandAsBasicTypeCalc(self_tensor, other_tensor);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(ExpandAs, ExpandAsCalc);

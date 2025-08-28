@@ -8,9 +8,6 @@ mindspore.mint.equal
     .. note::
         `input` 和 `other` 遵循隐式类型转换规则，使数据类型保持一致。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 第一个输入。
         - **other** (Tensor) - 第二个输入。

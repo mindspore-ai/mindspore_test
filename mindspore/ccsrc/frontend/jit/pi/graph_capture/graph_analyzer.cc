@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "frontend/jit/pi/graph_capture/graph_analyzer.h"
+
 #include <algorithm>
 #include <iterator>
 #include <list>
@@ -24,6 +25,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+
 #include "frontend/jit/pi/capture_context.h"
 #include "frontend/jit/pi/pi_jit_config.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
@@ -32,6 +34,8 @@
 #include "frontend/jit/pi/graph_capture/side_effect.h"
 #include "frontend/jit/pi/graph_build/build_graph_utils.h"
 #include "frontend/jit/pi/graph_capture/graph_arguments_optimizer.h"
+#include "utils/compile_config.h"
+#include "utils/convert_utils_base.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \

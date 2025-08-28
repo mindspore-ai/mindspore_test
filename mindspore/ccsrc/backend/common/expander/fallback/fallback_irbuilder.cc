@@ -21,10 +21,12 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
-#include "include/common/expander/core/emitter.h"
+#include "ir/scope.h"
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace expander {

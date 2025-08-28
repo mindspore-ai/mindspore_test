@@ -32,22 +32,17 @@ void ReshapeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inpu
     is_input_not_contiguous_ = true;
     return;
   }
+
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   auto shape = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
   if (std::any_of(shape.begin(), shape.end(), [](const int &shape_i) { return shape_i < -1; })) {
     MS_EXCEPTION(ValueError) << "ReshapeView the component of shape can't be less than -1, but got " << shape;
   }
 
-  auto ori_info = inputs[kIndex0]->tensor_storage_info();
-  if (ori_info != nullptr && !ori_info->is_contiguous) {
-    info_ = ops::ReshapeUncontiguousCalcImpl(old_info, shape);
-    if (info_.empty()) {
-      info_ = ops::ReshapeCalcImpl(old_info, shape);
-    }
-  } else {
-    info_ = ops::ReshapeCalcImpl(old_info, shape);
-  }
-  outputs[kIndex0]->set_tensor_storage_info(info_[0]);
+  auto info =
+    ops::ReshapeStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), shape);
+  MS_EXCEPTION_IF_NULL(info);
+  outputs[kIndex0]->set_tensor_storage_info(info);
 }
 
 void ReshapeView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

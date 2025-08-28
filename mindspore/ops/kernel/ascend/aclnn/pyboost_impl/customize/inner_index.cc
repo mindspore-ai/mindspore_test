@@ -20,13 +20,12 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<TensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
+std::vector<TensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple, device::DeviceType device_type) {
   // It is temporarily used: when the shape is 9 zeros, similar to ":" in x[(1,2,..), :, (..),].
   std::vector<TensorPtr> result;
   const auto &values = tuple->value();
@@ -37,7 +36,7 @@ std::vector<TensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
     if (shape.size() == kSize9 && std::all_of(shape.begin(), shape.end(), [](int i) { return i == 0; })) {
       auto type_id = tensor->data_type();
       std::vector<int64_t> empty_shape({0});
-      result.push_back(tensor::from_spec(type_id, empty_shape, device::DeviceType::kCPU));
+      result.push_back(tensor::from_spec(type_id, empty_shape, device_type));
     } else {
       result.push_back(tensor);
     }
@@ -52,7 +51,8 @@ tensor::TensorPtr InnerIndexAscendCustomize(const std::shared_ptr<OpRunner> &op,
   OpRunner::InferOpOutput(op, input_tensor, indices_tensor_list);
 
   // Process shape of 9 zeros
-  std::vector<TensorPtr> indices_tensor_vector = ConvertEmptyTensor(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector =
+    ConvertEmptyTensor(indices_tensor_list, input_tensor->device_address()->GetDeviceType());
 
   // Set address
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, indices_tensor_vector);

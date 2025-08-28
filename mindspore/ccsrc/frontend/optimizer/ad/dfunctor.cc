@@ -30,6 +30,7 @@
 #include "utils/info.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/manager.h"
+#include "ir/dtype/tensor_type.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/optimizer/ad/adjoint.h"
 #include "frontend/operator/ops.h"

@@ -21,7 +21,7 @@ import pickle
 import os
 import numpy as np
 
-from ..shardutils import check_filename
+from ..core.shardutils import check_filename
 
 __all__ = ['Cifar100']
 

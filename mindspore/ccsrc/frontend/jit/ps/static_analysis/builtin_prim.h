@@ -22,9 +22,7 @@
 #include <memory>
 #include <string>
 
-#include "utils/hash_map.h"
 #include "frontend/jit/ps/static_analysis/evaluator.h"
-#include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace abstract {

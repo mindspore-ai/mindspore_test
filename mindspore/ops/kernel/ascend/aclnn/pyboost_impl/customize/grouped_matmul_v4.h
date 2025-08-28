@@ -37,7 +37,8 @@ void GroupedMatmulV4AscendCustomize(
   const std::optional<ValueTuplePtr> &activation_input_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_offset_tensor_list, const Int64ImmPtr &split_item_imm,
-  const Int64ImmPtr &group_type_imm, const Int64ImmPtr &group_list_type_imm, const Int64ImmPtr &act_type_imm);
+  const Int64ImmPtr &group_type_imm, const Int64ImmPtr &group_list_type_imm, const Int64ImmPtr &act_type_imm,
+  const std::optional<Int64ImmPtr> &output_dtype_imm);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

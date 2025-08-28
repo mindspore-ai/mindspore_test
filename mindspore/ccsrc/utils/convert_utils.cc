@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/graph_utils.h"
 #include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/anf_utils.h"
@@ -696,6 +697,7 @@ ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &att
 
 ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val) {
   std::vector<ValuePtr> val_vec;
+  val_vec.reserve(val.size());
   std::transform(val.begin(), val.end(), std::back_inserter(val_vec),
                  [](int64_t e) { return std::make_shared<Int64Imm>(e); });
   return std::make_shared<ValueTuple>(val_vec);

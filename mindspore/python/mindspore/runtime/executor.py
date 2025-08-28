@@ -196,7 +196,7 @@ def set_kernel_launch_group(thread_num=2, kernel_group_num=8):
 
 
 @args_type_check(enable_capture_graph=bool)
-def set_kernel_launch_capture(enable_capture_graph):
+def set_kernel_launch_capture(enable_capture_graph, op_capture_skip=None):
     """
     In O0/O1 mode, the incremental inference scenario supports graph capture.
     By capturing the CPU-side operator dispatch behavior into a graph,
@@ -208,12 +208,20 @@ def set_kernel_launch_capture(enable_capture_graph):
     Args:
         enable_capture_graph (bool): Whether to enable graph capture.
             It can be turned on or off at any position in the script.
+        op_capture_skip (list): Custom non-captured operator names. Default: ``None``.
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.runtime.set_kernel_launch_capture(enable_capture_graph=True)
+        >>> op_capture_skip = ['matmul', 'addn']
+        >>> ms.runtime.set_kernel_launch_capture(enable_capture_graph=True, op_capture_skip)
     """
     if RuntimeConf.get_instance().is_kernel_launch_group_configured():
         raise RuntimeError("The kernel launch group and kernel launch capture can not be set together")
 
-    return RuntimeConf.get_instance().set_kernel_launch_capture(enable_capture_graph)
+    if op_capture_skip is None:
+        op_capture_skip = []
+
+    if not isinstance(op_capture_skip, list):
+        raise TypeError("op_capture_skip must be a list")
+
+    return RuntimeConf.get_instance().set_kernel_launch_capture(enable_capture_graph, op_capture_skip)

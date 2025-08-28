@@ -10,5 +10,4 @@ log2:
         name: log2_ext
     dispatch:
         enable: True
-        CPU: None
         GPU: None

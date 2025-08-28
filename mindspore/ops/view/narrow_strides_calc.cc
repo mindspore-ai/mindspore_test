@@ -20,31 +20,25 @@
 #include "utils/check_convert_utils.h"
 #include "view/narrow_strides_calc.h"
 
-namespace {
-constexpr size_t kNarrowInputsNum = 4;
-}
-
 namespace mindspore::ops {
-TensorStorageInfoPtrList NarrowBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
-                                             const int64_t &dim, const int64_t &start, const int64_t &length) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
-  auto old_shape = old_tensor_info->old_shape;
+TensorStorageInfoPtrList NarrowBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
+                                             const int64_t &start, const int64_t &length) {
+  const auto &input_shape = input_tensor->shape();
 
-  int shape_size = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(shape_size > 0, "narrow cannot be applied to a 0-dim tensor.");
+  int input_dim = SizeToLong(input_shape.size());
+  MS_CHECK_VALUE(input_dim > 0, "narrow cannot be applied to a 0-dim tensor.");
 
-  auto new_dim = DynamicDimWrap(dim, shape_size);
-  auto dim_value = old_shape[new_dim];
+  auto dim_value = input_shape[DynamicDimWrap(dim, input_dim)];
   MS_CHECK_VALUE(start >= -dim_value && start <= dim_value,
                  "For primitive [Narrow]: start value error, start: " + std::to_string(start) +
                    ", start should be in [" + std::to_string(-dim_value) + ", " + std::to_string(dim_value) + "].");
   auto new_start = start < 0 ? start + dim_value : start;
+
   auto max_length = dim_value - new_start;
-  MS_CHECK_VALUE(length >= 0 && length <= max_length, "length value error. length: " + std::to_string(length) +
-                                                        ", length should be in [0, " + std::to_string(max_length) +
-                                                        "].");
-  return SliceExtBasicTypeCalc(prim, input_tensor, dim, start, new_start + length, 1);
+  MS_CHECK_VALUE(length >= 0 && length <= max_length,
+                 "For 'Narrow', start (" + std::to_string(start) + "), + length (" + std::to_string(length) +
+                   ") exceeds dimension size (" + std::to_string(dim_value) + ").");
+  return SliceExtBasicTypeCalc(input_tensor, dim, new_start, new_start + length, 1);
 }
 
 TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -53,7 +47,7 @@ TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<
   auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
   auto start = GetValue<int64_t>(inputs[kInputIndex2]);
   auto length = GetValue<int64_t>(inputs[kInputIndex3]);
-  return NarrowBasicTypeCalc(prim, input_tensor, dim, start, length);
+  return NarrowBasicTypeCalc(input_tensor, dim, start, length);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Narrow, NarrowCalc);

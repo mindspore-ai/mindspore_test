@@ -20,7 +20,6 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "mindapi/base/types.h"
-#include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
 
 namespace mindspore {

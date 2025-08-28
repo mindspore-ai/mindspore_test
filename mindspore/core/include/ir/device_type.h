@@ -40,6 +40,9 @@ const std::map<std::string, DeviceType> device_name_to_type_map = {{"Unknown", D
 
 MS_CORE_API const std::string &GetDeviceNameByType(const DeviceType &type);
 MS_CORE_API DeviceType GetDeviceTypeByName(const std::string &name);
+MS_CORE_API bool IsAscendDeviceType(const DeviceType &type);
+MS_CORE_API bool IsCPUDeviceType(const DeviceType &type);
+
 }  // namespace device
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CORE_INCLUDE_IR_DEVICE_TYPE_H_

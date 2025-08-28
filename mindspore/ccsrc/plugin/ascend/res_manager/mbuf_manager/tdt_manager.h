@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "base/base.h"
+
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/visible.h"
 

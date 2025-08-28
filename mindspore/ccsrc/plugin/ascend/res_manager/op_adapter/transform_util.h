@@ -23,7 +23,6 @@
 #include <memory>
 #include "include/securec.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "utils/shape_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"

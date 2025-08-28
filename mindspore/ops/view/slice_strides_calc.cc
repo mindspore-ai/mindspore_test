@@ -24,10 +24,10 @@ constexpr size_t kSliceInputsNum = 3;
 }
 
 namespace mindspore::ops {
-void SliceInputsCheck(const PrimitivePtr &prim, const std::vector<int64_t> &tensor_shape,
-                      const std::vector<int64_t> &begin, const std::vector<int64_t> &size) {
+void SliceInputsCheck(const std::vector<int64_t> &tensor_shape, const std::vector<int64_t> &begin,
+                      const std::vector<int64_t> &size) {
   (void)CheckAndConvertUtils::CheckInteger("rank of input_x", SizeToLong(tensor_shape.size()), kGreaterThan, 0,
-                                           prim->name());
+                                           "Slice");
   if (tensor_shape.size() != begin.size() || tensor_shape.size() != size.size()) {
     MS_EXCEPTION(ValueError) << "For Slice, the shape of input|begin|size must be equal.";
   }
@@ -46,6 +46,7 @@ void SliceInputsCheck(const PrimitivePtr &prim, const std::vector<int64_t> &tens
     if (size[idx] < -1) {
       MS_EXCEPTION(RuntimeError) << "For Slice, the value in size should not be less than -1, but got " << size[idx];
     }
+
     if (begin[idx] + size[idx] > tensor_shape[idx]) {
       MS_EXCEPTION(ValueError) << "For Slice, the sum of begin_shape[" << idx << "] and size_shape[" << idx
                                << "] must be no greater than input_x_shape[" << idx << "].";
@@ -53,17 +54,14 @@ void SliceInputsCheck(const PrimitivePtr &prim, const std::vector<int64_t> &tens
   }
 }
 
-TensorStorageInfoPtrList SliceBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList SliceBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                             const std::vector<int64_t> &begin, const std::vector<int64_t> &size) {
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   MS_EXCEPTION_IF_NULL(old_tensor_info);
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
-  SliceInputsCheck(prim, old_shape, begin, size);
+  SliceInputsCheck(old_shape, begin, size);
 
   auto new_shape = size;
   auto new_strides = old_strides;
@@ -95,7 +93,7 @@ TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<V
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto begin = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   auto size = GetValue<std::vector<int64_t>>(inputs[kInputIndex2]);
-  return SliceBasicTypeCalc(prim, input_tensor, begin, size);
+  return SliceBasicTypeCalc(input_tensor, begin, size);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Slice, SliceCalc);

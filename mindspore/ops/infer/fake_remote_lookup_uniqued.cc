@@ -25,7 +25,6 @@
 #include "abstract/ops/op_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "ops/primitive_c.h"
 #include "infer/ops_func_impl/fake_remote_lookup_uniqued.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 

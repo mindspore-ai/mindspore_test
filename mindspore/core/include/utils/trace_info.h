@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 
-#include "mindspore/core/include/base/base.h"
+#include "base/base.h"
 
 namespace mindspore {
 class TraceInfo;

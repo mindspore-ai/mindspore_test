@@ -19,7 +19,6 @@
 #include <string>
 #include <algorithm>
 #include <limits>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/col2im_impl.cuh"
 

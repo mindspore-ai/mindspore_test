@@ -24,6 +24,8 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_constants.h"
+#include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/core/include/abstract/ops/op_infer.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {

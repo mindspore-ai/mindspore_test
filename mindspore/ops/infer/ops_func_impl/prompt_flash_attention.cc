@@ -25,7 +25,6 @@
 #include "utils/check_convert_utils.h"
 #include "utils/shape_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/primitive_c.h"
 #include "mindapi/helper.h"
 #include "ops_utils/op_constants.h"
 #include "op_def/op_enum.h"

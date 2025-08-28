@@ -30,7 +30,7 @@
 #include <utility>
 #include <vector>
 #include "minddata/dataset/core/config_manager.h"
-#include "minddata/dataset/engine/datasetops/source/io_block.h"
+#include "minddata/dataset/data_source/io_block.h"
 #include "minddata/dataset/engine/cache/cache_client.h"
 #include "minddata/dataset/engine/cache/perf/cache_msg.h"
 #include "minddata/dataset/util/queue.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 #include "backend/common/graph_kernel/core/graph_kernel_splitter.h"
+
 #include <algorithm>
 #include <vector>
 #include <string>
 #include <utility>
 #include <queue>
+
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/trace_info.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

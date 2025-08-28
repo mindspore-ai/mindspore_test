@@ -21,5 +21,4 @@ l1_loss_backward_ext:
   dispatch:
     enable: True
     Ascend: L1LossBackwardExtAscend
-    CPU: None
     GPU: None

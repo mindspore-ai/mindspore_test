@@ -23,7 +23,7 @@
 // pyboost headfiles
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/pynative/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
@@ -34,6 +34,8 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
+#include "mindspore/ccsrc/pynative/grad/function.h"
+#include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/custom_launch_aclnn.h"
 #endif  // CUSTOM_ASCEND_OP
 
 // The BaseTensor is deprecated

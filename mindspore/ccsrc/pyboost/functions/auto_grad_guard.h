@@ -62,6 +62,10 @@ class PYBOOST_API OpRunStatus {
 
   void HeterBarrier(device::DeviceType device);
 
+  bool IsSafeView() const { return is_safe_view_; }
+  void SetIsSafeView(bool is_safe) { is_safe_view_ = is_safe; }
+  void ResetIsSaveView(bool is_safe) { is_safe_view_ = is_safe; }
+
  private:
   OpRunStatus();
   ~OpRunStatus() = default;
@@ -69,6 +73,7 @@ class PYBOOST_API OpRunStatus {
 
   OpStatus status_{};
   bool require_grad_{false};
+  bool is_safe_view_{true};
   OpPtr last_op_{nullptr};
   // Change device name to device type latter.
   device::DeviceType cur_device_;
@@ -84,6 +89,18 @@ class PYBOOST_API RequireGradGuard {
 
  private:
   bool origin_require_grad_{false};
+};
+
+class PYBOOST_API IsSafeViewGuard {
+ public:
+  explicit IsSafeViewGuard(bool is_safe) {
+    origin_is_safe_view_ = OpRunStatus::Get().IsSafeView();
+    OpRunStatus::Get().SetIsSafeView(is_safe);
+  }
+  ~IsSafeViewGuard() { OpRunStatus::Get().ResetIsSaveView(origin_is_safe_view_); }
+
+ private:
+  bool origin_is_safe_view_{true};
 };
 }  // namespace pyboost
 }  // namespace kernel

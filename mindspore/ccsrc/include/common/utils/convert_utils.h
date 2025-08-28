@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,14 @@
 #include <map>
 #include <set>
 #include <optional>
+
 #include "utils/hash_map.h"
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/kernel_tensor_value.h"
 #include "include/common/visible.h"
+#include "mindspore/core/include/ir/signature.h"
 #include "utils/simple_info.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include <algorithm>
 
 #include "minddata/dataset/engine/datasetops/data_queue_op.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
+#include "minddata/dataset/data_source/sampler/sampler.h"
 
 #include "minddata/dataset/engine/operator_connector.h"
 #include "minddata/dataset/util/log_adapter.h"

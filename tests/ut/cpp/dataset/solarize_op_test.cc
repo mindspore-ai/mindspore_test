@@ -15,7 +15,7 @@
  */
 #include "common/cvop_common.h"
 #include "minddata/dataset/core/cv_tensor.h"
-#include "minddata/dataset/kernels/image/solarize_op.h"
+#include "minddata/dataset/vision/kernels/solarize_op.h"
 #include "minddata/dataset/util/status.h"
 #include "utils/log_adapter.h"
 

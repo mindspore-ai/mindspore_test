@@ -17,7 +17,7 @@
 #include <algorithm>
 #include "backend/ge_backend/runtime/actor/control_flow/exit_actor.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
@@ -191,7 +191,7 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
                         << device::GetDeviceNameByType(input_kernel_tensors_[i]->GetDeviceType());
     }
     if ((input_kernel_tensors_[i] != nullptr) && (input_kernel_tensors_[i]->device_address() != nullptr) &&
-        (input_kernel_tensors_[i]->device_address()->dynamic_ref_count() == 0)) {
+        (input_kernel_tensors_[i]->dynamic_ref_count() == 0)) {
       MS_LOG(INFO) << GetAID().Name() << " input index:" << i << " has no user and free the memory.";
       host_context->device_res_manager_->FreeMemory(input_kernel_tensors_[i]->device_address().get());
     }
@@ -270,13 +270,17 @@ void ExitActor::MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const cont
   }
 }
 
-bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index) {
+bool ExitActor::IsNeedCopyDeviceAddress(const KernelTensorPtr &input_kernel_tensor, size_t index) {
+  if (input_kernel_tensor == nullptr) {
+    return false;
+  }
+  auto input_device_tensor = input_kernel_tensor->device_address();
   if ((input_device_tensor == nullptr) || (!is_need_copy_device_tensors_[index])) {
     return false;
   }
 
   if (is_need_dynamic_checks_[index]) {
-    if (input_device_tensor->dynamic_ref_count() != INT32_MAX) {
+    if (input_kernel_tensor->dynamic_ref_count() != INT32_MAX) {
       return false;
     }
     const auto &node = input_device_tensor->GetNodeIndex().first;
@@ -337,7 +341,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
   for (size_t i = 0; i < input_kernel_tensors_.size(); ++i) {
     auto input_device_tensor =
       input_kernel_tensors_[i] == nullptr ? nullptr : input_kernel_tensors_[i]->device_address();
-    if (!IsNeedCopyDeviceAddress(input_device_tensor.get(), i)) {
+    if (!IsNeedCopyDeviceAddress(input_kernel_tensors_[i], i)) {
       (void)new_kernel_tensors.emplace_back(input_kernel_tensors_[i]);
       continue;
     }
@@ -383,12 +387,12 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     new_device_tensor->SetNodeIndex(node_with_index.first, node_with_index.second);
     new_device_tensor->set_from_persistent_mem(input_device_tensor->from_persistent_mem());
     // The device address which is created by actor uses the dynamic ref count.
-    new_device_tensor->set_dynamic_ref_count(0);
-    new_device_tensor->set_original_ref_count(SIZE_MAX);
-    new_device_tensor->ResetRefCount();
+    new_kernel_tensor->set_dynamic_ref_count(0);
+    new_kernel_tensor->set_original_ref_count(SIZE_MAX);
+    new_kernel_tensor->ResetRefCount();
 
     // If the address ptr can't be changed, then alloc the new device memory and copy the data.
-    if (input_device_tensor->is_ptr_persisted()) {
+    if (input_kernel_tensors_[i]->is_ptr_persisted()) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "CopyDeviceAddress", "");
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      new_device_tensor->GetSize(), new_device_tensor.get());

@@ -57,20 +57,15 @@ def tensor_hook(grad):
 class MyNet(pynn.Module):
     def __init__(self):
         super(MyNet, self).__init__()
-        self.f1 = pynn.Linear(2, 1, bias=True)
+        self.p1 = pynn.Parameter(torch.Tensor(np.array([2.0], dtype=np.float32)))
         self.f2 = MyMean()
-        self.weight_init()
         self.inputs = None
 
     def forward(self, inputs):
         self.inputs = inputs
-        output = self.f1(inputs)
+        output = inputs * self.p1
         output = self.f2(output)
         return output
-
-    def weight_init(self):
-        self.f1.weight.data.fill_(1.0)
-        self.f1.bias.data.fill_(0.0)
 
 
 class MyNet2(pynn.Module):
@@ -144,11 +139,11 @@ class MEMean(nn.Cell):
 class MENet1(nn.Cell):
     def __init__(self):
         super(MENet1, self).__init__()
-        self.f1 = nn.Dense(2, 1, weight_init="ones", bias_init="zeros", has_bias=True, activation=None)
+        self.p1 = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
         self.f2 = MEMean()
 
     def construct(self, x):
-        output = self.f1(x)
+        output = x * self.p1
         output = self.f2(output)
         return output
 
@@ -205,7 +200,7 @@ def test_bprop_compara_with_pytorch():
     grad_net.set_train()
 
     for _ in range(0, 3):
-        output_np = np.ones([2, 1]).astype(dtype=np.float32)
+        output_np = np.ones([2, 2]).astype(dtype=np.float32)
         input_np = np.random.randn(2, 2).astype(dtype=np.float32)
 
         inputs = torch.from_numpy(input_np.copy().astype(np.float32))

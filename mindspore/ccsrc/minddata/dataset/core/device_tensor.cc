@@ -16,7 +16,7 @@
 
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/core/device_tensor.h"
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
 
 namespace mindspore {
 namespace dataset {

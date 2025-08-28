@@ -20,7 +20,6 @@
 #include <vector>
 #include <memory>
 #include "ir/anf.h"
-#include "utils/hash_set.h"
 #include "frontend/parallel/parallel_processor_context.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 

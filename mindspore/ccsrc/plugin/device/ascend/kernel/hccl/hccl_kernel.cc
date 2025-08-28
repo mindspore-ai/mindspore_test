@@ -119,7 +119,7 @@ bool IsSupportLccl(const std::string &group_name, const std::string &kernel_name
 
 bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   // set source/destination rank
-  if (kernel_name_ == kSendOpName || kernel_name_ == kReduceOpName || kernel_name_ == kMuxSendOpName) {
+  if (kernel_name_ == kSendOpName || kernel_name_ == kReduceOpName) {
     if (!HcomUtil::GetHcomAttr<uint32_t, int64_t>(primitive_, kAttrDestRank, &dest_rank_)) {
       MS_LOG(ERROR) << "GetHcomDestRank fail!";
       return false;

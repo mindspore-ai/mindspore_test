@@ -26,7 +26,7 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/runtime/pynative/op_runner.h"
 #include "mindspore/core/include/utils/ms_utils.h"
-#include "mindspore/ccsrc/runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "mindspore/ccsrc/backend/common/device_address_utils.h"
 #include "mindspore/ccsrc/include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/core/include/utils/ms_context.h"
 
@@ -48,22 +48,42 @@ void SetPromise(const std::string &, const std::tuple<mindspore::stub::StubNodeP
   mindspore::tensor::SetPromise(tuple, output.tensor());
 }
 
-MemBlock::MemBlock(const mindspore::device::DeviceContext *device_context, size_t size, uint32_t stream_id) {
-  ptr_ = device_context->device_res_manager_->AllocateMemory(size, stream_id);
-  if (ptr_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Alloc workspace failed, size:" << size << ", stream_id:" << stream_id;
+/**
+ * @brief Memory block structure for managing device memory allocation.
+ */
+struct MemBlock {
+  /**
+   * @brief Constructs a MemBlock and allocates memory on the device.
+   * @param device_context The device context for memory allocation.
+   * @param size The size of the memory block to allocate.
+   * @param stream_id The stream ID for the memory allocation.
+   * @throws If memory allocation fails.
+   */
+  MemBlock(const mindspore::device::DeviceContext *device_context, size_t size, uint32_t stream_id) {
+    ptr_ = device_context->device_res_manager_->AllocateMemory(size, stream_id);
+    if (ptr_ == nullptr) {
+      MS_LOG(EXCEPTION) << "Alloc workspace failed, size:" << size << ", stream_id:" << stream_id;
+    }
+    device_context_ = device_context;
   }
-  device_context_ = device_context;
-}
 
-MemBlock::~MemBlock() { device_context_->device_res_manager_->FreeMemory(ptr_); }
+  /**
+   * @brief Destructor for MemBlock. Frees the allocated memory.
+   */
+  ~MemBlock() { device_context_->device_res_manager_->FreeMemory(ptr_); }
+
+  // Pointer to the allocated memory block.
+  void *ptr_;
+  // The device context used for allocation.
+  const mindspore::device::DeviceContext *device_context_;
+};
+using MemBlockPtr = std::shared_ptr<MemBlock>;
 
 mindspore::device::DeviceType GetDeviceTarget() { return mindspore::DeviceManagerConf::GetInstance()->device_type(); }
 }  // namespace inner
 
 namespace pynative {
-PyboostRunner::PyboostRunner(const std::string &op_name) {
-  _op_name_ = op_name;
+PyboostRunner::PyboostRunner(const std::string &op_name) : _op_name_(op_name) {
   _device_context_ = mindspore::runtime::OpRunner::GetDeviceContext(inner::GetDeviceTarget());
 }
 
@@ -81,8 +101,8 @@ void PyboostRunner::_Run() {
     if (simu) {
       return;
     }
-    // hold workspace until dispatch launch task
-    auto workspace_holder = runner->_MallocDeviceAddress();
+    runner->_MallocDeviceAddress();
+    runner->_MallocWorkspace();
     runner->_DispatchLaunchTask();
   }));
 }
@@ -110,7 +130,7 @@ void PyboostRunner::_PrepareDeviceAddress() {
   mindspore::runtime::DeviceAddressUtils::CreateOutputTensorAddress(_device_context_, _stream_id_, outs);
 }
 
-inner::MemBlockPtr PyboostRunner::_MallocDeviceAddress() {
+void PyboostRunner::_MallocDeviceAddress() {
   {
     // input tensors
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
@@ -120,7 +140,7 @@ inner::MemBlockPtr PyboostRunner::_MallocDeviceAddress() {
       if (!inp.is_defined()) {
         continue;
       }
-      mindspore::runtime::DeviceAddressUtils::MallocForInput(_device_context_, inp.tensor(), false);
+      mindspore::kernel::pyboost::PyBoostUtils::MallocForInput(_device_context_, inp.tensor(), false);
     }
   }
   {
@@ -137,6 +157,9 @@ inner::MemBlockPtr PyboostRunner::_MallocDeviceAddress() {
     }
     mindspore::runtime::DeviceAddressUtils::MallocForOutputs(_device_context_, outs);
   }
+}
+
+void PyboostRunner::_MallocWorkspace() {
   // calculate and alloc workspace
   inner::MemBlockPtr ws_mng;
   auto workspace_size = this->CalcWorkspace();
@@ -146,7 +169,23 @@ inner::MemBlockPtr PyboostRunner::_MallocDeviceAddress() {
   } else {
     this->_workspace_ptr_ = nullptr;
   }
-  return ws_mng;
+  this->ProcessWithWorkspace();
+}
+
+void PyboostRunner::ProcessCrossStreamAddress() {
+  mindspore::tensor::TensorPtrList tensors;
+  tensors.reserve(_inputs_.size() + _outputs_.size());
+  for (auto &t : _inputs_) {
+    if (t.is_defined()) {
+      (void)tensors.emplace_back(t.tensor());
+    }
+  }
+  for (auto &t : _outputs_) {
+    if (t.is_defined()) {
+      (void)tensors.emplace_back(t.tensor());
+    }
+  }
+  mindspore::runtime::DeviceAddressUtils::ProcessCrossStreamAddress(_op_name_, _device_context_, _stream_id_, tensors);
 }
 
 void PyboostRunner::_DispatchLaunchTask() {
@@ -154,11 +193,14 @@ void PyboostRunner::_DispatchLaunchTask() {
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kPyNativeLaunchTask,
                                                   runner->op_name(), false);
+    runner->_device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
     runner->LaunchKernel();
     if (mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking()) {
       if (!runner->_device_context_->device_res_manager_->SyncAllStreams()) {
         MS_LOG(EXCEPTION) << "SyncStream failed for op " << runner->op_name();
       }
+    } else {
+      runner->ProcessCrossStreamAddress();
     }
   });
 }

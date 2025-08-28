@@ -19,9 +19,10 @@
 #include <variant>
 #include <unordered_map>
 #include <algorithm>
+#include "tools/error_handler/error_config.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
@@ -36,7 +37,8 @@ namespace device {
 namespace ascend {
 AscendCommunicationGroup::AscendCommunicationGroup(
   const std::string &name, const std::vector<uint32_t> &group_ranks, uint32_t global_rank, uint32_t local_group_rank,
-  uint32_t local_group_size, const std::unordered_map<std::string, std::variant<uint32_t, std::string>> &hccl_config)
+  uint32_t local_group_size,
+  const std::unordered_map<std::string, std::variant<int64_t, uint32_t, std::string>> &hccl_config)
     : CommunicationGroup(name, group_ranks, global_rank, local_group_rank, local_group_size),
       unique_id_({}),
       comm_(nullptr),
@@ -74,8 +76,10 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   // Call HCCL initialize comm API.
   bool ret = false;
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
-  if (!rank_table_file_path.empty() && common::GetEnv(kSimulationLevel).empty() &&
-      !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
+  if (hccl_config_.find("hccl_comm") != hccl_config_.end()) {
+    ret = InitByHcclComm();
+  } else if (!rank_table_file_path.empty() && common::GetEnv(kSimulationLevel).empty() &&
+             !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
     ret = InitByRankTable(rank_table_file_path, group_size, group_rank, &config);
   } else {
     ret = InitByRootInfoConfig(root_info, group_size, group_rank, config);
@@ -91,13 +95,15 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   }
   initialized_ = true;
 
-  // Initialize watch dog for global communication group.
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG) && common::GetEnv(kSimulationLevel).empty()) {
+  // Initialize watch dog for every group.
+  if (common::GetEnv(kSimulationLevel).empty() && tools::TftConfig::GetInstance() != nullptr &&
+      (tools::TftConfig::GetInstance()->IsEnableWatchdog() ||
+       tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus())) {
     MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
                  << ", rank: " << global_rank_;
-    HcclWatchDogManager::GetInstance().AddHandler(std::make_unique<HcclWatchDogHandler>(global_rank_, name_, comm_));
-    auto handle_size = HcclWatchDogManager::GetInstance().HandleSize();
-    (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
+    HcclWatchDogManager::GetInstance().AddHandler(
+      std::make_unique<HcclWatchDogHandler>(global_rank_, device_id, name_, comm_, group_ranks_));
+    (void)HcclWatchDogManager::GetInstance().InitHandler(name_);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   distributed::collective::CollectiveManager::instance()->CacheInitedGroups(name_);
@@ -156,11 +162,18 @@ HcclCommConfig AscendCommunicationGroup::CreateHcclCommConfig() {
 
   // Parameters passed to HCCL via API's config have higher priority than those set in the environment variableThe.
   if (hccl_config_.find("hccl_buffer_size") != hccl_config_.end()) {
-    if (!std::holds_alternative<uint32_t>(hccl_config_["hccl_buffer_size"])) {
+    if (std::holds_alternative<int64_t>(hccl_config_["hccl_buffer_size"])) {
+      int64_t size = std::get<int64_t>(hccl_config_["hccl_buffer_size"]);
+      if (size < 0 || size > UINT32_MAX) {
+        MS_LOG(EXCEPTION) << "hccl_buffer_size out of uint32_t range: " << size;
+      }
+      config.hcclBufferSize = static_cast<uint32_t>(size);
+    } else if (std::holds_alternative<uint32_t>(hccl_config_["hccl_buffer_size"])) {
+      config.hcclBufferSize = std::get<uint32_t>(hccl_config_["hccl_buffer_size"]);
+    } else {
       MS_LOG(EXCEPTION)
         << "Failed to set hcclBufferSize. Type of hccl_buffer_size in GroupOptions should be unsigned integer.";
     }
-    config.hcclBufferSize = std::get<uint32_t>(hccl_config_["hccl_buffer_size"]);
   }
 
   return config;
@@ -222,6 +235,16 @@ bool AscendCommunicationGroup::InitByRankTable(std::string rank_table, uint32_t 
     }
     MS_LOG(WARNING) << "End to initialize communicator by HcclCreateSubCommConfig for " << name_;
   }
+  return true;
+}
+
+bool AscendCommunicationGroup::InitByHcclComm() {
+  MS_LOG(INFO) << "Start to initialize communicator by Hcom from hccl config for " << name_;
+  if (!std::holds_alternative<int64_t>(hccl_config_["hccl_comm"])) {
+    MS_LOG(EXCEPTION) << "Failed to get hcom. Type of hccl_comm in GroupOptions should be int64.";
+  }
+  comm_ = reinterpret_cast<HcclComm>(static_cast<intptr_t>(std::get<int64_t>(hccl_config_["hccl_comm"])));
+  MS_LOG(INFO) << "End to initialize communicator by Hcom from hccl config for " << name_;
   return true;
 }
 

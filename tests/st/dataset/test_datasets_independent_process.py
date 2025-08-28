@@ -23,7 +23,7 @@ import time
 
 import numpy as np
 import psutil
-
+from tests.mark_utils import arg_mark
 import mindspore.dataset as ds
 
 

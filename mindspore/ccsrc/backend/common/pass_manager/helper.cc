@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,10 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "utils/hash_set.h"
 #include "include/common/utils/utils.h"
 #include "base/base_ref.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/fallback.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
@@ -42,10 +42,8 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "backend/common/pass/const_input_to_attr.h"
-#include "backend/operator/ops_backend_infer_function.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "tools/profiler/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/op_def.h"
@@ -1016,7 +1014,7 @@ inline AbstractBasePtr InferShapeWithCheck(const PrimitivePtr &prim, const Primi
   if (auto shape_optional = abstract::InferShapeByFuncImpl(prim_clone, infer_spec_list); shape_optional.has_value()) {
     out_abs = orig_abs->Clone();
     out_abs->set_shape(shape_optional.value());
-  } else if (auto found = abstract::GetBackendPrimitiveInferImpl(prim_clone); found.has_value()) {
+  } else if (auto found = abstract::GetPrimitiveInferImpl(prim_clone); found.has_value()) {
     auto infer = found.value();
     MS_EXCEPTION_IF_CHECK_FAIL(infer.IsImplInferShapeAndType(), "There is no infer-shape implement for backend!");
     MS_EXCEPTION_IF_NULL(cnode);
@@ -1252,7 +1250,7 @@ AbstractBasePtr CppInferShapeAndType(const PrimitivePtr &prim, const AbstractBas
   if (auto abstract_optional = abstract::InferAbstractByFuncImpl(prim_clone, args_spec_list);
       abstract_optional.has_value()) {
     ret = abstract_optional.value();
-  } else if (auto found = abstract::GetBackendPrimitiveInferImpl(prim_clone); found.has_value()) {
+  } else if (auto found = abstract::GetPrimitiveInferImpl(prim_clone); found.has_value()) {
     auto infer = found.value();
     MS_EXCEPTION_IF_CHECK_FAIL(infer.IsImplInferShapeAndType(), "There is no infer-abstract implement!");
     auto infer_spec_list = RectifyAbstract(prim_clone, args_spec_list);
@@ -1610,8 +1608,6 @@ AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph, const C
   return nullptr;
 }
 
-void InferOp(const CNodePtr &node, void *args) { dynamic_shape::InferOp(node, args); }
-
 LaunchHandler launch_py_handler{nullptr};
 void set_launch_handler(const LaunchHandler &handler) { launch_py_handler = handler; }
 
@@ -1632,7 +1628,7 @@ AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<A
     return shape_optional.value();
   }
 
-  auto infer_impl = abstract::GetBackendPrimitiveInferImpl(primitive);
+  auto infer_impl = abstract::GetPrimitiveInferImpl(primitive);
   if (infer_impl.has_value()) {
     auto infer = infer_impl.value();
     if (infer.IsImplInferShapeAndType()) {

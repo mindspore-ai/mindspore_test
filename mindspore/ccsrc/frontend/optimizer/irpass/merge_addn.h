@@ -28,7 +28,6 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
-#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace opt {

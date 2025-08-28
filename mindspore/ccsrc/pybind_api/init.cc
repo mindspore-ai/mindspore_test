@@ -34,6 +34,8 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
+#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
+#include "frontend/parallel/device_manager.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/parallel/costmodel_context.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32))
@@ -45,7 +47,7 @@
 #include "include/backend/distributed/cluster/tcp_store.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pybind_api/resource/manager.h"
@@ -70,6 +72,9 @@ using MetaFuncGraph = mindspore::MetaFuncGraph;
 using EventWriter = mindspore::summary::EventWriter;
 using OpLib = mindspore::kernel::OpLib;
 using ParallelContext = mindspore::parallel::ParallelContext;
+using StrategyInfo = mindspore::parallel::StrategyInfo;
+using StrategyLayout = mindspore::parallel::StrategyLayout;
+using ParallelCommManager = mindspore::parallel::ParallelCommManager;
 using CostModelContext = mindspore::parallel::CostModelContext;
 using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
@@ -182,8 +187,8 @@ void RegModule(py::module *m) {
   RegSendRecv(m);
   RegResetParams(m);
   RegCleanTdtChannel(m);
-  mindspore::datadump::RegDumpControl(m);
-  mindspore::checksum::RegCheckSum(m);
+  mindspore::datadump::RegDataDump(m);
+  mindspore::silentdetect::RegSilentDetect(m);
   RegTFT(m);
   RegTensorDoc(m);
   RegReuseDataPtr(m);
@@ -199,6 +204,7 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterCellBackwardHookFunction(m);
   mindspore::pynative::RegisterFunctional(m);
   mindspore::pynative::RegDirectOps(m);
+  mindspore::pynative::distributed::RegReducer(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);
@@ -243,6 +249,12 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_func_graph_proto", &GraphExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.")
+    .def("get_onnx_func_graph_proto", &GraphExecutorPy::GetOnnxFuncGraphProto, py::arg("phase") = py::str(""),
+         py::arg("input_names") = py::list(), py::arg("output_names") = py::list(),
+         py::arg("opset_version") = py::int_(11), py::arg("export_params") = py::bool_(true),
+         py::arg("keep_initializers_as_inputs") = py::bool_(false), py::arg("dynamic_axes") = py::dict(),
+         py::arg("extra_save_params") = py::bool_(false), py::arg("save_file_dir") = py::str(""),
+         "Get graph proto string by onnx.")
     .def("get_params", &GraphExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
@@ -334,7 +346,19 @@ PYBIND11_MODULE(_c_expression, m) {
               "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");
-  (void)m.def("init_hccl", &mindspore::pipeline::InitHccl, "Init Hccl");
+  (void)m.def("init_hccl", (void (*)()) & mindspore::pipeline::InitHccl, "Init Hccl");
+  (void)m.def(
+    "_init_hccl_with_store",
+    [](std::optional<std::string> init_method, int64_t timeout, uint32_t world_size, uint32_t node_id,
+       const py::object &store) {
+      std::shared_ptr<TCPStoreClient> store_client = nullptr;
+      if (!store.is_none()) {
+        store_client = store.attr("instance").cast<std::shared_ptr<TCPStoreClient>>();
+      }
+      mindspore::pipeline::InitHccl(init_method, timeout, world_size, node_id, store_client);
+    },
+    py::arg("init_method"), py::arg("timeout"), py::arg("world_size"), py::arg("node_id"), py::arg("store"),
+    "Init Hccl without scheduler process");
   (void)m.def("finalize_hccl", &mindspore::pipeline::FinalizeHccl, "Finalize Hccl");
   (void)m.def("_finalize_collective", &mindspore::distributed::FinalizeCollective, "Finalize Collective");
   (void)m.def("get_hccl_rank_id", &mindspore::pipeline::GetHcclRankId, "Get Hccl Rank Id");
@@ -353,7 +377,16 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("split_dynamic_mindir", &mindspore::pipeline::SplitDynamicMindIR, py::arg("file_name"),
               py::arg("device_num") = py::int_(8), py::arg("rank_id") = py::int_(0), py::arg("sapp") = py::bool_(true),
               "Split single mindir to distributed mindir");
-  (void)m.def("init_cluster", &mindspore::distributed::Initialize, "Init Cluster");
+  (void)m.def("init_cluster", (bool (*)()) & mindspore::distributed::Initialize, "Init Cluster");
+  (void)m.def(
+    "_init_cluster_with_store",
+    [](std::optional<std::string> init_method, int64_t timeout, uint32_t world_size, uint32_t node_id,
+       const py::object &store) {
+      auto store_client = store.attr("instance").cast<std::shared_ptr<TCPStoreClient>>();
+      mindspore::distributed::Initialize(init_method, timeout, world_size, node_id, store_client);
+    },
+    py::arg("init_method"), py::arg("timeout"), py::arg("world_size"), py::arg("node_id"), py::arg("store"),
+    "Init Cluster without scheduler process");
   (void)m.def("set_cluster_exit_with_exception", &mindspore::distributed::set_cluster_exit_with_exception,
               "Set this process exits with exception.");
 
@@ -499,6 +532,35 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_auto_parallel_new_interface", &ParallelContext::set_auto_parallel_new_interface, "Set interface flag.")
     .def("get_auto_parallel_new_interface", &ParallelContext::auto_parallel_new_interface, "Get interface flag.")
     .def("reset", &ParallelContext::Reset, "Reset auto parallel context.");
+  MS_LOG(INFO) << "Start StrategyInfo...";
+  (void)py::class_<StrategyInfo, std::shared_ptr<StrategyInfo>>(m, "StrategyInfo")
+    .def(py::init<>())
+    .def("__str__", &StrategyInfo::ToString)
+    .def_property_readonly("dev_matrix", &StrategyInfo::dev_matrix)
+    .def_property_readonly("tensor_map", &StrategyInfo::tensor_map)
+    .def_property_readonly("tensor_shape", &StrategyInfo::tensor_shape)
+    .def_property_readonly("tensor_type", &StrategyInfo::tensor_type)
+    .def_property_readonly("field", &StrategyInfo::field)
+    .def_property_readonly("opt_weight_shard_step", &StrategyInfo::opt_weight_shard_step)
+    .def_property_readonly("opt_weight_shard_size", &StrategyInfo::opt_weight_shard_size)
+    .def_property_readonly("param_split_shape", &StrategyInfo::param_split_shape)
+    .def_property_readonly("indices_offset", &StrategyInfo::indices_offset)
+    .def_property_readonly("stage_id", &StrategyInfo::stage_id)
+    .def_property_readonly("pipeline_stages", &StrategyInfo::pipeline_stages)
+    .def_property_readonly("rank_list", &StrategyInfo::rank_list);
+  MS_LOG(INFO) << "Start StrategyLayout...";
+  (void)py::class_<StrategyLayout, std::shared_ptr<StrategyLayout>>(m, "StrategyLayout")
+    .def_static("get_instance", &StrategyLayout::GetInstance, "Get global_strategy_layout instance.")
+    .def("enable_save_strategy_online", &StrategyLayout::enable_save_strategy_online,
+         "Set save_strategy_online of global network.")
+    .def("global_network_layout", &StrategyLayout::global_network_layout, "Get global network rank param strategy.")
+    .def("local_network_layout", &StrategyLayout::local_network_layout, "Get local network rank param strategy.")
+    .def("clear_strategy_metadata", &StrategyLayout::clear_strategy_metadata, "Clear global network strategy info.");
+  MS_LOG(INFO) << "Start ParallelCommManager...";
+  (void)py::class_<ParallelCommManager, std::shared_ptr<ParallelCommManager>>(m, "ParallelCommManager")
+    .def_static("get_instance", &ParallelCommManager::GetInstance, "Get parallel comm manager instance.")
+    .def("set_hccl_groups", &ParallelCommManager::SetHcclGroups, "Record hccl_groups created by rank_list.")
+    .def("hccl_groups", &ParallelCommManager::HcclGroups, "Weather hccl_groups has been created by rank_list.");
   MS_LOG(INFO) << "Start CostModelContext...";
   (void)py::class_<CostModelContext, std::shared_ptr<CostModelContext>>(m, "CostModelContext")
     .def_static("get_instance", &CostModelContext::GetInstance, "Get cost_model context instance.")

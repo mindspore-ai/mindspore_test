@@ -23,9 +23,7 @@
 #include <memory>
 #include <vector>
 
-#include "ir/graph_utils.h"
 #include "base/base.h"
-#include "utils/hash_map.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
 
 namespace mindspore {

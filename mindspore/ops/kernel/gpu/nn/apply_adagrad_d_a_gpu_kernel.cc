@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "abstract/utils.h"
 #include "ops_utils/op_utils.h"
 
 #include "kernel/gpu/nn/apply_adagrad_d_a_gpu_kernel.h"

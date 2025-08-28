@@ -23,6 +23,8 @@
 #include <memory>
 #include "ops/op_def.h"
 #include "ir/tensor.h"
+#include "ir/dtype/tensor_type.h"
+#include "ir/graph_utils.h"
 #include "utils/shape_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "frontend/ir/tensor_py.h"
@@ -418,23 +420,21 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    old_device_address->pointer_ref_count()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
-    old_kernel_tensor->format(), old_device_address->type_id(), device_name, device_id,
-    old_device_address->stream_id());
+    old_device_address->device_pointer()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
+    old_kernel_tensor->format(), old_device_address->type_id(), device_name, old_device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_address(new_device_address);
 
   new_kernel_tensor->SetDeviceType(device::GetDeviceTypeByName(device_name));
-  new_kernel_tensor->set_device_id(device_id);
   new_kernel_tensor->set_device_ptr(nullptr);
   new_kernel_tensor->set_user_data(old_kernel_tensor->user_data());
   new_kernel_tensor->set_need_sync_user_data(old_kernel_tensor->need_sync_user_data());
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << " type:" << new_device_address->type_id();
 
-  new_device_address->set_original_ref_count(old_device_address->original_ref_count());
-  new_device_address->ResetRefCount();
+  new_kernel_tensor->set_original_ref_count(old_kernel_tensor->original_ref_count());
+  new_kernel_tensor->ResetRefCount();
   auto node = old_device_address->GetNodeIndex();
   new_device_address->SetNodeIndex(node.first, node.second);
   new_device_address->set_padding_type(old_device_address->padding_type());

@@ -500,7 +500,7 @@ class BottleneckAnalyzer:
             in_op_id, out_q = self._get_non_inline_child_recur(op_id), self.queue_utilization_pct[op_id]
             # This is a leaf node since input queue does not exist and output queue exists
             if in_op_id == self.op_id_not_exist and out_q != self.queue_usage_not_exist:
-                if out_q < self._THRESHOLDS['_LEAF_OUTPUT_QUEUE_EMPTY_FREQ_PCT_MAXIMUM']:
+                if out_q <= self._THRESHOLDS['_LEAF_OUTPUT_QUEUE_EMPTY_FREQ_PCT_MAXIMUM']:
                     queue_usage_analysis.append(self._format_leaf_node_suggestion(op_id, out_q))
             # This is device_queue op
             elif self.op_names[op_id] == "DeviceQueue" and in_op_id != self.op_id_not_exist:

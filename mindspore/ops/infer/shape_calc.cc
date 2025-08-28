@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

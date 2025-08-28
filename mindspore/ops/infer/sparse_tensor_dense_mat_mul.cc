@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,9 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
-#include "ir/named.h"
-#include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"

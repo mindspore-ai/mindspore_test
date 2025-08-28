@@ -191,6 +191,7 @@ void HcclAdapter::InitPlugin() {
   hccl_exec_enqueue_op_ = DlsymFuncObj(HcomExecEnqueueOperation, plugin_handle_);
   hccl_exec_enqueue_all_to_all_v_ = DlsymFuncObj(HcomExecEnqueueAllToAllV, plugin_handle_);
   launch_hccl_all_to_allv_ = DlsymFuncObj(HcclAlltoAllV, plugin_handle_);
+  launch_hccl_all_to_allvc_ = DlsymAscendFuncObj(HcclAlltoAllVC, plugin_handle_);
   launch_hccl_reduce_scatterv_ = DlsymAscendFuncObj(HcclReduceScatterV, plugin_handle_);
   launch_hccl_all_gatherv_ = DlsymAscendFuncObj(HcclAllGatherV, plugin_handle_);
   launch_hccl_all_to_all_ = DlsymFuncObj(HcclAlltoAll, plugin_handle_);
@@ -237,6 +238,7 @@ void HcclAdapter::FinalizePlugin() {
   hccl_exec_enqueue_all_to_all_v_ = nullptr;
   hccl_comm_working_dev_nic_set_ = nullptr;
   launch_hccl_all_to_allv_ = nullptr;
+  launch_hccl_all_to_allvc_ = nullptr;
   launch_hccl_reduce_scatterv_ = nullptr;
   launch_hccl_all_gatherv_ = nullptr;
   launch_hccl_comm_resume_ = nullptr;
@@ -315,19 +317,11 @@ bool HcclAdapter::IsSimulation() {
 }
 
 bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *disable) {
-  if (!init_flag_) {
+  if (!init_flag_ || hccl_get_comm_async_error_ == nullptr || hccl_get_error_string_ == nullptr) {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
     return true;
   }
   MS_EXCEPTION_IF_NULL(disable);
-  if (hccl_get_comm_async_error_ == nullptr) {
-    MS_LOG(INFO) << "Hccl has never been inited, skip.";
-    return true;
-  }
-  if (hccl_get_error_string_ == nullptr) {
-    MS_LOG(INFO) << "Hccl has never been inited, skip.";
-    return true;
-  }
   HcclResult hccl_async_error;
   auto ret = hccl_get_comm_async_error_(comm, &hccl_async_error);
   if (ret != HCCL_SUCCESS) {
@@ -338,8 +332,13 @@ bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, boo
   MS_LOG(DEBUG) << "hccl_get_comm_async_error_ res: " << hccl_async_error << ", comm: " << comm;
   if (hccl_async_error != HCCL_SUCCESS) {
     std::ostringstream oss;
-    oss << "Hccl get comm async error failed, error code is: " << hccl_async_error
-        << ", detail info: " << hccl_get_error_string_(hccl_async_error);
+    // handle special error code, this code is due to a network error or a remote process exiting prematurely.
+    string e_remote_err;
+    if (hccl_async_error == HCCL_E_REMOTE) {
+      e_remote_err = "[ HCCL_E_REMOTE ] ";
+    }
+    oss << "Hccl get comm async error failed, error code is: " << hccl_async_error << ", detail info: " << e_remote_err
+        << hccl_get_error_string_(hccl_async_error);
     *error_info = oss.str();
     return false;
   }
@@ -848,6 +847,19 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   if (MS_UNLIKELY(mindspore::profiler::MstxImpl::GetInstance().IsEnable())) {
     MSTX_END(rangeId, mindspore::profiler::MSTX_DOMAIN_COMMUNICATION);
   }
+  return ret;
+}
+
+HcclResult HcclAdapter::HcclAlltoAllVC(void *send_buf, void *send_count_matrix, HcclDataType send_type, void *recv_buf,
+                                       HcclDataType recv_type, aclrtStream stream, HcclComm hccl_comm) const {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return HCCL_SUCCESS;
+  }
+  CHECK_SYMBOL_NULL(launch_hccl_all_to_allvc_);
+  MS_EXCEPTION_IF_NULL(hccl_comm);
+  HcclResult ret =
+    launch_hccl_all_to_allvc_(send_buf, send_count_matrix, send_type, recv_buf, recv_type, hccl_comm, stream);
   return ret;
 }
 

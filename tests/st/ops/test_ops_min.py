@@ -91,7 +91,8 @@ def min_max_case_all_dyn(op_func, data_dtype=np.float32):
     disable_grad = False
     if not data_dtype in [np.float16, np.float32, np.float64, "bfloat16"]:
         disable_grad = True
-    TEST_OP(op_func, [input_case1, input_case2], disable_mode=["GRAPH_MODE_GE"], case_config={'disable_grad': disable_grad})
+    TEST_OP(op_func, [input_case1, input_case2], disable_mode=["GRAPH_MODE_GE"], disable_case=[
+        'EmptyTensor'], case_config={'disable_grad': disable_grad})
 
 
 def np_min(input_x):

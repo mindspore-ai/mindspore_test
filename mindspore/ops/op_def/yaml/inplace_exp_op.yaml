@@ -18,5 +18,4 @@ inplace_exp:
   dispatch:
     enable: True
     Ascend: InplaceExpAscend
-    CPU: None
     GPU: None

@@ -102,6 +102,24 @@ ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
   return flatten_gradients;
 }
 
+unsigned BackwardNode::AddCppTensorHook(std::unique_ptr<CppTensorBackwardNodePreHook> &&hook) {
+  if (cpp_tensor_pre_hooks_ == nullptr) {
+    cpp_tensor_pre_hooks_ = std::make_unique<CppTensorHookList>();
+  }
+  unsigned index = cpp_tensor_pre_hooks_->size();
+  cpp_tensor_pre_hooks_->emplace_back(std::move(hook));
+  return index;
+}
+
+void BackwardNode::RemoveCppTensorHook(unsigned idx) {
+  MS_EXCEPTION_IF_NULL(cpp_tensor_pre_hooks_);
+  if (idx >= cpp_tensor_pre_hooks_->size()) {
+    MS_LOG(EXCEPTION) << "Index out of range";
+  } else {
+    (*cpp_tensor_pre_hooks_)[idx] = nullptr;
+  }
+}
+
 bool BackwardNode::IsEmpty() {
   if (std::all_of(next_edges().begin(), next_edges().end(),
                   [](const Edge &edge) -> bool { return !edge.is_defined(); })) {
@@ -147,7 +165,7 @@ AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::Tensor &tensor) {
   if (auto_grad_meta == nullptr) {
     return nullptr;
   }
-  return std::dynamic_pointer_cast<AutoGradMetaData>(auto_grad_meta);
+  return std::static_pointer_cast<AutoGradMetaData>(auto_grad_meta);
 }
 
 ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor) {
@@ -156,7 +174,10 @@ ViewAutoGradMetaDataPtr GetViewAutogradMetaImpl(const tensor::TensorPtr &tensor)
     return nullptr;
   }
   const auto &meta_data = tensor->auto_grad_meta_data();
-  auto view_meta_data = std::dynamic_pointer_cast<ViewAutoGradMetaData>(meta_data);
+  if (!meta_data->is_view()) {
+    return nullptr;
+  }
+  auto view_meta_data = std::static_pointer_cast<ViewAutoGradMetaData>(meta_data);
   return view_meta_data;
 }
 

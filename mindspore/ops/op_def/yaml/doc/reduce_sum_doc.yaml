@@ -22,7 +22,7 @@ reduce_sum:
               [-rank(`x`), rank(`x`)).
 
         Outputs:
-            Tensor, has the same dtype as the `x`.
+            Tensor.
 
             - If `axis` is ``()`` , `keep_dims` is ``False`` , and `skip_mode` is ``False`` ,
               the output is a 0-D tensor representing the sum of all elements in the input tensor.

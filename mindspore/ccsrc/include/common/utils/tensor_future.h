@@ -26,15 +26,17 @@
 
 namespace mindspore {
 namespace pynative {
-using DeviceAddressFutureData = tensor::FutureData<DeviceSync>;
+using DeviceAddress = device::DeviceAddress;
+using DeviceAddressPtr = device::DeviceAddressPtr;
+using DeviceAddressFutureData = tensor::FutureData<device::DeviceAddress>;
 using DeviceAddressFutureDataPtr = std::shared_ptr<DeviceAddressFutureData>;
 
-class COMMON_EXPORT DeviceAddressFuture : public tensor::FutureBase<DeviceSync> {
+class COMMON_EXPORT DeviceAddressFuture : public tensor::FutureBase<device::DeviceAddress> {
  public:
   explicit DeviceAddressFuture(std::future<DeviceAddressFutureDataPtr> future)
-      : tensor::FutureBase<DeviceSync>(std::move(future)) {}
+      : tensor::FutureBase<device::DeviceAddress>(std::move(future)) {}
   ~DeviceAddressFuture() override;
-  std::shared_ptr<DeviceSync> Get() override;
+  std::shared_ptr<device::DeviceAddress> Get() override;
 
  private:
   std::once_flag once_flag_;

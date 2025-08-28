@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,10 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_EMPTY_H_
 #define MINDSPORE_CORE_IR_DTYPE_EMPTY_H_
 
-#include <iostream>
-#include <map>
-#include <memory>
-#include <sstream>
 #include <string>
+#include <memory>
 
-#include "utils/hash_map.h"
 #include "base/base.h"
-#include "ir/named.h"
 #include "ir/dtype/type.h"
 
 namespace mindspore {

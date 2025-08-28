@@ -23,7 +23,7 @@
 #include <mutex>
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
-#include "ir/dtype.h"
+#include "ir/dtype/type_id.h"
 
 namespace mindspore {
 class Debugger;

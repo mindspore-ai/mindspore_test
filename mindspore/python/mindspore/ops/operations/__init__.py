@@ -55,7 +55,7 @@ from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborE
                        Broadcast, CollectiveGather, CollectiveScatter, Barrier, Send, Receive, BatchISendIRecv,
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,
                        _VirtualOutput, _VirtualDiv, _GetTensorSlice, _VirtualAdd, _VirtualAssignAdd, _VirtualAccuGrad,
-                       _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather,
+                       _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather, AlltoAllVC,
                        _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache, AllGatherV, ReduceScatterV)
 from .control_ops import GeSwitch, Merge
 from .custom_ops import (Custom, CustomOpBuilder)
@@ -129,7 +129,6 @@ from .random_ops import (RandomChoiceWithMask, StandardNormal, Gamma, RandomGamm
                          LogUniformCandidateSampler, TruncatedNormal, LogNormalReverse, NonDeterministicInts,
                          ParameterizedTruncatedNormal, RandomPoisson, MultinomialWithReplacement, RandomShuffle,
                          RandpermV2)
-from .rl_ops import (BufferAppend, BufferGetItem, BufferSample)
 from .sparse_ops import (
     SparseToDense, SparseTensorDenseMatmul, SparseTensorDenseAdd, SparseSlice)
 from .spectral_ops import (BartlettWindow, BlackmanWindow)
@@ -406,6 +405,7 @@ __all__ = [
     "AllReduce",
     "AllGatherV",
     "ReduceScatterV",
+    "AlltoAllVC",
     "Reduce",
     "_AllSwap",
     "ReduceScatter",
@@ -532,9 +532,6 @@ __all__ = [
     "HShrink",
     "PyExecute",
     "PyFunc",
-    "BufferAppend",
-    "BufferGetItem",
-    "BufferSample",
     "Erfinv",
     "Conj",
     "Real",

@@ -26,6 +26,7 @@ Error rule:
 """
 from .enums import LogRuntime, ErrorCodeType, ErrorLevel
 from .constant import SYS_ID
+
 EXCEPTIONS = dict(
     # the format of list is [exception No, base error message]
     UnknownError=[0, 'Unknown Error.'],

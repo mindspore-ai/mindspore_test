@@ -20,5 +20,4 @@ rand_ext:
     dispatch:
         enable: True
         Ascend: RandExtAscend
-        CPU: None
         GPU: None

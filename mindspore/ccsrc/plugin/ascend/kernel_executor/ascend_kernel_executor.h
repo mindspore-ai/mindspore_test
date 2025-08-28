@@ -51,7 +51,7 @@ class AscendKernelExecutor : public KernelExecutor {
   // Note: Only support generate aclnn kernel mod current.
   kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const override;
 
-  int StressDetect() const override;
+  int StressDetect(const std::string &detect_type) const override;
   int CleanTdtChannel() const override;
   int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
   // Adjust kernel graph before run graph, used in Graph Mode.
@@ -106,6 +106,8 @@ class AscendKernelExecutor : public KernelExecutor {
   void DoAsyncCkpt(const CNodePtr &kernel) const;
   void SetArfError() const;
   void SetUceError() const;
+  bool SilentCheckAndPreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod,
+                                   const std::vector<KernelTensor *> &inputs, void *stream) const;
   bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;

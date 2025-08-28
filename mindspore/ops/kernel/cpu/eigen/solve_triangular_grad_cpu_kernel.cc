@@ -21,7 +21,6 @@
 #include <utility>
 #include <memory>
 #include <map>
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/grad/solve_triangular_grad.h"
 
 namespace mindspore {

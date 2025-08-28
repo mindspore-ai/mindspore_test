@@ -21,10 +21,9 @@
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "utils/phase.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_exception.h"
@@ -283,7 +282,7 @@ void HostQueueDataSourceActor::ReleaseData() {
       continue;
     }
     // If the address from input tensor and the address is not used by runtime.
-    if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
+    if (old_kernel_tensor->original_ref_count() == SIZE_MAX && !old_kernel_tensor->is_ptr_persisted()) {
       auto kernel_tensor =
         AnfAlgo::GetOutputKernelTensor(data_node_with_index.first, data_node_with_index.second, false);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -294,22 +293,22 @@ void HostQueueDataSourceActor::ReleaseData() {
 
       auto new_address = new_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(new_address);
-      MS_LOG(DEBUG) << "Create device tensor:" << new_address << " type:" << new_address->type_id()
-                    << ", kernel tensor addr:" << new_kernel_tensor.get();
-      new_address->set_original_ref_count(old_address->original_ref_count());
-      new_address->ResetRefCount();
+      MS_LOG(DEBUG) << "Create new kernel tensor:" << new_kernel_tensor->ToString();
+      new_kernel_tensor->set_original_ref_count(old_kernel_tensor->original_ref_count());
+      new_kernel_tensor->ResetRefCount();
       new_kernel_tensor->set_flag(old_kernel_tensor->flag());
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
-      AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first);
-      if (ref_device_tensors_.find(data_node_with_index) == ref_device_tensors_.end()) {
+      AnfAlgo::SetOutputKernelTensor(new_kernel_tensor, data_node_with_index.second, data_node_with_index.first.get());
+      if (ref_kernel_tensors_.find(data_node_with_index) == ref_kernel_tensors_.end()) {
         continue;
       }
-      for (const auto &device_tensor : ref_device_tensors_[data_node_with_index]) {
-        if (device_tensor != nullptr) {
-          MS_LOG(DEBUG) << "Set pointer ref count from device address:" << new_address << " to:" << device_tensor
+      for (const auto &ref_kernel_tensor : ref_kernel_tensors_[data_node_with_index]) {
+        if (ref_kernel_tensor != nullptr) {
+          MS_LOG(DEBUG) << "Set pointer ref count from kernel tensor:" << new_kernel_tensor->ToString()
+                        << " to:" << ref_kernel_tensor->ToString()
                         << " for data source node:" << data_node_with_index.first->DebugString();
-          device_tensor->set_pointer_ref_count(new_address->pointer_ref_count());
+          ref_kernel_tensor->set_pointer_ref_count(new_kernel_tensor.get());
         }
       }
     }

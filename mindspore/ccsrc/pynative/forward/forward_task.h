@@ -90,6 +90,21 @@ class PYNATIVE_EXPORT PyboostPromiseTask : public PyboostTask {
   std::function<void()> set_exception_func_;
 };
 
+class PYNATIVE_EXPORT ViewPyboostPromiseTask : public runtime::AsyncTask {
+ public:
+  explicit ViewPyboostPromiseTask(std::function<void(void)> run_func, std::function<void()> set_exception_func)
+      : AsyncTask(runtime::kFrontendTask),
+        run_func_(std::move(run_func)),
+        set_exception_func_(std::move(set_exception_func)) {}
+  ~ViewPyboostPromiseTask() override = default;
+  void Run() override;
+  void SetException(const std::exception_ptr &e) override;
+
+ private:
+  std::function<void(void)> run_func_;
+  std::function<void()> set_exception_func_;
+};
+
 class PYNATIVE_EXPORT FrontendPromiseTask : public FrontendTask {
  public:
   FrontendPromiseTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func,

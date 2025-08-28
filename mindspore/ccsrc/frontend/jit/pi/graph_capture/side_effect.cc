@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 #include "frontend/jit/pi/graph_capture/side_effect.h"
+
 #include <algorithm>
 #include <climits>
 #include <iterator>
 #include <list>
 #include <string>
 #include <utility>
+
 #include "frontend/jit/pi/graph_capture/code_generator.h"
 #include "frontend/jit/pi/graph_capture/graph.h"
 #include "frontend/jit/pi/graph_capture/node.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/pi_jit_config.h"
 #include "frontend/jit/pi/utils/opcode_util.h"
+#include "utils/compile_config.h"
 
 namespace mindspore {
 namespace pijit {

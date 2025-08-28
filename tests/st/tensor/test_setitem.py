@@ -123,8 +123,15 @@ def test_setitem(capture_mode):
             setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
     # Tensor index
-    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
-    np_indices = [0, True, False, slice(0, 2), [0, 1]]
+    tensor_indices = [
+        Tensor(0),
+        Tensor(True),
+        Tensor(False),
+        slice(Tensor(0), Tensor(2)),
+        Tensor([0, 1]),
+        Tensor([True, False])
+    ]
+    np_indices = [0, True, False, slice(0, 2), [0, 1], [True, False]]
     for index, np_index in zip(tensor_indices, np_indices):
         np_x = np.arange(2*3*4).reshape(2, 3, 4)
         ms_x = Tensor(np_x)

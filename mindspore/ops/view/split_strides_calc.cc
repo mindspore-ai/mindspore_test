@@ -64,12 +64,9 @@ TensorStorageInfoPtrList SplitProcess(const OldTensorInfoPtr &old_tensor_info, c
   return storage_info_list;
 }
 
-TensorStorageInfoPtrList SplitBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
-                                            const int64_t &axis, const int64_t &output_num) {
+TensorStorageInfoPtrList SplitBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &axis,
+                                            const int64_t &output_num) {
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   MS_EXCEPTION_IF_NULL(old_tensor_info);
   return SplitProcess(old_tensor_info, axis, output_num);
@@ -82,7 +79,7 @@ TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<V
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   auto axis = GetValue<int64_t>(inputs[kInputIndex1]);
   auto output_num = GetValue<int64_t>(inputs[kInputIndex2]);
-  return SplitBasicTypeCalc(prim, input_tensor, axis, output_num);
+  return SplitBasicTypeCalc(input_tensor, axis, output_num);
 }
 
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Split, SplitCalc);

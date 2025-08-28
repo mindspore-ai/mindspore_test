@@ -27,7 +27,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/pack.cuh"
 #include "mindspore/ops/infer/sequence_stack.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 
 namespace mindspore {
 namespace kernel {

@@ -22,7 +22,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "plugin/ascend/res_manager/collective/hccl_watch_dog_thread.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 
 constexpr size_t kPathMax = 4096;
 namespace mindspore {
@@ -38,6 +38,7 @@ static std::map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
   {TypeId::kNumberTypeUInt64, HCCL_DATA_TYPE_UINT64}, {TypeId::kNumberTypeUInt8, HCCL_DATA_TYPE_UINT8},
   {TypeId::kNumberTypeUInt16, HCCL_DATA_TYPE_UINT16}, {TypeId::kNumberTypeUInt32, HCCL_DATA_TYPE_UINT32},
   {TypeId::kNumberTypeFloat64, HCCL_DATA_TYPE_FP64},  {TypeId::kNumberTypeBFloat16, HCCL_DATA_TYPE_BFP16},
+  {TypeId::kNumberTypeBool, HCCL_DATA_TYPE_INT8},
 };
 
 ::HcclDataType ConvertHcclType(TypeId type_id) {

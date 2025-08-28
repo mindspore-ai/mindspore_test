@@ -205,8 +205,7 @@ class AbstractActor : public OpRTActor<KernelTensor> {
                       mindspore::HashMap<std::string, std::vector<OpData<KernelTensor> *>> *batch_output_data);
   // Fetch the sub actor in the fusion actor by the name.
   AbstractActor *FetchSubActorInFusionActor(const std::string &sub_actor_name) const;
-  bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node,
-                                bool *need_release_mem = nullptr);
+  bool IsOutputAddressPersisted(const KernelTensorPtr &output_kernel_tensor, const KernelWithIndex &output_node);
 
   // Stores info required by to_actor
   void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info);

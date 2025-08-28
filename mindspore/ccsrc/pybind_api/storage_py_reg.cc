@@ -103,8 +103,9 @@ static PyObject *StoragePy_Copy_(PyObject *self, PyObject *args, PyObject *kwarg
   StoragePy_assertNotNull(self);
   auto self_ = StoragePy_Unpack(self);
   PyObject *py_type;
+  static const char *kwlist[] = {"src", "non_blocking", nullptr};
   int non_blocking = 0;
-  if (!PyArg_ParseTuple(args, "O|i", &py_type, &non_blocking)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|i", const_cast<char **>(kwlist), &py_type, &non_blocking)) {
     return nullptr;
   }
 
@@ -140,13 +141,11 @@ static PyObject *StoragePy_Resize_(PyObject *self, PyObject *number_arg) {
 
   int64_t newsize = PyLong_AsLong(number_arg);
   auto device_type = storage.device();
-  if (device_type == "Ascend") {
+  if (device_type == "Ascend" || device_type == "CPU") {
     // ToDo: inplement resize
     storage.get_mutable_storage_base()->InplaceReSize(newsize);
   } else if (device_type == "GPU") {
     MS_LOG(EXCEPTION) << "Current Storage only support NPU, but got GPU!";
-  } else {
-    MS_LOG(EXCEPTION) << "Current Storage only support NPU, but got CPU!";
   }
   Py_INCREF(self);
   return self;

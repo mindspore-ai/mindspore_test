@@ -18,22 +18,20 @@
 
 #include <string>
 #include <memory>
+#include "ir/dtype/tensor_type.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace device {
 class MbufDeviceAddress : public device::DeviceAddress {
  public:
-  MbufDeviceAddress(void *ptr, size_t size, const ShapeVector &shape, TypeId type, const std::string &device_name,
-                    uint32_t device_id)
-      : DeviceAddress(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"), type, device_name, device_id,
-                      0) {
+  MbufDeviceAddress(void *ptr, size_t size, const ShapeVector &shape, TypeId type, const std::string &device_name)
+      : DeviceAddress(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"), type, device_name, 0) {
     auto tensor_shape = std::make_shared<abstract::TensorShape>();
     tensor_shape->SetShapeVector(shape);
     auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));
   }
   void SetData(void *data) { set_ptr(data); }
-  void ClearDeviceMemory() {}
   device::DeviceType GetDeviceType() const { return DeviceType::kAscend; }
 };
 }  // namespace device

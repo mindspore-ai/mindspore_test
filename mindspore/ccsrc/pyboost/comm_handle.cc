@@ -27,7 +27,7 @@ CommHandle::~CommHandle() {
   if (event_ == nullptr) {
     return;
   }
-  if (device_ctx_ != nullptr && device_ctx_->initialized()) {
+  if (device_ctx_ != nullptr && device_ctx_->device_res_manager_ != nullptr) {
     device_ctx_->device_res_manager_->DestroyEvent(event_);
     MS_LOG(DEBUG) << "DestoryEvent done, event: " << event_;
   }

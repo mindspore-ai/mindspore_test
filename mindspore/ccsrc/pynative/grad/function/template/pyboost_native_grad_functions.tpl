@@ -20,18 +20,21 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "ir/dtype/tensor_type.h"
+#include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
 ${ops_inc}
 ${include_op_header}
 
 namespace mindspore {
 namespace pynative {
 device::DeviceType NativeFunc::device_target_ = device::DeviceType::kUnknown;
+AbstractConverter kNativeAbstractConverter;
 
 NodePtr NativeFunc::RunOpInVm(const PrimitivePtr &prim, const NodePtrList &inputs) {
   VectorRef args;

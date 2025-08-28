@@ -18,7 +18,6 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/view.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/broadcast_to.h"
 #include "op_def/op_enum.h"
@@ -29,13 +28,6 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                        const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
-  MS_LOG(DEBUG) << "Meshgrid call start";
-  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kAscend);
-  return outputs_list;
-}
-
-std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const ValueTuplePtr &tensors_list, const int64_t &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
   auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kAscend);
   return outputs_list;

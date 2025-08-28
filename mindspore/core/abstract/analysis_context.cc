@@ -24,6 +24,7 @@
 #include "utils/hashing.h"
 #include "utils/ms_utils.h"
 #include "utils/trace_base.h"
+#include "utils/compile_config.h"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
 

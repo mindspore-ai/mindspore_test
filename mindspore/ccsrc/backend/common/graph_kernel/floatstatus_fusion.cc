@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,10 @@ const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, 
   }
   auto input_type = AnfAlgo::GetOutputDeviceDataType(input_node, 0);
   auto output_type = AnfAlgo::GetOutputDeviceDataType(node, 0);
-  if (input_type != output_type || output_type != kNumberTypeFloat32) {
+  if ((input_type != kNumberTypeFloat16 && input_type != kNumberTypeFloat32 && input_type != kNumberTypeBFloat16) ||
+      output_type != kNumberTypeFloat32) {
+    MS_LOG(DEBUG) << "input node: " << input_node->fullname_with_scope() << " " << TypeIdToString(input_type);
+    MS_LOG(DEBUG) << "last node: " << node->fullname_with_scope() << " " << TypeIdToString(output_type);
     return nullptr;
   }
   auto s_node = opt::GetAnfNodeByVar(equiv, s_);
@@ -109,7 +112,7 @@ const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, 
   new_node->set_abstract(node->abstract());
   kernel::KernelBuildInfo::KernelBuildInfoBuilder info_builder;
   info_builder.SetInputsFormat({kOpFormat_DEFAULT});
-  info_builder.SetInputsDeviceType({output_type});
+  info_builder.SetInputsDeviceType({input_type});
   info_builder.SetOutputsFormat({kOpFormat_DEFAULT});
   info_builder.SetOutputsDeviceType({output_type});
   info_builder.SetKernelType(UNKNOWN_KERNEL_TYPE);

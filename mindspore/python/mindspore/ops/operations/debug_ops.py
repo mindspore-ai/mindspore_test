@@ -13,14 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """debug_ops"""
-import stat
-from pathlib import Path
-
-import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
 from mindspore._c_expression import TensorPy as Tensor_
-from mindspore._c_expression import _tensordump_process_file
+from mindspore._c_expression import _tensordump_exec
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -314,26 +310,12 @@ class TensorDump(Primitive):
         self.add_prim_attr("side_effect_io", True)
         self.add_prim_attr("channel_name", "ms_tensor_dump")
 
-    def _save_file(self, file, data):
-        file = Path(file)
-        if file.exists():
-            file.chmod(stat.S_IWUSR)
-        np.save(file, data)
-        file.chmod(stat.S_IRUSR)
-
     def __call__(self, file, input_x):
         validator.check_value_type('file', file, [str], self.__class__.__name__)
         if not file:
             raise ValueError("For 'TensorDump', the input argument[file] cannot be an empty string.")
         validator.check_value_type('input_x', input_x, [Tensor], self.__class__.__name__)
-
-        dtype = input_x.dtype
-        file = _tensordump_process_file(file, str(dtype))
-        if not file:
-            return
-        if dtype == mstype.bfloat16:
-            input_x = P.Cast()(input_x, mstype.float32)
-        self._save_file(file, input_x.asnumpy())
+        _tensordump_exec(file, input_x)
 
 
 class HistogramSummary(Primitive):

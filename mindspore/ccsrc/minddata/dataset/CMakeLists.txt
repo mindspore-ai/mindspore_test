@@ -58,7 +58,7 @@ include_directories(${CMAKE_BINARY_DIR}) # for protobuf generated .h
 include_directories(${CMAKE_SOURCE_DIR}/mindspore)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/mindrecord/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset/vision/kernels)
 
 
 ######################################################################
@@ -84,38 +84,38 @@ add_subdirectory(core)
 add_subdirectory(kernels)
 add_subdirectory(engine)
 add_subdirectory(api)
+add_subdirectory(data_source)
 add_subdirectory(audio)
 add_subdirectory(text)
+add_subdirectory(vision)
+add_subdirectory(general)
 add_subdirectory(callback)
 add_subdirectory(plugin)
 ######################################################################
 add_dependencies(utils core)
-add_dependencies(kernels-image core)
-add_dependencies(kernels-data core)
 add_dependencies(kernels core)
-add_dependencies(engine-datasetops-source core)
-add_dependencies(engine-datasetops-source-sampler core)
+add_dependencies(data_source core)
+add_dependencies(data_source-sampler core)
+add_dependencies(data_source-operation core)
+add_dependencies(data_source-operation-samplers core)
 add_dependencies(engine-datasetops core)
 add_dependencies(engine-datasetops-mapop core)
-add_dependencies(engine-opt core)
+add_dependencies(engine-pass core)
 add_dependencies(engine core)
 add_dependencies(callback core)
 add_dependencies(audio-kernels core)
-add_dependencies(audio-ir core)
-add_dependencies(audio-ir-kernels core)
+add_dependencies(audio-transform core)
 add_dependencies(text core)
 add_dependencies(text-kernels core)
-add_dependencies(text-ir core)
-add_dependencies(text-ir-kernels core)
+add_dependencies(text-transform core)
+add_dependencies(vision-transform core)
+add_dependencies(vision-kernels core)
+add_dependencies(vision-kernels-dvpp-image core)
+add_dependencies(general-transform core)
+add_dependencies(general-kernels core)
 add_dependencies(cpp-API core)
-add_dependencies(engine-ir-datasetops core)
-add_dependencies(engine-ir-datasetops-source core)
-add_dependencies(engine-ir-datasetops-source-samplers core)
-add_dependencies(engine-ir-cache core)
-add_dependencies(kernels-ir core)
-add_dependencies(kernels-ir-data core)
-add_dependencies(kernels-ir-vision core)
-add_dependencies(kernels-dvpp-image core)
+add_dependencies(engine-operation-datasetops core)
+add_dependencies(engine-operation-cache core)
 
 if(ENABLE_PYTHON)
     add_dependencies(APItoPython core)
@@ -126,24 +126,24 @@ add_dependencies(engine-perf core)
 if(ENABLE_CACHE)
     add_dependencies(APItoPython engine-cache-server)
     add_dependencies(cpp-API engine-cache-server)
-    add_dependencies(engine-ir-cache engine-cache-server)
-    add_dependencies(engine-ir-datasetops engine-cache-server)
-    add_dependencies(engine-ir-datasetops-source engine-cache-server)
-    add_dependencies(engine-opt engine-cache-server)
+    add_dependencies(engine-operation-cache engine-cache-server)
+    add_dependencies(engine-operation-datasetops engine-cache-server)
+    add_dependencies(data_source engine-cache-server)
+    add_dependencies(data_source-operation engine-cache-server)
+    add_dependencies(engine-pass engine-cache-server)
     add_dependencies(engine-datasetops engine-cache-server)
-    add_dependencies(engine-datasetops-source engine-cache-server)
     add_dependencies(engine-perf engine-cache-server)
     add_dependencies(engine-cache-client core)
     add_dependencies(engine-cache-server core)
 else()
     add_dependencies(APItoPython engine-cache-client)
     add_dependencies(cpp-API engine-cache-client)
-    add_dependencies(engine-ir-cache engine-cache-client)
-    add_dependencies(engine-ir-datasetops engine-cache-client)
-    add_dependencies(engine-ir-datasetops-source engine-cache-client)
-    add_dependencies(engine-opt engine-cache-client)
+    add_dependencies(engine-operation-cache engine-cache-client)
+    add_dependencies(engine-operation-datasetops engine-cache-client)
+    add_dependencies(data_source engine-cache-client)
+    add_dependencies(data_source-operation engine-cache-client)
+    add_dependencies(engine-pass engine-cache-client)
     add_dependencies(engine-datasetops engine-cache-client)
-    add_dependencies(engine-datasetops-source engine-cache-client)
     add_dependencies(engine-perf engine-cache-client)
     add_dependencies(engine-cache-client core)
 endif()
@@ -154,33 +154,30 @@ set(dataengine_submodules
         $<TARGET_OBJECTS:callback>
         $<TARGET_OBJECTS:utils>
         $<TARGET_OBJECTS:kernels>
-        $<TARGET_OBJECTS:kernels-image>
         $<TARGET_OBJECTS:lite-cv>
-        $<TARGET_OBJECTS:kernels-data>
         $<TARGET_OBJECTS:cpp-API>
-        $<TARGET_OBJECTS:engine-ir-datasetops>
-        $<TARGET_OBJECTS:engine-ir-datasetops-source>
-        $<TARGET_OBJECTS:engine-ir-datasetops-source-samplers>
-        $<TARGET_OBJECTS:engine-ir-cache>
-        $<TARGET_OBJECTS:engine-datasetops-source>
-        $<TARGET_OBJECTS:engine-datasetops-source-sampler>
+        $<TARGET_OBJECTS:engine-operation-datasetops>
+        $<TARGET_OBJECTS:data_source-operation>
+        $<TARGET_OBJECTS:data_source-operation-samplers>
+        $<TARGET_OBJECTS:engine-operation-cache>
+        $<TARGET_OBJECTS:data_source>
+        $<TARGET_OBJECTS:data_source-sampler>
         $<TARGET_OBJECTS:engine-datasetops-mapop>
         $<TARGET_OBJECTS:engine-datasetops>
-        $<TARGET_OBJECTS:engine-opt>
+        $<TARGET_OBJECTS:engine-pass>
         $<TARGET_OBJECTS:engine-cache-client>
         $<TARGET_OBJECTS:engine>
         $<TARGET_OBJECTS:audio-kernels>
-        $<TARGET_OBJECTS:audio-ir>
-        $<TARGET_OBJECTS:audio-ir-kernels>
+        $<TARGET_OBJECTS:audio-transform>
         $<TARGET_OBJECTS:text>
         $<TARGET_OBJECTS:text-kernels>
-        $<TARGET_OBJECTS:text-ir>
-        $<TARGET_OBJECTS:text-ir-kernels>
-        $<TARGET_OBJECTS:kernels-ir>
-        $<TARGET_OBJECTS:kernels-ir-data>
-        $<TARGET_OBJECTS:kernels-ir-vision>
-        $<TARGET_OBJECTS:md_plugin>
-        $<TARGET_OBJECTS:kernels-dvpp-image>)
+        $<TARGET_OBJECTS:text-transform>
+        $<TARGET_OBJECTS:vision-transform>
+        $<TARGET_OBJECTS:vision-kernels>
+        $<TARGET_OBJECTS:vision-kernels-dvpp-image>
+        $<TARGET_OBJECTS:general-transform>
+        $<TARGET_OBJECTS:general-kernels>
+        $<TARGET_OBJECTS:md_plugin>)
 
 if(ENABLE_PYTHON)
     set(dataengine_submodules
@@ -234,8 +231,7 @@ target_link_libraries(_c_dataengine PUBLIC mindspore::jpeg_turbo mindspore::turb
                                           mindspore::opencv_imgcodecs mindspore::opencv_imgproc mindspore::tinyxml2
                                           mindspore::sentencepiece_train ${ICU_LIB})
 
-target_link_libraries(_c_dataengine PRIVATE mindspore_ms_backend mindspore_profiler mindspore_backend_common
-    mindspore_hardware_abstract mindspore_runtime_utils)
+target_link_libraries(_c_dataengine PRIVATE mindspore_profiler mindspore_hardware_abstract mindspore_runtime_utils)
 
 target_link_libraries(_c_dataengine PRIVATE mindspore_common)
 add_dependencies(_c_dataengine _c_mindrecord)

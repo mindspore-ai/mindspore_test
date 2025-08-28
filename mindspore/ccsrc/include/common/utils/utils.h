@@ -33,7 +33,7 @@
 
 #include "include/common/visible.h"
 #include "include/common/utils/stream_util.h"
-#include "ir/dtype/type.h"
+#include "ir/dtype/type_id.h"
 #include "utils/log_adapter.h"
 
 #include "ops_utils/op_constants.h"

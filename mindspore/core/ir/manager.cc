@@ -23,6 +23,7 @@
 
 #include "ir/core_ops_primitive.h"
 #include "ir/func_graph.h"
+#include "ir/scope.h"
 #include "utils/convert_utils_base.h"
 #include "utils/counter.h"
 #include "utils/trace_base.h"

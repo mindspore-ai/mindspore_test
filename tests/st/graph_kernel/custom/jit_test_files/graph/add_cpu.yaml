@@ -1,0 +1,18 @@
+#operator add_cpu
+add_cpu:
+  args:
+    input:
+      dtype: tensor
+      type_cast: number
+    other:
+      dtype: tensor
+      type_cast: number
+  args_signature:
+    dtype_group: (input, other)
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: AddCPU
+  dispatch:
+    enable: True

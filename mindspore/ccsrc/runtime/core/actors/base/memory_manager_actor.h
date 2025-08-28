@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <string>
 #include <set>
 #include <mutex>
-#include "utils/hash_map.h"
+
 #include "runtime/core/actors/base/actor_common.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
@@ -45,7 +45,8 @@ class MemoryManagerActor : public ActorBase {
   void AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list, const DeviceContext *device_context,
                       OpContext<KernelTensor> *const op_context, const AID &from_aid);
   void AllocateMemoryHP(const std::vector<KernelTensorPtr> *alloc_list, const DeviceContext *device_context,
-                        OpContext<KernelTensor> *const op_context, const AID &from_aid);
+                        OpContext<KernelTensor> *const op_context, const AID &from_aid,
+                        uint32_t stream_id = kDefaultStreamIndex);
   bool AllocateContinuousMemory(KernelTensor *kernel_tensor, const DeviceContext *device_context, const AID &from_aid);
   // The process entry of continuous memory alloc, the size of alloc_list_list, size_list_list, total_size_list and
   // device_contexts must be equal.

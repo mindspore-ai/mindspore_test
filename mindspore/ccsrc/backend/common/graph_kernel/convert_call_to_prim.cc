@@ -21,6 +21,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 bool ConvertCallToPrim::Run(const FuncGraphPtr &func_graph) {

@@ -29,7 +29,7 @@ BeginFunction(GmmV2, x, weight, bias, group_list, group_type, group_list_type) {
   auto act_type = Value(0);
   auto none = NewValueNode(kNone);
   auto out = Call(Prim(GroupedMatmulV4), x, weight, bias, none, none, none, none, none, group_list, none, none, none,
-                  split_item, group_type, group_list_type, act_type);
+                  split_item, group_type, group_list_type, act_type, none);
   Return(out);
 }
 EndFunction(GmmV2)

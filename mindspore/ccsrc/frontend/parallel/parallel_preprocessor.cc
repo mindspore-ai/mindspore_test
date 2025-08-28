@@ -65,6 +65,7 @@
 #include "frontend/parallel/parallel_optimizer/opt_param_mgr.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "utils/trace_base.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -743,6 +744,7 @@ void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet
     auto cnode = param_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     if (IsForwardCNode(cnode) && !IsPrimitiveCNode(cnode, prim::kPrimReceive) &&
+        !IsPrimitiveCNode(cnode, prim::kPrimSend) &&
         !(IsPrimitiveCNode(cnode, prim::kPrimDepend) && param_pair.second == INDEX_TWO)) {
       if (insert_flag) {
         // if there are multiple node users, they share one same allgather
@@ -1010,6 +1012,9 @@ static void SetParameterSliceShape(const FuncGraphPtr &root) {
     }
     auto param_sub_set = param_sub_map.at(parameter);
     MS_EXCEPTION_IF_NULL(parameter->Shape());
+    parallel::StrategyLayout::GetInstance()->SetParamGlobalShape(parameter);
+    parallel::StrategyLayout::GetInstance()->SetParamType(parameter);
+
     auto iter = g_RefMap.find(parameter);
     if (iter != g_RefMap.cend()) {
       std::string group = SetParallelShape(parameter, g_RefMap[parameter], root);

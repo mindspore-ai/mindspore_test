@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 #include "ir/anf.h"
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
-#include "frontend/optimizer/opt.h"
+#include "frontend/operator/ops.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/fallback.h"
 #include "frontend/jit/ps/fallback.h"

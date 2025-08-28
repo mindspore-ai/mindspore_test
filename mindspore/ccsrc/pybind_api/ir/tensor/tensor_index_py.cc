@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "frontend/jit/ps/parse/parse_base.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "pynative/pynative_execute.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -34,6 +33,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
+#include "mindspore/ccsrc/runtime/hardware_abstract/utils.h"
+#include "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate/tensor_api.h"
+#include "mindspore/core/include/ir/device_address_maker.h"
 
 namespace mindspore::tensor {
 using tensor::TensorPybind;
@@ -41,8 +46,15 @@ py::handle TensorIndex::py_index_handle_ = py::none();
 py::handle TensorIndex::py_value_handle_ = py::none();
 bool TensorIndex::is_ascend_ = false;
 IndexOpType TensorIndex::index_op_type_ = IndexOpType::GetItem;
-py::module TensorIndex::np_module_ = py::module();
+py::module TensorIndex::np_module_ = py::module::import("numpy");
 static const std::vector<TypeId> kIntTypes{kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+// ****************************************tensor index refactor**************************************
+ShapeVector empty_shape_1d = {0};
+ShapeVector empty_shape_9d = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+std::vector<int64_t> input = {0};
+TensorPtr tensor_1d = tensor::from_vector(input, TypeIdToType(TypeId::kNumberTypeInt64));
+TensorPtr empty_tensor_1d = tensor::from_spec(kNumberTypeInt64, empty_shape_1d, device::DeviceType::kCPU);
+TensorPtr empty_tensor_9d = tensor::from_spec(kNumberTypeInt64, empty_shape_9d, device::DeviceType::kCPU);
 // ***********************************************utils*******************************************
 std::ostream &operator<<(std::ostream &stream, const TensorIndex &tensor_index) {
   TensorIndexType tensor_index_type = tensor_index.type();
@@ -2065,7 +2077,6 @@ py::object TensorIndex::GetItemIndexInfo(const py::object &py_data, const py::ob
   MS_EXCEPTION_IF_NULL(new_py_index);
   TensorIndex::py_index_handle_ = new_py_index;
   TensorIndex::is_ascend_ = is_ascend;
-  TensorIndex::np_module_ = py::module::import("numpy");
   TensorIndex::index_op_type_ = IndexOpType::GetItem;
   TensorIndex index(new_py_index);
   CheckGetItemIndex(index.type());
@@ -2483,5 +2494,442 @@ py::object TensorIndex::SetItemIndexByIndexType(const TensorIndex &index, const 
   }
 
   return output;
+}
+
+// ****************************************tensor index refactor**************************************
+ValueTuplePtr TensorListToValueTuple(const tensor::TensorPtrList &tensor_list) {
+  std::vector<ValuePtr> values;
+  values.reserve(tensor_list.size());
+  (void)std::transform(tensor_list.begin(), tensor_list.end(), std::back_inserter(values),
+                       [](const TensorPtr &tensor) -> ValuePtr {
+                         if (tensor == nullptr) return kNone;
+                         return tensor;
+                       });
+  return std::make_shared<ValueTuple>(values);
+}
+
+void RecordTensorIndex(const TensorPtr index, TensorPtrList *remain_indexes, const uint64_t dim) {
+  if (remain_indexes->size() > dim) {
+    remain_indexes->at(dim) = index;
+  }
+  while (dim > remain_indexes->size()) {
+    (void)remain_indexes->emplace_back(empty_tensor_9d);
+  }
+  (void)remain_indexes->emplace_back(index);
+}
+
+TensorPtr DoSelect(const TensorPtr &self, int dim, int index, int dim_size) {
+  if (index >= dim_size || index < -dim_size) {
+    MS_EXCEPTION(IndexError) << "Index is out of bounds";
+  }
+  index = (index + dim_size) % dim_size;
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "SelectExtView");
+  return kernel::pyboost::select_ext_view(self, dim, index);
+}
+
+TensorPtr CpuDirectly(const TensorPtr &tensor) {
+  if (tensor->device_address() == nullptr) {
+    MS_EXCEPTION(ValueError) << "Can't do item() for uninitialized tensor " << tensor->ToString();
+  }
+  if (tensor->device_address()->GetDeviceType() == device::DeviceType::kCPU) {
+    return tensor;
+  }
+  // get res_manager
+  const auto &ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::DeviceContextKey host_key{device_name, device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  // create cpu device address
+  auto dst = MakeDeviceAddress(tensor->data_type(), tensor->shape(), true, device::DeviceType::kCPU);
+  MS_EXCEPTION_IF_NULL(dst);
+  // sync stream to ensure device address is ready
+  runtime::Pipeline::Get().WaitForward();
+  host_context->device_res_manager_->SyncStream(CurrentStream::id());
+  // create a new src device address with offset
+  size_t device_offset = static_cast<size_t>(tensor->storage_offset()) * abstract::TypeIdSize(tensor->data_type());
+  auto src = MakeDeviceAddress(tensor->data_type(), tensor->shape(), tensor->device_address()->GetMutablePtr(),
+                               device_offset, tensor->device_address()->GetDeviceType());
+  MS_EXCEPTION_IF_NULL(src);
+  // copy data from device to host
+  host_context->device_res_manager_->CopyDirectly(dst->GetMutablePtr(), dst->GetSize(), src->GetMutablePtr(),
+                                                  src->GetSize(), device::CopyType::kD2H);
+  return std::make_shared<Tensor>(tensor->data_type(), tensor->shape(), dst);
+}
+
+int64_t DoItem(const TensorPtr &tensor) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     "Item");
+  auto tensor_element_count = tensor->DataSize();
+  if (tensor_element_count != 1) {
+    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
+                             << " more than one element is ambiguous.";
+  }
+  auto cpu_tensor = CpuDirectly(tensor);
+  auto data_type = cpu_tensor->data_type();
+  auto data = cpu_tensor->data_c();
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return *static_cast<const int8_t *>(data);
+    case TypeId::kNumberTypeUInt8:
+      return *static_cast<const uint8_t *>(data);
+    case TypeId::kNumberTypeInt16:
+      return *static_cast<const int16_t *>(data);
+    case TypeId::kNumberTypeUInt16:
+      return *static_cast<const uint16_t *>(data);
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt32:
+      return *static_cast<const int *>(data);
+    case TypeId::kNumberTypeUInt32:
+      return *static_cast<const uint32_t *>(data);
+    case TypeId::kNumberTypeInt64:
+      return *static_cast<const int64_t *>(data);
+    case TypeId::kNumberTypeUInt64:
+      return *static_cast<const uint64_t *>(data);
+    case TypeId::kNumberTypeFloat16:
+      return static_cast<const float>(*static_cast<float16 *>(data));
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+      return *static_cast<const float *>(data);
+    case TypeId::kNumberTypeDouble:
+    case TypeId::kNumberTypeFloat64:
+      return *static_cast<const double *>(data);
+    case TypeId::kNumberTypeBFloat16:
+      return static_cast<const float>(*static_cast<bfloat16 *>(data));
+    case TypeId::kNumberTypeBool:
+      return *static_cast<const bool *>(data);
+    default:
+      MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
+  }
+}
+
+int64_t GetIndex(const py::object &index, const int64_t default_value) {
+  if (index == py::none()) {
+    return default_value;
+  }
+  if (IsTensorPy(index)) {
+    TensorPtr tensor_index = ConvertToTensor(index);
+    MS_EXCEPTION_IF_NULL(tensor_index);
+    return DoItem(tensor_index);
+  }
+  return index.cast<int64_t>();
+}
+
+TensorPtr DoSlice(const TensorPtr &self, const int dim, const py::slice &index, int dim_size) {
+  auto step = GetIndex(index.attr("step"), 1);
+  if (step <= 0) {
+    MS_EXCEPTION(ValueError) << "slice step must be positive";
+  }
+  auto start = GetIndex(index.attr("start"), 0);
+  auto end = GetIndex(index.attr("stop"), dim_size);
+  if (start == 0 && end == dim_size && step == 1) {
+    return self;
+  }
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "SliceExtView");
+  return kernel::pyboost::slice_ext_view(self, dim, start, end, step);
+}
+
+TensorPtr DoExpandDims(const TensorPtr &self, const int dim) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "ExpandDimsView");
+  return kernel::pyboost::expand_dims_view(self, dim);
+}
+
+TensorPtr ProcessDimInMultiDimIndex(const TensorPtr &prev_result, const TensorPtr &orig_tensor, const py::object &index,
+                                    int *dim, const int indexed_dims, TensorPtrList *remain_indexes, int *orig_dim) {
+  TensorPtr result = prev_result;
+  if (py::isinstance<py::bool_>(index)) {
+    result = DoExpandDims(prev_result, *dim);
+    TensorPtr index_for_bool = py::cast<py::bool_>(index) == py::bool_(true) ? tensor_1d : empty_tensor_1d;
+    RecordTensorIndex(index_for_bool, remain_indexes, *dim);
+    *dim += 1;
+  } else if (py::isinstance<py::int_>(index)) {
+    int int_index = py::cast<int>(index);
+    result = DoSelect(prev_result, *dim, int_index, orig_tensor->shape_c()[*orig_dim]);
+    *orig_dim += 1;
+  } else if (py::isinstance<py::slice>(index)) {
+    py::slice slice_index = py::cast<py::slice>(index);
+    result = DoSlice(prev_result, *dim, slice_index, orig_tensor->shape_c()[*orig_dim]);
+    *orig_dim += 1;
+    *dim += 1;
+  } else if (py::isinstance<py::ellipsis>(index)) {
+    int ellipsis_dims = orig_tensor->DataDim() - indexed_dims;
+    *orig_dim += ellipsis_dims;
+    *dim += ellipsis_dims;
+  } else if (index == py::none()) {
+    result = DoExpandDims(prev_result, *dim);
+    *dim += 1;
+  } else if (IsTensorPy(index)) {
+    TensorPtr tensor_index = ConvertToTensor(index);
+    MS_EXCEPTION_IF_NULL(tensor_index);
+    const std::vector<TypeId> int_types = {kNumberTypeInt8,  kNumberTypeInt16,  kNumberTypeInt32,  kNumberTypeInt64,
+                                           kNumberTypeUInt8, kNumberTypeUInt16, kNumberTypeUInt32, kNumberTypeUInt64};
+    auto type_id = tensor_index->data_type();
+    if (tensor_index->DataDim() == 0) {
+      if (std::find(int_types.begin(), int_types.end(), type_id) != int_types.end()) {
+        result = DoSelect(prev_result, *dim, DoItem(tensor_index), orig_tensor->shape_c()[*orig_dim]);
+        *orig_dim += 1;
+      } else if (type_id == kNumberTypeBool) {
+        result = DoExpandDims(prev_result, *dim);
+        TensorPtr index_for_bool = DoItem(tensor_index) ? tensor_1d : empty_tensor_1d;
+        RecordTensorIndex(index_for_bool, remain_indexes, *dim);
+        *dim += 1;
+      } else {
+        MS_EXCEPTION(IndexError) << "Invalid tensor index type";
+      }
+    } else {
+      RecordTensorIndex(tensor_index, remain_indexes, *dim);
+      *orig_dim += 1;
+      *dim += 1;
+    }
+  } else {
+    MS_EXCEPTION(IndexError) << "Invalid tensor index type";
+  }
+  return result;
+}
+
+TensorPtr ProcessMultiDimIndex(const TensorPtr &self, const py::tuple &indexes, TensorPtrList *remain_indexes,
+                               const int indexed_dims) {
+  TensorPtr self_viewed = self;
+  int dim = 0;
+  int orig_dim = 0;
+  for (size_t i = 0; i < indexes.size(); i++) {
+    py::object py_index = indexes[i];
+    if (py::isinstance<py::list>(py_index) || py::isinstance<py::tuple>(py_index) ||
+        py::isinstance<py::array>(py_index)) {
+      py::array np_index = TensorIndex::np_module_.attr("array")(py_index).cast<py::array>();
+      TypePtr index_dtype = np_index.dtype().kind() == 'b' ? kBool : kInt64;
+      TensorPtr tensor_ptr = TensorPybind::MakeTensor(np_index, index_dtype);
+      py_index = py::cast(tensor_ptr);
+    }
+    self_viewed = ProcessDimInMultiDimIndex(self_viewed, self, py_index, &dim, indexed_dims, remain_indexes, &orig_dim);
+  }
+  return self_viewed;
+}
+
+py::tuple WrapIndexToTuple(const py::object &py_index) {
+  if (py::isinstance<py::tuple>(py_index)) {
+    return py_index;
+  }
+  if (py::isinstance<py::list>(py_index)) {
+    py::list py_list = py_index.cast<py::list>();
+    // If the list is too long, convert to tuple directly to avoid performance issue.
+    const size_t list_max_index_num = 32;
+    if (py_list.size() >= list_max_index_num) {
+      return py::make_tuple(py_index);
+    }
+    bool exist_no_int_bool = false;
+    for (size_t i = 0; i < py_list.size(); i++) {
+      py::object item = py_list[i];
+      if (IsTensorPy(item) || py::isinstance<py::list>(item) || py::isinstance<py::tuple>(item) ||
+          py::isinstance<py::slice>(item) || py::isinstance<py::none>(item) || py::isinstance<py::ellipsis>(item)) {
+        exist_no_int_bool = true;
+        break;
+      }
+    }
+    if (exist_no_int_bool) {
+      return py::tuple(py_list);
+    }
+  }
+  return py::make_tuple(py_index);
+}
+
+int CountIndexedDims(const py::tuple &indexes) {
+  int count = 0;
+  for (size_t i = 0; i < indexes.size(); i++) {
+    py::object index = indexes[i];
+    if (IsTensorPy(index)) {
+      TensorPtr tensor = ConvertToTensor(index);
+      MS_EXCEPTION_IF_NULL(tensor);
+      if (tensor->data_type() == TypeId::kNumberTypeBool) {
+        count += tensor->DataDim();
+      } else {
+        count += 1;
+      }
+      continue;
+    } else if (!(py::isinstance<py::none>(index) || py::isinstance<py::ellipsis>(index) ||
+                 py::isinstance<py::bool_>(index))) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+TensorPtr DoIndex(TensorPtr self, const TensorPtrList &indices) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "aclnnIndex");
+  return kernel::pyboost::index(self, TensorListToValueTuple(indices));
+}
+
+PyObject *DoIndexPyMethod(TensorPtr self, const TensorPtrList &indices) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "aclnnIndex");
+  PyObject *py_self = tensor::PackTensor(self);
+  MS_EXCEPTION_IF_NULL(py_self);
+  PyObject *indices_tuple = PyTuple_New(indices.size());
+  MS_EXCEPTION_IF_NULL(indices_tuple);
+  for (size_t i = 0; i < indices.size(); ++i) {
+    PyObject *py_index = tensor::PackTensor(indices[i]);
+    MS_EXCEPTION_IF_NULL(py_index);
+    PyTuple_SetItem(indices_tuple, i, py_index);
+  }
+  PyObject *args_tuple = PyTuple_New(1);
+  MS_EXCEPTION_IF_NULL(args_tuple);
+  PyTuple_SetItem(args_tuple, 0, indices_tuple);
+  PyObject *result = TensorMethodIndex(py_self, args_tuple, nullptr);
+  Py_DECREF(py_self);
+  Py_DECREF(args_tuple);
+  return result;
+}
+
+TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py_index, PyObject **py_result) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     "TensorGetItem");
+  runtime::Pipeline::Get().WaitFrontend();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  if (py::isinstance<py::bool_>(py_index)) {
+    TensorPtr self_viewed = DoExpandDims(self, 0);
+    TensorPtr index_for_bool = py::cast<py::bool_>(py_index) == py::bool_(true) ? tensor_1d : empty_tensor_1d;
+    TensorPtrList indices = {index_for_bool};
+    return DoIndex(self_viewed, indices);
+  }
+  if (py::isinstance<py::int_>(py_index)) {
+    int int_index = py::cast<int>(py_index);
+    std::vector<int64_t> self_shape = self->shape_c();
+    if (self_shape.empty()) {
+      MS_EXCEPTION(TypeError) << "Invalid index of a 0-dim tensor.";
+    }
+    return DoSelect(self, 0, int_index, self_shape[0]);
+  }
+  if (py::isinstance<py::slice>(py_index)) {
+    py::slice slice_index = py::cast<py::slice>(py_index);
+    std::vector<int64_t> self_shape = self->shape_c();
+    if (self_shape.empty()) {
+      MS_EXCEPTION(TypeError) << "Invalid index of a 0-dim tensor.";
+    }
+    return DoSlice(self, 0, slice_index, self_shape[0]);
+  }
+  if (py_index == py::none()) {
+    return DoExpandDims(self, 0);
+  }
+  if (py::isinstance<py::ellipsis>(py_index)) {
+    return self;
+  }
+  py::tuple indexes = WrapIndexToTuple(py_index);
+  int indexed_dims = CountIndexedDims(indexes);
+  if (self->DataDim() < indexed_dims) {
+    MS_EXCEPTION(IndexError) << "For getitem, there are too many indices.";
+  }
+  TensorPtrList remain_indexes;
+  TensorPtr self_viewed = ProcessMultiDimIndex(self, indexes, &remain_indexes, indexed_dims);
+  if (remain_indexes.empty()) {
+    return self_viewed;
+  }
+  if (std::any_of(remain_indexes.begin(), remain_indexes.end(),
+                  [](const TensorPtr &index) { return index->data_type() == TypeId::kNumberTypeBool; })) {
+    // If any index is a bool tensor, run Index async by python method to reduce NonZero time cost.
+    *py_result = DoIndexPyMethod(self_viewed, remain_indexes);
+    return nullptr;
+  }
+  return DoIndex(self_viewed, remain_indexes);
+}
+
+TensorPtr DoView(const TensorPtr &self, const ShapeVector &shape) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "View");
+  return kernel::pyboost::view(self, shape);
+}
+
+TensorPtr DoInplaceCopy(TensorPtr dst, const TensorPtr &src) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "aclnnInplaceCopy");
+  return kernel::pyboost::inplace_copy(dst, src, std::make_shared<BoolImm>(true));
+}
+
+TensorPtr DoCopy(TensorPtr dst, const TensorPtr &src) {
+  const ShapeVector &dst_shape = dst->shape_c();
+  const ShapeVector &src_shape = src->shape_c();
+  if (dst_shape == src_shape || src_shape.empty()) {
+    return DoInplaceCopy(dst, src);
+  }
+  // remove all leading 1 in src shape, e.g. (1, 1, 2, 3) -> (2, 3)
+  size_t idx = 0;
+  while (idx < src_shape.size() && src_shape[idx] == 1) {
+    idx++;
+  }
+  ShapeVector src_viewed_shape(src_shape.begin() + idx, src_shape.end());
+  TensorPtr src_viewed = DoView(src, src_viewed_shape);
+  return DoInplaceCopy(dst, src_viewed);
+}
+
+TensorPtr DoInplaceIndexPut(TensorPtr self, const TensorPtrList &indices, const TensorPtr &value) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
+                                     "aclnnInplaceIndexPut");
+  return kernel::pyboost::inplace_index_put(self, TensorListToValueTuple(indices), value,
+                                            std::make_shared<BoolImm>(false));
+}
+
+TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index, const py::object &py_value) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     "TensorSetItem");
+  runtime::Pipeline::Get().WaitFrontend();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  self->set_need_pipeline_sync(true);
+  TensorPtr tensor_value;
+  TypePtr self_dtype = TypeIdToType(self->data_type());
+  if (IsTensorPy(py_value)) {
+    tensor_value = ConvertToTensor(py_value);
+    MS_EXCEPTION_IF_NULL(tensor_value);
+  } else if (py::isinstance<py::int_>(py_value)) {
+    tensor_value = tensor::from_scalar(py::cast<int64_t>(py_value), self_dtype);
+  } else if (py::isinstance<py::bool_>(py_value)) {
+    tensor_value = tensor::from_scalar(py::cast<bool>(py_value), self_dtype);
+  } else if (py::isinstance<py::float_>(py_value)) {
+    tensor_value = tensor::from_scalar(py::cast<float>(py_value), self_dtype);
+  } else {
+    MS_EXCEPTION(TypeError) << "For __setitem__, the type of value can only be bool, int, float or Tensor.";
+  }
+  if (py::isinstance<py::bool_>(py_index) && py::cast<py::bool_>(py_index) == py::bool_(false)) {
+    return self;
+  }
+  if (py::isinstance<py::ellipsis>(py_index)) {
+    return DoCopy(self, tensor_value);
+  }
+  if (py_index == py::none() ||
+      (py::isinstance<py::bool_>(py_index) && py::cast<py::bool_>(py_index) == py::bool_(true))) {
+    TensorPtr self_viewed = DoExpandDims(self, 0);
+    return DoCopy(self_viewed, tensor_value);
+  }
+  if (py::isinstance<py::int_>(py_index)) {
+    int int_index = py::cast<int>(py_index);
+    std::vector<int64_t> self_shape = self->shape_c();
+    if (self_shape.empty()) {
+      MS_EXCEPTION(TypeError) << "Invalid index of a 0-dim tensor.";
+    }
+    TensorPtr self_viewed = DoSelect(self, 0, int_index, self_shape[0]);
+    return DoCopy(self_viewed, tensor_value);
+  }
+  if (py::isinstance<py::slice>(py_index)) {
+    py::slice slice_index = py::cast<py::slice>(py_index);
+    std::vector<int64_t> self_shape = self->shape_c();
+    if (self_shape.empty()) {
+      MS_EXCEPTION(TypeError) << "Invalid index of a 0-dim tensor.";
+    }
+    TensorPtr self_viewed = DoSlice(self, 0, slice_index, self_shape[0]);
+    return DoCopy(self_viewed, tensor_value);
+  }
+  py::tuple indexes = WrapIndexToTuple(py_index);
+  int indexed_dims = CountIndexedDims(indexes);
+  if (self->DataDim() < indexed_dims) {
+    MS_EXCEPTION(IndexError) << "For getitem, there are too many indices.";
+  }
+  TensorPtrList remain_indexes;
+  TensorPtr self_viewed = ProcessMultiDimIndex(self, indexes, &remain_indexes, indexed_dims);
+  if (remain_indexes.empty()) {
+    return DoCopy(self_viewed, tensor_value);
+  }
+  return DoInplaceIndexPut(self_viewed, remain_indexes, tensor_value);
 }
 }  // namespace mindspore::tensor

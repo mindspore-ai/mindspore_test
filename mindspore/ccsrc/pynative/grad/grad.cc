@@ -23,8 +23,6 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
-#include "ir/named.h"
-#include "ir/primal_attr.h"
 #include "ir/value.h"
 #include "ir/tensor_new.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -835,6 +833,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   top_cell_->set_grad_is_running(true);
   auto grads = engine->RunBackward(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
                                    collect_default_weights, has_aux, sens);
+  engine->RunFinalCallback();
   top_cell_ = cur_top_cell;
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);
@@ -1204,6 +1203,10 @@ void GradExecutor::SetBpropGraphJitLevel(const py::object &obj) const {
     MS_LOG(EXCEPTION) << "JitConfig only support dict!";
   }
   auto jit_config_dict = jit_config.cast<py::dict>();
+  // Default jit config dict, do not replace current jit config set by gradjit
+  if (jit_config_dict.empty()) {
+    return;
+  }
   pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   graph_executor->SetJitConfig(jit_config_dict);
@@ -1219,6 +1222,15 @@ void GradExecutor::SaveDynamicInputsCells(const py::object &obj, const py::args 
 
 void GradExecutor::DispatchGradQueueTask(std::function<void(void)> &&task) const {
   runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
+}
+
+void GradExecutor::QueueFinalCallback(std::function<void()> callback) const {
+  auto cur_auto_diff_engine = autograd::impl::CurrentAutoDiffEngine();
+  MS_EXCEPTION_IF_CHECK_FAIL(cur_auto_diff_engine != nullptr,
+                             "Final backward callback can only be installed during backward pass");
+  auto engine = std::dynamic_pointer_cast<autograd::AutoDiff>(cur_auto_diff_engine);
+  MS_EXCEPTION_IF_NULL(engine);
+  engine->AddFinalCallback(std::move(callback));
 }
 
 std::string GradExecutor::SizeofContainer() const {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_IO_FORMAT_MAP_H_
 
 #include <string>
+
 #include "ir/anf.h"
 #include "utils/hash_map.h"
 #include "plugin/ascend/res_manager/visible.h"

@@ -31,6 +31,7 @@
 #include "frontend/jit/ps/action.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
+#include "ir/graph_utils.h"
 #include "backend/common/kernel_graph/session_factory.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "backend/ms_backend/segment_runner.h"
@@ -137,7 +138,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
 
   auto compiler = std::make_shared<runtime::GraphCompiler>();
   auto graph_id = compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(),
-                                         backend::BackendJitConfig(), false);
+                                         backend::BackendJitConfig());
   return compiler->Fetch(graph_id);
 }
 }  // namespace mindspore

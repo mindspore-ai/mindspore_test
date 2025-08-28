@@ -20,6 +20,7 @@
 #include "runtime/core/graph_scheduler/heterogeneous/device_tensor_copy_store.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/ms_context.h"
@@ -80,6 +81,14 @@ void GraphParameterStore::SetOffloaded(size_t outer_index, size_t inner_index, b
   is_offload_parameter_[outer_index][inner_index] = is_offload;
 }
 
+bool GraphParameterStore::GetPinned(size_t outer_index, size_t inner_index) {
+  return is_parameter_pinned_[outer_index][inner_index];
+}
+
+void GraphParameterStore::SetPinned(size_t outer_index, size_t inner_index, bool is_offload) {
+  is_parameter_pinned_[outer_index][inner_index] = is_offload;
+}
+
 bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_index) {
   return parameter_used_times_[outer_index][inner_index] > 1;
 }
@@ -95,7 +104,7 @@ void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
   index_to_front_node_.emplace(index, node);
 }
 
-void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor) {
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceAddressPtr &device_tensor) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   device_tensor_in_callback_.push_back(device_tensor);
 }
@@ -121,26 +130,24 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
   bool is_ref_count_max = kernel_tensor_with_info.second.first == SIZE_MAX;
 
   if (kernel_tensor_with_info.first != nullptr) {
-    auto &device_tensor = kernel_tensor_with_info.first->device_address();
-    if (device_tensor != nullptr) {
-      auto user_cnt = kernel_tensor_with_info.second.first;
-      if (user_cnt > 0) {
-        // When allocate memory, the ref count would be increase, so it should be decrease here.
-        if (is_ref_count_max) {
-          device_tensor->set_new_ref_count(SIZE_MAX);
-        } else {
-          static std::string name = "Parameter store";
-          device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
-        }
-        kernel_tensor_with_info.first->ClearFlag(device::kDeviceAddressFlagNotUsed);
-        MS_LOG(DEBUG) << "Parameter store set new ref count:" << (user_cnt - 1)
-                      << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
+    auto &kernel_tensor = kernel_tensor_with_info.first;
+    auto user_cnt = kernel_tensor_with_info.second.first;
+    if (user_cnt > 0) {
+      // When allocate memory, the ref count would be increase, so it should be decrease here.
+      if (is_ref_count_max) {
+        kernel_tensor->set_new_ref_count(SIZE_MAX);
       } else {
-        MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
-                      << " inner index:" << inner_index << " for device address:" << device_tensor;
+        static std::string name = "Parameter store";
+        kernel_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
-      return;
+      kernel_tensor_with_info.first->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      MS_LOG(DEBUG) << "Parameter store set new ref count:" << (user_cnt - 1)
+                    << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
+    } else {
+      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
+                    << " for kernel tensor:" << kernel_tensor->ToString();
     }
+    return;
   }
 }
 
@@ -256,12 +263,32 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
   return isDyn;
 }
 
+void GraphParameterStore::ConvertNormalInputContiguous(const std::vector<size_t> &input_index) {
+  for (size_t l = 0; l < input_index.size(); ++l) {
+    auto i = input_index[l];
+    if (i >= buffers_.size()) {
+      MS_LOG(EXCEPTION) << "Index " << i << " is out of range of buffers size: " << buffers_.size();
+    }
+    auto buffer_inner_size = buffers_[i].size();
+
+    if (buffer_inner_size != 1) {
+      if (buffers_[i][0] != nullptr && buffers_[i][0]->storage_info() != nullptr) {
+        MS_LOG(EXCEPTION) << "The input of tuple type contains non-contiguous inputs, which is not supported in the "
+                             "inference scenario.";
+      }
+    } else {
+      const auto &input_tensor = buffers_[i][0];
+      DeviceAddressUtils::ConvertContiguousTensorSync(input_tensor, 0);
+    }
+  }
+}
+
 DeviceTensorPtr GraphParameterStore::GetReleasedCheckInfo(size_t outer_index, size_t inner_index) {
   CheckIndexValid(outer_index, inner_index);
   return released_check_addresses_[outer_index][inner_index];
 }
 
-void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_callback) {
+void AddCopyDataCallBack(const std::vector<DeviceAddressPtr> &device_tensor_in_callback) {
   if (device_tensor_in_callback.empty()) {
     return;
   }
@@ -300,8 +327,8 @@ void GraphParameterStore::ReleaseData() {
     auto &kernel_tensor = kernel_tensor_with_info.first;
     if (kernel_tensor != nullptr) {
       auto &device_tensor = kernel_tensor->device_address();
-      if (device_tensor != nullptr && device_tensor->new_ref_count() == SIZE_MAX &&
-          !device_tensor->is_ptr_persisted()) {
+      if (device_tensor != nullptr && kernel_tensor->new_ref_count() == SIZE_MAX &&
+          !kernel_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << kernel_tensor->ToString();
         // Record released info, so that it can check input next step.

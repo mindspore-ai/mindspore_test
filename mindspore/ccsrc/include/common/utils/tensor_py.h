@@ -34,6 +34,15 @@ namespace py = pybind11;
 namespace mindspore {
 namespace tensor {
 
+struct TensorPyUserData {
+  py::object obj;
+  ~TensorPyUserData() {
+    // cppcheck-suppress unreadVariable
+    py::gil_scoped_acquire acquire_gil;
+    obj = py::object();
+  }
+};
+
 // TensorPyBase: An entity class
 class COMMON_EXPORT TensorPy {
  public:
@@ -286,7 +295,7 @@ class COMMON_EXPORT TensorPy {
 
   /// \brief Get the device address.
   /// \return The device address.
-  const DeviceSyncPtr GetDeviceAddress() const;
+  const DeviceAddressPtr GetDeviceAddress() const;
 
   /// \brief Whether the tensor is parameter output.
   /// \return True or False, is parameter output or not.

@@ -22,7 +22,6 @@
 #include <map>
 #include <memory>
 #include <utility>
-#include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"

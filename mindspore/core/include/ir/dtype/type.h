@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,13 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_TYPE_H_
 #define MINDSPORE_CORE_IR_DTYPE_TYPE_H_
 
-#include <cstddef>
-#include <iostream>
-#include <initializer_list>
 #include <unordered_map>
 #include <memory>
-#include <utility>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <type_traits>
 #include <algorithm>
+
 #include "utils/hash_map.h"
 #include "base/base.h"
 #include "ir/named.h"

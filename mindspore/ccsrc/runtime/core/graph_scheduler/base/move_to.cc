@@ -19,8 +19,8 @@
 #include <algorithm>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
@@ -64,7 +64,7 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  DeviceSyncPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
+  DeviceAddressPtr src_data = src_device_ptr == nullptr ? src_tensor->device_address() : src_device_ptr;
   auto ret = true;
   std::string status;
   if (blocking) {
@@ -127,7 +127,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
-      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, device_id, 0);
+      nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());

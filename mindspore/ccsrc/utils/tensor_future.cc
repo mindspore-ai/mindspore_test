@@ -31,7 +31,7 @@ DeviceAddressFuture::~DeviceAddressFuture() {
   }
 }
 
-std::shared_ptr<DeviceSync> DeviceAddressFuture::Get() {
+std::shared_ptr<DeviceAddress> DeviceAddressFuture::Get() {
   std::call_once(once_flag_, [this]() {
     if (future_.valid()) {
       // cppcheck-suppress unreadVariable

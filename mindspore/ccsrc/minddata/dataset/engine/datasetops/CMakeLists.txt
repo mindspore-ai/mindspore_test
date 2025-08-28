@@ -1,4 +1,3 @@
-add_subdirectory(source)
 add_subdirectory(map_op)
 
 file(GLOB_RECURSE _CURRENT_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")

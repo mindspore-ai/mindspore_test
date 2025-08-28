@@ -26,7 +26,7 @@ from mindspore.dataset.vision import Inter
 from mindspore.mindrecord import FileWriter
 from tests.mark_utils import arg_mark
 
-input_apple_jpg = "/home/workspace/mindspore_dataset/910B_dvpp/apple.jpg"
+PWD = os.path.dirname(__file__)
 
 @arg_mark(plat_marks=['cpu_windows'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_map_call_py_transforms_func():
@@ -45,6 +45,7 @@ def test_map_call_py_transforms_func():
     cv_schema_json = {"label": {"type": "int32"},
                       "data": {"type": "bytes"}}
     writer.add_schema(cv_schema_json, "img_schema")
+    input_apple_jpg = PWD + "/data/apple.jpg"
     image_file = open(input_apple_jpg, "rb")
     image = image_file.read()
     image_file.close()

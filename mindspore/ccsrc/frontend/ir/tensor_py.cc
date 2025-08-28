@@ -32,10 +32,13 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
-#include "utils/ordered_set.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
+#include "utils/value_utils.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
+#include "runtime/pynative/op_runner.h"
+#include "utils/ms_utils_secure.h"
+
 namespace mindspore {
 namespace tensor {
 namespace {
@@ -326,6 +329,47 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   return std::make_shared<Tensor>(dtype, shape, device_address);
 }
 
+TensorPtr TensorPybind::MakePinMemoryTensor(const tensor::TensorPy &tensor) {
+  const auto &base_tensor = tensor.GetTensor();
+  const auto &shape = base_tensor->shape();
+  const auto &dtype = base_tensor->data_type();
+  auto tensor_size = LongToSize(base_tensor->DataNBytes());
+
+  const auto &base_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  if (device::IsAscendDeviceType(base_device_address->GetDeviceType())) {
+    MS_LOG(EXCEPTION) << "Only CPU tensor can be pinned.The source tensor should be CPU tensor.";
+  }
+
+  // auto tensor_data = tensor::MakeTensorData(dtype, shape);
+  auto device_address = DeviceAddressMaker(nullptr, dtype, shape)
+                          .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+                          .make_device_address();
+  auto ascend_device_ctx = runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend);
+  if (ascend_device_ctx == nullptr || ascend_device_ctx->device_res_manager_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot find Ascend device context. ascend_device_ctx or device_res_manager is null.";
+  }
+  auto pin_memory_allocator = ascend_device_ctx->device_res_manager_->pin_mem_allocator();
+  std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_allocator(pin_memory_allocator);
+  auto device_ctx = runtime::OpRunner::GetDeviceContext(device::DeviceType::kCPU);
+  bool allocate_mem_ret = device_ctx->device_res_manager_->AllocateMemory(
+    std::dynamic_pointer_cast<device::DeviceAddress>(device_address).get());
+  if (!allocate_mem_ret) {
+    MS_LOG(EXCEPTION) << "Tensor.pin_memory allocate memory failed!";
+  }
+
+  const void *pin_data_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->GetPtr();
+  // H2H copy
+  auto memcpy_ret = common::huge_memcpy(reinterpret_cast<uint8_t *>(const_cast<void *>(pin_data_ptr)), tensor_size,
+                                        reinterpret_cast<uint8_t *>(base_tensor->data_c()), tensor_size);
+  if (memcpy_ret != EOK) {
+    MS_LOG(EXCEPTION) << "memcpy failed!";
+  }
+
+  TensorPtr tensorPtrRes = std::make_shared<Tensor>(dtype, shape, device_address);
+  tensorPtrRes->set_need_pipeline_sync(true);
+  return tensorPtrRes;
+}
+
 void TensorPybind::SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value) {
   const std::string name = key.cast<std::string>();
   const auto &primitive_data = std::make_shared<TensorPyUserData>();
@@ -361,6 +405,13 @@ static py::buffer_info GetPyBufferInfo(const TensorPtr &tensor) {
   std::vector<ssize_t> strides = GetStrides(shape, tensor->DataItemSize());
   return py::buffer_info{
     tensor->data_c(), tensor->DataItemSize(), GetPyTypeFormat(tensor->data_type()), tensor->DataDim(), shape, strides};
+}
+
+static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
+  std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
+  return py::buffer_info{
+    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
 }
 
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
@@ -575,51 +626,42 @@ py::object TensorPybind::ToList(const TensorPtr &tensor) {
 }
 
 py::object TensorPybind::Item(const TensorPtr &tensor) {
-  auto tensor_element_count = tensor->DataSize();
-  if (tensor_element_count != 1) {
-    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
-                             << " more than one element is ambiguous.";
-  }
-  auto cpu_tensor = tensor->cpu();
-  auto data_type = cpu_tensor->data_type();
-  auto data = cpu_tensor->data_c();
+  auto data_type = tensor->data_type();
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return py::int_(py::cast(*static_cast<const int8_t *>(data)));
+      return py::int_(py::cast(TensorItem<int8_t>(tensor)));
     case TypeId::kNumberTypeUInt8:
-      return py::int_(py::cast(*static_cast<const uint8_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint8_t>(tensor)));
     case TypeId::kNumberTypeInt16:
-      return py::int_(py::cast(*static_cast<const int16_t *>(data)));
+      return py::int_(py::cast(TensorItem<int16_t>(tensor)));
     case TypeId::kNumberTypeUInt16:
-      return py::int_(py::cast(*static_cast<const uint16_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint16_t>(tensor)));
     case TypeId::kNumberTypeInt:
     case TypeId::kNumberTypeInt32:
-      return py::int_(py::cast(*static_cast<const int *>(data)));
+      return py::int_(py::cast(TensorItem<int32_t>(tensor)));
     case TypeId::kNumberTypeUInt32:
-      return py::int_(py::cast(*static_cast<const uint32_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint32_t>(tensor)));
     case TypeId::kNumberTypeInt64:
-      return py::int_(py::cast(*static_cast<const int64_t *>(data)));
+      return py::int_(py::cast(TensorItem<int64_t>(tensor)));
     case TypeId::kNumberTypeUInt64:
-      return py::int_(py::cast(*static_cast<const uint64_t *>(data)));
+      return py::int_(py::cast(TensorItem<uint64_t>(tensor)));
     case TypeId::kNumberTypeFloat16:
-      return py::float_(py::cast(*static_cast<const float16 *>(data)));
+      return py::float_(py::cast(TensorItem<float16>(tensor)));
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32:
-      return py::float_(py::cast(*static_cast<const float *>(data)));
+      return py::float_(py::cast(TensorItem<float>(tensor)));
     case TypeId::kNumberTypeDouble:
     case TypeId::kNumberTypeFloat64:
-      return py::float_(py::cast(*static_cast<const double *>(data)));
+      return py::float_(py::cast(TensorItem<double>(tensor)));
     case TypeId::kNumberTypeBFloat16:
-      return py::float_(py::cast(*static_cast<const bfloat16 *>(data)));
+      return py::float_(py::cast(TensorItem<bfloat16>(tensor)));
     case TypeId::kNumberTypeBool:
-      return py::bool_(py::cast(*static_cast<const bool *>(data)));
+      return py::bool_(py::cast(TensorItem<bool>(tensor)));
     case TypeId::kNumberTypeComplex64:
     case TypeId::kNumberTypeComplex:
-      return py::cast(
-        std::complex<double>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))});
+      return py::cast(std::complex<double>{TensorItem<std::complex<float>>(tensor)});
     case TypeId::kNumberTypeComplex128:
-      return py::cast(
-        std::complex<long double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))});
+      return py::cast(std::complex<long double>{TensorItem<std::complex<double>>(tensor)});
     default:
       MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
       break;
@@ -651,6 +693,33 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
   }
   return AsNumpy(*tensor_for_copy);
+}
+
+py::array TensorPybind::NumpyNonBlocking(const Tensor &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  const auto &device_address = tensor.device_address();
+  if (device_address == nullptr) {
+    MS_LOG(EXCEPTION) << "Tensor " << tensor.ToString() << " is uninitialized. "
+                      << "Maybe you need to call Tensor.init_data first.";
+  }
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(EXCEPTION) << "Only support convert CPU Tensor to Numpy array, but got Tensor on "
+                      << device::GetDeviceNameByType(device_address->GetDeviceType());
+  }
+  py::object owner = py::cast(device_address);
+  if (device_address->has_data()) {
+    const auto &data = device_address->data();
+    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
+    if (raw_data != nullptr) {
+      return raw_data->py_array(owner);
+    }
+  }
+  // Create numpy array by buffer protocol.
+  auto info = GetPyBufferInfo(tensor);
+  py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
+                         ? py::detail::npy_format_descriptor<bfloat16>::dtype()
+                         : py::dtype(info);
+  return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
 py::array TensorPybind::AsNumpy(const Tensor &tensor) {
@@ -718,7 +787,7 @@ void TensorPybind::Load(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
   const auto &device_sync = tensor.device_address();
   if (device_sync == nullptr) {
-    MS_LOG(WARNING) << "Tensor without DeviceSync can not be loaded.";
+    MS_LOG(WARNING) << "Tensor has no DeviceAddress, can not be loaded.";
     return;
   }
   const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
@@ -756,7 +825,6 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     MS_LOG(EXCEPTION) << "set_device_address now only support Ascend backend!";
   }
-  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
   if (type_ptr == nullptr) {
     MS_LOG(EXCEPTION) << "Dtype to be set is nullptr.";
@@ -781,31 +849,13 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   auto device_sync_ = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_sync_);
   if (device_sync_->GetDeviceType() != device::DeviceType::kAscend) {
-    auto device_address =
-      std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice, device_id);
+    auto device_address = std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetData(data);
   }
-}
-
-std::shared_ptr<StorageBase> TensorPybind::GetStorage(const TensorPtr &tensor) {
-  runtime::Pipeline::Get().WaitAll();
-  auto device_sync = tensor->device_address();
-  device::DeviceAddressPtr device_address = nullptr;
-  if (device_sync != nullptr) {
-    device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-  } else {
-    return nullptr;
-  }
-  if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
-    MS_LOG(EXCEPTION) << "The current Storage does not yet support "
-                      << device::GetDeviceNameByType(device_address->GetDeviceType());
-  }
-  auto storage_base = std::make_shared<StorageBase>(device_address);
-  return storage_base;
 }
 
 uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {

@@ -138,17 +138,17 @@ def test_shard_with_in_strategy_4x1_sharding_propagation():
     Description: Test shard given (4, 1) tuple as in_strategy.
     Expectation: In strategy of the identity node is ((4, 1)).
     """
-    case_name = "test_reshard_sharding_propagation"
+    case_name = "test_shard_with_in_strategy_4x1_sharding_propagation"
     net, x, ir_graph_path = before_test(case_name)
     parallel_config = {"parallel_mode": "sharding_propagation"}
     compile_net(net, parallel_config, x, layout1, layout2)
 
     file = find_ir_file_path(ir_graph_path, "step_parallel_end")
 
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%36)"
     in_strategy1 = "in_strategy: ((4, 1))"
 
-    para2 = "PrimFunc_AShardIdentity(%10)"
+    para2 = "PrimFunc_AShardIdentity(%40)"
     in_strategy2 = "in_strategy: ((4, 1))"
 
     check_layout_config(para1, file, in_strategy1)
@@ -161,17 +161,17 @@ def test_shard_with_in_strategy_4x1_semi_auto():
     Description: Test shard given (4, 1) tuple as in_strategy.
     Expectation: In strategy of the identity node is ((4, 1)).
     """
-    case_name = "test_reshard_semi_auto"
+    case_name = "test_shard_with_in_strategy_4x1_semi_auto"
     net, x, ir_graph_path = before_test(case_name)
     parallel_config = {"parallel_mode": "semi_auto"}
     compile_net(net, parallel_config, x, layout1, layout2)
 
     file = find_ir_file_path(ir_graph_path, "step_parallel_end")
 
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%36)"
     in_strategy1 = "in_strategy: ((4, 1))"
 
-    para2 = "PrimFunc_AShardIdentity(%10)"
+    para2 = "PrimFunc_AShardIdentity(%40)"
     in_strategy2 = "in_strategy: ((4, 1))"
 
     check_layout_config(para1, file, in_strategy1)
@@ -184,9 +184,32 @@ def test_shard_with_in_strategy_4x1_recursive_programming():
     Description: 'search_mode' must be 'sharding_propagation' for 'Shard' when the 'parallel_mode' is 'auto_parallel'.
     Expectation: raise RuntimeError.
     """
-    case_name = "test_reshard_sharding_propagation"
+    case_name = "test_shard_with_in_strategy_4x1_recursive_programming"
     net, x, _ = before_test(case_name)
     parallel_config = {"parallel_mode": "recursive_programming"}
     with pytest.raises(RuntimeError) as e:
         compile_net(net, parallel_config, x, layout1, layout2)
     assert "'search_mode' must be 'sharding_propagation' for 'Shard'" in str(e.value)
+
+
+def test_shard_with_data_parallel():
+    """
+    Feature: shard in data_parallel mode
+    Description: test usage of shard nested shard
+    Expectation: compile success.
+    """
+    from mindspore.parallel.strategy import get_strategy_metadata, get_current_strategy_metadata, \
+        enable_save_strategy_online
+    ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
+    case_name = "test_shard_with_data_parallel"
+    net, x, _ = before_test(case_name)
+    parallel_config = None
+    enable_save_strategy_online()
+    compile_net(net, parallel_config, x, layout1, layout2)
+
+    # data parallel does not support save strategies
+    local_info = get_current_strategy_metadata(network=net)
+    assert local_info is None
+
+    global_layout = get_strategy_metadata(network=net)
+    assert global_layout is None

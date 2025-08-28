@@ -31,8 +31,5 @@ std::vector<TypeId> EqualExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                                 const InferInfoPtrList &input_infos) const {
   return {kNumberTypeBool};
 }
-
-REGISTER_SIMPLE_INFER(kNameEqualExt, EqualExtFuncImpl)
-
 }  // namespace ops
 }  // namespace mindspore

@@ -27,7 +27,6 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "infer/make_tuple.h"
-#include "utils/anf_utils.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"

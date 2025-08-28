@@ -73,9 +73,6 @@ class AdaptiveAvgPool2d(_AdaptiveAvgPoolNd):
     The output is of size :math:`H x W` , for any input size.
     The number of output features is equal to the number of input planes.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         output_size (Union(int, tuple[int])): the target output size of the image of the form :math:`H x W` .
             Can be a tuple :math:`(H, W)` or a single :math:`H` for square image :math:`H x H` .
@@ -129,7 +126,6 @@ class AdaptiveAvgPool3d(Cell):
 
     .. warning::
         For Ascend, it is only supported on Atlas A2 Training Series Products.
-        This is an experimental optimizer API that is subject to change or deletion.
 
     Args:
         output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(D, H, W)`,

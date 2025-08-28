@@ -49,6 +49,8 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
         self.GEN_OPS_DEF_HEADER_TEMPLATE = template.GEN_OPS_DEF_HEADER_TEMPLATE
         self.contiguous_template = Template(
             "convert_$arg_name = runtime::ValueConverter::ContiguousTensorValue($device_target, convert_$arg_name);\n")
+        self.PYBOOST_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_GRAD_FUNCTION_TEMPLATE
+        self.PYBOOST_VIEW_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_VIEW_GRAD_FUNCTION_TEMPLATE
 
     def generate(self, work_path, op_protos):
         """
@@ -85,7 +87,8 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
             for op_arg in op_proto.op_args:
                 call_arg = 'convert_' + op_arg.arg_name
                 call_args_str.append(call_arg)
-            pyboost_func_str += template.PYBOOST_GRAD_FUNCTION_TEMPLATE.replace(
+            pyboost_grad_function_template = self._get_pyboost_grad_function_template(op_proto)
+            pyboost_func_str += pyboost_grad_function_template.replace(
                 func_name=op_pyboost_func_name,
                 op_name=op_name_str,
                 op_args=op_args_str,
@@ -107,6 +110,11 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
         save_path = os.path.join(work_path, K.PYBOOST_GRAD_FUNC_GEN_PATH)
         file_name = "pyboost_grad_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
+
+    def _get_pyboost_grad_function_template(self, op_proto: OpProto):
+        if op_proto.op_view:
+            return self.PYBOOST_VIEW_GRAD_FUNCTION_TEMPLATE
+        return self.PYBOOST_GRAD_FUNCTION_TEMPLATE
 
     def _convert_value_type(self, op_proto: OpProto) -> str:
         """

@@ -20,9 +20,9 @@
 #include <unordered_set>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -106,8 +106,8 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
 
     std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
     std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
-    std::vector<device::DeviceAddressPtr> input_device_addresses;
-    std::vector<device::DeviceAddressPtr> output_device_addresses;
+    std::vector<KernelTensorPtr> input_kts;
+    std::vector<KernelTensorPtr> output_kts;
     auto device_context = kernel_actor->device_contexts()[kIndex0];
     MS_EXCEPTION_IF_NULL(device_context);
     auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
@@ -120,9 +120,12 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
                                                      memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());
-      device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id);
+      if (device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id)) {
+        static std::string name = "Alloc memory";
+        kernel_tensor->IncreaseNewRefCount(name);
+      }
       input_kernel_tensor->set_device_ptr(new_device_tensor->GetMutablePtr());
-      (void)input_device_addresses.emplace_back(new_device_tensor);
+      (void)input_kts.emplace_back(kernel_tensor);
     }
     for (const auto &output_kernel_tensor : output_kernel_tensors) {
       MS_EXCEPTION_IF_NULL(output_kernel_tensor);
@@ -131,22 +134,29 @@ void PreLaunchComm::Launch(std::vector<LaunchCommNode> &launch_hccl_nodes, Sorte
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForPreLaunchComm",
                                                      memory::mem_pool::MemType::kOther, new_device_tensor->GetSize(),
                                                      new_device_tensor.get());
-      device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id);
+      if (device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), stream_id)) {
+        static std::string name = "Alloc memory";
+        kernel_tensor->IncreaseNewRefCount(name);
+      }
       output_kernel_tensor->set_device_ptr(new_device_tensor->GetMutablePtr());
-      (void)output_device_addresses.emplace_back(new_device_tensor);
+      (void)output_kts.emplace_back(kernel_tensor);
     }
     MS_LOG(DEBUG) << "Pre build hccl kernel " << kernel->fullname_with_scope();
     (void)kernel_mod->Launch(input_kernel_tensors, hccl_kernel_launch_info.workspace_kernel_tensors_,
                              output_kernel_tensors, hccl_kernel_launch_info.stream_);
     for (size_t i = 0; i < input_kernel_tensors.size(); i++) {
       auto kernel_tensor = input_kernel_tensors[i];
-      auto device_address = input_device_addresses[i];
+      auto kt = input_kts[i];
+      MS_EXCEPTION_IF_NULL(kt);
+      auto device_address = kt->device_address();
       device_context->device_res_manager_->FreeMemory(device_address.get());
       kernel_tensor->set_device_ptr(nullptr);
     }
     for (size_t i = 0; i < output_kernel_tensors.size(); i++) {
       auto kernel_tensor = output_kernel_tensors[i];
-      auto device_address = output_device_addresses[i];
+      auto kt = output_kts[i];
+      MS_EXCEPTION_IF_NULL(kt);
+      auto device_address = kt->device_address();
       device_context->device_res_manager_->FreeMemory(device_address.get());
       kernel_tensor->set_device_ptr(nullptr);
     }

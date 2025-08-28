@@ -20,21 +20,21 @@
 #include <exception>
 #include <iomanip>
 #include <functional>
+#include <type_traits>
 #include <utility>
 #include <algorithm>
 #include <map>
 #include "mindapi/base/type_id.h"
-#include "abstract/utils.h"
 #include "abstract/abstract_value.h"
 #include "base/complex_storage.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "utils/ordered_set.h"
 #include "utils/system/env.h"
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/stream_guard.h"
 #include "base/float16.h"
 #include "ir/dtype/type_id.h"
@@ -126,7 +126,7 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   return *this;
 }
 
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_address)
+Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceAddressPtr device_address)
     : MetaTensor(data_type, shape), id_(MakeId()), device_sync_(std::move(device_address)) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape)
@@ -318,16 +318,10 @@ std::string Tensor::ToStringRepr() const {
   return buf.str();
 }
 
-const DeviceSyncPtr &Tensor::device_address() const { return device_sync_; }
+const DeviceAddressPtr &Tensor::device_address() const { return device_sync_; }
 
-void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count) {
+void Tensor::set_device_address(const DeviceAddressPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
-  // To support the old and new runtime coexistence, the output of old runtime may be the input of new runtime, so the
-  // device address cannot be released through ref count and set max ref count in this scenario.
-  if (need_update_ref_count && (device_sync_ != nullptr)) {
-    device_sync_->set_original_ref_count(SIZE_MAX);
-    device_sync_->ResetRefCount();
-  }
 }
 
 TensorStorageInfoPtr Tensor::storage_info() const {
@@ -381,12 +375,10 @@ void Tensor::ExecuteLazyTask() const {
   }
 }
 
-DeviceSyncPtr Tensor::CallContiguousCallback() const {
-  DeviceSyncPtr contiguous_device_address = nullptr;
+DeviceAddressPtr Tensor::CallContiguousCallback() const {
+  DeviceAddressPtr contiguous_device_address = nullptr;
   if (contiguous_callback_ != nullptr && storage_info() != nullptr) {
     contiguous_device_address = contiguous_callback_(device_address());
-    contiguous_device_address->set_original_ref_count(SIZE_MAX);
-    contiguous_device_address->ResetRefCount();
   }
   return contiguous_device_address;
 }
@@ -426,7 +418,7 @@ void *Tensor::data_c() const {
 
 TensorPtr Tensor::cpu() const {
   ExecuteLazyTask();
-  DeviceSyncPtr device_address;
+  DeviceAddressPtr device_address;
   auto contiguous_address = CallContiguousCallback();
   if (contiguous_address != nullptr) {
     device_address = contiguous_address;
@@ -486,7 +478,7 @@ void Tensor::SetDeviceInfo(const std::string &format, const TypePtr &data_type, 
   set_device_info(info);
 }
 
-void Tensor::data_sync_directly(const DeviceSync *const device_sync, bool need_wait) const {}
+void Tensor::data_sync_directly(const DeviceAddress *const device_sync, bool need_wait) const {}
 
 bool Tensor::Offload(const std::string &file_path) {
   if (file_path.empty()) {

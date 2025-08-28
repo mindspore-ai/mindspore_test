@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

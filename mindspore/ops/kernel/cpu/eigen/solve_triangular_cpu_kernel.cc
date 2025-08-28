@@ -21,7 +21,6 @@
 #include <utility>
 #include <memory>
 #include <map>
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

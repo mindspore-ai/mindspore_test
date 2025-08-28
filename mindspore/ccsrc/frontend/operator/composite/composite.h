@@ -25,6 +25,7 @@
 #include <map>
 #include <set>
 #include <memory>
+
 #include "utils/hash_map.h"
 #include "frontend/operator/composite/zip_operation.h"
 #include "frontend/operator/composite/list_operation.h"
@@ -35,7 +36,6 @@
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "utils/misc.h"
 #include "utils/any.h"
-#include "ir/dtype.h"
 #include "ir/meta_func_graph.h"
 
 namespace mindspore {

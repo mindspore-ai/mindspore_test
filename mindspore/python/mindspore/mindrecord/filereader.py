@@ -18,10 +18,10 @@ This module is to read data from MindRecord.
 import platform
 from mindspore import log as logger
 
-from .shardreader import ShardReader
-from .shardheader import ShardHeader
-from .shardutils import populate_data
-from .shardutils import check_parameter
+from .core.shardreader import ShardReader
+from .core.shardheader import ShardHeader
+from .core.shardutils import populate_data
+from .core.shardutils import check_parameter
 from .common.exceptions import ParamTypeError
 from .config import _get_enc_key, _get_dec_mode, decrypt
 

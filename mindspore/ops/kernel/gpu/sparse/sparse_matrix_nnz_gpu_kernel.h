@@ -26,7 +26,6 @@
 #include <utility>
 #include <vector>
 
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/sparse_matrix_nnz.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_matrix_nnz_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"

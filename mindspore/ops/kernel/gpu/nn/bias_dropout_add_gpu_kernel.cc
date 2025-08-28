@@ -21,7 +21,6 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "abstract/utils.h"
 #include "infer/cxx_api/bias_dropout_add_fusion.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/bias_dropout_add_impl.cuh"
 

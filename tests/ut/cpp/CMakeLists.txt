@@ -77,7 +77,7 @@ file(GLOB_RECURSE UT_PYNATIVE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./pynati
 file(GLOB_RECURSE UT_OLD_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./device/*.cc ./kernel/*.cc
         ./pre_activate/common/*.cc  ./session/*.cc ./runtime/device/move_to_test.cc
         ./transform/*.cc ./vm/*.cc ./runtime/core/*.cc ./runtime/device/gsm/*.cc)
-file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/core/*.cc
+file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/graph_scheduler/*.cc
         ./runtime/pipeline/*.cc ./plugin/device/ascend/hal/hardware/*.cc)
 file(GLOB_RECURSE UT_GRAPH_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./graph_kernel/*.cc)
 
@@ -90,8 +90,7 @@ endif()
 file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ./backend/graph_optimizer_test_framework.cc ./symbol_engine/*.cc)
 # plugin/device/cpu/hal/test_ms_collective_topo.cc will also open 127.0.0.1:8090
-file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc
-        ./plugin/device/ascend/hal/hardware/ascend_watch_dog_thread_test.cc)
+file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc)
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
@@ -101,10 +100,9 @@ file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./com
 
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-            ./distributed/persistent/*.cc
-            ./distributed/rpc/tcp/*.cc
-            ./distributed/cluster/*.cc
-            ./distributed/cluster/topology/*.cc)
+            ./cluster/persistent/*.cc
+            ./cluster/rpc/tcp/*.cc
+            ./cluster/topology/*.cc)
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
 
@@ -147,12 +145,11 @@ if(Python3_FOUND)
 endif()
 
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_res_manager.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.cc"
-        "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/ms_collective_topo.cc"
+        "../../../mindspore/ccsrc/cluster/topology/*.cc"
+        "../../../mindspore/ccsrc/cluster/rpc/tcp/*.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/cpu_res_manager.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/mem_manager/cpu_memory_pool.cc"
+        "../../../mindspore/ccsrc/plugin/cpu/res_manager/collective/ms_collective_topo.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
         "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
@@ -193,7 +190,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_auto_monad.cc"
-        "${ASCEND_PLUGIN_PATH}/res_manager/collective/hccl_watch_dog_thread.cc"
+        "${ASCEND_PLUGIN_PATH}/res_manager/error_manager/collective_comm_monitor.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/ascend_res_manager.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/executor/ge_memory_manager.cc"
@@ -203,20 +200,16 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/backend_common_unify_mindir.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/common/gllo_utils.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/deal_ref_output.cc"
-        "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/insert_cast.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/insert_identity.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/set_fracz_group_attr.cc"
-        "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/utils.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/pass/*.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ascend_pass_optimization.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/get_value_helper.cc"
-        "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/adam_weight_decay_fission.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/batch_norm_grad_infer_fission.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/bn_grad_split.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/bn_split.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/cdist_fission.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/seed_adapter.cc"
-        "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fission/tensor_scatter_fission.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/adaptive_max_pool2d_fusion.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnorm_to_bninfer.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/ir_fusion/batchnormgrad_to_bninfergrad.cc"
@@ -243,6 +236,8 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_mod.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_build.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/cluster_context.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/actor_route_table_proxy.cc")
 
 # list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 #         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")

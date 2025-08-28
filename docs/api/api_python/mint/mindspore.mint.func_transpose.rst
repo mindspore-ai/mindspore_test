@@ -5,9 +5,6 @@ mindspore.mint.transpose
 
     交换Tensor的两个维度。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。
         - **dim0** (int) - 第一个维度。

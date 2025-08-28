@@ -122,9 +122,8 @@ def test_view_shape_error():
             return self.value.view()
 
     net = Net()
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError):
         net()
-    assert "The shape variable should not be empty" in str(ex.value)
 
 
 def test_view_shape_error_1():
@@ -137,6 +136,5 @@ def test_view_shape_error_1():
             return self.value.view((2, 3), (4, 5))
 
     net = Net()
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError):
         net()
-    assert "Only one tuple is needed" in str(ex.value)

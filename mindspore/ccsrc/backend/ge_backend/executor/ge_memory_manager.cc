@@ -16,7 +16,7 @@
 
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include <algorithm>
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {

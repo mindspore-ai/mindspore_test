@@ -29,7 +29,6 @@
 #include <functional>
 
 #include "base/base.h"
-#include "ir/dtype.h"
 #include "ir/dtype/number.h"
 #include "utils/hashing.h"
 #include "base/bfloat16.h"

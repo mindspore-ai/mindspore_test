@@ -25,7 +25,7 @@
 #include <unordered_set>
 #include <utility>
 #include "ir/device_type.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "ir/tensor.h"
@@ -153,12 +153,12 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  virtual bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                         bool keep_src) const {
+  virtual bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
+                         size_t stream_id, bool keep_src) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
@@ -222,7 +222,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id) const = 0;
+                                               uint32_t stream_id) const = 0;
 
   // Create a stream with assigning a stream id, the assigned stream id will be written to the parameter '*stream_id'.
   virtual bool CreateStream(size_t *stream_id) const {
@@ -405,7 +405,9 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
   // Clean tdt channel
   virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
   // Detect stress.
-  virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+  virtual int StressDetect(const std::string &detect_type) const {
+    MS_LOG(EXCEPTION) << "Stress detection is not supported.";
+  }
 
   virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                  const device::DeviceAddressPtrList &input_addr_list,

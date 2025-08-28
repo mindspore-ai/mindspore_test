@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 #include <vector>
 #include <unordered_map>
 #include "mindspore/ops/op_def/other_ops.h"
-#include "utils/hash_set.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/costmodel_context.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/status.h"

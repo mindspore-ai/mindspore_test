@@ -21,7 +21,6 @@
 #include <algorithm>
 #include <set>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lp_norm_impl.cuh"

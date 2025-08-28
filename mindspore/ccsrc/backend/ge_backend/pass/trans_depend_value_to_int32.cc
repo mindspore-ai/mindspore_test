@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore::opt {
 namespace {

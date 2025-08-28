@@ -11,9 +11,6 @@ mindspore.mint.nn.functional.pixel_shuffle
 
     关于pixel_shuffle算法详细介绍，请参考 `Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network <https://arxiv.org/abs/1609.05158>`_ 。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - Tensor，shape为 :math:`(*, C \times r^2, H, W)` 。 `input` 的维度需要大于2，并且倒数第三维length可以被 `upscale_factor` 的平方整除。
         - **upscale_factor** (int) - 打乱输入Tensor的因子，是正整数。 `upscale_factor` 是上面提到的 :math:`r` 。

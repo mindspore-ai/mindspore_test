@@ -26,7 +26,6 @@
 #include "backend/common/pass/convert_tuple_output_to_maketuple.h"
 #include "backend/common/pass/convert_const_input_to_tensor_input.h"
 #include "backend/common/pass/convert_tuple_input_to_dynamic_input.h"
-#include "backend/common/pass/convert_const_scalar_to_tensor.h"
 #include "backend/common/pass/convert_attr_to_unify_mindir.h"
 #include "backend/common/pass/optimize_updatestate.h"
 #include "backend/common/pass/conv_transpose_to_conv_bp.h"

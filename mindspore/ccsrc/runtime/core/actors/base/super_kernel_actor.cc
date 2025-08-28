@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #include "runtime/core/actors/base/super_kernel_actor.h"
 #include <set>
 #include <algorithm>
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -29,14 +29,15 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
-#include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
+#include "utils/trace_base.h"
 #include "op_def/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
+#include "tools/error_handler/error_config.h"
 
 namespace mindspore {
 namespace runtime {
@@ -282,10 +283,10 @@ void SuperKernelActor::Init() {
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      if (device_address->is_ptr_persisted() || graph_->is_dynamic_shape()) {
+      if (kernel_tensor->is_ptr_persisted() || graph_->is_dynamic_shape()) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Actor:" << GetAID() << " skip alloc memory for device address:" << device_address
-          << " is persist:" << device_address->is_ptr_persisted() << " is dynamic shape:" << graph_->is_dynamic_shape()
+          << " is persist:" << kernel_tensor->is_ptr_persisted() << " is dynamic shape:" << graph_->is_dynamic_shape()
           << " output node:" << output_node->DebugString();
         continue;
       }
@@ -410,7 +411,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
       }
 
       if (!enable_kbk_sub_graph_execute_ || ActorDispatcher::enable_use_trace_memory()) {
-        if (input_data->data_->device_address()->new_ref_count() != SIZE_MAX) {
+        if (input_data->data_->new_ref_count() != SIZE_MAX) {
           (void)memory_free_list.emplace_back(input_data->data_);
         }
 
@@ -517,12 +518,6 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context) {
   MemoryTraceManager::GetInstance().PickMemoryTrackInfoForGraph(graph_->graph_id());
   if (!ActorDispatcher::enable_static_shape()) {
-    if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && already_allocate_trace_memory_) {
-      MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-      GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
-      FreeTraceMemory();
-    }
-
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, GetAID().Name());
 
     const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &all_kernel_block_info =
@@ -719,9 +714,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       // Maybe allocate memory failed, early stop to run graph.
       return false;
     }
-    if (!SyncAllStreamForDeviceAddress(dest_device_address->GetDeviceType() == device::DeviceType::kCPU
-                                         ? src_device_address
-                                         : dest_device_address) ||
+    if (!SyncAllStreamForDeviceAddress(dest_device_address, src_device_address) ||
         !SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
                     << ", output index: " << output_index << ", dest device address: " << dest_device_address
@@ -750,7 +743,7 @@ void SuperKernelActor::UpdateOutputAddress(
     KernelTensorPtr real_input = kernel_actor->input_kernel_tensors_[kernel_input_index];
     MS_EXCEPTION_IF_NULL(real_input);
     const std::vector<size_t> &actor_output_indices = pair.second;
-    real_input->device_address()->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
+    real_input->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase ref count to:" << real_input->new_ref_count() << " increase size:" << actor_output_indices.size() - 1
       << " for kernel tensor:" << real_input->ToString() << " in actor:" << GetAID();
@@ -778,21 +771,49 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
       << ", kernel tensor info: " << kernel_tensor->ToString()
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
-    kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
-    if (is_first_user) {
-      if (ActorDispatcher::enable_use_trace_memory()) {
-        if (kernel_actor->input_kernel_tensors_[kernel_input_index]->new_ref_count() != SIZE_MAX) {
-          std::lock_guard<SpinLock> locker(spin_lock);
-          memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[kernel_input_index]);
-          MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-            << "Add memory free list for trace kernel tensor:"
-            << kernel_actor->input_kernel_tensors_[kernel_input_index]->ToString() << " in actor:" << GetAID();
-        }
+    auto device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    const auto storage_info = device_tensor->GetTensorStorageInfo();
+    if (storage_info && IsNonContinuousInputValid()) {
+      if (is_first_user) {
+        HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
       }
+      if (!kernel_actor->ConvertInputContiguousForSingleKernelTensor(context, kernel_tensor, kernel_input_index)) {
+        kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
+      }
+    } else {
+      kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
+      if (is_first_user) {
+        HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
+      }
+      kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
+                                          context, enable_infer_boost_);
     }
+  }
+}
 
-    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
-                                        context, enable_infer_boost_);
+bool SuperKernelActor::IsNonContinuousInputValid() {
+  if (enable_infer_boost_) {
+    if (enable_capture_graph_) {
+      return true;
+    }
+    if (enable_trace_memory_) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+void SuperKernelActor::HandleFirstUserInputMemoryFree(const KernelRunnerPtr &kernel_actor, size_t kernel_input_index) {
+  if (ActorDispatcher::enable_use_trace_memory()) {
+    if (kernel_actor->input_kernel_tensors_[kernel_input_index]->new_ref_count() != SIZE_MAX) {
+      std::lock_guard<SpinLock> locker(spin_lock);
+      memory_free_lists_.back().emplace_back(kernel_actor->input_kernel_tensors_[kernel_input_index]);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Add memory free list for trace kernel tensor:"
+        << kernel_actor->input_kernel_tensors_[kernel_input_index]->ToString() << " in actor:" << GetAID();
+    }
   }
 }
 
@@ -802,9 +823,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
     for (const auto &iter : input_params_no_user_) {
       auto kernel_tensor = FetchParameter(iter.second, GetAID());
       MS_EXCEPTION_IF_NULL(kernel_tensor);
-      auto device_tensor = kernel_tensor->device_address().get();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      if (device_tensor->new_ref_count() != SIZE_MAX) {
+      if (kernel_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
@@ -879,7 +898,8 @@ void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context
     kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
     // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
     kernel_actor->InferAndUpdateDeviceTensorSize(context);
-  } else if (LLMManager::GetInstance().need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+  } else if (LLMManager::GetInstance().need_force_resize(kernel_actor->kernel_mod_->kernel_name()) ||
+             kernel_actor->is_dynamic_value_) {
     kernel_actor->ResizeKernelMod();
     kernel_actor->FetchOutputDeviceTensor(context);
     kernel_actor->FetchWorkspaceDeviceTensor();
@@ -891,6 +911,77 @@ void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context
   } else {
     KernelAsyncLaunchActor::GetInstance()->LaunchKernelV2(context, kernel_actor);
   }
+}
+
+bool SuperKernelActor::LaunchKernelForCaptureGraph(OpContext<KernelTensor> *const context,
+                                                   const KernelRunnerPtr &kernel_actor, size_t index, bool is_graph) {
+  kernel_actor->UpdateRefDeviceAddress(context, true);
+  kernel_actor->UpdateGraphOutputRefCount(context);
+  kernel_actor->UpdateMemoryFreeList(context);
+  auto kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_mod = kernel_actor->kernel_mod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  // Update output device address for Parameter as graph output case.
+  const auto &input_to_output_iter = kernel_input_to_actor_output_indices_.find(kernel.get());
+  if (input_to_output_iter != kernel_input_to_actor_output_indices_.end()) {
+    const auto &kernel_inputs_to_actor_outputs = input_to_output_iter->second;
+    UpdateOutputAddress(kernel_inputs_to_actor_outputs, kernel_actor);
+  }
+  if (LLMManager::GetInstance().need_force_resize(kernel_mod->kernel_name())) {
+    kernel_actor->ResizeKernelMod();
+    kernel_actor->FetchOutputDeviceTensor(context);
+    kernel_actor->FetchWorkspaceDeviceTensor();
+  }
+
+  if (!kernel_actor->memory_alloc_list_.empty()) {
+    kernel_actor->SendMemoryAllocReqHP(context, GraphCaptureManager::GetInstance().GetStreamId());
+  }
+
+  if (!kernel_actor->LaunchKernelHP(context, IsSkippedLaunch(kernel, nullptr))) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
+                                             kernel->fullname_with_scope()
+                                        << trace::DumpSourceLines(kernel);
+  }
+
+  if (kernel_actor->is_dynamic_shape() && kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+    kernel_mod->UpdateOutputShapeAndSize(kernel_actor->input_launch_tensors_, kernel_actor->output_launch_tensors_);
+  }
+  // In capture mode, If launch single op, record the related infos, include the device_ptr, shape and size.
+  if (!is_graph) {
+    GraphCaptureManager::GetInstance().RecodeInfoForSingleOp(kernel_actor, index);
+  }
+
+  if (kernel_actor->new_memory_free_list_.size() > 0 && kernel_actor->copy_output_kernel_tensors_.empty()) {
+    kernel_actor->SendMemoryFreeReq(context);
+  }
+  return true;
+}
+
+bool SuperKernelActor::LaunchKernelForReplayGraph(OpContext<KernelTensor> *const context,
+                                                  const KernelRunnerPtr &kernel_actor, size_t index) {
+  auto kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_mod = kernel_actor->kernel_mod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+
+  // In replay mode, before launch single op, recover all the infos.
+  GraphCaptureManager::GetInstance().RecoverInfoForSingleOp(kernel_actor, index);
+
+  kernel_actor->ResizeKernelMod();
+  kernel_actor->FetchOutputDeviceTensor(context);
+  kernel_actor->FetchWorkspaceDeviceTensor();
+
+  if (!kernel_actor->LaunchKernelHP(context, IsSkippedLaunch(kernel, nullptr))) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
+                                             kernel->fullname_with_scope()
+                                        << trace::DumpSourceLines(kernel);
+  }
+
+  if (kernel_actor->is_dynamic_shape() && kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+    MS_LOG(EXCEPTION) << "Replay single op meet shape changed!";
+  }
+  return true;
 }
 
 bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
@@ -952,7 +1043,7 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
     }
   } else if (ActorDispatcher::enable_async_launch_kernel() && !sync_run) {
     auto &llm_manager = LLMManager::GetInstance();
-    if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
+    if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_) {
       kernel_actor->ResizeKernelMod();
       kernel_actor->FetchOutputDeviceTensor(context);
       kernel_actor->FetchWorkspaceDeviceTensor();
@@ -1120,7 +1211,8 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
     }
 
     auto &llm_manager = LLMManager::GetInstance();
-    bool need_force_resize = llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name());
+    bool need_force_resize =
+      llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_;
     if (need_force_resize) {
       kernel_actor->ResizeKernelMod();
       kernel_actor->FetchOutputDeviceTensor(nullptr);
@@ -1228,9 +1320,8 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   }
 
   MS_LOG(DEBUG) << "Run graph: " << graph_->ToString()
-                << ", enable capture graph global: " << GraphCaptureManager::GetInstance().GetEnableGraphCapture()
-                << ", enable trace memory: " << enable_trace_memory_
-                << ", already allocate trace memory: " << already_allocate_trace_memory_;
+                << ", enable capture graph global: " << GraphCaptureManager::GetInstance().GetEnableGraphCapture();
+
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
                   << ", phase: " << graph_phase_;
@@ -1240,11 +1331,6 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
       MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->ToString();
       return;
     }
-  } else if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && enable_trace_memory_ &&
-             already_allocate_trace_memory_) {
-    MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-    GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
-    FreeTraceMemory();
   }
 
   device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -1254,16 +1340,17 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   } else {
     bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
                               ActorDispatcher::enable_static_shape();
-    bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph() &&
-                             ActorDispatcher::enable_static_shape();
+    bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph();
+    GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
+
     if (!need_capture_graph && !need_replay_graph) {
       if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels by execution order failed for graph: " << graph_->ToString();
       }
     } else if (need_capture_graph) {
-      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, 0, kernel_actors_,
-                                                                          &memory_free_lists_);
+      GraphCaptureManager::GetInstance().Initialize(device_contexts_[0]);
+      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, kernel_actors_, &memory_free_lists_);
       if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(
             context, kernel_actors_, this, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
@@ -1284,6 +1371,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
         MS_LOG(EXCEPTION) << "check parameter error when replay capture graph, it's seems like the parameter device "
                              "address has changed.";
       }
+      GraphCaptureManager::GetInstance().ResetInfoForSingleOp(kernel_actors_);
     }
   }
 
@@ -1443,12 +1531,15 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   MS_EXCEPTION_IF_NULL(copy_device_tensor);
   copy_kernel_tensor->set_user_data(node_kernel_tensor->user_data());
   copy_kernel_tensor->set_need_sync_user_data(node_kernel_tensor->need_sync_user_data());
-  if ((copy_device_tensor->GetPtr() == nullptr) &&
-      (!device_context->device_res_manager_->AllocateMemory(copy_device_tensor.get()))) {
-    MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
-                  << ") memory isn't enough and alloc failed, kernel name: " << GetAID()
-                  << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
-    return true;
+  if (copy_device_tensor->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(copy_device_tensor.get())) {
+      MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
+                    << ") memory isn't enough and alloc failed, kernel name: " << GetAID()
+                    << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
+      return true;
+    }
+    static std::string name = "Alloc memory";
+    copy_kernel_tensor->IncreaseNewRefCount(name);
   }
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Alloc memory for device tensor:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
@@ -1504,7 +1595,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     DeviceTensorPtr copy_device_tensor = nullptr;
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
-    if (!node_device_tensor->is_ptr_persisted()) {
+    if (!node_device_kernel_tensor->is_ptr_persisted()) {
       if (CopyInputDataPersistedHandle(device_context, input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }
@@ -1661,15 +1752,19 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
     }
 
     enable_capture_graph_ = GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
-                            (graph_phase_.find("increment") != std::string::npos) && enable_trace_memory_ &&
-                            graph_->is_dynamic_shape();
+                            (graph_phase_.find("increment") != std::string::npos) && graph_->is_dynamic_shape();
     if (enable_capture_graph_) {
       auto ret =
         GraphCaptureManager::GetInstance().FindSupportCaptureKernelPositions(kernel_actors_, device_contexts_[0]);
       if (ret) {
+        size_t stream_id = kIndex3;
+        device_contexts_[0]->device_res_manager_->CreateStream(&stream_id);
+        MS_LOG(WARNING) << "Create new stream for capture graph, stream id: " << stream_id;
+        GraphCaptureManager::GetInstance().SetStreamId(stream_id);
         MS_LOG(INFO) << "Enable acl graph for graph: " << graph_->ToString() << ", phase: " << graph_phase_;
-        GraphCaptureManager::GetInstance().Initialize(device_contexts_[0]);
       } else {
+        MS_LOG(INFO) << "Can't find any available op to capture in graph: " << graph_->ToString()
+                     << ", phase: " << graph_phase_;
         GraphCaptureManager::GetInstance().SetEnableGraphCapture(false);
         enable_capture_graph_ = false;
       }
@@ -1724,7 +1819,7 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     }
     auto &llm_manager = LLMManager::GetInstance();
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
-    bool need_force_resize = llm_manager.need_force_resize(kernel_name);
+    bool need_force_resize = llm_manager.need_force_resize(kernel_name) || kernel_actor->is_dynamic_value_;
     if (need_force_resize || common::AnfAlgo::IsCommunicationFusionOp(kernel_name)) {
       serial_launch_kernels_.push_back(kernel_actor);
       continue;
@@ -2051,6 +2146,8 @@ bool SuperKernelActor::IsHighPerfModeAtComp() {
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex1),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex2),
     common::GetEnv("NPU_ASD_ENABLE") == std::to_string(kIndex3),
+    tools::TftConfig::IsEnableStepTRE(),
+    tools::TftConfig::GetInstance() != nullptr && tools::TftConfig::GetInstance()->IsEnableSaveHcclOpStatus(),
   };
   // When this function returns false, it means performance is not cirtical in this context.
   // Otherwise runtime will launch kernels with high performance.

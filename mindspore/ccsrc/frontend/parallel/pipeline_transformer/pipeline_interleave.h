@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+
 #include "ir/value.h"
-#include "ir/graph_utils.h"
 #include "base/base.h"
 #include "utils/hash_map.h"
 #include "frontend/parallel/step_parallel.h"
@@ -72,6 +72,7 @@ class PipelineInterleave {
   void FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeSet *strided_slice_nodes) const;
   size_t MicroSize(const AnfNodeIndexSet &input_node_users) const;
   size_t GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const;
+  mindspore::HashMap<int64_t, std::vector<int64_t>> BuildStageRanksMap() const;
   FuncGraphManagerPtr manager_;
   NodeUsersMap node_users_map_;
   int64_t stage_;
@@ -88,6 +89,7 @@ class PipelineInterleave {
   int64_t global_rank_ = 0;
   int64_t per_stage_rank_num_ = 0;
   bool is_vpp_ = false;
+  int64_t param_stage_ = -1;
 };
 
 class PipelinePostProcess {

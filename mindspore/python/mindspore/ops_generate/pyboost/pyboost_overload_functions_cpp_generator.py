@@ -161,13 +161,14 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
-            func_call_body_list.append(self.PYBOOST_MINT_CLASS_DEF.replace(
+            func_call_body = self.PYBOOST_MINT_CLASS_DEF.replace(
                 class_name=class_name,
                 func_name=func_name,
                 device_dispatcher=device_dispatcher_str,
                 signatures=signature_str,
                 max_args=max_size,
-                ut_body=ut_body))
+                ut_body=ut_body)
+            func_call_body_list.append(func_call_body)
             cpp_class_name_list.append(class_name)
         return func_call_body_list, cpp_class_name_list
 

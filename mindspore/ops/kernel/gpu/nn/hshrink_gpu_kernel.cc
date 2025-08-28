@@ -17,7 +17,6 @@
 #include "kernel/gpu/nn/hshrink_gpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/hshrink_impl.cuh"
 

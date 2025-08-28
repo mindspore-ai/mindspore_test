@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 
 #include "frontend/operator/composite/unpack_call.h"
+
 #include <algorithm>
 #include <utility>
+#include <vector>
 
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -25,7 +27,6 @@
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
-#include "frontend/optimizer/opt.h"
 #include "include/common/pybind_api/api_register.h"
 #include "frontend/jit/ps/fallback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

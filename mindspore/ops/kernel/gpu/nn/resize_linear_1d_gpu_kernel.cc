@@ -15,7 +15,6 @@
  */
 
 #include "kernel/gpu/nn/resize_linear_1d_gpu_kernel.h"
-#include "abstract/utils.h"
 #include "mindapi/base/types.h"
 
 namespace {

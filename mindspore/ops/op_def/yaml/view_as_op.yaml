@@ -10,8 +10,9 @@ view_as:
       dtype: tensor
   class:
     name: ViewAs
+  view: True
+  bprop_expander: False
   dispatch:
     enable: True
     Ascend: ViewAsAscend
-    CPU: None
     GPU: None

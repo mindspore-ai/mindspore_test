@@ -18,7 +18,6 @@
 #include <functional>
 #include <string>
 #include <algorithm>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {

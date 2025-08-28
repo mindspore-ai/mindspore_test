@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,10 @@
 #include <vector>
 #include <map>
 #include <memory>
+
 #include "utils/hash_map.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
-
 #include "graph/tensor.h"
 #include "ge/ge_api.h"
 

@@ -33,5 +33,4 @@ conv3d_ext:
   dispatch:
     enable: True
     Ascend: Conv3DExtAscend
-    CPU: None
     GPU: None

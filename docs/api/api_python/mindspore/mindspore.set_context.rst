@@ -43,7 +43,7 @@ mindspore.set_context
           - **exception_dump** (str): 开启Ascend算子异常dump。默认 ``"2"``。此参数已废弃，请使用接口 :func:`mindspore.device_context.ascend.op_debug.aclinit_config` 代替。
           - **host_scheduling_max_threshold** (int): 控制根图是否使用动态shape调度的最大阈值，默认 ``0`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.jit` 相关参数代替。
           - **parallel_speed_up_json_path** (Union[str, None]): 并行加速配置文件，此参数将在后续版本中废弃，请使用接口 :func:`mindspore.parallel.auto_parallel.AutoParallel.transformer_opt` 代替。
-          - **hccl_watchdog** (bool): 开启一个线程监控集合通信故障。默认 ``True`` 。
+          - **hccl_watchdog** (bool): 开启一个线程监控集合通信故障。默认 ``True`` 。此参数将在后续版本中废弃，请使用环境变量 `MS_ENABLE_THM="{HCCL_WATCHDOG:1}"` 控制该功能开启。
         - **gpu_config** (dict) - 设置GPU硬件平台专用参数，默认不设置。
 
           - **conv_fprop_algo** (str): 指定cuDNN的卷积前向算法，默认 ``"normal"`` 。此参数将在后续版本中废弃，请使用接口 :func:`mindspore.device_context.gpu.op_tuning.conv_fprop_algo` 代替。

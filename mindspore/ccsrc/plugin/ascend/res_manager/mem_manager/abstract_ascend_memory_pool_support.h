@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "plugin/ascend/res_manager/visible.h"
 
 namespace mindspore {

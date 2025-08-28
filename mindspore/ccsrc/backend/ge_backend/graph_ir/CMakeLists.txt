@@ -31,11 +31,7 @@ if(ENABLE_D OR ENABLE_ACL)
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/compile_cache_context.cc")
 
         list(APPEND _TRANSFORM_SRC_LIST
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/format_utils.cc")
-        list(APPEND _TRANSFORM_SRC_LIST
                 "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_tensor.cc")
-        list(APPEND _TRANSFORM_SRC_LIST
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/device_address.cc")
         list(APPEND _TRANSFORM_SRC_LIST
             "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_build_info.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../minddata/dataset/core/types.cc")

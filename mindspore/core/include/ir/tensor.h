@@ -27,16 +27,13 @@
 #include <utility>
 #include <algorithm>
 #include <iomanip>
-#include "ir/device_sync.h"
+#include "ir/device_address.h"
 #include "ir/meta_tensor.h"
 #include "ir/device_type.h"
 #include "utils/log_adapter.h"
 #include "base/bfloat16.h"
-#include "base/float8_e5m2.h"
-#include "base/hifloat8.h"
 #include "utils/os.h"
 #include "ir/meta_grad_data.h"
-#include "base/complex_storage.h"
 #include "ir/quantization_param.h"
 #include "ir/dtype/op_dtype.h"
 
@@ -67,6 +64,7 @@ enum TensorCompressionType {
 using ShapeValueDType = int64_t;
 using ShapeVector = std::vector<ShapeValueDType>;
 using ShapeArray = std::vector<ShapeVector>;
+class QuantizationParam;
 
 // Pinned memory register interface.
 class MS_CORE_API PinnedMemRegister {
@@ -96,6 +94,8 @@ namespace tensor {
 class Tensor;
 using TensorPtr = std::shared_ptr<Tensor>;
 using TensorPtrList = std::vector<std::shared_ptr<Tensor>>;
+using DeviceAddress = device::DeviceAddress;
+using DeviceAddressPtr = device::DeviceAddressPtr;
 
 struct Version {
  public:
@@ -176,7 +176,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] data_type [TypeId] The new tensor data type.
   Tensor(const Tensor &tensor, TypeId data_type);
 
-  Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr data);
+  Tensor(TypeId data_type, const ShapeVector &shape, DeviceAddressPtr data);
 
   /// \brief Create a lazy allocated tensor.
   ///
@@ -351,24 +351,24 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the device address.
   ///
   /// \return The device address.
-  const DeviceSyncPtr &device_address() const;
+  const DeviceAddressPtr &device_address() const;
 
   /// \brief Set the device address.
   ///
   /// \param[in] device_sync The input Device synchronization.
   /// \param[in] need_update_ref_count If need_update_ref_count is true, the device address cannot be released and
   /// reused, so the feature map should set false when set device address of tensor.
-  void set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count = true);
+  void set_device_address(const DeviceAddressPtr &device_sync, bool need_update_ref_count = true);
 
   /// \brief Set origin device address for implicit copy.
   ///
   /// \param[in] device_address Origin device address.
-  void set_implicit_copy_address(const DeviceSyncPtr &device_address) { implicit_copy_address_ = device_address; }
+  void set_implicit_copy_address(const DeviceAddressPtr &device_address) { implicit_copy_address_ = device_address; }
 
   /// \brief Get the device address for implicit copy.
   ///
   /// \return The device address.
-  const DeviceSyncPtr &implicit_copy_address() const { return implicit_copy_address_; }
+  const DeviceAddressPtr &implicit_copy_address() const { return implicit_copy_address_; }
 
   /// \brief Get the id of this Tensor.
   ///
@@ -383,12 +383,14 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Contiguous callback function to this Tensor
   ///
   /// \return The contiguous callback function
-  const std::function<DeviceSyncPtr(const DeviceSyncPtr &)> &contiguous_callback() { return contiguous_callback_; }
+  const std::function<DeviceAddressPtr(const DeviceAddressPtr &)> &contiguous_callback() {
+    return contiguous_callback_;
+  }
 
   /// \brief Set contiguous callback function to this Tensor
   ///
   /// \param[in] contiguous_callback The callback from backend when need to make tensor contiguous.
-  void set_contiguous_callback(const std::function<DeviceSyncPtr(const DeviceSyncPtr &)> &contiguous_callback) {
+  void set_contiguous_callback(const std::function<DeviceAddressPtr(const DeviceAddressPtr &)> &contiguous_callback) {
     contiguous_callback_ = contiguous_callback;
   }
 
@@ -498,12 +500,12 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   /// \brief Execute contiguous callback.
   ///
-  DeviceSyncPtr CallContiguousCallback() const;
+  DeviceAddressPtr CallContiguousCallback() const;
 
   /// \brief To synchronize data with the device without keeping device address, you need to wait for the data to be
   /// valid.
   ///
-  void data_sync_directly(const DeviceSync *const device_sync, bool need_wait = true) const;
+  void data_sync_directly(const DeviceAddress *const device_sync, bool need_wait = true) const;
 
   /// \brief Check if this Tensor is initialized.
   ///
@@ -676,7 +678,7 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   // function size 32
   inline static std::function<void(void)> lazy_callback_{nullptr};
-  std::function<DeviceSyncPtr(const DeviceSyncPtr &)> contiguous_callback_{nullptr};
+  std::function<DeviceAddressPtr(const DeviceAddressPtr &)> contiguous_callback_{nullptr};
   std::function<void(const Tensor *)> update_value_callback_{nullptr};
 
   // string size 32
@@ -686,8 +688,8 @@ class MS_CORE_API Tensor : public MetaTensor {
 
   // shared_ptr size 16
   Version version_{};
-  mutable DeviceSyncPtr device_sync_{nullptr};
-  mutable DeviceSyncPtr implicit_copy_address_{nullptr};
+  mutable DeviceAddressPtr device_sync_{nullptr};
+  mutable DeviceAddressPtr implicit_copy_address_{nullptr};
   AutoGradMetaInterfacePtr auto_grad_meta_data_{nullptr};
   TensorStorageInfoPtr storage_info_;
   // Tensor base shape which contain dynamic shape info.

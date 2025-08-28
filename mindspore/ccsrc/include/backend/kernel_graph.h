@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@
 #include <set>
 #include <stack>
 #include <atomic>
+
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
 #include "ir/device_type.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 
@@ -172,7 +172,6 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   CNodePtr NewCNodeWithInfos(const AnfNodePtrList &inputs, const CNodePtr &ori_cnode = nullptr);
   void CreateKernelInfoFromNewParameter(const CNodePtr &cnode) const;
   CNodePtr NewCNode(const CNodePtr &cnode);
-  void ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) const;
   ParameterPtr NewParameter(const ParameterPtr &parameter = nullptr);
   ParameterPtr NewParameter(const abstract::AbstractBasePtr &abstract);
   ValueNodePtr NewValueNode(const ValueNodePtr &value_node = nullptr) const;

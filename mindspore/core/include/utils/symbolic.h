@@ -24,7 +24,6 @@
 #include <utility>
 #include <string>
 
-#include "utils/hash_map.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"

@@ -31,7 +31,6 @@
 #include "mindspore/ops/op_def/sequence_op_name.h"
 #include "mindspore/ops/op_def/sparse_op_name.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "plugin/ascend/graph_optimizer/pass/mindir/reg_ascend_vm_op_adaptation_funcs.h"
 
 namespace mindspore::opt {
 #define REG_ASCEND_VM_OP_ADAPTATION_INFO(me_op_name) REG_OP_ADAPTATION_INFO(me_op_name, kAscendDevice, true)

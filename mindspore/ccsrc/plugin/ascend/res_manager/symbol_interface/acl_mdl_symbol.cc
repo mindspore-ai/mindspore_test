@@ -129,4 +129,57 @@ void LoadAclMdlApiSymbol(const std::string &ascend_path) {
 
   MS_LOG(INFO) << "Load acl mdl api success!";
 }
+
+void LoadSimulationAclMdlApi() {
+  ASSIGN_SIMU(aclmdlAddDatasetBuffer);
+  ASSIGN_SIMU(aclmdlCreateDataset);
+  ASSIGN_SIMU(aclmdlCreateDesc);
+  ASSIGN_SIMU(aclmdlDestroyDataset);
+  ASSIGN_SIMU(aclmdlDestroyDesc);
+  ASSIGN_SIMU(aclmdlExecute);
+  ASSIGN_SIMU(aclmdlFinalizeDump);
+  ASSIGN_SIMU(aclmdlGetCurOutputDims);
+  ASSIGN_SIMU(aclmdlGetDatasetBuffer);
+  ASSIGN_SIMU(aclmdlGetDatasetNumBuffers);
+  ASSIGN_SIMU(aclmdlGetDesc);
+  ASSIGN_SIMU(aclmdlGetInputDataType);
+  ASSIGN_SIMU(aclmdlGetInputDims);
+  ASSIGN_SIMU(aclmdlGetInputIndexByName);
+  ASSIGN_SIMU(aclmdlGetInputNameByIndex);
+  ASSIGN_SIMU(aclmdlGetInputSizeByIndex);
+  ASSIGN_SIMU(aclmdlGetNumInputs);
+  ASSIGN_SIMU(aclmdlGetNumOutputs);
+  ASSIGN_SIMU(aclmdlGetOutputDataType);
+  ASSIGN_SIMU(aclmdlGetOutputDims);
+  ASSIGN_SIMU(aclmdlGetOutputNameByIndex);
+  ASSIGN_SIMU(aclmdlGetOutputSizeByIndex);
+  ASSIGN_SIMU(aclmdlInitDump);
+  ASSIGN_SIMU(aclmdlLoadFromMem);
+  ASSIGN_SIMU(aclmdlSetDump);
+  ASSIGN_SIMU(aclmdlSetDynamicBatchSize);
+  ASSIGN_SIMU(aclmdlUnload);
+  ASSIGN_SIMU(aclmdlQuerySizeFromMem);
+  ASSIGN_SIMU(aclmdlBundleGetModelId);
+  ASSIGN_SIMU(aclmdlBundleLoadFromMem);
+  ASSIGN_SIMU(aclmdlBundleUnload);
+  ASSIGN_SIMU(aclmdlLoadFromMemWithMem);
+  ASSIGN_SIMU(aclmdlSetDatasetTensorDesc);
+  ASSIGN_SIMU(aclmdlGetInputFormat);
+  ASSIGN_SIMU(aclmdlGetDatasetTensorDesc);
+  ASSIGN_SIMU(aclmdlSetInputDynamicDims);
+  ASSIGN_SIMU(aclmdlGetOutputFormat);
+  ASSIGN_SIMU(aclmdlGetInputDimsV2);
+  ASSIGN_SIMU(aclmdlGetDynamicHW);
+  ASSIGN_SIMU(aclmdlGetInputDynamicDims);
+  ASSIGN_SIMU(aclmdlGetInputDynamicGearCount);
+  ASSIGN_SIMU(aclmdlGetDynamicBatch);
+  ASSIGN_SIMU(aclmdlSetDynamicHWSize);
+#if defined(__linux__) && defined(WITH_BACKEND)
+  ASSIGN_SIMU(aclmdlRICaptureBegin);
+  ASSIGN_SIMU(aclmdlRICaptureGetInfo);
+  ASSIGN_SIMU(aclmdlRICaptureEnd);
+  ASSIGN_SIMU(aclmdlRIExecuteAsync);
+  ASSIGN_SIMU(aclmdlRIDestroy);
+#endif
+}
 }  // namespace mindspore::device::ascend

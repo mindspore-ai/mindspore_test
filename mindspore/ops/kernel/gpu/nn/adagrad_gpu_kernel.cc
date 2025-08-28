@@ -16,7 +16,6 @@
 
 #include "kernel/gpu/nn/adagrad_gpu_kernel.h"
 #include "mindspore/ops/infer/apply_adagrad.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 

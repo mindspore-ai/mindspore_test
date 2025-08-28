@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_JIT_REMOVE_VALUE_NODE_DUP_H_
 
 #include <vector>
+
 #include "utils/hash_map.h"
 #include "base/base.h"
 #include "ir/manager.h"

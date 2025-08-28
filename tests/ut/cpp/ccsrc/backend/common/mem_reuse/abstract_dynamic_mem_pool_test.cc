@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "common/common_test.h"
-#include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/abstract_dynamic_mem_pool.h"
 
 namespace mindspore {
 namespace device {

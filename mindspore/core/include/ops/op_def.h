@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "ir/dtype/type_id.h"
+
 #include "ir/dtype/op_dtype.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 namespace mindspore::ops {

@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -36,7 +37,7 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -272,13 +273,14 @@ bool IsControlFlowActor(KernelTransformType actor_type);
 
 size_t GetDefragMemoryStepFreq();
 
-void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = false);
+void UpdateRefCount(const KernelTensorPtr &kernel_tensor, bool is_max_ref_count = false);
 // Update the reference count of device tensor by the output index of node.
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor);
 // The memory free for the pynative bprop graph which is managed by the value node.
-void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor);
+void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes,
+                           const KernelTensorPtr &kernel_tensor);
 
 KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const KernelGraphPtr &graph,
                                              const std::vector<AnfNodePtr> &host_parameters = {},

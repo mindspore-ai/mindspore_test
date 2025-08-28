@@ -33,7 +33,7 @@
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "utils/distributed_meta.h"
 #include "utils/log_adapter.h"
 #include "utils/info.h"
@@ -53,11 +53,11 @@
 #include "tools/profiler/profiler.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "tools/profiler/profiling.h"
-#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
+#include "tools/error_handler/exit_handler.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "frontend/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -229,7 +229,7 @@ void ClearResPart3() {
 void ClearSingleton() {
   MS_LOG(INFO) << "Start clear singleton...";
   profiler::Profiler::Clear();
-  debug::tft::TFTWaitSem::GetInstance().Clear();
+  tools::TFTWaitSem::GetInstance().Clear();
 #ifdef ENABLE_AKG
   kernel::GraphKernelBuildManager::Instance().Clear();
 #endif

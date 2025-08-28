@@ -17,24 +17,30 @@
 #include "view/broadcast_to_strides_calc.h"
 #include <memory>
 #include <string>
+#include <utility>
+#include "utils/core_op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore::ops {
-bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &input_x,
-                      const std::vector<int64_t> &x_shape) {
-  CheckAndConvertUtils::Check("x shape", SizeToLong(x_shape.size()), kLessEqual, SizeToLong(input_x.size()),
-                              "BroadcastTo");
-  auto outer_dim_offset = input_x.size() - x_shape.size();
+namespace {
+inline static bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &proposed_shape,
+                                    const std::vector<int64_t> &x_shape) {
+  MS_CHECK_VALUE(
+    x_shape.size() <= proposed_shape.size(),
+    "For primitive [BroadcastTo]: input's rank should be less equal to the number of proposed_shape, but got " +
+      std::to_string(x_shape.size()) + " and " + std::to_string(proposed_shape.size()));
+
+  auto outer_dim_offset = proposed_shape.size() - x_shape.size();
   bool flag = true;
-  if (input_x.end() == find(input_x.begin(), input_x.end(), -1)) {
+  if (proposed_shape.end() == find(proposed_shape.begin(), proposed_shape.end(), -1)) {
     flag = false;
   } else {
     flag = true;
   }
   if (flag) {
-    for (size_t i = 0; i < input_x.size(); i++) {
-      if (input_x[i] == -1) {
+    for (size_t i = 0; i < proposed_shape.size(); i++) {
+      if (proposed_shape[i] == -1) {
         if (i < outer_dim_offset) {
           MS_EXCEPTION(ValueError) << "For '" << prim_name
                                    << "', -1 in init shape is in an incompatible "
@@ -47,45 +53,48 @@ bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &
     }
   }
   for (size_t i = 0; i < x_shape.size(); i++) {
-    if (input_x[i + outer_dim_offset] == -1) {
+    if (proposed_shape[i + outer_dim_offset] == -1) {
       continue;
     }
-    if (input_x[i + outer_dim_offset] != x_shape[i] && x_shape[i] != 1) {
+    if (proposed_shape[i + outer_dim_offset] != x_shape[i] && x_shape[i] != 1) {
       MS_EXCEPTION(ValueError)
         << "For '" << prim_name
         << "', in order to broadcast, each dimension pair must be equal or input dimension is 1 or target "
            "dimension is -1. But got x_shape: "
-        << ShapeVectorToStr(x_shape) << ", target shape: " << ShapeVectorToStr(input_x) << ".";
+        << ShapeVectorToStr(x_shape) << ", target shape: " << ShapeVectorToStr(proposed_shape) << ".";
       return false;
     }
   }
   return true;
 }
+}  // namespace
 
-TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor_info,
-                                               const std::vector<int64_t> &input_x) {
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
-  auto old_storage_offset = old_tensor_info->old_offset;
-  if (!BroadcastToCheck(kBroadcastToOpName, input_x, old_shape)) {
+TensorStorageInfoPtrList BroadCastToStrideCalc(const std::vector<int64_t> &old_shape,
+                                               const std::vector<int64_t> &old_strides,
+                                               const TensorStorageInfoPtr &storage_info,
+                                               const std::vector<int64_t> &proposed_shape) {
+  auto [ori_shape, ori_strides, old_storage_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
+  if (MS_UNLIKELY(!BroadcastToCheck(kBroadcastToOpName, proposed_shape, old_shape))) {
     return {};
   }
-  int64_t ndim = SizeToInt(input_x.size());
+  int64_t ndim = SizeToInt(proposed_shape.size());
   int64_t tensor_ndim = SizeToInt(old_shape.size());
   std::vector<int64_t> new_strides(ndim);
-  if (tensor_ndim == 0) {
+  if (MS_UNLIKELY(tensor_ndim == 0)) {
+    bool is_contiguous = IsContiguous(proposed_shape, new_strides);
     auto new_storage_info =
-      std::make_shared<TensorStorageInfo>(input_x, new_strides, old_storage_offset, old_tensor_info->ori_shape,
-                                          old_tensor_info->ori_strides, IsContiguous(input_x, new_strides));
+      std::make_shared<TensorStorageInfo>(proposed_shape, std::move(new_strides), old_storage_offset,
+                                          std::move(ori_shape), std::move(ori_strides), is_contiguous);
     return {new_storage_info};
   }
+
   std::vector<int64_t> new_shape(ndim);
   for (int64_t i = ndim - 1; i >= 0; --i) {
     int64_t offset = ndim - 1 - i;
     int64_t dim = tensor_ndim - 1 - offset;
     auto size = (dim >= 0) ? old_shape[dim] : 1;
     auto stride = (dim >= 0) ? old_strides[dim] : new_shape[i + 1] * new_strides[i + 1];
-    auto target_size = input_x[i];
+    auto target_size = proposed_shape[i];
     if (target_size == -1) {
       target_size = size;
     }
@@ -96,33 +105,26 @@ TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor
     new_shape[i] = size;
     new_strides[i] = stride;
   }
+  bool is_contiguous = IsContiguous(new_shape, new_strides);
   auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), old_storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::TensorPtr input_tensor,
-                                            const std::vector<int64_t> &input_x) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return BroadCastToStrideCalc(old_tensor_info, input_x);
-}
-
-TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const PrimitivePtr &prim,
-                                                  const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                   const std::vector<int64_t> &shape) {
-  return BroadCastToProcess(prim, input_tensor, shape);
+  return BroadCastToStrideCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), shape);
 }
 
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
-
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_x = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  return BroadCastToProcess(prim, input_tensor, input_x);
+  auto proposed_shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
+  return BroadcastToBasicTypeCalc(input_tensor, proposed_shape);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(BroadcastTo, BroadcastToCalc);

@@ -32,6 +32,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+using TensorPtr = tensor::TensorPtr;
 struct MemUceInfo {
   int device_id = 0;
   std::vector<aclrtMemUceInfo> info;
@@ -46,6 +47,7 @@ class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
 
   void *Alloc(size_t size, uint32_t stream_id) override;
   bool Free(void *address_ptr) override;
+  bool IsPinned() override;
 
  private:
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
@@ -75,12 +77,12 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       TypeId type_id, const std::string &device_name,
                                        uint32_t stream_id) const override;
 
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                 size_t stream_id) const override;
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+  bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
                  bool keep_src) const override;
   bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const override;
   bool CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const override;
@@ -162,8 +164,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::vector<uint64_t> GetOptimizerTimestamps() override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
-  bool AllocateForHete(DeviceAddress *const &address, mindspore::HeterogeneousInfoPtr hete_info) const;
-  void FreeForHete(mindspore::HeterogeneousInfoPtr hete_info) const;
 
   // Override interface for multi stream event control.
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
@@ -191,17 +191,17 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
   std::shared_ptr<AddressAllocator> pin_mem_allocator() const override { return pin_mem_allocator_; }
 
  private:
-  bool SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const;
-  bool SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                         size_t stream_id) const;
-  bool SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                           size_t stream_id) const;
-  bool AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                          size_t stream_id) const;
-  bool AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
-                         bool keep_src) const;
-  bool AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
+                         size_t stream_id, bool keep_src) const;
+  bool AsyncDeviceToDevice(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                            size_t stream_id) const;
   bool CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                      size_t stream_id) const;
@@ -211,17 +211,13 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public DeviceResManager {
                                      size_t stream_id) const;
   bool CopyHostToDeviceForDiffType(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                                    size_t stream_id) const;
-  bool SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                            size_t stream_id) const;
-  bool CopyDeviceToHostForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
-  bool CopyHostToDeviceForHeteInfo(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
-                                   size_t stream_id) const;
+  bool SyncDeviceToDeviceWithDiffFormatType(const DeviceAddressPtr &dst_device_sync,
+                                            const DeviceAddressPtr &src_device_sync, size_t stream_id) const;
   bool CopyHostToDevice(const DeviceAddress *dst_device_address, const DeviceAddress *src_device_address,
                         const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-                        const DeviceSyncPtr src_device_sync = nullptr) const;
+                        const DeviceAddressPtr src_device_sync = nullptr) const;
   bool BaseCopy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind, size_t stream_id,
-                const DeviceSyncPtr src_device_sync = nullptr) const;
+                const DeviceAddressPtr src_device_sync = nullptr) const;
 
  private:
   MemUceInfo mem_uce_info_;

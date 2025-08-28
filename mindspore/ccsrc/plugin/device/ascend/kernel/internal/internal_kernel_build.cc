@@ -23,7 +23,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
+#include "kernel/ascend/kernel_plugin.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/common/utils/anfalgo.h"
 

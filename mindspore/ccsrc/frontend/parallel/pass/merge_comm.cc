@@ -28,6 +28,7 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/step_parallel.h"
 #include "utils/log_adapter.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

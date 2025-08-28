@@ -18,7 +18,7 @@
 #include "minddata/dataset/api/python/pybind_register.h"
 #include "minddata/dataset/core/global_context.h"
 
-#include "mindspore/ccsrc/minddata/dataset/kernels/data/compose_op.h"
+#include "mindspore/ccsrc/minddata/dataset/general/kernels/compose_op.h"
 #include "minddata/dataset/kernels/py_func_op.h"
 
 namespace mindspore {

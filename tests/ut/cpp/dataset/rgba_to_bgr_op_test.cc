@@ -17,7 +17,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/image/rgba_to_bgr_op.h"
+#include "minddata/dataset/vision/kernels/rgba_to_bgr_op.h"
 #include "minddata/dataset/core/cv_tensor.h"
 #include "utils/log_adapter.h"
 

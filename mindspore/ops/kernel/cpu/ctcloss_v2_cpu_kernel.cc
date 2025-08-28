@@ -21,7 +21,6 @@
 #include <limits>
 #include <algorithm>
 #include "mindspore/ops/infer/ctc_loss_v2.h"
-#include "abstract/utils.h"
 namespace mindspore {
 namespace kernel {
 namespace ctcloss_v2_cpu {

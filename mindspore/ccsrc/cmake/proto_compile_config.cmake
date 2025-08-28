@@ -13,9 +13,9 @@ file(GLOB_RECURSE COMM_PROTO_IN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ps/core/pr
 ms_protobuf_generate(COMM_PROTO_SRCS COMM_PROTO_HDRS ${COMM_PROTO_IN})
 list(APPEND MINDSPORE_PROTO_LIST ${COMM_PROTO_SRCS})
 
-include_directories("${CMAKE_BINARY_DIR}/distributed/cluster/topology")
+include_directories("${CMAKE_BINARY_DIR}/cluster/topology")
 file(GLOB_RECURSE DISTRIBUTED_CLUSTER_TOPOLOGY RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "distributed/cluster/topology/protocol/*.proto")
+        "cluster/topology/protocol/*.proto")
 ms_protobuf_generate(DISTRIBUTED_CLUSTER_TOPOLOGY_SRCS DISTRIBUTED_CLUSTER_TOPOLOGY_HDRS
         ${DISTRIBUTED_CLUSTER_TOPOLOGY})
 list(APPEND MINDSPORE_PROTO_LIST ${DISTRIBUTED_CLUSTER_TOPOLOGY_SRCS})

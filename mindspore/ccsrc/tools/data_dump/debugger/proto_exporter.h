@@ -23,7 +23,6 @@
 #include "include/common/debug/common.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/debugger/proto_exporter.h"
-#include "ir/graph_utils.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "proto/debug_graph.pb.h"

@@ -24,8 +24,8 @@ namespace mindspore {
 namespace runtime {
 namespace test {
 namespace {
-DeviceSyncPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
-                                    DeviceAddressDeleter &&deleter) {
+DeviceAddressPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
+                                       DeviceAddressDeleter &&deleter) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -34,8 +34,8 @@ DeviceSyncPtr MakeTestDeviceAddress(TypeId data_type, const ShapeVector &shape, 
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", device_id, 0);
-  device_address->SetPointerRefCountDeleter(std::move(deleter));
+    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
+  device_address->SetDevicePointerDeleter(std::move(deleter));
   return device_address;
 }
 
@@ -155,12 +155,12 @@ void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_
 }
 }  // namespace
 
-bool TestResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool TestResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                               size_t stream_id) const {
   return AsyncCopy(dst_device_sync, src_device_sync, stream_id, false);
 }
 
-bool TestResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+bool TestResManager::AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                                size_t stream_id, bool) const {
   const auto &dst_device_address = dynamic_cast<const TestDeviceAddress *>(dst_device_sync.get());
   const auto &src_device_address = dynamic_cast<const TestDeviceAddress *>(src_device_sync.get());
@@ -215,7 +215,8 @@ bool TestResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Devic
 }
 
 MS_REGISTER_HAL_COPY_FUNC(
-  DeviceType::kCPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+  DeviceType::kCPU,
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -226,7 +227,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     return host_context->device_res_manager_->SyncCopy(dst_device_sync, src_device_sync, stream_id);
   }),
-  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool) {
+  ([](const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id, bool) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);

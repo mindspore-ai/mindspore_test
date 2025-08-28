@@ -21,10 +21,9 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "frontend/optimizer/opt.h"
-#include "frontend/parallel/status.h"
+
 #include "ir/anf.h"
-#include "frontend/parallel/auto_parallel/rec_core/rec_parse_graph.h"
+#include "ir/manager.h"
 
 namespace mindspore {
 namespace parallel {

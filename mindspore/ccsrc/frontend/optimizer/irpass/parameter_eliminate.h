@@ -20,7 +20,6 @@
 #include <utility>
 #include <memory>
 
-#include "utils/hash_set.h"
 #include "utils/trace_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

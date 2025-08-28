@@ -1,4 +1,4 @@
-add_subdirectory(ir)
+add_subdirectory(transform)
 add_subdirectory(kernels)
 
 file(GLOB _CURRENT_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")

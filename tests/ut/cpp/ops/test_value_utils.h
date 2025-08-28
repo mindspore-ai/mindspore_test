@@ -21,7 +21,6 @@
 #include <vector>
 #include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
-#include "ir/dtype/type.h"
 #include "mindapi/base/format.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

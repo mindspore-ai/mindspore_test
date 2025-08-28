@@ -17,20 +17,18 @@
 #include "view/transpose_strides_calc.h"
 #include <vector>
 #include <memory>
+#include <utility>
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
+TensorStorageInfoPtrList TransposeStridesCalc(const std::vector<int64_t> &cur_shape,
+                                              const std::vector<int64_t> &cur_strides,
+                                              const TensorStorageInfoPtr &cur_storage_info,
+                                              const std::vector<int64_t> &dims) {
+  auto [ori_shape, ori_strides, storage_offset] = GetOriShapeStridesAndOffset(cur_shape, cur_strides, cur_storage_info);
 
-TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_info,
-                                              const std::vector<int64_t> &input_perm) {
-  const auto &old_shape = old_tensor_info->old_shape;
-  const auto &old_strides = old_tensor_info->old_strides;
-  const auto &old_storage_offset = old_tensor_info->old_offset;
-
-  auto &dims = input_perm;
-  const auto ndim = old_shape.size();
-
+  const auto ndim = cur_shape.size();
   ShapeVector new_shape(ndim);
   std::vector<int64_t> new_strides(ndim);
   std::vector<bool> seen_dims(ndim, false);
@@ -42,28 +40,26 @@ TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_
         "For 'Transpose' perms should all be unique dim, but", wrap_dim, " is not unique!");
     }
     seen_dims[wrap_dim] = true;
-    new_shape[i] = old_shape[wrap_dim];
-    new_strides[i] = old_strides[wrap_dim];
+    new_shape[i] = cur_shape[wrap_dim];
+    new_strides[i] = cur_strides[wrap_dim];
   }
 
   bool is_contiguous = IsContiguous(new_shape, new_strides);
   auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, is_contiguous);
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList TransposeBasicTypeCalc(const PrimitivePtr &prim,
-                                                const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList TransposeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                 const std::vector<int64_t> &dims) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &x_shape = input_tensor->shape();
-  auto x_rank = x_shape.size();
+  const auto &x_rank = x_shape.size();
   MS_CHECK_VALUE(dims.size() == x_rank, CheckAndConvertUtils::FormatCommMsg(
-                                          "For '", prim->name(), "', size of perm should equal to rank of x, but got ",
+                                          "For 'Transpose', size of perm should equal to rank of x, but got ",
                                           dims.size(), " and ", x_rank, "!"));
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return TransposeStridesCalc(old_tensor_info, dims);
+  return TransposeStridesCalc(x_shape, input_tensor->stride(), input_tensor->storage_info(), dims);
 }
 
 TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -72,7 +68,8 @@ TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vect
   }
   auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);
-  return TransposeBasicTypeCalc(prim, tensor, dims);
+  auto new_storage_info = TransposeBasicTypeCalc(tensor, dims);
+  return {new_storage_info};
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Transpose, TransposeCalc);

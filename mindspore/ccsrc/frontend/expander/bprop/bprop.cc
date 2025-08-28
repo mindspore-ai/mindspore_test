@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@
 #include <queue>
 #include <unordered_map>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/expander/core/infer.h"
+#include "mindspore/ccsrc/include/utils/expander/infer.h"
 #include "include/backend/kernel_graph.h"
-#include "utils/anf_utils.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "frontend/expander/utils.h"
+#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace expander {

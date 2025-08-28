@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import mindspore as ms
-from mindspore import nn, Tensor, ops, Parameter
-from mindspore.common import ParameterTuple
+from mindspore import nn, Tensor, ops, Parameter, jit
+from mindspore.common import ParameterTuple, mutable
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
 import mindspore.context as context
@@ -375,3 +375,103 @@ def test_cpu_any_type_empty_tuple():
     a, b = fact.single_net_train(Simplenet, x, y, True)
     c, d = fact.vmap_net_train(Simplenet, x, y, True)
     print(a, b, c, d)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_pyobj_to_tensor():
+    """
+    Feature: tensor data.
+    Description: empty value sequence.
+    Expectation: Not throw exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.idx = mutable([2, 1, 0])
+
+        def construct(self, x):
+            out = x[self.idx]
+            return out
+
+    class _Grad(nn.Cell):
+        def __init__(self, grad, network, wrt_params=False, real_inputs_count=None):
+            super().__init__()
+            self.network = network
+            self.grad = grad
+            self.sens_param = self.grad.sens_param
+            self.wrt_params = wrt_params
+            self.real_inputs_count = real_inputs_count
+
+        def construct(self, *inputs):
+            if self.real_inputs_count is None or self.sens_param is False:
+                if self.wrt_params:
+                    return self.grad(self.network, self.params)(*inputs)
+                return self.grad(self.network)(*inputs)
+
+            real_inputs = inputs[:self.real_inputs_count]
+            sense_param_inputs = inputs[self.real_inputs_count:]
+            if self.wrt_params:
+                return self.grad(self.network, self.params)(*real_inputs, sense_param_inputs)
+            return self.grad(self.network)(*real_inputs, sense_param_inputs)
+
+    class GradOfAllInputs(_Grad):
+        def __init__(self, network, sens_param=True, real_inputs_count=None):
+            super().__init__(grad=ops.GradOperation(get_all=True, sens_param=sens_param),
+                             network=network, real_inputs_count=real_inputs_count)
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    import numpy as np
+    x = Tensor(np.random.rand(3, 3, 2), dtype=mstype.float32)
+    d = Tensor(None, dtype=mstype.float32)
+    net = Net()
+    net.set_inputs(d)
+    out = net(x)
+    grad_net = GradOfAllInputs(net, False)
+    grad_out = grad_net(x)
+    print(out)
+    assert grad_out[0].asnumpy()[0][0][0] == 1
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_pyexecute_launch_d2h():
+    """
+    Feature: tensor data.
+    Description: empty value sequence.
+    Expectation: Not throw exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        def construct(self, y):
+            return ops.matmul(self.x, y)
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, grad_position=0):
+            super().__init__()
+            self.grad = ops.grad
+            self.grad_net = self.grad(net, grad_position=grad_position)
+
+        def construct(self, *x):
+            return self.grad_net(*x)
+
+    @jit
+    def modify_func():
+        obj.x = Tensor([[-1, 0], [0, -1]], ms.float32)
+        obj.x += 1
+        return obj.x
+
+    import numpy as np
+    obj = Net()
+    ret1 = modify_func()
+    y = Tensor([[1, 2, 3], [4, 5, 6]], ms.float32)
+    ms_out = obj(y)
+    ms_grad = GradNet(obj)(y)
+    ret2 = modify_func()
+
+    assert np.allclose(np.array([[0, 1], [1, 0]]), ret1.asnumpy(), 0, 0)
+    assert np.allclose(np.array([[4, 5, 6], [1, 2, 3]]), ms_out.asnumpy(), 0, 0)
+    assert np.allclose(np.ones([2, 3]), ms_grad.asnumpy(), 0, 0)
+    assert np.allclose(np.array([[0, 1], [1, 0]]), obj.x.asnumpy(), 0, 0)
+    assert np.allclose(ret2.asnumpy(), ret1.asnumpy(), 0, 0)

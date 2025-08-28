@@ -15,8 +15,8 @@
  */
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
-#include "minddata/dataset/kernels/image/resize_op.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
+#include "minddata/dataset/vision/kernels/resize_op.h"
 #include "utils/log_adapter.h"
 
 using namespace mindspore::dataset;

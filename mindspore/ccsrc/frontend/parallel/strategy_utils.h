@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_STRATEGY_UTILS_H_
 
 #include <string>
-#include "base/base.h"
+
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 

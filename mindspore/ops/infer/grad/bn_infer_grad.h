@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 #ifndef MINDSPORE_CORE_OPS_BN_INFER_GRAD_H_
 #define MINDSPORE_CORE_OPS_BN_INFER_GRAD_H_
+
 #include <memory>
 #include <string>
-#include "mindapi/base/format.h"
+
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
 

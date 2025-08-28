@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/command.h"
 #include "minddata/dataset/util/sig_handler.h"

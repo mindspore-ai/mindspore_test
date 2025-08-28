@@ -24,7 +24,6 @@
 #include <thread>
 #include "ps/core/communicator/message_handler.h"
 #include "utils/log_adapter.h"
-#include "ps/core/communicator/http_message_handler.h"
 #include "ps/core/communicator/tcp_server.h"
 #include "ps/core/node_info.h"
 #include "include/backend/distributed/ps/constants.h"
@@ -35,11 +34,10 @@ namespace core {
 enum class TcpUserCommand { kPush, kPull };
 
 // CommunicatorBase is used to receive request and send response for server.
-// It is the base class of HttpCommunicator and TcpCommunicator.
+// It is the base class of TcpCommunicator.
 class CommunicatorBase {
  public:
   using MessageCallback = std::function<void(std::shared_ptr<MessageHandler>)>;
-  using HttpMsgCallback = std::function<void(std::shared_ptr<HttpMessageHandler>)>;
   using OnNodeEventCallback = std::function<void(const ClusterEvent &)>;
   using TcpMsgCallback = std::function<void(std::shared_ptr<core::TcpConnection> conn,
                                             std::shared_ptr<core::MessageMeta> meta, const void *data, size_t size)>;

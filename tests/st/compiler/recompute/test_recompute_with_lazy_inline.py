@@ -123,7 +123,7 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs1():
     Description: Each block is set recompute by both the primitive and cell recompute api and return a tuple.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs1", 67)
+    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs1", 65)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -133,7 +133,7 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs2():
     Description: Each block is set recompute by both the primitive and cell recompute api and return a tuple.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs2", 67)
+    run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs2", 65)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

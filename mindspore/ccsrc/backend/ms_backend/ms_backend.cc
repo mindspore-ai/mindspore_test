@@ -53,7 +53,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pipeline/task/run_graph_task.h"
@@ -67,22 +67,16 @@ MSBackend::~MSBackend() {
   runtime::Pipeline::Get().frontend_stage()->Wait();
 }
 
-runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId graph_id,
-                                                             const GraphCompilerInfo &graph_compiler_info,
-                                                             const VectorRef &args, bool no_multi_graph) {
+void MSBackend::ProcessBeforeRunActor(const GraphCompilerInfo &graph_compiler_info, const VectorRef &args) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
   CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
   auto graphs = graph_compiler_info.graphs_;
-  auto device_contexts = graph_compiler_info.device_contexts_;
 
   for (size_t i = 0; i < graphs.size(); ++i) {
     const auto &graph = graphs[i];
     MS_EXCEPTION_IF_NULL(graph);
-    graph->set_flag(kFlagPyNativeRunInGraph, true);
-    graph->set_flag(kFlagIsPynativeBpropGraph,
-                    graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph));
     if (graph->is_any_type_input()) {
       continue;
     }
@@ -96,41 +90,7 @@ runtime::ActorSet *MSBackend::RealCompileGraphBeforeRunActor(BackendGraphId grap
         }
       }
     }
-
-    if (no_multi_graph) {
-      MS_LOG(INFO) << "Replace parameter format";
-      // The input tensors of heterogeneous graphs or control flow graphs are null.
-      // Need to get tensor after ParseControlNodes.
-      pynative::GraphAdapter::ReplaceGraphParameterProperties(graph, input_tensors.at(i), device_contexts[i]);
-    }
-    (void)graph_compiler_->CompileGraphImpl(graph, device_contexts[i]);
-    pynative::GraphAdapter::RemoveUnusedValueNodes(graph);
-    graph->CacheGraphOutputToFrontNodeWithIndex({graph->output()}, graph->front_outputs());
-    // Clear front outputs after the outputs is cached.
-    graph->set_front_outputs({});
-    AnfAlgo::UpdateGraphValidRefPair(graph);
-    pynative::GraphAdapter::SensTensorToDevice(graph, device_contexts[i]);
   }
-
-  ParseControlNodes(graph_compiler_info);
-  UpdateGraphCompilerInfo(graph_compiler_info);
-  auto actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
-  MS_EXCEPTION_IF_NULL(actor_set);
-  constexpr auto kKernelActorThreshold = 5000;
-  // Turning off multithreading may cause stack overflow in control flow scenarios.
-  if (no_multi_graph && actor_set->kernel_actors_.size() < kKernelActorThreshold &&
-      graph_compiler_info.root_func_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
-    // Multithreading can cause spikes in memory usage and performance fluctuations.
-    actor_set->is_multi_thread_execution_ = false;
-    MS_LOG(INFO) << "Actor Multithreading is turned off!";
-  }
-  runtime::GraphScheduler::GetInstance().Schedule(actor_set);
-
-  for (size_t i = 0; i < graphs.size(); ++i) {
-    pynative::GraphAdapter::GenerateRefCountForBpropValueNode(graphs[i]);
-    graph_adapter_.GenerateBackoffValueNodeOwners(graphs[i]);
-  }
-  return actor_set;
 }
 
 void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info,
@@ -138,21 +98,12 @@ void MSBackend::RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInf
   MS_LOG(INFO) << "Status record: begin run actor: " << graph_id;
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   auto graphs = graph_compiler_info.graphs_;
-  auto &device_contexts = graph_compiler_info.device_contexts_;
-  if (device_contexts.size() != graphs.size()) {
-    MS_LOG(EXCEPTION) << "Graphs size " << graphs.size() << " is not equal to device_contexts size "
-                      << device_contexts.size();
-  }
 
   // KernelByKernel: The size of control_nodes is at least 1 since there is return node in the graph.
   // GraphMode: No control nodes.
   bool no_multi_graph = graph_compiler_info.control_nodes_.size() <= 1 && graphs.size() == 1;
+  ProcessBeforeRunActor(graph_compiler_info, args);
   auto actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
-  if (actor_set == nullptr) {
-    actor_set = RealCompileGraphBeforeRunActor(graph_id, graph_compiler_info, args, no_multi_graph);
-    // Clear the temp members at the end of graph building.
-    ClearGraphBuildMember();
-  }
   MS_EXCEPTION_IF_NULL(actor_set);
 
   if (graph_compiler_info.enable_graph_pipeline_) {

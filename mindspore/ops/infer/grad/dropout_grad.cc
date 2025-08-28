@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,11 @@
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"

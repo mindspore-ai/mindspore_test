@@ -17,11 +17,10 @@
 #include <cstdint>
 #include <algorithm>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "abstract/utils.h"
 #include "kernel/gpu/arrays/ones_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_v2_impl.cuh"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {

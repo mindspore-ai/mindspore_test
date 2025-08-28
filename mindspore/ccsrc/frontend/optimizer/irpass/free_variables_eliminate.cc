@@ -224,7 +224,7 @@ void MergeParameters(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &op
   auto manager = optimizer->manager();
   mindspore::HashMap<FuncGraphPtr, std::vector<bool>> func_need_reserved_flags;
   const auto fg_used_total = func_graph->func_graphs_used_total();
-  for (const auto fg : fg_used_total) {
+  for (const auto &fg : fg_used_total) {
     const auto &inner_params = fg->parameters();
     std::map<std::string, AnfNodePtr> ref_key_nodes = GetParameterMap(inner_params);
     auto [remove, need_reserved] = RemoveRedundantParams(fg, ref_key_nodes);

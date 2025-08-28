@@ -31,7 +31,7 @@
 #include "backend/common/pass/communication_op_fusion.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
@@ -59,16 +59,16 @@ class TestDeviceAddress : public DeviceAddress {
   TestDeviceAddress() : DeviceAddress() {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
       : DeviceAddress(ptr, size, device_name) {}
-  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
-                    uint32_t device_id)
-      : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
+  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
+      : DeviceAddress(ptr, size, format, type_id, device_name) {
+  }
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
   bool IsPtrValid() const {
-    return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
+    return GetDevicePtr() != nullptr;
   }
-  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
+  DeviceType GetDeviceType() const { return device_type_; }
 
   void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
 
@@ -111,40 +111,48 @@ class TestResManager : public device::DeviceResManager {
     if (address->GetMutablePtr() != nullptr) {
       address->set_ptr(nullptr);
     }
-    if (address->heterogeneous_info() != nullptr && address->heterogeneous_info()->host_ptr_ != nullptr) {
-      address->heterogeneous_info()->host_ptr_ = nullptr;
-    }
   }
   void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
   void FreeMemory(void *const ptr) const {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const {}
 
-  bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+  bool SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,
                 size_t stream_id) const override;
 
-  bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+  bool AsyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync, size_t stream_id,
                  bool) const override;
 
   DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const ShapeVector &shape) const {
-    return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU", 0);
+    return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU");
   }
 
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const {
-    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
+                                       TypeId type_id, const std::string &device_name, uint32_t stream_id) const {
+    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name);
   }
 
   DeviceAddressPtr CreateDeviceAddress() const {
     auto device_address = std::make_shared<TestDeviceAddress>();
     device_address->SetDeviceType(device::GetDeviceTypeByName(device_context_->device_context_key().device_name_));
-    device_address->set_device_id(device_context_->device_context_key().device_id_);
     return device_address;
   }
   bool LoadCollectiveCommLib() { return false; }
   device::CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
+
+  bool SyncStream(size_t stream_id) const override {
+    sync_stream_counts_[stream_id] += 1;
+    return true;
+  }
+
+  bool SyncAllStreams(bool sync_device = true) const override {
+    sync_all_stream_count_ += 1;
+    return true;
+  }
+
+  mutable std::map<size_t, size_t> sync_stream_counts_;
+  mutable size_t sync_all_stream_count_{0};
 };
 
 class TestKernelExecutor : public device::KernelExecutor {

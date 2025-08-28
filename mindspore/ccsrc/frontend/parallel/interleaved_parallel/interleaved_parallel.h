@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_INTERLEAVE_PARALLEL_INTERLEAVE_PARALLEL_H_
 
 #include <vector>
-#include "ir/primitive.h"
 #include "ir/anf.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 

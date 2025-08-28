@@ -56,6 +56,7 @@ class AutoGradMetaInterface {
   [[nodiscard]] virtual size_t output_index() const = 0;
   virtual void set_output_index(size_t output_index) = 0;
   virtual void Reset() = 0;
+  virtual bool is_view() const = 0;
   virtual ~AutoGradMetaInterface() = default;
 };
 using AutoGradMetaInterfacePtr = std::shared_ptr<AutoGradMetaInterface>;

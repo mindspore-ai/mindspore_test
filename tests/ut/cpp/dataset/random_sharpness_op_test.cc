@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "minddata/dataset/kernels/image/random_sharpness_op.h"
+#include "minddata/dataset/vision/kernels/random_sharpness_op.h"
 #include "common/common.h"
 #include "common/cvop_common.h"
 #include "utils/log_adapter.h"

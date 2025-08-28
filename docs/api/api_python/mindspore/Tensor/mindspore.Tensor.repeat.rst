@@ -16,9 +16,6 @@ mindspore.Tensor.repeat
         repeats_{i} & \text{if } input.{rank} \le i < n \\
         \end{cases}
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     .. note::
         如需对单个轴的每个元素单独指定重复次数，请参考 :func:`mindspore.Tensor.repeat_interleave` 。
 

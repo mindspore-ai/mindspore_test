@@ -18,7 +18,6 @@
 #include "atb/atb_infer.h"
 #include "tools/profiler/profiler.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "runtime/pynative/op_executor.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 
 namespace mindspore::kernel::pyboost {

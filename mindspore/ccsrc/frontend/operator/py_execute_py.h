@@ -37,7 +37,6 @@
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;

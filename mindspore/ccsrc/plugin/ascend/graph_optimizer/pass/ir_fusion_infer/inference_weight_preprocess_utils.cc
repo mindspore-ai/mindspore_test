@@ -23,6 +23,7 @@
 #include <algorithm>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 

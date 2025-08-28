@@ -22,6 +22,7 @@
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "ir/graph_utils.h"
 #include "tools/profiler/profiler.h"
 #include "include/common/utils/utils.h"
 #include "mindapi/base/type_id.h"
@@ -35,21 +36,24 @@
 #include "plugin/ascend/graph_optimizer/somas/acl_somas.h"
 #include "plugin/ascend/graph_optimizer/stream_assign/acl_stream_assign.h"
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
-#include "plugin/device/ascend/hal/special/parameter_replication.h"
+#include "plugin/ascend/res_manager/error_manager/param_restore.h"
+#include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
 #include "plugin/device/ascend/hal/hardware/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
+#include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
-#include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
+#include "kernel/ascend/kernel_packet/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #ifdef ENABLE_DVM
-#include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
+#include "kernel/ascend/dvm/dvm_kernel_build.h"
 #endif
 
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
@@ -62,7 +66,7 @@
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
-#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
+#include "kernel/ascend/atb/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
@@ -77,7 +81,6 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "tools/profiler/profiling.h"
-#include "utils/anf_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
@@ -192,6 +195,8 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
     } else if (kernel_type == KernelType::ATB_KERNEL) {
       kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
+    } else if (kernel_type == KernelType::CUSTOM_KERNEL) {
+      kernel_mod_ptr = kernel::CustomKernelBuild(kernel);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "The kernel: " << kernel->fullname_with_scope()
@@ -1001,33 +1006,6 @@ void FixExecutionOrderForInlineControlFlowGraph(const KernelGraphPtr &graph) {
   }
   graph->set_execution_order(execution_order);
 }
-
-void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream) {
-  for (const auto &node : weights) {
-    if (!node->isa<Parameter>()) {
-      continue;
-    }
-    auto param = node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param);
-    if (common::AnfAlgo::IsParameterWeight(param)) {
-      auto tensor = param->default_param()->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      auto out_addr = AnfAlgo::GetMutableOutputAddr(param, 0, false);
-      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
-        // skip async copy if addr is nullptr.
-        // special format need convert to default format at host, so skip async copy if format is a special format.
-        continue;
-      }
-      auto size = tensor->Size();
-      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, tensor->data_c(), size, out_addr->GetMutablePtr(), size,
-                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
-      if (ret != ACL_ERROR_NONE) {
-        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
-      }
-      tensor->set_copy_done_flag(true);
-    }
-  }
-}
 }  // namespace
 
 void AscendKernelExecutor::Initialize() {
@@ -1236,7 +1214,9 @@ void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
   }
 }
 
-int AscendKernelExecutor::StressDetect() const { return kernel::pyboost::StressDetectKernel(); }
+int AscendKernelExecutor::StressDetect(const std::string &detect_type) const {
+  return kernel::pyboost::StressDetectKernel(detect_type);
+}
 
 int AscendKernelExecutor::CleanTdtChannel() const {
   if (!res_manager_->BindDeviceToCurrentThread(false)) {
@@ -1330,35 +1310,67 @@ bool AscendKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const std::vect
 }
 
 void AscendKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
-  static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
-  if (MS_LIKELY(disable_ckpt_d2h_async)) {
+  if (!IsGraphPipelineCompiled()) {
     return;
   }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto need_async_ckpt = ms_context->get_param<bool>(MS_CTX_NEED_CKPT);
-  if (!IsGraphPipelineCompiled() || !need_async_ckpt) {
-    return;
-  }
+
   MS_EXCEPTION_IF_NULL(kernel);
   auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
-  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
-  auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
-  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
-  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
-                << ", last_triggered_step:" << last_triggered_step;
-  if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
-    AscendResManager *ascend_res_manager = dynamic_cast<AscendResManager *>(res_manager_);
-    if (SkipOrResetCopyAction()) {
-      MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), ascend_res_manager->GetCopyDataStream());
-    }
-    if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
-        common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
-      MS_LOG(INFO) << "Ref op sync once action";
-      AscendStreamMng::GetInstance().SyncStream(ascend_res_manager->GetCopyDataStream());
+  if (kg == nullptr) {
+    return;
+  }
+
+  if (!tools::ascend::NeedSaveAsyncCkpt() && !tools::ascend::NeedSaveSnapshot()) {
+    return;
+  }
+
+  AscendResManager *ascend_res_manager = dynamic_cast<AscendResManager *>(res_manager_);
+  if (!tools::ascend::AscendSnapshotMgr::GetInstance()->IsSavingSnapshot()) {
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SetSavingSnapshot(true);
+    MS_LOG(INFO) << "Enable async d2h copy";
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SaveParameters(kg->GetRootWeights(),
+                                                                    ascend_res_manager->GetCopyDataStream());
+    tools::ascend::AscendSnapshotMgr::GetInstance()->RecordEvent(ascend_res_manager->GetCopyDataStream());
+    tools::ascend::AscendSnapshotMgr::GetInstance()->SaveLastSaveStep(
+      MsContext::GetInstance()->get_param<int>(MS_CTX_CUR_STEP_NUM));
+  }
+}
+
+bool AscendKernelExecutor::SilentCheckAndPreSaveWeight(const CNodePtr &kernel, KernelMod *kernel_mod,
+                                                       const std::vector<KernelTensor *> &inputs, void *stream) const {
+  // 1. SilentCheck
+  if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
+      !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
+      kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
+    silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+  }
+  // 2. async ckpt and snap short
+  auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
+  bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
+  if (MS_UNLIKELY(tools::ascend::NeedSaveAsyncCkpt() || tools::ascend::NeedSaveSnapshot())) {
+    if (is_opt_start_kernel) {
+      tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
+      tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
     }
   }
+  if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
+    // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
+    return false;
+  }
+
+  bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
+  if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
+    if (is_opt_start_kernel || is_opt_end_kernel) {
+      // insert event for optimizer start and end
+      OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
+    }
+  }
+  if (is_opt_end_kernel) {
+    // skip execute TensorReport op at the end of optimizer, it is just used as a tag
+    return false;
+  }
+  return true;
 }
 
 bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
@@ -1377,27 +1389,21 @@ bool AscendKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vecto
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
-    if (silentcheck::ascend::SilentChecker::IsNpuAsdEnable() &&
-        !silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
-        kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
-      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
-      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+    if (!SilentCheckAndPreSaveWeight(kernel, kernel_mod, inputs, stream)) {
+      // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
+      // skip execute TensorReport op at the end of optimizer, it is just used as a tag
+      return true;
     }
-
-    if (MS_UNLIKELY(UCEException::IsEnableUCE())) {
-      bool is_opt_start_kernel = OptimizerEventInfo::GetInstance().IsOptimizerStartKernelMod(kernel_mod, kernel);
-      bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
-      if (is_opt_start_kernel || is_opt_end_kernel) {
-        // insert event for optimizer start and end
-        OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
-      }
-      if (is_opt_end_kernel) {
-        // skip execute TensorReport op at the end of optimzer, it is just used as a tag
-        return true;
-      }
+    bool is_need_record = HcclWatchDogManager::CheckStatusSaveEnable() && common::AnfAlgo::IsCommunicationOp(kernel);
+    auto hccl_work_event = is_need_record ? std::make_unique<HcclWorkEvent>(kernel, stream) : nullptr;
+    if (hccl_work_event != nullptr) {
+      hccl_work_event->RecordStartEvent();
     }
-
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
+    if (hccl_work_event != nullptr) {
+      hccl_work_event->RecordEndEvent();
+      HcclWatchDogManager::GetInstance().AddHcclWorkEvent(std::move(hccl_work_event));
+    }
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
       SetUceError();

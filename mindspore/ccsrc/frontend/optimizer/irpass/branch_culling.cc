@@ -31,6 +31,7 @@
 #include "ir/tensor_new.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/scope.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/pattern_matcher.h"

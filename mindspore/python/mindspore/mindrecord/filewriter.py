@@ -25,11 +25,11 @@ import time
 import multiprocessing as mp
 import numpy as np
 from mindspore import log as logger
-from .shardwriter import ShardWriter
-from .shardreader import ShardReader
-from .shardheader import ShardHeader
-from .shardindexgenerator import ShardIndexGenerator
-from .shardutils import MIN_SHARD_COUNT, MAX_SHARD_COUNT, VALID_ATTRIBUTES, VALID_ARRAY_ATTRIBUTES, \
+from .core.shardwriter import ShardWriter
+from .core.shardreader import ShardReader
+from .core.shardheader import ShardHeader
+from .core.shardindexgenerator import ShardIndexGenerator
+from .core.shardutils import MIN_SHARD_COUNT, MAX_SHARD_COUNT, VALID_ATTRIBUTES, VALID_ARRAY_ATTRIBUTES, \
     check_filename, VALUE_TYPE_MAP, SUCCESS
 from .common.exceptions import ParamValueError, ParamTypeError, MRMInvalidSchemaError, MRMDefineIndexError
 from .config import _get_enc_key, _get_enc_mode, _get_dec_mode, encrypt, decrypt

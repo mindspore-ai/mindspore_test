@@ -20,7 +20,7 @@
 #include <utility>
 #include "ir/tensor_storage_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
 namespace kernel {

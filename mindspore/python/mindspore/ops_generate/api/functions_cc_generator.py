@@ -23,6 +23,7 @@ from common.template import Template
 import common.gen_constants as K
 from common.gen_utils import save_file
 from common.base_generator import BaseGenerator
+from pyboost.op_template_parser import OpTemplateParser
 from pyboost.pyboost_utils import is_optional_param, get_input_dtype, get_return_type
 
 
@@ -112,9 +113,14 @@ class FunctionsGenerator(BaseGenerator):
         """
         self.FUNCTIONS_CC_TEMPLATE = template.FUNCTIONS_CC_TEMPLATE
         self.FUNCTION_BODY_TEMPLATE = template.FUNCTION_BODY_TEMPLATE
+        self.FUNCTION_VIEW_BODY_TEMPLATE = template.FUNCTION_VIEW_BODY_TEMPLATE
+        self.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE = template.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE
         self.FUNCTION_COMM_BODY_TEMPLATE = template.FUNCTION_COMM_BODY_TEMPLATE
         self.pyboost_func_include_header_template = Template(
             f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
+        )
+        self.pyboost_view_func_include_header_template = Template(
+            f'#include "{K.MS_OPS_VIEW_PATH}/${{operator_name}}_strides_calc.h"\n'
         )
         self.clone_inplace_input_template = Template(
             'GetCloneFunc()(op, prim::kPrim${class_name}, device_target, {${grad_args}});'
@@ -140,9 +146,14 @@ class FunctionsGenerator(BaseGenerator):
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
-            func_include_headers_list.append(
-                self.pyboost_func_include_header_template.replace(operator_name=op_proto.op_name))
-            op_call_with_grad_list.append(self._get_function_body(op_proto))
+            if op_proto.op_view:
+                function_body, pyboost_func_include_header = self._get_function_view_body(op_proto)
+            else:
+                pyboost_func_include_header = self.pyboost_func_include_header_template.\
+                    replace(operator_name=op_proto.op_name)
+                function_body = self._get_function_body(op_proto)
+            func_include_headers_list.append(pyboost_func_include_header)
+            op_call_with_grad_list.append(function_body)
             ops_inc_head_set.add(
                 template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         pyboost_func_h_str = self.FUNCTIONS_CC_TEMPLATE.replace(op_call_with_grad=op_call_with_grad_list,
@@ -151,6 +162,46 @@ class FunctionsGenerator(BaseGenerator):
         save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.cc"
         save_file(save_path, file_name, pyboost_func_h_str)
+
+    def _get_function_view_body(self, op_proto):
+        """
+        Get the function body for a given view operator prototype.
+
+        Args:
+            op_proto: The operator prototype.
+
+        Returns:
+            str: The generated function body.
+        """
+        function_body_template = self.FUNCTION_VIEW_BODY_TEMPLATE
+        pyboost_func_include_header = self.pyboost_view_func_include_header_template.\
+            replace(operator_name=op_proto.op_name)
+        if not op_proto.bprop_expander or op_proto.op_name in ["reshape"]:
+            function_body_template = self.FUNCTION_VIEW_CUSTOMIZE_BODY_TEMPLATE
+            pyboost_func_include_header = ""
+        op_parser = OpTemplateParser(op_proto)
+        input_args = self._get_input_args(op_proto, False)
+        input_args_with_type = self._get_input_args(op_proto, True)
+        call_args_with_type = op_parser.parse_call_args_with_types(True)
+        call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
+        call_args_tensors = op_parser.get_call_args_tensor()
+        storage_calc_str = op_proto.op_class.name
+        return_values, _ = op_parser.generate_pyboost_outputs()
+        storage_info_idx = "[0]" if return_values.endswith("]") else ""
+        return_type_str = _get_return_type_str(op_proto)
+        function_body = function_body_template.replace(op_name=op_proto.op_name,
+                                                       class_name=op_proto.op_class.name,
+                                                       input_args_with_type=input_args_with_type,
+                                                       input_args=input_args,
+                                                       storage_calc=storage_calc_str,
+                                                       call_args_with_type=call_args_with_type,
+                                                       call_args=call_args,
+                                                       call_tensors=call_args_tensors,
+                                                       input=call_args[0],
+                                                       storage_info_idx=storage_info_idx,
+                                                       return_values=return_values,
+                                                       return_type=return_type_str)
+        return function_body, pyboost_func_include_header
 
     def _get_function_body(self, op_proto):
         """

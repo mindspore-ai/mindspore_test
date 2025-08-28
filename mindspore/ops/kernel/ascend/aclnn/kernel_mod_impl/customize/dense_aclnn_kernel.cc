@@ -54,7 +54,8 @@ std::vector<int64_t> DenseAclnnKernelMod::TransposeWeight(const KernelTensor *w_
     w_t_tensor->SetShape(std::make_shared<abstract::TensorShape>(w_t_shape));
     // calculate new storage infoF
     ops::OldTensorInfoPtr old_info = GetOldTensorInfo(w_tensor);
-    auto new_info = ops::TransposeExtViewStridesCalc(old_info, -1, -2);
+    auto new_info = ops::TransposeExtViewStridesCalc(old_info->old_shape, old_info->old_strides,
+                                                     w_tensor->tensor_storage_info(), -1, -2);
     w_t_tensor->set_tensor_storage_info(new_info[0]);
   }
   return w_t_shape;

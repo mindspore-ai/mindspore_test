@@ -18,15 +18,18 @@
 #include <vector>
 #include <memory>
 
+#include "frontend/parallel/pass/split_layernorm_comm_fp.h"
+#include "frontend/parallel/step_parallel.h"
+#include "frontend/jit/ps/graph_circle_handler.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/common/utils/parallel_context.h"
+#include "include/common/utils/utils.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "frontend/parallel/pass/split_layernorm_comm_fp.h"
-#include "frontend/parallel/step_parallel.h"
-#include "include/common/utils/utils.h"
-#include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -37,8 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace parallel {

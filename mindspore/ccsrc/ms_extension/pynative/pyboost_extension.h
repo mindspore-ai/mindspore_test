@@ -22,6 +22,8 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <optional>
+#include <type_traits>
 #include "ms_extension/common/tensor.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
@@ -42,7 +44,6 @@ class PyBoostDeviceTask;
 
 namespace ms {
 namespace inner {
-
 /**
  * @brief Retrieves the demangled function name (if applicable) from a mangled symbol name.
  * @param name A mangled symbol name.
@@ -92,20 +93,45 @@ void SetPromise(const std::string &op_name, const std::tuple<T...> &tuple, const
 }
 
 /**
- * @brief Converts a Tensor or an optional Tensor's stub node into a Tensor object.
- * @tparam T The type of the argument, which can be a Tensor or an optional Tensor.
- * @param arg The argument to convert.
+ * @brief Generic converter entry point.
+ * @tparam T Deduced type of the argument; must be one of
+ *           Tensor, std::optional<Tensor>, or std::vector<U> where
+ *           U is recursively any of the former.
+ * @param arg Object whose innermost Tensor elements will be converted.
  */
 template <typename T>
-void ConvertMsTensor(const T &arg) {
-  if constexpr (std::is_same_v<T, ms::Tensor>) {
-    arg.ConvertStubNodeToTensor();
-  } else {
-    if constexpr (std::is_same_v<T, std::optional<ms::Tensor>>) {
-      if (arg.has_value()) {
-        arg.value().ConvertStubNodeToTensor();
-      }
-    }
+void ConvertMsTensor(const T &arg) {}
+
+/**
+ * @brief Converts a single Tensor.
+ * @param arg Tensor instance to materialize.
+ */
+template <>
+inline void ConvertMsTensor<ms::Tensor>(const ms::Tensor &arg) {
+  arg.ConvertStubNodeToTensor();
+}
+
+/**
+ * @brief Converts a Tensor wrapped in std::optional.
+ * @param arg Optional tensor; conversion is skipped if disengaged.
+ */
+template <>
+inline void ConvertMsTensor<std::optional<ms::Tensor>>(const std::optional<ms::Tensor> &arg) {
+  if (arg.has_value()) {
+    arg.value().ConvertStubNodeToTensor();
+  }
+}
+
+/**
+ * @brief Recursively converts every element of a vector.
+ * @tparam T Value type stored in the vector; must itself be convertible
+ *           via ConvertMsTensor.
+ * @param vec Vector whose elements will be processed in order.
+ */
+template <typename T>
+void ConvertMsTensor(const std::vector<T> &vec) {
+  for (const auto &item : vec) {
+    ConvertMsTensor(item);
   }
 }
 
@@ -118,31 +144,6 @@ template <typename... Args>
 void ConvertStubNodeToTensor(const Args &... args) {
   (ConvertMsTensor(args), ...);
 }
-
-/**
- * @brief Memory block structure for managing device memory allocation.
- */
-struct MemBlock {
-  /**
-   * @brief Constructs a MemBlock and allocates memory on the device.
-   * @param device_context The device context for memory allocation.
-   * @param size The size of the memory block to allocate.
-   * @param stream_id The stream ID for the memory allocation.
-   * @throws If memory allocation fails.
-   */
-  MemBlock(const mindspore::device::DeviceContext *device_context, size_t size, uint32_t stream_id);
-
-  /**
-   * @brief Destructor for MemBlock. Frees the allocated memory.
-   */
-  ~MemBlock();
-
-  // Pointer to the allocated memory block.
-  void *ptr_;
-  // The device context used for allocation.
-  const mindspore::device::DeviceContext *device_context_;
-};
-using MemBlockPtr = std::shared_ptr<MemBlock>;
 }  // namespace inner
 
 namespace pynative {
@@ -151,7 +152,7 @@ namespace pynative {
  * @brief [API] Represents a runner for PyBoost operations, providing methods to manage execution, memory allocation,
  * and kernel launches.
  */
-class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<PyboostRunner> {
+class EXTENSION_API PyboostRunner : public std::enable_shared_from_this<PyboostRunner> {
  public:
   /**
    * @brief Constructs a PyboostRunner with the specified operation name.
@@ -225,6 +226,11 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
   virtual size_t CalcWorkspace() { return 0; }
 
   /**
+   * @brief Process after allocating workspace.
+   */
+  virtual void ProcessWithWorkspace() {}
+
+  /**
    * @brief [API] Launches the kernel for the operation.
    */
   virtual void LaunchKernel() = 0;
@@ -282,14 +288,24 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
   virtual void _PrepareDeviceAddress();
 
   /**
-   * @brief Allocates tensors memory and workspace memory.
+   * @brief Allocates tensors memory for inputs and outputs.
    */
-  virtual inner::MemBlockPtr _MallocDeviceAddress();
+  virtual void _MallocDeviceAddress();
+
+  /**
+   * @brief Allocates workspace memory.
+   */
+  virtual void _MallocWorkspace();
 
   /**
    * @brief Dispatch a launch task
    */
   virtual void _DispatchLaunchTask();
+
+  /**
+   * @brief Process cross stream address
+   */
+  void ProcessCrossStreamAddress();
 
   // The name of the operation.
   std::string _op_name_;
@@ -307,6 +323,22 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
   void *_workspace_ptr_{nullptr};
 };
 
+template <int OUT_NUM, typename Ret, typename... Args, size_t... I>
+py::object PyboostArgsCallerImpl(Ret (*func)(Args...), const py::args &args, std::index_sequence<I...>) {
+  return ms::pynative::PyboostRunner::Call<OUT_NUM>(func, args[I].cast<std::decay_t<Args>>()...);
+}
+
+template <int OUT_NUM, typename Ret, typename... Args>
+py::object PyboostArgsCaller(Ret (*func)(Args...), const py::args &args) {
+  constexpr size_t N = sizeof...(Args);
+  if (args.size() != N) {
+    MS_LOG(EXCEPTION) << "Argument count mismatch: expected " << N << ", got " << args.size();
+  }
+  return PyboostArgsCallerImpl<OUT_NUM>(func, args, std::make_index_sequence<N>());
+}
+
+#define PYBOOST_CALLER(OUT_NUM, FUNC) \
+  ([](const py::args &args) -> py::object { return ms::pynative::PyboostArgsCaller<OUT_NUM>(FUNC, args); })
 }  // namespace pynative
 }  // namespace ms
 #endif  // MINDSPORE_CCSRC_EXTENSION_PYBOOST_EXTENSION_H_

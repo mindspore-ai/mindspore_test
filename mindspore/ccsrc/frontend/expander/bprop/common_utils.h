@@ -24,7 +24,7 @@
 #include <vector>
 #include "mindspore/ops/infer/dynamic_broadcast_gradient_args.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "include/common/visible.h"
 
 namespace mindspore::expander::bprop {

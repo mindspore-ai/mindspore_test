@@ -19,9 +19,9 @@
 
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
-#include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/utils/ErrorCode.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 
 namespace mindspore {
 namespace dataset {

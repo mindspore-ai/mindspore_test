@@ -22,14 +22,14 @@
 #include "view/broadcast_to_strides_calc.h"
 
 namespace mindspore::ops {
-TensorStorageInfoPtrList BroadcastToViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                      const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList BroadcastToViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                       const std::vector<int64_t> &shape) {
-  return BroadcastToBasicTypeCalc(prim, input_tensor, shape);
+  return BroadcastToBasicTypeCalc(input_tensor, shape);
 }
 
 TensorStorageInfoPtrList BroadcastToViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   return BroadcastToCalc(prim, inputs);
 }
+
 REG_VIEW_STRIDES_CALC_FUN(BroadcastToView, BroadcastToViewCalc);
 }  // namespace mindspore::ops

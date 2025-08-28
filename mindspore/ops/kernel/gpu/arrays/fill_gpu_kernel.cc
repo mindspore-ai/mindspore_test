@@ -19,7 +19,6 @@
 #include <functional>
 #include <algorithm>
 #include "base/float16.h"
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/arrays/fill_gpu_kernel.h"

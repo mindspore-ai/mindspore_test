@@ -15,32 +15,33 @@
  */
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "view/chunk_strides_calc.h"
 
 namespace mindspore::ops {
-TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, TensorStorageInfoPtr storage_info,
-                                          const int64_t &chunks, const int64_t &dim) {
-  auto old_shape = tensor_info->old_shape;
-  auto old_strides = tensor_info->old_strides;
-
-  auto rank = SizeToLong(old_shape.size());
-  if (rank <= 0) {
-    MS_LOG(EXCEPTION) << "For 'Chunk', rank should > 0, but get " << rank;
-  }
+TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
+                                          const std::vector<int64_t> &old_strides,
+                                          const TensorStorageInfoPtr &storage_info, const int64_t &chunks,
+                                          const int64_t &dim) {
   const auto ndim = old_shape.size();
+  if (ndim == 0) {
+    MS_LOG(EXCEPTION) << "For 'Chunk', rank should > 0, but get " << ndim;
+  }
+  auto [ori_shape, ori_strides, old_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
   int64_t dim_size = old_shape[wrap_dim];
   int64_t split_size = (dim_size + chunks - 1) / chunks;
 
-  if (dim_size == 0) {
+  if (MS_UNLIKELY(dim_size == 0)) {
     if (split_size == 0) {
+      TensorStorageInfoPtr new_storage_info{storage_info};
       if (storage_info == nullptr) {
-        storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, old_shape, old_strides,
-                                                           IsContiguous(old_shape, old_strides));
+        new_storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, old_shape, old_strides,
+                                                               IsContiguous(old_shape, old_strides));
       }
-      std::vector<TensorStorageInfoPtr> storage_info_list(chunks, storage_info);
+      std::vector<TensorStorageInfoPtr> storage_info_list(chunks, new_storage_info);
       return storage_info_list;
     }
     MS_EXCEPTION(ValueError) << "For 'Chunk', output_num must be positive, but got 0.";
@@ -59,21 +60,22 @@ TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, Te
     // Calculate the size of a sub tensor in a specified dimension
     slice_shape[wrap_dim] = (idx == num_splits - 1) ? last_split_size : split_size;
     // Calculate the storage offset of sub tensors
-    size_t new_storage_offset = tensor_info->old_offset + LongToSize(idx * split_size * old_strides[wrap_dim]);
-    auto new_storage_info =
-      std::make_shared<TensorStorageInfo>(slice_shape, old_strides, new_storage_offset, tensor_info->ori_shape,
-                                          tensor_info->ori_strides, IsContiguous(slice_shape, old_strides));
-    storage_info_list.emplace_back(new_storage_info);
+    size_t new_storage_offset = old_offset + LongToSize(idx * split_size * old_strides[wrap_dim]);
+    bool is_contiguous = IsContiguous(slice_shape, old_strides);
+    auto new_storage_info = std::make_shared<TensorStorageInfo>(std::move(slice_shape), old_strides, new_storage_offset,
+                                                                ori_shape, ori_strides, is_contiguous);
+    (void)storage_info_list.emplace_back(new_storage_info);
   }
+
   return storage_info_list;
 }
 
-TensorStorageInfoPtrList ChunkBasicTypeCalc(const PrimitivePtr &prim, const mindspore::tensor::TensorPtr &input_tensor,
-                                            const int64_t &chunks, const int64_t &dim) {
-  MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));
-  auto tensor_info = GetOldTensorInfo(input_tensor);
-  auto storage_info = input_tensor->storage_info();
-  return ChunkStridesCalc(tensor_info, storage_info, chunks, dim);
+TensorStorageInfoPtrList ChunkBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &chunks,
+                                            const int64_t &dim) {
+  if (MS_UNLIKELY(chunks < 1)) {
+    MS_EXCEPTION(ValueError) << "For 'Chunk', chunks should be greater equal than 1, but got " << chunks;
+  }
+  return ChunkStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), chunks, dim);
 }
 
 TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -85,12 +87,9 @@ TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<V
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto chunks = GetValue<int64_t>(inputs[kInputIndex1]);
-  MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));
   auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(tensor_info);
-  auto storage_info = input_tensor->storage_info();
-  return ChunkStridesCalc(tensor_info, storage_info, chunks, dim);
+  return ChunkBasicTypeCalc(input_tensor, chunks, dim);
 }
+
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Chunk, ChunkCalc);
 }  // namespace mindspore::ops

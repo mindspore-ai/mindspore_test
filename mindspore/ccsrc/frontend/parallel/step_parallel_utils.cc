@@ -28,7 +28,6 @@
 
 #include "abstract/dshape.h"
 #include "base/base.h"
-#include "base/bfloat16.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/device_manager.h"
@@ -47,6 +46,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"

@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
-#include "utils/hash_set.h"
+#include "ir/graph_utils.h"
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/pass/overlap_opt_shard_in_pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"

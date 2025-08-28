@@ -259,18 +259,30 @@ straspb::ParallelStrategyMap StrategyCheckpointInfo::to_protobuf() const {
       for (auto dev_dim : tensor_layout->device_arrangement_origin().array()) {
         dev_matrix->add_dim(UlongToUint(LongToUlong(dev_dim)));
       }
-      // tensor_map_before is not empty, the param is in layout process
-      for (auto tensor_map_vec : tensor_layout->tensor_map_before()) {
+
+      const auto &tensor_map_before = tensor_layout->tensor_map_before();
+      if (std::all_of(tensor_map_before.begin(), tensor_map_before.end(),
+                      [](const auto &tensor_map_vec) { return tensor_map_vec.size() == kSizeOne; })) {
+        // If all dimensions are mapped to at most one device dimension, a 1-D TensorMap can be used to represent it.
         straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
         MS_EXCEPTION_IF_NULL(tensor_map);
-        for (auto map_dim : tensor_map_vec) {
-          tensor_map->add_dim(LongToInt(map_dim));
+        for (const auto &tensor_map_vec : tensor_map_before) {
+          tensor_map->add_dim(LongToInt(tensor_map_vec.at(kIndex0)));
         }
-      }
-      // if tensor_map_before size is 1, insert an empty tensor map
-      if (tensor_layout->tensor_map_before().size() == 1) {
-        straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
-        MS_EXCEPTION_IF_NULL(tensor_map);
+      } else {
+        // tensor_map_before is not empty, the param is in layout process
+        for (const auto &tensor_map_vec : tensor_map_before) {
+          straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
+          MS_EXCEPTION_IF_NULL(tensor_map);
+          for (auto map_dim : tensor_map_vec) {
+            tensor_map->add_dim(LongToInt(map_dim));
+          }
+        }
+        // if tensor_map_before size is 1, insert an empty tensor map
+        if (tensor_map_before.size() == 1) {
+          straspb::TensorMap *tensor_map = parallel_layouts->add_tensor_map();
+          MS_EXCEPTION_IF_NULL(tensor_map);
+        }
       }
     }
     straspb::ParamSplitShape *param_split_shape = parallel_layouts->add_param_split_shape();

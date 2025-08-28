@@ -31,7 +31,7 @@
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 
 namespace mindspore {
@@ -386,7 +386,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
       // In the case of the same shape, but dtype and format are inconsistent
       auto tensor_addr = input_tensor->device_address();
       if (tensor_addr != nullptr && !has_hidden_side_effect) {
-        auto p_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor_addr);
+        auto p_address = tensor_addr;
         MS_EXCEPTION_IF_NULL(p_address);
         graph_info += p_address->format();
         graph_info += p_address->padding_type();

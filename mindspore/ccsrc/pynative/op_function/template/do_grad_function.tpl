@@ -17,12 +17,12 @@ void DoGrad${class_name}(${grad_args_with_type}) {
   if (!bprop_expander || non_differentiable) {
     return;
   }
-  bool require_grad = kernel::pyboost::OpRunStatus::Get().RequireGrad();
 
-  auto output_value = AutoGradUtil::Make${is_multi}Output(require_grad, op${view_arg});
+  bool require_grad = NeedAutoGrad();
 
-  if (NeedAutoGrad()) {
-    ${convert_basic_to_value}
+  auto output_value = AutoGradUtil::Make${is_multi}Output(require_grad, op);
+
+  if (require_grad) {
     DoGrad${class_name}Inner(op, ${grad_input_args_with_optional}, output_value);
   } else if (is_inplace_op) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);

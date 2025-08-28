@@ -17,6 +17,7 @@
 #include "plugin/ascend/graph_optimizer/pass/enhancer/eliminate_maketuple_getitem.h"
 #include <string>
 #include <vector>
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"

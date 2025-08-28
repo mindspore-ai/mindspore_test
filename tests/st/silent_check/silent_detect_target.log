@@ -1,0 +1,42 @@
+SilentDetect initialized with enable: 1, with_checksum: 1, grad_sample_interval: 30, upper_thresh1: 60, upper_thresh2: 600, cooldown: 1min, strikes_num: 5, strikes_window: 100min, checksum_cooldown: 10min.
+Silent detect receives data, name is layernorm, value is 0.1
+After silent detect, name is layernorm, stat is StatData{avg: 0.001, pre_value: 0.1, count: 1, none_zero_count: 1}
+Silent detect receives data, name is embedding, value is 0.0999756
+After silent detect, name is embedding, stat is StatData{avg: 0.000999756, pre_value: 0.0999756, count: 1, none_zero_count: 1}
+Silent detect receives data, name is transformer, value is 0.100098
+After silent detect, name is transformer, stat is StatData{avg: 0.00100098, pre_value: 0.100098, count: 1, none_zero_count: 1}
+Skip the unsupported data type: Int32, tensor name is linear
+Silent detect receives data, name is layernorm, value is 10
+After silent detect, name is layernorm, stat is StatData{avg: 0.10099, pre_value: 10, count: 2, none_zero_count: 2}
+Silent detect receives data, name is embedding, value is 10
+After silent detect, name is embedding, stat is StatData{avg: 0.10099, pre_value: 10, count: 2, none_zero_count: 2}
+Silent detect receives data, name is transformer, value is 10
+After silent detect, name is transformer, stat is StatData{avg: 0.100991, pre_value: 10, count: 2, none_zero_count: 2}
+Skip the unsupported data type: Int32, tensor name is linear
+Silent detect receives data, name is layernorm, value is inf
+After silent detect, name is layernorm, stat is StatData{avg: 0.10099, pre_value: inf, count: 3, none_zero_count: 2}
+Strike happened. record is StrikeRecord{name: layernorm, value: inf, stat: StatData{avg: 0.10099, pre_value: 10, count: 2, none_zero_count: 2}}
+Silent detect receives data, name is embedding, value is inf
+After silent detect, name is embedding, stat is StatData{avg: 0.10099, pre_value: inf, count: 3, none_zero_count: 2}
+Strike will not be recorded repeatedly during the 1 mins cooling-off period, and the exception info is StrikeRecord{name: embedding, value: inf, stat: StatData{avg: 0.10099, pre_value: 10, count: 2, none_zero_count: 2}}
+Silent detect receives data, name is transformer, value is inf
+After silent detect, name is transformer, stat is StatData{avg: 0.100991, pre_value: inf, count: 3, none_zero_count: 2}
+Strike will not be recorded repeatedly during the 1 mins cooling-off period, and the exception info is StrikeRecord{name: transformer, value: inf, stat: StatData{avg: 0.100991, pre_value: 10, count: 2, none_zero_count: 2}}
+Skip the unsupported data type: Int32, tensor name is linear
+Silent detect receives data, name is layernorm, value is nan
+After silent detect, name is layernorm, stat is StatData{avg: 0.10099, pre_value: nan, count: 4, none_zero_count: 2}
+Strike will not be recorded repeatedly during the 1 mins cooling-off period, and the exception info is StrikeRecord{name: layernorm, value: nan, stat: StatData{avg: 0.10099, pre_value: inf, count: 3, none_zero_count: 2}}
+Silent detect receives data, name is embedding, value is nan
+After silent detect, name is embedding, stat is StatData{avg: 0.10099, pre_value: nan, count: 4, none_zero_count: 2}
+Strike will not be recorded repeatedly during the 1 mins cooling-off period, and the exception info is StrikeRecord{name: embedding, value: nan, stat: StatData{avg: 0.10099, pre_value: inf, count: 3, none_zero_count: 2}}
+Silent detect receives data, name is transformer, value is nan
+After silent detect, name is transformer, stat is StatData{avg: 0.100991, pre_value: nan, count: 4, none_zero_count: 2}
+Strike will not be recorded repeatedly during the 1 mins cooling-off period, and the exception info is StrikeRecord{name: transformer, value: nan, stat: StatData{avg: 0.100991, pre_value: inf, count: 3, none_zero_count: 2}}
+Skip the unsupported data type: Int32, tensor name is linear
+Silent detect receives data, name is layernorm, value is 0.5
+After silent detect, name is layernorm, stat is StatData{avg: 0.10498, pre_value: 0.5, count: 5, none_zero_count: 3}
+Silent detect receives data, name is embedding, value is 0.5
+After silent detect, name is embedding, stat is StatData{avg: 0.10498, pre_value: 0.5, count: 5, none_zero_count: 3}
+Silent detect receives data, name is transformer, value is 0.5
+After silent detect, name is transformer, stat is StatData{avg: 0.104981, pre_value: 0.5, count: 5, none_zero_count: 3}
+Skip the unsupported data type: Int32, tensor name is linear
