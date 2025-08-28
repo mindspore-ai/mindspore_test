@@ -1492,6 +1492,8 @@ class CustomOpBuilder:
         flags += ['-std=c++17', '-fstack-protector-all', '-fPIC', '-pie']
         if self.debug_mode:
             flags.append('-g')
+        else:
+            flags.append('-O2')
         if self.backend == "Ascend":
             flags.append('-DCUSTOM_ASCEND_OP')
             if self.enable_atb:

@@ -93,7 +93,7 @@ std::vector<TensorPtr> GmmV2(const ValueTuplePtr &x, const ValueTuplePtr &weight
   static const auto act_type = std::make_shared<Int64Imm>(0);
   return grouped_matmul_v4(x, weight, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                            std::nullopt, group_list, std::nullopt, std::nullopt, std::nullopt, split_item, group_type,
-                           group_list_type, act_type);
+                           group_list_type, act_type, std::nullopt);
 }
 }  // namespace
 void GmmBackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &grad_tenor_list,
