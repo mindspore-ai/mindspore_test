@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.parameter import ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
-from mindspore.train.serialization import export, _get_mindir_inputs
+from mindspore.train.serialization import export
 
 
 def weight_variable():
@@ -170,46 +170,6 @@ def test_export_lenet_grad_mindir():
     verify_name = file_name + ".mindir"
     assert os.path.exists(verify_name)
     os.remove(verify_name)
-
-
-def test_get_mindir_inputs1():
-    """
-    Feature: Get MindIR input.
-    Description: Test get mindir input.
-    Expectation: Successfully
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    net = InputNet1()
-    input1 = Tensor(np.zeros([32, 10]).astype(np.float32))
-    file_name = "input1.mindir"
-    export(net, input1, file_name=file_name, file_format='MINDIR')
-    input_tensor = _get_mindir_inputs(file_name)
-    assert os.path.exists(file_name)
-    assert input_tensor.shape == (32, 10)
-    assert input_tensor.dtype == mindspore.float32
-    os.remove(file_name)
-
-
-def test_get_mindir_inputs2():
-    """
-    Feature: Get MindIR input.
-    Description: Test get mindir input.
-    Expectation: Successfully
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    net = InputNet2()
-    input1 = Tensor(np.zeros(1).astype(np.float16))
-    input2 = Tensor(np.zeros([10, 20]), dtype=mstype.int32)
-    file_name = "input2.mindir"
-    export(net, input1, input2, file_name=file_name, file_format='MINDIR')
-    input_tensor = _get_mindir_inputs(file_name)
-    assert os.path.exists(file_name)
-    assert len(input_tensor) == 2
-    assert input_tensor[0].shape == (1,)
-    assert input_tensor[0].dtype == mindspore.float16
-    assert input_tensor[1].shape == (10, 20)
-    assert input_tensor[1].dtype == mindspore.int32
-    os.remove(file_name)
 
 
 def test_export_lenet_with_dataset():
