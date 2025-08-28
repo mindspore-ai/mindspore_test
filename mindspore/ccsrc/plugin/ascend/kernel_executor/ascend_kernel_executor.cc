@@ -1214,7 +1214,9 @@ void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
   }
 }
 
-int AscendKernelExecutor::StressDetect() const { return kernel::pyboost::StressDetectKernel(); }
+int AscendKernelExecutor::StressDetect(const std::string &detect_type) const {
+  return kernel::pyboost::StressDetectKernel(detect_type);
+}
 
 int AscendKernelExecutor::CleanTdtChannel() const {
   if (!res_manager_->BindDeviceToCurrentThread(false)) {

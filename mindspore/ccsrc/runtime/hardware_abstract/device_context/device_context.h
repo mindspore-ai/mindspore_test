@@ -405,7 +405,9 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
   // Clean tdt channel
   virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
   // Detect stress.
-  virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+  virtual int StressDetect(const std::string &detect_type) const {
+    MS_LOG(EXCEPTION) << "Stress detection is not supported.";
+  }
 
   virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                  const device::DeviceAddressPtrList &input_addr_list,
