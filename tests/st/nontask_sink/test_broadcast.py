@@ -77,4 +77,22 @@ def test_hccl_broadcast_func_2p():
         assert rst
 
 
+def test_hccl_broadcast_func_2p_bool():
+    """
+    Feature: test 'broadcast' communication function.
+    Description: test 'broadcast' communication function.
+    Expectation: expect correct result.
+    """
+    rank = get_rank()
+
+    if rank == 0:
+        data = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    else:
+        data = ms.Tensor([0, 0, 0], dtype=ms.bool_)
+
+    out = broadcast(data, src=0)
+    expect_output = ms.Tensor([1, 1, 1], dtype=ms.bool_)
+    assert np.allclose(expect_output.asnumpy(), out.asnumpy())
+
+
 test_hccl_broadcast_func_2p()
