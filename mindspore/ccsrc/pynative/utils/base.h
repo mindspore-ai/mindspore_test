@@ -191,6 +191,7 @@ struct InputArgsInfo {
   std::string ready_run_cell_id;
   std::string input_args_id;
   size_t input_size = 0;
+  int64_t parallel_loss_repeat_num = -1;
   std::vector<std::string> input_arg_id_vec;
   std::vector<ValuePtr> input_arg_value_vec;
   // Used for dynamic shape auto detect

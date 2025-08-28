@@ -16,6 +16,7 @@
 
 import copy
 from typing import Tuple, Optional
+import functools
 import numpy as np
 import mindspore as ms
 from mindspore import log as logger
@@ -575,6 +576,38 @@ class Layout:
         ms.communication.create_group(group, rank_list)
         self._group_map[(axis, rank)] = group
         return group
+
+    def repeat_num(self):
+        """
+        Number of repeated placements.
+        In pipeline parallel, only the last stage return repeat num, other stages return -1.
+        For example:
+        layout = Layout((2, 4), ("dp", "mp"))
+        x_layout = layout("dp", "None")
+        The repeat_num is equal to all device num 8 divided by device num corresponding to used axis 2, that is 4.
+        """
+        if self._tensor_map is None:
+            raise ValueError(f"The tensor_map is None, the device_matrix is {self._device_shape},"
+                             f" alias_name is {self._alias_name}")
+
+        # if it is not the last stage, return -1
+        from mindspore.communication.management import get_group_size
+        group_size = get_group_size()
+        if self._rank_list[-1] != (group_size - 1):
+            return -1
+
+        all_device_num = functools.reduce(lambda x, y: x * y, self._device_shape)
+        used_dev_num = 1
+        for ele in self._tensor_map:
+            if isinstance(ele, tuple):
+                for item in ele:
+                    if item >= 0:
+                        used_dev_num *= self._device_shape[len(self._device_shape) - item - 1]
+                continue
+            if ele >= 0:
+                used_dev_num *= self._device_shape[len(self._device_shape) - ele -1]
+
+        return all_device_num // used_dev_num
 
     def _to_compact_string(self):
         """

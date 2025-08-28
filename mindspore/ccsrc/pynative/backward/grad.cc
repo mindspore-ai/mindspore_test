@@ -58,6 +58,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "frontend/expander/bprop/bprop.h"
+#include "pyboost/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace pynative {
@@ -556,6 +557,14 @@ void GradExecutor::SetForwardLastNodeInfo(const InputArgsInfoPtr &input_args_inf
   input_args_info->out_value = ShallowCopyTensorValue(value);
 }
 
+static int64_t ParallelLossRepeatNum(const py::object &out) {
+  py::object layout = out.attr("_layout");
+  py::object repeat_num = layout.attr("repeat_num")();
+  int64_t repeat_num_value = py::cast<int64_t>(repeat_num);
+  MS_LOG(INFO) << "parallel loss repeat num is " << repeat_num_value;
+  return repeat_num_value;
+}
+
 void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, const py::args &args) {
   if (input_args_info_stack_.empty()) {
     return;
@@ -581,6 +590,11 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
       input_args_info->out_value = parse::data_converter::PyObjToValue(out, false);
     }
     MS_LOG(DEBUG) << "Get cell output value " << input_args_info->out_value->ToString();
+
+    if (py::hasattr(out, "_layout")) {
+      input_args_info->parallel_loss_repeat_num = ParallelLossRepeatNum(out);
+    }
+
     EndGraphImpl(input_args_info);
     (void)PopTopCellStack();
   }
@@ -811,6 +825,32 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   return BaseRefToPyData(forward_run);
 }
 
+static ValuePtr ParallelHandleSens(const autograd::GradAttr &grad_attr, const ValuePtr &origin_sens,
+                                   const InputArgsInfoPtr &top_input_args_info) {
+  auto sens = origin_sens;
+  int64_t repeat_num = top_input_args_info->parallel_loss_repeat_num;
+  if (grad_attr.has_sens) {
+    MS_LOG(EXCEPTION) << "need to split sens for parallel, it is not supported yet";
+  } else {
+    if (repeat_num == 1) {
+      MS_LOG(INFO) << "loss repeat num is 1, and sens is null, do nothing";
+      return sens;
+    }
+    // generate sens from output
+    auto out_tensor = top_input_args_info->out_value->cast<tensor::TensorPtr>();
+    sens = kernel::pyboost::ones_like_ext(out_tensor, std::nullopt);
+  }
+
+  if (repeat_num == 1) {
+    return sens;
+  }
+  auto divisor = tensor::from_scalar(repeat_num, kInt64);
+  sens = kernel::pyboost::div(sens->cast<tensor::TensorPtr>(), divisor);
+  MS_LOG(INFO) << "handle loss repeat mean for parallel, the divisor is " << repeat_num << ", the sens is "
+               << sens->ToString();
+  return sens;
+}
+
 py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
                                      const std::vector<size_t> &p_args, bool has_aux, bool collect_default_weights) {
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
@@ -826,6 +866,9 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
                                                      cur_top_cell->is_high_order_top_cell(), is_run_recompute_);
   autograd::AutoDiffGuard auto_diff_guard(engine);
   top_cell_->set_grad_is_running(true);
+  if (top_input_args_info_->parallel_loss_repeat_num > 0) {
+    sens = ParallelHandleSens(grad_attr, sens, top_input_args_info_);
+  }
   auto grads = engine->RunGradFunc(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
                                    collect_default_weights, has_aux, sens);
   engine->RunFinalCallback();
