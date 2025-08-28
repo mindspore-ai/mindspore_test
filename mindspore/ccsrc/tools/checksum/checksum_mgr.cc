@@ -16,6 +16,7 @@
 
 #include "tools/checksum/checksum_mgr.h"
 #include <string>
+#include "tools/silent_detect/silent_detect_config_parser.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 
@@ -42,7 +43,18 @@ int GetMsSdcDetectEnable() {
 
 bool CheckSumMgr::NeedEnableCheckSum() const {
   static int ms_sdc_detect_enable = GetMsSdcDetectEnable();
-  return ms_sdc_detect_enable == 1;
+  if (ms_sdc_detect_enable == 1) {
+    return true;
+  }
+  static bool silent_detect_with_checksum = []() {
+    bool need_enable = silentdetect::SilentDetectConfigParser::GetInstance().IsEnable() &&
+                       silentdetect::SilentDetectConfigParser::GetInstance().IsWithChecksum();
+    if (need_enable) {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "MS_NPU_ASD_CONFIG-with_checksum is true, need enable CheckSum.";
+    }
+    return need_enable;
+  }();
+  return silent_detect_with_checksum;
 }
 
 bool CheckSumMgr::IsCheckSumEnable() const {

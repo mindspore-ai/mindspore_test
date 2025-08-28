@@ -58,6 +58,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "tools/silent_detect/silent_detect_config_parser.h"
 
 namespace mindspore {
 namespace silentcheck {
@@ -194,7 +195,18 @@ bool IsAsdEnable() {
                                     << " and environment var " << kNpuAsdEnable << " is " << GetNpuAsdDetectValue();
     return enable_check;
   }();
-  return is_npu_asd_enable;
+  if (!is_npu_asd_enable) {
+    return false;
+  }
+  static bool new_silent_detect_enable = []() {
+    bool enable = silentdetect::SilentDetectConfigParser::GetInstance().IsEnable();
+    if (enable) {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << std::string("MS_NPU_ASD_CONFIG-enable is true, using SilentCheck 4.0, '")
+                                      << kNpuAsdEnable << "' is ignored.";
+    }
+    return enable;
+  }();
+  return !new_silent_detect_enable && is_npu_asd_enable;
 }
 
 bool IsCheckTypeSupported(const TensorPtr &input_tensor) {

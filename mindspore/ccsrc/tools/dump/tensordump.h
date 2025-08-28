@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
-#define MINDSPORE_CCSRC_DEBUG_TENSORDUMP_CONTROL_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_
+#define MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_
 
 #include <set>
 #include <string>
 #include <vector>
 #include <array>
+#include <mutex>
+
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
+#include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "include/common/visible.h"
 
 namespace mindspore {
@@ -30,20 +34,24 @@ namespace datadump {
 inline constexpr int kCallFromCXX = 0;
 inline constexpr int kCallFromPython = 1;
 
-class DUMP_EXPORT TensorDumpStepManager {
+class DUMP_EXPORT TensorDumpManager {
  public:
-  static TensorDumpStepManager &GetInstance() {
-    static TensorDumpStepManager instance;
+  enum class task_type { dump = 0, skip = 1, update_step = 2, silentdetect = 3, unknown = 100 };
+  static TensorDumpManager &GetInstance() {
+    static TensorDumpManager instance;
     return instance;
   }
-  ~TensorDumpStepManager() = default;
+  ~TensorDumpManager() = default;
   void SetDumpStep(const std::vector<size_t> &);
   std::string ProcessFileName(const std::string &, const std::string &, const int = kCallFromCXX);
+  task_type GetTaskType(const std::string &tensor_name, const int mode);
+  void Exec(const std::string &, tensor::TensorPtr, const int = kCallFromCXX);
+  void ExecTask(task_type, const std::string &, tensor::TensorPtr, const int);
   void SetAclDumpCallbackReg(void *);
 
  private:
-  TensorDumpStepManager() = default;
-  DISABLE_COPY_AND_ASSIGN(TensorDumpStepManager);
+  TensorDumpManager() = default;
+  DISABLE_COPY_AND_ASSIGN(TensorDumpManager);
   void UpdateStep(const int);
   size_t GetStep(const int) const;
   bool NeedDump(const int) const;
@@ -53,8 +61,10 @@ class DUMP_EXPORT TensorDumpStepManager {
   std::array<size_t, 2> step_ = {0, 0};
   std::set<size_t> valid_steps_;
   void *aclDumpCallbackReg_;
+  std::mutex mtx_;
 };
+
 }  // namespace datadump
 }  // namespace mindspore
 
-#endif
+#endif  // MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_

@@ -19,50 +19,14 @@
 #include <fstream>
 #include <memory>
 
-#include "tools/dump/npy_header.h"
-#include "tools/dump/tensordump_control.h"
+#include "tools/dump/tensordump.h"
+#include "tools/dump/utils.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::device::ascend {
-namespace {
-
-void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr) {
-  MS_EXCEPTION_IF_NULL(tensor_ptr);
-  if (tensor_ptr->data_type_c() == TypeId::kNumberTypeBFloat16) {
-    auto new_tensor = tensor::from_spec(TypeId::kNumberTypeFloat32, tensor_ptr->shape(), device::DeviceType::kCPU);
-    auto input_addr = static_cast<bfloat16 *>(tensor_ptr->device_address()->GetMutablePtr());
-    auto output_addr = static_cast<float *>(new_tensor->device_address()->GetMutablePtr());
-    size_t size = SizeOf(tensor_ptr->shape());
-    tensor::TransDataType<float, bfloat16>(input_addr, output_addr, size);
-    tensor_ptr = new_tensor;
-  }
-  std::string npy_header = GenerateNpyHeader(tensor_ptr->shape(), tensor_ptr->data_type());
-  if (!npy_header.empty()) {
-    ChangeFileMode(file_name, S_IWUSR);
-    std::fstream output{file_name, std::ios::out | std::ios::trunc | std::ios::binary};
-    if (!output.is_open()) {
-      MS_LOG(ERROR) << "For 'TensorDump' ops, open " << file_name << " file failed, the args of 'file' is invalid.";
-      return;
-    }
-    output << npy_header;
-    (void)output.write(reinterpret_cast<const char *>(tensor_ptr->data_c()), SizeToLong(tensor_ptr->Size()));
-    if (output.bad()) {
-      output.close();
-      MS_LOG(ERROR) << "For 'TensorDump' ops, write mem to " << file_name << " failed.";
-      return;
-    }
-    output.close();
-    ChangeFileMode(file_name, S_IRUSR);
-  } else {
-    MS_LOG(ERROR) << "For 'TensorDump' ops, the type of " << TypeIdToType(tensor_ptr->data_type())->ToString()
-                  << " not support dump.";
-  }
-}
-
-}  // namespace
 
 TensorDumpUtils &TensorDumpUtils::GetInstance() {
   static TensorDumpUtils instance;
@@ -87,12 +51,7 @@ void TensorDumpUtils::SaveDatasetToNpyFile(const ScopeAclTdtDataset &dataset) {
     MS_LOG(WARNING) << "Ignore data of string type: " << std::get<std::string>(data_elem);
   }
   auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
-  std::string data_type = TypeIdToType(tensor_ptr->data_type())->ToString();
-  auto file_name = datadump::TensorDumpStepManager::GetInstance().ProcessFileName(tensor_name, data_type);
-  if (file_name.empty()) {  // update step or not need dump
-    return;
-  }
-  SaveTensor2NPY(file_name, tensor_ptr);
+  datadump::TensorDumpManager::GetInstance().Exec(tensor_name, tensor_ptr);
 }
 
 }  // namespace mindspore::device::ascend
