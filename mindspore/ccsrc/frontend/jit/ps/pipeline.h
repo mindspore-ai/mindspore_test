@@ -25,6 +25,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <list>
+#include <optional>
 
 #include "pybind11/pybind11.h"
 
