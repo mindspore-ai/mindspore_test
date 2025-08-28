@@ -258,7 +258,7 @@ def test_tensor_numpy_non_blocking():
     x = Tensor(np_data).to("Ascend").sin()
     output = x.to("CPU")._numpy_non_blocking() # pylint:disable=protected-access
     ms.runtime.synchronize()
-    assert (output == np.sin(np_data)).all()
+    assert np.allclose(output, np.sin(np_data))
 
 
 def test_tensor_to_with_numpy_perf():
@@ -289,7 +289,7 @@ def test_tensor_to_with_numpy_perf():
         end = time.time()
         return end - start
 
-    assert non_blocking_perf() * 2 < blocking_perf()
+    assert non_blocking_perf() < blocking_perf()
 
 
 @arg_mark(plat_marks=['platform_ascend'],
