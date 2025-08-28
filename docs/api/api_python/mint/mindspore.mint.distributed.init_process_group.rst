@@ -11,17 +11,20 @@ mindspore.mint.distributed.init_process_group
 
     参数：
         - **backend** (str，可选) - 分布式后端的名称，默认为 ``"hccl"``，且目前只能设置为hccl。
-        - **init_method** (str, 无效参数) - 初始化通讯域时的URL配置。这个参数主要对标PT，但实际无效且设置不生效。
-        - **timeout** (timedelta, 无效参数) - 设置接口的超时配置。这个参数主要对标PT，但实际无效且设置不生效。
-        - **world_size** (int, 可选) - 配置初始化时全局通讯的卡数。
-        - **rank** (int, 无效参数) - 设置当前设备卡的卡号。这个参数主要对标PT，但实际无效且设置不生效。
-        - **store** (Store, 无效参数) - key/value 数据在设备进程上存储以便于设备进程间通讯地址、连接信息的交换。这个参数主要对标PT，但实际无效且设置不生效。
-        - **pg_options** (ProcessGroupOptions, 无效参数) - 针对创建的通讯group设置特殊配置策略。这个参数主要对标PT，但实际无效且设置不生效。
-        - **device_id** (int, 无效参数) - 设置当前进程使用的NPU卡卡号。这个参数主要对标PT，但实际无效且设置不生效。
+        - **init_method** (str, 可选) - 初始化通讯域时的URL配置，默认为 ``None``。
+        - **timeout** (timedelta, 可选) - 设置接口的超时配置，默认为 ``None``。目前，仅在使用 `init_method` 或者 `store` 进行主机端集群网络配置时，才支持该参数。
+        - **world_size** (int, 可选) - 配置初始化时全局通讯的卡数，默认为 ``-1``。
+        - **rank** (int, 可选) - 设置当前设备卡的卡号，默认为 ``-1``。
+        - **store** (Store, 可选) - 存储key/value数据的对象，用于进程间通讯地址、连接信息的交换，默认为 ``None``。目前，仅支持 ``TCPStore`` 类型。
+        - **pg_options** (ProcessGroupOptions, 无效参数) - 针对创建的通讯group设置特殊配置策略。该参数为预留参数，当前设置不生效。
+        - **device_id** (int, 无效参数) - 设置当前进程使用的NPU卡卡号。该参数为预留参数，当前设置不生效。
 
     异常：
-        - **ValueError** - 参数 `backend` 的值不是hccl。
-        - **ValueError** - 参数 `world_size` 的值非-1，且与实际通讯集群数不一致。
+        - **ValueError** - 参数 `backend` 的值不是 ``"hccl"``。
+        - **ValueError** - 参数 `world_size` 的值非 ``-1``，且与实际通讯集群数不一致。
+        - **ValueError** - 同时设置参数 `init_method` 和 `store` 。
+        - **ValueError** - 当使用 `init_method` 或 `store` 初始化方式时，参数 `world_size` 未被正确设置为正整数。
+        - **ValueError** - 当使用 `init_method` 或 `store` 初始化方式时，参数 `rank` 未被正确设置为非负整数。
         - **RuntimeError** - 1）硬件设备类型无效；2）后台服务无效；3）分布式计算初始化失败；4）后端是HCCL的情况下，未设置环境变量 RANK_ID 或 MINDSPORE_HCCL_CONFIG_PATH 的情况下初始化HCCL服务。
 
     样例：

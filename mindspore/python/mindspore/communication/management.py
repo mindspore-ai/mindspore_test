@@ -22,7 +22,8 @@ from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get
     _create_group_helper, _destroy_group_helper, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
     MCCL_WORLD_COMM_GROUP, DEVICE_TO_BACKEND, _get_local_rank_helper, _get_local_size_helper, GlobalComm, \
     _check_mpi_envs, _set_elegant_exit_handle, _get_group_ranks, _get_comm_name_helper, _comm_switch_nic_helper
-from mindspore._c_expression import init_hccl, finalize_hccl, init_cluster, MSContext, ms_ctx_param
+from mindspore._c_expression import init_hccl, finalize_hccl, init_cluster, MSContext, ms_ctx_param, \
+    _init_hccl_with_store, _init_cluster_with_store
 from mindspore.hal.device import is_initialized
 
 __all__ = ["init", "release", "get_rank", "get_local_rank", "get_group_size",
@@ -211,6 +212,83 @@ def init(backend_name=None):
         GlobalComm.WORLD_COMM_GROUP = NCCL_WORLD_COMM_GROUP
     elif backend_name == "mccl":
         init_cluster()
+        GlobalComm.BACKEND = Backend("mccl")
+        GlobalComm.WORLD_COMM_GROUP = MCCL_WORLD_COMM_GROUP
+    else:
+        raise RuntimeError("For 'init', the argument 'backend_name' must be one of 'hccl', 'nccl' and 'mccl', "
+                           "but got 'backend_name' : {}".format(backend_name))
+
+    GlobalComm.INITED = True
+    _set_envs()
+
+
+def _init_without_sched(backend_name=None, init_method=None, timeout=None, world_size=-1, rank=-1, store=None):
+    """
+    Initialize the distributed backends required by the communication services through an existing TcpStore or
+    by creating a new TcpStore. This approach does not rely on an additional Scheduler process.
+
+    Args:
+        backend_name (str, optional): Backend, using ``"hccl"`` / ``"nccl"`` / ``"mccl"``.
+            ``"hccl"`` should be used for Ascend hardware platforms,
+            ``"nccl"`` for GPU hardware platforms and ``"mccl"`` for CPU hardware platforms.
+            If not set, inference is automatically made based on the hardware platform type (device_target).
+            Default: ``None`` .
+        init_method (str, optional): URL specifying how to init collective communication group. Default is ``None``.
+        timeout (timedelta, optional): Timeout for API executed. Default is ``None``. Currently, this parameter is
+            only supported for host-side cluster network configuration using `init_method` or `store`.
+        world_size (int, optional): Number of the processes participating in the job. Default is ``-1``.
+        rank (int, optional): Rank of the current process. Default is ``-1``.
+        store (Store, optional): An object that stores key/value data, facilitating the exchange of inter-process
+            communication addresses and connection information. Default is ``None``. Currently, only the
+            ``TCPStore`` type is supported.
+
+    Raises:
+        TypeError: If `backend_name` is not a string.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails,
+                      or the environment variables RANK_ID/MINDSPORE_HCCL_CONFIG_PATH
+                      have not been exported when backend is HCCL.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    device_target = context.get_context("device_target")
+
+    if backend_name is None:
+        if device_target == "Ascend":
+            backend_name = "hccl"
+        elif device_target == "GPU":
+            backend_name = "nccl"
+        elif device_target == "CPU":
+            backend_name = "mccl"
+        else:
+            raise RuntimeError("For 'set_context', the argument 'device_target' {} is not supported in "
+                               "parallel initialization, please use Ascend, GPU or CPU.".format(device_target))
+    if not isinstance(backend_name, str):
+        raise TypeError("For 'init', the argument 'backend_name' must be a string, "
+                        "but got the type : {}".format(type(backend_name)))
+
+    _set_elegant_exit_handle()
+    if backend_name == "hccl":
+        if device_target != "Ascend":
+            raise RuntimeError("For 'init', the argument 'backend_name' should be '{}' to init '{}', "
+                               "but got 'hccl'.".format(DEVICE_TO_BACKEND[device_target], device_target))
+        if is_initialized(device_target):
+            logger.warning(f"For 'init' in Ascend backend, the backend is already initialized, please set it before "
+                           "the definition of any Tensor and Parameter, and the instantiation and execution of any "
+                           "operation and net, otherwise the 'init' may not take effect.")
+        GlobalComm.BACKEND = Backend("hccl")
+        _check_hccl()
+        _init_hccl_with_store(init_method, timeout, world_size, rank, store)
+        GlobalComm.WORLD_COMM_GROUP = HCCL_WORLD_COMM_GROUP
+    elif backend_name == "nccl":
+        if device_target != "GPU":
+            raise RuntimeError("For 'init', the argument 'backend_name' should be '{}' to init '{}', "
+                               "but got 'nccl'.".format(DEVICE_TO_BACKEND[device_target], device_target))
+        _init_cluster_with_store(init_method, timeout, world_size, rank, store)
+        GlobalComm.BACKEND = Backend("nccl")
+        GlobalComm.WORLD_COMM_GROUP = NCCL_WORLD_COMM_GROUP
+    elif backend_name == "mccl":
+        _init_cluster_with_store(init_method, timeout, world_size, rank, store)
         GlobalComm.BACKEND = Backend("mccl")
         GlobalComm.WORLD_COMM_GROUP = MCCL_WORLD_COMM_GROUP
     else:

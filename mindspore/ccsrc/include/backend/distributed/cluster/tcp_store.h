@@ -50,15 +50,25 @@ class BACKEND_EXPORT TCPStoreClient {
   int64_t AddKey(const std::string &key, int64_t amount);
 
   bool DeleteKey(const std::string &key);
+
+  std::string ip() const { return ip_; }
+
+  int64_t port() const { return port_; }
+
+  int64_t world_size() const { return world_size_; }
+
+  void set_timeout(int64_t timeout) { timeout_ = timeout; }
 #if defined(__linux__) && defined(WITH_BACKEND)
   std::shared_ptr<topology::NodeBase> server_node_ = nullptr;
   std::shared_ptr<topology::TcpNodeBase> client_node_ = nullptr;
 #endif
+
  private:
   std::string ip_;
   int64_t port_;
-  bool is_master_;
   int64_t timeout_;
+  int64_t world_size_;
+  bool is_master_;
 };
 
 }  // namespace cluster

@@ -34,8 +34,10 @@ bool AllReduceLauncher::Initialize() {
   MS_EXCEPTION_IF_NULL(node_base);
   rank_id_ = node_base->rank_id();
 
-  auto cgn = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(node_base);
-  abs_node_ = std::make_shared<ps::core::CollectiveNode>(cgn);
+  std::shared_ptr<distributed::cluster::topology::TcpNodeBase> client_node;
+  client_node = std::dynamic_pointer_cast<distributed::cluster::topology::TcpNodeBase>(node_base);
+  MS_EXCEPTION_IF_NULL(client_node);
+  abs_node_ = std::make_shared<ps::core::CollectiveNode>(client_node);
   if (!abs_node_->Start()) {
     MS_LOG(ERROR) << "Failed to start the cpu collective node.";
     return false;

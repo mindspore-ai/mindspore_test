@@ -25,6 +25,9 @@
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #include "cluster/topology/meta_server_node.h"
 #include "cluster/topology/actor_route_table_proxy.h"
+#include "include/backend/distributed/cluster/tcp_store.h"
+#include "include/backend/distributed/cluster/topology/tcp_node.h"
+#include "include/backend/distributed/cluster/utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
@@ -137,6 +140,76 @@ bool ClusterContext::Initialize() {
     }
   }
 
+  inited_ = true;
+  finalized_ = false;
+  return true;
+}
+
+bool ClusterContext::Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                                TCPStoreClientPtr store) {
+  if (inited_) {
+    MS_LOG(INFO) << "The cluster has been initialized.";
+    return true;
+  }
+
+  node_id_ = std::to_string(node_id).c_str();
+  common::SetEnv(kEnvRole, kEnvRoleOfWorker);
+  common::SetEnv(kEnvWorkerNum, std::to_string(world_size).c_str());
+  common::SetEnv(kNodeId, std::to_string(node_id).c_str());
+
+  std::string ip;
+  int64_t port;
+  if (url.has_value()) {
+    if (!cluster::Utils::ParseTcpUrlForIpv4(url.value(), &ip, &port)) {
+      return false;
+    }
+    const bool is_master = (node_id == 0);
+    tcp_store_client_ = std::make_shared<cluster::TCPStoreClient>(ip, port, is_master, timeout, world_size);
+    MS_EXCEPTION_IF_NULL(tcp_store_client_);
+    MS_LOG(INFO) << "Initialize cluster using init_method, a default TcpStore is created with ip: " << ip
+                 << ", port: " << port << ", world_size: " << world_size;
+  } else {
+    tcp_store_client_ = store;
+    MS_EXCEPTION_IF_NULL(tcp_store_client_);
+    ip = tcp_store_client_->ip();
+    port = tcp_store_client_->port();
+    tcp_store_client_->set_timeout(timeout);
+    int64_t tcp_world_size = tcp_store_client_->world_size();
+    if (tcp_world_size != world_size) {
+      MS_LOG(EXCEPTION) << "Initialize cluster using existing store with world_size [" << tcp_world_size
+                        << "] is inconsistent with init_process_group provided world_size [" << world_size << "].";
+    }
+    MS_LOG(INFO) << "Initialize cluster using existing store with ip: " << ip << ", port: " << port
+                 << ", world_size: " << world_size;
+  }
+  common::SetEnv(kEnvSchedulerHost, ip.c_str());
+  common::SetEnv(kEnvSchedulerPort, std::to_string(port).c_str());
+  InitClusterConfig();
+
+  // Initializing with TcpStore makes client_node as cgn.
+  node_base_ = tcp_store_client_->client_node_;
+  MS_EXCEPTION_IF_NULL(node_base_);
+
+  tcp_store_client_->client_node_->set_rank_id(node_id);
+  MS_LOG(WARNING) << "This node " << node_id_ << " rank id: " << tcp_store_client_->client_node_->rank_id();
+
+  // 2. Set this node's client ip address in this cluster.
+  const std::string &client_ip_in_cluster = tcp_store_client_->client_node_->client_ip();
+  MS_LOG(INFO) << "Client ip address in this cluster of this client_node is " << client_ip_in_cluster;
+  (void)common::SetEnv(kEnvWorkerIp, client_ip_in_cluster.c_str());
+
+  // 3. Set port range of this node.
+  NodeRolePortAssignment port_assignment =
+    (tcp_store_client_->client_node_->role() == kEnvRoleOfWorker) ? kWorkerPortAssignment : kServerPortAssignment;
+  uint32_t start_port = port_assignment.start_port;
+  uint32_t port_range = port_assignment.port_range;
+  uint32_t max_node_num = port_assignment.max_node_num;
+  port_range_.first =
+    start_port + (port_range / max_node_num) * (tcp_store_client_->client_node_->rank_id() % max_node_num);
+  port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
+  MS_LOG(INFO) << "Assigned for this worker port range is " << port_range_.first << " to " << port_range_.second;
+
+  init_by_store_ = true;
   inited_ = true;
   finalized_ = false;
   return true;
@@ -291,7 +364,7 @@ void ClusterContext::InitNodeRole() {
 void ClusterContext::InitSchedulerIp() {
   scheduler_host_ = common::GetEnv(kEnvSchedulerHost);
   if (scheduler_host_.empty()) {
-    MS_LOG(EXCEPTION) << kEnvSchedulerHost << " is empty. " << kEnvSchedulerHost;
+    MS_LOG(EXCEPTION) << kEnvSchedulerHost << " is empty.";
   }
 }
 
@@ -335,46 +408,48 @@ bool ClusterContext::IsEnableCrossCluster() {
 }
 
 void ClusterContext::PostProcess() {
-  if (node_role_ != kEnvRoleOfScheduler) {
-    auto cgn = std::dynamic_pointer_cast<topology::ComputeGraphNode>(node_base_);
-    MS_EXCEPTION_IF_NULL(cgn);
-    MS_LOG(INFO) << "Start post processing for computing graph nodes.";
+  if (node_role_ == kEnvRoleOfScheduler) {
+    return;
+  }
 
-    // 1. Get new rank id from meta server node because it may be reassigned.
-    auto node_id = common::GetEnv("MS_NODE_ID");
-    if (node_id.empty() || !common::IsStrNumeric(node_id) || !common::GetEnv("RANK_TABLE_FILE").empty()) {
-      MS_LOG(INFO) << "MS_NODE_ID set to this process is " << node_id
-                   << " and it's not numeric. Or ranktable file is set. Need to get reassigned rank id from scheduler.";
-      std::string final_rank_id = cgn->GetMetadata(node_role_ + node_id_);
-      if (!final_rank_id.empty()) {
-        cgn->set_rank_id(static_cast<uint32_t>(std::atoi(final_rank_id.c_str())));
-      } else {
-        MS_LOG(WARNING) << "This node could be redundant and is not successfully registered.";
-      }
+  auto cgn = std::dynamic_pointer_cast<topology::ComputeGraphNode>(node_base_);
+  MS_EXCEPTION_IF_NULL(cgn);
+  MS_LOG(INFO) << "Start post processing for computing graph nodes.";
+
+  // 1. Get new rank id from meta server node because it may be reassigned.
+  auto node_id = common::GetEnv("MS_NODE_ID");
+  if (node_id.empty() || !common::IsStrNumeric(node_id) || !common::GetEnv("RANK_TABLE_FILE").empty()) {
+    MS_LOG(INFO) << "MS_NODE_ID set to this process is " << node_id
+                 << " and it's not numeric. Or ranktable file is set. Need to get reassigned rank id from scheduler.";
+    std::string final_rank_id = cgn->GetMetadata(node_role_ + node_id_);
+    if (!final_rank_id.empty()) {
+      cgn->set_rank_id(static_cast<uint32_t>(std::atoi(final_rank_id.c_str())));
+    } else {
+      MS_LOG(WARNING) << "This node could be redundant and is not successfully registered.";
     }
-    MS_LOG(WARNING) << "This node " << node_id_ << " rank id: " << cgn->rank_id();
+  }
+  MS_LOG(WARNING) << "This node " << node_id_ << " rank id: " << cgn->rank_id();
 
-    // 2. Set this node's client ip address in this cluster.
-    const std::string &client_ip_in_cluster = cgn->client_ip();
-    MS_LOG(INFO) << "Client ip address in this cluster of this compute graph node is " << client_ip_in_cluster;
-    (void)common::SetEnv(kEnvWorkerIp, client_ip_in_cluster.c_str());
+  // 2. Set this node's client ip address in this cluster.
+  const std::string &client_ip_in_cluster = cgn->client_ip();
+  MS_LOG(INFO) << "Client ip address in this cluster of this compute graph node is " << client_ip_in_cluster;
+  (void)common::SetEnv(kEnvWorkerIp, client_ip_in_cluster.c_str());
 
-    // 3. Set port range of this node.
-    NodeRolePortAssignment port_assignment =
-      (cgn->role() == kEnvRoleOfWorker) ? kWorkerPortAssignment : kServerPortAssignment;
-    uint32_t start_port = port_assignment.start_port;
-    uint32_t port_range = port_assignment.port_range;
-    uint32_t max_node_num = port_assignment.max_node_num;
-    port_range_.first = start_port + (port_range / max_node_num) * (cgn->rank_id() % max_node_num);
-    port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
-    MS_LOG(INFO) << "Assigned for this worker port range is " << port_range_.first << " to " << port_range_.second;
+  // 3. Set port range of this node.
+  NodeRolePortAssignment port_assignment =
+    (cgn->role() == kEnvRoleOfWorker) ? kWorkerPortAssignment : kServerPortAssignment;
+  uint32_t start_port = port_assignment.start_port;
+  uint32_t port_range = port_assignment.port_range;
+  uint32_t max_node_num = port_assignment.max_node_num;
+  port_range_.first = start_port + (port_range / max_node_num) * (cgn->rank_id() % max_node_num);
+  port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
+  MS_LOG(INFO) << "Assigned for this worker port range is " << port_range_.first << " to " << port_range_.second;
 
-    // 4. Set whether enable cross cluster communication.
-    if (IsEnableCrossCluster()) {
-      MS_LOG(WARNING) << "This node enable the cross cluster communication.";
-      enable_cross_cluster_ = true;
-      DistributedMeta::GetInstance()->set_enable_cross_cluster(enable_cross_cluster_);
-    }
+  // 4. Set whether enable cross cluster communication.
+  if (IsEnableCrossCluster()) {
+    MS_LOG(WARNING) << "This node enable the cross cluster communication.";
+    enable_cross_cluster_ = true;
+    DistributedMeta::GetInstance()->set_enable_cross_cluster(enable_cross_cluster_);
   }
 }
 }  // namespace cluster
