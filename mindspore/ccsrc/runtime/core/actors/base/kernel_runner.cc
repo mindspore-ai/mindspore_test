@@ -38,7 +38,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
@@ -322,7 +322,7 @@ void KernelRunner::Init() {
   }
 
   // Set flag to check input contiguous
-  if (kernel::NeedCheckInputContiguous(kernel_)) {
+  if (NeedCheckInputContiguous(kernel_)) {
     need_check_tensor_contiguous_ = true;
   }
 

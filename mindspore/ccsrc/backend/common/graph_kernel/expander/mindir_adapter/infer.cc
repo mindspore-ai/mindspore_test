@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <memory>
 #include "backend/common/graph_kernel/model/op_register.h"
-#include "backend/common/graph_kernel/model/node.h"
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 

@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include "backend/common/graph_kernel/split_model/split_model.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {

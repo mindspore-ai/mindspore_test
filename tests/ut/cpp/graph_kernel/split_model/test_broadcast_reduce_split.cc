@@ -20,7 +20,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/adapter/split_model_ascend.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore::graphkernel::test {
 class TestBroadcastReduceSplit : public GraphKernelCommonTestSuite {

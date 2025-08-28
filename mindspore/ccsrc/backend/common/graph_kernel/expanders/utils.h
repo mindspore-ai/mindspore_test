@@ -22,7 +22,7 @@
 #include <utility>
 
 #include "backend/common/graph_kernel/model/lite_graph.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 
 namespace mindspore::graphkernel::expanders {

@@ -32,7 +32,7 @@
 #include "backend/common/kernel_graph/session_factory.h"
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "ir/device_type.h"
 
 namespace mindspore {

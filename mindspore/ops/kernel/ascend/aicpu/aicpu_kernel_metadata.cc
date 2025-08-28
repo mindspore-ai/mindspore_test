@@ -20,7 +20,7 @@
 #include "op_def/array_op_name.h"
 #include "include/common/kernel_base/oplib/oplib.h"
 #include "include/common/kernel_base/common_utils.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/ascend/aicpu/aicpu_util.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -51,7 +51,7 @@ void AicpuMetadataInfo(const CNodePtr &kernel_node, std::vector<std::shared_ptr<
     AicpuMetadataInfoForSpecialNodes(kernel_node, kernel_info_list);
     return;
   }
-  if (!ParseMetadata(kernel_node, op_info_ptr, AICPU, kernel_info_list)) {
+  if (!AnfAlgo::ParseMetadata(kernel_node, op_info_ptr, AICPU, kernel_info_list)) {
     MS_LOG(WARNING) << "Aicpu parsed metadata op [" << op_name << "] failed.";
     return;
   }

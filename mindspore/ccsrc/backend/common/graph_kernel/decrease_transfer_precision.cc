@@ -27,7 +27,7 @@
 #include "ir/manager.h"
 #include "ir/graph_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "backend/common/graph_kernel/decrease_transfer_precision.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

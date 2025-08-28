@@ -28,9 +28,9 @@
 #include "utils/anf_utils.h"
 #include "utils/ordered_set.h"
 #include "utils/trace_info.h"
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "ir/func_graph_cloner.h"
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -40,7 +40,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #ifdef ENABLE_AKG
-#include "kernel/graph_kernel/graph_kernel_builder.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder.h"
 #endif
 #include "ir/func_graph_flag.h"
 

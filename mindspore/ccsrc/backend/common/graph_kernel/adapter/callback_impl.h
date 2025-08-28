@@ -18,7 +18,8 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_CALLBACK_IMPL_H_
 #include <string>
 #include <vector>
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel {
 class BACKEND_COMMON_EXPORT CallbackImpl : public Callback {

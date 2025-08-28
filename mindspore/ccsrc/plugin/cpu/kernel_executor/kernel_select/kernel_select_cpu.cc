@@ -329,9 +329,9 @@ void SetKernelBuildInfoWithSelectedAttr(const CNodePtr &kernel_node, const kerne
     kernel_build_info->SetOpType(kernel::OpType::SKIP);
   }
   AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, selected_kernel_attr);
-  kernel::UnfoldKernelBuildInfo(kernel_node);
+  AnfAlgo::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
-    kernel::SetDynamicInputSizeAttr(kernel_node);
+    AnfAlgo::SetDynamicInputSizeAttr(kernel_node);
   }
 }
 
@@ -452,9 +452,9 @@ void UpdateDynamicKernelBuildInfo(const CNodePtr &kernel_node) {
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
   AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
-  kernel::UnfoldKernelBuildInfo(kernel_node);
+  AnfAlgo::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
-    kernel::SetDynamicInputSizeAttr(kernel_node);
+    AnfAlgo::SetDynamicInputSizeAttr(kernel_node);
   }
 }
 
@@ -545,7 +545,7 @@ void UpdateCustomKernelBuildInfo(const CNodePtr &kernel_node, bool is_akg_op) {
   // check reg info if kernel_attr is not null
   if (kernel_attr != nullptr) {
     std::vector<std::shared_ptr<KernelBuildInfo>> kernel_info_list;
-    if (!ParseMetadata(kernel_node, kernel_attr, kernel::Processor::CPU, &kernel_info_list)) {
+    if (!AnfAlgo::ParseMetadata(kernel_node, kernel_attr, kernel::Processor::CPU, &kernel_info_list)) {
       MS_LOG(EXCEPTION) << "Parsed metadata of op[" << op_name << "] failed.";
     }
     if (kernel_info_list.empty()) {
@@ -742,7 +742,7 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   } else if (kernel_attrs[0].GetSkipCheck()) {
     object_selected_kernel_attrs = kernel_attrs;
   } else if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
-    return kernel::KernelObjectTypeNotSupportWarning(kernel_node);
+    return AnfAlgo::KernelObjectTypeNotSupportWarning(kernel_node);
   }
 
   // Second select the matched kernel attr.

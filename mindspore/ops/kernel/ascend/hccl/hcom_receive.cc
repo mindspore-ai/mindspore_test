@@ -24,7 +24,7 @@
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/common/utils/parallel_context.h"
 #include "proto/topology.pb.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/collective/collective_manager.h"

@@ -35,7 +35,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace runtime {

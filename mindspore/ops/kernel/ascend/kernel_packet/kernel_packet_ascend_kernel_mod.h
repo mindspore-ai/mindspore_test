@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_GRAPH_KERNEL_PACKET_KERNEL_MOD_H_
 
 #include <vector>
-#include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
 #include "kernel/ascend/visible.h"
 
 namespace mindspore {

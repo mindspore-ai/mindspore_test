@@ -19,7 +19,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "utils/trace_base.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 

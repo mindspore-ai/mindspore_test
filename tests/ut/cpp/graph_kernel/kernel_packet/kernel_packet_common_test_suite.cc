@@ -16,7 +16,7 @@
 
 #include "graph_kernel/kernel_packet/kernel_packet_common_test_suite.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 
 namespace mindspore::graphkernel::test {
 CNodePtrList TestKernelPacket::GetAllPacketNodes(const FuncGraphPtr &fg) {

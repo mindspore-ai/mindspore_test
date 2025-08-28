@@ -26,7 +26,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

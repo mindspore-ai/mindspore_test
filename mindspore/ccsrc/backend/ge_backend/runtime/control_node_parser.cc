@@ -31,7 +31,7 @@
 #include "ir/dtype/tensor_type.h"
 #include "abstract/abstract_function.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace ge_backend {

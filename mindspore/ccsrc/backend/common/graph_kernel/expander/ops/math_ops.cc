@@ -17,7 +17,7 @@
 #include <set>
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "utils/value_utils.h"
 

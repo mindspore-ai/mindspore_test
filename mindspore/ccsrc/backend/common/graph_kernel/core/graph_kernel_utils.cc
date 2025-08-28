@@ -26,7 +26,7 @@
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
 #include "include/common/callback.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"

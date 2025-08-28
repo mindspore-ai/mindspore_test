@@ -150,7 +150,7 @@ bool RefreshCastAndParamWeightFormat(const AnfNodePtr &input_node, const string 
   if (common::AnfAlgo::GetCNodeName(cast_node) != prim::kPrimCast->name()) {
     return true;
   }
-  if (AnfAlgo::IsFeatureMapOutput(cast_node)) {
+  if (common::AnfAlgo::IsFeatureMapOutput(cast_node)) {
     return true;
   }
   if (format == kOpFormat_FRACTAL_ZN_RNN || format == kOpFormat_ND_RNN_BIAS) {

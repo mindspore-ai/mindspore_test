@@ -349,6 +349,10 @@ class COMMON_EXPORT AnfAlgo {
   // if graph output is valuenode or parameter, used to skip run and construct output
   static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
                                                 VectorRef *outputs);
+  // charge if the node's output is a feature map output
+  static bool IsFeatureMapOutput(const AnfNodePtr &node);
+  // charge if the node's input is from a feature map output
+  static bool IsFeatureMapInput(const AnfNodePtr &node, size_t input_index);
 };
 }  // namespace common
 }  // namespace mindspore

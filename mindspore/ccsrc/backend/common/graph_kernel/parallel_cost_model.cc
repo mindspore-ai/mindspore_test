@@ -16,7 +16,7 @@
 
 #include "backend/common/graph_kernel/parallel_cost_model.h"
 
-#include "kernel/graph_kernel/graph_kernel_json_generator.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/common/utils/python_adapter.h"
 

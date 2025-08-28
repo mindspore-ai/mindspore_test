@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_EXPANDER_MINDIR_ADAPTER_INFER_H_
 
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "utils/hash_map.h"
 
 namespace mindspore::graphkernel::expander {

@@ -29,6 +29,7 @@
 #include "base/base.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "include/common/utils/contract.h"
 #include "ir/device_address.h"
 #include "include/backend/visible.h"
@@ -221,10 +222,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static void SetGraphId(uint32_t graph_id, AnfNode *node);
   // get graph id
   static uint32_t GetGraphId(const AnfNode *node);
-  // charge if the node's output is a feature map output
-  static bool IsFeatureMapOutput(const AnfNodePtr &node);
-  // charge if the node's input is from a feature map output
-  static bool IsFeatureMapInput(const AnfNodePtr &node, size_t input_index);
   // get input index in graph for some tbe ops which input order is different between graph and tbe kernel
   static size_t GetInputGraphIdxByKernelIdx(const AnfNodePtr &anf_node, size_t input_index_in_kernel);
   // get input index in kernel for some tbe ops which input order is different between graph and tbe kernel
@@ -242,7 +239,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static std::string GetBackend(const FuncGraphPtr &graph);
   static bool GetDisableFormatTransform(const KernelGraphPtr &graph);
   static std::string GetExecOrderAlgo(const KernelGraphPtr &graph);
-  static std::map<std::string, std::map<std::string, std::string> > GetGeOptions(const KernelGraphPtr &graph);
+  static std::map<std::string, std::map<std::string, std::string>> GetGeOptions(const KernelGraphPtr &graph);
   // get ge options from jitconfig or context
   static std::map<std::string, std::string> GetGeOptions(std::string option_level);
 
@@ -351,6 +348,13 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static bool IsBackendGe();
   // check if is ms_backend backend
   static bool IsBackendMs();
+  static bool ParseMetadata(const CNodePtr &kernel_node, const std::shared_ptr<const kernel::OpInfo> &op_info_ptr,
+                            kernel::Processor processor,
+                            std::vector<std::shared_ptr<kernel::KernelBuildInfo>> *const kernel_info_list);
+  static void SetDynamicInputSizeAttr(const CNodePtr &cnode);
+  static int64_t CalOutputTupleSize(const AnfNodePtr &node);
+  static void UnfoldKernelBuildInfo(const CNodePtr &kernel_node);
+  static std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportWarning(const CNodePtr &kernel_node);
 };
 }  // namespace session
 

@@ -21,7 +21,7 @@
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_expander_cloud.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"

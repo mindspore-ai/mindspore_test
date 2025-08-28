@@ -31,7 +31,7 @@
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/file_utils.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

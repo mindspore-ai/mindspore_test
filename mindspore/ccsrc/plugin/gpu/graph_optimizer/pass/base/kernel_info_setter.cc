@@ -20,7 +20,7 @@
 #include <tuple>
 #include <string>
 #include <set>
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
@@ -168,7 +168,7 @@ std::string GetSupportedTypesStr(const CNodePtr &kernel_node, KernelType kernel_
   if (op_info_ptr == nullptr) {
     return supported_type_lists;
   }
-  (void)ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list);
+  (void)AnfAlgo::ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list);
   for (size_t i = 0; i < kernel_info_list.size(); i++) {
     auto supported_akg_type = kernel_info_list[i]->GetAllInputDeviceTypes();
     auto supported_akg_type_out = kernel_info_list[i]->GetAllOutputDeviceTypes();
@@ -204,7 +204,7 @@ bool SelectAkgKernel(const CNodePtr &kernel_node, const std::shared_ptr<KernelBu
     MS_LOG(DEBUG) << "Not find op[" << op_name << "] in akg";
     return false;
   }
-  if (!ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list)) {
+  if (!AnfAlgo::ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list)) {
     MS_LOG(EXCEPTION) << "Parsed metadata of op[" << op_name << "] failed.";
   }
   if (kernel_info_list.empty()) {
@@ -251,7 +251,7 @@ bool SelectCustomKernel(const CNodePtr &kernel_node, const std::shared_ptr<Kerne
     return true;
   }
   std::vector<std::shared_ptr<KernelBuildInfo>> kernel_info_list;
-  if (!ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list)) {
+  if (!AnfAlgo::ParseMetadata(kernel_node, op_info_ptr, kernel::Processor::CUDA, &kernel_info_list)) {
     MS_LOG(EXCEPTION) << "Parsed metadata of op[" << op_name << "] failed.";
   }
   if (kernel_info_list.empty()) {
@@ -674,7 +674,7 @@ std::pair<bool, std::pair<std::string, ExceptionType>> GetSelectKernelObjectType
 
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
   if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
-    return {false, kernel::KernelObjectTypeNotSupportWarning(kernel_node)};
+    return {false, AnfAlgo::KernelObjectTypeNotSupportWarning(kernel_node)};
   }
 
   AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, object_selected_kernel_attrs[0]);
@@ -725,9 +725,9 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   builder->SetInputsDeviceType(inputs_type);
   builder->SetOutputsFormat(outputs_format);
   builder->SetOutputsDeviceType(outputs_type);
-  kernel::UnfoldKernelBuildInfo(kernel_node);
+  AnfAlgo::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
-    kernel::SetDynamicInputSizeAttr(kernel_node);
+    AnfAlgo::SetDynamicInputSizeAttr(kernel_node);
   }
   MS_LOG(INFO) << kernel_node->fullname_with_scope() << " kernel attr info: "
                << kernel::FetchPrintInfoByKernelAttr(kernel::GetKernelAttrFromBuildInfo(builder->Build()));

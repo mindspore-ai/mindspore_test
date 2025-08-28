@@ -24,7 +24,7 @@
 #include <sstream>
 
 #include "utils/hash_map.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
 #include "backend/common/graph_kernel/model/op_register.h"
 

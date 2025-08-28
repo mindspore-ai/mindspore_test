@@ -21,7 +21,7 @@
 #include <vector>
 #include <utility>
 #include "ops/primitive_c.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::inner {

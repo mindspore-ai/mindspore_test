@@ -19,7 +19,7 @@
 #include "common/py_func_graph_fetcher.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "kernel/kash/kernel_pack.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/ascend/graph_optimizer/pass/buffer_fusion/ub_pattern_fusion.h"
