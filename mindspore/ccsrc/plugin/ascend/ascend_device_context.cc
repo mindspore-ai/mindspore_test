@@ -221,7 +221,7 @@ void SetContextSocVersion(MsContext *ctx) {
     {"Ascend910_9361", "ascend910_93"}, {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},
     {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"},      {"Ascend310", "ascend310"}};
   const char *soc_name_c = "";
-  if (!common::IsCompileSimulation()) {
+  if (!UseSimulationApi()) {
     soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
     if (soc_name_c == nullptr) {
       MS_LOG(ERROR) << "Get soc name failed.";
@@ -255,7 +255,7 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
     common::SetEnv("MS_FORMAT_MODE", format_mode.c_str());
   }
 
-  if (!common::IsCompileSimulation()) {
+  if (!UseSimulationApi()) {
     device::ascend::LoadAscendApiSymbols();
   } else {
     device::ascend::LoadSimulationApiSymbols();
