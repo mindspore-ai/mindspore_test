@@ -102,8 +102,12 @@ size_t DefaultAscendMemoryPool::EmptyCache() {
 }
 
 int32_t GetDeviceId() {
-  int32_t device_id = 0;
-  device_id = static_cast<int32_t>(DistributedMeta::GetInstance()->local_rank_id());
+  static const int32_t device_id = []() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    return ms_context->get_param<int>(MS_CTX_DEVICE_ID);
+  }();
+
   return device_id;
 }
 
