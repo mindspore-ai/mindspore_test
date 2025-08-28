@@ -528,7 +528,9 @@ std::vector<ValueNode *> SideEffectHandler::CollectSideEffectOperations() const 
     if (opcode == STORE_FAST) {
       continue;
     }
-    if (opcode == STORE_SUBSCR && node->inputs()[1]->GetScope() == AObject::Scope::SCOPE_LOCAL) {
+    if ((opcode == STORE_SUBSCR || opcode == STORE_ATTR) &&
+        node->inputs()[1]->GetScope() == AObject::Scope::SCOPE_LOCAL) {
+      MS_LOG(DEBUG) << "Skip local node: " << node->ToString();
       continue;
     }
     if (Opcode(opcode).IsCall()) {
