@@ -32,7 +32,7 @@
 namespace mindspore {
 namespace opt {
 std::vector<std::string> AddCastRmsNormCastFusion::MustExistPrimitiveName() const {
-  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimCast->name(), prim::kPrimAdd->name()};
+  std::vector<std::string> ret = {prim::kPrimRmsNorm->name(), prim::kPrimCast->name(), prim::kPrimAdd->name()};
   return ret;
 }
 
