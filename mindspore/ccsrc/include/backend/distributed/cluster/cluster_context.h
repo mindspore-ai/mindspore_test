@@ -24,6 +24,7 @@
 #include <memory>
 #include <atomic>
 #include <utility>
+#include <optional>
 #include "include/backend/distributed/constants.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

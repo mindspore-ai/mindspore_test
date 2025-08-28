@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <memory>
+#include <optional>
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
