@@ -198,6 +198,9 @@ void RebaseVariable(const OpGradInfoPtr &op_grad_info, const BackwardNodePtr &fu
 // Update next edges info for backward node.
 void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &inputs);
 
+// Update version for view's output
+void UpdateVersion(const tensor::TensorPtr &output);
+
 // Build func node for common op
 BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
                                       const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,

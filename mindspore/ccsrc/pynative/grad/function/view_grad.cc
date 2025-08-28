@@ -16,18 +16,27 @@
 
 #include "mindspore/ccsrc/pynative/grad/function/view_grad.h"
 #include <memory>
+#include "mindspore/core/include/utils/device_manager_conf.h"
 #include "pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "mindspore/ccsrc/include/common/utils/convert_utils.h"
 
 namespace mindspore::pynative::autograd {
+namespace {
+inline void SetDeviceTarget() {
+  const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
+  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, false, 0, device_target));
+}
+}  // namespace
 
 ValuePtrList ViewBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
   auto output = kernel::pyboost::reshape(grads[0]->cast<TensorPtr>(), self_shape_);
   return {output};
 }
 
 ValuePtrList TransposeBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
   auto ndims = perm_.size();
   std::vector<int64_t> invert_perm(ndims);
   for (size_t i = 0; i < ndims; ++i) {
@@ -38,11 +47,13 @@ ValuePtrList TransposeBackwardNode::CallBackward(const ValuePtrList &grads) {
 }
 
 ValuePtrList TransposeExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
   auto output = kernel::pyboost::transpose_ext_view(grads[0]->cast<TensorPtr>(), dim0_, dim1_);
   return {output};
 }
 
 ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
   auto size = PackBasicTypeToValue(self_shape_);
   auto grad = grads[0]->cast<TensorPtr>();
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
@@ -53,6 +64,7 @@ ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) 
 }
 
 ValuePtrList SliceExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
   auto size = PackBasicTypeToValue(self_shape_);
   auto grad = grads[0]->cast<TensorPtr>();
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
