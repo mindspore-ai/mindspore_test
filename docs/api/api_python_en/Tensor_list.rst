@@ -92,7 +92,7 @@
 {{ fullname | underline }}
 
 .. autoclass:: {{ name }}
-    :exclude-members: tft_register
+    :exclude-members: tft_register, on_train_step_begin
     :members:
 
 {% elif objname[0].istitle() %}
