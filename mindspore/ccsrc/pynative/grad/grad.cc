@@ -833,6 +833,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   top_cell_->set_grad_is_running(true);
   auto grads = engine->RunBackward(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
                                    collect_default_weights, has_aux, sens);
+  engine->RunFinalCallback();
   top_cell_ = cur_top_cell;
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);
@@ -1221,6 +1222,15 @@ void GradExecutor::SaveDynamicInputsCells(const py::object &obj, const py::args 
 
 void GradExecutor::DispatchGradQueueTask(std::function<void(void)> &&task) const {
   runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
+}
+
+void GradExecutor::QueueFinalCallback(std::function<void()> callback) const {
+  auto cur_auto_diff_engine = autograd::impl::CurrentAutoDiffEngine();
+  MS_EXCEPTION_IF_CHECK_FAIL(cur_auto_diff_engine != nullptr,
+                             "Final backward callback can only be installed during backward pass");
+  auto engine = std::dynamic_pointer_cast<autograd::AutoDiff>(cur_auto_diff_engine);
+  MS_EXCEPTION_IF_NULL(engine);
+  engine->AddFinalCallback(std::move(callback));
 }
 
 std::string GradExecutor::SizeofContainer() const {

@@ -28,7 +28,6 @@
 #include "ir/anf.h"
 #include "include/fork_utils.h"
 #include "include/common/visible.h"
-#include "include/common/pynative/variable.h"
 
 namespace mindspore::pynative {
 namespace py = pybind11;
@@ -95,6 +94,7 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
   py::object RunSliceOpStub(const std::vector<ValuePtr> &input_v,
                             const std::vector<SliceOpInfoPtr> &slice_op_infos) const;
   void SetCreationType(const py::object &obj, autograd::CreationType creation_type);
+  void QueueBackwardFinalCallback(const py::object &callback) const;
 
  private:
   PyNativeExecutor() = default;
