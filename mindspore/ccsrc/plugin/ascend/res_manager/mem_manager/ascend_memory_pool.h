@@ -23,8 +23,8 @@
 #include <utility>
 #include <vector>
 
-#include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/abstract_dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "plugin/ascend/res_manager/visible.h"
 #include "plugin/ascend/res_manager/mem_manager/abstract_ascend_memory_pool_support.h"
 #include "utils/ms_context.h"

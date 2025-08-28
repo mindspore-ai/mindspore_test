@@ -22,7 +22,7 @@
 #include <string>
 
 #include "include/backend/visible.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {

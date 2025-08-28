@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/mem_reuse/tracker_graph.h"
+#include "include/runtime/memory/mem_pool/tracker_graph.h"
 
 #include <fstream>
 #include <memory>
@@ -23,15 +23,15 @@
 #include <string>
 #include <unordered_map>
 
-#include "include/backend/mem_reuse/race_checker.h"
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/race_checker.h"
+#include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/distributed_meta.h"
 #include "include/common/debug/common.h"
 #include "ir/device_type.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
 #include "utils/file_utils.h"
 

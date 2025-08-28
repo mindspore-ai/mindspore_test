@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/device_address.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 

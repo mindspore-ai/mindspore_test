@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 namespace device {

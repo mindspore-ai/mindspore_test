@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
+#include "include/runtime/memory/mem_pool/abstract_dynamic_mem_pool.h"
 
 #include <stdio.h>
 
@@ -25,7 +25,7 @@
 #include <fstream>
 #include <numeric>
 
-#include "include/backend/mem_reuse/mem_pool_util.h"
+#include "include/runtime/memory/mem_pool/mem_pool_util.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 
 #include <algorithm>
 #include <chrono>
@@ -23,7 +23,7 @@
 #include <utility>
 #include <string>
 
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/log_adapter.h"

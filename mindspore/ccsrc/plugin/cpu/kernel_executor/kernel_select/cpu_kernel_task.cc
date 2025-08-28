@@ -17,7 +17,7 @@
 #include "plugin/cpu/kernel_executor/kernel_select/cpu_kernel_task.h"
 #include "plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/copy_with_slice_cpu_kernel.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore::device::cpu {
 void MallocMemoryForDeviceAddress(const device::DeviceAddressPtr &device_address,

@@ -26,7 +26,7 @@
 
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore::device::ascend {
 AscendCaptureGraph::~AscendCaptureGraph() {

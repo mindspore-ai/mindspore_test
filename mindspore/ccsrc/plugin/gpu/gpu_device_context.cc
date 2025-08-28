@@ -71,7 +71,7 @@
 #include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "runtime/core/graph_scheduler/base/move_to.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/common/utils/parallel_context.h"
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

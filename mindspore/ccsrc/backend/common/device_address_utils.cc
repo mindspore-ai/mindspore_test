@@ -41,7 +41,7 @@
 #include "runtime/hardware_abstract/utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "frontend/ir/tensor_py.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"

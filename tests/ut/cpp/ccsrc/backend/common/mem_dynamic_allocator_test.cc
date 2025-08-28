@@ -17,7 +17,7 @@
 #include <unordered_set>
 
 #include "common/common_test.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 
 namespace mindspore {
 namespace device {

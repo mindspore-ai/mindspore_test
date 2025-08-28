@@ -26,7 +26,7 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/distributed/ps/ps_context.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "runtime/core/graph_scheduler/base/parameter_store.h"
 #include "runtime/core/actors/base/kernel_async_launch_actor.h"

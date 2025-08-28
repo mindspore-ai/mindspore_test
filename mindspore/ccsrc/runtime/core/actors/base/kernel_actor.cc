@@ -32,7 +32,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "ir/dtype/tensor_type.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"

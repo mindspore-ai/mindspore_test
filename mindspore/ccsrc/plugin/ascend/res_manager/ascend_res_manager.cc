@@ -41,7 +41,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "tools/error_handler/error_config.h"
 #include "utils/file_utils.h"

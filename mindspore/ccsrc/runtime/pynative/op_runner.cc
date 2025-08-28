@@ -40,7 +40,7 @@
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_executor/pre_launch/kernel_cache.h"
 #include "kernel/framework_utils.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"

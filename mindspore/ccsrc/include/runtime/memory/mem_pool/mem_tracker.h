@@ -30,7 +30,7 @@
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "include/backend/mem_reuse/mem_pool_util.h"
+#include "include/runtime/memory/mem_pool/mem_pool_util.h"
 
 namespace mindspore {
 namespace device {
