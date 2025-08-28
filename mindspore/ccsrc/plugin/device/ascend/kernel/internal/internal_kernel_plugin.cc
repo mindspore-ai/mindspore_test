@@ -84,18 +84,21 @@ static IndexTable GroupedMatmulV4NzIndicesGetter(const AnfNodePtr &node) {
   return {{{}, {}}, {{}, {}}};
 }
 
-IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) {
-  constexpr auto kCtkvIndex = 2;
-  auto ctkv_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kCtkvIndex);
-  if (ctkv_dtype == kNumberTypeInt8) {
-    return {{{}, {}}, {{2, 3}, {}}};
-  }
-
-  return {{{}, {}}, {{}, {}}};
-}
-
+IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) { return {{{}, {}}, {{2, 3}, {}}}; }
 IndexTable QbmmNzIndicesGetter(const AnfNodePtr &node) { return {{{1}, {}}, {{1}, {}}}; }
-IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) { return {{{5, 18}, {}}, {{5, 18}, {}}}; }
+IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) {
+  size_t mla_pre_input_num = common::AnfAlgo::GetInputTensorNum(node);
+  auto cache_mode_node = common::AnfAlgo::GetPrevNodeOutput(node, mla_pre_input_num - 1).first;
+  if (cache_mode_node->isa<ValueNode>()) {
+    auto cache_mode_value_node = cache_mode_node->cast<ValueNodePtr>();
+    auto cache_mode_value = GetValue<int64_t>(cache_mode_value_node->value());
+    MS_LOG(INFO) << "cache_mode is " << cache_mode_value;
+    if (cache_mode_value == 2 || cache_mode_value == 3) {
+      return {{{5, 16, 18, 25}, {}}, {{5, 16, 18, 25}, {}}};
+    }
+  }
+  return {{{5, 18}, {}}, {{5, 18}, {}}};
+}
 
 static std::unordered_map<std::string, GetNzIndicesFunc> kNzIndicesGetterMap = {
   {prim::kPrimGroupedMatmulV4->name(), GroupedMatmulV4NzIndicesGetter},
