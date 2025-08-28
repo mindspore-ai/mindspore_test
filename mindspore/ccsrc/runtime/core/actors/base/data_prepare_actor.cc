@@ -423,6 +423,8 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
     // Push flatten tensors into store buffers.
     graph_parameter_store->FillBuffer(index, flatten_tensors);
   }
+  // Convert all non-contiguous and non-tuple inputs in the current network into contiguous ones.
+  graph_parameter_store->ConvertNormalInputContiguous(inference_input_indexes_);
   auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(graph_compiler_info_, inference_input_indexes_,
                                                                 inference_parameters_);
   if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {

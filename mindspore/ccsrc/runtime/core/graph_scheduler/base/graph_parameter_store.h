@@ -194,6 +194,8 @@ class BACKEND_EXPORT GraphParameterStore {
   bool RecordGraphInputsAndIsDyn(const GraphCompilerInfo *graph_compiler_info, const std::vector<size_t> &input_index,
                                  const std::vector<AnfNodePtr> &parameters);
 
+  void ConvertNormalInputContiguous(const std::vector<size_t> &input_index);
+
   // Release input data at the end of run graph.
   void ReleaseData();
 
