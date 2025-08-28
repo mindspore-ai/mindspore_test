@@ -591,6 +591,7 @@ constexpr const char kNameAlltoAllAllGatherBatchMatMul[] = "AlltoAllAllGatherBat
 constexpr const char kNameBatchMatMulReduceScatterAlltoAll[] = "BatchMatMulReduceScatterAlltoAll";
 constexpr const char kNameMeanExt[] = "MeanExt";
 constexpr const char kNameAlltoAll[] = "AlltoAll";
+constexpr const char kNameContiguous[] = "Contiguous";
 
 class OpAdapterDesc;
 
