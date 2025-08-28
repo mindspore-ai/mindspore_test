@@ -545,14 +545,33 @@ static void MicroBatchPostProcess(const FuncGraphPtr &root, const std::vector<An
 }
 }  // namespace
 
-void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root) {
+void CheckpointOnline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root) {
+  StrategyMap stra_map;
+  TensorInfoMap tensor_info_map;
+  ManualShapeMap manual_shape_map;
+  CheckpointStrategy(all_nodes, root, &stra_map, &tensor_info_map, &manual_shape_map);
+  if (StrategyCheckpoint::GetInstance().SaveOnline(stra_map, tensor_info_map, manual_shape_map) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Save strategy checkpoint online failed.";
+  }
+}
+
+void CheckpointOffline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root) {
   if (!StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
     MS_LOG(INFO) << "The param of save_checkpoint_on_ is False";
+    return;
   }
 
   StrategyMap stra_map;
   TensorInfoMap tensor_info_map;
   ManualShapeMap manual_shape_map;
+  CheckpointStrategy(all_nodes, root, &stra_map, &tensor_info_map, &manual_shape_map);
+  if (StrategyCheckpoint::GetInstance().Save(stra_map, tensor_info_map, manual_shape_map) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Save strategy checkpoint failed. Please check the file permission or the disk usage.";
+  }
+}
+
+void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, StrategyMap *stra_map,
+                        TensorInfoMap *tensor_info_map, ManualShapeMap *manual_shape_map) {
   for (auto &node : all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
     auto cnode = node->cast<CNodePtr>();
@@ -585,12 +604,12 @@ void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
       } else {
         stra = operator_info->strategy();
       }
-      AssignStrategyMap(stra, strategy_key_name, &stra_map);
+      AssignStrategyMap(stra, strategy_key_name, stra_map);
 
       for (auto param_name_pair : param_names) {
-        tensor_info_map[param_name_pair.first] = param_name_pair.second->user_data<TensorLayout>();
+        (*tensor_info_map)[param_name_pair.first] = param_name_pair.second->user_data<TensorLayout>();
       }
-      AssignManualShapeMapForGather(operator_info, param_name, &manual_shape_map);
+      AssignManualShapeMapForGather(operator_info, param_name, manual_shape_map);
     }
   }
   for (auto &cloned_parameter_node : root->parameters()) {
@@ -613,10 +632,7 @@ void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
     if (cloned_param_layout == nullptr) {
       continue;
     }
-    tensor_info_map[cloned_param_name] = cloned_param_layout;
-  }
-  if (StrategyCheckpoint::GetInstance().Save(stra_map, tensor_info_map, manual_shape_map) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Save strategy checkpoint failed. Please check the file permission or the disk usage.";
+    (*tensor_info_map)[cloned_param_name] = cloned_param_layout;
   }
 }
 
@@ -668,7 +684,7 @@ void ParallelPostprocessor::PipelinePostProcessStep1() {
     const auto &root = processor_context_->root;
     MS_EXCEPTION_IF_NULL(root);
     const auto &all_nodes_pp = processor_context_->all_nodes;
-    CheckpointStrategy(all_nodes_pp, root);
+    CheckpointOnline(all_nodes_pp, root);
   }
   if (pipeline_processor != nullptr) {
     MS_EXCEPTION_IF_NULL(pipeline_processor);
@@ -677,13 +693,13 @@ void ParallelPostprocessor::PipelinePostProcessStep1() {
       MS_EXCEPTION_IF_NULL(root);
       auto all_nodes_pp = TopoSort(root->get_return(), SuccDeeperSimple);
       pipeline_processor->Init(all_nodes_pp);
-      CheckpointStrategy(all_nodes_pp, root);
+      CheckpointOnline(all_nodes_pp, root);
       pipeline_processor->GraphPartition(all_nodes_pp);
     } else {
       const auto &root = processor_context_->root;
       MS_EXCEPTION_IF_NULL(root);
       const auto &all_nodes_pp = processor_context_->all_nodes;
-      CheckpointStrategy(all_nodes_pp, root);
+      CheckpointOnline(all_nodes_pp, root);
       pipeline_processor->GraphPartition(processor_context_->all_nodes);
     }
     AddVirtualAssignKvCache(processor_context_->root);
@@ -744,7 +760,7 @@ void ParallelPostprocessor::Process() {
   auto all_nodes_after_pp = TopoSort(root->get_return(), SuccDeeperSimple);
 
   if (StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
-    CheckpointStrategy(all_nodes_after_pp, root);
+    CheckpointOffline(all_nodes_after_pp, root);
   }
   DecorateDumpPathIfDumpOps(all_nodes_after_pp, manager);
   auto comm_group = FindCommonMirrorGroup(root);

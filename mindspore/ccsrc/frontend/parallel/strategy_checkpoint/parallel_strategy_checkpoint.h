@@ -216,6 +216,8 @@ class StrategyCheckpoint {
   Status LoadGroupInfo(const std::string &file, GroupInfoMap *group_info_map) const;
   Status Save(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
               const ManualShapeMap &manual_shape_map);
+  Status SaveOnline(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
+                    const ManualShapeMap &manual_shape_map);
   Status SaveGroupInfo(const GroupInfoMap &group_info_map, const RankList &restore_rank_list);
   bool group_info_save_on() const { return group_info_save_on_; }
 

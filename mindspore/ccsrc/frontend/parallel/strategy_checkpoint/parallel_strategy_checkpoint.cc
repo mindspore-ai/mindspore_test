@@ -541,8 +541,8 @@ void StrategyCheckpoint::SaveStrategyParamLayout() {
   StrategyLayout::GetInstance()->SaveNetworkGlobalLayout();
 }
 
-Status StrategyCheckpoint::Save(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
-                                const ManualShapeMap &manual_shape_map) {
+Status StrategyCheckpoint::SaveOnline(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
+                                      const ManualShapeMap &manual_shape_map) {
   strategy_checkpoint_info_.Init(strategy_map, tensor_info_map, manual_shape_map, ++current_stage_);
   const auto &compile_phase = StrategyLayout::GetInstance()->CellPhase();
   bool isValidPhase = !compile_phase.empty();
@@ -551,16 +551,16 @@ Status StrategyCheckpoint::Save(const StrategyMap &strategy_map, const TensorInf
   if (isValidPhase && !isInit && enable_save) {
     StrategyCheckpoint::GetInstance().SaveStrategyParamLayout();
   }
+  return SUCCESS;
+}
 
-  if (!StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
-    MS_LOG(INFO) << "Strategy checkpoint is not saved";
-    return SUCCESS;
-  }
-
+Status StrategyCheckpoint::Save(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
+                                const ManualShapeMap &manual_shape_map) {
   if (!CheckPath(save_file_)) {
     MS_LOG(EXCEPTION) << "CheckPoint file in invalid";
   }
 
+  strategy_checkpoint_info_.Init(strategy_map, tensor_info_map, manual_shape_map, ++current_stage_);
   if (save_format_json_) {
     auto stra_ckpt_info_j = strategy_checkpoint_info_.to_json();
     std::fstream output(save_file_, std::ios::out);

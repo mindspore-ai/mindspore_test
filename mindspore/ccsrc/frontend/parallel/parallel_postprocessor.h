@@ -36,7 +36,10 @@ class ParallelPostprocessor {
   const ParallelProcessorContextPtr &processor_context_;
 };
 
-void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root);
+void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, StrategyMap *stra_map,
+                        TensorInfoMap *tensor_info_map, ManualShapeMap *manual_shape_map);
+void CheckpointOnline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root);
+void CheckpointOffline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root);
 }  // namespace parallel
 }  // namespace mindspore
 
