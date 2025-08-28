@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import subprocess
+from tests.st.runtime.run_capture_graph import Net1, SeqNet, expected_output
+from tests.mark_utils import arg_mark
 import numpy as np
-import mindspore as ms
-import mindspore.nn as nn
 import mindspore.ops as P
 import mindspore.runtime as rt
 from mindspore import Tensor, context, mutable
-from mindspore.common import Parameter
 from mindspore import dtype as mstype
-from tests.mark_utils import arg_mark
 
 context.set_context(
     mode=context.GRAPH_MODE,
@@ -35,74 +35,9 @@ g_block_num = 20
 steps = 20
 input_len = 10
 
-class Net(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.param = Parameter(Tensor(2, ms.float32))
-        self.add = P.Add()
-        self.mul = P.Mul()
-
-    def construct(self, x):
-        x = self.add(x, self.param)
-        for _ in range(5):
-            x = self.add(x, 0.1)
-            x = self.add(x, 0.2)
-        x = self.mul(x, 2)
-        x = self.add(x, 0.5)
-        return x
-
-class SeqNet(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.net = Net()
-
-    def construct(self, x):
-        output = self.net(x)
-        return output
-
-class Net1(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.add = P.Add()
-        self.mul = P.Mul()
-        self.sub = P.Sub()
-        self.add_n = P.AddN()
-        self.reshape = P.Reshape()
-
-    def construct(self, x, key_cache_list, value_cache_list):
-        y = x
-        x = self.reshape(x, (1, -1))
-        for i in range(g_block_num):
-            key = key_cache_list[int(i/2) % input_len]
-            x = self.add(x, 1)
-            x = self.sub(x, 1.1)
-            x = self.reshape(x, (2, -1))
-            x = self.add(x, key)
-            x = self.add(x, y)
-            x = self.mul(x, 0.251)
-            x = self.add(x, 1)
-            x = self.add(x, key)
-            x = self.mul(x, 0.501)
-            x = self.sub(x, 1.1)
-            x = self.reshape(x, (2, -1))
-            x = self.mul(x, 2)
-            x = self.add(x, y)
-            x = self.sub(x, 1.1)
-            x = self.sub(x, key)
-            x = self.reshape(x, (4, -1))
-            x = self.mul(x, 0.051)
-            x = self.reshape(x, (2, -1))
-            x = self.add_n(value_cache_list) + y + x
-            x = self.add(x, key)
-        x = self.reshape(x, (2, -1))
-        return x
-
-def expected_output(x):
-    return (x + 3.5) * 2 + 0.5
-
 @arg_mark(
     plat_marks=['platform_ascend910b'],
-    level_mark='level0',
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='essential'
 )
@@ -145,7 +80,7 @@ def test_kv_cache_for_capture_graph():
     Description: Test kv_cache scene
     Expectation: No exception and result is correct
     """
-    rt.set_kernel_launch_capture(True)
+    rt.set_kernel_launch_capture(True, ['reshape'])
     input_data1 = Tensor(np.zeros((2, 2)).astype(np.float32))
     input_data2 = Tensor(np.zeros((2, 4)).astype(np.float32))
     dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
@@ -187,3 +122,46 @@ def test_kv_cache_for_capture_graph():
     expected = np.array([[11.036, 11.036, 11.036, 11.036], [11.036, 11.036, 11.036, 11.036]], dtype=np.float32)
 
     assert np.allclose(output, expected, rtol=0, atol=0.001), f"Result wrong, real: {output}, expected: {expected}"
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_multi_graph_cache_for_capture_graph():
+    """
+    Feature: capture graph support multi graph cache
+    Description: Test capture count and replay count are both correct
+    Expectation: No exception and result is correct
+    """
+    expected_capture_count = 3
+    expected_replay_count = 11
+
+    command = 'export GLOG_v=1 && python run_capture_graph.py > capture_graph.log 2>&1'
+    os.system(command)
+
+    log_file = "capture_graph.log"
+
+    try:
+        capture_count = int(subprocess.check_output(
+            f"grep 'Begin launch all kernels with capture graph' {log_file} | wc -l",
+            shell=True
+        ).decode().strip())
+
+        replay_count = int(subprocess.check_output(
+            f"grep 'Begin launch all kernels with replay graph' {log_file} | wc -l",
+            shell=True
+        ).decode().strip())
+
+        assert capture_count == expected_capture_count, \
+            f"Expected {expected_capture_count} capture graph launched, got {capture_count}"
+        assert replay_count == expected_replay_count, \
+            f"Expected {expected_replay_count} capture graph launched, got {replay_count}"
+
+    except subprocess.CalledProcessError as e:
+        pytest.fail(f"Failed to analyse logs: {str(e)}")
+    finally:
+        if os.path.exists(log_file):
+            os.remove(log_file)

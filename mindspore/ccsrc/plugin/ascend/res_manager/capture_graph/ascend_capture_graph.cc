@@ -105,5 +105,4 @@ void AscendCaptureGraph::ExecuteCaptureGraph(uint32_t stream_id) {
   }
 #endif
 }
-bool AscendCaptureGraph::HasCapturedGraph() const { return finish_capture_graph_; }
 }  // namespace mindspore::device::ascend

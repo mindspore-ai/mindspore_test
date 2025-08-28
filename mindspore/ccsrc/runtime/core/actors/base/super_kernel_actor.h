@@ -99,6 +99,14 @@ class SuperKernelActor : public DebugAwareActor {
   bool LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor, bool hp_mode,
                     bool sync_run = false);
 
+  // Only used for the aclgraph feature, At the capture stage, when dispatching operators.
+  bool LaunchKernelForCaptureGraph(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
+                                   size_t index, bool is_graph);
+
+  // Only used for the aclgraph feature, At the replay stage, when dispatching operators.
+  bool LaunchKernelForReplayGraph(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
+                                  size_t index);
+
   bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
 
   bool enable_inline_control_flow() const { return enable_inline_control_flow_; }
@@ -212,6 +220,10 @@ class SuperKernelActor : public DebugAwareActor {
                            size_t stream_id = SIZE_MAX);
   void FreeInputParamWithoutUser(OpContext<KernelTensor> *const context);
   void RecordKernelActorWeight();
+
+  void HandleFirstUserInputMemoryFree(const KernelRunnerPtr &kernel_actor, size_t kernel_input_index);
+
+  bool IsNonContinuousInputValid();
 
   // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
   bool FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_actor, OpContext<KernelTensor> *const context);

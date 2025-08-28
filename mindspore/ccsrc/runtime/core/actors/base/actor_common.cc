@@ -260,6 +260,11 @@ bool EnableTraceMemory() {
     return false;
   }
 
+  // capture graph not support trace memory.
+  if (EnableCaptureGraph()) {
+    return false;
+  }
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   const bool enable_infer_boost = ms_context->IsEnableInferBoost();
@@ -363,6 +368,13 @@ bool EnableParallelDispatchKernel() {
   MS_EXCEPTION_IF_NULL(runtime_conf_instance);
   static bool enable_parallel_dispatch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
   return enable_parallel_dispatch_kernel;
+}
+
+bool EnableCaptureGraph() {
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  bool enable_capture_graph = runtime_conf_instance->GetEnableKernelLaunchCapture();
+  return enable_capture_graph;
 }
 
 size_t GetDefragMemoryStepFreq() {

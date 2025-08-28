@@ -316,7 +316,7 @@ void AbstractActor::HandleWaitMessage(OpContext<KernelTensor> *const context, co
 }
 
 bool AbstractActor::IsOutputAddressPersisted(const KernelTensorPtr &output_kernel_tensor,
-                                             const KernelWithIndex &output_node, bool *need_release_mem) {
+                                             const KernelWithIndex &output_node) {
   MS_EXCEPTION_IF_NULL(output_node.first);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -340,10 +340,8 @@ bool AbstractActor::IsOutputAddressPersisted(const KernelTensorPtr &output_kerne
 
   // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
   // memory.
-  if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && ActorDispatcher::enable_use_trace_memory()) {
-    if (need_release_mem) {
-      *need_release_mem = false;
-    }
+  if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
+      GraphCaptureManager::GetInstance().IncrementGraph()) {
     return true;
   }
 

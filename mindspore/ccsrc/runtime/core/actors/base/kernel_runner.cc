@@ -569,6 +569,74 @@ void KernelRunner::SetShapeDependInfo() {
   input_free_index_.swap(need_free_input_index);
 }
 
+bool KernelRunner::ConvertInputContiguousForSingleKernelTensor(OpContext<KernelTensor> *const context,
+                                                               KernelTensorPtr input_kernel_tensor,
+                                                               size_t kernel_input_index) {
+  auto stream_id = kernel_info_->stream_id();
+  auto input_device_tensor = input_kernel_tensor->device_address().get();
+  MS_EXCEPTION_IF_NULL(input_device_tensor);
+  const auto old_storage_info = input_device_tensor->GetTensorStorageInfo();
+  if ((SizeOf(old_storage_info->shape) == SizeOf(old_storage_info->ori_shape)) && old_storage_info->is_contiguous) {
+    return false;
+  }
+  if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
+                                                    kernel_input_index) != launch_ignored_inputs_.end())) {
+    MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << kernel_input_index;
+    return false;
+  }
+  MS_LOG(INFO) << "Make input [" << kernel_input_index << "] contiguous for kernel " << kernel_->DebugString();
+  if (contiguous_tensors_[kernel_input_index] == nullptr) {
+    // Make new device tensor and run InplaceCopy to make contiguous.
+    MS_EXCEPTION_IF_NULL(old_storage_info);
+    auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
+      nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
+      device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+    kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
+    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
+    kernel_tensor->set_stream_id(stream_id);
+
+    auto new_device_address = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(new_device_address);
+    // Store the temp device address
+    contiguous_tensors_[kernel_input_index] = kernel_tensor;
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
+  }
+  auto &new_kernel_tensor = contiguous_tensors_[kernel_input_index];
+  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+  auto &new_device_address = new_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(new_device_address);
+  if (is_dynamic_shape_) {
+    auto input_tensor = input_kernel_tensors_[kernel_input_index];
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    MS_EXCEPTION_IF_NULL(input_tensor->GetShape());
+    new_kernel_tensor->SetShape(input_tensor->GetShape()->Clone());
+    MS_EXCEPTION_IF_NULL(input_tensor->device_address());
+    auto address_size =
+      GetTypeByte(TypeIdToType(input_tensor->device_address()->type_id())) * SizeOf(old_storage_info->shape);
+    new_kernel_tensor->set_size(address_size);
+  }
+
+  new_device_address->set_tensor_storage_info(nullptr);
+  // Launch CopyInplace to make tensor contiguous.
+  if (kernel_input_index >= depend_shape_input_list_.size() || !depend_shape_input_list_[kernel_input_index]) {
+    if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(
+          runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_device_tensor}, {new_device_address.get()}, stream_id)) {
+      MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
+    }
+    // Store the old tensor storage info , input device tensor and input kernel tensor.
+    // Recover them when launch finished.
+  }
+  temp_input_kernel_tensors_[kernel_input_index] = input_kernel_tensors_[kernel_input_index];
+  MS_LOG(DEBUG) << "Repalce input kernel tensor from:" << input_kernel_tensors_[kernel_input_index]->ToString()
+                << " to:" << new_kernel_tensor->ToString() << " input index:" << kernel_input_index
+                << " for actor:" << GetAID();
+  input_kernel_tensors_[kernel_input_index] = new_kernel_tensor;
+  input_launch_tensors_[kernel_input_index] = new_kernel_tensor.get();
+  input_kernel_tensors_for_infer_[kernel_input_index] = new_kernel_tensor;
+  return true;
+}
+
 void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context) {
   auto cur_stream_id = device_contexts_[0]->device_res_manager_->GetCurrentStreamId();
   auto stream_id = kernel_info_->stream_id();
@@ -849,7 +917,7 @@ void KernelRunner::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   }
 }
 
-void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) {
+void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t stream_id) {
   if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
     MS_EXCEPTION_IF_NULL(kernel_info_);
     for (const auto &out_in : kernel_info_->out_in_ref_map()) {
@@ -868,7 +936,8 @@ void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) 
       output_device_tensor->set_ptr(ptr);
     }
   }
-  MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID());
+  MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID(),
+                                                      stream_id);
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {
     if (IsRunningFailed(context)) {
