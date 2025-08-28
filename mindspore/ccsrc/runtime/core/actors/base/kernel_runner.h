@@ -151,6 +151,7 @@ class KernelRunner {
   const std::vector<std::shared_ptr<InputDataInfo>> &real_input_data_infos() const { return real_input_data_infos_; }
   GraphExecutionStrategy &get_strategy() { return strategy_; }
   KernelTransformType type() const { return type_; }
+  bool is_dynamic_value() const { return is_dynamic_value_; }
 
   bool HighPerfMode();
 
