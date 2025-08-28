@@ -54,6 +54,7 @@ from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
 from mindspore._c_expression import _get_optimzer_timestamps
 from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo, check_is_arf, set_is_arf
+from mindspore._c_expression import _get_snapshot_params, _is_snapshot_valid
 
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from .serialization import load_param_into_net
@@ -171,7 +172,12 @@ def _handle_training_result_error(model, tft_obj):
     """
     Handle training result error for resuming training.
     """
-    ckpt_load_fn = tft_obj.ckpt_load_func
+    def load_snapshot_params():
+        param_dict = {}
+        for name, tensor in _get_snapshot_params().items():
+            param_dict[name] = mindspore.Parameter(tensor, name=name)
+        return (param_dict, False)
+    ckpt_load_fn = load_snapshot_params if _is_snapshot_valid() else tft_obj.ckpt_load_func
     train_network = tft_obj.cb_params.train_network
     logger.warning("Process training result error start.")
     # 1. Clear tdt channel
@@ -230,6 +236,20 @@ def _update_ckpt_callback_info(resume_train_step, **kwargs):
         ckpt_obj._append_step_num = resume_train_step
 
 
+def _get_tft_obj(**kwargs):
+    """
+    Get TrainFaultTolerance from kwargs of callback
+    """
+    obj = None
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TrainFaultTolerance):
+        obj = kwargs.get('callbacks')
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
+        for item in kwargs.get('callbacks'):
+            if isinstance(item, TrainFaultTolerance):
+                obj = item
+    return obj
+
+
 def _handle_tft(func):
     """
     Decorator function, which starts uce handle process when an exception occurs during training.
@@ -237,17 +257,11 @@ def _handle_tft(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        obj = None
-        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TrainFaultTolerance):
-            obj = kwargs.get('callbacks')
-        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
-            for item in kwargs.get('callbacks'):
-                if isinstance(item, TrainFaultTolerance):
-                    obj = item
-        if obj:
+        obj = _get_tft_obj(**kwargs)
+        if obj and not TrainFaultTolerance._only_enable_ckpt_d2h_async():
             tft_env = os.getenv("MS_ENABLE_TFT", "")
             uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env or "HCCE:1" in tft_env
-            tre_env = "TRE:1" in tft_env
+            tre_env = "TRE:1" in tft_env or "TRE:2" in tft_env
             while True:
                 try:
                     return func(self, *args, **kwargs)
@@ -801,9 +815,7 @@ class Model:
         :param cb_params: callback params
         :return: none
         """
-        if os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC") != "1":
-            return
-        if context.get_context("device_target") == "Ascend":
+        if TrainFaultTolerance._enable_snapshot() and context.get_context("device_target") == "Ascend":
             cb_params.need_ckpt, cb_params.save_checkpoint_steps, \
             cb_params.last_triggered_step = self._check_need_ckpt(cb_params.list_callback)
             logger.info(f"need_ckpt:{cb_params.need_ckpt},"
@@ -1300,7 +1312,6 @@ class Model:
         """
         _init_auto_parallel_context(self._network)
         _check_tft()
-        device_target = context.get_context("device_target")
 
         Validator.check_bool(dataset_sink_mode)
         if isinstance(self._train_network, nn.GraphCell) and dataset_sink_mode:
@@ -1439,7 +1450,6 @@ class Model:
             >>> model.fit(2, train_dataset, valid_dataset)
         """
         _init_auto_parallel_context(self._network)
-        device_target = context.get_context("device_target")
 
         dataset_sink_mode = Validator.check_bool(dataset_sink_mode)
         valid_dataset_sink_mode = Validator.check_bool(valid_dataset_sink_mode)

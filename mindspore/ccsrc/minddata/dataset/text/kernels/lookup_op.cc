@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 #include "minddata/dataset/text/kernels/lookup_op.h"
 
 namespace mindspore {

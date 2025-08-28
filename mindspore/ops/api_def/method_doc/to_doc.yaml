@@ -1,0 +1,97 @@
+to:
+  description: |
+    to(dtype=None, non_blocking=False, copy=False) -> Tensor
+    
+    Returns a tensor with the new specified data type.
+
+    Note:
+        - When converting complex numbers to boolean type, the imaginary part of the complex number is not
+          taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+        - `non_blocking` and `copy` do not take effect in GRAPH_MODE or within jit.
+
+    Args:
+        dtype (dtype.Number, optional): The valid data type of the output tensor. Default: ``None``.
+        non_blocking(bool, optional): Data type conversion asynchronously. If ``True`` , convert data type asynchronously. If ``False`` , convert data type synchronously. Default: ``False`` .
+        copy(bool, optional): When copy is set ``True`` , a new Tensor is created even when then Tensor already matches the desired conversion. Default: ``False`` .
+
+    Returns:
+        Tensor, the data type of the tensor is `dtype` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> dtype = mindspore.int32
+        >>> output = input.to(dtype)
+        >>> print(output.dtype)
+        Int32
+        >>> print(output.shape)
+        (2, 3, 4, 5)
+    
+    .. method:: Tensor.to(device=None, dtype=None, non_blocking=False, copy=False) -> Tensor
+        :noindex:
+    
+    Returns a tensor with the new specified data type and device type.
+
+    Note:
+        `device` , `non_blocking` and `copy` do not take effect in GRAPH_MODE or within jit.
+    
+    Args:
+        device(string, optional): The device type of the output tensor. Default: ``None`` .
+        dtype (dtype.Number, optional): The valid data type of the output tensor. Default: ``None`` .
+        non_blocking(bool, optional): Data type conversion asynchronously. If ``True`` , convert data type asynchronously. If ``False`` , convert data type synchronously. Default: ``False`` .
+        copy(bool, optional): When copy is set ``True`` , a new Tensor is created even when then Tensor already matches the desired conversion. Default: ``False`` .
+    
+    Returns:
+        Tensor, the specified device type and data type of the tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> dtype = mindspore.int32
+        >>> output = input.to("Ascend")
+        >>> print(output.device)
+        "Ascend:0"
+    
+    .. method:: Tensor.to(other, non_blocking=False, copy=False) -> Tensor
+        :noindex:
+    
+    Returns a tensor with same device and dtype as the Tensor `other` .
+    
+    Note:
+        `non_blocking` and `copy` do not take effect in GRAPH_MODE or within jit.
+
+    Args:
+        other(Tensor): The returned Tensor has the same device and dtype as `other` .
+        non_blocking(bool, optional): Data type conversion asynchronously. If ``True`` , convert data type asynchronously. If ``False`` , convert data type synchronously. Default: ``False`` .
+        copy(bool, optional): When copy is set ``True`` , a new Tensor is created even when then Tensor already matches the desired conversion. Default: ``False`` .
+
+    Returns:
+        Tensor, same device and dtype as the Tensor `other` .
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> other = input.to("Ascend", dtype=mindspore.float16)
+        >>  output = input.to(other)
+        >>> print(output.device)
+        "Ascend:0"
+        >>> print(output.dtype)
+        float16

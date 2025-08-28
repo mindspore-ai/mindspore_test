@@ -27,7 +27,8 @@ void UnstackExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &i
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   const auto &dim = inputs[kIndex1]->GetValueWithCheck<int64_t>();
 
-  info_ = ops::UnstackStridesCalc(old_info, dim);
+  info_ =
+    ops::UnstackStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), dim);
   for (size_t i = 0; i < outputs.size(); i++) {
     outputs[i]->set_tensor_storage_info(info_[i]);
   }

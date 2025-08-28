@@ -5,6 +5,7 @@ tile:
     CPU: pyboost
     GPU: pyboost
     interface: tensor
+    varargs: dims
 
   - op_yaml: deprecated/tile_method.yaml
     py_method: deprecated_tensor_tile

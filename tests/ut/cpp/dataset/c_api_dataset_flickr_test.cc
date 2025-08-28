@@ -178,6 +178,9 @@ TEST_F(MindDataTestPipeline, TestFlickrIteratorWrongColumn) {
   EXPECT_EQ(iter, nullptr);
 }
 
+/// Feature: FlickrDataset
+/// Description: Test basic usage of FlickrDataset with train dataset
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestFlickrGetters) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestFlickrGetters.";
 

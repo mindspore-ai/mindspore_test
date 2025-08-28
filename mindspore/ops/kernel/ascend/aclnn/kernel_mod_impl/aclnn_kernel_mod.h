@@ -30,7 +30,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "include/common/utils/utils.h"
 #include "tools/profiler/profiler.h"
-#include "runtime/pynative/op_runtime_info.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
@@ -380,6 +379,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override;
   bool IsNeedUpdateOutputShapeAndSize() override { return false; }
   std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in aclnn."; }
+  void set_fullname(const std::string &fullname) override { fullname_ = fullname; }
 
   template <typename... Args>
   void UpdateWorkspace(const std::tuple<Args...> &args) {
@@ -420,6 +420,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
   std::list<CacheTuple> hash_cache_;
   size_t capacity_{64};
+  std::string fullname_;
 
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;

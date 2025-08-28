@@ -23,9 +23,6 @@ mindspore.mint.nn.NLLLoss
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **weight** (Tensor, 可选) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
           数据类型仅支持float16、float32或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `input` 的数据类型保持一致。默认值： ``None`` 。

@@ -151,6 +151,9 @@ TEST_F(MindDataTestPipeline, TestRandomDatasetGetters) {
   EXPECT_EQ(ds->GetColumnNames(), column_names);
 }
 
+/// Feature: RandomDataset
+/// Description: Test basic usage of RandomDataset with train dataset
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestRandomDatasetBasic2) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestRandomDatasetBasic2.";
 
@@ -499,9 +502,9 @@ TEST_F(MindDataTestPipeline, TestRandomDatasetBasic7) {
   GlobalContext::config_manager()->set_seed(curr_seed);
 }
 
-// Feature: Test Repeat and Shuffle on RandomData
-// Description: Apply operations, iterate through dataset and count rows
-// Expectation: There should be 30 rows in the dataset
+/// Feature: Test Repeat and Shuffle on RandomData
+/// Description: Apply operations, iterate through dataset and count rows
+/// Expectation: There should be 30 rows in the dataset
 TEST_F(MindDataTestPipeline, TestRandomDatasetBasic8) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestRandomDatasetBasic8.";
 

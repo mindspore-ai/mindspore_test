@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_DECLARE_NO_OP_DECLARE_H_
 
 #include "plugin/ascend/res_manager/op_adapter/op_declare/op_declare_macro.h"
-#include "utils/hash_map.h"
 
 DECLARE_OP_ADAPTER(NoOp)
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_DECLARE_NO_OP_DECLARE_H_

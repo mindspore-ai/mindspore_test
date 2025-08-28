@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@
 
 #include <string>
 #include <memory>
-#include "ir/named.h"
-#include "ir/primal_attr.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 /// \brief QuantizationParam defines tensor quantization param of MindSpore.

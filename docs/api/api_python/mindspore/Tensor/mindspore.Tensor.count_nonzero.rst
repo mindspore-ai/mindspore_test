@@ -5,9 +5,6 @@ mindspore.Tensor.count_nonzero
 
     计算输入Tensor指定轴上的非零元素的数量。如果没有指定维度，则计算Tensor中所有非零元素的数量。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **dim** (Union[None, int, tuple(int), list(int)], 可选) - 要沿其计算非零值数量的维度。默认值： ``None`` ，计算所有非零元素的个数。
 

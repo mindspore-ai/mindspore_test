@@ -16,9 +16,9 @@
 #include <fstream>
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/image/decode_op.h"
-#include "minddata/dataset/kernels/image/random_crop_and_resize_op.h"
-#include "minddata/dataset/kernels/image/random_crop_decode_resize_op.h"
+#include "minddata/dataset/vision/kernels/decode_op.h"
+#include "minddata/dataset/vision/kernels/random_crop_and_resize_op.h"
+#include "minddata/dataset/vision/kernels/random_crop_decode_resize_op.h"
 #include "minddata/dataset/core/config_manager.h"
 #include "utils/log_adapter.h"
 

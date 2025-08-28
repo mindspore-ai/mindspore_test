@@ -28,7 +28,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lu_unpack_impl.cuh"
 #include "utils/check_convert_utils.h"
-#include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 constexpr size_t kInputNum = 2;

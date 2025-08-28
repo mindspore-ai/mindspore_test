@@ -3,23 +3,22 @@ set_property(SOURCE ${_CURRENT_SRC_FILES} PROPERTY COMPILE_DEFINITIONS SUBMODULE
 if(ENABLE_PYTHON)
     add_library(APItoPython OBJECT
             python/bindings/dataset/audio/bindings.cc
-            python/bindings/dataset/audio/kernels/ir/bindings.cc
+            python/bindings/dataset/audio/transform/bindings.cc
             python/bindings/dataset/callback/bindings.cc
             python/bindings/dataset/core/bindings.cc
+            python/bindings/dataset/data_source/bindings.cc
+            python/bindings/dataset/data_source/samplers/bindings.cc
             python/bindings/dataset/engine/cache/bindings.cc
             python/bindings/dataset/engine/datasetops/bindings.cc
-            python/bindings/dataset/engine/ir/consumer/bindings.cc
-            python/bindings/dataset/engine/ir/datasetops/bindings.cc
-            python/bindings/dataset/engine/ir/datasetops/source/bindings.cc
-            python/bindings/dataset/engine/ir/datasetops/source/samplers/bindings.cc
-            python/bindings/dataset/engine/ir/execute/bindings.cc
-            python/bindings/dataset/engine/ir/schema/bindings.cc
+            python/bindings/dataset/engine/consumer/bindings.cc
+            python/bindings/dataset/engine/execute/bindings.cc
+            python/bindings/dataset/engine/schema/bindings.cc
             python/bindings/dataset/engine/perf/bindings.cc
             python/bindings/dataset/kernels/bindings.cc
-            python/bindings/dataset/kernels/ir/bindings.cc
-            python/bindings/dataset/kernels/ir/image/bindings.cc
+            python/bindings/dataset/vision/bindings.cc
             python/bindings/dataset/text/bindings.cc
-            python/bindings/dataset/text/kernels/ir/bindings.cc
+            python/bindings/dataset/text/transform/bindings.cc
+            python/bindings/dataset/general/bindings.cc
             python/bindings/dataset/util/bindings.cc
             python/bindings/mindrecord/include/bindings.cc
             python/pybind_conversion.cc

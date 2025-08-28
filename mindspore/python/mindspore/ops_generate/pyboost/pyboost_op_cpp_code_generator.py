@@ -40,6 +40,25 @@ def check_no_basic_int_type(op_args):
     return True
 
 
+def get_inplace_indices(op_proto):
+    """
+    Extracts the indices of inplace arguments from the operation prototype.
+
+    Args:
+        op_proto (OpProto): The operator prototype containing argument information.
+
+    Returns:
+        list: A list of indices for inplace arguments.
+    """
+    inplace_args = []
+    for arg in op_proto.op_returns:
+        if arg.inplace != '':
+            inplace_args.append(arg.inplace)
+    input_args = [arg.arg_name for arg in op_proto.op_args]
+    inplace_indices = [input_args.index(arg) for arg in inplace_args]
+    return inplace_indices
+
+
 class PyboostCommonOpHeaderGenerator(BaseGenerator):
     """
     Generates common C++ headers for PyBoost operations.
@@ -302,9 +321,12 @@ class PyboostOpCppGenerator:
                 if arg.inplace != '':
                     check_inplace_func = f'ThrowExpectionWhenInternalOverlap({arg.inplace}_tensor);'
                     break
+            inplace_indices = get_inplace_indices(op_proto)
+            inplace_indices_str = ', '.join(str(i) for i in inplace_indices)
             call_impl = self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE.replace(
                 call_args=call_args,
                 return_values=call_func_outputs,
+                inplace_indices=inplace_indices_str,
                 customize_func=getattr(
                     op_proto.op_dispatch, self.device) + "Customize",
                 check_expression=check_inplace_func,
@@ -435,7 +457,6 @@ class PyboostViewOpCppGenerator:
             merge_op_header (list): A list to store the generated C++ header code for view operations.
             merge_op_function (list): A list to store the generated C++ source code for view operations.
         """
-        calc_args_temp = Template("{${call_args}}")
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
@@ -443,7 +464,7 @@ class PyboostViewOpCppGenerator:
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
-            if not op_proto.op_view:
+            if not op_proto.op_view or not op_proto.bprop_expander:
                 continue
 
             op_parser = OpTemplateParser(op_proto)
@@ -451,16 +472,12 @@ class PyboostViewOpCppGenerator:
             call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
             if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
                 call_args_with_type = op_parser.parse_call_args_with_types(True)
-                storage_calc_str = op_proto.op_class.name + "BasicType"
-                calc_func_args_str = call_args
             else:
                 call_args_with_type = op_parser.parse_call_args_with_types()
-                storage_calc_str = op_proto.op_class.name
-                calc_func_args_str = calc_args_temp.replace(call_args=call_args)
+            storage_calc_str = op_proto.op_class.name
             _, call_func_outputs = op_parser.generate_pyboost_outputs()
             call_impl = self.PYBOOST_VIEW_CALL_TEMPLATE.replace(op_name=op_proto.op_class.name,
                                                                 storage_calc=storage_calc_str,
-                                                                calc_func_args=calc_func_args_str,
                                                                 call_args=call_args,
                                                                 call_tensors=call_args_tensor,
                                                                 return_values=call_func_outputs,
@@ -596,6 +613,8 @@ class AclnnOpCppCodeGenerator:
             else:
                 call_args_with_type = op_parser.parse_call_args_with_types()
             inplace_process = _generate_inplace_process_cpp_code(op_proto)
+            inplace_indices = get_inplace_indices(op_proto)
+            inplace_indices_str = ', '.join(str(i) for i in inplace_indices)
             call_impl = self.PYBOOST_CALL_TEMPLATE.replace(aclnn_name=aclnn_name,
                                                            call_args=call_args,
                                                            call_tensors=call_args_tensor,
@@ -612,6 +631,7 @@ class AclnnOpCppCodeGenerator:
                                                            return_values=call_func_outputs,
                                                            outputs=real_output,
                                                            inplace_process=inplace_process,
+                                                           inplace_indices=inplace_indices_str,
                                                            cast_input_code=cast_input_code,
                                                            real_call_args_tensor=real_call_args_tensor,
                                                            class_name=op_proto.op_class.name,
@@ -1024,6 +1044,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
             ops_inc_head_set = set()
             for op_name_inc in op_inc_list[i]:
                 ops_inc_head_set.add(template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_name_inc[0].lower()))
+            op_header += '#include "kernel/cpu/pyboost/pyboost_op_plugin_utils.h"\n'
             cpu_pyboost_op_source = self.PYBOOST_CPU_OP_SOURCE_TEMPLATE.replace(
                 merge_op_header=op_header, merge_op_function=op_function, ops_inc=list(sorted(ops_inc_head_set)))
             save_file(os.path.join(work_path, self.cpu_gen_path), f"pyboost_cpu_ops_{i}.cc",

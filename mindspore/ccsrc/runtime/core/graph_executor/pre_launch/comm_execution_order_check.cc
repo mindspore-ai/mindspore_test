@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -269,7 +269,7 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
 
   auto input_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, kMaxAllGatherBuffSize, {static_cast<int64_t>(kMaxAllGatherBuffSize)}, Format::DEFAULT_FORMAT,
-    TypeId::kNumberTypeUInt8, device_target, device_id, comm_stream_id);
+    TypeId::kNumberTypeUInt8, device_target, comm_stream_id);
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocMemoryForCheckCommExecutionOrder",
                                                  "AllocMemoryForCheckCommExecutionOrder", "", false);
@@ -292,7 +292,7 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
 
   auto output_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, kMaxAllGatherBuffSize * GetRankSize(), {static_cast<int64_t>(kMaxAllGatherBuffSize * GetRankSize())},
-    Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt8, device_target, device_id, comm_stream_id);
+    Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt8, device_target, comm_stream_id);
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "AllocMemoryForCheckCommExecutionOrder",
                                                  device::tracker::MemType::kOther, output_device_tensor->GetSize(),

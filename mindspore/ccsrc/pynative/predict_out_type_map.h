@@ -23,8 +23,8 @@
 #include "utils/hash_map.h"
 #include "ops/base_operator.h"
 #include "base/base.h"
-#include "ir/dtype.h"
 #include "pynative/base.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace pynative {

@@ -26,7 +26,8 @@ void ExpandDimsView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &i
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   auto axis = inputs[kIndex1]->GetValueWithCheck<int64_t>();
 
-  info_ = ops::ExpandDimsStrideCalc(old_info, axis);
+  info_ =
+    ops::ExpandDimsStrideCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), axis);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 

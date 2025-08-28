@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

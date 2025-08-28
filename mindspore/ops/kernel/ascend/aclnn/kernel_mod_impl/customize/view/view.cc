@@ -35,9 +35,10 @@ void ViewView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
   }
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
 
-  info_ = ops::ViewStridesCalc(old_info, shape);
-  info_[0]->ori_size = inputs[0]->size();
-  outputs[kIndex0]->set_tensor_storage_info(info_[0]);
+  auto infos =
+    ops::ViewStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), shape);
+  infos[0]->ori_size = inputs[0]->size();
+  outputs[kIndex0]->set_tensor_storage_info(infos[0]);
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 

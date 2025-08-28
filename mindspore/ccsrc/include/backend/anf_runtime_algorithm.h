@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,11 @@
 #include <map>
 #include <optional>
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "base/base.h"
-#include "ir/primitive.h"
-#include "ir/kernel_info_dev.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/common/utils/contract.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -331,10 +328,8 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static ValueNodePtr CreateTypeIdValueNodeToFuncGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static bool IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph);
 
-  // if graph output is valuenode or parameter, used to skip compile or run
+  // if graph output is valuenode or parameter, used to skip compile
   static bool IsGraphOutputValueNodeOrParameterForCompile(const AnfNodePtr &graph_output);
-  static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
-                                                VectorRef *outputs);
 
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
@@ -349,6 +344,9 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                             const ShapeVector &host_shape, const string &device_name,
                                             uint32_t device_id, const UserDataPtr &user_data = nullptr);
+
+  // Get device attr string from Parameter.
+  static std::string GetParameterDeviceStr(const mindspore::AnfNodePtr &node);
   // check if is GE backend
   static bool IsBackendGe();
   // check if is ms_backend backend

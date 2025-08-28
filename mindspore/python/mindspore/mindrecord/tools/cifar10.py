@@ -23,7 +23,7 @@ import re
 import numpy as np
 
 from mindspore import log as logger
-from ..shardutils import check_filename
+from ..core.shardutils import check_filename
 
 __all__ = ['Cifar10']
 

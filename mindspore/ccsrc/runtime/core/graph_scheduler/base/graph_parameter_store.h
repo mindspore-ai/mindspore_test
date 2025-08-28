@@ -59,6 +59,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_used_times_.resize(front_parameter_size);
     parameter_device_types_.resize(front_parameter_size);
     is_offload_parameter_.resize(front_parameter_size);
+    is_parameter_pinned_.resize(front_parameter_size);
     released_check_addresses_.resize(front_parameter_size);
   }
 
@@ -72,6 +73,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_used_times_[outer_index].resize(tuple_unfold_length, 0);
     parameter_device_types_[outer_index].resize(tuple_unfold_length);
     is_offload_parameter_[outer_index].resize(tuple_unfold_length, false);
+    is_parameter_pinned_[outer_index].resize(tuple_unfold_length, false);
     released_check_addresses_[outer_index].resize(tuple_unfold_length);
     buffer_size_ += tuple_unfold_length;
   }
@@ -192,6 +194,8 @@ class BACKEND_EXPORT GraphParameterStore {
   bool RecordGraphInputsAndIsDyn(const GraphCompilerInfo *graph_compiler_info, const std::vector<size_t> &input_index,
                                  const std::vector<AnfNodePtr> &parameters);
 
+  void ConvertNormalInputContiguous(const std::vector<size_t> &input_index);
+
   // Release input data at the end of run graph.
   void ReleaseData();
 
@@ -200,7 +204,7 @@ class BACKEND_EXPORT GraphParameterStore {
   size_t GetNonWeightParameterNum();
 
   // Insert host tensor data and src device tensor into callback to avoid release before async copy finished.
-  void InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor);
+  void InsertDeviceTensorIntoCallback(const DeviceAddressPtr &device_tensor);
 
   void SetPositionTensor(size_t outer_index, bool is_tensor);
   bool GetPositionTensor(size_t outer_index);
@@ -208,11 +212,16 @@ class BACKEND_EXPORT GraphParameterStore {
   void SetOffloaded(size_t outer_index, size_t inner_index, bool is_offload);
   bool GetOffloaded(size_t outer_index, size_t inner_index);
 
+  void SetPinned(size_t outer_index, size_t inner_index, bool is_pinned);
+  bool GetPinned(size_t outer_index, size_t inner_index);
+
   void Clear();
 
   const std::vector<std::vector<std::pair<KernelTensorPtr, UserCntWithPrepared>>> &GetAll() const {
     return parameter_kernel_tensors_;
   }
+
+  const std::vector<ShapeVector> &GetHostTensorsShape() const { return host_tensors_shape_; }
 
   void SetParameterUsedTimes(size_t outer_index, size_t inner_index, size_t times);
 
@@ -237,6 +246,7 @@ class BACKEND_EXPORT GraphParameterStore {
   std::vector<bool> is_tensors_;
   std::vector<std::vector<device::DeviceType>> parameter_device_types_;
   std::vector<std::vector<bool>> is_offload_parameter_;
+  std::vector<std::vector<bool>> is_parameter_pinned_;
   // Record the parameter may be concurrently used, if equal to 1, fetch parameter can not use lock.
   std::vector<std::vector<size_t>> parameter_used_times_;
   std::vector<std::vector<std::function<void(size_t)>>> async_copy_funcs_;
@@ -260,7 +270,7 @@ class BACKEND_EXPORT GraphParameterStore {
   std::vector<std::vector<TensorPtr>> buffers_;
   size_t buffer_size_{0};
   // Protect async copy finished before release.
-  std::vector<DeviceSyncPtr> device_tensor_in_callback_;
+  std::vector<DeviceAddressPtr> device_tensor_in_callback_;
   // Record the dynamic shape for each position.
   std::vector<std::vector<bool>> is_dynamic_;
   // Record the tensor shape for inference.

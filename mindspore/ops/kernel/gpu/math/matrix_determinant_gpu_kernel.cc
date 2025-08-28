@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/determinant_by_lu_impl.cuh"

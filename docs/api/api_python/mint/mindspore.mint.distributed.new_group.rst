@@ -21,6 +21,11 @@ mindspore.mint.distributed.new_group
             GroupOptions {
                 hccl_config(dict)
             }
+            
+          `hccl_config` 当前仅支持 "hccl_buffer_size" 和 "hccl_comm" 两个参数。
+
+          - **hccl_buffer_size** (uint32)：指定HCCL通信缓冲区的大小。
+          - **hccl_comm** (int64)：指定已存在的HcclComm指针。如果设置了 "hccl_comm"，则 "hccl_buffer_size" 无效。
 
         - **use_local_synchronization** (bool, 无效参数) - 当前为预留参数。
         - **group_desc** (str, 无效参数) - 当前为预留参数。

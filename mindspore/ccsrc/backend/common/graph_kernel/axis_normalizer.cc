@@ -25,8 +25,10 @@
 #include "ir/tensor_new.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/anf_utils.h"
+#include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 

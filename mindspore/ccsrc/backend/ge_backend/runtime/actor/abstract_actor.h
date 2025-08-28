@@ -160,7 +160,7 @@ class AbstractActor : public OpRTActor<KernelTensor> {
                       const std::vector<DataArrowPtr> &output_data_arrows,
                       const std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> &output_data_list);
 
-  bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
+  bool IsOutputAddressPersisted(const KernelTensorPtr &output_kernel_tensor, const KernelWithIndex &output_node);
 
   KernelTransformType type_;
 

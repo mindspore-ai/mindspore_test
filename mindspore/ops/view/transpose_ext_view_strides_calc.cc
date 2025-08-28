@@ -23,49 +23,43 @@
 #include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore::ops {
-constexpr size_t kTransposeExtCalcInputsNum = 3;
-
-TensorStorageInfoPtrList TransposeExtViewStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim0,
+TensorStorageInfoPtrList TransposeExtViewStridesCalc(const std::vector<int64_t> &cur_shape,
+                                                     const std::vector<int64_t> &cur_strides,
+                                                     const TensorStorageInfoPtr &cur_storage_info, const int64_t &dim0,
                                                      const int64_t &dim1) {
-  auto oldShape = old_tensor_info->old_shape;
-  auto oldStrides = old_tensor_info->old_strides;
-  auto oldStorageOffset = old_tensor_info->old_offset;
-  int64_t dim_size = SizeToLong(oldShape.size());
-  // if x is a scalar tensor, then dim must be in the range [-1, 0].
-  if (dim_size <= 0) {
-    dim_size = 1;
-  }
-  if (dim0 < -dim_size || dim0 >= dim_size || dim1 < -dim_size || dim1 >= dim_size) {
-    MS_EXCEPTION(ValueError) << "For primitive[TransposeExtView], the dim1 must be in [" << -dim_size << ", "
-                             << dim_size << "], but got dim0 " << dim0 << ", dim1 " << dim1;
-  }
-  auto dim0_new = DynamicDimWrap(dim0, dim_size);
-  auto dim1_new = DynamicDimWrap(dim1, dim_size);
+  auto [ori_shape, ori_strides, storage_offset] = GetOriShapeStridesAndOffset(cur_shape, cur_strides, cur_storage_info);
+
+  int64_t dim_size = SizeToLong(cur_shape.size());
+  auto dim0_new = DynamicDimWrap(dim0, dim_size, true);
+  auto dim1_new = DynamicDimWrap(dim1, dim_size, true);
+
   if (dim0_new == dim1_new) {
-    bool is_contiguous = IsContiguous(oldShape, oldStrides);
-    auto newStorageInfo = std::make_shared<TensorStorageInfo>(
-      oldShape, oldStrides, oldStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
-    return {newStorageInfo};
+    bool is_contiguous = IsContiguous(cur_shape, cur_strides);
+    auto new_storage_info = std::make_shared<TensorStorageInfo>(
+      cur_shape, cur_strides, storage_offset, std::move(ori_shape), std::move(ori_strides), is_contiguous);
+    return {std::move(new_storage_info)};
   }
 
-  ShapeVector newShape = oldShape;
-  StridesVecotr newStrides = oldStrides;
-  std::swap(newShape[dim0_new], newShape[dim1_new]);
-  std::swap(newStrides[dim0_new], newStrides[dim1_new]);
-  bool is_contiguous = IsContiguous(newShape, newStrides);
-  auto newStorageInfo = std::make_shared<TensorStorageInfo>(
-    newShape, newStrides, oldStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
-  return {newStorageInfo};
+  ShapeVector new_shape = cur_shape;
+  StridesVecotr new_strides = cur_strides;
+  std::swap(new_shape[dim0_new], new_shape[dim1_new]);
+  std::swap(new_strides[dim0_new], new_strides[dim1_new]);
+  bool is_contiguous = IsContiguous(new_shape, new_strides);
+  auto new_storage_info =
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
+
+  return {std::move(new_storage_info)};
 }
 
-TensorStorageInfoPtrList TransposeExtViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                       const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList TransposeExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                        const int64_t &dim0, const int64_t &dim1) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return TransposeExtViewStridesCalc(old_tensor_info, dim0, dim1);
+  return TransposeExtViewStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim0,
+                                     dim1);
 }
 
 TensorStorageInfoPtrList TransposeExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  constexpr size_t kTransposeExtCalcInputsNum = 3;
   if (CheckInputsNull(inputs, kTransposeExtCalcInputsNum) || !inputs[kIndex0]->isa<tensor::Tensor>() ||
       !inputs[kIndex1]->isa<IntegerImm>() || !inputs[kIndex2]->isa<IntegerImm>()) {
     return {};
@@ -73,8 +67,8 @@ TensorStorageInfoPtrList TransposeExtViewCalc(const PrimitivePtr &prim, const st
   auto tensor = inputs[kIndex0]->cast<tensor::TensorPtr>();
   auto dim0 = GetValue<int64_t>(inputs[kIndex1]);
   auto dim1 = GetValue<int64_t>(inputs[kIndex2]);
-  auto old_tensor_info = GetOldTensorInfo(tensor);
-  return TransposeExtViewStridesCalc(old_tensor_info, dim0, dim1);
+  auto new_storage_info = TransposeExtViewBasicTypeCalc(tensor, dim0, dim1);
+  return {new_storage_info};
 }
 
 REG_VIEW_STRIDES_CALC_FUN(TransposeExtView, TransposeExtViewCalc);

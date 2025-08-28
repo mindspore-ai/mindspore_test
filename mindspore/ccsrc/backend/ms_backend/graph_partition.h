@@ -21,8 +21,6 @@
 #include <memory>
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "ir/graph_utils.h"
-#include "base/base_ref.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

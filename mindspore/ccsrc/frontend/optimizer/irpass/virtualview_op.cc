@@ -19,6 +19,7 @@
 #include <vector>
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

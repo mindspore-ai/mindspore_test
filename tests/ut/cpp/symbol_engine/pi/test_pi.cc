@@ -18,7 +18,7 @@
 #include <string>
 #include "symbol_engine/ops/symbolic_shape_test_utils.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "include/common/symbol_engine/symbol_engine_impl_pi.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl_pi.h"
 
 namespace mindspore::symshape::test {
 class TestSymbolEnginePI : public UT::Common {};

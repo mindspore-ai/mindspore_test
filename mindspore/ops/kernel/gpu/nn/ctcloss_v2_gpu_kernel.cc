@@ -20,7 +20,6 @@
 #include <algorithm>
 #include "kernel/gpu/cuda_impl/cuda_ops/ctcloss_v2_impl.cuh"
 #include "mindspore/ops/infer/ctc_loss_v2.h"
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

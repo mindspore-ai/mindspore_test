@@ -18,6 +18,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "ir/dtype/tensor_type.h"
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

@@ -25,7 +25,9 @@
 
 #include "abstract/abstract_value.h"
 #include "abstract/analysis_context.h"
+#include "ir/primitive.h"
 #include "ir/meta_func_graph.h"
+#include "ir/scope.h"
 
 namespace mindspore {
 namespace abstract {

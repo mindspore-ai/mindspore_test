@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 
 #include "plugin/ascend/res_manager/op_adapter/custom_op_proto/cust_nn_ops.h"
 #include "plugin/ascend/res_manager/op_adapter/op_declare/op_declare_macro.h"
-#include "utils/hash_map.h"
 
 DECLARE_OP_ADAPTER(SmoothL1LossV2)
 DECLARE_OP_USE_OUTPUT(SmoothL1LossV2)

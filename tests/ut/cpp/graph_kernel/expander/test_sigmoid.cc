@@ -27,6 +27,7 @@
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "graph_kernel/expander/base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {
 namespace {

@@ -18,6 +18,7 @@
 
 #include <utility>
 #include "ir/anf.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/framework_utils.h"
 #include "include/common/utils/anfalgo.h"

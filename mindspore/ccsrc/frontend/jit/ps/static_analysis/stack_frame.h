@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 
 #include "frontend/jit/ps/static_analysis/evaluator.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "utils/compile_config.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace abstract {
@@ -48,24 +48,7 @@ class StackFrame final : public Base {
 
   MS_DECLARE_PARENT(StackFrame, Base);
 
-  void Load() {
-    MS_EXCEPTION_IF_NULL(func_graph_);
-    node_slots_ = TopoSort(func_graph_->get_return(), SuccIncoming, [](const AnfNodePtr &node) -> IncludeType {
-      static const bool enable_pre_lift = (common::GetCompileConfig("PRE_LIFT") == "1");
-      if (node->isa<ValueNode>() || node->isa<Parameter>() ||
-          (enable_pre_lift && IsPrimitiveCNode(node, prim::kPrimPartial))) {
-        return EXCLUDE;
-      }
-      return FOLLOW;
-    });
-    if (node_slots_.empty()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The func graph is empty, func graph: " << func_graph_ << "/"
-                                 << func_graph_->ToString()
-                                 << ", has return: " << (func_graph_->get_return() != nullptr);
-    }
-    slot_index_ = 0;
-    args_abs_list_.clear();
-  }
+  void Load();
 
   // Check if we need branch to another func graph.
   StackFramePtr Jump(const AnalysisEnginePtr &engine);

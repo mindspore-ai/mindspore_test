@@ -36,7 +36,7 @@ KernelTensorValue::KernelTensorValue(const void *data, size_t size, const TypePt
   use_mutable_storage_ = true;
 }
 
-KernelTensorValue::KernelTensorValue(const DeviceSyncPtr &device_sync, const TypePtr &t) : Value(t) {
+KernelTensorValue::KernelTensorValue(const DeviceAddressPtr &device_sync, const TypePtr &t) : Value(t) {
   const_data_ = device_sync;
   obj_type_id_ = kObjectTypeTensorType;
 }
@@ -92,7 +92,7 @@ const void *KernelTensorValue::GetDataPtr() const {
     }
 
     case kObjectTypeTensorType: {
-      const DeviceSyncPtr &device_sync = std::get<DeviceSyncPtr>(const_data_);
+      const DeviceAddressPtr &device_sync = std::get<DeviceAddressPtr>(const_data_);
       MS_EXCEPTION_IF_NULL(device_sync);
       if (device_sync->GetDeviceType() != device::DeviceType::kCPU) {
         MS_LOG(EXCEPTION) << "Invalid device type:" << device_sync->GetDeviceType() << " device sync:" << device_sync
@@ -128,7 +128,7 @@ size_t KernelTensorValue::GetDataSize() const {
     }
 
     case kObjectTypeTensorType: {
-      const DeviceSyncPtr &device_sync = std::get<DeviceSyncPtr>(const_data_);
+      const DeviceAddressPtr &device_sync = std::get<DeviceAddressPtr>(const_data_);
       MS_EXCEPTION_IF_NULL(device_sync);
       return device_sync->GetSize();
     }

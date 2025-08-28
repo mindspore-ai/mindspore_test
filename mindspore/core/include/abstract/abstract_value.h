@@ -24,21 +24,27 @@
 #include <vector>
 #include <string>
 #include <memory>
+
 #include "utils/log_adapter.h"
 #include "utils/hashing.h"
 #include "utils/hash_map.h"
 #include "base/base.h"
 #include "base/user_data.h"
-#include "ir/dtype.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "ir/map_tensor.h"
+#include "ir/dtype/empty.h"
 #include "abstract/dshape.h"
 #include "abstract/utils.h"
 #include "utils/shape_utils.h"
 #include "symbolic_shape/symbol.h"
 
 namespace mindspore {
+class MapTensorType;
+using MapTensorTypePtr = std::shared_ptr<MapTensorType>;
+namespace tensor {
+class MapTensor;
+using MapTensorPtr = std::shared_ptr<MapTensor>;
+}  // namespace tensor
 namespace abstract {
 class AbstractBase;
 using AbstractBasePtrList = std::vector<AbstractBasePtr>;

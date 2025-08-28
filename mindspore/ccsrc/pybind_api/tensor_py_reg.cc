@@ -24,7 +24,7 @@
 #include "pybind_api/ir/tensor/tensor_index_py.h"
 #include "tools/profiler/profiler.h"
 #include "include/backend/mbuf_device_address.h"
-#include "utils/ordered_set.h"
+#include "ir/tensor_data.h"
 #include "utils/ms_context.h"
 #include "pybind_api/ir/tensor/tensor_register/tensor_func_reg.h"
 #include "pybind_api/ir/tensor/tensor_register/auto_generate/tensor_py_gen.h"
@@ -532,6 +532,26 @@ extern PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_numpy_non_blocking(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *py_tensor;
+  pybind11::array np_array;
+  if (self == NULL) {
+    PyObject *oriTensor;
+    if (!PyArg_ParseTuple(args, "O", &oriTensor)) {
+      return nullptr;
+    }
+    py_tensor = (PyType<TensorPy> *)oriTensor;
+  } else {
+    py_tensor = (PyType<TensorPy> *)self;
+  }
+  TensorPy &tensorPy = py_tensor->value;
+  auto tensor = tensorPy.GetTensor();
+  np_array = TensorPybind::NumpyNonBlocking(*tensor);
+  return np_array.release().ptr();
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   runtime::Pipeline::Get().WaitAll();
@@ -560,6 +580,37 @@ extern PyObject *TensorPython_from_numpy(PyObject *self, PyObject *args) {
   }
   py::array input = py::cast<py::array>(numpy_array);
   return tensor::PackTensor(TensorPybind::MakeTensorOfNumpy(input));
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_pin_memory(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &value = tensor->value;
+  return tensor::PackTensor(TensorPybind::MakePinMemoryTensor(value));
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_is_pinned(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
+  TensorPy &tensor_py = tensor->value;
+  const auto &base_tensor = tensor_py.GetTensor();
+  if (base_tensor->device_address() == nullptr) {
+    MS_LOG(INFO) << "TensorPython_is_pinned device_address is nullptr.";
+    Py_RETURN_FALSE;
+  }
+  const auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  const auto allocator = device_address->allocator();
+  if (device_address->allocator() == nullptr) {
+    MS_LOG(INFO) << "TensorPython_is_pinned allocator is nullptr.";
+    Py_RETURN_FALSE;
+  }
+  if (allocator->IsPinned()) {
+    Py_RETURN_TRUE;
+  } else {
+    Py_RETURN_FALSE;
+  }
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -926,13 +977,6 @@ extern PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   HANDLE_MS_EXCEPTION_END
 }
 
-extern py::object TensorGetItemImpl(const py::object &self, const py::object &py_index) {
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    return self.attr("_getitem_origin")(py_index);
-  }
-  return self.attr("_getitem")(py_index);
-}
-
 extern PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
 
@@ -940,20 +984,23 @@ extern PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "O", &py_index)) {
     return nullptr;
   }
-  py::object result =
-    TensorGetItemImpl(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
-  trace::CaptureResolveOperation(
-    py::make_tuple(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index)), "getitem",
-    &result);
-  return result.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern py::object TensorSetItemImpl(const py::object &self, const py::object &py_index, const py::object &py_value) {
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    return self.attr("_setitem_origin")(py_index, py_value);
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && !trace::IsTracing() &&
+      !Tensor::CheckStub()) {
+    PyType<TensorPy> *py_tensor = (PyType<TensorPy> *)self;
+    TensorPtr tensor = py_tensor->value.GetTensor();
+    PyObject *py_result_obj;
+    TensorPtr result = TensorIndex::TensorGetItem(tensor, py::reinterpret_borrow<py::object>(py_index), &py_result_obj);
+    if (result == nullptr) {
+      return py_result_obj;
+    }
+    return tensor::PackTensor(result);
   }
-  return self.attr("_setitem")(py_index, py_value);
+  py::object self_obj = py::reinterpret_borrow<py::object>(self);
+  py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
+  py::object py_result_obj = self_obj.attr("_getitem_origin")(py_index_obj);
+  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj), "getitem", &py_result_obj);
+  return py_result_obj.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 extern PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
@@ -962,15 +1009,23 @@ extern PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "|OO", &py_index, &py_value)) {
     return nullptr;
   }
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && !trace::IsTracing() &&
+      !Tensor::CheckStub()) {
+    PyType<TensorPy> *py_tensor = (PyType<TensorPy> *)self;
+    TensorPtr tensor = py_tensor->value.GetTensor();
+    TensorPtr result = TensorIndex::TensorSetItem(tensor, py::reinterpret_borrow<py::object>(py_index),
+                                                  py::reinterpret_borrow<py::object>(py_value));
+    return tensor::PackTensor(result);
+  }
   py::object self_obj = py::reinterpret_borrow<py::object>(self);
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
-  py::object result = TensorSetItemImpl(self_obj, py_index_obj, py_value_obj);
-  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj, py_value_obj), "setitem", &result);
-  if (result.is(py::none())) {
+  py::object py_result_obj = self_obj.attr("_setitem_origin")(py_index_obj, py_value_obj);
+  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj, py_value_obj), "setitem", &py_result_obj);
+  if (py_result_obj.is(py::none())) {
     return nullptr;
   }
-  return result.release().ptr();
+  return py_result_obj.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
 
@@ -1014,10 +1069,17 @@ extern PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   if (tensor->value.GetStorage().is_none()) {
     auto tensorTmp = tensor->value.GetTensor();
-    std::shared_ptr<StorageBase> result = TensorPybind::GetStorage(tensorTmp);
-    if (result == nullptr) {
+    runtime::Pipeline::Get().WaitForward();
+    MS_EXCEPTION_IF_NULL(tensorTmp);
+    tensorTmp->set_need_pipeline_sync(true);
+    auto device_sync = tensorTmp->device_address();
+    device::DeviceAddressPtr device_address = nullptr;
+    if (device_sync != nullptr) {
+      device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    } else {
       MS_LOG(EXCEPTION) << "Current Tensor has no device!";
     }
+    auto result = std::make_shared<StorageBase>(device_address);
     Storage storage = Storage(result);
     tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStorageObj(storage)));
   }
@@ -1135,6 +1197,19 @@ static PyMethodDef Tensor_methods[] = {
                                     array([[1., 1., 1.],
                                            [1., 1., 1.]])
                                 )mydelimiter"},
+  {"_numpy_non_blocking", (PyCFunction)TensorPython_numpy_non_blocking, METH_VARARGS, R"mydelimiter(
+                                Convert tensor to numpy.ndarray.
+
+                                Returns:
+                                    numpy.ndarray.
+
+                                Examples:
+                                    >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                    >>> array = data.asnumpy()
+                                    >>> array
+                                    array([[1., 1., 1.],
+                                           [1., 1., 1.]])
+                                )mydelimiter"},
   {"data_sync", (PyCFunction)TensorPython_data_sync, METH_VARARGS, "Synchronize data with optional wait"},
   {"__repr__", (PyCFunction)TensorPython_repr, METH_NOARGS, "Return the string representation of the tensor."},
   {"from_numpy", TensorPython_from_numpy, METH_STATIC | METH_VARARGS, R"mydelimiter(
@@ -1149,6 +1224,33 @@ static PyMethodDef Tensor_methods[] = {
                                 Examples:
                                     >>> a = np.ones((2, 3))
                                     >>> t = mindspore.Tensor.from_numpy(a)
+                                )mydelimiter"},
+  {"pin_memory", TensorPython_pin_memory, METH_VARARGS, R"mydelimiter(
+                                Copy current Tensor to pinned memory, and return a new Tensor.
+                                
+                                Returns:
+                                    Tensor, with same elements as the input tensor.
+                                
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> from mindspore import Tensor
+                                    >>> x = Tensor([1, 2, 3], ms.int16)
+                                    >>> out = x.pin_memory()
+                                    >>> print(out)
+                                    [1 2 3]
+                                )mydelimiter"},
+  {"is_pinned", TensorPython_is_pinned, METH_NOARGS, R"mydelimiter(
+                                Check whether a Tensor is allocated in pinned memory.
+
+                                Returns:
+                                    bool, whether the tensor is allocated in pinned memory.
+                                
+                                Examples:
+                                    >>> import mindspore as ms
+                                    >>> from mindspore import Tensor
+                                    >>> x = ms.Tensor([1, 2, 3], ms.int16)
+                                    >>> print(x.is_pinned())
+                                    False
                                 )mydelimiter"},
   {"setitem_index_info", TensorIndex_setitem_index_info, METH_STATIC | METH_VARARGS, "Set item index information."},
   {"getitem_index_info", TensorIndex_getitem_index_info, METH_STATIC | METH_VARARGS, "Get item index information."},
@@ -1292,7 +1394,7 @@ static PyMethodDef Tensor_methods[] = {
   {"is_contiguous", (PyCFunction)TensorPython_is_contiguous, METH_NOARGS,
    "Check if the tensor is contiguous in memory."},
   {"is_complex", (PyCFunction)TensorPython_is_complex, METH_NOARGS, R"mydelimiter(
-                              For details, please refer to: func:'mindspore.ops.is_complex'.
+                              For details, please refer to :func:`mindspore.ops.is_complex`.
 
                               Examples
                                   >>> x = mindspore.Tensor([1 + 1j], dtype=mindspore.complex128)
@@ -1477,7 +1579,7 @@ void RegPyTensor(py::module *m) {
 void RegMetaTensor(const py::module *m) {
   // Define TensorData as a python class so that ownership of tensor data can be managed.
   (void)py::class_<TensorData, TensorDataPtr>(*m, "_TensorData");
-  (void)py::class_<DeviceSync, DeviceSyncPtr>(*m, "_DeviceSync");
+  (void)py::class_<DeviceAddress, DeviceAddressPtr>(*m, "_DeviceAddress");
 }
 
 void RegCSRTensor(const py::module *m) {

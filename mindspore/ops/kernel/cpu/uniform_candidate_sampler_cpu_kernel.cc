@@ -21,7 +21,6 @@
 #include <random>
 #include <sstream>
 #include "mindspore/ops/op_def/random_ops.h"
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/uniform_candidate_sampler.h"
 #include "runtime/hardware_abstract/kernel_base/philox_random.h"
 #include "ops_utils/op_utils.h"

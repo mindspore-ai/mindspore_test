@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <vector>
 #include <optional>
 #include <utility>
+#include <tuple>
+
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -32,12 +34,23 @@ using TensorStorageInfoPtrList = std::vector<TensorStorageInfoPtr>;
 // unsupported will return {}
 using StridesCalcFunc = std::function<TensorStorageInfoPtrList(const PrimitivePtr &, const std::vector<ValuePtr> &)>;
 using StridesVecotr = std::vector<int64_t>;
+
 OPS_API std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape);
 OPS_API bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides);
-OPS_API int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr);
+OPS_API int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr, bool wrap_scalar = false);
 OPS_API bool IsDynamic(const std::vector<int64_t> &shape);
 OPS_API bool HasZero(const std::vector<int64_t> &value);
 OPS_API bool CheckInputsNull(const std::vector<ValuePtr> &inputs, const size_t &input_num);
+
+inline OPS_API std::tuple<std::vector<int64_t>, std::vector<int64_t>, size_t> GetOriShapeStridesAndOffset(
+  const std::vector<int64_t> &cur_shape, const std::vector<int64_t> &cur_strides,
+  const TensorStorageInfoPtr &cur_storage_info) {
+  if (cur_storage_info) {
+    return std::make_tuple(cur_storage_info->ori_shape, cur_storage_info->ori_strides,
+                           cur_storage_info->storage_offset);
+  }
+  return std::make_tuple(cur_shape, cur_strides, size_t(0));
+}
 
 struct OldTensorInfo {
   OldTensorInfo(std::vector<int64_t> old_shape, std::vector<int64_t> old_strides, std::vector<int64_t> ori_shape,

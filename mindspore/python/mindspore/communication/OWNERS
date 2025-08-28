@@ -4,6 +4,7 @@ approvers:
 - yao_yf
 - kisnwang #
 - ZPaC
+- zhangyinxia
 
 options:
     no_parent_owners: true

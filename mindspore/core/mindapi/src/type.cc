@@ -20,7 +20,6 @@
 #include "ir/dtype.h"
 #include "ir/dtype/type.h"
 #include "ir/dtype/tensor_type.h"
-#include "abstract/utils.h"
 
 namespace mindspore::api {
 using TypeImpl = mindspore::Type;

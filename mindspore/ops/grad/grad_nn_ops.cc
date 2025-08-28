@@ -17,7 +17,7 @@
 #include <memory>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "grad/grad_utils.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 #include "ir/value.h"
 #include "infer/conv2d.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"

@@ -16,5 +16,4 @@ bincount_ext:
   dispatch:
     enable: True
     Ascend: BincountExtAscend
-    CPU: None
     GPU: None

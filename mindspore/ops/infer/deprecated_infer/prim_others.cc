@@ -19,12 +19,11 @@
 #include "utils/log_adapter.h"
 #include "abstract/param_validator.h"
 #include "infer/deprecated_infer/infer_functions.h"
-#include "abstract/utils.h"
-#include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
+#include "utils/compile_config.h"
 
 namespace {
 constexpr auto kRankSize = "rank_size";

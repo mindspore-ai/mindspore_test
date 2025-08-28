@@ -136,7 +136,7 @@ std::vector<Tensor> Tensor::chunk(int64_t chunks, int64_t dim) const {
 Tensor Tensor::contiguous() const { return Tensor(mindspore::kernel::pyboost::contiguous(tensor())); }
 
 Tensor Tensor::flatten(int64_t start_dim, int64_t end_dim) const {
-  return Tensor(mindspore::kernel::pyboost::flatten_ext(tensor(), MakeI64Value(start_dim), MakeI64Value(end_dim)));
+  return Tensor(mindspore::kernel::pyboost::flatten_ext(tensor(), start_dim, end_dim));
 }
 
 Tensor Tensor::index_select(int64_t dim, const Tensor &index) const {

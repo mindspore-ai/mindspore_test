@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@
 #include <queue>
 #include <deque>
 #include <set>
+
 #include "ir/anf.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::session {

@@ -32,7 +32,7 @@
 #include "utils/log_adapter.h"
 
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/visible.h"

@@ -84,7 +84,11 @@ int64_t GetMatMulFlops(const CNodePtr &cnode) {
 
   auto full_a_shape = cnode->input(kIndex1)->abstract()->GetShapeTrack()->GetShapeVector();
   auto full_b_shape = cnode->input(kIndex2)->abstract()->GetShapeTrack()->GetShapeVector();
-  auto transpose_b = GetValue<bool>(GetValueNode(cnode->input(kIndex4)));
+  auto transpose_b = false;
+  if (kIndex4 < cnode->inputs().size()) {
+    // MatmulExt dose not has transpose inputs
+    transpose_b = GetValue<bool>(GetValueNode(cnode->input(kIndex4)));
+  }
   auto a_dim_index = full_a_shape.size() - kIndex2;
   auto b_dim_index = full_a_shape.size() - 1;
   int64_t flops = 1;

@@ -39,13 +39,13 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/fallback.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_executor/pre_launch/pre_launch_comm.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -68,7 +68,7 @@
 #endif
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
@@ -78,6 +78,7 @@
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace backend {
@@ -800,11 +801,8 @@ void MSBackendBase::CompileGraphFromSegment(const FuncGraphPtr &func_graph, cons
     AnfNodePtrList outputs;
     std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
 
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
-                                                     backend_jit_config, ms_execution_mode == kPynativeMode);
+    GraphId graph_id =
+      graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context, backend_jit_config);
     auto new_fg = graph_compiler_->Fetch(graph_id);
     func_graph_to_sub_segments_[func_graph].emplace_back(graph_id);
     MS_EXCEPTION_IF_NULL(new_fg);
@@ -880,10 +878,16 @@ bool MSBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, Devi
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   try {
     MS_LOG(INFO) << "Status record: Start load backend kernel graph.";
-    if (!graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context)) {
+    nlohmann::json data_json;
+    if (!CheckBackendInfoValid(&data_json)) {
       return false;
     }
-    if (!LoadBackendInfo()) {
+    if (!graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context)) {
+      MS_LOG(INFO) << "Failed to load kernel graph cache.";
+      return false;
+    }
+    if (!LoadBackendInfo(data_json)) {
+      MS_LOG(INFO) << "Failed to load backend info for compile cache.";
       return false;
     }
     MS_LOG(INFO) << "Status record: End load backend kernel graph.";
@@ -997,25 +1001,46 @@ bool MSBackendBase::DumpBackendInfo() {
   return Common::SaveStringToFile(backinfo_json_real_path.value(), backinfo_json.dump());
 }
 
-bool MSBackendBase::LoadBackendInfo() {
-  MS_LOG(INFO) << "Use compile cache to load control node cache, be ware of correctness risks.";
+bool MSBackendBase::CheckBackendInfoValid(nlohmann::json *data_json) {
+  MS_EXCEPTION_IF_NULL(data_json);
   auto &context = CompileCacheContext::GetInstance();
   auto func_graph = context.FrontGraph();
   if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "The frontend graph to be cached is null";
+    MS_LOG(ERROR) << "The frontend graph to be cached is null";
     return false;
   }
+  MS_LOG(INFO) << "Start check backend compile cache valid for funcgraph:" << func_graph->ToString();
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
   auto json_path = cache_path + kControlNodeJsonSuffix;
   MS_LOG(DEBUG) << "Json path: " << json_path;
-
-  nlohmann::json data_json;
   std::ifstream json_stream(json_path);
   if (!json_stream.is_open()) {
     MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache missed.";
     return false;
   }
-  json_stream >> data_json;
+  json_stream >> (*data_json);
+  json_stream.close();
+  auto control_node_json = (*data_json)[kControlNodeCache];
+  // Load device context.
+  if (control_node_json.contains(kKernelGraphToDeviceContext)) {
+    const auto &kernel_graph_json = control_node_json[kKernelGraphToDeviceContext];
+    for (const auto &kernelgraph : kernel_graph_json) {
+      const auto &graph_id = kernelgraph[kGraphId].get<GraphId>();
+      if (graph_compiler_->Fetch(graph_id) != nullptr) {
+        MS_LOG(INFO) << "The kernel graph id:" << graph_id
+                     << " in compile cache has been used, the cache cannot be load for funcgraph:"
+                     << func_graph->ToString();
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool MSBackendBase::LoadBackendInfo(const nlohmann::json &data_json) {
+  MS_LOG(INFO) << "Use compile cache to load control node cache, be ware of correctness risks.";
+  auto &context = CompileCacheContext::GetInstance();
+  auto func_graph = context.FrontGraph();
   if (!data_json.contains(kControlNodeCache)) {
     MS_LOG(WARNING) << "No control node info in control cache json file.";
     return true;
@@ -1082,11 +1107,10 @@ bool MSBackendBase::LoadBackendInfo() {
     }
     device_name_ = control_node_json[kDeviceName];
     device_id_ = control_node_json[kDeviceId].get<uint32_t>();
-    json_stream.close();
-    MS_LOG(INFO) << "Load control node cache success. Json path: " << json_path;
+    MS_LOG(INFO) << "Load control node cache success for funcgraph:" << func_graph->ToString();
   } catch (std::exception &e) {
-    json_stream.close();
-    MS_LOG(EXCEPTION) << "Fail to load control node cache. Json path: " << json_path << " error info:" << e.what();
+    MS_LOG(EXCEPTION) << "Fail to load control node cache for funcgraph:" << func_graph->ToString()
+                      << ", error info:" << e.what();
     return false;
   }
   return true;
@@ -1152,7 +1176,7 @@ std::shared_ptr<GraphCompilerInfo> MSBackendBase::ConstructGraphCompilerInfo(
   auto compile_func = [graph_compiler = this->graph_compiler_, backend_jit_config](
                         const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                         const DeviceContext *device_context) -> KernelGraphPtr {
-    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config, false);
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, backend_jit_config);
     return graph_compiler->Fetch(graph_id);
   };
 
@@ -1211,11 +1235,7 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
     return false;
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  bool is_pynative_in_kbk_mode =
-    (ms_execution_mode == kPynativeMode) && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_);
+  bool is_pynative_in_kbk_mode = JitPipelineCompiling();
   if (!is_pynative_in_kbk_mode) {
     return false;
   }
@@ -1451,6 +1471,9 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
       MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_context->device_context_key().device_id_
                         << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                         << split_device_tensor->GetSize() << "B.";
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
     if (copy_offset_size + split_tensor_size > tensor_device_size) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The copy size is out of range, copy size:"
@@ -1753,11 +1776,6 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   // Register a summary callback function, which is called in the final stages of summary.
   graph_compiler_->RegisterSummaryCallBackFunc();
 
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto ms_execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-  func_graph->set_flag(kFlagPyNativeRunInGraph, ms_execution_mode == kPynativeMode);
-
   // Compile root graph.
   bool load_compile_cache = false;
   if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
@@ -1793,13 +1811,10 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   graph_compiler_info->func_graph_to_kernel_graph_ids_ = func_graph_to_kernel_graph_ids_;
   // Use kernel graph, which output maybe change by backed pass, so backup output
   graph_compiler_info->origin_output_node_ = origin_output_node;
-  graph_compiler_info->is_pynative_mode_ = true;
+  graph_compiler_info->is_pynative_mode_ = JitPipelineCompiling();
 
-  if ((ms_execution_mode == kGraphMode ||
-       (ms_execution_mode == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&
-      ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1)) {
+  if ((!graph_compiler_info->graphs_.empty() || graph_compiler_info->control_nodes_.size() > 1)) {
     MS_LOG(DEBUG) << "Start transform";
-    graph_compiler_info->is_pynative_mode_ = false;
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
@@ -1830,15 +1845,15 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 }
 
 namespace {
-bool IsMemoryLeak(const device::DeviceAddress *const device_tensor) {
-  if (device_tensor == nullptr || device_tensor->new_ref_count() == SIZE_MAX) {
+bool IsMemoryLeak(const KernelTensorPtr &kernel_tensor) {
+  if (kernel_tensor == nullptr || kernel_tensor->new_ref_count() == SIZE_MAX) {
     return false;
   }
-  if (device_tensor->GetPtr() != nullptr) {
+  if (kernel_tensor->device_ptr() != nullptr) {
     return true;
   }
-  if (device_tensor->new_ref_count() != 0) {
-    MS_LOG(INFO) << "Ref count is not 0 after run graph for device address:" << device_tensor->ToString();
+  if (kernel_tensor->new_ref_count() != 0) {
+    MS_LOG(INFO) << "Ref count is not 0 after run graph for device address:" << kernel_tensor->ToString();
   }
   return false;
 }
@@ -1847,8 +1862,7 @@ void CheckMemoryLeak(const runtime::AbstractActorPtr &actor, const KernelTensorP
   if (kernel_tensor == nullptr) {
     return;
   }
-  const auto &device_tensor = kernel_tensor->device_address().get();
-  if (IsMemoryLeak(device_tensor)) {
+  if (IsMemoryLeak(kernel_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
                       << " output kernel tensor:" << kernel_tensor->ToString();
   }
@@ -1858,8 +1872,7 @@ void CheckMemoryLeakV2(const runtime::KernelRunnerPtr &actor, const KernelTensor
   if (kernel_tensor == nullptr) {
     return;
   }
-  const auto &device_tensor = kernel_tensor->device_address().get();
-  if (IsMemoryLeak(device_tensor)) {
+  if (IsMemoryLeak(kernel_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
                       << " output kernel tensor:" << kernel_tensor->ToString();
   }
@@ -1916,8 +1929,7 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
         if (kernel_tensor == nullptr) {
           continue;
         }
-        const auto &device_tensor = kernel_tensor->device_address().get();
-        if (IsMemoryLeak(device_tensor)) {
+        if (IsMemoryLeak(kernel_tensor)) {
           MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for kernel tensor:"
                             << kernel_tensor->ToString();
         }
@@ -1944,7 +1956,7 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   auto root_graph = graph_compiler_info.root_func_graph_;
   MS_EXCEPTION_IF_NULL(root_graph);
 
-  if (AnfAlgo::IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
+  if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(root_graph->output(), inputs, outputs)) {
     return kRunningSuccess;
   }
 

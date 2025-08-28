@@ -29,11 +29,11 @@
 #include "utils/ms_exception.h"
 #include "include/common/utils/python_adapter.h"
 
-constexpr char kOptimizerEndFlag[] = "optimizer_end";
-
 namespace mindspore::device::ascend {
-
 namespace {
+constexpr char kOptimizerEndFlag[] = "optimizer_end";
+constexpr char kOptimizerSnapshotFlag[] = "snapshot";
+
 std::string GetMindIOPath() {
   try {
     const char mindio_pkg_name[] = "mindio_ttp";
@@ -87,20 +87,22 @@ void OptimizerEventInfo::GetOptimizerTimestamp(bool is_optimizer_start) {
   }
 }
 
-bool OptimizerEventInfo::IsOptimizerStartKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel) {
+OptStartType OptimizerEventInfo::GetOptimizerStartType(kernel::KernelMod *kernel_mod, const CNodePtr &kernel) {
   if (optimizer_start_kernel_mod_ != nullptr) {
-    return optimizer_start_kernel_mod_ == kernel_mod;
+    return optimizer_start_kernel_mod_ == kernel_mod ? opt_start_type_ : OptStartType::OPT_START_TYPE_NONE;
   }
   if (kernel_mod->kernel_name() != kTensorReport) {
-    return false;
+    return OptStartType::OPT_START_TYPE_NONE;
   }
   auto prim = common::AnfAlgo::GetCNodePrimitive(kernel);
   MS_EXCEPTION_IF_NULL(prim);
   if (!prim->HasAttr(kOptimizerEndFlag)) {
     optimizer_start_kernel_mod_ = kernel_mod;
-    return true;
+    opt_start_type_ = prim->HasAttr(kOptimizerSnapshotFlag) ? OptStartType::OPT_START_TYPE_SNAPSHOT
+                                                            : OptStartType::OPT_START_TYPE_REPORT;
+    return opt_start_type_;
   }
-  return false;
+  return OptStartType::OPT_START_TYPE_NONE;
 }
 
 bool OptimizerEventInfo::IsOptimizerEndKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel) {
@@ -185,5 +187,4 @@ void TensorReportUtils::ReportReceiveData(const ScopeAclTdtDataset &dataset) {
 }
 
 void TensorReportUtils::SetTFTCallBack(const TFT_StartUpdatingOsFunObj &optStart) { _optStart = optStart; }
-
 }  // namespace mindspore::device::ascend

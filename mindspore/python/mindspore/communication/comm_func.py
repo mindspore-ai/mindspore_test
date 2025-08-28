@@ -18,7 +18,7 @@ Defines communication operators with functional form.
 """
 from mindspore.communication import GlobalComm, get_group_rank_from_world_rank, get_group_size
 from mindspore.communication.management import _get_group
-from mindspore.communication._comm_helper import _get_group_rank_from_world_rank_from_cache_helper
+from mindspore.communication._comm_helper import _get_group_rank_from_world_rank_from_cache_helper, _get_rank_helper
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops import ReduceOp, cat
@@ -26,7 +26,8 @@ from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.primitive import _primexpr
 from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, inner_comm_all_gather_op,
                                                       inner_comm_all_to_all_v_op, inner_comm_irecv_op,
-                                                      inner_comm_isend_op, inner_comm_reduce_scatter_op)
+                                                      inner_comm_isend_op, inner_comm_reduce_scatter_op,
+                                                      dist_comm_all_to_all_v_c_op)
 from mindspore._c_expression import CommHandle as CommHandle_
 from mindspore._c_expression.typing import Type
 from mindspore import jit_class
@@ -49,11 +50,13 @@ __all__ = [
     'recv',
     'P2POp',
     'batch_isend_irecv',
+    'all_to_all_v_c'
 ]
 
 import mindspore.ops.operations as P
 
 _GROPU_SIZE_CACHE = {}
+_GROPU_RANK_CACHE = {}
 
 @jit_class
 class CommHandle(CommHandle_):
@@ -733,7 +736,7 @@ def gather_into_tensor(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP):
     Args:
         tensor (Tensor): The tensor to be gathered. The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
         dst(int, optional): Specifies the rank(global rank) of the process that receive the tensor.
-            And only process `dst` will receive the gathered tensor. Default: 0.
+            And only process `dst` will receive the gathered tensor. Default: ``0``.
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``.
 
     Returns:
@@ -1453,3 +1456,132 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         result = result.reshape((-1,) + recv_shape_without_first_dim)
 
     return result, handle
+
+
+def _get_all_to_all_v_c_numel_list(output, input, send_count_matrix_size):
+    """get numel list for all_to_all_v_c."""
+    send_size_without_first_dim = _get_size(input.shape[1:])
+    recv_size_without_first_dim = _get_size(output.shape[1:])
+    if send_size_without_first_dim != recv_size_without_first_dim:
+        raise ValueError("The input and output dimensions except 0 must be of equal size, "
+                         f"but got {send_size_without_first_dim} and {recv_size_without_first_dim}.")
+    send_count_matrix = [size * send_size_without_first_dim for size in send_count_matrix_size]
+    return send_count_matrix
+
+
+def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
+    """get cache group size."""
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = get_group_size(group)
+    group_size = _GROPU_SIZE_CACHE[group]
+    return group_size
+
+def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
+    """get cache rank id."""
+    global _GROPU_RANK_CACHE
+    if group not in _GROPU_RANK_CACHE:
+        _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
+    group_rank = _GROPU_RANK_CACHE[group]
+    return group_rank
+
+
+def all_to_all_v_c(output, input, send_count_matrix, group=None, async_op=False):
+    r"""
+    Based on the user-specified split size, the input tensor is divided and sent to other devices, where split chunks
+    are received and then merged into a single output tensor.
+
+    Note:
+        Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        output (Tensor): the output tensor is gathered concatenated from remote ranks.
+        input (Tensor): tensor to be scattered to remote rank.
+        send_count_matrix (list[int]): The sending and receiving parameters of all ranks,
+            :math:`\text{send_count_matrix}[i*\text{rank_size}+j]` represents the amount of data sent by
+            rank i to rank j, and the basic unit is first dimension sizes. Among them, `rank_size`
+            indicates the size of the communication group.
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+        async_op (bool, optional): Whether this operator should be an async operator. Default: ``False`` .
+
+    Returns:
+        CommHandle. CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
+
+    Raises:
+        TypeError: If `input` or `output` is not tensor. `group` is not a str, or async_op is not bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore.mint.distributed import init_process_group, get_rank
+        >>> from mindspore.communication.comm_func import all_to_all_v_c
+        >>> from mindspore import Tensor
+        >>> from mindspore.ops import zeros
+        >>>
+        >>> init_process_group()
+        >>> this_rank = get_rank()
+        >>> if this_rank == 0:
+        ...     output = Tensor(np.zeros([3]).astype(np.float32))
+        ...     tensor = Tensor([0, 1, 2.]) * this_rank
+        ...     result = all_to_all_v_c(output, tensor, [0, 3, 3, 0])
+        ...     print(output)
+        >>> if this_rank == 1:
+        ...     output = Tensor(np.zeros([3]).astype(np.float32))
+        ...     tensor = Tensor([0, 1, 2.]) * this_rank
+        ...     result = all_to_all_v_c(output, tensor, [0, 3, 3, 0])
+        ...     print(output)
+        rank 0:
+        [0. 1. 2]
+        rank 1:
+        [0. 0. 0]
+    """
+
+    _check_all_tensors([input])
+    _check_all_tensors([output])
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "The argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(async_op, bool):
+        raise TypeError(
+            f"The argument 'async_op' must be a bool, but got {type(async_op)}."
+        )
+    if not isinstance(send_count_matrix, list):
+        raise TypeError("send_count_matrix must be list, but got {}".format(type(send_count_matrix)))
+    if not all(isinstance(x, int) for x in send_count_matrix):
+        raise TypeError("send_count_matrix elements must be of type int")
+    rank_size = get_cache_group_size(group)
+    if rank_size * rank_size != len(send_count_matrix):
+        raise TypeError(f"send_count_matrix must be square matrix, but got {len(send_count_matrix)}.")
+    _send_count_matrix = _get_all_to_all_v_c_numel_list(output, input, send_count_matrix)
+    _input = input.reshape(-1)
+    rank_id = get_cache_group_rank(group)
+    result = dist_comm_all_to_all_v_c_op(
+        output,
+        _input,
+        group,
+        _send_count_matrix,
+        rank_size,
+        rank_id,
+    )
+    _, handle = _deal_comm_outputs(result, async_op)
+    return handle

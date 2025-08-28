@@ -23,7 +23,7 @@
 #include <memory>
 #include <queue>
 #include <utility>
-#include "utils/hash_map.h"
+
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/actor/debug_aware_actor.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
@@ -115,7 +115,7 @@ class HostQueueDataSourceActor : public DataSourceActor {
   // The location of the data node in the data source actor.
   std::map<KernelWithIndex, size_t> data_node_position_map_;
   // The ref relationship of device address.
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors_;
 
   // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
   bool is_infer_phase_;

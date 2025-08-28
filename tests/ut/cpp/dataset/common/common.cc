@@ -25,7 +25,7 @@
 #include "minddata/dataset/core/tensor_shape.h"
 #include "minddata/dataset/engine/datasetops/batch_op.h"
 #include "minddata/dataset/engine/datasetops/repeat_op.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
 
 namespace UT {
 #ifdef __cplusplus

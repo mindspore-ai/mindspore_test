@@ -37,16 +37,13 @@ constexpr size_t kToInputIndex = 2;
 constexpr size_t kBlockInputIndex = 3;
 constexpr int64_t kNpuInt = 0;
 constexpr int64_t kCpuInt = 1;
-constexpr int64_t kDiskInt = 2;
 
-static const std::map<std::string, int64_t> ToStrMap{{kToNpu, kNpuInt}, {kToCpu, kCpuInt}, {kToDisk, kDiskInt}};
+static const std::map<std::string, int64_t> ToStrMap{{kToNpu, kNpuInt}, {kToCpu, kCpuInt}};
 
-std::map<std::pair<int64_t, int64_t>, MoveFunc> MoveTo::func_map_ = {
-  {{kNpuInt, kCpuInt}, &MoveTo::MoveFromDToH},  {{kNpuInt, kDiskInt}, &MoveTo::MoveFromDToF},
-  {{kNpuInt, kNpuInt}, &MoveTo::EmptyMove},     {{kCpuInt, kNpuInt}, &MoveTo::MoveFromHToD},
-  {{kCpuInt, kDiskInt}, &MoveTo::MoveFromHToF}, {{kCpuInt, kCpuInt}, &MoveTo::EmptyMove},
-  {{kDiskInt, kCpuInt}, &MoveTo::MoveFromFToH}, {{kDiskInt, kNpuInt}, &MoveTo::MoveFromFToD},
-  {{kDiskInt, kDiskInt}, &MoveTo::EmptyMove}};
+std::map<std::pair<int64_t, int64_t>, MoveFunc> MoveTo::func_map_ = {{{kNpuInt, kCpuInt}, &MoveTo::MoveFromDToH},
+                                                                     {{kNpuInt, kNpuInt}, &MoveTo::EmptyMove},
+                                                                     {{kCpuInt, kNpuInt}, &MoveTo::MoveFromHToD},
+                                                                     {{kCpuInt, kCpuInt}, &MoveTo::EmptyMove}};
 
 bool MoveTo::GetToFromValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
@@ -158,25 +155,6 @@ device::SwapManagerPtr MoveTo::GetSwapManager(const KernelTensor *tensor) {
 
 bool MoveTo::SyncStream(void *stream_ptr) { return CALL_ASCEND_API(aclrtSynchronizeStream, stream_ptr) == ACL_SUCCESS; }
 
-bool MoveTo::WaitAioFinish(const KernelTensor *tensor) {
-  const auto &hete_info = tensor->heterogeneous_info();
-  if (hete_info == nullptr) {
-    return true;
-  }
-  if (!hete_info->aio_token_.has_value()) {
-    return true;
-  }
-  const auto token = hete_info->aio_token_.value();
-  const auto &swap_manager = GetSwapManager(tensor);
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  if (!swap_manager->WaitAsyncIO(token)) {
-    MS_LOG(ERROR) << "Wait async io failed, token: " << token;
-    return false;
-  }
-  hete_info->aio_token_ = std::nullopt;
-  return true;
-}
-
 bool MoveTo::D2H(void *host_ptr, const void *device_ptr, void *stream_ptr, size_t size) {
   const auto status =
     CALL_ASCEND_API(aclrtMemcpyAsync, host_ptr, size, device_ptr, size, ACL_MEMCPY_DEVICE_TO_HOST, stream_ptr);
@@ -194,38 +172,6 @@ bool MoveTo::H2D(void *device_ptr, const void *host_ptr, void *stream_ptr, size_
   if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Moveto kernel aclrtMemcpyAsync host to device failed! src ptr: " << device_ptr
                   << ", dst ptr: " << host_ptr << ", size: " << size << ", stream: " << stream_ptr;
-    return false;
-  }
-  return true;
-}
-
-bool MoveTo::F2H(void *host_ptr, const string &file_name, size_t size, const device::SwapManagerPtr &swap_manager,
-                 device::AsyncIOToken *token) {
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  MS_EXCEPTION_IF_NULL(host_ptr);
-  if (file_name.empty()) {
-    MS_LOG(ERROR) << "Empty source file name.";
-    return false;
-  }
-  if (!swap_manager->FileToHostMemory(host_ptr, file_name, size, true, token)) {
-    MS_LOG(ERROR) << "Moveto kernel FileToHostMemory failed! src ptr: " << host_ptr << ", dst file: " << file_name
-                  << ", size: " << size;
-    return false;
-  }
-  return true;
-}
-
-bool MoveTo::H2F(const string &file_name, const void *host_ptr, size_t size, const device::SwapManagerPtr &swap_manager,
-                 device::AsyncIOToken *token) {
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  MS_EXCEPTION_IF_NULL(host_ptr);
-  if (file_name.empty()) {
-    MS_LOG(ERROR) << "Empty dst file name.";
-    return false;
-  }
-  if (!swap_manager->HostMemoryToFile(file_name, host_ptr, size, true, token)) {
-    MS_LOG(ERROR) << "Moveto kernel HostMemoryToFile failed! src file name: " << file_name
-                  << ", dst host ptr: " << host_ptr << ", size: " << size;
     return false;
   }
   return true;
@@ -257,118 +203,6 @@ bool MoveTo::MoveFromHToD(const KernelTensor *dst_tensor, const KernelTensor *sr
   return H2D(device_ptr, host_ptr, stream_ptr, size);
 }
 
-bool MoveTo::MoveFromFToH(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr) {
-  // Get src file name.
-  const auto &src_hete_info = src_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(src_hete_info);
-  const auto &file_name = src_hete_info->file_name_;
-
-  // Get dst host ptr.
-  const auto &dst_hete_info = dst_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(dst_hete_info);
-  const auto host_ptr = dst_hete_info->host_ptr_;
-  MS_EXCEPTION_IF_NULL(host_ptr);
-
-  // Memory copy.
-  const auto size = src_tensor->size();
-  const auto &swap_manager = GetSwapManager(dst_tensor);
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  device::AsyncIOToken token;
-  return F2H(host_ptr, file_name, size, swap_manager, &token);
-}
-
-bool MoveTo::MoveFromHToF(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr) {
-  // Get src host ptr.
-  const auto &src_hete_info = src_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(src_hete_info);
-  const auto &host_ptr = src_hete_info->host_ptr_;
-  MS_EXCEPTION_IF_NULL(host_ptr);
-
-  // Get dst file name.
-  const auto &dst_hete_info = dst_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(dst_hete_info);
-  const auto &file_name = dst_hete_info->file_name_;
-
-  // Memory copy.
-  const auto size = src_tensor->size();
-  const auto &swap_manager = GetSwapManager(dst_tensor);
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  device::AsyncIOToken token;
-  if (!H2F(file_name, host_ptr, size, swap_manager, &token)) {
-    return false;
-  }
-  dst_hete_info->aio_token_ = token;
-  return true;
-}
-
-bool MoveTo::MoveFromFToD(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr) {
-  // Get src file name.
-  const auto &src_hete_info = src_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(src_hete_info);
-  const auto &file_name = src_hete_info->file_name_;
-
-  // Get dst device ptr.
-  const auto device_ptr = dst_tensor->device_ptr();
-  MS_EXCEPTION_IF_NULL(device_ptr);
-
-  // Allocate host memory.
-  const auto &swap_manager = GetSwapManager(dst_tensor);
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  const auto size = src_tensor->size();
-  const auto host_ptr = swap_manager->AllocHostMemory(size);
-  MS_EXCEPTION_IF_NULL(host_ptr);
-
-  // Memory copy.
-  device::AsyncIOToken token;
-  if (!F2H(host_ptr, file_name, size, swap_manager, &token) || !swap_manager->WaitAsyncIO(token)) {
-    return false;
-  }
-
-  if (!H2D(device_ptr, host_ptr, stream_ptr, size)) {
-    return false;
-  }
-
-  // Free host memory
-  swap_manager->FreeHostMemory(host_ptr);
-  return true;
-}
-
-bool MoveTo::MoveFromDToF(const KernelTensor *dst_tensor, const KernelTensor *src_tensor, void *stream_ptr) {
-  // Get src device ptr.
-  const auto device_ptr = src_tensor->device_ptr();
-  MS_EXCEPTION_IF_NULL(device_ptr);
-
-  // Get dst file name.
-  const auto &dst_hete_info = dst_tensor->heterogeneous_info();
-  MS_EXCEPTION_IF_NULL(dst_hete_info);
-  const auto &file_name = dst_hete_info->file_name_;
-
-  // Allocate host memory.
-  const auto &swap_manager = GetSwapManager(dst_tensor);
-  MS_EXCEPTION_IF_NULL(swap_manager);
-  const auto size = src_tensor->size();
-  const auto host_ptr = swap_manager->AllocHostMemory(size);
-  MS_EXCEPTION_IF_NULL(host_ptr);
-
-  // Memory copy.
-  if (!D2H(host_ptr, device_ptr, stream_ptr, size)) {
-    return false;
-  }
-  if (!SyncStream(stream_ptr)) {
-    MS_LOG(ERROR) << "Sync stream during move from device to file failed.";
-    return false;
-  }
-  device::AsyncIOToken token;
-  if (!H2F(file_name, host_ptr, size, swap_manager, &token)) {
-    return false;
-  }
-  dst_hete_info->aio_token_ = token;
-
-  // Free host memory
-  swap_manager->FreeHostMemory(host_ptr);
-  return true;
-}
-
 bool MoveTo::EmptyMove(const KernelTensor *, const KernelTensor *, void *) {
   MS_LOG(INFO) << "Kernel tensor has already been stored in target device, skip moving it.";
   return true;
@@ -381,16 +215,6 @@ bool MoveTo::Launch(const std::vector<KernelTensor *> &inputs, const std::vector
   const auto output = outputs[0];
   MS_EXCEPTION_IF_NULL(output);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-
-  // Wait unfinished io
-  if (!WaitAioFinish(input)) {
-    MS_LOG(ERROR) << "Wait async io finish failed for input of kernel: " << kernel_name_;
-    return false;
-  }
-  if (!WaitAioFinish(output)) {
-    MS_LOG(ERROR) << "Wait async io finish failed for output of kernel: " << kernel_name_;
-    return false;
-  }
 
   const auto from = GetTensorDevice(input);
   const auto &func_iter = func_map_.find(std::make_pair(from, to_));

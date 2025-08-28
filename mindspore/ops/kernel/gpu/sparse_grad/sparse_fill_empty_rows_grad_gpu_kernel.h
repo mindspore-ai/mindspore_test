@@ -25,9 +25,8 @@
 #include <algorithm>
 #include <complex>
 
-#include "abstract/utils.h"
 #include "mindspore/ops/infer/grad/sparse_fill_empty_rows_grad.h"
-#include "plugin/res_manager/gpu/device/cuda_driver.h"
+#include "plugin/gpu/res_manager/symbol_interface/cuda_driver.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "include/common/utils/anfalgo.h"

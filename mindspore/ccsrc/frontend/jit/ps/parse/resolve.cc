@@ -39,7 +39,6 @@
 #include "include/common/utils/parallel_context.h"
 #include "utils/any.h"
 #include "frontend/operator/ops.h"
-#include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/symbol_resolver.h"
 #include "include/common/fallback.h"

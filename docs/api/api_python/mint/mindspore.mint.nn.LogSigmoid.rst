@@ -17,9 +17,6 @@ mindspore.mint.nn.LogSigmoid
     .. image:: ../images/LogSigmoid.png
         :align: center
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     输入：
         - **input** (Tensor) - LogSigmoid的输入，数据类型为bfloat16，float16或float32。shape为 :math:`(*)` ，其中 :math:`*` 表示任意的附加维度。
 

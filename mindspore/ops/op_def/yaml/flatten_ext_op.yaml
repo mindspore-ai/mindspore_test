@@ -12,8 +12,9 @@ flatten_ext:
   returns:
     output:
       dtype: tensor
+  view: True
+  bprop_expander: False
   dispatch: 
     enable: True
     Ascend: FlattenExtAscend
-    CPU: None
     GPU: None

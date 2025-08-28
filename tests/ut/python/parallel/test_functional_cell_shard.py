@@ -23,6 +23,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.parallel.auto_parallel import AutoParallel
 from mindspore.parallel.shard import Layout
+from mindspore.nn import TrainOneStepCell, Momentum
 from parallel.utils.utils import ParallelValidator, check_layout_config, compile_net
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from .test_pipeline_split import DatasetLenet
@@ -670,7 +671,7 @@ def test_cell_shard_pp_interleave_5():
     """
     Feature: Test cell.shard with given layout and make shard outside a sub cell of pipeline stage.
     Description: dev_num is 8.
-    Expectation: compile with runtime error raised.
+    Expectation: compile success.
     """
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       device_num=8, global_rank=0)
@@ -688,3 +689,25 @@ def test_cell_shard_pp_interleave_5():
     with pytest.raises(RuntimeError) as error_info:
         compile_net(pipeline_net, x)
     assert "For sharded cell " in str(error_info.value)
+
+
+def test_cell_shard_in_root_graph_00():
+    """
+    Feature: Test cell.shard with given layout in the root graph, no inlining occurs in the shard expand irpass.
+    Description: dev_num is 8.
+    Expectation: compile with runtime error raised.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=8, global_rank=0)
+    case_name = "test_cell_shard_in_root_graph_00"
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
+    in_layout1 = (layout("dp", "mp"),)
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = ShardNet()
+    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    net.shard(in_layout1)
+    train_net = TrainOneStepCell(net, optimizer)
+    train_net.set_train()
+    compile_net(train_net, x)

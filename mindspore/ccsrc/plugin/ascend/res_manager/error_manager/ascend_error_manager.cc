@@ -1,0 +1,155 @@
+/**
+ * Copyright 2025 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
+#include <mutex>
+#include <vector>
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
+#include "ir/tensor_new.h"
+#include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
+#include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "utils/log_adapter.h"
+#include "symbolic_shape/symbol.h"
+#include "utils/ms_context.h"
+#include "tools/error_handler/error_config.h"
+
+namespace mindspore {
+namespace tools {
+namespace ascend {
+namespace {
+SNAPSHOT_MANAGER_REG(kAscendDevice, AscendSnapshotMgr);
+}  // namespace
+
+AscendSnapshotMgrPtr AscendSnapshotMgr::GetInstance() {
+  auto instance = SnapshotMgr::GetInstance(kAscendDevice);
+  MS_EXCEPTION_IF_NULL(instance);
+  AscendSnapshotMgrPtr ptr_inst = std::dynamic_pointer_cast<AscendSnapshotMgr>(instance);
+  if (ptr_inst->async_copy_event_ != nullptr) {
+    return ptr_inst;
+  }
+
+  static std::mutex mtx;
+  std::lock_guard<std::mutex> gurad(mtx);
+  if (ptr_inst->async_copy_event_ == nullptr) {
+    if (CALL_ASCEND_API(aclrtCreateEvent, &ptr_inst->async_copy_event_) != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Create async event failed";
+    }
+  }
+
+  return ptr_inst;
+}
+
+AscendSnapshotMgr::~AscendSnapshotMgr() { (void)CALL_ASCEND_API(aclrtDestroyEvent, async_copy_event_); }
+
+void AscendSnapshotMgr::RecordEvent(aclrtStream stream) {
+  aclError ret = CALL_ASCEND_API(aclrtRecordEvent, async_copy_event_, stream);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtRecordEvent failed, error code is " << ret;
+  }
+}
+
+void AscendSnapshotMgr::ResetEvent(aclrtStream stream) {
+  aclError ret = CALL_ASCEND_API(aclrtResetEvent, async_copy_event_, stream);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtResetEvent failed, error code is " << ret;
+  }
+}
+
+void AscendSnapshotMgr::StreamWaitEvent(aclrtStream stream) {
+  aclError ret = CALL_ASCEND_API(aclrtStreamWaitEvent, stream, async_copy_event_);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(EXCEPTION) << "Call aclrtStreamWaitEvent failed, error code is " << ret;
+  }
+}
+
+void AscendSnapshotMgr::SaveParameters(const std::vector<AnfNodePtr> &weights, aclrtStream stream) {
+  int index = 0;
+  for (const auto &node : weights) {
+    index += 1;
+    if (!node->isa<Parameter>()) {
+      continue;
+    }
+    auto param = node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
+    if (common::AnfAlgo::IsParameterWeight(param)) {
+      auto out_addr = session::AnfRuntimeAlgorithm::GetMutableOutputAddr(param, 0, false);
+      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
+        // skip async copy if addr is nullptr.
+        // special format need convert to default format at host, so skip async copy if format is a special format.
+        continue;
+      }
+      auto iter = saved_params_.find(param->name());
+      if (iter == saved_params_.end()) {
+        MS_LOG(WARNING) << "Can not find parameter " << param->name() << " in saved parameters.";
+        continue;
+      }
+      auto tensor = param->default_param()->cast<tensor::TensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor);
+      if (iter->second == nullptr) {
+        saved_params_[param->name()] = tensor::from_spec(static_cast<mindspore::TypeId>(tensor->data_type_c()),
+                                                         tensor->shape_c(), device::DeviceType::kCPU);
+      }
+      auto host_tensor = saved_params_[param->name()];
+      auto size = tensor->Size();
+      MS_LOG(INFO) << "Copy parameter " << param->name() << " with size " << size << " " << index << "/"
+                   << weights.size();
+      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, host_tensor->data_c(), size, out_addr->GetMutablePtr(), size,
+                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
+      if (ret != ACL_ERROR_NONE) {
+        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
+      }
+    }
+  }
+}
+
+bool NeedSaveAsyncCkpt() {
+  static bool disable_ckpt_d2h_async = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC") != "1";
+  if (MS_LIKELY(disable_ckpt_d2h_async)) {
+    return false;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (!ms_context->get_param<bool>(MS_CTX_NEED_CKPT)) {
+    return false;
+  }
+
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
+  auto checkpoint_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", checkpoint_steps: " << checkpoint_steps
+                << ", last_triggered_step:" << last_triggered_step;
+  return cur_step >= (last_triggered_step + checkpoint_steps);
+}
+
+bool NeedSaveSnapshot() {
+  if (!TftConfig::IsEnableStepTRE()) {
+    return false;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto last_save_step = AscendSnapshotMgr::GetInstance()->LastSaveStep();
+  auto snapshot_steps = TftConfig::GetSnapShotSteps();
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", snapshot_steps: " << snapshot_steps
+                << ", last_save_step:" << last_save_step;
+  return last_save_step > 0 ? cur_step >= (last_save_step + snapshot_steps) : cur_step > snapshot_steps;
+}
+}  // namespace ascend
+}  // namespace tools
+}  // namespace mindspore

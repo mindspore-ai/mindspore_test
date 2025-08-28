@@ -5,7 +5,6 @@ set(ASCEND_COLLECTIVE_SRCS "ascend_collective_comm_lib.cc"
         "ccool_collective_comm_lib.cc"
         "ccool_communication_group.cc"
         "leaper_trans.cc"
-        "hccl_watch_dog_thread.cc"
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/collective_communication_lib.cc
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/dummy_collective_communication_lib.cc
         ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/hardware_abstract/collective/communication_group.cc)
@@ -29,6 +28,20 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
 endif()
 
+set(DVM_LIB)
+if(ENABLE_DVM)
+    set(DVM_LIB $ENV{DVM_LIB})
+else()
+    message(WARNING "The binary files tracked by git lfs have not been downloaded, and Graph Kernel Fusion can not "
+            "be enabled on Ascend! Please perform the following steps:\n"
+            "1. Install git lfs, refer https://github.com/git-lfs/git-lfs/wiki/installation\n"
+            "2. After installing git lfs, do not forget executing the following command:\n"
+            "   git lfs install\n"
+            "3. Download the files tracked by git lfs, executing the following commands:\n"
+            "   cd ${CMAKE_SOURCE_DIR}\n"
+            "   git lfs pull\n"
+            "4. Re-compile the source codes")
+endif()
 link_directories(${DVM_LIB})
 set(DVM_COLLECTIVE_SRCS "dvm_collective_comm_lib.cc"
         "dvm_communication_group.cc"

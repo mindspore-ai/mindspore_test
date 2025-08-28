@@ -62,7 +62,7 @@ if(ENABLE_D)
     )
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective d_collective
+                TARGETS d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
@@ -114,6 +114,11 @@ if(ENABLE_D)
             DIRECTORY
             ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/custom_compiler
             ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910b
+            DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+            COMPONENT mindspore
+    )
+    install(
+            TARGETS mindspore_extension_ascend_aclnn ARCHIVE
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
             COMPONENT mindspore
     )

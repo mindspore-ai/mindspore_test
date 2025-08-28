@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/strategy.h"

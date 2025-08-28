@@ -16,6 +16,8 @@
 
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 #include <memory>
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
@@ -49,6 +51,15 @@ StringImmPtr ValueConverter::ToString(const ValuePtr &input) { return Convert<St
 TypePtr ValueConverter::ToDtype(const ValuePtr &input) { return Convert<TypePtr>(input); }
 
 ValueTuplePtr ValueConverter::ToValueTuple(const ValuePtr &input) { return Convert<ValueTuplePtr>(input); }
+
+ValuePtr ValueConverter::ToValue(const tensor::TensorPtr &tensor) { return tensor; }
+
+ValuePtr ValueConverter::ToValue(const std::vector<tensor::TensorPtr> &tensors) {
+  ValuePtrList values;
+  (void)std::transform(tensors.begin(), tensors.end(), std::back_inserter(values),
+                       [](const tensor::TensorPtr &tensor) { return tensor; });
+  return std::make_shared<ValueTuple>(values);
+}
 
 std::vector<int64_t> ValueConverter::ToBasicIntVector(const ValuePtr &input) {
   return ConvertBasic<ValueTuplePtr, std::vector<int64_t>>(input);

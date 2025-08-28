@@ -8,6 +8,7 @@ file(GLOB_RECURSE _PYNATIVE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "grad/function/*.cc"
         "op_function/*.cc"
         "op_function/auto_generate/*.cc"
+        "parallel/*.cc"
         "*.cc"
 )
 set_property(SOURCE ${_PYNATIVE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PYNATIVE)

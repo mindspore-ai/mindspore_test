@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/helper.h"
 #include "ops/primitive_c.h"

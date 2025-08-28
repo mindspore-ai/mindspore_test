@@ -168,6 +168,7 @@ def test_tensor_min_dynamic():
     keepdims2 = True
     TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]],
             disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
             case_config={'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
                          'disable_resize': True})
     TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]],

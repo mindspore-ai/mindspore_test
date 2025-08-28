@@ -27,6 +27,7 @@
 #include "frontend/jit/pi/utils/utils.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_guard/cache.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace pijit {

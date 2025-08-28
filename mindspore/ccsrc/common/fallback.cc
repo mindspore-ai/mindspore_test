@@ -22,6 +22,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/phase.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace fallback {

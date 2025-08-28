@@ -91,8 +91,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
                 pyboost_op_name=pyboost_op_name,
                 pyboost_cfunc_name=pyboost_func_name,
                 class_name=op_proto.op_class.name)
-            pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
-                operator_name=op_proto.op_name)
+            pyboost_func_include_headers_str +=\
+                self.pyboost_func_include_header_template.replace(operator_name=op_proto.op_name)
             ops_inc_head_set.add(self.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         register_func_str = self.REGISTER_TEMPLATE.replace(register_func=pyboost_func_pybind_def)
         function_class_register = self._get_function_class_register(op_protos)
@@ -148,7 +148,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         op_def_name_str = op_parser.get_op_def_name_str()
         parser_body_str = self._generate_parser_func(op_proto)
         op_args_str = [op_arg.arg_name for op_arg in op_proto.op_args]
-        registry_body_tpl = self.get_pyboost_registry_body_cc_tpl(op_proto)
+        registry_body_tpl = self.PYBOOST_REGISTRY_BODY_CC_TEMPLATE
         return registry_body_tpl.replace(func_name=op_pyboost_func_name,
                                          op_def_name=op_def_name_str,
                                          parser_body=parser_body_str,
@@ -199,6 +199,3 @@ class PyboostFunctionsGenerator(BaseGenerator):
             parser_func_str += self.convert_template.replace(arg_name=op_arg.arg_name, convert_func=convert_type_str,
                                                              arg_index=pyboost_utils.get_index(index))
         return parser_func_str
-
-    def get_pyboost_registry_body_cc_tpl(self, op_proto: OpProto):
-        return self.PYBOOST_REGISTRY_BODY_CC_TEMPLATE

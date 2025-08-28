@@ -20,7 +20,7 @@ import os
 
 from mindspore import log as logger
 from ..filewriter import FileWriter
-from ..shardutils import check_filename, ExceptionThread
+from ..core.shardutils import check_filename, ExceptionThread
 
 
 __all__ = ['CsvToMR']

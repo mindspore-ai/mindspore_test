@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -37,7 +36,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {

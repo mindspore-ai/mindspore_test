@@ -17,6 +17,7 @@
  */
 
 #include "frontend/optimizer/fallback_rewriter.h"
+
 #include <iterator>
 #include <string>
 #include <algorithm>
@@ -26,6 +27,7 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
+
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -44,6 +46,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/anf.h"
 #include "ir/value.h"
+#include "ir/graph_utils.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "utils/hash_map.h"

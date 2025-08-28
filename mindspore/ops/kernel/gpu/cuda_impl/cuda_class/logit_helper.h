@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_class/helper_base.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/logit_impl.cuh"
 

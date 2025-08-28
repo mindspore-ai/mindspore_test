@@ -5,9 +5,6 @@ mindspore.Tensor.transpose
 
     通过给定的维度对输入Tensor进行转置。
 
-    .. warning::
-        这是一个实验性API，可能会更改或删除。
-
     参数：
         - **dim0** (int) - 指定第一个需要被转置的维度。
         - **dim1** (int) - 指定第二个需要被转置的维度。

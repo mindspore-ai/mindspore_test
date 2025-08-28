@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <set>
 
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/kernel_actor.h"
@@ -25,16 +26,16 @@
 #include "runtime/core/actors/base/debug_actor.h"
 #include "runtime/core/actors/base/profiler_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
-#include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 namespace runtime {
@@ -54,10 +55,6 @@ bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const Devi
   if (device_context->device_res_manager_ == nullptr ||
       device_context->device_res_manager_->swap_manager() == nullptr) {
     return false;
-  }
-  const auto &hete_info = device_tensor->heterogeneous_info();
-  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
-    return true;
   }
   return false;
 }
@@ -96,6 +93,8 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *device_context, node->fullname_with_scope(),
                                                   device_tensor->GetSize());
     }
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, "SyncTensorData", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
       device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
@@ -345,9 +344,11 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   if (tensor_address == nullptr) {
     return;
   }
-  tensor_address->set_new_ref_count(SIZE_MAX);
 
-  auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  kernel_tensor->set_new_ref_count(SIZE_MAX);
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   if (tensor_address == device_address) {
     tensor_address->SetNodeIndex(input_node, 0);
@@ -356,7 +357,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
-  if (device_address->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
+  if (kernel_tensor->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
       (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
                                     kernel::GetFormatFromStrToEnum(device_address->format()))) ||
       (tensor_address->type_id() != device_address->type_id())) {
@@ -368,18 +369,18 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
                                                << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
-  auto ref_iter = ref_device_tensors_.find({input_node, 0});
-  if (ref_iter == ref_device_tensors_.end()) {
+  auto ref_iter = ref_kernel_tensors_.find({input_node, 0});
+  if (ref_iter == ref_kernel_tensors_.end()) {
     return;
   }
-  for (const auto &ref_address : ref_iter->second) {
-    if (ref_address == nullptr) {
+  for (const auto &ref_kernel_tensor : ref_iter->second) {
+    if (ref_kernel_tensor == nullptr) {
       continue;
     }
-    ref_address->set_pointer_ref_count(tensor_address->pointer_ref_count());
+    ref_kernel_tensor->set_pointer_ref_count(kernel_tensor.get());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Set pointer ref count:" << tensor_address->pointer_ref_count() << " from node:" << input_node->DebugString()
-      << " device address:" << tensor_address << " to device address:" << ref_address;
+      << "Set pointer ref count:" << tensor_address->device_pointer() << " from node:" << input_node->DebugString()
+      << " kernel tensor:" << kernel_tensor->ToString() << " to kernel tensor:" << ref_kernel_tensor->ToString();
   }
 }
 
@@ -422,8 +423,13 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
     // Push flatten tensors into store buffers.
     graph_parameter_store->FillBuffer(index, flatten_tensors);
   }
+  // Convert all non-contiguous and non-tuple inputs in the current network into contiguous ones.
+  graph_parameter_store->ConvertNormalInputContiguous(inference_input_indexes_);
   auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(graph_compiler_info_, inference_input_indexes_,
                                                                 inference_parameters_);
+  if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
+    GraphCaptureManager::GetInstance().SetShapeKey();
+  }
   MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
                << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
                << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
@@ -432,6 +438,9 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
     ActorDispatcher::set_enable_static_shape(!isDyn);
     const auto &phase = graph_compiler_info_->graph_phase_;
     bool is_increment_graph = (phase.find("increment") != std::string::npos);
+    if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
+      GraphCaptureManager::GetInstance().SetIncrementGraph(is_increment_graph);
+    }
     if (enable_trace_memory_ && is_increment_graph) {
       if (has_continuous_memory()) {
         MS_LOG(EXCEPTION)
@@ -1012,6 +1021,8 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
+  static std::string name = "Alloc memory";
+  kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForControlValueNode", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
     device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
@@ -1065,7 +1076,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
     MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, string_tensor->device_address()) ||
         !SyncCopy(device_tensor, string_tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1090,6 +1101,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
+  static std::string name = "Alloc memory";
+  kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForStringValue", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
     device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
@@ -1136,7 +1149,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     MS_EXCEPTION_IF_NULL(device_tensor);
     auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, tensor->device_address()) ||
         !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1160,6 +1173,8 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
+  static std::string name = "Alloc memory";
+  kernel_tensor->IncreaseNewRefCount(name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue",
     device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->GetPtr(), device_tensor->type_id(),
@@ -1230,14 +1245,14 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
       auto mem_type =
         backend_node->isa<ValueNode>() ? device::tracker::MemType::kConstantValue : memory::mem_pool::MemType::kWeight;
       UpdateTracker("CopyDataFromDeviceTensorStore", backend_node, graph_str, mem_type, another_kernel_tensor);
-    }
-    if (need_alloc_memory && (!another_device_context->device_res_manager_->AllocateMemory(another_device_tensor.get(),
-                                                                                           kDefaultStreamIndex))) {
-      SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *another_device_context,
-                                                  backend_node->fullname_with_scope(),
-                                                  another_device_tensor->GetSize());
-    }
-    if (need_alloc_memory) {
+      if ((!another_device_context->device_res_manager_->AllocateMemory(another_device_tensor.get(),
+                                                                        kDefaultStreamIndex))) {
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *another_device_context,
+                                                    backend_node->fullname_with_scope(),
+                                                    another_device_tensor->GetSize());
+      }
+      static std::string name = "Alloc memory";
+      another_kernel_tensor->IncreaseNewRefCount(name);
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         MarkTensorAsOutput, "CopyDataFromDeviceTensorStore",
         device::GetDeviceNameByType(another_device_tensor->GetDeviceType()), another_device_tensor->GetPtr(),
@@ -1257,9 +1272,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
                  << ", device name:" << another_device_name << " from device address:" << host_tensor_address
                  << " to:" << another_device_tensor;
     auto skip_h2d = UCEException::GetInstance().is_reboot_node();
-    if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor->GetDeviceType() == device::DeviceType::kCPU
-                                                       ? host_tensor_address
-                                                       : another_device_tensor) ||
+    if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor, host_tensor_address) ||
                       !SyncCopy(another_device_tensor, host_tensor_address, kDefaultStreamIndex))) {
       std::string error_info = "Sync data error.";
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1335,7 +1348,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     } else if (host_tensor_address != device_tensor) {
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
-      if (device_tensor->is_ptr_persisted() ||
+      if (node_kernel_tensor->is_ptr_persisted() ||
           !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
                                        kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
         if ((device_tensor->GetPtr() == nullptr) &&
@@ -1343,10 +1356,10 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context,
                                                       backend_node->fullname_with_scope(), device_tensor->GetSize());
         }
-        if (!skip_h2d &&
-            (!SyncAllStreamForDeviceAddress(
-               device_tensor->GetDeviceType() == device::DeviceType::kCPU ? host_tensor_address : device_tensor) ||
-             !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex))) {
+        static std::string name = "Alloc memory";
+        host_kernel_tensor->IncreaseNewRefCount(name);
+        if (!skip_h2d && (!SyncAllStreamForDeviceAddress(device_tensor, host_tensor_address) ||
+                          !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex))) {
           std::string error_info = "Sync data error.";
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
         }

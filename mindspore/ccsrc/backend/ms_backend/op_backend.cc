@@ -23,11 +23,12 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore::compile {
@@ -59,6 +60,61 @@ void WaitTasksFinish() {
   runtime::Pipeline::Get().launch_stage()->Wait();
 }
 
+std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info,
+                                                           const abstract::AbstractBasePtr &out_abstract,
+                                                           size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(op_compiler_info);
+  auto device_context = op_compiler_info->device_context_;
+  const auto &output_edges = op_compiler_info->simple_graph_->outputs_;
+  size_t output_num = output_edges.size();
+
+  std::vector<KernelTensorPtr> output_kernel_tensor_list;
+  output_kernel_tensor_list.reserve(output_num);
+
+  for (size_t i = 0; i < output_num; ++i) {
+    const auto &edge = output_edges[i];
+    MS_EXCEPTION_IF_NULL(edge);
+    auto kernel_tensor = edge->kernel_tensor_;
+    if (kernel_tensor != nullptr) {
+      MS_LOG(DEBUG) << "Already have output kernel tensor for ref output";
+      output_kernel_tensor_list.push_back(kernel_tensor);
+      continue;
+    }
+
+    const auto &[output_node, index] = edge->node_with_index_;
+    auto cache_output_kernel_tensor = edge->origin_kernel_tensor_;
+
+    auto real_abstract = out_abstract;
+    if (out_abstract->isa<abstract::AbstractSequence>()) {
+      auto abstract_tuple = out_abstract->cast<abstract::AbstractSequencePtr>();
+      if (i >= abstract_tuple->elements().size()) {
+        MS_LOG(EXCEPTION) << "abstract_tuple size is " << abstract_tuple->elements().size() << " ,but get index is"
+                          << i;
+      }
+      real_abstract = abstract_tuple->elements()[i];
+    }
+    auto output_shape_ptr = real_abstract->BuildShape();
+    MS_EXCEPTION_IF_NULL(output_shape_ptr);
+    auto shape_vector = output_shape_ptr->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_vector);
+    const auto &shape = shape_vector->shape();
+    MS_EXCEPTION_IF_NULL(cache_output_kernel_tensor->device_address());
+    auto output_type = cache_output_kernel_tensor->device_address()->type_id();
+    const auto &output_format = kernel::GetFormatFromEnumToStr(cache_output_kernel_tensor->format());
+    auto address_size = runtime::DeviceAddressUtils::GetTensorDeviceSize(device_context, output_node, shape,
+                                                                         output_format, output_type, index);
+    const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
+      real_abstract->GetShape()->Clone(), real_abstract->GetType()->Clone(), real_abstract->GetValue(), nullptr,
+      address_size, output_format, output_type, shape, device_context->device_context_key().device_name_,
+      device_context->device_context_key().device_id_, cache_output_kernel_tensor->user_data());
+    new_kernel_tensor->set_stream_id(stream_id);
+    MS_LOG(DEBUG) << "Create addr for node:" << output_node->DebugString()
+                  << " kernel tensor:" << new_kernel_tensor->ToString();
+    output_kernel_tensor_list.push_back(new_kernel_tensor);
+    edge->kernel_tensor_ = new_kernel_tensor;
+  }
+  return output_kernel_tensor_list;
+}
 }  // namespace
 
 void OpBackend::Run(const BackendOpRunInfoPtr &op_run_info, device::DeviceType device_type, uint32_t device_id,
@@ -166,8 +222,8 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
     auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
     runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, false,
                                                        op_run_info->base_op_run_info.stream_id);
-    auto kernel_tensor_list = runtime::DeviceAddressUtils::CreateGraphOutputKernelTensor(
-      op_compiler_info, op_run_info->base_op_run_info.abstract, op_run_info->base_op_run_info.stream_id);
+    auto kernel_tensor_list = CreateGraphOutputKernelTensor(op_compiler_info, op_run_info->base_op_run_info.abstract,
+                                                            op_run_info->base_op_run_info.stream_id);
     // Create output tensor
     post_run_.UpdateOutputDynamic(op_run_info, op_compiler_info, kernel_tensor_list, outputs);
     DispatchOpTaskDynamic(outputs, op_compiler_info, op_run_info, kernel_tensor_list);
@@ -582,7 +638,6 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
 
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
-  device_address->set_is_view(true);
 
   if (device_address->GetPtr() != nullptr) {
     MS_LOG(DEBUG) << "Input device address already allocated.";

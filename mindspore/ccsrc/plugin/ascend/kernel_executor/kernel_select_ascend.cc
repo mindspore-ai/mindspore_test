@@ -28,10 +28,11 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
-#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
+#include "kernel/ascend/atb/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
@@ -43,7 +44,7 @@
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
+#include "plugin/cpu/kernel_executor/kernel_select/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -61,8 +62,8 @@ namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
 constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
-constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel",
-                                           "atb kernel",      "hccl kernel",  "host kernel"};
+constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel", "atb kernel",
+                                           "hccl kernel",     "host kernel",  "custom kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -663,6 +664,12 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
   std::tuple<bool, std::string, ExceptionType, bool> result = std::make_tuple(true, "", NoExceptionType, false);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
+
+  if (kernel::IsEnableCustomNode(node)) {
+    GenerateKernelBuildInfo(node, KernelType::CUSTOM_KERNEL);
+    CollectOpSelectedType(op_name, SelectedKernelType::CUSTOM_KERNEL, op_selected_num, &op_selected_type);
+    return result;
+  }
 
   if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);

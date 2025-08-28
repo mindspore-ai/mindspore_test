@@ -16,6 +16,7 @@
 #include "utils/value_utils.h"
 
 #include <vector>
+#include <complex>
 #include <set>
 #include <utility>
 #include <string>
@@ -27,6 +28,7 @@
 #include "ir/kernel_tensor_value.h"
 #include "abstract/abstract_value.h"
 #include "mindapi/base/macros.h"
+#include "base/bfloat16.h"
 
 namespace mindspore {
 template <typename T>
@@ -269,4 +271,93 @@ template MS_CORE_API std::optional<ArrayValue<bool>> GetArrayValue(const abstrac
 template MS_CORE_API std::optional<ArrayValue<std::string>> GetArrayValue(const abstract::AbstractBasePtr &abs_base);
 template MS_CORE_API std::optional<ArrayValue<float16>> GetArrayValue(const abstract::AbstractBasePtr &abs_base);
 template MS_CORE_API std::optional<ArrayValue<bfloat16>> GetArrayValue(const abstract::AbstractBasePtr &abs_base);
+
+namespace {
+template <typename T>
+struct TypeIdTrait {};
+
+#define TYPEID_TRAIT(typeid, prototype)   \
+  template <>                             \
+  struct TypeIdTrait<prototype> {         \
+    static const TypeId type_id = typeid; \
+  };
+
+TYPEID_TRAIT(kNumberTypeInt8, int8_t)
+TYPEID_TRAIT(kNumberTypeUInt8, uint8_t)
+TYPEID_TRAIT(kNumberTypeInt16, int16_t)
+TYPEID_TRAIT(kNumberTypeUInt16, uint16_t)
+TYPEID_TRAIT(kNumberTypeInt32, int32_t)
+TYPEID_TRAIT(kNumberTypeUInt32, uint32_t)
+TYPEID_TRAIT(kNumberTypeInt64, int64_t)
+TYPEID_TRAIT(kNumberTypeUInt64, uint64_t)
+TYPEID_TRAIT(kNumberTypeFloat16, float16)
+TYPEID_TRAIT(kNumberTypeFloat32, float)
+TYPEID_TRAIT(kNumberTypeFloat64, double)
+TYPEID_TRAIT(kNumberTypeBFloat16, bfloat16)
+TYPEID_TRAIT(kNumberTypeBool, bool)
+TYPEID_TRAIT(kNumberTypeComplex64, std::complex<float>)
+TYPEID_TRAIT(kNumberTypeComplex128, std::complex<double>)
+}  // namespace
+
+template <typename T>
+T TensorItem(const tensor::TensorPtr &tensor) {
+  if (tensor->DataItemSize() != sizeof(T)) {
+    MS_EXCEPTION(TypeError) << "The tensor's type is " << TypeIdToString(tensor->data_type()) << ", which is not "
+                            << TypeIdToString(TypeIdTrait<T>::type_id);
+  }
+  if (tensor->DataSize() != 1) {
+    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor->DataSize() << ","
+                             << " more than one element is ambiguous.";
+  }
+  auto cpu_tensor = tensor->cpu();
+  auto data = cpu_tensor->data_c();
+  if constexpr (std::is_same_v<T, std::complex<float>>) {
+    return std::complex<float>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))};
+  } else if constexpr (std::is_same_v<T, std::complex<double>>) {
+    return std::complex<double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))};
+  } else {
+    return *static_cast<const T *>(data);
+  }
+}
+
+#define TENSOR_ITEM_TEMPLATE(TYPE) template MS_CORE_API TYPE TensorItem<TYPE>(const tensor::TensorPtr &value);
+
+TENSOR_ITEM_TEMPLATE(int8_t)
+TENSOR_ITEM_TEMPLATE(uint8_t)
+TENSOR_ITEM_TEMPLATE(int16_t)
+TENSOR_ITEM_TEMPLATE(uint16_t)
+TENSOR_ITEM_TEMPLATE(int32_t)
+TENSOR_ITEM_TEMPLATE(uint32_t)
+TENSOR_ITEM_TEMPLATE(int64_t)
+TENSOR_ITEM_TEMPLATE(uint64_t)
+TENSOR_ITEM_TEMPLATE(float16)
+TENSOR_ITEM_TEMPLATE(float)
+TENSOR_ITEM_TEMPLATE(double)
+TENSOR_ITEM_TEMPLATE(bfloat16)
+TENSOR_ITEM_TEMPLATE(bool)
+TENSOR_ITEM_TEMPLATE(std::complex<float>)
+TENSOR_ITEM_TEMPLATE(std::complex<double>)
+
+std::optional<int64_t> FetchTensorIntValue(const tensor::TensorPtr &tensor) {
+  const auto &tensor_type_id = tensor->data_type();
+  static const std::unordered_map<TypeId, std::function<int64_t(const tensor::TensorPtr &tensor)>> valid_integral{
+    {kNumberTypeUInt8,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<uint8_t>(tensor)); }},
+    {kNumberTypeInt8,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<int8_t>(tensor)); }},
+    {kNumberTypeInt16,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<int16_t>(tensor)); }},
+    {kNumberTypeInt,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<int>(tensor)); }},
+    {kNumberTypeInt32,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<int32_t>(tensor)); }},
+    {kNumberTypeInt64,
+     [](const tensor::TensorPtr &tensor) -> int64_t { return static_cast<int64_t>(TensorItem<int64_t>(tensor)); }},
+  };
+  auto it = valid_integral.find(tensor_type_id);
+  if (MS_UNLIKELY(it == valid_integral.end())) {
+    return std::nullopt;
+  }
+  return it->second(tensor);
+}
 }  //  namespace mindspore

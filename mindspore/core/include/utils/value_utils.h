@@ -26,6 +26,7 @@
 
 #include "ir/anf.h"
 #include "ir/value.h"
+#include "ir/tensor.h"
 #include "abstract/abstract_value.h"
 #include "mindapi/base/macros.h"
 
@@ -161,5 +162,10 @@ inline bool IsValueKnown(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   return IsValueKnown(abs->GetValue());
 }
+
+template <typename T>
+MS_CORE_API T TensorItem(const tensor::TensorPtr &tensor);
+
+MS_CORE_API std::optional<int64_t> FetchTensorIntValue(const tensor::TensorPtr &tensor);
 }  //  namespace mindspore
 #endif  //  MINDSPORE_CORE_UTILS_VALUE_UTILS_H

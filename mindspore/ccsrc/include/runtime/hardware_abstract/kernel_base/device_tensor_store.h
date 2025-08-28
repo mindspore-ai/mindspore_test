@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <shared_mutex>
+
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware_abstract/visible.h"
@@ -46,7 +47,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceTensorStore {
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
     const auto &iter = kernel_tensors_.find(key);
     MS_EXCEPTION_IF_NULL(value->device_address());
-    value->device_address()->set_new_ref_count(SIZE_MAX);
+    value->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Device tensor store set ref count to max for kernel tensor:" << value
                   << ", device address: " << value->device_address().get() << " node:" << key->DebugString();
     if (iter == kernel_tensors_.end()) {

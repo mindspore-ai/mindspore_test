@@ -21,15 +21,13 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const PrimitivePtr &prim,
-                                                          const mindspore::tensor::TensorPtr &input_tensor,
+OPS_API TensorStorageInfoPtrList BroadCastToStrideCalc(const std::vector<int64_t> &old_shape,
+                                                       const std::vector<int64_t> &old_strides,
+                                                       const TensorStorageInfoPtr &storage_info,
+                                                       const std::vector<int64_t> &proposed_shape);
+OPS_API TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                           const std::vector<int64_t> &shape);
 OPS_API TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::TensorPtr input_tensor,
-                                            const std::vector<int64_t> &input_x);
-OPS_API TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor_info,
-                                                       const std::vector<int64_t> &input_x);
-
 }  // namespace ops
 }  // namespace mindspore
 

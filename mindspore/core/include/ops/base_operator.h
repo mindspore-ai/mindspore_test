@@ -41,6 +41,7 @@ using PrimitivePtr = std::shared_ptr<Primitive>;
 
 namespace mindspore {
 namespace ops {
+using PrimitiveC = Primitive;
 using PrimitiveCPtr = PrimitivePtr;
 class MIND_API BaseOperator : public api::Primitive {
  public:

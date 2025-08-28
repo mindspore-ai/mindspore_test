@@ -27,9 +27,6 @@ mindspore.mint.nn.functional.smooth_l1_loss
 
     其中， :math:`\text{beta}` 控制损失函数在线性与二次间变换的阈值， :math:`\text{beta} \geq 0` ，默认值是 ``1.0`` 。 :math:`N` 为batch size。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     .. note::
         参数 `input` 和 `target` 遵循隐式类型转换规则，使数据类型保持一致。如果两参数数据类型不一致，则低精度类型会被转换成较高精度类型。
 

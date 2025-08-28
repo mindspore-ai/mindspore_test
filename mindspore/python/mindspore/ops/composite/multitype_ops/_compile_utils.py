@@ -472,6 +472,9 @@ def _process_multi_dim_index_for_setitem(self, indexes, remain_indexes, indexed_
         preprocessed_index.append(index)
         need_index_prim = _get_need_index_prim(index, need_index_prim)
 
+    if not preprocessed_index:
+        return do_copy(self_viewed, value)
+
     result = self
 
     for i, index in enumerate(preprocessed_index):

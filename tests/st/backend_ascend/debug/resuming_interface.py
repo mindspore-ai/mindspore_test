@@ -37,7 +37,7 @@ def rebuild_hccl_interface():
     """
     # init
     group_name = "hccl_world_group"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", ascend_config={"hccl_watchdog": False})
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     init()
     print("==INIT OK==")
     base_value = Tensor([8], ms.int32)

@@ -25,8 +25,10 @@ void FlattenView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inpu
                                          const std::vector<KernelTensor *> &outputs) {
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   std::vector<int64_t> shape = {-1};
-  info_ = ops::ReshapeCalcImpl(old_info, shape);
-  outputs[kIndex0]->set_tensor_storage_info(info_[0]);
+  auto info =
+    ops::ReshapeStridesCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), shape);
+  MS_EXCEPTION_IF_NULL(info);
+  outputs[kIndex0]->set_tensor_storage_info(info);
 }
 
 void FlattenView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

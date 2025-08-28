@@ -15,9 +15,6 @@ mindspore.mint.norm
     其余int或float值       不支持                             :math:`sum(abs(x)^{p})^{(1 / p)}`
     =================   ================================== ==============================================
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - shape为 :math:`(*)` 或者 :math:`(*, m, n)` 的Tensor，其中*是零个或多个batch维度。
         - **p** (Union[bool, int, float, inf, -inf, 'fro', 'nuc'], 可选) - 范数的计算模式。行为参考上表。默认值： ``'fro'`` 。

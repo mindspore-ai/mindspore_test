@@ -12,7 +12,6 @@ meshgrid:
     returns:
         outputs:
             dtype: tuple[tensor]
-    view: True
     function:
         disable: True
     dispatch:
@@ -20,4 +19,3 @@ meshgrid:
         Ascend: MeshgridAscend
         CPU: MeshgridCPU
         GPU: MeshgridGPU
-

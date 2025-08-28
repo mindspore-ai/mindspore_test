@@ -24,7 +24,7 @@
 #include <functional>
 #include "proto/ps.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
-#include "ps/core/server_node.h"
+#include "ps/core/abstract_node.h"
 
 namespace mindspore {
 namespace fl {
@@ -72,8 +72,6 @@ class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
     return instance;
   }
 
-  void Initialize(const std::shared_ptr<ps::core::ServerNode> &server_node);
-
   template <typename T>
   bool AllReduce(const void *sendbuff, void *recvbuff, size_t count, int reduce_op,
                  const ps::core::AbstractNodePtr &node, const CommunicationGroupInfo &group_info);
@@ -103,12 +101,7 @@ class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
 
  private:
   CollectiveOpsImpl()
-      : server_node_(nullptr),
-        rank_id_(0),
-        server_num_(0),
-        node_(nullptr),
-        node_role_(ps::core::NodeRole::WORKER),
-        rank_size_(0) {
+      : rank_id_(0), server_num_(0), node_(nullptr), node_role_(ps::core::NodeRole::WORKER), rank_size_(0) {
     std::string env_op_timeout = common::GetEnv(kEnvCommOpTimeOut);
     int comm_op_timeout = env_op_timeout.empty() ? kCollectiveCommTimeout : std::stoi(env_op_timeout);
     comm_op_timeout_ = (comm_op_timeout < 0) ? UINT64_MAX : comm_op_timeout;
@@ -156,7 +149,6 @@ class BACKEND_COMMON_EXPORT CollectiveOpsImpl {
   bool Broadcast(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                  const CommunicationGroupInfo &group_info);
 
-  std::shared_ptr<ps::core::ServerNode> server_node_;
   uint32_t rank_id_;
   uint32_t server_num_;
   size_t comm_op_timeout_;

@@ -21,7 +21,6 @@
 #include <string>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
-#include "ir/primitive.h"
 
 namespace py = pybind11;
 

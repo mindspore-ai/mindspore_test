@@ -323,9 +323,6 @@ class NLLLoss(Cell):
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
@@ -694,9 +691,6 @@ class ReLU6(Cell):
     r"""
     Activation function ReLU6.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Refer to :func:`mindspore.mint.nn.functional.relu6` for more details.
 
     ReLU6 Activation Function Graph:
@@ -844,9 +838,6 @@ class SmoothL1Loss(Cell):
     Computes smooth L1 loss, a robust L1 loss.
 
     Refer to :func:`mindspore.mint.nn.functional.smooth_l1_loss` for more details.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Supported Platforms:
         ``Ascend``

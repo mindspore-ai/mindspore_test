@@ -20,7 +20,7 @@
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 namespace runtime {
@@ -118,7 +118,8 @@ void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
                                                  << " from device tensor:" << input_kernel_tensors_[0]->device_address()
                                                  << " to:" << output_kernel_tensors_[0]->device_address();
     output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
-    if (!SyncAllStreamForDeviceAddress(output_kernel_tensors_[0]->device_address()) ||
+    if (!SyncAllStreamForDeviceAddress(output_kernel_tensors_[0]->device_address(),
+                                       input_kernel_tensors_[0]->device_address()) ||
         !SyncCopy(output_kernel_tensors_[0]->device_address(), input_kernel_tensors_[0]->device_address(),
                   kDefaultStreamIndex)) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
@@ -204,7 +205,7 @@ void CopyActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   for (size_t i = 0; i < output_data_arrows_.size() - output_free_size_; ++i) {
-    output_kernel_tensors_[0]->device_address()->IncreaseNewRefCount(GetAID().Name());
+    output_kernel_tensors_[0]->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase new ref count for kernel tensor:" << output_kernel_tensors_[0]->ToString()
       << " in actor:" << GetAID();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@
 #include <stack>
 #include <set>
 #include <map>
+
 #include "include/common/utils/convert_utils.h"
 #include "tools/profiler/profiler.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"

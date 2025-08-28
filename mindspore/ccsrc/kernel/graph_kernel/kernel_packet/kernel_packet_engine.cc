@@ -15,6 +15,8 @@
  */
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "include/common/utils/utils.h"
+#include "ir/graph_utils.h"
+
 namespace mindspore {
 namespace graphkernel {
 namespace packet {

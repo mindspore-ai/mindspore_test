@@ -22,7 +22,6 @@
 #include <vector>
 #include <tuple>
 
-#include "utils/hash_map.h"
 #include "ir/value.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/tril_info.h"

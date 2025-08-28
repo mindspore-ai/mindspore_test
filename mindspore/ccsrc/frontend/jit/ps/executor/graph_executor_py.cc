@@ -46,7 +46,7 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
-#include "include/common/symbol_engine/utils.h"
+#include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"

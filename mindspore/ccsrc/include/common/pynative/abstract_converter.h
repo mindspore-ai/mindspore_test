@@ -37,6 +37,7 @@ class COMMON_EXPORT AbstractConverter {
   AbstractBasePtr ConvertAbstract(const ValuePtr &t);
   // Tensor is held by Abstract, may lead to memory leak.
   AbstractBasePtr ConvertAbstract(const tensor::TensorPtr &t);
+  AbstractBasePtr ConvertAbstract(const std::vector<tensor::TensorPtr> &t);
   AbstractBasePtr ConvertAbstract(const ValueTuplePtr &t);
 
   template <typename T>

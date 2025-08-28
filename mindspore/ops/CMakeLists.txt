@@ -18,6 +18,8 @@ endif()
 if(NOT BUILD_LITE)
     # mindspore_ops_grad
     include(cmake/ops_grad.cmake)
+    # mindspore_ops_fallback
+    include(cmake/ops_fallback.cmake)
 
     add_subdirectory(kernel)
 

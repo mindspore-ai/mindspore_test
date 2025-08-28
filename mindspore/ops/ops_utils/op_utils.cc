@@ -31,7 +31,6 @@
 #include "abstract/param_validator.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
-#include "ir/named.h"
 #include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@
 #include <string>
 #include <vector>
 #include <utility>
+
 #include "pynative/base.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/forward/forward_task.h"
 #include "pynative/grad/function/func_builder.h"
 #include "frontend/jit/ps/parse/data_converter.h"
+#include "frontend/operator/primitive_py.h"
 #include "include/common/pynative/variable.h"
 
 namespace mindspore {
@@ -86,6 +88,10 @@ struct AutoGradUtil {
                                   const tensor::TensorPtr &view_base = nullptr);
   // Multi inputs and multi outputs view op enter here, temp code need discard.
   static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, const ValueTuplePtr &base_view);
+  static ValuePtr MakeOutput(bool requires_grad, const tensor::TensorPtr &output_tensor,
+                             const tensor::TensorPtr &base_view = nullptr);
+  static ValuePtr MakeOutput(bool requires_grad, const std::vector<tensor::TensorPtr> &output_tensors,
+                             const tensor::TensorPtr &base_view = nullptr);
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);

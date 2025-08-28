@@ -18,7 +18,8 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_DATASET_UTILS_KERNEL_H_
 
 #include <vector>
-#include "ir/dtype/type.h"
+#include "ir/primitive.h"
+
 namespace mindspore {
 namespace kernel {
 int ElementNums(const std::vector<int> &shape);

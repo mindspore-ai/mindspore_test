@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@
 #include <utility>
 #include <algorithm>
 
-#include "utils/hash_set.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "ir/graph_utils.h"
+#include "ir/scope.h"
+#include "ir/dtype/ref.h"
+#include "ir/dtype/tensor_type.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"

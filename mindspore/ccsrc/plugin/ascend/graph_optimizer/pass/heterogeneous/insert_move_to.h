@@ -29,7 +29,8 @@ class BACKEND_EXPORT InsertMoveTo : public Pass {
   struct OffloadParamInfo {
     CNodePtr user_node_;
     size_t input_index_;
-    size_t execution_order_;
+    size_t first_execution_order_;
+    size_t last_side_effect_execution_order_;
     bool side_effect_;
     std::string offload_device_;
   };

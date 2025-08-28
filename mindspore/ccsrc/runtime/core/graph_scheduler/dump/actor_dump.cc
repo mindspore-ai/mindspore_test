@@ -373,7 +373,7 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
       copy_output_info = "\tcopy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << output_kernel_tensor->new_ref_count()
         << "\tflag:" << output_kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
@@ -451,7 +451,7 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
       copy_output_info = "\tcopy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+        << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << output_kernel_tensor->new_ref_count()
         << "\tflag:" << output_kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)

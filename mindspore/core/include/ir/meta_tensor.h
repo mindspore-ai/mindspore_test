@@ -23,7 +23,6 @@
 #include <string>
 #include "base/base.h"
 #include "ir/param_info.h"
-#include "ir/dtype.h"
 #include "utils/convert_utils_base.h"
 #include "utils/hashing.h"
 #include "utils/shape_utils.h"

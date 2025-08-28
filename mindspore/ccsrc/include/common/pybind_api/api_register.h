@@ -74,6 +74,9 @@ FRONTEND_EXPORT void RegisterCustomizeFunction(py::module *m);
 FRONTEND_EXPORT void RegisterCellBackwardHookFunction(py::module *m);
 FRONTEND_EXPORT void RegisterFunctional(py::module *m);
 FRONTEND_EXPORT void RegDirectOps(py::module *m);
+namespace distributed {
+FRONTEND_EXPORT void RegReducer(py::module *m);
+}
 }  // namespace pynative
 
 namespace pijit {
@@ -95,11 +98,11 @@ void RegProfiler(const py::module *m);
 }  // namespace profiler
 
 namespace datadump {
-void RegDumpControl(py::module *m);
+void RegDataDump(py::module *m);
 }
 
-namespace checksum {
-void RegCheckSum(py::module *m);
+namespace silentdetect {
+void RegSilentDetect(py::module *m);
 }
 
 namespace prim {

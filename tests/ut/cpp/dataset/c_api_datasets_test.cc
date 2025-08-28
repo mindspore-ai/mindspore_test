@@ -116,9 +116,9 @@ TEST_F(MindDataTestPipeline, TestCelebADefault) {
   iter->Stop();
 }
 
-// Feature: Test Repeat operation on CelebA dataset
-// Description: Perform repeat operation with count = 2, and count rows in the dataset
-// Expectation: Dataset should have 8 rows (2 times original size since it is repeated)
+/// Feature: Test Repeat operation on CelebA dataset
+/// Description: Perform repeat operation with count = 2, and count rows in the dataset
+/// Expectation: Dataset should have 8 rows (2 times original size since it is repeated)
 TEST_F(MindDataTestPipeline, TestCelebARepeat) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestCelebARepeat.";
 
@@ -148,9 +148,9 @@ TEST_F(MindDataTestPipeline, TestCelebARepeat) {
   iter->Stop();
 }
 
-// Feature: Test SubsetRandomSampler on CelebA dataset
-// Description: Create dataset with SubsetRandomSampler given a single index and count rows in the dataset
-// Expectation: Dataset should have 1 row
+/// Feature: Test SubsetRandomSampler on CelebA dataset
+/// Description: Create dataset with SubsetRandomSampler given a single index and count rows in the dataset
+/// Expectation: Dataset should have 1 row
 TEST_F(MindDataTestPipeline, TestCelebASubsetRandomSampler) {
   std::vector<int64_t> indices = {1};
 
@@ -220,6 +220,10 @@ TEST_F(MindDataTestPipeline, TestGetBatchSize) {
   EXPECT_NE(ds, nullptr);
   EXPECT_EQ(ds->GetBatchSize(), 3);
 }
+
+/// Feature: CelebA
+/// Description: Test basic usage of CelebA with dataset size
+/// Expectation: The data is processed successfully
 TEST_F(MindDataTestPipeline, TestCelebAGetDatasetSize) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestCelebAGetDatasetSize.";
 

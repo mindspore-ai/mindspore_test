@@ -233,6 +233,9 @@ REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED}
                                               {"COMPLETE", LinalgQrMode::COMPLETE},
                                               {"R", LinalgQrMode::R}});
 
+// DequantSwigluQuant quant_mode
+REG_STRING_TO_ENUM_SPECIAL(quant_mode, StrToEnumMap{{"STATIC", QuantMode::STATIC}, {"DYNAMIC", QuantMode::DYNAMIC}});
+
 // FlipMode
 REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});
 

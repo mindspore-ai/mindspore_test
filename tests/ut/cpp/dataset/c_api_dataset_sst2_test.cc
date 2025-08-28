@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
-#include "minddata/dataset/engine/ir/datasetops/source/sst2_node.h"
+#include "minddata/dataset/data_source/operation/sst2_node.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 
 using namespace mindspore::dataset;
@@ -341,7 +341,7 @@ TEST_F(MindDataTestPipeline, TestSST2DatasetWithPipeline) {
     ASSERT_OK(iter->GetNextRow(&row));
   }
 
-  // Expect 2 × 3 + 3 × 3 = 15 samples
+  // Expect 2 x 3 + 3 x 3 = 15 samples
   EXPECT_EQ(i, 15);
 
   // Manually terminate the pipeline

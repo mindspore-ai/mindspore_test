@@ -15,12 +15,13 @@
  */
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/common/utils/convert_utils.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore::kernel {
 namespace {
@@ -83,11 +84,15 @@ KernelHostInfo::KernelHostInfo(const KernelHostInfo &other) {
   kernel_tensor_value_ = other.kernel_tensor_value_;
 }
 
-KernelTensor::KernelTensor() { device_address_ = std::make_shared<DeviceAddress>(); }
+KernelTensor::KernelTensor() {
+  device_address_ = std::make_shared<DeviceAddress>();
+  ref_cnt_ = std::make_shared<RefCount>();
+}
 
 KernelTensor::KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value) {
   host_info_ = std::make_unique<KernelHostInfo>();
   device_address_ = std::make_shared<DeviceAddress>();
+  ref_cnt_ = std::make_shared<RefCount>();
 
   if (type) {
     SetType(type);
@@ -112,20 +117,18 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_
   } else {
     SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
   }
+  ref_cnt_ = std::make_shared<RefCount>();
 }
 
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
                            const TypePtr &type, const ValuePtr &value, void *device_ptr, size_t size,
                            const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
-                           const string &device_name, uint32_t device_id, const UserDataPtr &user_data)
+                           const string &device_name, const UserDataPtr &user_data)
     : KernelTensor(shape, type, value) {
   MS_EXCEPTION_IF_NULL(device_address);
   auto shape_vector = device_address_->GetShapeVector();
   device_address_ = device_address;
-  device_address_->pointer_ref_count()->set_ptr(device_ptr);
-  auto pointer_ref_count = device_address_->pointer_ref_count();
-  device_address_->pointer_ref_count()->set_deleter(pointer_ref_count->deleter());
-  device_address_->pointer_ref_count()->set_allocator(pointer_ref_count->allocator());
+  device_address_->device_pointer()->set_ptr(device_ptr);
   device_address_->SetSize(size);
   if (IsDynamic(host_shape)) {
     device_address_->SetShapeVector(host_shape);
@@ -135,8 +138,8 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   device_address_->set_format(format);
   device_address_->set_type_id(dtype_id);
   device_address_->SetDeviceType(device::GetDeviceTypeByName(device_name));
-  device_address_->set_device_id(device_id);
   user_data_ = user_data;
+  ref_cnt_ = std::make_shared<RefCount>();
 }
 
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
@@ -155,6 +158,7 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   if (value) {
     SetValue(value);
   }
+  ref_cnt_ = std::make_shared<RefCount>();
 }
 
 KernelTensor::KernelTensor(const KernelTensor &other) {
@@ -176,6 +180,7 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
   task_id_on_stream_ = other.task_id_on_stream_;
   MS_EXCEPTION_IF_NULL(other.device_address_);
   device_address_ = other.device_address_->CloneDeviceAddress();
+  ref_cnt_ = std::make_shared<RefCount>();
 }
 
 inline void KernelTensor::CheckHostInfoValid() {
@@ -628,7 +633,7 @@ bool KernelTensor::SetKernelTensorValue() const {
   return true;
 }
 
-void KernelTensor::set_device_ptr(void *ptr) { device_address_->pointer_ref_count()->set_ptr(ptr); }
+void KernelTensor::set_device_ptr(void *ptr) { device_address_->device_pointer()->set_ptr(ptr); }
 bool KernelTensor::IsDynamicShape() const {
   const auto &shape = this->GetShapeVector();
   return std::any_of(shape.cbegin(), shape.cend(), [](auto i) { return i < 0; });
@@ -649,10 +654,10 @@ ShapeVector KernelTensor::GetMaxShape() const {
 const DeviceAddressPtr &KernelTensor::device_address() const { return device_address_; }
 void KernelTensor::set_device_address(const DeviceAddressPtr &device_address) { device_address_ = device_address; }
 
-ContinuousDeviceAddressesPtr KernelTensor::continuous_device_addresses() const { return continuous_device_addresses_; }
+ContinuousKernelTensorsPtr KernelTensor::continuous_kernel_tensors() const { return continuous_kernel_tensors_; }
 
-void KernelTensor::set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses) {
-  continuous_device_addresses_ = continuous_device_addresses;
+void KernelTensor::set_continuous_kernel_tensors(const ContinuousKernelTensorsPtr &continuous_kernel_tensors) {
+  continuous_kernel_tensors_ = continuous_kernel_tensors;
 }
 
 mindspore::Format KernelTensor::format() const { return kernel::GetFormatFromStrToEnum(device_address_->format()); }
@@ -692,5 +697,106 @@ void *KernelTensor::GetValidPtr(size_t) {
   (*sync_handler)(this);
   need_sync_user_data_ = false;
   return device_ptr();
+}
+
+bool KernelTensor::is_ptr_persisted() const { return ref_cnt_->is_ptr_persisted_; }
+
+void KernelTensor::set_is_ptr_persisted(bool is_ptr_persisted) { ref_cnt_->is_ptr_persisted_ = is_ptr_persisted; }
+
+void KernelTensor::IncreaseNewRefCount(const std::string &op_name, size_t i) {
+  IncreaseNewRefCount(i);
+  MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << ToString();
+}
+size_t KernelTensor::DecreaseNewRefCount(const std::string &op_name) {
+  size_t ref_count = DecreaseNewRefCount();
+  MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << ToString();
+  return ref_count;
+}
+
+// The related interface of static reference count operation.
+void KernelTensor::set_original_ref_count(size_t original_ref_count) {
+  ref_cnt_->original_ref_count_ = original_ref_count;
+}
+size_t KernelTensor::original_ref_count() const { return ref_cnt_->original_ref_count_; }
+void KernelTensor::set_ref_count(size_t ref_count) { ref_cnt_->ref_count_ = ref_count; }
+size_t KernelTensor::ref_count() const { return ref_cnt_->ref_count_.load(); }
+void KernelTensor::IncreaseOriginalRefCount() {
+  if (ref_cnt_->original_ref_count_ < SIZE_MAX) {
+    ref_cnt_->original_ref_count_++;
+  }
+}
+void KernelTensor::DecreaseOriginalRefCount() {
+  if ((ref_cnt_->original_ref_count_ < SIZE_MAX) && (ref_cnt_->original_ref_count_ > 0)) {
+    ref_cnt_->original_ref_count_--;
+  }
+}
+
+void KernelTensor::IncreaseRefCount(size_t increase_cnt) {
+  if (ref_count() < SIZE_MAX && (SIZE_MAX - ref_count()) > increase_cnt) {
+    ref_cnt_->ref_count_ += increase_cnt;
+    return;
+  }
+  MS_LOG(EXCEPTION) << "The reference count is:" << ref_count() << ", and can't add: " << increase_cnt << " more.";
+}
+size_t KernelTensor::DecreaseRefCount() { return --ref_cnt_->ref_count_; }
+void KernelTensor::ResetRefCount() { ref_cnt_->ref_count_ = ref_cnt_->original_ref_count_; }
+
+// The related interface of dynamic reference count operation.
+void KernelTensor::set_dynamic_ref_count(int32_t dynamic_ref_count) {
+  ref_cnt_->dynamic_ref_count_ = dynamic_ref_count;
+}
+int32_t KernelTensor::dynamic_ref_count() const { return ref_cnt_->dynamic_ref_count_; }
+
+void KernelTensor::IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
+  if (ref_cnt_->dynamic_ref_count_ < INT32_MAX && (INT32_MAX - ref_cnt_->dynamic_ref_count_) > increase_cnt) {
+    auto ret = ref_cnt_->dynamic_ref_count_.fetch_add(increase_cnt) + increase_cnt;
+    MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << device_ptr();
+    return;
+  }
+  MS_LOG(EXCEPTION) << "The dynamic reference count is:" << ref_cnt_->dynamic_ref_count_
+                    << ", and can't add: " << increase_cnt << " more.";
+}
+void KernelTensor::IncreaseDynamicRefCount(const std::string &op_object) {
+  if (ref_cnt_->dynamic_ref_count_ < INT32_MAX) {
+    auto ret = ++ref_cnt_->dynamic_ref_count_;
+    MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << device_ptr();
+  }
+}
+int32_t KernelTensor::DecreaseDynamicRefCount(const std::string &op_object) {
+  if (ref_cnt_->dynamic_ref_count_ <= 0) {
+    MS_LOG(EXCEPTION) << "The dynamic reference count is invalid value:" << ref_cnt_->dynamic_ref_count_;
+  }
+  auto ret = --ref_cnt_->dynamic_ref_count_;
+  MS_LOG(DEBUG) << op_object << " The dynamic ref count decreases to:" << ret << " for ptr:" << device_ptr();
+  return ret;
+}
+
+// New ref count interface.
+void KernelTensor::IncreaseNewRefCount(size_t i) {
+  if (ref_cnt_->new_ref_count_ < SIZE_MAX) {
+    ref_cnt_->new_ref_count_ += i;
+  }
+}
+size_t KernelTensor::DecreaseNewRefCount() {
+  if (ref_cnt_->new_ref_count_ == 0) {
+    MS_LOG(EXCEPTION) << "Failed to decrease ref count:" << this;
+  }
+  if (ref_cnt_->new_ref_count_ == SIZE_MAX) {
+    return SIZE_MAX;
+  }
+  return --ref_cnt_->new_ref_count_;
+}
+void KernelTensor::set_new_ref_count(size_t new_ref_count) { ref_cnt_->new_ref_count_ = new_ref_count; }
+size_t KernelTensor::new_ref_count() const { return ref_cnt_->new_ref_count_.load(); }
+
+void KernelTensor::set_pointer_ref_count(KernelTensor *const other) {
+  if (other->device_address() == nullptr) {
+    MS_LOG(WARNING) << "Kernel tensor: " << this << " has no device address.";
+  }
+  MS_LOG(DEBUG) << "Kernel tensor: " << this->ToString()
+                << ", set pointer ref count from kernel tensor: " << other->ToString();
+  auto other_device_address = other->device_address();
+  device_address_->set_device_pointer(other_device_address->device_pointer());
+  ref_cnt_ = other->ref_cnt_;
 }
 }  // namespace mindspore::kernel

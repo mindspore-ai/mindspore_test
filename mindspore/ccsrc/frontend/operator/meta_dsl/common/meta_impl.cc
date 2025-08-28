@@ -27,6 +27,7 @@
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/parse/parse_base.h"
+#include "utils/compile_config.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

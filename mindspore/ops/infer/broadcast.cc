@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,9 @@
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
-#include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -62,7 +59,7 @@ std::string Broadcast::get_group() const {
 void CheckParallelValidTypes(const AbstractBasePtr x, const std::string &op_name) {
   // The data type check is only migrated from the previous corresponding python code,
   // and need further confirmation is required
-  const std::set<TypePtr> default_target_dtypes = {kInt8, kInt32, kFloat16, kFloat32, kBFloat16};
+  const std::set<TypePtr> default_target_dtypes = {kInt8, kInt32, kFloat16, kFloat32, kBFloat16, kBool};
   const std::set<TypePtr> target_dtypes = common_valid_types_with_bool;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);

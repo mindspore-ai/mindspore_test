@@ -21,7 +21,7 @@
 #include "minddata/dataset/include/dataset/transforms.h"
 
 // IR non-leaf nodes
-#include "minddata/dataset/engine/ir/datasetops/bucket_batch_by_length_node.h"
+#include "minddata/dataset/engine/operation/datasetops/bucket_batch_by_length_node.h"
 
 #include "minddata/dataset/engine/tree_modifier.h"
 #include "minddata/dataset/engine/serdes.h"
@@ -31,9 +31,9 @@ using mindspore::dataset::Tensor;
 
 class MindDataTestTreeAdapter : public UT::DatasetOpTesting {};
 
-// Feature: TreeAdapter
-// Description: Test TreeAdapter in simple case without IR optimization
-// Expectation: Runs successfully
+/// Feature: TreeAdapter
+/// Description: Test TreeAdapter in simple case without IR optimization
+/// Expectation: Runs successfully
 TEST_F(MindDataTestTreeAdapter, TestSimpleTreeAdapter) {
   MS_LOG(INFO) << "Doing MindDataTestTreeAdapter-TestSimpleTreeAdapter.";
 
@@ -72,9 +72,9 @@ TEST_F(MindDataTestTreeAdapter, TestSimpleTreeAdapter) {
   EXPECT_TRUE(err_msg.find("EOF buffer encountered.") != err_msg.npos);
 }
 
-// Feature: TreeAdapter
-// Description: Test TreeAdapter with repeated row_sizes
-// Expectation: Runs successfully
+/// Feature: TreeAdapter
+/// Description: Test TreeAdapter with repeated row_sizes
+/// Expectation: Runs successfully
 TEST_F(MindDataTestTreeAdapter, TestTreeAdapterWithRepeat) {
   MS_LOG(INFO) << "Doing MindDataTestTreeAdapter-TestTreeAdapterWithRepeat.";
 
@@ -107,9 +107,9 @@ TEST_F(MindDataTestTreeAdapter, TestTreeAdapterWithRepeat) {
   EXPECT_TRUE(err_msg.find("EOF buffer encountered.") != err_msg.npos);
 }
 
-// Feature: TreeAdapter
-// Description: Test TreeAdapter on dataset that has been projected
-// Expectation: Runs successfully
+/// Feature: TreeAdapter
+/// Description: Test TreeAdapter on dataset that has been projected
+/// Expectation: Runs successfully
 TEST_F(MindDataTestTreeAdapter, TestProjectMapTreeAdapter) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestProjectMap.";
 
@@ -150,11 +150,11 @@ TEST_F(MindDataTestTreeAdapter, TestProjectMapTreeAdapter) {
   EXPECT_TRUE(err_msg.find("EOF buffer encountered.") != err_msg.npos);
 }
 
-// Feature: Test for Serializing and Deserializing an optimized IR Tree after the tree has been modified with
-// TreeModifier or in other words through Autotune indirectly.
-// Description: Create a simple tree, modify the workers and queue size, serialize the optimized IR Tree, obtain a new
-// tree with deserialize and then compare the output of serializing the new optimized IR tree with the first tree.
-// Expectation: No failures.
+/// Feature: Test for Serializing and Deserializing an optimized IR Tree after the tree has been modified with
+/// TreeModifier or in other words through Autotune indirectly.
+/// Description: Create a simple tree, modify the workers and queue size, serialize the optimized IR Tree, obtain a new
+/// tree with deserialize and then compare the output of serializing the new optimized IR tree with the first tree.
+/// Expectation: No failures.
 TEST_F(MindDataTestTreeAdapter, TestOptimizedTreeSerializeDeserializeForAutoTune) {
   MS_LOG(INFO) << "Doing MindDataTestTreeAdapter-TestOptimizedTreeSerializeDeserializeForAutoTune.";
 
@@ -265,9 +265,9 @@ TEST_F(MindDataTestTreeAdapter, TestOptimizedTreeSerializeDeserializeForAutoTune
   EXPECT_EQ(i, 6);
 }
 
-// Feature: Basic test for TreeModifier
-// Description: Create simple tree and modify the tree by adding workers, change queue size and then removing workers
-// Expectation: No failures.
+/// Feature: Basic test for TreeModifier
+/// Description: Create simple tree and modify the tree by adding workers, change queue size and then removing workers
+/// Expectation: No failures.
 TEST_F(MindDataTestTreeAdapter, TestSimpleTreeModifier) {
   MS_LOG(INFO) << "Doing MindDataTestTreeAdapter-TestSimpleTreeModifier.";
 
@@ -323,10 +323,10 @@ TEST_F(MindDataTestTreeAdapter, TestSimpleTreeModifier) {
   EXPECT_EQ(i, 6);
 }
 
-// Feature: Test for TreeModifier on MindDataset
-// Description: Create a simple tree with a Mindrecord op first add then add and remove workers afterward. Collect
-// file_name of images when executing the first tree and then compare the outputs of the other runs against it.
-// Expectation: No failures.
+/// Feature: Test for TreeModifier on MindDataset
+/// Description: Create a simple tree with a Mindrecord op first add then add and remove workers afterward. Collect
+/// file_name of images when executing the first tree and then compare the outputs of the other runs against it.
+/// Expectation: No failures.
 TEST_F(MindDataTestTreeAdapter, TestTreeModifierMindRecord) {
   MS_LOG(INFO) << "Doing MindDataTestTreeAdapter-TestTreeModifierMindRecord.";
 

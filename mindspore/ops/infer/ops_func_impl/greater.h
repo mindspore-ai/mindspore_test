@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 
+#include "ir/dtype/tensor_type.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {

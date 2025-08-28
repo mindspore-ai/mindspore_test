@@ -40,13 +40,14 @@
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_adapter.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/singleton.h"
+#include "ir/graph_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "mindspore/core/include/ir/tensor_new.h"
@@ -243,11 +244,14 @@ void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const Anf
       MS_LOG(EXCEPTION) << "Output shape must be greater than 0, but got " << actual_shapes;
     }
   }
-  auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
+  auto output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+  auto output_addr = output_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(output_addr);
   output_addr->SetSize(ge_output->GetSize());
   auto &&ge_data_uni = ge_output->ResetData();
   auto ge_data = ge_data_uni.release();
-  output_addr->set_is_ptr_persisted(false);
+  output_kernel_tensor->set_is_ptr_persisted(false);
   output_addr->set_from_mem_pool(false);
   output_addr->set_ptr(ge_data);
   auto placement = ge_output->GetTensorDesc().GetPlacement();
@@ -657,17 +661,17 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
     auto io_index = ge_message_manager_.GetSummary(graph_name).io_indexes;
 
     for (auto io : io_index) {
-      auto input_device_tensor = input_datas[io.first]->device_address();
-      MS_EXCEPTION_IF_NULL(input_device_tensor);
-      auto output_device_tensor = output_datas[io.second]->device_address();
-      MS_EXCEPTION_IF_NULL(output_device_tensor);
-      if (output_device_tensor->GetPtr() != nullptr &&
-          output_device_tensor->GetPtr() != input_device_tensor->GetPtr()) {
+      auto input_kernel_tensor = input_datas[io.first];
+      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+      auto output_kernel_tensor = output_datas[io.second];
+      MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+      if (output_kernel_tensor->device_ptr() != nullptr &&
+          output_kernel_tensor->device_ptr() != input_kernel_tensor->device_ptr()) {
         MS_LOG(INFO) << "The io_index[" << io.first << ", " << io.second << "] ptr is already exist and not same.";
         continue;
       }
-      output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
-      output_device_tensor->set_is_ptr_persisted(input_device_tensor->is_ptr_persisted());
+      output_kernel_tensor->set_pointer_ref_count(input_kernel_tensor);
+      output_kernel_tensor->set_is_ptr_persisted(input_kernel_tensor->is_ptr_persisted());
     }
   }
 
@@ -717,7 +721,7 @@ void GeGraphExecutor::FreeInputOutputMemory(const KernelGraphPtr &graph) const {
     auto input_kernel_tensor = input_datas[i];
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     auto input_address = input_kernel_tensor->device_address().get();
-    if (input_address->GetPtr() != nullptr && !input_address->is_ptr_persisted()) {
+    if (input_address->GetPtr() != nullptr && !input_kernel_tensor->is_ptr_persisted()) {
       MS_LOG(DEBUG) << "Free the memory of input[" << i << "], deivce_address: " << input_address
                     << ", ptr: " << input_address->GetPtr();
       ge_res_manager_->FreeMemory(input_address);
@@ -742,7 +746,7 @@ void GeGraphExecutor::FreeInputOutputMemory(const KernelGraphPtr &graph) const {
     auto output_kernel_tensor = output_datas[i];
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
     auto output_address = output_kernel_tensor->device_address().get();
-    if (output_address->GetPtr() != nullptr && !output_address->is_ptr_persisted()) {
+    if (output_address->GetPtr() != nullptr && !output_kernel_tensor->is_ptr_persisted()) {
       MS_LOG(DEBUG) << "Free the memory of output[" << i << "], deivce_address: " << output_address
                     << ", ptr: " << output_address->GetPtr();
       ge_res_manager_->FreeMemory(output_address);
@@ -1111,7 +1115,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector
     MS_LOG(DEBUG) << "For graph: " << graph->ToString() << ", update input GeTensor[" << index
                   << "], shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
                   << ", dtype: " << tensor->dtype_id() << ", ptr: " << tensor->device_ptr()
-                  << ", pointer_ref_count: " << tensor->pointer_ref_count();
+                  << ", kernel tensor: " << tensor->ToString();
     ++index;
   }
   return ge_inputs;
@@ -1157,7 +1161,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateOutputGeTensorList(const std::vecto
     MS_LOG(DEBUG) << "For graph: " << graph->ToString() << ", update output GeTensor[" << index
                   << "], shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
                   << ", dtype: " << tensor->dtype_id() << ", ptr: " << tensor->device_ptr()
-                  << ", pointer_ref_count: " << tensor->pointer_ref_count();
+                  << ", kernel tensor: " << tensor->ToString();
     ++index;
   }
   return ge_outputs;

@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <set>
+#include <utility>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "view/slice_ext_strides_calc.h"
@@ -25,15 +26,15 @@ constexpr size_t kSliceExtInputsNum = 5;
 }
 
 namespace mindspore::ops {
-TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+TensorStorageInfoPtrList SliceExtStridesCalc(const std::vector<int64_t> &old_shape,
+                                             const std::vector<int64_t> &old_strides,
+                                             const TensorStorageInfoPtr &old_storage_info, const int64_t ori_dim,
                                              const int64_t ori_start, const int64_t ori_end, const int64_t step) {
+  int dim_size = SizeToLong(old_shape.size());
+  MS_CHECK_VALUE(dim_size > 0, "slice can not be applied to a 0-dim tensor.");
   MS_CHECK_VALUE(step > 0, "slice step must be positive");
 
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
-
-  int dim_size = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(dim_size > 0, "slice cannot be applied to a 0-dim tensor.");
+  auto [ori_shape, ori_strides, old_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, old_storage_info);
 
   auto dim = DynamicDimWrap(ori_dim, dim_size);
   auto dim_value = old_shape[dim];
@@ -60,34 +61,32 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_i
   new_shape[dim] = (len + step - 1) / step;
   auto new_strides = old_strides;
   new_strides[dim] *= step;
-  size_t new_storage_offset = old_tensor_info->old_offset + LongToSize(start * old_strides[dim]);
+  size_t new_storage_offset = old_offset + LongToSize(start * old_strides[dim]);
 
+  bool is_contiguous = IsContiguous(new_shape, new_strides);
   auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
-  return {new_storage_info};
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), new_storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
+
+  return {std::move(new_storage_info)};
 }
 
-TensorStorageInfoPtrList SliceExtBasicTypeCalc(const PrimitivePtr &prim,
-                                               const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
+TensorStorageInfoPtrList SliceExtBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
                                                const int64_t &start, const int64_t &end, const int64_t &step) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return SliceExtStridesCalc(old_tensor_info, dim, start, end, step);
+  return SliceExtStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim, start,
+                             end, step);
 }
 
 TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
 
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
-
   auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
   auto start = GetValue<int64_t>(inputs[kInputIndex2]);
   auto end = GetValue<int64_t>(inputs[kInputIndex3]);
   auto step = GetValue<int64_t>(inputs[kInputIndex4]);
 
-  return SliceExtStridesCalc(old_tensor_info, dim, start, end, step);
+  return SliceExtBasicTypeCalc(input_tensor, dim, start, end, step);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(SliceExt, SliceExtCalc);

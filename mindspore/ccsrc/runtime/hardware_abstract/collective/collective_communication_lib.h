@@ -35,7 +35,7 @@ struct RUNTIME_HARDWARE_EXPORT GroupOptions {
   // Whether creating communication group asynchonizely.
   bool async = false;
   // Used to specify some hccl settings.
-  std::unordered_map<std::string, std::variant<uint32_t, std::string>> hccl_config = {};
+  std::unordered_map<std::string, std::variant<int64_t, uint32_t, std::string>> hccl_config = {};
 };
 
 // The reduce type of collective operations.

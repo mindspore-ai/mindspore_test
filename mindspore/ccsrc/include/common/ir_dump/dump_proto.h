@@ -47,6 +47,7 @@ using IntPtr = std::shared_ptr<Int>;
 using UIntPtr = std::shared_ptr<UInt>;
 using ComplexPtr = std::shared_ptr<Complex>;
 using ModelProtoPtr = std::shared_ptr<mind_ir::ModelProto>;
+class QuantizationParam;
 constexpr const size_t TOTAL_SAVE = 1024 * 1024 * 1024;
 constexpr const int64_t OFFSET = 64;
 constexpr const size_t PARA_ROUND = 1024;
@@ -209,7 +210,11 @@ class IrExportBuilder {
 
 COMMON_EXPORT std::string GetFuncGraphProtoString(const FuncGraphPtr &func_graph);
 
-std::string GetOnnxProtoString(const FuncGraphPtr &func_graph);
+std::string GetOnnxProtoString(const FuncGraphPtr &func_graph, const std::vector<std::string> &input_names = {},
+                               const std::vector<std::string> &outputs_names = {}, const int &opset_version = 11,
+                               const bool &export_params = true, const bool &keep_initializers_as_inputs = false,
+                               const std::map<std::string, std::map<int, std::string>> &dynamic_axes = {},
+                               const bool &extra_save_params = false, const std::string &save_file_dir = "");
 
 COMMON_EXPORT std::string GetBinaryProtoString(const FuncGraphPtr &func_graph, const bool &incremental = false);
 

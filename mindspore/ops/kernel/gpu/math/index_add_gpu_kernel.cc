@@ -21,7 +21,6 @@
 #include <map>
 #include "kernel/gpu/cuda_impl/cuda_ops/index_add_impl.cuh"
 #include "mindspore/ops/infer/index_add.h"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {

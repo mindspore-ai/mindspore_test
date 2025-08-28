@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "common/common.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/skip_first_epoch_sampler.h"
+#include "minddata/dataset/data_source/sampler/sampler.h"
+#include "minddata/dataset/data_source/sampler/skip_first_epoch_sampler.h"
 #include "utils/log_adapter.h"
 
 using namespace mindspore::dataset;

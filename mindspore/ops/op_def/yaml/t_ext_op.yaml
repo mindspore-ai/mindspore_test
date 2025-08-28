@@ -8,8 +8,9 @@ t_ext:
       dtype: tensor
   class:
     name: TExt
+  view: True
+  bprop_expander: False
   dispatch:
     enable: True
     Ascend: TExtAscend
-    CPU: None
     GPU: None

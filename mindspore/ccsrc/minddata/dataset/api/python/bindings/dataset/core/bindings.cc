@@ -34,7 +34,7 @@
 
 #include "minddata/dataset/include/dataset/constants.h"
 #if defined(ENABLE_D)
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
 #endif
 
 namespace mindspore {

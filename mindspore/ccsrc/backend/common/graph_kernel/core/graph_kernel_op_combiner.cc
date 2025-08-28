@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/graph_kernel/core/graph_kernel_op_combiner.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel {
 bool GraphKernelOpCombiner::Run(const FuncGraphPtr &func_graph) {

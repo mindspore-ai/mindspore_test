@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@
 #include <utility>
 #include <algorithm>
 
+#include "include/common/utils/parallel_context.h"
+#include "include/common/utils/convert_utils.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel.h"
-#include "include/common/utils/convert_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "utils/log_adapter.h"
 

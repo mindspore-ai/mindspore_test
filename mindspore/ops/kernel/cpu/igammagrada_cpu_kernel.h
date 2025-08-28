@@ -23,7 +23,7 @@
 #include <map>
 #include <string>
 #include <tuple>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ops/infer/grad/igammagrada.h"
 

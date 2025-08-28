@@ -19,7 +19,6 @@
 #include <utility>
 #include <string>
 #include <algorithm>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_diag_v3_impl.cuh"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/matrix_diag_v3.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 #ifndef MINDSPORE_CORE_UTILS_COUNTER_H_
 #define MINDSPORE_CORE_UTILS_COUNTER_H_
+
 #include <list>
 #include <vector>
 #include <utility>
 #include <functional>
 #include <memory>
+
 #include "utils/hash_map.h"
 #include "utils/ordered_map.h"
 

@@ -1,0 +1,26 @@
+#operator to_dtype
+to_dtype:
+  args:
+    input:
+      dtype: tensor
+    dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    non_blocking:
+      dtype: bool
+      default: False
+    copy:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: ToDtypeAscend
+    CPU: ToDtypeCPU
+    GPU: ToDtypeGPU

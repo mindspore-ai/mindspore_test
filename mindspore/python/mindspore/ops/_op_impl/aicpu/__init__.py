@@ -214,13 +214,8 @@ from .cumsum import _cumsum_aicpu
 from .round import _round_aicpu
 from .stft import _stft_aicpu
 from .floor_div import _floor_div_aicpu
-from .priority_replay_buffer import _prb_create_op_cpu
-from .priority_replay_buffer import _prb_push_op_cpu
 from .conjugate_transpose import _conjugate_transpose_aicpu
-from .priority_replay_buffer import _prb_sample_op_cpu
-from .priority_replay_buffer import _prb_update_op_cpu
 from .equal import _equal_aicpu
-from .priority_replay_buffer import _prb_destroy_op_cpu
 from .right_shift import _right_shift_aicpu
 from .tril import _tril_aicpu
 from .linspace import _lin_space_aicpu
@@ -242,10 +237,6 @@ from .sparse_tensor_to_csr_sparse_matrix import _sparse_tensor_to_csr_sparse_mat
 from .csr_sparse_matrix_to_sparse_tensor import _csr_sparse_matrix_to_sparse_tensor_aicpu
 from .linear_sum_assignment import _linear_sum_assignment_aicpu
 from .random_shuffle import _random_shuffle_aicpu
-from .reservoir_replay_buffer import _rrb_create_op_cpu
-from .reservoir_replay_buffer import _rrb_push_op_cpu
-from .reservoir_replay_buffer import _rrb_sample_op_cpu
-from .reservoir_replay_buffer import _rrb_destroy_op_cpu
 from .concat_offset import _concat_offset_aicpu
 from .range import _range_aicpu
 from .range_v2 import _range_v2_aicpu

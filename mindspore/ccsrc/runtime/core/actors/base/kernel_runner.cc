@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <limits>
 
+#include "ir/dtype/tensor_type.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
 #include "runtime/core/actors/base/output_actor.h"
@@ -31,7 +32,7 @@
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
@@ -195,11 +196,11 @@ void ResetNewRefCountForRefOutputInSomas(const CNodePtr &node, size_t index) {
       !AnfAlgo::OutputAddrExist(input_node_with_index.first, input_node_with_index.second, false)) {
     return;
   }
-  const auto &input_device_tensor =
-    AnfAlgo::GetMutableOutputAddr(input_node_with_index.first, input_node_with_index.second, false);
-  input_device_tensor->set_new_ref_count(0);
+  const auto &input_kernel_tensor =
+    AnfAlgo::GetOutputKernelTensor(input_node_with_index.first, input_node_with_index.second, false);
+  input_kernel_tensor->set_new_ref_count(0);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-    << "Set new ref count to 0 for device tensor:" << input_device_tensor->ToString()
+    << "Set new ref count to 0 for kernel tensor:" << input_kernel_tensor->ToString()
     << " for node:" << input_node_with_index.first->fullname_with_scope()
     << " debug string:" << input_node_with_index.first->DebugString() << " index:" << input_node_with_index.second;
   ResetNewRefCountForRefOutputInSomas(input_node_with_index.first->cast<CNodePtr>(), input_node_with_index.second);
@@ -454,7 +455,7 @@ void KernelRunner::InitOutputInfo() {
         (void)somas_info_->InsertGraphOutputInfo(output_address.get(), somas_outputs[i].first, somas_outputs[i].second);
         ResetNewRefCountForRefOutputInSomas(kernel_, i);
       } else {
-        output_address->set_new_ref_count(SIZE_MAX);
+        output_kernel_tensor->set_new_ref_count(SIZE_MAX);
       }
       output_need_somas = true;
     } else {
@@ -516,7 +517,7 @@ void KernelRunner::InitWorkspaceInfo() {
                      << " somas aligned size:" << somas_workspace[i].second
                      << " is smaller than address size:" << workspace_address->GetSize();
       }
-      workspace_address->set_new_ref_count(SIZE_MAX);
+      workspace_kernel_tensor->set_new_ref_count(SIZE_MAX);
       workspace_need_somas = true;
     } else {
       (void)memory_alloc_list_.emplace_back(workspace_kernel_tensor);
@@ -566,6 +567,74 @@ void KernelRunner::SetShapeDependInfo() {
     need_free_input_index.emplace_back(index);
   }
   input_free_index_.swap(need_free_input_index);
+}
+
+bool KernelRunner::ConvertInputContiguousForSingleKernelTensor(OpContext<KernelTensor> *const context,
+                                                               KernelTensorPtr input_kernel_tensor,
+                                                               size_t kernel_input_index) {
+  auto stream_id = kernel_info_->stream_id();
+  auto input_device_tensor = input_kernel_tensor->device_address().get();
+  MS_EXCEPTION_IF_NULL(input_device_tensor);
+  const auto old_storage_info = input_device_tensor->GetTensorStorageInfo();
+  if ((SizeOf(old_storage_info->shape) == SizeOf(old_storage_info->ori_shape)) && old_storage_info->is_contiguous) {
+    return false;
+  }
+  if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
+                                                    kernel_input_index) != launch_ignored_inputs_.end())) {
+    MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << kernel_input_index;
+    return false;
+  }
+  MS_LOG(INFO) << "Make input [" << kernel_input_index << "] contiguous for kernel " << kernel_->DebugString();
+  if (contiguous_tensors_[kernel_input_index] == nullptr) {
+    // Make new device tensor and run InplaceCopy to make contiguous.
+    MS_EXCEPTION_IF_NULL(old_storage_info);
+    auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
+      nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
+      device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+    kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
+    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
+    kernel_tensor->set_stream_id(stream_id);
+
+    auto new_device_address = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(new_device_address);
+    // Store the temp device address
+    contiguous_tensors_[kernel_input_index] = kernel_tensor;
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
+  }
+  auto &new_kernel_tensor = contiguous_tensors_[kernel_input_index];
+  MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+  auto &new_device_address = new_kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(new_device_address);
+  if (is_dynamic_shape_) {
+    auto input_tensor = input_kernel_tensors_[kernel_input_index];
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    MS_EXCEPTION_IF_NULL(input_tensor->GetShape());
+    new_kernel_tensor->SetShape(input_tensor->GetShape()->Clone());
+    MS_EXCEPTION_IF_NULL(input_tensor->device_address());
+    auto address_size =
+      GetTypeByte(TypeIdToType(input_tensor->device_address()->type_id())) * SizeOf(old_storage_info->shape);
+    new_kernel_tensor->set_size(address_size);
+  }
+
+  new_device_address->set_tensor_storage_info(nullptr);
+  // Launch CopyInplace to make tensor contiguous.
+  if (kernel_input_index >= depend_shape_input_list_.size() || !depend_shape_input_list_[kernel_input_index]) {
+    if (!device_contexts_[0]->GetKernelExecutor()->ExecuteKernelTask(
+          runtime::KernelTaskType::kCONTIGUOUS_TASK, {input_device_tensor}, {new_device_address.get()}, stream_id)) {
+      MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
+    }
+    // Store the old tensor storage info , input device tensor and input kernel tensor.
+    // Recover them when launch finished.
+  }
+  temp_input_kernel_tensors_[kernel_input_index] = input_kernel_tensors_[kernel_input_index];
+  MS_LOG(DEBUG) << "Repalce input kernel tensor from:" << input_kernel_tensors_[kernel_input_index]->ToString()
+                << " to:" << new_kernel_tensor->ToString() << " input index:" << kernel_input_index
+                << " for actor:" << GetAID();
+  input_kernel_tensors_[kernel_input_index] = new_kernel_tensor;
+  input_launch_tensors_[kernel_input_index] = new_kernel_tensor.get();
+  input_kernel_tensors_for_infer_[kernel_input_index] = new_kernel_tensor;
+  return true;
 }
 
 void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context) {
@@ -767,10 +836,11 @@ void KernelRunner::SetSomasMemory(OpContext<KernelTensor> *const context) const 
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Set ptr:" << device_ptr << " to device address:" << output_device_tensor << " in actor:" << GetAID();
       output_device_tensor->set_ptr(device_ptr);
-      if (somas_graph_output_indexes_.count(i) || output_device_tensor->new_ref_count() != SIZE_MAX) {
-        output_device_tensor->IncreaseNewRefCount(GetAID().Name());
+      if (somas_graph_output_indexes_.count(i) || output_kernel_tensors_[i]->new_ref_count() != SIZE_MAX) {
+        output_kernel_tensors_[i]->IncreaseNewRefCount(GetAID().Name());
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Add new ref count for somas output address:" << output_device_tensor << " in kernel actor:" << GetAID();
+          << "Add new ref count for somas output kernel tensor:" << output_kernel_tensors_[i]->ToString()
+          << " in kernel actor:" << GetAID();
       }
     }
   }
@@ -818,8 +888,7 @@ void KernelRunner::TraceDynamicMemory() {
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not changed, so need
     // trace the graph output kernel tensor device address, which device memory will be allocated and released with the
     // whole graph.
-    if ((is_output_kernel_[i] && !enable_capture_graph) ||
-        kernel_tensor->pointer_ref_count()->new_ref_count() == SIZE_MAX) {
+    if ((is_output_kernel_[i] && !enable_capture_graph) || kernel_tensor->new_ref_count() == SIZE_MAX) {
       continue;
     }
     MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
@@ -848,7 +917,7 @@ void KernelRunner::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   }
 }
 
-void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) {
+void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t stream_id) {
   if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
     MS_EXCEPTION_IF_NULL(kernel_info_);
     for (const auto &out_in : kernel_info_->out_in_ref_map()) {
@@ -867,7 +936,8 @@ void KernelRunner::SendMemoryAllocReqHP(OpContext<KernelTensor> *const context) 
       output_device_tensor->set_ptr(ptr);
     }
   }
-  MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID());
+  MemoryManagerActor::GetInstance()->AllocateMemoryHP(&memory_alloc_list_, device_contexts_[0], context, GetAID(),
+                                                      stream_id);
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {
     if (IsRunningFailed(context)) {
@@ -1032,6 +1102,8 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy_, *context, *(device_contexts_[0]), GetAID().Name(),
                                                   new_device_tensor->GetSize());
     }
+    static std::string name = "Alloc memory";
+    new_kernel_tensor->IncreaseNewRefCount(name);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase new ref count for kernel tensor:" << new_kernel_tensor->ToString() << " in actor:" << GetAID();
   }
@@ -1040,8 +1112,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
                << " copy from device address:" << kernel_tensor->ToString()
                << " to device address:" << new_kernel_tensor->ToString();
   // Copy from the real parameter to formal parameter and insert the device tensor copy store.
-  if (!SyncAllStreamForDeviceAddress(device_tensor->GetDeviceType() == device::DeviceType::kCPU ? new_device_tensor
-                                                                                                : device_tensor) ||
+  if (!SyncAllStreamForDeviceAddress(new_device_tensor, device_tensor) ||
       !SyncCopy(new_device_tensor, device_tensor, kDefaultStreamIndex)) {
     std::string error_info = "Copy device tensor failed: " + GetAID().Name();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
@@ -1062,12 +1133,12 @@ void KernelRunner::UpdateGraphOutputRefCount(OpContext<KernelTensor> *const cont
       MS_LOG(EXCEPTION) << "Invalid output index:" << pair.first << " total size:" << output_kernel_tensors_.size()
                         << " for actor:" << GetAID();
     }
-    const auto &output_device_tensor = output_kernel_tensors_[pair.first]->device_address();
-    MS_EXCEPTION_IF_NULL(output_device_tensor);
-    output_device_tensor->IncreaseNewRefCount(GetAID().Name(), pair.second);
+    const auto &output_kernel_tensor = output_kernel_tensors_[pair.first];
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    output_kernel_tensor->IncreaseNewRefCount(GetAID().Name(), pair.second);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Add new ref count size:" << pair.second
-      << " for kernel tensor:" << output_kernel_tensors_[pair.first]->ToString() << " for kernel actor:" << GetAID();
+      << "Add new ref count size:" << pair.second << " for kernel tensor:" << output_kernel_tensor->ToString()
+      << " for kernel actor:" << GetAID();
   }
 }
 
@@ -1114,8 +1185,8 @@ void KernelRunner::UpdateRefDeviceAddress(OpContext<KernelTensor> *const context
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     auto output_device_tensor = output_kernel_tensors_[pair.first]->device_address().get();
     MS_EXCEPTION_IF_NULL(output_device_tensor);
-    output_device_tensor->set_pointer_ref_count(input_device_tensor->pointer_ref_count());
-    output_device_tensor->IncreaseNewRefCount(GetAID().Name());
+    output_kernel_tensors_[pair.first]->set_pointer_ref_count(input_kernel_tensors_[pair.second].get());
+    output_kernel_tensors_[pair.first]->IncreaseNewRefCount(GetAID().Name());
     if (input_device_tensor->GetTensorStorageInfo() != nullptr && need_ref_for_storage_info_) {
       output_device_tensor->set_tensor_storage_info(input_device_tensor->GetTensorStorageInfo());
     }
@@ -1758,6 +1829,12 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
   }
   // Reset cross stream addresses.
   cross_stream_addresses_.clear();
+  // Add ref processes for sync stream on demand.
+  if (!rw_write_index_.empty() && stream_id != kDefaultStreamIndex) {
+    auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
+      device_contexts_[0]->device_context_key().device_name_);
+    multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, stream_id);
+  }
 }
 
 void KernelRunner::PreLaunchKernel(OpContext<KernelTensor> *) {
@@ -1828,10 +1905,8 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
         continue;
       }
 
-      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address()->GetDeviceType() ==
-                                             device::DeviceType::kCPU
-                                           ? input_kernel_tensor->device_address()
-                                           : new_kernel_tensor->device_address()) ||
+      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address(), input_kernel_tensor->device_address(),
+                                         kDefaultStreamIndex, false) ||
           !SyncCopy(new_kernel_tensor->device_address(), input_kernel_tensor->device_address(), kDefaultStreamIndex)) {
         std::string error_info = "Copy input device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
@@ -1861,10 +1936,8 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
         continue;
       }
 
-      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address()->GetDeviceType() ==
-                                             device::DeviceType::kCPU
-                                           ? output_kernel_tensor->device_address()
-                                           : new_kernel_tensor->device_address()) ||
+      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address(), output_kernel_tensor->device_address(),
+                                         kDefaultStreamIndex, false) ||
           !SyncCopy(new_kernel_tensor->device_address(), output_kernel_tensor->device_address(), kDefaultStreamIndex)) {
         std::string error_info = "Copy output device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
@@ -1900,7 +1973,7 @@ void KernelRunner::ResetState() {
       continue;
     }
     auto device_tensor = kernel_tensor->device_address();
-    if (device_tensor->new_ref_count() == SIZE_MAX) {
+    if (kernel_tensor->new_ref_count() == SIZE_MAX) {
       continue;
     }
     if (device_tensor != nullptr && device_tensor->IsPtrValid()) {

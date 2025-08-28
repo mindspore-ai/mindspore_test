@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "ops_utils/op_constants.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {

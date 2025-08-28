@@ -31,7 +31,7 @@
 #include "utils/somas/somas_stream.h"
 #include "utils/somas/somas_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/common/debug/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/compile_cache_context.h"

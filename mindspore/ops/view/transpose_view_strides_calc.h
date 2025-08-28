@@ -21,12 +21,9 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList TransposeViewBasicTypeCalc(const PrimitivePtr &prim,
-                                                            const mindspore::tensor::TensorPtr &input_tensor,
+OPS_API TensorStorageInfoPtrList TransposeViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                             const std::vector<int64_t> &dims);
 OPS_API TensorStorageInfoPtrList TransposeViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList TransposeViewStridesCalc(const OldTensorInfoPtr old_tensor_info,
-                                                          const std::vector<int64_t> &perms);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_VIEW_STRIDES_CALC_H

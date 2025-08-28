@@ -27,13 +27,11 @@
 #include <functional>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
 #include "utils/any.h"
 #include "utils/profile.h"
-#include "ir/manager.h"
 
 #include "frontend/jit/ps/resource_base.h"
 #include "frontend/jit/ps/static_analysis/prim.h"

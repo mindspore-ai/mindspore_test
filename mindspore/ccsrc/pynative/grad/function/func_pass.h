@@ -22,7 +22,7 @@
 #include <memory>
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/expander/core/node.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
 
 namespace mindspore {
 namespace pynative {

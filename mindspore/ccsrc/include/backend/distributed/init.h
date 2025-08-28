@@ -19,6 +19,8 @@
 
 #include <string>
 #include <utility>
+#include <memory>
+#include <optional>
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -29,14 +31,22 @@
 
 namespace mindspore {
 namespace distributed {
+namespace cluster {
+class TCPStoreClient;
+using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
+}  // namespace cluster
 // The static methods of MindSpore distributed execution. They can be exported by Pybind.
 
 // Initialize and finalize distributed execution.
 BACKEND_COMMON_EXPORT bool Initialize();
+BACKEND_COMMON_EXPORT bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
+                                      uint32_t node_id, cluster::TCPStoreClientPtr store);
 BACKEND_COMMON_EXPORT bool Finalize();
 
 // Initialize and finalize the cluster based on MindSpore communication framework.
 BACKEND_COMMON_EXPORT bool InitializeCluster();
+BACKEND_COMMON_EXPORT bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t world_size,
+                                             uint32_t node_id, cluster::TCPStoreClientPtr store);
 BACKEND_COMMON_EXPORT bool FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.

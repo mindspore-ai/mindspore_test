@@ -23,12 +23,14 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "include/common/pynative/common_utils.h"
 #include "pynative/pynative_utils.h"
 #include "utils/core_op_utils.h"
+#include "utils/check_convert_utils.h"
 #include "pynative/grad/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"

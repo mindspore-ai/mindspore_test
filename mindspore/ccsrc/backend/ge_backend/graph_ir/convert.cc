@@ -53,7 +53,6 @@
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_desc.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/graph_ir/storage_format_convertor.h"
-#include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

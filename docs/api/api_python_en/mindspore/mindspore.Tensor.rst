@@ -266,6 +266,7 @@ mindspore.Tensor
     mindspore.Tensor.isneginf
     mindspore.Tensor.isposinf
     mindspore.Tensor.isreal
+    mindspore.Tensor.is_pinned
     mindspore.Tensor.is_signed
     mindspore.Tensor.item
     mindspore.Tensor.itemset
@@ -344,6 +345,7 @@ mindspore.Tensor
     mindspore.Tensor.ormqr
     mindspore.Tensor.outer
     mindspore.Tensor.permute
+    mindspore.Tensor.pin_memory
     mindspore.Tensor.positive
     mindspore.Tensor.pow
     mindspore.Tensor.prod

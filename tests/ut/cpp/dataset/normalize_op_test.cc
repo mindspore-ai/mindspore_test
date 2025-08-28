@@ -15,8 +15,8 @@
  */
 #include "common/common.h"
 #include "common/cvop_common.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
-#include "minddata/dataset/kernels/image/normalize_op.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
+#include "minddata/dataset/vision/kernels/normalize_op.h"
 #include "minddata/dataset/core/cv_tensor.h"
 #include "utils/log_adapter.h"
 #include <opencv2/opencv.hpp>

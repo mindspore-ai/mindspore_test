@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <utility>
 #include "mindspore/ops/infer/multinomial.h"
-#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
+#include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/multinomial_impl.cuh"

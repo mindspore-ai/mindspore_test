@@ -1459,7 +1459,9 @@ def set_context(**kwargs):
               This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.parallel.auto_parallel.AutoParallel.transformer_opt` instead.
             - hccl_watchdog (bool): Enable a thread to monitor the failure of collective communication.
-              Default ``True`` .
+              Default ``True`` . This parameter will be deprecated and removed in future versions. Please use the
+              environment variable `MS_ENABLE_THM="{HCCL_WATCHDOG:1}"` instead.
+
         gpu_config (dict): Set the parameters specific to gpu hardware platform. It is not set by default.
 
             - conv_fprop_algo (str): Specifies convolution forward algorithm. Default ``"normal"`` .

@@ -146,9 +146,9 @@ def test_shard_with_in_strategy_4x1():
     net, x, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
     compile_net(net, x, layout1, layout2)
     file = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%14)"
     in_strategy1 = "in_strategy: ((4, 1))"
-    para2 = "PrimFunc_AShardIdentity(%10)"
+    para2 = "PrimFunc_AShardIdentity(%18)"
     in_strategy2 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file, in_strategy1)
     check_layout_config(para2, file, in_strategy2)
@@ -163,11 +163,11 @@ def test_parameter_plan_with_strategy_4x1():
     net, x, ir_graph_path = before_test("test_parameter_plan_with_strategy_4x1")
     compile_net(net, x, layout1, layout2)
     file1 = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%18)"
     in_strategy1 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/step_parallel_begin_*"
-    para2 = "PrimFunc_MatMul(%25"
+    para2 = "PrimFunc_MatMul(%15"
     in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
@@ -182,12 +182,12 @@ def test_parameter_plan_with_layout_4x1():
     net = Net2()
     compile_net(net, x, layout1, layout2)
     file1 = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%10)"
+    para1 = "PrimFunc_AShardIdentity(%1)"
     in_strategy1 = ("in_layout: ({'device_matrix': (4, 1), 'tensor_map': (1, 0), "
                     "'interleaved_parallel': false, 'alias_name': (dp, mp)})")
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/step_parallel_begin_*"
-    para2 = "PrimFunc_MatMul(%7, %11"
+    para2 = "PrimFunc_MatMul(%15, %19"
     in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
@@ -232,7 +232,7 @@ def test_reshard_with_layout_propagation():
     net, x, ir_graph_path = before_test("test_reshard_with_layout_propagation", device_num=8)
     compile_net(net, x, layout3, layout4)
     file = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_MatMul(%87, %88"
+    para1 = "PrimFunc_MatMul(%12, %13"
     matmul_strategy = "in_strategy: ((4, 2), (2, 1))"
     check_layout_config(para1, file, matmul_strategy)
 
@@ -284,13 +284,13 @@ def test_shard_with_in_strategy_4x1_getting_dynamic_input_1():
     Description: Test shard given (4, 1) tuple as in_strategy.
     Expectation: In strategy of the identity node is ((4, 1)).
     """
-    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
+    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1_getting_dynamic_input_1")
     x_dyn = Tensor(shape=[32, 1, None, 28], dtype=ms.float32)
     compile_net(net, x_dyn, layout1, layout2)
     file = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%14)"
     in_strategy1 = "in_strategy: ((4, 1))"
-    para2 = "PrimFunc_AShardIdentity(%10)"
+    para2 = "PrimFunc_AShardIdentity(%18)"
     in_strategy2 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file, in_strategy1)
     check_layout_config(para2, file, in_strategy2)
@@ -302,13 +302,13 @@ def test_shard_with_in_strategy_4x1_getting_dynamic_input_2():
     Description: Test shard given (4, 1) tuple as in_strategy.
     Expectation: In strategy of the identity node is ((4, 1)).
     """
-    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1")
+    net, _, ir_graph_path = before_test("test_shard_with_in_strategy_4x1_getting_dynamic_input_2")
     x_dyn = Tensor(shape=[None, None, None, None], dtype=ms.float32)
     compile_net(net, x_dyn, layout1, layout2)
     file = f"{ir_graph_path}/step_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%6)"
+    para1 = "PrimFunc_AShardIdentity(%14)"
     in_strategy1 = "in_strategy: ((4, 1))"
-    para2 = "PrimFunc_AShardIdentity(%10)"
+    para2 = "PrimFunc_AShardIdentity(%18)"
     in_strategy2 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file, in_strategy1)
     check_layout_config(para2, file, in_strategy2)

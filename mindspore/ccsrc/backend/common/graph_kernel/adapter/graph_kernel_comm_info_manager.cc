@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "backend/common/graph_kernel/adapter/graph_kernel_comm_info_manager.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace graphkernel {

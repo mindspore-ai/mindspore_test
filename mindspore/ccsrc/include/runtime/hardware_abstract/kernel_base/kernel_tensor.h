@@ -32,16 +32,14 @@
 #include "abstract/abstract_value.h"
 #include "mindapi/base/format.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
 #include "runtime/hardware_abstract/visible.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 
 namespace mindspore {
 namespace kernel {
@@ -98,7 +96,36 @@ struct Address {
 };
 using AddressPtr = std::shared_ptr<Address>;
 using AddressPtrList = std::vector<AddressPtr>;
-using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
+
+// RefCount is used to express reference between kernel tensors.
+struct RefCount {
+  RefCount() = default;
+  ~RefCount() = default;
+
+  std::string ToString() const {
+    std::ostringstream ofs;
+    ofs << this << " origin ref count:" << original_ref_count_ << " ref count:" << ref_count_
+        << " dynamic ref count:" << dynamic_ref_count_ << " new ref count:" << new_ref_count_
+        << " is ptr persisted:" << is_ptr_persisted_;
+    return ofs.str();
+  }
+
+  // The static reference count, the value can be calculated at compile phase.
+  size_t original_ref_count_{1};
+  // The current reference count value, it will be decreased in the running, and reset by original_ref_count_ when it is
+  // zero.
+  std::atomic<size_t> ref_count_{1};
+
+  std::atomic<size_t> new_ref_count_{0};
+
+  // The dynamic reference count, the value can be calculated at compile phase.
+  std::atomic_int32_t dynamic_ref_count_{INT32_MAX};
+  // The device address of the node that owns the device address cannot be updated and replaced.
+  // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
+  // execution.
+  bool is_ptr_persisted_{false};
+};
+using RefCountPtr = std::shared_ptr<RefCount>;
 
 // KernelTensor is used to express input and output parameters of kernels.
 // KernelTensor is a generalized Tensor semantics, which can represent not only Tensor, but also the meta-information
@@ -106,7 +133,8 @@ using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<D
 // operators Infer and Launch, and provides related Get/Set interfaces.
 class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
  public:
-  using Deleter = PointerRefCount::Deleter;
+  using Deleter = DevicePointer::Deleter;
+  using ContinuousKernelTensorsPtr = std::shared_ptr<std::vector<std::weak_ptr<KernelTensor>>>;
 
   KernelTensor();
   ~KernelTensor() = default;
@@ -121,8 +149,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
                const ValuePtr &value, void *device_ptr, size_t size, const std::string &format, TypeId dtype_id,
-               const ShapeVector &host_shape, const string &device_name, uint32_t device_id,
-               const UserDataPtr &user_data = nullptr);
+               const ShapeVector &host_shape, const string &device_name, const UserDataPtr &user_data = nullptr);
 
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
@@ -142,7 +169,8 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
         << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString())
         << " value:" << (value_ == nullptr ? "null" : value_->ToString());
     ofs << " flag:" << flag_ << " user data:" << (user_data_ != nullptr)
-        << " need sync user data:" << need_sync_user_data_;
+        << " need sync user data:" << need_sync_user_data_ << " managed by somas:" << managed_by_somas_;
+    ofs << "ref count:" << ref_cnt_->ToString();
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->ToString();
     }
@@ -312,27 +340,19 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Set the data format of string type.
   void SetStringFormat(const std::string &format);
 
-  // Get pointer and reference count.
-  const PointerRefCountPtr &pointer_ref_count() const { return device_address_->pointer_ref_count(); }
-
-  // Set pointer and reference count.
-  void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt) {
-    device_address_->set_pointer_ref_count(ptr_ref_cnt);
-  }
-
   //  Set the pointer and reference count to nullptr, resource reclaiming of the device pointer is automatically
   //  released.
-  void ReleaseDeviceRes() { device_address_->set_pointer_ref_count(nullptr); }
+  void ReleaseDeviceRes() { device_address_->set_device_pointer(nullptr); }
 
   // Set pointer resource destructor.
-  void set_deleter(const Deleter &deleter) { device_address_->pointer_ref_count()->set_deleter(deleter); }
+  void set_deleter(const Deleter &deleter) { device_address_->device_pointer()->set_deleter(deleter); }
 
   void set_allocator(std::shared_ptr<AddressAllocator> allocator) {
-    device_address_->pointer_ref_count()->set_allocator(allocator);
+    device_address_->device_pointer()->set_allocator(allocator);
   }
 
   // Get pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void *device_ptr() const { return device_address_->pointer_ref_count()->ptr(); }
+  void *device_ptr() const { return device_address_->device_pointer()->ptr(); }
 
   // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
   void set_device_ptr(void *ptr);
@@ -352,9 +372,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Get device id.
   uint32_t device_id() const { return device_address_->device_id(); }
 
-  // Set device id.
-  void set_device_id(uint32_t device_id) { device_address_->set_device_id(device_id); }
-
   // Get logical stream id.
   uint32_t stream_id() const { return device_address_->stream_id(); }
 
@@ -373,8 +390,8 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   void set_managed_by_somas(bool managed_by_somas) { managed_by_somas_ = managed_by_somas; }
 
-  ContinuousDeviceAddressesPtr continuous_device_addresses() const;
-  void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
+  ContinuousKernelTensorsPtr continuous_kernel_tensors() const;
+  void set_continuous_kernel_tensors(const ContinuousKernelTensorsPtr &continuous_kernel_tensors);
 
   // Get user data maintained by the KernelTensor.
   UserDataPtr user_data() const { return user_data_; }
@@ -405,16 +422,8 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     need_sync_user_data_ = false;
   }
 
-  HeterogeneousInfoPtr heterogeneous_info() const {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->heterogeneous_info();
-  }
-
-  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info) {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->set_heterogeneous_info(hete_info);
-  }
-
+  bool is_ptr_persisted() const;
+  void set_is_ptr_persisted(bool is_ptr_persisted);
   // Clone a new KernelTensor from this.
   std::shared_ptr<KernelTensor> CloneKernelTensor() { return std::make_shared<KernelTensor>(*this); }
 
@@ -460,10 +469,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   void ClearFlag(size_t flag);
   bool IsNotNeedAlloc() const;
   bool IsNotNeedAllocWOLock() const;
-  size_t original_ref_count() const { return device_address_->original_ref_count(); }
-  size_t ref_count() const { return device_address_->ref_count(); }
-  int32_t dynamic_ref_count() const { return device_address_->dynamic_ref_count(); }
-  size_t new_ref_count() const { return device_address_->new_ref_count(); }
 
   const DeviceAddressPtr &device_address() const;
   void set_device_address(const DeviceAddressPtr &device_address);
@@ -483,10 +488,40 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
     return device_address_->IsPtrValid();
   }
 
-  void ClearUserData() {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->ClearUserData();
-  }
+  // Get pointer and reference count.
+  const DevicePointerPtr &device_pointer() const { return device_address_->device_pointer(); }
+
+  // Set pointer and reference count.
+  void set_pointer_ref_count(KernelTensor *const other);
+
+  void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
+  size_t DecreaseNewRefCount(const std::string &op_name);
+
+  // The related interface of static reference count operation.
+  void set_original_ref_count(size_t original_ref_count);
+  size_t original_ref_count() const;
+  void set_ref_count(size_t ref_count);
+  size_t ref_count() const;
+  void IncreaseOriginalRefCount();
+  void DecreaseOriginalRefCount();
+
+  void IncreaseRefCount(size_t increase_cnt);
+  size_t DecreaseRefCount();
+  void ResetRefCount();
+
+  // The related interface of dynamic reference count operation.
+  void set_dynamic_ref_count(int32_t dynamic_ref_count);
+  int32_t dynamic_ref_count() const;
+
+  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt);
+  void IncreaseDynamicRefCount(const std::string &op_object);
+  int32_t DecreaseDynamicRefCount(const std::string &op_object);
+
+  // New ref count interface.
+  void IncreaseNewRefCount(size_t i = 1);
+  size_t DecreaseNewRefCount();
+  void set_new_ref_count(size_t new_ref_count);
+  size_t new_ref_count() const;
 
  private:
   // This is a deprecated function in base class.
@@ -539,7 +574,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   // device address info
   DeviceAddressPtr device_address_{nullptr};
-  ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
+  ContinuousKernelTensorsPtr continuous_kernel_tensors_{nullptr};
   // The kernel tensor flag.
   size_t flag_{0};
 
@@ -549,8 +584,10 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Thread lock for ptr_.
   mutable std::mutex ptr_mutex_;
   bool managed_by_somas_{false};
+  RefCountPtr ref_cnt_;
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
+using ContinuousKernelTensorsPtr = std::shared_ptr<std::vector<std::weak_ptr<KernelTensor>>>;
 
 }  // namespace kernel
 }  // namespace mindspore

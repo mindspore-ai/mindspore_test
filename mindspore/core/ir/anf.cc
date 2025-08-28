@@ -31,9 +31,12 @@
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "ops/op_def.h"
+#include "ir/scope.h"
 #include "ir/tensor_py_wrapperbase.h"
 #include "utils/ms_utils.h"
 #include "utils/info.h"
+#include "ir/primal_attr.h"
+#include "ir/primal_debug_info.h"
 
 namespace mindspore {
 namespace {
@@ -719,6 +722,10 @@ bool Parameter::has_dynamic_shape() const { return has_dynamic_shape_; }
 void Parameter::set_dynamic_len(bool flag) { is_dynamic_len_ = flag; }
 
 bool Parameter::dynamic_len() const { return is_dynamic_len_; }
+
+void Parameter::set_format(std::string format) { format_attrs_.format = format; }
+
+std::string Parameter::format() const { return format_attrs_.format; }
 
 void Parameter::set_fracz_group(int64_t fracz_group) { format_attrs_.fracz_group = fracz_group; }
 

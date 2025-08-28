@@ -29,17 +29,17 @@
 #if defined(ENABLE_D)
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #include "minddata/dataset/engine/datasetops/map_op/npu_map_job.h"
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 #endif
-#include "minddata/dataset/engine/ir/datasetops/map_node.h"
+#include "minddata/dataset/engine/operation/datasetops/map_node.h"
 #include "minddata/dataset/kernels/py_func_op.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/random.h"
 #include "minddata/dataset/util/task_manager.h"
 #if defined(ENABLE_D)
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
-#include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/utils/ErrorCode.h"
 #endif
 #include "minddata/utils.h"
 

@@ -26,15 +26,13 @@
 #include <utility>
 #include <set>
 #include <bitset>
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
+
 #include "base/base.h"
 #include "base/effect_info.h"
 #include "ir/kernel_info_dev.h"
-#include "ir/scope.h"
-#include "ir/primal_attr.h"
-#include "ir/primal_debug_info.h"
-#include "utils/hashing.h"
+#include "utils/hash_map.h"
+#include "utils/hash_set.h"
+#include "utils/log_adapter.h"
 #include "utils/os.h"
 
 // A MindSpore ANF IR defined here.
@@ -91,6 +89,9 @@ class AnfIrVisitor;
 
 class ParamInfo;
 using ParamInfoPtr = std::shared_ptr<ParamInfo>;
+
+class Scope;
+using ScopePtr = std::shared_ptr<Scope>;
 
 // AnfNode is the basic class of the IR definition derived from Base.
 // Only two types of nodes are derived: CNode and ANode.
@@ -778,6 +779,16 @@ class MS_CORE_API Parameter final : public ANode {
   /// \return True if this Parameter is dynamic len, otherwise false.
   bool dynamic_len() const;
 
+  /// \brief Set format.
+  ///
+  /// \param[in] format String.
+  void set_format(std::string format);
+
+  /// \brief Get format.
+  ///
+  /// \return format.
+  std::string format() const;
+
   /// \brief Set groups attr in FRACTAL_Z format.
   ///
   /// \param[in] fracz_group Groups attr in FRACTAL_Z format.
@@ -816,6 +827,7 @@ class MS_CORE_API Parameter final : public ANode {
  private:
   void Init();
   struct FormatAttr {
+    std::string format = "";
     int64_t fracz_group = 1;
     int64_t input_size = 0;
     int64_t hidden_size = 0;

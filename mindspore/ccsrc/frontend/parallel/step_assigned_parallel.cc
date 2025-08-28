@@ -42,6 +42,7 @@
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

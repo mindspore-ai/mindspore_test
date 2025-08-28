@@ -21,6 +21,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <utility>
 #include "utils/ms_context.h"
 #include "runtime/utils/visible.h"
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
@@ -130,9 +131,14 @@ class RUNTIME_UTILS_EXPORT RuntimeConf {
     ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_strategy);
   }
 
-  void SetEnableKernelLaunchCapture(bool enable_capture_graph) { enable_capture_graph_ = enable_capture_graph; }
+  void SetEnableKernelLaunchCapture(bool enable_capture_graph, const std::vector<std::string> &op_capture_skip = {}) {
+    enable_capture_graph_ = enable_capture_graph;
+    op_capture_skip_ = op_capture_skip;
+  }
 
   bool GetEnableKernelLaunchCapture() { return enable_capture_graph_; }
+
+  const std::vector<std::string> &GetNotCaptureOpList() const { return op_capture_skip_; }
 
  private:
   static std::shared_ptr<RuntimeConf> inst_context_;
@@ -150,6 +156,7 @@ class RUNTIME_UTILS_EXPORT RuntimeConf {
   int mem_optimize_level_;
   float mem_huge_page_reserve_size_;
   bool enable_capture_graph_;
+  std::vector<std::string> op_capture_skip_{};
   std::map<std::string, bool> conf_status_;
 };
 

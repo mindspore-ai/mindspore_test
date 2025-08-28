@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <utility>
 #include <map>
 #include <set>
+
 #include "utils/hash_map.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/core/actors/base/actor_common.h"
@@ -172,7 +173,7 @@ class DataPrepareActor : public DebugAwareActor {
   // Record each tensor related to graph.
   static mindspore::HashMap<const tensor::Tensor *, mindspore::HashSet<const DataPrepareActor *>> tensor_with_graphs_;
   // The ref relationship of device address.
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors_;
 
   bool has_dynamic_shape_{false};
 

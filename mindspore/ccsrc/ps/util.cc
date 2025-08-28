@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,19 @@
  */
 
 #include "include/backend/distributed/ps/util.h"
+
 #include <vector>
 #include <memory>
+
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "utils/hash_map.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/distributed/ps/ps_context.h"
-#include "distributed/persistent/data.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace ps {
@@ -118,17 +120,6 @@ bool Util::FuseServerCommOps(const FuncGraphPtr &func_graph) {
   DoFusion(func_graph, kPullWeightOpName, kFusedPullWeightOpName);
   DoFusion(func_graph, kPushWeightOpName, kFusedPushWeightOpName);
   return true;
-}
-
-WeightPtr Util::MakeWeightPtr(const std::shared_ptr<std::vector<float>> &data, bool enable_recovery,
-                              const std::shared_ptr<std::vector<int>> &shape) {
-  WeightPtr weight_ptr;
-  if (!enable_recovery) {
-    weight_ptr = std::make_shared<Weight>(data, shape);
-  } else {
-    weight_ptr = std::make_shared<PersistentWeight>(data, shape);
-  }
-  return weight_ptr;
 }
 
 std::string Util::GetPrimitiveName(const CNodePtr &cnode) {

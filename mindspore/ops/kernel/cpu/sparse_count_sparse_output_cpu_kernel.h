@@ -19,7 +19,7 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {
@@ -37,6 +37,8 @@ class SparseCountSparseOutputCpuKernelMod : public NativeCpuKernelMod {
     return kernel_func_(this, inputs, workspace, outputs);
   }
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
+  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
 
  protected:
   std::vector<KernelAttr> GetOpSupport() override;

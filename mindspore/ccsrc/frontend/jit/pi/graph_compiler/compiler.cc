@@ -30,6 +30,7 @@
 #include "frontend/jit/pi/utils/utils.h"
 #include "include/common/pynative/grad_state.h"
 #include "include/common/pynative/adapter.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace pijit {

@@ -35,7 +35,7 @@ DeviceContext *GetDeviceCtx() {
 }
 }  // namespace
 
-int StressDetect() {
+int StressDetect(const std::string &detect_type) {
   auto device_ctx = GetDeviceCtx();
   MS_EXCEPTION_IF_NULL(device_ctx);
   runtime::Pipeline::Get().WaitAll();
@@ -44,8 +44,10 @@ int StressDetect() {
   controller->Refresh();
   (void)controller->SyncAllStreams();
   MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());
-  return device_ctx->GetKernelExecutor()->StressDetect();
+  return device_ctx->GetKernelExecutor()->StressDetect(detect_type);
 }
 
-void RegStress(py::module *m) { (void)m->def("stress_detect", &mindspore::StressDetect, "Detect stress"); }
+void RegStress(py::module *m) {
+  (void)m->def("stress_detect", &mindspore::StressDetect, "Detect stress", py::arg("detect_type") = "aic");
+}
 }  // namespace mindspore

@@ -183,13 +183,6 @@ if(ENABLE_MPI)
           COMPONENT mindspore
         )
     endif()
-    if(ENABLE_D)
-        install(
-                TARGETS _ascend_mpi
-                DESTINATION ${INSTALL_BASE_DIR}
-                COMPONENT mindspore
-        )
-    endif()
 endif()
 
 if(ENABLE_GPU)
@@ -241,7 +234,7 @@ if(ENABLE_D)
     endif()
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective d_collective
+                TARGETS d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
@@ -354,6 +347,7 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/runtime
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/onnx
     DESTINATION ${INSTALL_PY_DIR}
     COMPONENT mindspore
 )
@@ -512,6 +506,11 @@ if(ENABLE_D)
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/custom_compiler
         ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910b
         DESTINATION ${INSTALL_ASCEND_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_extension_ascend_aclnn ARCHIVE
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
         COMPONENT mindspore
     )
 endif()

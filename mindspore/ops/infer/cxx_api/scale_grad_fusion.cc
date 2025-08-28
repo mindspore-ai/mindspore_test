@@ -20,6 +20,8 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
+#include "abstract/ops/primitive_infer_map.h"
+#include "abstract/ops/op_infer.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {

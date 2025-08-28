@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@
 #include <vector>
 #include <climits>
 #include <unordered_map>
+
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
+#include "utils/hashing.h"
 #include "kernel/ascend/visible.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_map.h"

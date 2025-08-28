@@ -25,13 +25,14 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
+#include "include/backend/distributed/constants.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
-#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
+#include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "tools/profiler/profiling.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
@@ -51,7 +52,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "acl/acl_dump.h"
-#include "tools/dump/tensordump_control.h"
+#include "tools/dump/tensordump.h"
 
 namespace mindspore {
 namespace device {
@@ -94,7 +95,7 @@ void AscendDeviceContext::InitializeForAclop() const {
   }
   // should be called after ge initialize.
   SetAclOpDebugOption();
-  datadump::TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
+  datadump::TensorDumpManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
   initialized_aclop_ = true;
   MS_LOG(INFO) << "End initializing for acl.";
 }
@@ -133,7 +134,11 @@ void AscendDeviceContext::Initialize() {
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
 
-  if (ms_context->GetBackend() == kBackendGE) {
+  // After evolve to pynative+jit, we cannot know if run ge in initialize stage. To avoid the port occupancy conflict
+  // between the initialization of non-global communication group and ge, we initialize ge first if run distributed
+  // program in ascend910. May can be removed after the decoupling with CollectiveManager and DeviceContext.
+  if (ms_context->GetBackend() == kBackendGE ||
+      (soc_version == "ascend910" && !common::GetEnv(mindspore::distributed::kEnvWorkerNum).empty())) {
     InitializeForAclop();
   }
 
@@ -220,11 +225,15 @@ void SetContextSocVersion(MsContext *ctx) {
     {"Ascend910_9381", "ascend910_93"}, {"Ascend910_9382", "ascend910_93"}, {"Ascend910_9372", "ascend910_93"},
     {"Ascend910_9361", "ascend910_93"}, {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},
     {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"},      {"Ascend310", "ascend310"}};
-  const char *soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
-  if (soc_name_c == nullptr) {
-    MS_LOG(ERROR) << "Get soc name failed.";
-    return;
+  const char *soc_name_c = "";
+  if (!UseSimulationApi()) {
+    soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
+    if (soc_name_c == nullptr) {
+      MS_LOG(ERROR) << "Get soc name failed.";
+      return;
+    }
   }
+
   std::string version(soc_name_c);
   MS_LOG(INFO) << "The soc version :" << version;
   MS_EXCEPTION_IF_NULL(ctx);
@@ -251,7 +260,11 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
     common::SetEnv("MS_FORMAT_MODE", format_mode.c_str());
   }
 
-  device::ascend::LoadAscendApiSymbols();
+  if (!UseSimulationApi()) {
+    device::ascend::LoadAscendApiSymbols();
+  } else {
+    device::ascend::LoadSimulationApiSymbols();
+  }
   ctx->set_ascend_soc_func(SetContextSocVersion);
 });
 #endif

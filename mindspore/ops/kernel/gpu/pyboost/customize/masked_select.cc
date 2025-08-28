@@ -16,9 +16,7 @@
 
 #include "kernel/gpu/pyboost/customize/masked_select.h"
 #include "ir/scalar.h"
-#include "mindspore/ccsrc/plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"

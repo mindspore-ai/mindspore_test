@@ -22,6 +22,7 @@
 #include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "abstract/abstract_value.h"
+#include "abstract/ops/primitive_infer_map.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_dyn_cases.h"
 #include "ops/test_ops_cmp_utils.h"

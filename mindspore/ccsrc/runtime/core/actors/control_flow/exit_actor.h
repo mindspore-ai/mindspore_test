@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include <utility>
+
 #include "utils/hash_map.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/actors/control_flow/control_actor.h"
@@ -70,7 +71,7 @@ class ExitActor : public ControlActor {
   void CopyDeviceAddress(OpContext<KernelTensor> *const context);
   void UpdateDeviceOutputData();
   void MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const context);
-  bool IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index);
+  bool IsNeedCopyDeviceAddress(const KernelTensorPtr &input_kernel_tensor, size_t index);
 
   // Exit actor will send to different actors according to different callers, so the output data, control,
   // and partial arrows will have branch.

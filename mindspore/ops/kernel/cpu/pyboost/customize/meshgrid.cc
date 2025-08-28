@@ -17,10 +17,9 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/meshgrid.h"
 
 #include "ir/scalar.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
@@ -31,13 +30,6 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
-  MS_LOG(DEBUG) << "Nonzero CPU start";
-  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kCPU);
-  MS_LOG(DEBUG) << "NonZero CPU end";
-  return output;
-}
-std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
   MS_LOG(DEBUG) << "Nonzero CPU start";
   std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kCPU);
   MS_LOG(DEBUG) << "NonZero CPU end";

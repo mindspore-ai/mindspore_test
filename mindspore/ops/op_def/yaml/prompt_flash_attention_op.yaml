@@ -77,5 +77,4 @@ prompt_flash_attention:
   dispatch:
     enable: True
     Ascend: PromptFlashAttentionAscend
-    CPU: None
     GPU: None

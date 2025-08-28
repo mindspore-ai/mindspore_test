@@ -28,7 +28,6 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -37,7 +36,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace ops {

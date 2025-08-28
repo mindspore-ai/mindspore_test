@@ -22,6 +22,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -119,10 +120,9 @@ void RecordInplaceNodes(const CNodePtr &cnode, std::unordered_map<AnfNodePtr, An
  *
  * \param[in] func_graph func graph.
  **/
-void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
+void ChangeInplaceInputInner(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::unordered_map<AnfNodePtr, AnfNodePtr> inplace_input;
-  auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto &node_users_map = manager->node_users();
   auto output_node = func_graph->output();
@@ -163,7 +163,7 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
   // Isolated inplace nodes
   // Return {prim::kPrimDepend, real_output, ...}
   auto real_output_cnode = real_output->cast<CNodePtr>();
-  if (real_output_cnode != nullptr && !IsMonad(real_output_cnode->inputs().back())) {
+  if (IsPrimitiveCNode(real_output_cnode, prim::kPrimMakeTuple)) {
     ReplaceInplaceNodeForCNode(real_output_cnode, inplace_input, manager, func_graph);
   }
   return;
@@ -176,12 +176,12 @@ bool DoInplaceInputReplace(const FuncGraphPtr &func_graph, const OptimizerPtr &o
   if (!exist_inplace_nodes) {
     return false;
   }
-
+  auto manager = func_graph->manager();
   // Do inplace input replace for func_graph and sub_graphs
-  ChangeInplaceInputInner(func_graph);
+  ChangeInplaceInputInner(func_graph, manager);
   auto sub_graphs = func_graph->func_graphs_used_total();
   for (const auto &sub_graph : sub_graphs) {
-    ChangeInplaceInputInner(sub_graph);
+    ChangeInplaceInputInner(sub_graph, manager);
   }
 
   return false;

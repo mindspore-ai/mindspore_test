@@ -19,7 +19,7 @@
 #include <cublas_v2.h>
 #include <cuda_runtime_api.h>
 #include <cusolverDn.h>
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 namespace mindspore {
 namespace cusolver {

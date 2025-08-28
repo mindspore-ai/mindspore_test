@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/no_repeat_ngram_impl.cuh"
 
 namespace mindspore {

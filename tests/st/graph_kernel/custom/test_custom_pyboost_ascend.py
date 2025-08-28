@@ -17,11 +17,12 @@
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore._c_expression import typing
 from mindspore.ops import CustomOpBuilder
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_pyboost_atb_swiglu():
     """
     Feature: CustomOpBuilder.
@@ -44,7 +45,7 @@ def test_pyboost_atb_swiglu():
                        [0.459, 0.02806, 0.01624, 0.2295, 0.1123, 0.2357, 0.0163, 0.2664,
                         0.0526, 0.0998, 0.1132, 0.01584, 0.07697, 0.01211, 0.1747, 0.000609]], dtype=np.float16)
     output = my_ops.npu_swiglu(ms.Tensor(x), -1)
-    np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+    assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -130,7 +131,6 @@ def test_pyboost_asdsip_fft():
     assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
 
 
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_pyboost_aclnn():
     """
@@ -140,11 +140,98 @@ def test_pyboost_aclnn():
     """
 
     ms.set_device("Ascend")
-    my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp'], backend="Ascend").load()
+    my_ops = CustomOpBuilder("aclnn_op", ['jit_test_files/pyboost_aclnn_sum.cpp', "jit_test_files/graph/module.cpp"],
+                             backend="Ascend").load()
     x = np.random.rand(4, 5, 6).astype(np.float32)
     expect = np.sum(np.abs(x), 1, keepdims=True)
-    output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True)
+    output = my_ops.npu_abs_reduce_sum(ms.Tensor(x), (1,), True, None)
     assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyboost_aclnn_arg_min():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("aclnn_op_2", ['jit_test_files/pyboost_aclnn_argmin.cpp'],
+                             backend="Ascend").load()
+
+    x = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    expect = np.argmin(x, 0)
+    output = my_ops.npu_arg_min(ms.Tensor(x), 0, False)
+    assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyboost_aclnn_batch_norm():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("aclnn_op_3", ['jit_test_files/pyboost_aclnn_batch_norm.cpp'],
+                             backend="Ascend").load()
+
+    x = ms.Tensor((3 * np.ones(16)).reshape(2, 2, 1, 4).astype(np.float32))
+    scale = ms.Tensor(np.ones(2).astype(np.float32))
+    bias = ms.Tensor(np.ones(2).astype(np.float32))
+    mean = ms.Tensor(np.ones(2).astype(np.float32))
+    variance = ms.Tensor(np.ones(2).astype(np.float32))
+
+    expect = np.array([2.99999]).repeat(16, axis=0).astype(np.float32).reshape((2, 2, 1, 4))
+
+    output = my_ops.npu_batch_norm(x, scale, bias, mean, variance, False, 0.1, 1e-5)[0]
+    assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyboost_aclnn_cast():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("aclnn_op_4", ['jit_test_files/pyboost_aclnn_cast.cpp'],
+                             backend="Ascend").load()
+
+    x = np.random.randn(1280, 1280).astype(np.float16)
+    dst_type_id = typing.type_to_type_id(ms.dtype.float32)
+    output = my_ops.npu_cast(ms.Tensor(x), dst_type_id)
+    assert output.asnumpy().dtype == 'float32'
+    assert output.asnumpy().shape == (1280, 1280)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyboost_aclnn_avg_pool_2d():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    my_ops = CustomOpBuilder("aclnn_op_5", ['jit_test_files/pyboost_aclnn_avg_pool_2d.cpp'],
+                             backend="Ascend").load()
+
+    image = ms.Tensor(np.array([[[4.1702e-1, 7.2032e-1, 1.1437e-4, 3.0223e-1],
+                                 [1.4676e-1, 9.2339e-2, 1.8626e-1, 3.4556e-1],
+                                 [3.9677e-1, 5.3882e-1, 4.1919e-1, 6.8522e-1],
+                                 [2.0445e-1, 8.7812e-1, 2.7338e-2, 6.7047e-1]]]).astype(np.float32))
+
+    output = my_ops.npu_avgpool2d(image, (2, 2), (2, 2), (1, 1), False, True, 0, False)
+    expected = np.array([[[0.1043, 0.1801, 0.0756],
+                          [0.1359, 0.3092, 0.2577],
+                          [0.0511, 0.2264, 0.1676]]]).astype(np.float32)
+
+    assert np.allclose(output.asnumpy(), expected, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')

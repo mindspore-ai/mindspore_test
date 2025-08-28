@@ -35,7 +35,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
+#include "kernel/ascend/kernel_plugin.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/internal_pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

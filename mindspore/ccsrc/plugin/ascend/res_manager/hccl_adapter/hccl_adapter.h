@@ -116,6 +116,9 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclResult HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params, HcclDataType dataType,
                            const aclrtStream stream, HcclComm comm) const;
 
+  HcclResult HcclAlltoAllVC(void *send_buf, void *send_count_matrix, HcclDataType send_type, void *recv_buf,
+                            HcclDataType recv_type, aclrtStream stream, HcclComm hccl_comm) const;
+
   HcclResult HcclReduceScatterV(void *send_buf, void *recv_buf, hccl::HcclReduceScatterVParams params,
                                 HcclDataType data_type, const HcclReduceOp op, const aclrtStream stream,
                                 HcclComm hccl_comm) const;
@@ -191,6 +194,7 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclGetRankIdFunObj single_op_hccl_get_rank_id_ = nullptr;
   HcclGetRankSizeFunObj single_op_hccl_get_rank_size_ = nullptr;
   HcclAlltoAllVFunObj launch_hccl_all_to_allv_ = nullptr;
+  HcclAlltoAllVCFunObj launch_hccl_all_to_allvc_ = nullptr;
   HcclReduceScatterVFunObj launch_hccl_reduce_scatterv_ = nullptr;
   HcclAllGatherVFunObj launch_hccl_all_gatherv_ = nullptr;
   HcclAlltoAllFunObj launch_hccl_all_to_all_ = nullptr;

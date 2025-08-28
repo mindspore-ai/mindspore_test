@@ -1,4 +1,5 @@
-# the mindspore_extension_ascend.so will be added in the future.
+# default build aclnn
+add_subdirectory(aclnn)
 
 # nnal is an optional package
 if(EXISTS ${ASCEND_NNAL_ATB_PATH})
@@ -6,6 +7,5 @@ if(EXISTS ${ASCEND_NNAL_ATB_PATH})
 endif()
 
 if(EXISTS ${ASCEND_NNAL_ASDSIP_PATH})
-    add_definitions(-DASDSIP_PATH="${ASCEND_NNAL_ASDSIP_PATH}")
     add_subdirectory(asdsip)
 endif()

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 #define MINDSPORE_CORE_BASE_OTHER_OPS_H_
 
 #include <memory>
+
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/other_op_name.h"
-#include "utils/hash_map.h"
 #include "ir/core_ops_primitive.h"
 
 namespace mindspore {
@@ -60,6 +60,7 @@ GVAR_DEF(PrimitivePtr, kPrimNeighborExchangeV2Grad, std::make_shared<Primitive>(
 GVAR_DEF(PrimitivePtr, kPrimAlltoAll, std::make_shared<Primitive>("AlltoAll"));
 GVAR_DEF(PrimitivePtr, kPrimAllToAll, std::make_shared<Primitive>("AllToAll"));
 GVAR_DEF(PrimitivePtr, kPrimAlltoAllV, std::make_shared<Primitive>("AlltoAllV"));
+GVAR_DEF(PrimitivePtr, kPrimAlltoAllVC, std::make_shared<Primitive>("AlltoAllVC"));
 GVAR_DEF(PrimitivePtr, kPrimAllGatherV, std::make_shared<Primitive>("AllGatherV"));
 GVAR_DEF(PrimitivePtr, kPrimReduceScatterV, std::make_shared<Primitive>("ReduceScatterV"));
 GVAR_DEF(PrimitivePtr, kPrimAlltoAllVGE, std::make_shared<Primitive>("AlltoAllVGE"));
@@ -95,12 +96,7 @@ GVAR_DEF(PrimitivePtr, kPrimTensorArrayGather, std::make_shared<Primitive>("Tens
 GVAR_DEF(PrimitivePtr, kPrimPartitionedCall, std::make_shared<Primitive>("PartitionedCall"));
 GVAR_DEF(PrimitivePtr, kPrimDecodeImage, std::make_shared<Primitive>("DecodeImage"));
 GVAR_DEF(PrimitivePtr, kPrimKMeansCentroids, std::make_shared<Primitive>("KMeansCentroids"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferCreate, std::make_shared<Primitive>("ReservoirReplayBufferCreate"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferPush, std::make_shared<Primitive>("ReservoirReplayBufferPush"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferSample, std::make_shared<Primitive>("ReservoirReplayBufferSample"));
-GVAR_DEF(PrimitivePtr, kPrimReservoirReplayBufferDestroy, std::make_shared<Primitive>("ReservoirReplayBufferDestroy"));
 GVAR_DEF(PrimitivePtr, kPrimOCRDetectionPreHandle, std::make_shared<Primitive>("OCRDetectionPreHandle"));
-GVAR_DEF(PrimitivePtr, kPrimBufferAppend, std::make_shared<Primitive>("BufferAppend"));
 
 // NPU
 GVAR_DEF(PrimitivePtr, kPrimNPUGetFloatStatus, std::make_shared<Primitive>("NPUGetFloatStatus"));

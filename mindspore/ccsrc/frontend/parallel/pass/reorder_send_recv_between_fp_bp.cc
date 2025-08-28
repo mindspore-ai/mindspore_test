@@ -15,11 +15,14 @@
  */
 
 #include "frontend/parallel/pass/reorder_send_recv_between_fp_bp.h"
+
 #include <memory>
 #include <list>
 #include <vector>
 #include <string>
 #include <queue>
+
+#include "include/common/utils/parallel_context.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/jit/ps/graph_circle_handler.h"

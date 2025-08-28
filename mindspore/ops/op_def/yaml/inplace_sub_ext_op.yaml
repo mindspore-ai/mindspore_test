@@ -23,5 +23,4 @@ inplace_sub_ext:
   dispatch:
     enable: True
     Ascend: InplaceSubExtAscend
-    CPU: None
     GPU: None

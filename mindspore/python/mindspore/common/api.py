@@ -208,6 +208,11 @@ def _handle_func_args(func, *args, **kwargs):
         args = bound_arguments.args
         kwargs = bound_arguments.kwargs
 
+    return args, kwargs
+
+
+def _check_func_args(func, *args):
+    """Check the *args inputs of the function"""
     positional_args = 0
     default_args = 0
     has_var = False
@@ -221,14 +226,13 @@ def _handle_func_args(func, *args, **kwargs):
                 default_args += 1
 
     if has_var:
-        return args, kwargs
+        return
 
     if len(args) < positional_args:
         raise TypeError(f"Function {func.__name__} needs {positional_args} positional argument, but got {len(args)}.")
     if len(args) > positional_args + default_args:
         raise TypeError(f"Function {func.__name__} needs {positional_args} positional argument and {default_args} "
                         f"default argument, total {positional_args + default_args}, but got {len(args)}.")
-    return args, kwargs
 
 
 sys_path = list(sys.path)
@@ -349,7 +353,7 @@ def _get_parameter_layout():
     return layout
 
 
-def _handle_arg(obj, arg, has_mutable_arg):
+def _handle_arg(obj, arg, has_mutable_arg, is_predict):
     """Handle arg for runtime .If need handle the arg, return True"""
     from mindspore._extends.parse import compile_config
     if isinstance(arg, PythonTensor):
@@ -364,7 +368,7 @@ def _handle_arg(obj, arg, has_mutable_arg):
         if isinstance(arg, list) and not arg:
             return None
         return arg
-    elif (context.get_context("grad_for_scalar") or str(compile_config.GRAD_FOR_SCALAR) == '1') and \
+    elif not is_predict and (context.get_context("grad_for_scalar") or str(compile_config.GRAD_FOR_SCALAR) == '1') and \
             isinstance(arg, (int, float)):
         return arg
     elif hasattr(obj, "enable_tuple_broaden") and obj.enable_tuple_broaden and isinstance(arg, tuple) and \
@@ -394,17 +398,16 @@ def _handle_arg_predict(obj, arg, has_mutable_arg):
     return arg
 
 
-def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, is_predict):
+def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, is_predict=False):
     """Get the actual input args and kwargs for runtime."""
     new_args = []
-    fn = _handle_arg_predict if is_predict else _handle_arg
     for arg, has_mutable_arg in zip(args, has_mutable_args_list):
-        new_arg = fn(obj, arg, has_mutable_arg)
+        new_arg = _handle_arg(obj, arg, has_mutable_arg, is_predict)
         if new_arg is not None:
             new_args.append(new_arg)
 
     for _, value in kwargs.items():
-        new_value = fn(obj, value, None)
+        new_value = _handle_arg(obj, value, None, is_predict)
         if new_value is not None:
             new_args.append(new_value)
 
@@ -634,16 +637,8 @@ class _JitExecutor:
             except Exception as err:
                 _pynative_executor.clear_res()
                 raise err
-        else:  # get compiled args to generate run args by _generate_run_args
-            compile_args = self._generate_compile_args(args_list)
-            key_id = self._get_key_id()
-            if self.input_signature is None:
-                compile_args = get_auto_dynamic_shape_args(
-                    compile_args, key_id, self._enable_auto_dynamic
-                )
-            self._compile_args = compile_args
 
-        new_inputs = self._generate_run_args(args_list, kwargs)
+        new_inputs = self._generate_run_args(args_list, kwargs, is_predict=True)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
@@ -661,6 +656,7 @@ class _JitExecutor:
         predict, res = self._predict(*args, **kwargs)
         if predict:
             return res
+        _check_func_args(self.fn, *args)
         if jit_context() and jit_context().is_nested():
             return jit_context().run_graph("", None, *())
         args_list = args
@@ -706,6 +702,9 @@ class _JitExecutor:
         # 2) Args contains sequence with gradient tensor.
         compile_args = _add_mutable_attr(args, compile_args, _pynative_executor.requires_grad())
         self._compile_args = compile_args
+        # Store the compile_args in the cell obj for incremental inference.
+        if self.obj is not None:
+            self.obj._compile_args = compile_args
         generate_name, echo_function_name = self._get_generate_name()
         # The full Function name
         full_function_name = generate_name
@@ -895,7 +894,7 @@ class _JitExecutor:
         # Case: If the shape of input args is dynamic, get dynamic shape tensor from context and use it to compile.
         return _pynative_executor.get_dynamic_input(args_list)
 
-    def _generate_run_args(self, args_list, kwargs):
+    def _generate_run_args(self, args_list, kwargs, is_predict=False):
         """
         Generate input args, which are required for running.
 
@@ -906,7 +905,9 @@ class _JitExecutor:
         Returns:
             new_inputs, new input args, which are required for running.
         """
-        return _get_args_for_run(self, args_list, kwargs, _get_mutable_flags(self._compile_args), False)
+        if self._compile_args is None and self.obj is not None:
+            self._compile_args = self.obj._compile_args
+        return _get_args_for_run(self, args_list, kwargs, _get_mutable_flags(self._compile_args), is_predict)
 
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
         """Get graph proto from pipeline."""
@@ -1933,6 +1934,19 @@ class _PyNativeExecutor:
         """
         return self._executor.set_creation_type(tensor, creation_type)
 
+    def queue_backward_final_callback(self, callback):
+        """
+        add backward final callback
+
+        Args:
+            callback(Function): callback function.
+
+        Return:
+            None.
+        """
+        return self._executor.queue_backward_final_callback(callback)
+
+
 
 class _CellGraphExecutor:
     """
@@ -2074,6 +2088,8 @@ class _CellGraphExecutor:
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
+        obj._add_attr("compile_phase", phase)
+        obj.compile_phase = phase
         if phase in obj.compile_cache and self.has_compiled(phase):
             logger.debug("%r graph has existed.", phase)
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
@@ -2211,6 +2227,24 @@ class _CellGraphExecutor:
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
         return self._graph_executor.get_func_graph_proto(exec_id, ir_type, incremental)
+
+    def _get_onnx_func_graph_proto(self, obj, exec_id, use_prefix=False, input_names=None, output_names=None,
+                                   opset_version=11, export_params=True, keep_initializers_as_inputs=False,
+                                   dynamic_axes=None, extra_save_params=False, save_file_dir=None):
+        """Get graph proto from pipeline."""
+        if use_prefix:
+            exec_id = exec_id + '.' + obj.arguments_key
+        if self._graph_executor.has_compiled(exec_id) is False:
+            return None
+        if input_names is None:
+            input_names = []
+        if output_names is None:
+            output_names = []
+        if dynamic_axes is None:
+            dynamic_axes = {}
+        return self._graph_executor.get_onnx_func_graph_proto(exec_id, input_names, output_names, opset_version,
+                                                              export_params, keep_initializers_as_inputs, dynamic_axes,
+                                                              extra_save_params, save_file_dir)
 
     def get_optimize_graph_proto(self, obj):
         """Return optimize graph binary proto."""

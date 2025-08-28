@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include <map>
-#include "utils/hash_map.h"
+
 #include "runtime/core/graph_scheduler/control_flow/control_node_parser.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/core/actors/base/actor_common.h"

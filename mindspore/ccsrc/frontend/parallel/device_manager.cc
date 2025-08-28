@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@
 #include <vector>
 #include <unordered_map>
 
-#include "utils/hash_set.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace parallel {
@@ -405,9 +405,29 @@ std::string DeviceManager::GenerateGroupNameByRanks(RankList ranks) {
   std::sort(ranks.begin(), ranks.end());  // sorted in increasing order
   std::string rank_list_name = RankListName(ranks);
 
-  // hash rank-list-name and add ranks' size as prefix
-  std::string group_hash_name = HashName(rank_list_name);
-  std::string group_name = std::to_string(ranks.size()) + "-" + group_hash_name;
+  // replace group name
+  std::string group_name;
+  std::vector<uint32_t> rank_list;
+  rank_list.reserve(ranks.size());
+  (void)std::transform(ranks.begin(), ranks.end(), std::back_inserter(rank_list),
+                       [](int64_t r) { return static_cast<uint32_t>(r); });
+  auto group_flag_pair = ParallelCommManager::GetInstance()->HcclGroups(rank_list);
+  bool is_created = group_flag_pair && group_flag_pair->second;
+  bool initialized = distributed::collective::CollectiveManager::instance()->initialized();
+  bool in_group_map = false;
+  if (is_created && initialized) {
+    const auto &group_map = distributed::collective::CollectiveManager::instance()->get_group_map();
+    auto it = group_map.find(group_flag_pair->first);
+    in_group_map = (it != group_map.end() && !it->second.empty());
+  }
+  bool valid_group = is_created && initialized && in_group_map;
+
+  if (valid_group) {
+    group_name = group_flag_pair->first;
+  } else {
+    std::string group_hash_name = HashName(rank_list_name);  // hash rank-list-name and add ranks' size as prefix
+    group_name = std::to_string(ranks.size()) + "-" + group_hash_name;
+  }
 
   if (rank_to_group_.find(rank_list_name) == rank_to_group_.end()) {
     if (group_to_rank_.find(group_name) == group_to_rank_.end()) {
@@ -462,6 +482,54 @@ void DeviceManager::Clear() {
   devices_.clear();
   stage_devices_.clear();
   gm_.Clear();
+}
+
+std::shared_ptr<ParallelCommManager> ParallelCommManager::GetInstance() {
+  static std::once_flag flag;
+  std::call_once(flag, []() {
+    if (group_instance_ == nullptr) {
+      MS_LOG(INFO) << "Create ParallelCommManager.";
+      group_instance_ = std::make_shared<ParallelCommManager>();
+    }
+  });
+  return group_instance_;
+}
+
+std::string ParallelCommManager::RankListName(const std::vector<uint32_t> &ranks) const {
+  std::vector<uint32_t> sorted_ranks = ranks;
+  std::sort(sorted_ranks.begin(), sorted_ranks.end());
+  std::string rank_list_name;
+  for (auto it = sorted_ranks.begin(); it != sorted_ranks.end(); ++it) {
+    if (it == sorted_ranks.begin()) {
+      rank_list_name = std::to_string(*it);
+    } else {
+      rank_list_name += "-" + std::to_string(*it);
+    }
+  }
+  return rank_list_name;
+}
+
+std::string ParallelCommManager::HashName(const std::string &origin_name) const {
+  return std::to_string(std::hash<string>{}(origin_name));
+}
+
+void ParallelCommManager::SetHcclGroups(const std::vector<uint32_t> &ranks, std::string name, bool flag) {
+  std::string rank_list_name = RankListName(ranks);
+  std::string hash_name = HashName(rank_list_name);
+  auto &pair = hccl_groups_map_[hash_name];
+  pair.first = name;
+  pair.second = flag;
+}
+
+std::optional<std::pair<std::string, bool>> ParallelCommManager::HcclGroups(const std::vector<uint32_t> &ranks) const {
+  std::string rank_list_name = RankListName(ranks);
+  std::string hash_name = HashName(rank_list_name);
+  const auto &it = hccl_groups_map_.find(hash_name);
+  if (it == hccl_groups_map_.end()) {
+    MS_LOG(DEBUG) << "Hccl groups has not been created: " << rank_list_name;
+    return std::nullopt;
+  }
+  return it->second;
 }
 }  // namespace parallel
 }  // namespace mindspore

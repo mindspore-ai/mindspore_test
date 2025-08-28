@@ -16,20 +16,22 @@
 
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include <algorithm>
+#include <functional>
 #include <utility>
 #include <unordered_map>
+#include "abstract/ops/primitive_infer_map.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
@@ -174,35 +176,48 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
   const auto &key = with_prim_attr ? cache_helper.GetPrimAttrKernelModKey(prim, device_name, inputs)
                                    : cache_helper.GetKernelModKey(op_name, device_name, inputs);
   auto kernel_mod = cache_helper.GetKernelMod(key);
-  if (kernel_mod == nullptr) {
-    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
-    if (kernel_mod == nullptr) {
-      if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
-        // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-        const std::string custom_op_name = "CustomOpPlugin";
-        kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
-        MS_EXCEPTION_IF_NULL(kernel_mod);
-      } else {
-        MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
-      }
-    }
-    if (!kernel_mod->Init(prim, inputs, outputs)) {
-      MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
+  if (kernel_mod != nullptr) {
+    return kernel_mod;
+  }
+
+  static const auto ms_op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (ms_op_plugin_path != nullptr) {
+    // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+    constexpr auto custom_op_name = "CustomOpPlugin";
+    kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+
+    if (kernel_mod->Init(prim, inputs, outputs)) {
+      // use op plugin when init success
+      cache_helper.SetCache(key, kernel_mod);
+      PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
+      return kernel_mod;
     }
     cache_helper.SetCache(key, kernel_mod);
     PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
   }
 
+  kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(op_name);
+  if (kernel_mod == nullptr) {
+    MS_LOG(EXCEPTION) << "Create kernelmod for op " << op_name << " failed";
+  }
+
+  if (!kernel_mod->Init(prim, inputs, outputs)) {
+    MS_LOG(EXCEPTION) << "KernelMod Init Failed: " << op_name;
+  }
+  cache_helper.SetCache(key, kernel_mod);
+  PyboostKernelExtraFuncFactory::GetInstance().SetThreadPool(device::GetDeviceTypeByName(device_name), kernel_mod);
+
   return kernel_mod;
 }
 
-DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync) {
+DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr &device_sync) {
   const auto &storage_info = device_sync->GetTensorStorageInfo();
   if (storage_info == nullptr) {
     return device_sync;
   }
 
-  auto old_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  auto old_device_address = device_sync;
 
   MS_EXCEPTION_IF_NULL(old_device_address);
   MS_EXCEPTION_IF_NULL(storage_info);
@@ -216,8 +231,7 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   auto address_size = GetTypeByte(TypeIdToType(old_device_address->type_id())) * SizeOf(storage_info->shape);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
-  new_device_address->set_new_ref_count(SIZE_MAX);
+    device_context->device_context_key().device_name_, stream_id);
 
   if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
                                                               {old_device_address}, {new_device_address}, stream_id)) {
@@ -255,24 +269,89 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
                                      runtime::ProfilerRecorder::kNoName, false);
   auto output_tensor = tensor::from_spec(data_type, storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
-  output_tensor->set_contiguous_callback(
-    [](const DeviceSyncPtr &device_address) -> DeviceSyncPtr { return ContiguousByDeviceAddress(device_address); });
+  output_tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
+    return ContiguousByDeviceAddress(device_address);
+  });
 
-  auto input_device_address = std::static_pointer_cast<device::DeviceAddress>(input->device_address());
+  auto input_device_address = input->device_address();
   MS_EXCEPTION_IF_NULL(input_device_address);
-  input_device_address->set_is_view(true);
 
   // Create view output address
   auto output_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, input_device_address->GetSize(), output_tensor->shape(), DEFAULT_FORMAT, output_tensor->data_type(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_,
-    input_device_address->stream_id());
+    device_context->device_context_key().device_name_, input_device_address->stream_id());
   MS_EXCEPTION_IF_NULL(output_device_address);
   output_device_address->set_tensor_storage_info(storage_info);
-  output_device_address->set_pointer_ref_count(input_device_address->pointer_ref_count());
+  output_device_address->set_device_pointer(input_device_address->device_pointer());
   output_tensor->set_device_address(output_device_address);
   (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString() << " with " << storage_info->ToString();
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view) {
+  if (tensor == nullptr) {
+    return;
+  }
+  const auto &device_sync = tensor->device_address();
+  auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
+
+  auto mem_type =
+    tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
+                                                 device_address.get());
+  if (device_address->GetMutablePtr() != nullptr) {
+    return;
+  }
+
+  if (device_address->size() == 0) {
+    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+    if (shape_size != 0) {
+      return;
+    }
+  }
+
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    MS_LOG(EXCEPTION) << "Allocate memory failed";
+  }
+
+  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
+    runtime::OpExecutor::DispatchLaunchTask([tensor]() {
+      MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+      runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
+    });
+  } else {
+    MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+    runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
+  }
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const std::vector<tensor::TensorPtr> &tensors,
+                                  bool is_view) {
+  for (const auto &tensor : tensors) {
+    MallocForInput(device_context, tensor, is_view);
+  }
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const ValueTuplePtr &value_tuple, bool is_view) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto &values = value_tuple->value();
+  std::vector<tensor::TensorPtr> tensors;
+  for (size_t i = 0; i < values.size(); ++i) {
+    const auto &value = values[i];
+    if (value != nullptr && value->isa<tensor::Tensor>()) {
+      tensors.push_back(GetValue<tensor::TensorPtr>(value));
+    }
+  }
+  return PyBoostUtils::MallocForInput(device_context, tensors, is_view);
+}
+
+void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const std::optional<tensor::TensorPtr> &val,
+                                  bool is_view) {
+  if (!val.has_value()) {
+    return;
+  }
+  MallocForInput(device_context, val.value(), is_view);
 }
 
 AbstractBasePtr PyBoostUtils::InferByOpDef(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_abs) {
@@ -340,7 +419,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   MS_EXCEPTION_IF_NULL(kernel_tensor_list);
   MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
 
-  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto tmp_abs = input_abs;
   if (input_abs == nullptr) {
@@ -376,6 +455,32 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   for (const auto &tensor : tensors) {
     // input_abs is not used in GetKernelTensor when value is TensorPtr.
     GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+  }
+}
+
+void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                   const abstract::AbstractBasePtr &input_abs, size_t index,
+                                   std::vector<kernel::KernelTensor *> *kernel_tensor_list,
+                                   std::vector<kernel::KernelTensorPtr> *kernel_tensor_ptr_list,
+                                   const ValueTuplePtr &value_tuple) {
+  MS_EXCEPTION_IF_NULL(value_tuple);
+  const auto values = value_tuple->value();
+  size_t tensor_num = std::count_if(values.cbegin(), values.cend(), [](const ValuePtr &value) {
+    return value != nullptr && value->isa<tensor::Tensor>();
+  });
+  if (tensor_num == values.size() && tensor_num != 0) {
+    for (const auto &value : values) {
+      const auto &tensor = value->cast<tensor::TensorPtr>();
+      GetKernelTensor(device_context, stream_id, input_abs, index, kernel_tensor_list, kernel_tensor_ptr_list, tensor);
+    }
+  } else {
+    auto kernel_tensor =
+      runtime::DeviceAddressUtils::CreateInputKernelTensor(device_context, stream_id, input_abs, index, value_tuple);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
+    MS_EXCEPTION_IF_NULL(kernel_tensor_list);
+    (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);
+    (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
   }
 }
 
@@ -703,6 +808,67 @@ std::vector<tensor::TensorPtr> PyBoostUtils::CastTensor(const std::vector<tensor
     (void)output_tensors.emplace_back(output);
   }
   return output_tensors;
+}
+
+bool ProfileTracker::ProfileTrackerTask(const PrimitivePtr &primitive) {
+  static bool enable_trace_mem = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (MS_UNLIKELY(enable_trace_mem || device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info())) {
+    PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive]() {
+      // wait for event
+      runtime::Pipeline::Get().launch_stage()->Wait();
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddNestedTask, "PyNative", primitive->name(), "");
+    }));
+  }
+  bool skip_tracker = !enable_trace_mem;
+  return skip_tracker;
+}
+
+void ProfileTracker::TrackerInputTensors(const PrimitivePtr &primitive, const std::vector<tensor::TensorPtr> &tensors) {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive, tensors]() {
+    for (const auto &tensor : tensors) {
+      MS_EXCEPTION_IF_NULL(tensor);
+      const auto &device_sync = tensor->device_address();
+      auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+      if (device_address == nullptr) {
+        MS_LOG(WARNING) << "Tracker: input tensor device address is nullptr, primitive: " << primitive->name();
+        continue;
+      }
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (device_address->GetPtr() == nullptr) {
+        MS_LOG(WARNING) << "Tracker: input tensor device ptr is nullptr, primitive: " << primitive->name();
+        continue;
+      }
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+        MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
+        device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
+        device_address->GetTensorStorageInfo());
+    }
+  }));
+}
+
+void ProfileTracker::TrackerOutputTensors(const PrimitivePtr &primitive,
+                                          const std::vector<tensor::TensorPtr> &tensors) {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive, tensors]() {
+    for (const auto &tensor : tensors) {
+      MS_EXCEPTION_IF_NULL(tensor);
+      const auto &device_sync = tensor->device_address();
+      auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+      if (device_address == nullptr) {
+        MS_LOG(WARNING) << "Tracker: input tensor device address is nullptr, primitive: " << primitive->name();
+        continue;
+      }
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (device_address->GetPtr() == nullptr) {
+        MS_LOG(WARNING) << "Tracker: input tensor device ptr is nullptr, primitive: " << primitive->name();
+        continue;
+      }
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+        MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
+        device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
+        device_address->GetTensorStorageInfo());
+    }
+    device::tracker::CALL_MEMORY_TRACKER(DelNestedTask);
+  }));
 }
 }  // namespace pyboost
 }  // namespace kernel

@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include <string>
 #include "utils/ms_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "op_def/auto_generate/gen_ops_def.h"
+#include "mindspore/ccsrc/pynative/base.h"
+#include "mindspore/ccsrc/pynative/grad/grad_utils.h"
+#include "mindspore/ccsrc/pynative/pynative_utils.h"
+#include "mindspore/core/include/utils/stream_guard.h"
+#include "mindspore/ccsrc/pyboost/functions/customize/view_impl.h"
+
 ${ops_inc}
 ${pyboost_op_header_include}
 
@@ -48,6 +54,7 @@ const CloneFunc& GetCloneFunc() {
 }
 
 ${op_call_with_grad}
+
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,9 +18,10 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "ir/dtype/tensor_type.h"
 #include "include/common/debug/common.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 
@@ -121,6 +122,9 @@ KernelTensorPtr DumpMemManager::CreateOutPutKernelTensor(const DeviceContext *de
                                                  device_addr->GetSize(), device_addr.get());
   if (!device_context->device_res_manager_->AllocateMemory(device_addr.get(), kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "Dump allocate outputs memory failed";
+  } else {
+    static std::string name = "Alloc memory";
+    tensor->IncreaseNewRefCount(name);
   }
   return tensor;
 }
@@ -141,6 +145,9 @@ KernelTensorPtr DumpMemManager::CreateWorkspaceKernelTensor(const DeviceContext 
                                                  device_address->GetSize(), device_address.get());
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get(), kDefaultStreamIndex)) {
     MS_LOG(EXCEPTION) << "Allocate dynamic workspace memory failed";
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   MS_LOG(DEBUG) << "Create workspace device address:" << device_address;
   return kernel_tensor;

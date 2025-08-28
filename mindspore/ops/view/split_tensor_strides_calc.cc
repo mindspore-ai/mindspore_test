@@ -15,25 +15,26 @@
  */
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "view/split_tensor_strides_calc.h"
 
 namespace mindspore::ops {
-TensorStorageInfoPtrList SplitTensorStridesCalc(const OldTensorInfoPtr tensor_shape, const int64_t &split_size,
+TensorStorageInfoPtrList SplitTensorStridesCalc(const std::vector<int64_t> &old_shape,
+                                                const std::vector<int64_t> &old_strides,
+                                                const TensorStorageInfoPtr &old_storage_info, const int64_t &split_size,
                                                 const int64_t &dim) {
-  auto old_shape = tensor_shape->old_shape;
-  auto old_strides = tensor_shape->old_strides;
+  auto [ori_shape, ori_strides, current_offset] = GetOriShapeStridesAndOffset(old_shape, old_shape, old_storage_info);
 
-  auto rank = SizeToLong(old_shape.size());
-  if (rank <= 0) {
-    MS_EXCEPTION(ValueError) << "For SplitTensor, rank should > 0, but got " << rank;
+  auto ndim = old_shape.size();
+  if (MS_UNLIKELY(ndim == 0)) {
+    MS_EXCEPTION(ValueError) << "For SplitTensor, rank should > 0, but got " << ndim;
   }
-  const auto ndim = old_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
 
   // Check if the output quantity is positive
-  if (split_size <= 0) {
+  if (MS_UNLIKELY(split_size <= 0)) {
     MS_EXCEPTION(ValueError) << "For 'SplitTensor', output_num must be positive, but got " << split_size << ".";
   }
 
@@ -42,36 +43,34 @@ TensorStorageInfoPtrList SplitTensorStridesCalc(const OldTensorInfoPtr tensor_sh
 
   // Create a storage information list
   std::vector<TensorStorageInfoPtr> storage_info_list;
-
+  storage_info_list.reserve(num_splits);
   for (int64_t idx = 0; idx < num_splits; ++idx) {
     // Calculate the shape and length of sub tensors
     std::vector<int64_t> slice_shape = old_shape;
 
     // Calculate the size of a sub tensor in a specified dimension
     int64_t slice_size = split_size;
-    if (idx == num_splits - 1) {
+    if (MS_UNLIKELY(idx == num_splits - 1)) {
       // For the last sub tensor, ensure that it contains all remaining elements in that dimension
       slice_size = old_shape[wrap_dim] - (idx * split_size);
     }
     slice_shape[wrap_dim] = slice_size;
+
     // Calculate the storage offset of sub tensors
-    size_t new_storage_offset = tensor_shape->old_offset + LongToSize(idx * split_size * old_strides[wrap_dim]);
-    auto new_storage_info =
-      std::make_shared<TensorStorageInfo>(slice_shape, old_strides, new_storage_offset, tensor_shape->ori_shape,
-                                          tensor_shape->ori_strides, IsContiguous(slice_shape, old_strides));
-    storage_info_list.emplace_back(new_storage_info);
+    size_t new_storage_offset = current_offset + LongToSize(idx * split_size * old_strides[wrap_dim]);
+    bool is_contiguous = IsContiguous(slice_shape, old_strides);
+    auto new_storage_info = std::make_shared<TensorStorageInfo>(std::move(slice_shape), old_strides, new_storage_offset,
+                                                                ori_shape, ori_strides, is_contiguous);
+    storage_info_list.push_back(std::move(new_storage_info));
   }
+
   return storage_info_list;
 }
 
-TensorStorageInfoPtrList SplitTensorBasicTypeCalc(const PrimitivePtr &prim,
-                                                  const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList SplitTensorBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                   const int64_t &split_size, const int64_t &dim) {
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto tensor_shape = GetOldTensorInfo(input_tensor);
-  return SplitTensorStridesCalc(tensor_shape, split_size, dim);
+  return SplitTensorStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), split_size,
+                                dim);
 }
 
 TensorStorageInfoPtrList SplitTensorCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
@@ -82,12 +81,8 @@ TensorStorageInfoPtrList SplitTensorCalc(const PrimitivePtr &prim, const std::ve
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto split_size = GetValue<int64_t>(inputs[kInputIndex1]);
   auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto tensor_shape = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(tensor_shape);
-  return SplitTensorStridesCalc(tensor_shape, split_size, dim);
+  return SplitTensorBasicTypeCalc(input_tensor, split_size, dim);
 }
+
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(SplitTensor, SplitTensorCalc);
 }  // namespace mindspore::ops

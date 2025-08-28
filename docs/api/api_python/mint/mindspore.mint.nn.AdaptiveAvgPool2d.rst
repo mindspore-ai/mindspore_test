@@ -8,9 +8,6 @@ mindspore.mint.nn.AdaptiveAvgPool2d
     对于任何输入大小，输出大小均为 :math:`H x W` 。
     输出特征的数量等于输入平面的数量。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **output_size** (Union(int, tuple[int])) - :math:`H x W` 形式的图像的目标输出尺寸。
           可以是tuple :math:`（H，W）` ，也可以是正方形图像 :math:`H x H` 的单个 :math:`H` 。

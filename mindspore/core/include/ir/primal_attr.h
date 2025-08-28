@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 #ifndef MINDSPORE_CORE_IR_PRIMAL_ATTR_H_
 #define MINDSPORE_CORE_IR_PRIMAL_ATTR_H_
+
 #include <string>
 #include <memory>
 #include <stack>
+
 #include "utils/hash_map.h"
 #include "mindapi/base/macros.h"
 

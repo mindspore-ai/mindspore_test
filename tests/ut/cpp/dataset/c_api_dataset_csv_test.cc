@@ -18,7 +18,7 @@
 #include "minddata/dataset/include/dataset/datasets.h"
 
 // need for CsvRecord
-#include "minddata/dataset/engine/ir/datasetops/source/csv_node.h"
+#include "minddata/dataset/data_source/operation/csv_node.h"
 
 using namespace mindspore::dataset;
 

@@ -28,7 +28,6 @@ class CaptureGraph {
   virtual void CaptureGetInfo(uint32_t stream_id) = 0;
   virtual void CaptureEnd(uint32_t stream_id) = 0;
   virtual void ExecuteCaptureGraph(uint32_t stream_id) = 0;
-  virtual bool HasCapturedGraph() const = 0;
 };
 using CaptureGraphPtr = std::shared_ptr<CaptureGraph>;
 }  // namespace mindspore

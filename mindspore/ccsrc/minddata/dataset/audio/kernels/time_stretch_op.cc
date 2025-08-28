@@ -18,7 +18,7 @@
 #include <limits>
 
 #include "minddata/dataset/audio/kernels/audio_utils.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {

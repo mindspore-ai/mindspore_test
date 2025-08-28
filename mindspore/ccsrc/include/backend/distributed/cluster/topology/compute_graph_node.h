@@ -57,18 +57,11 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
   // Stop the heart beat thread. This method will be invoked when exception happens.
   void StopHeartBeatThread();
 
-  // Query the specified message from the meta server node according to the given message name.
-  // Returns nullptr if no message returned after timeout.
-  std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, uint32_t timeout = 5);
-
   // Exchange metadata(name:value) between all the compute graph nodes.
   // The transaction of the exchange process is guaranteed.
   bool ExchangeMetadata(const std::string &biz, const size_t &rank_size, const std::vector<std::string> &names_prefix,
                         const std::vector<std::string> &values, std::map<std::string, std::string> *results,
                         uint32_t timeout = 90);
-
-  // Get all the hostnames of compute graph nodes.
-  std::vector<std::string> GetHostNames(const std::string &role);
 
   void set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) override;
 
@@ -91,9 +84,6 @@ class BACKEND_COMMON_EXPORT ComputeGraphNode : public TcpNodeBase {
 
   // Reconnect to the meta server node.
   bool Reconnect();
-
-  std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, const std::string &msg_body,
-                                                      uint32_t timeout = 5);
 
   // The TCP client used to send heartbeat to meta server.
   std::unique_ptr<rpc::TCPClient> hb_client_;

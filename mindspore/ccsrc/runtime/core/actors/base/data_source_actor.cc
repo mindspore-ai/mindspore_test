@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,9 @@
 #include "runtime/core/actors/base/debug_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#include "utils/phase.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
@@ -102,7 +101,7 @@ void HostQueueDataSourceActor::IncreaseNewRefCounts(OpContext<KernelTensor> *con
     }
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]);
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[position]->device_address());
-    output_kernel_tensors[position]->device_address()->IncreaseNewRefCount(GetAID().Name());
+    output_kernel_tensors[position]->IncreaseNewRefCount(GetAID().Name());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase new ref count for kernel tensor:" << output_kernel_tensors[position]->ToString()
       << " in actor:" << GetAID();
@@ -221,7 +220,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   MS_EXCEPTION_IF_NULL(device_tensor);
   // No used device address need skip.
   if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
-    device_tensor->IncreaseNewRefCount("data source actor");
+    kernel_tensor->IncreaseNewRefCount("data source actor");
     MS_LOG(DEBUG) << "Data source actor input kernel tensor is not used:" << kernel_tensor->ToString();
     return;
   }
@@ -232,8 +231,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
     if (tensor_device_address->GetPtr() == device_tensor->GetPtr()) {
       return;
     }
-    if (!SyncAllStreamForDeviceAddress(
-          device_tensor->GetDeviceType() == device::DeviceType::kCPU ? tensor_device_address : device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, tensor_device_address) ||
         !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
     }
@@ -249,7 +247,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
                   << " to host tensor:" << host_tensor->ToString()
                   << " by data node:" << node_index.first->DebugString();
     host_tensor->set_device_address(kernel_tensor->device_address());
-    kernel_tensor->device_address()->set_new_ref_count(SIZE_MAX);
+    kernel_tensor->set_new_ref_count(SIZE_MAX);
   }
   if (enable_async_copy) {
     MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
@@ -257,7 +255,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
   } else {
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, host_tensor->device_address()) ||
         !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
     }
@@ -360,16 +358,18 @@ void HostQueueDataSourceActor::ReleaseData() {
       continue;
     }
     // If the address from input tensor and the address is not used by runtime.
-    if (old_address->new_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
-      auto new_address = old_address->CloneDeviceAddress();
+    if (old_kernel_tensor->new_ref_count() == SIZE_MAX && !old_kernel_tensor->is_ptr_persisted()) {
+      auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
+      MS_EXCEPTION_IF_NULL(new_kernel_tensor);
+      auto new_address = new_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(new_address);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Create device tensor:" << new_address << " type:" << new_address->type_id();
-      new_address->set_new_ref_count(old_address->new_ref_count());
+      new_kernel_tensor->set_new_ref_count(old_kernel_tensor->new_ref_count());
       new_address->set_ptr(nullptr);
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
-      AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first);
+      AnfAlgo::SetOutputKernelTensor(new_kernel_tensor, data_node_with_index.second, data_node_with_index.first.get());
     }
   }
 }

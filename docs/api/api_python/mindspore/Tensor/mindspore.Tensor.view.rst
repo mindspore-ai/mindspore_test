@@ -1,9 +1,9 @@
 mindspore.Tensor.view
 =====================
 
-.. py:method:: mindspore.Tensor.view(*shape)
+.. py:method:: mindspore.Tensor.view(*shape) -> Tensor
 
-    根据输入shape重新创建一个Tensor，与原Tensor数据相同。该方法与reshape方法相同，都是依靠底层reshape算子实现的。
+    根据输入shape重新创建一个Tensor，与原Tensor数据相同。
 
     参数：
         - **shape** (Union[tuple(int), int]) - 输出Tensor的维度。

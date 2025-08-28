@@ -1,9 +1,6 @@
 count_nonzero:
     description: |
         Count the number of non-zero elements in the Tensor `input` on a given dimension `dim`. If no dim is specified then all non-zeros in the tensor are counted.
-        
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
 
         Args:
             input (Tensor): Input data is used to count non-zero numbers. With shape

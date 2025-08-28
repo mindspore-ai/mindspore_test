@@ -24,9 +24,8 @@
 #include <unordered_set>
 #include <functional>
 
-#include "include/common/expander/core/node.h"
-#include "include/common/expander/core/emitter.h"
-#include "utils/hash_map.h"
+#include "mindspore/ccsrc/include/utils/expander/node.h"
+#include "mindspore/ccsrc/include/utils/expander/emitter.h"
 
 namespace mindspore {
 namespace expander {
@@ -74,8 +73,7 @@ struct COMMON_EXPORT BpropHandle {
 
 class COMMON_EXPORT BpropBuilder : public Emitter {
  public:
-  BpropBuilder(const std::string &name, const ExpanderInferPtr &infer)
-      : Emitter(infer, std::make_shared<Scope>(std::string("Bprop/grad") + name)), name_(name) {}
+  BpropBuilder(const std::string &name, const ExpanderInferPtr &infer);
 
   /// \brief Run irbuilder to generate a graph
   NodePtrList Run(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,

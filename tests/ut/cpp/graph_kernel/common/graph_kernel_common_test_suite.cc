@@ -19,6 +19,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "ir/func_graph_flag.h"
+#include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {
 class EmptyPass : public mindspore::opt::Pass {

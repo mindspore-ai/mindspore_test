@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 #define MINDSPORE_CORE_BASE_ARITHMETIC_OPS_H_
 
 #include <memory>
+
 #include "mindspore/ops/op_def/arithmetic_op_name.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "utils/hash_map.h"
 
 namespace mindspore {
 namespace prim {

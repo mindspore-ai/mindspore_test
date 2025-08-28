@@ -2,9 +2,6 @@ transpose_ext_view:
     description: |
         Interchange two axes of a tensor.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Args:
             input(Tensor): Input tensor.
             dim0 (int): First axis.

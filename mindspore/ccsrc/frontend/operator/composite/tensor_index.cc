@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "frontend/operator/composite/tensor_index.h"
+
 #include <algorithm>
 #include <vector>
 #include <tuple>
@@ -23,9 +24,9 @@
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
+#include "frontend/operator/ops.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
-#include "frontend/optimizer/opt.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/structure_ops.h"

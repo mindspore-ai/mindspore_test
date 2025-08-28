@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/execution_tree.h"
-#include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
+#include "minddata/dataset/engine/operation/datasetops/dataset_node.h"
 #include "minddata/dataset/engine/perf/auto_tune.h"
 #include "minddata/dataset/engine/perf/dataset_iterator_tracing.h"
 

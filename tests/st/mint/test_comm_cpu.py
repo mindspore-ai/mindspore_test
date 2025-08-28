@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import numpy as np
 import hashlib
 import time
@@ -34,10 +35,27 @@ from mindspore.mint.distributed.distributed import (
     recv,
     barrier,
     all_reduce,
+    TCPStore,
 )
 #msrun --worker_num=8 --local_worker_num=8 --master_port=10923 --bind_core True --join True pytest -sv --disable-warnings  test_comm_cpu.py
 np.random.seed(1)
-init_process_group()
+
+init_approach = os.environ.get('INIT_APPROACH')
+node_id = get_rank()
+worker_num = 8
+
+if init_approach == "INIT_METHOD":
+    print("Entry calling init_process_group with provided init_method!", flush=True)
+    init_method = "tcp://127.0.0.1:10666"
+    init_process_group(init_method=init_method, rank=node_id, world_size=worker_num)
+elif init_approach == "TCPSTORE":
+    print("Entry calling init_process_group with provided TcpStore!", flush=True)
+    is_master = (node_id == 0)
+    store = TCPStore("127.0.0.1", 10666, worker_num, is_master)
+    init_process_group(rank=node_id, world_size=worker_num, store=store)
+else:
+    init_process_group()
+
 context.set_auto_parallel_context(
     parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True
 )

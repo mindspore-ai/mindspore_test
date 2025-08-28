@@ -84,8 +84,8 @@ void AsdSipFFTOpRunner::Init(const FFTParam &param) {
   asd_fft_handle_ = FFTCache::GetInstance().Get(param);
 }
 
-inner::MemBlockPtr AsdSipFFTOpRunner::_MallocDeviceAddress() {
-  auto mem_block = PyboostRunner::_MallocDeviceAddress();
+void AsdSipFFTOpRunner::_MallocDeviceAddress() {
+  PyboostRunner::_MallocDeviceAddress();
   AsdFftSetWorkSpace(asd_fft_handle_, _workspace_ptr_);
   AsdFftSetStream(asd_fft_handle_, stream());
   if (_inputs_[0].is_defined() && !_inputs_[0].is_contiguous()) {
@@ -94,7 +94,6 @@ inner::MemBlockPtr AsdSipFFTOpRunner::_MallocDeviceAddress() {
     input_tensor_ = mindspore::device::ascend::ConvertType(_inputs_[0].tensor());
   }
   output_tensor_ = mindspore::device::ascend::ConvertType(_outputs_[0].tensor());
-  return mem_block;
 }
 
 size_t AsdSipFFTOpRunner::CalcWorkspace() {

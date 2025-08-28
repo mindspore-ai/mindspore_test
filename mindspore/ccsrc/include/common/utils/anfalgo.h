@@ -31,10 +31,7 @@
 #include "include/common/utils/contract.h"
 #include "include/common/visible.h"
 #include "ir/anf.h"
-#include "ir/dtype.h"
 #include "ir/func_graph.h"
-#include "ir/kernel_info_dev.h"
-#include "ir/primitive.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -349,6 +346,9 @@ class COMMON_EXPORT AnfAlgo {
                                  std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter);
   static bool IsNeededShape(const CNodePtr &cnode);
   static bool IsMonadType(const TypeId &type_id);
+  // if graph output is valuenode or parameter, used to skip run and construct output
+  static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
+                                                VectorRef *outputs);
 };
 }  // namespace common
 }  // namespace mindspore

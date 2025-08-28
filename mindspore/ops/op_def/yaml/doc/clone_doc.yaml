@@ -2,9 +2,6 @@ clone:
     description: |
         Returns a copy of the input tensor.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Note:
             This function is differentiable, and gradients will flow back directly from the calculation
             result of the function to the `input`.

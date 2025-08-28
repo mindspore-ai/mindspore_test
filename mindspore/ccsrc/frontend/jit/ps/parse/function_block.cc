@@ -34,7 +34,6 @@
 #include "frontend/jit/ps/parse/parse.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "frontend/jit/ps/parse/resolve.h"
-#include "utils/hash_set.h"
 #include "utils/info.h"
 #include "utils/trace_info.h"
 #include "utils/compile_config.h"

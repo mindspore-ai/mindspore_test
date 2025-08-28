@@ -24,7 +24,7 @@
 #include "mindspore/ops/infer/grad/max_pool_3d_grad.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "ir/format_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/avg_pool3d_helper_impl.cuh"
 #include "mindspore/ops/op_def/op_name.h"

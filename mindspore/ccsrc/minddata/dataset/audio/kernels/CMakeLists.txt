@@ -3,8 +3,8 @@ set_property(SOURCE ${_CURRENT_SRC_FILES} PROPERTY COMPILE_DEFINITIONS SUBMODULE
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         include(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/cmake/dataset.cmake)
-        set(AUDIO_KERNELS ${CMAKE_BINARY_DIR}/merge/mindspore/minddata/audio/kernel)
-        merge_minddata_files(${CMAKE_CURRENT_SOURCE_DIR}/ ${AUDIO_KERNELS} dataset_audio_kernel "" "" TRUE)
+        set(AUDIO_KERNELS ${CMAKE_BINARY_DIR}/merge/mindspore/minddata/audio/kernels)
+        merge_minddata_files(${CMAKE_CURRENT_SOURCE_DIR}/ ${AUDIO_KERNELS} dataset_audio_kernels "" "" TRUE)
         file(GLOB AUDIO_MERGE_LIST "${AUDIO_KERNELS}/*.cc")
         add_library(audio-kernels OBJECT ${AUDIO_MERGE_LIST})
 else()

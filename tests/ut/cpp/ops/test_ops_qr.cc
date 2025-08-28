@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
-#include "ir/primal_attr.h"
 #include "mindapi/base/shape_vector.h"
 #include "test_value_utils.h"
 #include "ops/test_ops.h"

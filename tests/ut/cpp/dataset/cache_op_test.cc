@@ -20,13 +20,13 @@
 #include "minddata/dataset/engine/datasetops/cache_op.h"
 #include "minddata/dataset/engine/datasetops/cache_lookup_op.h"
 #include "minddata/dataset/engine/datasetops/cache_merge_op.h"
-#include "minddata/dataset/engine/datasetops/source/image_folder_op.h"
-#include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
+#include "minddata/dataset/data_source/image_folder_op.h"
+#include "minddata/dataset/data_source/tf_reader_op.h"
 #include "minddata/dataset/engine/jagged_connector.h"
 #include "common/common.h"
 #include "gtest/gtest.h"
 #include "utils/log_adapter.h"
-#include "minddata/dataset/engine/datasetops/source/random_data_op.h"
+#include "minddata/dataset/data_source/random_data_op.h"
 #include "minddata/dataset/engine/data_schema.h"
 
 using namespace mindspore::dataset;

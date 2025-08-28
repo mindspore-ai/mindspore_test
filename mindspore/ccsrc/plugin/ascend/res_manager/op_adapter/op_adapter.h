@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include <map>
+
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"

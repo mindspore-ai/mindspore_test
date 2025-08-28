@@ -20,7 +20,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_trilinear_3d_grad_impl.cuh"
 #include "kernel/gpu/nn/upsample_trilinear_3d_gpu_kernel.h"

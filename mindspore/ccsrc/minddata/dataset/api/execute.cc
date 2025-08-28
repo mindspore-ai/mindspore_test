@@ -29,21 +29,21 @@
 #include "minddata/dataset/core/tensor_row.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/kernels/data/compose_op.h"
-#include "minddata/dataset/kernels/ir/tensor_operation.h"
+#include "minddata/dataset/general/kernels/compose_op.h"
+#include "minddata/dataset/kernels/tensor_operation.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/core/ascend_resource.h"
-#include "minddata/dataset/kernels/image/dvpp/utils/CommonDataType.h"
-#include "minddata/dataset/kernels/ir/vision/ascend_vision_ir.h"
+#include "minddata/dataset/vision/kernels/dvpp/utils/CommonDataType.h"
+#include "minddata/dataset/vision/transform/ascend_vision_ir.h"
 #if defined(ENABLE_D)
-#include "minddata/dataset/kernels/image/image_utils.h"
+#include "minddata/dataset/vision/kernels/image_utils.h"
 #endif
 #include "utils/file_utils.h"
 namespace platform = mindspore;
 #if defined(ENABLE_D)
-#include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
-#include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
+#include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
+#include "minddata/dataset/vision/kernels/dvpp/utils/ErrorCode.h"
 #endif
 
 namespace mindspore {

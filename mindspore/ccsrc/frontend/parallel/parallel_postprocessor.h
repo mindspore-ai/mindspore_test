@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_PARALLEL_POSTPROCESSOR_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_PARALLEL_POSTPROCESSOR_H_
 
+#include <vector>
 #include "frontend/parallel/parallel_processor_context.h"
 
 namespace mindspore {
@@ -34,6 +35,11 @@ class ParallelPostprocessor {
   void PipelinePostProcessStep2();
   const ParallelProcessorContextPtr &processor_context_;
 };
+
+void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, StrategyMap *stra_map,
+                        TensorInfoMap *tensor_info_map, ManualShapeMap *manual_shape_map);
+void CheckpointOnline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root);
+void CheckpointOffline(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -17,7 +17,7 @@
 #include "common/common.h"
 #include "gtest/gtest.h"
 #include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/kernels/data/duplicate_op.h"
+#include "minddata/dataset/general/kernels/duplicate_op.h"
 
 using namespace mindspore::dataset;
 

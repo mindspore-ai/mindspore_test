@@ -38,6 +38,7 @@
 #include "frontend/jit/ps/parse/resolve.h"
 #include "abstract/abstract_value.h"
 #include "ir/func_graph.h"
+#include "ir/dtype/tensor_type.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/backend/mem_reuse/mem_pool_util.h"
+#include "include/runtime/memory/mem_pool/mem_pool_util.h"
 
 #include "include/common/debug/common.h"
 #include "include/common/utils/utils.h"

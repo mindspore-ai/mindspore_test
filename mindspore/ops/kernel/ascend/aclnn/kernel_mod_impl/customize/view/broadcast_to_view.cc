@@ -26,7 +26,8 @@ void BroadcastToView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   auto shape = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
 
-  info_ = ops::BroadCastToStrideCalc(old_info, shape);
+  info_ = ops::BroadCastToStrideCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex1]->tensor_storage_info(),
+                                     shape);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 

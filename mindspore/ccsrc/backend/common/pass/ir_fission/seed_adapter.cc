@@ -30,6 +30,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "ir/tensor_new.h"
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore::opt {
 namespace {

@@ -1,0 +1,9 @@
+broadcast_to:
+    op_yaml: broadcast_to_op.yaml
+    py_method: tensor_broadcast_to # callback to python function "def tensor_broadcast_to"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+    varargs: shape
+    # Tensor.broadcast_to(*shape)

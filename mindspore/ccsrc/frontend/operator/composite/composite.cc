@@ -17,28 +17,32 @@
  */
 
 #include "frontend/operator/composite/composite.h"
+
 #include <algorithm>
 #include <string>
 #include <tuple>
 #include <regex>
+
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
 #include "abstract/dshape.h"
 #include "abstract/param_validator.h"
 #include "frontend/operator/cc_implementations.h"
-#include "frontend/optimizer/opt.h"
+#include "frontend/operator/ops.h"
 #include "utils/symbolic.h"
 #include "include/common/fallback.h"
 #include "include/common/pybind_api/api_register.h"
 #include "ir/signature.h"
 #include "frontend/jit/ps/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
+#include "utils/compile_config.h"
 #include "utils/interpret_node_recorder.h"
 #include "utils/ms_context.h"
 #include "utils/trace_info.h"

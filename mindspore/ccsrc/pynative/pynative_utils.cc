@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <vector>
 #include <set>
+
+#include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -673,7 +675,7 @@ tensor::TensorPtr Common::ConvertToContiguousTensor(const tensor::TensorPtr &ten
   MS_EXCEPTION_IF_NULL(tensor);
 
   // Tensor with storage info, need convert to contiguous in no-view op.
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
 
@@ -687,7 +689,7 @@ tensor::TensorPtr Common::ConvertStubNodeToTensor(const ValuePtr &v, bool need_c
     return tensor;
   }
 
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->GetDeviceType();
   if (device_target == device::DeviceType::kAscend) {
@@ -1502,6 +1504,17 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
     grad_info->input_value[0] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(grad_info->input_value[0]);
     grad_info->clone_value = op->clone_tensor();
   }
+  forward->ForwardOpGradImpl(grad_info, async_status);
+}
+
+void PyBoost::DoGrad(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) {
+  static const std::string kDoGradName = "DoGrad";
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
+                                     kDoGradName, false);
+
+  const auto &pynative_executor = Common::GetPyNativeExecutor();
+  const auto &forward = pynative_executor->forward_executor();
+  MarkPyBoostInputs(grad_info);
   forward->ForwardOpGradImpl(grad_info, async_status);
 }
 

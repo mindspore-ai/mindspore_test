@@ -5,9 +5,6 @@ mindspore.mint.randperm
 
     生成从 0 到 n-1 的整数随机排列。
 
-    .. warning::
-        - 这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **n** (Union[Tensor, int]) - 随机排列长度。int或shape为()或(1,)，数据类型为int64的Tensor。数值必须大于0。
 

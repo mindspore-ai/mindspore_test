@@ -15,7 +15,7 @@
  */
 
 #include "common/bboxop_common.h"
-#include "minddata/dataset/kernels/image/random_crop_with_bbox_op.h"
+#include "minddata/dataset/vision/kernels/random_crop_with_bbox_op.h"
 #include "utils/log_adapter.h"
 
 #include "minddata/dataset/core/config_manager.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -36,8 +37,8 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -483,6 +484,8 @@ bool IsSkippedLaunch(const CNodePtr &kernel = nullptr, const KernelGraphPtr &ker
 
 bool EnableTraceMemory();
 
+bool EnableCaptureGraph();
+
 void ResetPipelineStatus();
 void ResetTraceMemoryStatus();
 void ResetPipelineAndTraceMemoryStatus();
@@ -519,7 +522,11 @@ inline bool EnableRuntimeNewPipeline() {
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish = true);
 
-bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor);
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &dst_device_tensor, const DeviceTensorPtr &src_device_tensor,
+                                   uint32_t stream_id = kDefaultStreamIndex, bool sync_stream_on_demand = true);
+bool SyncStreamOnDemandForDeviceAddress(const DeviceTensorPtr &dst_device_tensor,
+                                        const DeviceTensorPtr &src_device_tensor,
+                                        uint32_t stream_id = kDefaultStreamIndex);
 size_t GetDefragMemoryStepFreq();
 
 // Use async copy should use callback to avoid src device tenor released.
@@ -552,7 +559,7 @@ bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
 KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
                                bool is_first_user = true, size_t stream_id = SIZE_MAX,
-                               bool enable_parallel_dispath = false, bool *has_h2d_copy = nullptr);
+                               bool enable_parallel_dispatch = false, bool *has_h2d_copy = nullptr);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
 

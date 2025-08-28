@@ -331,27 +331,27 @@ def test_sharding_strategy_save_and_load1():
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load1/strategy.json")
 
     _in_strategy1 = ((_dp1, _mp1), (1, _mp1))
     _in_strategy2 = ((_dp2, _mp2), (1, _mp2))
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load1/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load1/strategy.json")
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
-    assert os.path.exists("/tmp/strategy.json")
+    assert os.path.exists("/tmp/test_sharding_strategy_save_and_load1/strategy.json")
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load1/strategy.json")
     _in_strategy1 = None
     _in_strategy2 = None
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
-    os.remove("/tmp/strategy.json")
+    os.remove("/tmp/test_sharding_strategy_save_and_load1/strategy.json")
 
 
 def test_sharding_strategy_save_and_load2():
@@ -416,23 +416,23 @@ def test_sharding_strategy_save_and_load2():
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     ms.set_algo_parameters(fully_use_devices=True)
-    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load2/strategy.json")
 
     _in_strategy1 = ((_dp1, _mp1), (1, _mp1))
     _out_strategy1 = ((_dp1 * _mp1, 1),)
     _in_strategy2 = ((_dp2, _mp2), (1, _mp2))
     _out_strategy2 = ((_dp2 * _mp2, 1),)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load2/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load2/strategy.json")
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
-    assert os.path.exists("/tmp/strategy.json")
+    assert os.path.exists("/tmp/test_sharding_strategy_save_and_load2/strategy.json")
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load2/strategy.json")
     _in_strategy1 = None
     _out_strategy1 = None
     _in_strategy2 = None
@@ -440,7 +440,7 @@ def test_sharding_strategy_save_and_load2():
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
-    os.remove("/tmp/strategy.json")
+    os.remove("/tmp/test_sharding_strategy_save_and_load2/strategy.json")
 
 def test_sharding_strategy_save_and_load3():
     """
@@ -453,15 +453,15 @@ def test_sharding_strategy_save_and_load3():
                                       search_mode="sharding_propagation")
     ms.set_algo_parameters(fully_use_devices=True)
     with pytest.raises(KeyError):
-        set_op_strategy_config(mode="SAVE", path="./tmp/strategy.json")
+        set_op_strategy_config(mode="SAVE", path="./tmp/test_sharding_strategy_save_and_load3/strategy.json")
     with pytest.raises(KeyError):
-        set_op_strategy_config(mode="LOAD", path="./tmp/strategy.json")
+        set_op_strategy_config(mode="LOAD", path="./tmp/test_sharding_strategy_save_and_load3/strategy.json")
     with pytest.raises(KeyError):
-        set_op_strategy_config(mode="SAVE", path="/tmp/strategy.yaml")
+        set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load3/strategy.yaml")
     with pytest.raises(KeyError):
-        set_op_strategy_config(mode="LOAD", path="/tmp/strategy.yaml")
+        set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load3/strategy.yaml")
     with pytest.raises(KeyError):
-        set_op_strategy_config(mode="READ", path="/tmp/strategy.json")
+        set_op_strategy_config(mode="READ", path="/tmp/test_sharding_strategy_save_and_load3/strategy.json")
 
 def test_sharding_strategy_save_and_load4():
     """
@@ -531,32 +531,32 @@ def test_sharding_strategy_save_and_load4():
         para2 = "(out2) = PrimFunc_MatMul"
         check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
         check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load4/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load4/strategy.json")
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
-    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load4/strategy.json")
 
     layout = Layout((2, 2, 2, 2), ("dp", "mp", "sp", "interleaved_parallel"))
     in_layout1 = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp", "sp"))
     out_layout1 = (layout(("dp", "interleaved_parallel", "mp"), "sp"),)
     in_layout2 = (layout(("dp", "interleaved_parallel", "mp"), "sp"), layout("sp", "None"))
     out_layout2 = (layout(("dp", "interleaved_parallel", "mp", "sp"), "None"),)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load4/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load4/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
 
-    assert os.path.exists("/tmp/strategy.json")
+    assert os.path.exists("/tmp/test_sharding_strategy_save_and_load4/strategy.json")
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load4/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     ms.reset_auto_parallel_context()
-    os.remove("/tmp/strategy.json")
+    os.remove("/tmp/test_sharding_strategy_save_and_load4/strategy.json")
 
 def test_sharding_strategy_save_and_load5():
     """
@@ -626,32 +626,32 @@ def test_sharding_strategy_save_and_load5():
         para2 = "(out2) = PrimFunc_MatMul"
         check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
         check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load5/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load5/strategy.json")
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
-    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load5/strategy.json")
 
     layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
     in_layout1 = (layout("dp", "mp"), layout("mp", "sp"))
     out_layout1 = (layout(("dp", "mp"), "sp"),)
     in_layout2 = (layout(("dp", "mp"), "sp"), layout("sp", "None"))
     out_layout2 = (layout(("dp", "mp", "sp"), "None"),)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load5/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load5/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
 
-    assert os.path.exists("/tmp/strategy.json")
+    assert os.path.exists("/tmp/test_sharding_strategy_save_and_load5/strategy.json")
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load5/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     ms.reset_auto_parallel_context()
-    os.remove("/tmp/strategy.json")
+    os.remove("/tmp/test_sharding_strategy_save_and_load5/strategy.json")
 
 def test_sharding_strategy_save_and_load6():
     """
@@ -721,31 +721,31 @@ def test_sharding_strategy_save_and_load6():
         para2 = "(out2) = PrimFunc_MatMul"
         check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
         check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load6/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load6/strategy.json")
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
     ms.set_algo_parameters(fully_use_devices=True)
-    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="SAVE", path="/tmp/test_sharding_strategy_save_and_load6/strategy.json")
 
     layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
     in_layout1 = (layout("dp", "mp"), layout("mp", "sp"))
     out_layout1 = (layout(("dp", "mp"), "sp"),)
     in_layout2 = (layout(("dp", "mp"), "sp"), layout("sp", "None"))
     out_layout2 = (layout(("dp", "mp", "sp"), "None"),)
-    if os.path.exists("/tmp/strategy.json"):
-        os.remove("/tmp/strategy.json")
+    if os.path.exists("/tmp/test_sharding_strategy_save_and_load6/strategy.json"):
+        os.remove("/tmp/test_sharding_strategy_save_and_load6/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
 
-    assert os.path.exists("/tmp/strategy.json")
+    assert os.path.exists("/tmp/test_sharding_strategy_save_and_load6/strategy.json")
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     ms.set_algo_parameters(fully_use_devices=True)
-    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    set_op_strategy_config(mode="LOAD", path="/tmp/test_sharding_strategy_save_and_load6/strategy.json")
     compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
     ms.reset_auto_parallel_context()
-    os.remove("/tmp/strategy.json")
+    os.remove("/tmp/test_sharding_strategy_save_and_load6/strategy.json")

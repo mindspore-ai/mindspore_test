@@ -243,7 +243,7 @@ class ResNet(Cell):
         self.layer1 = MakeLayer0(
             block, layer_num[0], in_channels=64, out_channels=2048, stride=1)
 
-        self.pool = nn.AvgPool2d(7, 1)
+        self.pool = nn.AvgPool2d(56, 56)
         self.fc = fc_with_initialize(512 * block.expansion, num_classes)
         self.flatten = Flatten()
 

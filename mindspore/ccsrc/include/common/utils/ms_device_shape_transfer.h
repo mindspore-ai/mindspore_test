@@ -26,7 +26,7 @@
 #include <numeric>
 #include <optional>
 #include <unordered_map>
-#include "abstract/utils.h"
+#include "abstract/dshape.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/utils.h"
 

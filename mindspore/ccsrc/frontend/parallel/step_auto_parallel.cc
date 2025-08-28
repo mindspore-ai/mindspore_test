@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@
 #include <utility>
 #include <vector>
 
-#include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/auto_parallel/dp_algo_costmodel.h"
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
@@ -47,13 +46,13 @@
 #include "ir/anf.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/ms_context.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
@@ -668,7 +667,7 @@ Status ConstructCostGraphNodesByUniqueId(const std::vector<AnfNodePtr> &all_node
   StrategyMap stra_map;
   if (StrategyCheckpoint::GetInstance().LoadCheckPointOn()) {
     if (StrategyCheckpoint::GetInstance().Load(&stra_map) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Load strategy checkpoint failed";
+      MS_LOG(EXCEPTION) << "Load strategy checkpoint failed. Please check if the file exists and the file permission.";
     }
   }
 
@@ -804,7 +803,7 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
   StrategyMap stra_map;
   if (StrategyCheckpoint::GetInstance().LoadCheckPointOn() &&
       StrategyCheckpoint::GetInstance().Load(&stra_map) != SUCCESS) {
-    MS_LOG(WARNING) << "Load strategy checkpoint failed";
+    MS_LOG(WARNING) << "Load strategy checkpoint failed. Please check if the file exists and the file permission.";
     return FAILED;
   }
   for (auto &node : all_nodes) {

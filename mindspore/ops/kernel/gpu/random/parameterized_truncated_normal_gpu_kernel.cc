@@ -26,7 +26,6 @@
 #include <functional>
 #include <vector>
 #include <map>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/curand_kernel.h"
 

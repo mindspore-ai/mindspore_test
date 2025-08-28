@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include <utility>
+
 #include "utils/hash_map.h"
 #include "backend/ge_backend/runtime/actor/actor_common.h"
 #include "backend/ge_backend/runtime/actor/control_flow/control_actor.h"
@@ -70,7 +71,7 @@ class ExitActor : public ControlActor {
   void CopyDeviceAddress(OpContext<KernelTensor> *const context);
   void UpdateDeviceOutputData();
   void MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const context);
-  bool IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index);
+  bool IsNeedCopyDeviceAddress(const KernelTensorPtr &input_kernel_tensor, size_t index);
 
   // Exit actor will send to different actors according to different callers, so the output data, control,
   // and partial arrows will have branch.

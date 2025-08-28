@@ -21,7 +21,7 @@
 #include <utility>
 #include <map>
 #include <complex>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "nnacl/base/broadcast_to.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "minddata/dataset/engine/datasetops/source/nonmappable_leaf_op.h"
+#include "minddata/dataset/data_source/nonmappable_leaf_op.h"
 #include "minddata/dataset/engine/serdes.h"
 #include "minddata/dataset/util/task_manager.h"
 

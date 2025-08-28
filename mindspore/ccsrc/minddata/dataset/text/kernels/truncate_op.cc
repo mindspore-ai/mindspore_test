@@ -16,7 +16,7 @@
 #include "minddata/dataset/text/kernels/truncate_op.h"
 
 #include "minddata/dataset/core/tensor.h"
-#include "minddata/dataset/kernels/data/slice_op.h"
+#include "minddata/dataset/general/kernels/slice_op.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/text/kernels/data_utils.h"
 

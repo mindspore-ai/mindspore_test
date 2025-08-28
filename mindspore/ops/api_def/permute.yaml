@@ -1,0 +1,17 @@
+permute:
+  - op_yaml: transpose_op.yaml
+    py_method: deprecated_tensor_permute # callback to python function "def deprecated_tensor_permute"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+    varargs: dims
+    # Tensor.permute(*dims)
+
+  - op_yaml: deprecated/permute_method.yaml
+    py_method: deprecated_tensor_permute # callback to python function "def deprecated_tensor_permute"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    varargs: axis
+    interface: tensor

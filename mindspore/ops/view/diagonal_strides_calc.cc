@@ -20,9 +20,8 @@
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
-constexpr int64_t kDimNum = 2;
-
-int64_t ComputeData(int64_t offset, int64_t dim1, int64_t dim2, std::vector<int64_t> old_shape) {
+namespace {
+inline static int64_t ComputeData(int64_t offset, int64_t dim1, int64_t dim2, std::vector<int64_t> old_shape) {
   int64_t diag_size;
   if (offset >= 0) {
     diag_size = std::max<int64_t>(std::min(old_shape[dim1], old_shape[dim2] - offset), 0);
@@ -31,6 +30,7 @@ int64_t ComputeData(int64_t offset, int64_t dim1, int64_t dim2, std::vector<int6
   }
   return diag_size;
 }
+}  // namespace
 
 TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &offset,
                                              const int64_t &dim_1, const int64_t &dim_2) {
@@ -38,14 +38,13 @@ TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_i
   auto old_strides = old_tensor_info->old_strides;
   auto storage_offset = old_tensor_info->old_offset;
   int64_t dim_size = SizeToLong(old_shape.size());
-  (void)CheckAndConvertUtils::CheckInRange<int64_t>("dim1", dim_1, kIncludeBoth, {-dim_size, dim_size - 1}, "Diagonal");
-  (void)CheckAndConvertUtils::CheckInRange<int64_t>("dim2", dim_2, kIncludeBoth, {-dim_size, dim_size - 1}, "Diagonal");
   auto dim1 = DynamicDimWrap(dim_1, dim_size);
   auto dim2 = DynamicDimWrap(dim_2, dim_size);
   if (dim1 == dim2) {
     MS_EXCEPTION(ValueError) << "For 'Diagonal', dim1 and dim2 cannot be identical, but got : dim1 =" << dim1
                              << " and dim2 = " << dim2 << ".";
   }
+  constexpr int64_t kDimNum = 2;
   if (dim_size < kDimNum) {
     MS_EXCEPTION(ValueError) << "For 'Diagonal', input must be at least 2-dimensional, but got : " << dim_size << ".";
   }
@@ -73,8 +72,7 @@ TensorStorageInfoPtrList DiagonalStridesCalc(const OldTensorInfoPtr old_tensor_i
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList DiagonalBasicTypeCalc(const PrimitivePtr &prim,
-                                               const mindspore::tensor::TensorPtr &input_tensor, const int64_t &offset,
+TensorStorageInfoPtrList DiagonalBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &offset,
                                                const int64_t &dim1, const int64_t &dim2) {
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   return DiagonalStridesCalc(old_tensor_info, offset, dim1, dim2);
@@ -83,15 +81,10 @@ TensorStorageInfoPtrList DiagonalBasicTypeCalc(const PrimitivePtr &prim,
 TensorStorageInfoPtrList DiagonalCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   auto offset = GetValue<int64_t>(inputs[kInputIndex1]);
   auto dim1 = GetValue<int64_t>(inputs[kInputIndex2]);
   auto dim2 = GetValue<int64_t>(inputs[kInputIndex3]);
-
-  return DiagonalStridesCalc(old_tensor_info, offset, dim1, dim2);
+  return DiagonalBasicTypeCalc(input_tensor, offset, dim1, dim2);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Diagonal, DiagonalCalc);

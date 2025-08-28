@@ -31,8 +31,8 @@ datasets using `mindspore.dataset.MindDataset <https://www.mindspore.cn/docs/en/
 mindspore.dataset.MindDataset.html>`_ .
 
 Users can also convert datasets from other formats to the MindRecord format.
-For more details, please refer to `Converting Dataset to MindRecord <https://www.mindspore.cn/docs/en/master/
-model_train/dataset/record.html>`_ .
+For more details, please refer to
+`Converting Dataset to MindRecord <https://www.mindspore.cn/tutorials/en/master/dataset/record.html>`_ .
 Additionally, MindRecord supports file encryption, decryption,
 and integrity checks to ensure the security of MindRecord format datasets.
 """
@@ -41,7 +41,7 @@ from .filewriter import FileWriter
 from .filereader import FileReader
 from .mindpage import MindPage
 from .common.exceptions import *
-from .shardutils import SUCCESS, FAILED
+from .core.shardutils import SUCCESS, FAILED
 from .tools.cifar10_to_mr import Cifar10ToMR
 from .tools.cifar100_to_mr import Cifar100ToMR
 from .tools.csv_to_mr import CsvToMR

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"

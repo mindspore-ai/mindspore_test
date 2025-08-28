@@ -23,6 +23,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
 ${include_op_header}
 
 namespace mindspore::runtime {
@@ -92,7 +93,9 @@ session::BackendOpRunInfoPtr GetBackendOpRunInfo(OpRunnerInfo *op_runner_info) {
 }
 
 DoGradFunc do_grad_func{nullptr};
-}
+
+pynative::AbstractConverter kAbstractConverter;
+} // namespace
 
 void RegisterDoGradFunc(const DoGradFunc &grad_func) {
   do_grad_func = grad_func;

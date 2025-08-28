@@ -24,7 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "utils/hash_map.h"
 #include "include/common/utils/contract.h"
 #include "ir/anf.h"
 #include "base/base_ref.h"
@@ -59,9 +58,7 @@ class BACKEND_EXPORT MSBackend : public MSBackendBase {
   void RunGraphByCondition(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
                            VectorRef *outputs) override;
 
-  runtime::ActorSet *RealCompileGraphBeforeRunActor(BackendGraphId graph_id,
-                                                    const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
-                                                    bool no_multi_graph);
+  void ProcessBeforeRunActor(const GraphCompilerInfo &graph_compiler_info, const VectorRef &args);
   void RunGraphByActors(BackendGraphId graph_id, const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
                         VectorRef *outputs);
 

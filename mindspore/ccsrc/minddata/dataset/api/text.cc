@@ -19,7 +19,7 @@
 #include <regex>
 
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/text/ir/kernels/text_ir.h"
+#include "minddata/dataset/text/transform/text_ir.h"
 #include "ir/dtype/type_id.h"
 #include "utils/file_utils.h"
 

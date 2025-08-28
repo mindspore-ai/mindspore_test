@@ -23,12 +23,13 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/opinfo.h"
 #include "kernel/kash/kernel_pack.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_address.h"
+#include "ir/device_address.h"
 #include "ops/base_operator.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
@@ -60,7 +61,6 @@ class BACKEND_COMMON_EXPORT KernelMeta {
 };
 
 BACKEND_COMMON_EXPORT std::string GetCompilerCachePath();
-bool CheckCache(const std::string &kernel_name);
 KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor);
 KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &processor);
 
@@ -73,8 +73,6 @@ BACKEND_COMMON_EXPORT bool ParseMetadata(const CNodePtr &kernel_node, const std:
 BACKEND_COMMON_EXPORT void SaveJsonInfo(const std::string &json_name, const std::string &info,
                                         const std::string &base_path);
 
-std::string GetProcessor(const AnfNodePtr &anf_node);
-Processor GetProcessor(const string &processor);
 Processor GetProcessorFromContext();
 std::string GetStrProcessorFromContext();
 
@@ -86,7 +84,6 @@ BACKEND_COMMON_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, s
                                                std::vector<AnfNodePtr> *input_list,
                                                std::vector<AnfNodePtr> *output_list);
 void GetFuncGraphOutputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *output_list);
-void GetGraphRealOutput(const FuncGraphPtr &func_graph, std::vector<std::pair<AnfNodePtr, size_t>> *node_list);
 BACKEND_COMMON_EXPORT std::vector<int64_t> GetReduceAttrAxis(const CNodePtr &cnode);
 
 struct KernelArgs {
@@ -96,26 +93,8 @@ struct KernelArgs {
   // cppcheck-suppress unusedStructMember
   constexpr static char key[] = "KernelArgs";
 };
-BACKEND_COMMON_EXPORT KernelArgs AbstractArgsFromCNode(const CNodePtr &cnode);
-BACKEND_COMMON_EXPORT std::shared_ptr<KernelArgs> GetArgsFromCNode(const CNodePtr &cnode);
-BACKEND_COMMON_EXPORT void SetArgsToCNode(const CNodePtr &cnode, const KernelArgs &args);
 
-BACKEND_COMMON_EXPORT BaseOperatorPtr CreateOperatorByCNode(const CNodePtr &cnode);
-BACKEND_COMMON_EXPORT void UpdateNodeShape(const CNodePtr &cnode);
-
-BACKEND_COMMON_EXPORT void SetInputsByDependMap(const std::map<uint32_t, tensor::TensorPtr> &depend_tensor_map,
-                                                std::vector<KernelTensorPtr> *inputs, bool is_stored_in_device = false);
-BACKEND_COMMON_EXPORT void SetInputsByConstInputs(const CNodePtr &node,
-                                                  std::map<uint32_t, tensor::TensorPtr> *inputs_tensor_map);
 BACKEND_COMMON_EXPORT bool CheckResizeCondition(const CNodePtr &node);
-
-inline std::map<uint32_t, tensor::TensorPtr> GetKernelDepends(const CNodePtr &cnode) {
-  auto args = GetArgsFromCNode(cnode);
-  if (args) {
-    return args->depend_tensor_map;
-  }
-  return std::map<uint32_t, tensor::TensorPtr>();
-}
 
 KernelObjectType StringToKernelObjectType(const std::string &object_type);
 

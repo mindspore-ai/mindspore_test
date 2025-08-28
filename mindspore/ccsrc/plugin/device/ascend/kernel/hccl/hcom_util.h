@@ -23,7 +23,6 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include "ir/dtype.h"
 #include "hccl/base.h"
 #include "include/common/utils/contract.h"
 #include "hccl/hccl_types.h"
@@ -43,6 +42,7 @@ constexpr int64_t kComplex64ConvertFloat32Num = 2;
 
 /* Correspondence between data_type and hcom data type in Ascend */
 static const map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
+  {TypeId::kNumberTypeBool, HCCL_DATA_TYPE_INT8},
   {TypeId::kNumberTypeInt8, HCCL_DATA_TYPE_INT8},
   {TypeId::kNumberTypeInt16, HCCL_DATA_TYPE_INT16},
   {TypeId::kNumberTypeInt32, HCCL_DATA_TYPE_INT32},
@@ -114,9 +114,7 @@ class HcomUtil {
   static bool GetHcomReceiveType(const AnfNodePtr &anf_node, TypeId *receive_type);
   static void AdjustShapeByDataType(TypeId type_id, ShapeVector *shape);
 
-  static inline bool IsReceiveOp(const std::string &kernel_name) {
-    return kernel_name == mindspore::kReceiveOpName || kernel_name == mindspore::kMuxReceiveOpName;
-  }
+  static inline bool IsReceiveOp(const std::string &kernel_name) { return kernel_name == mindspore::kReceiveOpName; }
 
   template <typename T>
   static inline bool GetHcomAttr(const PrimitivePtr &prim, const std::string &attr_name, T *value_ptr) {

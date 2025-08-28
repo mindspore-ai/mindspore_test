@@ -20,16 +20,17 @@
 #include <memory>
 #include <vector>
 #include "ir/tensor.h"
+#include "ir/dtype/tensor_type.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 
 namespace mindspore::pynative {
 namespace {
@@ -53,42 +54,6 @@ tensor::TensorPtr GetTensorFromValueNode(const AnfNodePtr &node) {
 
   auto tensor = value->cast<tensor::TensorPtr>();
   return tensor;
-}
-
-HashMap<ValueNodePtr, size_t> GetGraphValueNodeRefCounts(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  HashMap<ValueNodePtr, size_t> value_node_ref_counts;
-  // For example:
-  //   %1 MakeTuple(V1, V2)
-  //   %2 TupleGetItem(0, %1)
-  //   %3 Kernel(%2)
-  // V2 is not used by kernel. Need to remove.
-  auto execution_nodes = graph->execution_order();
-  for (auto &node : execution_nodes) {
-    std::vector<session::KernelWithIndex> real_inputs;
-    common::AnfAlgo::GetRealInputs(node, &real_inputs);
-    for (auto &real_input : real_inputs) {
-      auto input = real_input.first;
-      MS_EXCEPTION_IF_NULL(input);
-      if (input->isa<ValueNode>()) {
-        auto value_node = input->cast<ValueNodePtr>();
-        value_node_ref_counts[value_node] += 1;
-      }
-    }
-  }
-
-  // ValueNodes as graph outputs
-  auto outputs = common::AnfAlgo::GetAllOutput(graph->output());
-  for (auto &output : outputs) {
-    MS_EXCEPTION_IF_NULL(output);
-    if (output->isa<ValueNode>()) {
-      auto value_node = output->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(value_node);
-      value_node_ref_counts[value_node] += 1;
-    }
-  }
-
-  return value_node_ref_counts;
 }
 
 device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
@@ -146,7 +111,7 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(device_context);
-  auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  auto device_address = tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
 
   MS_EXCEPTION_IF_NULL(device_address);
@@ -161,35 +126,6 @@ device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &
   return device_address;
 }
 }  // namespace
-
-void GraphAdapter::RemoveUnusedValueNodes(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto value_node_ref_counts = GetGraphValueNodeRefCounts(graph);
-  for (const auto &value_node : graph->graph_value_nodes()) {
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto iter = value_node_ref_counts.find(value_node);
-    if (iter == value_node_ref_counts.end()) {
-      MS_LOG(DEBUG) << "Remove unused ValueNode " << value_node->DebugString();
-      graph->RemoveNodeFromGraph(value_node);
-    }
-  }
-}
-
-// The device address of graph value node need to release
-// if the value node is output of forward_graph in PyNative mode.
-void GraphAdapter::GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  HashMap<std::string, size_t> tensor_counts;
-  std::vector<size_t> value_node_ref_count_list;
-  std::vector<bool> value_node_forward_output_flags;
-  for (auto &value_node : graph->graph_value_nodes()) {
-    MS_EXCEPTION_IF_NULL(value_node);
-    (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
-    (void)value_node_forward_output_flags.emplace_back(false);
-  }
-  graph->set_attr(kAttrBpropValueNodeRefCount, MakeValue(value_node_ref_count_list));
-  graph->set_attr(kAttrValueNodeForwardOuputFlags, MakeValue(value_node_forward_output_flags));
-}
 
 void GraphAdapter::GenerateBackoffValueNodeOwners(const KernelGraphPtr &graph) {
   for (auto &kernel : graph->execution_order()) {
@@ -276,7 +212,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     MS_EXCEPTION_IF_NULL(tensor);
 
     auto device_address = HandleAddressForHeterogeneous(tensor, value_node, device_context);
-    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_address, true);
+    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_address);
     auto abs = tensor->ToAbstract()->Broaden();
     MS_EXCEPTION_IF_NULL(abs);
     auto shape = abs->GetShape();
@@ -312,57 +248,12 @@ void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tens
     MS_EXCEPTION_IF_NULL(device_context);
     for (auto &tensor : tensors) {
       if (tensor != nullptr && tensor->device_address() != nullptr) {
-        auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+        auto device_address = tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_address);
         if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
           actor_set->data_prepare_actor_->set_heter_weights(true);
         }
       }
-    }
-  }
-}
-
-void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
-                                                   const std::vector<tensor::TensorPtr> &input_tensors,
-                                                   const device::DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(graph);
-  size_t index = 0;
-  for (const auto &input_node : graph->input_nodes()) {
-    auto parameters = common::AnfAlgo::GetAllOutput(input_node);
-    for (const auto &parameter : parameters) {
-      MS_EXCEPTION_IF_NULL(parameter);
-      if (index >= input_tensors.size()) {
-        MS_LOG(EXCEPTION) << "Parameter size out of range. Parameter index: " << index
-                          << ", input size: " << input_tensors.size();
-      }
-      const auto &input_tensor = input_tensors[index++];
-      MS_EXCEPTION_IF_NULL(input_tensor);
-      const auto &tensor_address = input_tensor->device_address();
-      auto address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor_address);
-      if (address == nullptr || address->GetDeviceType() != device_context->GetDeviceType()) {
-        // Need to discard input tensor properties in heterogeneous scenarios.
-        // For example, the format of device_address in input_tensor is 5D format,
-        // and it's invalid for CPU graph parameter.
-        continue;
-      }
-
-      auto kernel_build_info_builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
-      MS_EXCEPTION_IF_NULL(kernel_build_info_builder);
-      kernel_build_info_builder->SetOutputsFormat(std::vector<std::string>{address->format()});
-      kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{address->type_id()});
-      kernel_build_info_builder->SetOutputsReshapeType({address->padding_type()});
-      AnfAlgo::SetOutputAddr(address, 0, parameter);
-      AnfAlgo::SetSelectKernelBuildInfo(kernel_build_info_builder->Build(), parameter.get());
-
-      auto abstract = parameter->abstract();
-      MS_EXCEPTION_IF_NULL(abstract);
-      if (!abstract->isa<abstract::AbstractTensor>()) {
-        continue;
-      }
-      auto shape = abstract->BuildShape();
-      auto new_abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(address->type_id()), shape);
-      parameter->set_abstract(new_abs);
     }
   }
 }

@@ -141,8 +141,8 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
         << "\tdebug_name:" << data_node.first->DebugString() << "\tindex:" << data_node.second
         << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
         << "\tstream id:" << device_tensor->stream_id()
-        << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << kernel_tensor->flag() << "\n ";
+        << "\toriginal_ref_count:" << kernel_tensor->original_ref_count()
+        << "\tdynamic_ref_count:" << kernel_tensor->dynamic_ref_count() << "\tflag:" << kernel_tensor->flag() << "\n ";
   }
 
   DumpAbstractActor(actor, ofs);
@@ -916,7 +916,7 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
       ofs << "<" << kernel_tensor << "> ";
       return;
     }
-    ofs << "<" << kernel_tensor << " : ref count:" << kernel_tensor->device_address()->original_ref_count() << "> ";
+    ofs << "<" << kernel_tensor << " : ref count:" << kernel_tensor->original_ref_count() << "> ";
   });
   ofs << "\n\t# AID : " << actor->GetAID().Name() << "\n";
 }

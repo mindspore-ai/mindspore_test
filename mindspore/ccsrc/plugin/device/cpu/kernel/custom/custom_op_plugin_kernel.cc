@@ -17,6 +17,8 @@
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
+#else
+#include <windows.h>
 #endif
 
 #include <vector>
@@ -24,22 +26,13 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_common.h"
+#include "plugin/device/cpu/kernel/cpu_common.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
+#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
 
 namespace mindspore {
 namespace kernel {
-CustomOpPluginCpuKernelMod::~CustomOpPluginCpuKernelMod() {
-#if !defined(_WIN32) && !defined(_WIN64)
-  if (handle_ != nullptr) {
-    dlclose(handle_);
-  }
-
-#endif
-}
-
 void CustomOpPluginCpuKernelMod::SetKernelPath() {
   const char *op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
 
@@ -56,6 +49,19 @@ bool CustomOpPluginCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   kernel_name_ = primitive_->name();
   SetKernelPath();
+
+  try {
+    bool ret = IsOpPluginKernel(primitive_->name());
+    if (!ret) {
+      MS_LOG(INFO) << "Can't find '" << kernel_name_ << " on CPU in op plugin";
+      return false;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
+                    << file_path_ << "! "
+                    << "Error message is " << e.what();
+    return false;
+  }
 
   for (size_t i = 0; i < inputs.size(); i++) {
     auto in_shape = inputs[i]->GetShapeVector();
@@ -98,36 +104,10 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
     params.push_back(static_cast<void *>(workspace[i]->device_ptr()));
   }
 
-#if !defined(_WIN32) && !defined(_WIN64)
-
-  if (!handle_) {
-    handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (!handle_) {
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
-                    << "' should be successful, but error occurs! Error message is: " << dlerror();
-      return false;
-    }
-  }
-
-  if (!aot_func_) {
-    aot_func_ =
-      reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
-        dlsym(handle_, func_name_.c_str()));
-    if (auto error_info = dlerror(); error_info != nullptr) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << func_name_
-                        << "'. Error info: " << error_info;
-    }
-  }
-
-  int nparam = SizeToInt(params.size());
   int ret = 0;
   try {
-    if (nparam == 0) {
-      ret = aot_func_(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-    } else {
-      ret = aot_func_(nparam, &params[0], &ndims_[0], &shapes_[0], &type_pointer_list_[0], nullptr,
-                      reinterpret_cast<void *>(&kernel_info_));
-    }
+    ret = LaunchOpPluginKernel(kernel_name_, params.size(), params.data(), ndims_.data(), shapes_.data(),
+                               type_pointer_list_.data(), nullptr, reinterpret_cast<void *>(&kernel_info_));
   } catch (const std::exception &e) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
                       << file_path_ << "! "
@@ -140,10 +120,6 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
                       << "Any return value not equal to 0 will be treated as user defined error code and we will "
                          "terminate execution. If termination is not your purpose, please set return value to 0.";
   }
-
-#else
-  MS_LOG(EXCEPTION) << "Custom AOT Operator doesn't support Windows currently";
-#endif
 
   return true;
 }

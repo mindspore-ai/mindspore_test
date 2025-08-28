@@ -17,7 +17,6 @@
 #include "kernel/gpu/pyboost/customize/meshgrid.h"
 #include <memory>
 #include <utility>
-#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/customize/meshgrid.h"
 
 namespace mindspore {
@@ -25,13 +24,6 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
-  MS_LOG(DEBUG) << "Meshgrid call start";
-  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kGPU);
-  MS_LOG(DEBUG) << "Meshgrid call end";
-  return output;
-}
-std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
   std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kGPU);
   MS_LOG(DEBUG) << "Meshgrid call end";

@@ -16,7 +16,6 @@
 
 #include "kernel/gpu/nn/apply_add_sign_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_add_sign_impl.cuh"
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/curand.h"
 #include "mindspore/ops/infer/apply_add_sign.h"

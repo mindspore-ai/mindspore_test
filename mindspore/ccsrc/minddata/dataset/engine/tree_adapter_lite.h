@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
+#include "minddata/dataset/engine/operation/datasetops/dataset_node.h"
 
 namespace mindspore {
 namespace dataset {

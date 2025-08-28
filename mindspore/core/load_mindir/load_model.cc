@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "load_mindir/load_model.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <cstring>
@@ -26,15 +27,18 @@
 #include <list>
 #include <utility>
 #include <nlohmann/json.hpp>
+
 #include "ir/core_ops_primitive.h"
 #include "utils/crypto.h"
 #include "utils/os.h"
-#include "ir/value.h"
-#include "ir/tensor.h"
-#include "ir/param_info.h"
-#include "ir/map_tensor.h"
 #include "ir/functor.h"
+#include "ir/map_tensor.h"
+#include "ir/param_info.h"
+#include "ir/quantization_param.h"
+#include "ir/tensor.h"
 #include "ir/tensor_new.h"
+#include "ir/value.h"
+#include "ir/dtype/ref.h"
 #include "ops/op_def.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"

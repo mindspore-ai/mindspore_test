@@ -9,10 +9,6 @@ mindspore.mint.bernoulli
 
         output_{i} \sim Bernoulli(p=input_{i})
 
-
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 伯努利分布的输入张量，其中元素 `input_{i}` 代表对应输出元素 `output_{i}` 被设为 `1` 的概率，因此 `input` 中每个元素的数值范围都应当在 `[0, 1]` 之间。支持的数据类型： float16、float32、float64、bfloat16（仅Atlas A2训练系列产品支持）。
 

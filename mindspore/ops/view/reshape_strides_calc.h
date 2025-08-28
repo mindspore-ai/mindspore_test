@@ -21,13 +21,14 @@
 
 namespace mindspore {
 namespace ops {
-OPS_API TensorStorageInfoPtrList ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
-                                                      const std::vector<int64_t> &shape);
+OPS_API TensorStorageInfoPtr ReshapeStridesCalc(const std::vector<int64_t> &cur_shape,
+                                                const std::vector<int64_t> &cur_strides,
+                                                const TensorStorageInfoPtr &cur_storage_info,
+                                                const std::vector<int64_t> &proposed_shape);
+OPS_API TensorStorageInfoPtr ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
+                                                  const std::vector<int64_t> &proposed_shape);
 OPS_API TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList ReshapeCalcImpl(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
-                                                 const std::vector<int64_t> &shape);
-OPS_API TensorStorageInfoPtrList ReshapeUncontiguousCalcImpl(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
-                                                             const std::vector<int64_t> &shape);
+
 }  // namespace ops
 }  // namespace mindspore
 

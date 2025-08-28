@@ -3,8 +3,9 @@ transpose:
   args:
     input:
       dtype: tensor
-    input_perm:
+    dims:
       dtype: tuple[int]
+      type_cast: list[int]
   returns:
     output:
       dtype: tensor

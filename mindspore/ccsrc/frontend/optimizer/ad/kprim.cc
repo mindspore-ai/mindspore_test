@@ -42,7 +42,6 @@
 #include "utils/info.h"
 #include "utils/trace_info.h"
 #include "frontend/jit/ps/debug/trace.h"
-#include "utils/anf_utils.h"
 #include "frontend/expander/utils.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "include/common/pynative/grad_state.h"

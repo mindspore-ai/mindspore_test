@@ -23,7 +23,6 @@
 #include <map>
 #include <unordered_map>
 #include <utility>
-#include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/data_format_dim_map_impl.cuh"

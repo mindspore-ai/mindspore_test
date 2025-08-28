@@ -18,14 +18,14 @@
 
 #include <utility>
 
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/distributed_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/pk_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/random_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/sequential_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/subset_random_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/subset_sampler_ir.h"
-#include "minddata/dataset/engine/ir/datasetops/source/samplers/weighted_random_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/distributed_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/pk_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/random_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/samplers_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/sequential_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/subset_random_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/subset_sampler_ir.h"
+#include "minddata/dataset/data_source/operation/samplers/weighted_random_sampler_ir.h"
 
 namespace mindspore {
 namespace dataset {

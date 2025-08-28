@@ -15,12 +15,12 @@
  */
 #include "common/cvop_common.h"
 #include "minddata/dataset/core/cv_tensor.h"
-#include "minddata/dataset/kernels/image/affine_op.h"
-#include "minddata/dataset/kernels/image/math_utils.h"
+#include "minddata/dataset/vision/kernels/affine_op.h"
+#include "minddata/dataset/vision/kernels/math_utils.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/types_c.h>
-#include "lite_cv/lite_mat.h"
-#include "lite_cv/image_process.h"
+#include "minddata/dataset/vision/kernels/lite_cv/lite_mat.h"
+#include "minddata/dataset/vision/kernels/lite_cv/image_process.h"
 
 using namespace mindspore::dataset;
 using mindspore::dataset::InterpolationMode;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include "runtime/core/graph_scheduler/dump/actor_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
@@ -31,7 +30,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/core/graph_scheduler/base/device_address_utils.h"
+#include "backend/common/device_address_utils.h"
 
 namespace mindspore {
 namespace runtime {
@@ -189,7 +188,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
       auto store_kernel_tensor = graph_parameter_store->Fetch(outer_idx, 0);
       if (store_kernel_tensor == nullptr || store_kernel_tensor->device_address() == nullptr) {
         graph_parameter_store->Push(outer_idx, 0, kernel_tensor, SIZE_MAX);
-        const auto &parameter_device = DeviceAddressUtils::GetParameterDeviceStr(anf_node);
+        const auto &parameter_device = AnfAlgo::GetParameterDeviceStr(anf_node);
         if (!parameter_device.empty()) {
           if (parameter_device != kToCpu) {
             MS_LOG(EXCEPTION) << "Device of parameter is supposed to be \"CPU\" if it is set, but got "
@@ -209,7 +208,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
                     << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType()
                     << ", outer idx:" << outer_idx;
       kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-      device_tensor->set_new_ref_count(SIZE_MAX);
+      kernel_tensor->set_new_ref_count(SIZE_MAX);
       return;
     }
   }
@@ -1601,9 +1600,9 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
+    device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
     kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
-    device_context->device_context_key().device_id_, device_address->stream_id());
+    device_address->stream_id());
   new_device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_user_data(kernel_tensor->user_data());

@@ -9,7 +9,7 @@ import mindspore.nn as nn
 from mindspore import context
 from mindspore import Tensor, mint, ops
 from mindspore.ops import operations as P
-from mindspore.train.serialization import export
+from mindspore.onnx import export
 from mindspore.ops.auto_generate import SliceExt
 from mindspore.ops.function.nn_func import batch_norm_ext
 from mindspore.mint.nn.functional import conv2d
@@ -37,7 +37,7 @@ def test_convert_model_with_topk():
          [0.3563, 0.5152, 0.9675, 0.8230]]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "topk_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format="ONNX")
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./topk_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -71,7 +71,7 @@ def test_convert_model_with_atan():
     x = [1.0, 0.0]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "atan_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./atan_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -102,7 +102,7 @@ def test_convert_model_with_argmax():
     x = [[1, 20, 5], [67, 8, 9], [130, 24, 15]]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "argmax_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./argmax_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -135,7 +135,7 @@ def test_convert_model_with_clip_scalar():
     min_value = 5.0
     max_value = 20.0
     onnx_name = "clip_scalar_net.onnx"
-    export(net, ms_x, min_value, max_value, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, min_value, max_value, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./clip_scalar_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -168,7 +168,7 @@ def test_convert_model_with_clip_tensor():
     min_value = Tensor(5.0, dtype=ms.float32)
     max_value = Tensor(20.0, dtype=ms.float32)
     onnx_name = "clip_tensor_net.onnx"
-    export(net, ms_x, min_value, max_value, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, min_value, max_value, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./clip_tensor_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -200,7 +200,7 @@ def test_convert_model_with_pad():
     x = [[1.0, 1.2], [2.3, 3.4], [4.5, 5.7]]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "pad_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./pad_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -235,7 +235,7 @@ def test_convert_model_with_sub():
     y = 1
     ms_y = Tensor(y, dtype=ms.int32)
     onnx_name = "sub_net.onnx"
-    export(net, ms_x, ms_y, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, ms_y, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./sub_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -255,9 +255,9 @@ class InputNetMatMul(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_convert_model_with_matmul():
+def test_convert_model_with_matmul_and_input_output_names():
     """
-    Feature: Convert mindir to onnx and infer by onnx
+    Feature: Convert mindir to onnx and infer by onnx and change input output node names
     Description: Test matmul between ms and onnx
     Expectation: success
     """
@@ -269,13 +269,13 @@ def test_convert_model_with_matmul():
     y = np.arange(4 * 5).reshape(4, 5)
     ms_y = Tensor(y, dtype=ms.float32)
     onnx_name = "matmul_net.onnx"
-    export(net, ms_x, ms_y, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, ms_y, file_name=onnx_name, input_names=["input_x", "input_y"], output_names=["output"])
     assert os.path.exists(onnx_name)
     if os.path.isfile("./matmul_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
         np_y = np.array(y, dtype=np.float32)
         session = ort.InferenceSession("./matmul_net.onnx")
-        output = session.run(None, {'x': np_x, 'y': np_y})
+        output = session.run(None, {'input_x': np_x, 'input_y': np_y})
 
         expected = np.array([[[70., 76., 82., 88., 94.],
                               [190., 212., 234., 256., 278.],
@@ -308,7 +308,7 @@ def test_convert_model_with_transpose():
     dim1 = 2
     dim2 = 1
     onnx_name = "transpose_net.onnx"
-    export(net, ms_x, dim1, dim2, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, dim1, dim2, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./transpose_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -339,7 +339,7 @@ def test_convert_model_with_split_tensor():
     x = [0, 1, 2, 3, 4, 5, 6, 7, 8]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "split_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./split_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -373,7 +373,7 @@ def test_convert_model_with_add_ext():
     y = [1, 2, 3]
     ms_y = Tensor(y, dtype=ms.float32)
     onnx_name = "add_ext_net.onnx"
-    export(net, ms_x, ms_y, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, ms_y, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./add_ext_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -390,6 +390,7 @@ class InputNetSliceExt(nn.Cell):
     def __init__(self):
         super(InputNetSliceExt, self).__init__()
         self.slice_ext = SliceExt()
+
     def construct(self, x):
         output = self.slice_ext(x, 0, 0, 2, 1)
         return output
@@ -408,7 +409,7 @@ def test_convert_model_with_slice_ext():
     x = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "slice_ext_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./slice_ext_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -443,7 +444,7 @@ def test_convert_model_with_batch_norm_ext():
     x = (3 * np.ones(16)).reshape(2, 2, 1, 4).astype(np.float32)
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "batchnorm_ext_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./batchnorm_ext_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -460,6 +461,7 @@ class InputNetBatchNorm(nn.Cell):
     def __init__(self):
         super(InputNetBatchNorm, self).__init__()
         self.batch_norm = ops.BatchNorm()
+
     def construct(self, x):
         scale = Tensor(np.ones([2]), ms.float32)
         bias = Tensor(np.ones([2]), ms.float32)
@@ -482,7 +484,7 @@ def test_convert_model_with_batch_norm():
     x = (3 * np.ones(16)).reshape(2, 2, 1, 4).astype(np.float32)
     ms_x = Tensor(x, dtype=ms.float32)
     onnx_name = "batchnorm_net.onnx"
-    export(net, ms_x, file_name=onnx_name, file_format='ONNX')
+    export(net, ms_x, file_name=onnx_name)
     assert os.path.exists(onnx_name)
     if os.path.isfile("./batchnorm_net.onnx"):
         np_x = np.array(x, dtype=np.float32)
@@ -513,7 +515,7 @@ def test_export_batchmatmulext():
     b = Tensor(np_b)
     net = BatchMatmulExtNet()
     y = net(a, b)
-    export(net, a, b, file_name='./batchmatmulext_onnx', file_format='ONNX')
+    export(net, a, b, file_name='./batchmatmulext_onnx')
     if os.path.isfile("./batchmatmulext_onnx.onnx"):
         session = ort.InferenceSession("./batchmatmulext_onnx.onnx")
         output = session.run(None, {"a": np_a, "b": np_b})[0]
@@ -539,7 +541,7 @@ def test_export_identity():
     x = Tensor(np_x)
     net = IdentityNet()
     y = net(x)
-    export(net, x, file_name='./identity_onnx', file_format='ONNX')
+    export(net, x, file_name='./identity_onnx')
     if os.path.isfile("./identity_onnx.onnx"):
         session = ort.InferenceSession("./identity_onnx.onnx")
         output = session.run(None, {"x": np_x})[0]
@@ -572,7 +574,7 @@ def test_export_convolution(bias, stride, padding, dilation, transposed, output_
     net = ConvolutionNet()
     y = net(x, weight, ms_bias, stride, padding, dilation, transposed, output_padding, groups)
     export(net, x, weight, ms_bias, stride, padding, dilation,
-           transposed, output_padding, groups, file_name='./convolution_onnx', file_format='ONNX')
+           transposed, output_padding, groups, file_name='./convolution_onnx')
     if os.path.isfile("./convolution_onnx.onnx"):
         session = ort.InferenceSession("./convolution_onnx.onnx")
         inputs = {"x": np_x, "weight": np_weight}
@@ -607,7 +609,7 @@ def test_export_conv2dext(bias, stride, padding, dilation, groups):
     ms_bias = Tensor(bias, ms.float32) if bias else None
     net = Conv2DExtNet()
     y = net(x, weight, ms_bias, stride, padding, dilation, groups)
-    export(net, x, weight, ms_bias, stride, padding, dilation, groups, file_name='./conv2dext_onnx', file_format='ONNX')
+    export(net, x, weight, ms_bias, stride, padding, dilation, groups, file_name='./conv2dext_onnx')
     if os.path.isfile("./conv2dext_onnx.onnx"):
         session = ort.InferenceSession("./conv2dext_onnx.onnx")
         inputs = {"x": np_x, "weight": np_weight}
@@ -642,7 +644,7 @@ def test_export_convtranspose2d(bias, stride, padding, output_padding, groups, d
     net = ConvTranspose2DNet()
     y = net(x, weight, ms_bias, stride, padding, output_padding, groups, dilation)
     export(net, x, weight, ms_bias, stride, padding, output_padding,
-           groups, dilation, file_name='./convtranspose2d_onnx', file_format='ONNX')
+           groups, dilation, file_name='./convtranspose2d_onnx')
     if os.path.isfile("./convtranspose2d_onnx.onnx"):
         session = ort.InferenceSession("./convtranspose2d_onnx.onnx")
         inputs = {"x": np_x, "weight": np_weight}
@@ -672,7 +674,7 @@ def test_export_upsamplenearest2d(output_size, scales):
     x = Tensor(np_x)
     net = UpsampleNearest2DNet()
     y = net(x, output_size, scales)
-    export(net, x, output_size, scales, file_name='./upsamplenearest2d_onnx', file_format='ONNX')
+    export(net, x, output_size, scales, file_name='./upsamplenearest2d_onnx')
     if os.path.isfile("./upsamplenearest2d_onnx.onnx"):
         session = ort.InferenceSession("./upsamplenearest2d_onnx.onnx")
         inputs = {"x": np_x}
@@ -687,6 +689,7 @@ class MeshgridNet(nn.Cell):
     def __init__(self, indexing):
         super().__init__()
         self.meshgrid_op = gen.Meshgrid(indexing)
+
     def construct(self, inputs):
         x, y, z = inputs
         x = x + 1
@@ -712,7 +715,7 @@ def test_export_meshgrid(indexing):
     net = MeshgridNet(indexing)
     ms_outputs = net(inputs)
     onnx_file = './meshgrid_onnx_' + indexing
-    export(net, inputs, file_name=onnx_file, file_format='ONNX')
+    export(net, inputs, file_name=onnx_file)
     onnx_file = onnx_file + '.onnx'
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
@@ -729,6 +732,7 @@ class StackExtNet(nn.Cell):
     def __init__(self):
         super().__init__()
         self.stack_ext_op = gen.StackExt()
+
     def construct(self, x, y, z):
         return self.stack_ext_op((x, y, z))
 
@@ -749,7 +753,7 @@ def test_export_stackext():
     net = StackExtNet()
     ms_outputs = net(x, y, z)
     onnx_file = './stackext_onnx'
-    export(net, x, y, z, file_name=onnx_file, file_format='ONNX')
+    export(net, x, y, z, file_name=onnx_file)
     onnx_file = onnx_file + '.onnx'
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
@@ -778,16 +782,16 @@ def test_export_dense():
     Description: Export ops.Dense to onnx
     Expectation: success
     """
-    np_x = np.arange(100*16*10).reshape(100, 16, 10).astype(np.float32)
+    np_x = np.arange(100 * 16 * 10).reshape(100, 16, 10).astype(np.float32)
     x = Tensor(np_x)
-    np_w = np.arange(24*10).reshape(24, 10).astype(np.float32)
+    np_w = np.arange(24 * 10).reshape(24, 10).astype(np.float32)
     w = Tensor(np_w)
     np_b = np.array(5).astype(np.float32)
     b = Tensor(np_b)
     net = DenseNet()
     ms_output = net(x, w, b)
     onnx_file = './dense_onnx'
-    export(net, x, w, b, file_name=onnx_file, file_format='ONNX')
+    export(net, x, w, b, file_name=onnx_file)
     onnx_file = onnx_file + '.onnx'
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
@@ -832,7 +836,7 @@ def test_export_argmaxwithvalue():
     for i in range(4):
         ms_output = net(x, i)
         onnx_file = './argmaxwithvalue_onnx'
-        export(net, x, i, file_name=onnx_file, file_format='ONNX')
+        export(net, x, i, file_name=onnx_file, output_names=["out1"])
         onnx_file = onnx_file + '.onnx'
         if os.path.isfile(onnx_file):
             session = ort.InferenceSession(onnx_file)
@@ -868,7 +872,7 @@ def test_export_stridedslice():
     net = StridedSliceNet()
     ms_output = net(x)
     onnx_file = './strided_slice_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -898,7 +902,7 @@ def test_export_sumext():
     net = SumExtNet()
     ms_output = net(x)
     onnx_file = './sum_ext_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -930,7 +934,7 @@ def test_export_square():
     net = SquareNet()
     ms_output = net(x)
     onnx_file = './square_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -962,7 +966,7 @@ def test_export_silu():
     net = SiLUNet()
     ms_output = net(x)
     onnx_file = './silu_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -996,7 +1000,7 @@ def test_export_mod():
     net = ModNet()
     ms_output = net(x, y)
     onnx_file = './mod_onnx.onnx'
-    export(net, x, y, file_name=onnx_file, file_format='ONNX')
+    export(net, x, y, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x, "y": np_y}
@@ -1028,7 +1032,7 @@ def test_export_avgpool():
     net = AvgPoolNet()
     ms_output = net(x)
     onnx_file = './avgpool_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -1060,7 +1064,7 @@ def test_export_softmax():
     net = SoftmaxNet()
     ms_output = net(x)
     onnx_file = './softmax_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -1092,7 +1096,7 @@ def test_export_squeeze():
     net = SqueezeNet()
     ms_output = net(x)
     onnx_file = './squeeze_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -1125,7 +1129,7 @@ def test_export_muls():
     net = MulsNet()
     ms_output = net(x)
     onnx_file = './muls_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -1148,7 +1152,7 @@ def test_export_muls_with_saved_dirs():
     net = MulsNet()
     ms_output = net(x)
     onnx_file = './muls_test/test1/test2/muls_onnx.onnx'
-    export(net, x, file_name=onnx_file, file_format='ONNX')
+    export(net, x, file_name=onnx_file)
     if os.path.isfile(onnx_file):
         session = ort.InferenceSession(onnx_file)
         inputs = {"x": np_x}
@@ -1157,3 +1161,93 @@ def test_export_muls_with_saved_dirs():
         os.remove(onnx_file)
     else:
         raise RuntimeError(f"Export operator Muls to ONNX failed!")
+
+
+class ConvReluModel(nn.Cell):
+    def __init__(self):
+        super(ConvReluModel, self).__init__()
+        self.conv_layers = nn.SequentialCell(
+            nn.Conv2d(3, 5, kernel_size=1, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=1, stride=1),
+        )
+
+    def construct(self, x):
+        x = self.conv_layers(x)
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_param_keep_initializers():
+    """
+    Feature: Export model with export_params=False and keep_initializers=True.
+    Description: Export net to onnx.
+    Expectation: export success, runtime success.
+    """
+    np_x = np.random.uniform(low=0, high=1, size=(1, 3, 5, 5)).astype(np.float32)
+    x = Tensor(np_x)
+    net = ConvReluModel()
+    ms_output = net(x)
+    onnx_file_origin_weight = './origin_weight.onnx'
+    onnx_file_export_params_false = './export_false.onnx'
+    onnx_file_keep_true = './keep_true.onnx'
+    export(net, x, file_name=onnx_file_origin_weight)
+    export(net, x, file_name=onnx_file_export_params_false, export_params=False)
+    export(net, x, file_name=onnx_file_keep_true, keep_initializers_as_inputs=True)
+    if not os.path.isfile(onnx_file_origin_weight):
+        raise RuntimeError(f"Export operator ConvReluModel to ONNX failed!")
+    if not os.path.isfile(onnx_file_export_params_false):
+        raise RuntimeError(f"Export operator ConvReluModel to ONNX with export_params=False failed!")
+    if not os.path.isfile(onnx_file_keep_true):
+        raise RuntimeError(f"Export operator ConvReluModel to ONNX with keep_initializers_as_inputs=True failed!")
+    session1 = ort.InferenceSession(onnx_file_origin_weight)
+    session2 = ort.InferenceSession(onnx_file_export_params_false)
+    session3 = ort.InferenceSession(onnx_file_keep_true)
+    np_weight = np.random.uniform(low=0, high=1, size=(5, 3, 1, 1)).astype(np.float32)
+    inputs = {"x": np_x, "conv_layers.0.weight": np_weight}
+    output1 = session1.run(None, {"x": np_x})[0]
+    assert np.allclose(ms_output, output1, rtol=1e-3, atol=1e-3), "origin weight not equal, please check"
+    output2 = session2.run(None, inputs)[0]
+    output3 = session3.run(None, inputs)[0]
+    assert np.array_equal(output2,
+                          output3), f"Result of export_params=False and keep_initializers_as_inputs=True are not equal"
+
+    os.remove(onnx_file_origin_weight)
+    os.remove(onnx_file_export_params_false)
+    os.remove(onnx_file_keep_true)
+
+
+class DynamicNetwork(nn.Cell):
+    def __init__(self):
+        super(DynamicNetwork, self).__init__()
+        self.conv1 = nn.Conv2d(3, 2, kernel_size=3, pad_mode='same')
+        self.bn1 = nn.BatchNorm2d(2)
+        self.relu1 = nn.ReLU()
+
+    def construct(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_dynamic_axes():
+    """
+    Feature: Export model with dynamic_axes and different input shape for export and onnxruntime
+    Description: Export net to onnx.
+    Expectation: export success, runtime success.
+    """
+    ms.set_context(mode=ms.GRAPH_MODE)
+    input_tensor = ms.Tensor(shape=(8, 3, 2, 2), dtype=ms.float32, init=ms.common.initializer.One())
+    input_tensor1 = ms.Tensor(shape=(6, 3, 2, 2), dtype=ms.float32, init=ms.common.initializer.One())
+    net = DynamicNetwork()
+    ms_output = net(input_tensor)
+    onnx_file = './dynamic_batch_size.onnx'
+    export(net, input_tensor1, file_name=onnx_file, input_names=['input0'],
+           output_names=["out0"], dynamic_axes={"input0": {0: "batch_size"}})
+    session = ort.InferenceSession(onnx_file)
+    inputs = {"input0": input_tensor.asnumpy()}
+    onnxruntime_output = session.run(None, inputs)[0]
+    assert np.allclose(ms_output.asnumpy(), onnxruntime_output, rtol=1e-3, atol=1e-3)
+    os.remove(onnx_file)

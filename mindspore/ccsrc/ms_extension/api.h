@@ -18,14 +18,14 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "mindspore/ccsrc/pynative/grad/function.h"
 #include "ms_extension/common/tensor.h"
 #include "ms_extension/common/tensor_utils.h"
+#include "ms_extension/common/utils.h"
 #include "ms_extension/pynative/pyboost_extension.h"
 
 // ascend files
 #ifdef CUSTOM_ASCEND_OP
-#include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/customize/custom_launch_aclnn.h"
+#include "ms_extension/ascend/aclnn/aclnn_op_runner.h"
 #ifdef CUSTOM_ENABLE_ATB
 #include "ms_extension/ascend/atb/atb_common.h"
 #endif  // CUSTOM_ENABLE_ATB

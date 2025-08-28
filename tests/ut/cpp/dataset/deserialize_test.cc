@@ -19,7 +19,7 @@
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/vision.h"
 #include "minddata/dataset/include/dataset/transforms.h"
-#include "minddata/dataset/kernels/ir/data/transforms_ir.h"
+#include "minddata/dataset/general/transform/transforms_ir.h"
 
 using namespace mindspore::dataset;
 using mindspore::dataset::DatasetNode;

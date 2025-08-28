@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import functools
 import os
 import shutil
 import subprocess
@@ -22,29 +23,27 @@ from mindspore import ops
 from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, inplace_copy_op
 from mindspore.ops.functional import grad
 
-graph_save_path = './graph_save_path'
-
 # IR file pattern
 virtual_view_grad_insert_pattern = '*_virtual_view_grad_insert_*.ir'
 virtual_view_insert_pattern = '*_virtual_view_insert_*.ir'
 remove_redundant_virtual_ops_pattern = '*_remove_redundant_virtual_ops_*.ir'
 
 
-def setup_function():
+def save_graph_setting(graph_save_path):
     os.environ['MS_DEV_SAVE_GRAPHS'] = '3'
-    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = './graph_save_path'
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = graph_save_path
     if os.path.exists(graph_save_path):
         shutil.rmtree(graph_save_path)
 
 
-def teardown_function():
+def remove_graph_path(graph_save_path):
     os.unsetenv('MS_DEV_SAVE_GRAPHS')
     os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
     if os.path.exists(graph_save_path):
         shutil.rmtree(graph_save_path)
 
 
-def check_prim_number_valid(prim_name, ir_pattern, size):
+def check_prim_number_valid(prim_name, ir_pattern, size, graph_save_path):
     file_path = os.path.join(graph_save_path, ir_pattern)
     para = prim_name
     output = subprocess.check_output(["grep -r '%s' %s | wc -l" % (para, file_path)], shell=True)
@@ -57,6 +56,17 @@ def grad_under_jit(net, arg):
     return grad(net)(arg)
 
 
+def save_graphs_for_case(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        graph_save_path = func.__name__
+        save_graph_setting(graph_save_path)
+        func(*args, **kwargs)
+        remove_graph_path(graph_save_path)
+    return wrapper
+
+
+@save_graphs_for_case
 def test_virtualviewgrad_number_case1():
     """
     Feature: Support tensor inplace view gradient.
@@ -76,9 +86,11 @@ def test_virtualviewgrad_number_case1():
     x = ms.Tensor([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=ms.float32)
     net = Net()
     grad_under_jit(net, x)
-    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 3)
+    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern,
+                            3, "test_virtualviewgrad_number_case1")
 
 
+@save_graphs_for_case
 def test_virtualviewgrad_number_case2():
     """
     Feature: Support tensor inplace view gradient.
@@ -98,10 +110,12 @@ def test_virtualviewgrad_number_case2():
     x = ms.Tensor([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=ms.float32)
     net = Net()
     grad_under_jit(net, x)
-    check_prim_number_valid('_VirtualViewGrad(%', virtual_view_grad_insert_pattern, 3)
-    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2)
+    dir_path = "test_virtualviewgrad_number_case2"
+    check_prim_number_valid('_VirtualViewGrad(%', virtual_view_grad_insert_pattern, 3, dir_path)
+    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2, dir_path)
 
 
+@save_graphs_for_case
 def test_virtualview_number_case1():
     """
     Feature: Support tensor inplace view gradient.
@@ -122,11 +136,13 @@ def test_virtualview_number_case1():
     x = ms.Tensor([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=ms.float32)
     net = Net()
     grad_under_jit(net, x)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 2)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 2)
-    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2)
+    dir_path = "test_virtualview_number_case1"
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 2, dir_path)
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 2, dir_path)
+    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2, dir_path)
 
 
+@save_graphs_for_case
 def test_virtualview_number_case2():
     """
     Feature: Support tensor inplace view gradient.
@@ -148,11 +164,13 @@ def test_virtualview_number_case2():
     x = ms.Tensor([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=ms.float32)
     net = Net()
     grad_under_jit(net, x)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 4)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 4)
-    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 3)
+    dir_path = "test_virtualview_number_case2"
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 4, dir_path)
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 4, dir_path)
+    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 3, dir_path)
 
 
+@save_graphs_for_case
 def test_remove_virtualviewops_case():
     """
     Feature: Support tensor inplace view gradient.
@@ -173,7 +191,8 @@ def test_remove_virtualviewops_case():
     x = ms.Tensor([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=ms.float32)
     net = Net()
     grad_under_jit(net, x)
-    check_prim_number_valid('_VirtualViewGrad(%', virtual_view_grad_insert_pattern, 3)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 2)
-    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 1)
-    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2)
+    dir_path = "test_remove_virtualviewops_case"
+    check_prim_number_valid('_VirtualViewGrad(%', virtual_view_grad_insert_pattern, 3, dir_path)
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', virtual_view_insert_pattern, 2, dir_path)
+    check_prim_number_valid('{is_virtual_view_op: Bool(1)}', remove_redundant_virtual_ops_pattern, 1, dir_path)
+    check_prim_number_valid('_VirtualViewGrad(%', remove_redundant_virtual_ops_pattern, 2, dir_path)

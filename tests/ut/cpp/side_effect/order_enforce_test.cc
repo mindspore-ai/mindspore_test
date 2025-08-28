@@ -26,6 +26,7 @@
 #include "ir/visitor.h"
 #include "frontend/jit/ps/action.h"
 #include "ir/func_graph.h"
+#include "ir/graph_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"

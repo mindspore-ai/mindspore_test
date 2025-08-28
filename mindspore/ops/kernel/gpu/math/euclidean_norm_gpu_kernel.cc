@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include <set>
-#include "abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mindspore/ops/infer/euclidean_norm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/euclidean_norm_impl.cuh"

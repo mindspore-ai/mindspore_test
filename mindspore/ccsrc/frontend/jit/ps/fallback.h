@@ -23,7 +23,6 @@
 #include <unordered_map>
 
 #include "ir/anf.h"
-#include "ir/dtype/type.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/python_adapter.h"
 #include "frontend/jit/ps/parse/resolve.h"

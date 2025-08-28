@@ -18,7 +18,7 @@
 
 #include <string>
 #include <memory>
-#include "include/common/symbol_engine/symbol_engine_impl.h"
+#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {

@@ -15,6 +15,7 @@
  */
 
 #include "frontend/jit/ps/static_analysis/auto_monad.h"
+
 #include <list>
 #include <vector>
 #include <stack>
@@ -22,6 +23,7 @@
 #include <utility>
 #include <memory>
 #include <algorithm>
+
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -36,12 +38,10 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ordered_map.h"
 #include "utils/ordered_set.h"
 #include "utils/trace_info.h"
-#include "base/effect_info.h"
 #include "abstract/abstract_value.h"
 #include "frontend/jit/ps/debug/trace.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

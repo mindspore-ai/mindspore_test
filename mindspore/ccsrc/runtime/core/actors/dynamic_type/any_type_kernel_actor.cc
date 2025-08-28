@@ -19,10 +19,11 @@
 #include <unordered_map>
 #include <functional>
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/pyexecute/py_execute_cpu_kernel.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"
+#include "ir/graph_utils.h"
 #include "include/backend/py_execute_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -277,6 +278,8 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get())) {
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Device address:" << device_tensor << " allocate ptr:" << device_tensor->GetPtr()
       << " for value node:" << node->DebugString();

@@ -18,7 +18,6 @@
 #define MINDSPORE_CORE_MINDAPI_IR_UTILS_H_
 
 #include "mindapi/base/base.h"
-#include "mindapi/base/shared_ptr.h"
 #include "mindapi/base/type_traits.h"
 #include "mindapi/ir/anf.h"
 #include "mindapi/ir/value.h"

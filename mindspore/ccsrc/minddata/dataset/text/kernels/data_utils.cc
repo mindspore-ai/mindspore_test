@@ -20,9 +20,9 @@
 #include <string>
 
 #include "minddata/dataset/core/pybind_support.h"
-#include "minddata/dataset/kernels/data/slice_op.h"
-#include "minddata/dataset/kernels/data/concatenate_op.h"
-#include "minddata/dataset/kernels/data/data_utils.h"
+#include "minddata/dataset/general/kernels/slice_op.h"
+#include "minddata/dataset/general/kernels/concatenate_op.h"
+#include "minddata/dataset/general/kernels/data_utils.h"
 
 namespace mindspore {
 namespace dataset {

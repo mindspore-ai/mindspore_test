@@ -30,12 +30,10 @@
 #include <utility>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "utils/ordered_set.h"
 #include "utils/ordered_map.h"
 #include "mindapi/base/macros.h"
 #include "base/base_ref.h"
-#include "base/effect_info.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "ir/dtype/amp.h"

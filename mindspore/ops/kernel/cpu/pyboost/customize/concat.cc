@@ -20,7 +20,7 @@
 #include "ir/scalar.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/cpu/kernel_executor/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 

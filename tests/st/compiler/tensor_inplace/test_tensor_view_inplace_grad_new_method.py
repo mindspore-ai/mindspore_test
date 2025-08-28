@@ -17,6 +17,7 @@ import os
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
+import mindspore.ops.operations as P
 from mindspore import ops, Tensor
 from mindspore.nn import ReLU
 from mindspore.common.parameter import Parameter
@@ -876,3 +877,42 @@ def test_view_and_inplace_with_inplace_func_call():
         assert np.allclose(out_back_expect[1].asnumpy(), out_back_jit[1].asnumpy())
     finally:
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_inplace_grad_with_return_same_out():
+    """
+    Feature: inplace operation in grad.
+    Description: inplace operation in grad.
+    Expectation: no exception
+    """
+
+    class CtrlForbyIfBR(nn.Cell):
+        def __init__(self, t):
+            super().__init__()
+            self.add = P.Add()
+            self.mul = P.Mul()
+            self.assignadd = P.AssignAdd()
+            self.para = Parameter(t, name="a")
+
+        def construct(self, x, y):
+            out = self.add(y, y)
+            self.assignadd(self.para, y)
+            for _ in range(0, -5, -1):
+                x = x - 1
+                if x > 0:
+                    out = self.mul(out, y)
+                else:
+                    break
+                out = self.add(out, self.para)
+            if x > 2:
+                return out
+            return out
+
+    input_np = np.random.randn(3, 4, 5).astype(np.float32)
+    x = Tensor(1)
+    t = Tensor(input_np)
+    y = Tensor(input_np)
+    net = CtrlForbyIfBR(t)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    grad(net)(x, y)

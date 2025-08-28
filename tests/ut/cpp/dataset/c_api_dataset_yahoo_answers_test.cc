@@ -15,7 +15,7 @@
  */
 #include "common/common.h"
 #include "minddata/dataset/include/dataset/datasets.h"
-#include "minddata/dataset/engine/ir/datasetops/source/yahoo_answers_node.h"
+#include "minddata/dataset/data_source/operation/yahoo_answers_node.h"
 
 using namespace mindspore::dataset;
 

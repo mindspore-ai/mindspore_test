@@ -22,7 +22,7 @@
 #include "utils/ms_utils.h"
 #include "kernel/framework_utils.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {

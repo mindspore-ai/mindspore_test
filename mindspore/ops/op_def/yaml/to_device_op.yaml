@@ -1,0 +1,30 @@
+#operator to_device
+to_device:
+  args:
+    input:
+      dtype: tensor
+    device:
+      dtype: int
+      arg_handler: str_to_enum
+      default: None
+    dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    non_blocking:
+      dtype: bool
+      default: False
+    copy:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: ToDeviceAscend
+    CPU: ToDeviceCPU
+    GPU: ToDeviceGPU

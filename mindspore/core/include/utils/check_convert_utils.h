@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
 #include <utility>
 #include <typeinfo>
 #include <memory>
+
 #include "abstract/param_validator.h"
 #include "base/base.h"
 #include "ir/anf.h"
-#include "include/api/format.h"
 #include "utils/log_adapter.h"
 #if __has_include("include/mindapi/base/types.h")
 #include "include/mindapi/base/types.h"

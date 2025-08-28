@@ -195,13 +195,9 @@ using Key = size_t;
 using Keys = std::vector<Key>;
 using Values = std::vector<float>;
 using ValuesPtr = std::shared_ptr<Values>;
-using Weight = distributed::persistent::Data<float>;
-using PersistentWeight = distributed::persistent::PersistentData<float>;
 using Grad = std::vector<float>;
 using LookupIds = std::vector<Key>;
 using Lengths = std::vector<int>;
-using WeightPtr = std::shared_ptr<Weight>;
-using PersistentWeightPtr = std::shared_ptr<PersistentWeight>;
 using GradPtr = std::shared_ptr<Grad>;
 using InputsShape = std::vector<std::shared_ptr<ShapeVector>>;
 using InputsShapePtr = std::shared_ptr<std::vector<std::shared_ptr<ShapeVector>>>;
@@ -211,38 +207,6 @@ using OptimOriginIdx = std::map<std::string, size_t>;
 using OptimPSSendIdx = std::map<std::string, size_t>;
 
 using EventCallback = std::function<void(void)>;
-
-const OptimOriginIdx kMomentumOriginIdx = {{"weight", 0}, {"accum", 1}, {"lr", 2}, {"grad", 3}, {"momentum", 4}};
-const OptimPSSendIdx kMomentumPSSendIdx = {
-  {"weight", INDEX_NOT_SEND}, {"accum", INDEX_NOT_SEND}, {"lr", 0}, {"grad", 1}, {"momentum", 2}};
-
-const OptimOriginIdx kSparseAdamOriginIdx = {{"weight", 0},      {"m", 1},    {"v", 2},       {"beta1_power", 3},
-                                             {"beta2_power", 4}, {"lr", 5},   {"beta1", 6},   {"beta2", 7},
-                                             {"eps", 8},         {"grad", 9}, {"indices", 10}};
-const OptimPSSendIdx kSparseAdamPSSendIdx = {{"weight", INDEX_NOT_SEND},
-                                             {"m", INDEX_NOT_SEND},
-                                             {"v", INDEX_NOT_SEND},
-                                             {"beta1_power", 0},
-                                             {"beta2_power", 1},
-                                             {"lr", 2},
-                                             {"beta1", 3},
-                                             {"beta2", 4},
-                                             {"eps", 5},
-                                             {"grad", 6},
-                                             {"indices", 7}};
-
-const OptimOriginIdx kSparseFtrlOriginIdx = {{"weight", 0}, {"accum", 1}, {"linear", 2}, {"grad", 3}, {"indices", 4}};
-const OptimPSSendIdx kSparseFtrlPSSendIdx = {
-  {"weight", INDEX_NOT_SEND}, {"accum", INDEX_NOT_SEND}, {"linear", INDEX_NOT_SEND}, {"grad", 0}, {"indices", 1}};
-
-const std::map<std::string, OptimOriginIdx> kOptimToOriginIdx = {{kApplyMomentum, kMomentumOriginIdx},
-                                                                 {kSparseAdam, kSparseAdamOriginIdx},
-                                                                 {kSparseLazyAdam, kSparseAdamOriginIdx},
-                                                                 {kSparseFtrl, kSparseFtrlOriginIdx}};
-const std::map<std::string, OptimOriginIdx> kOptimToPSSendIdx = {{kApplyMomentum, kMomentumPSSendIdx},
-                                                                 {kSparseAdam, kSparseAdamPSSendIdx},
-                                                                 {kSparseLazyAdam, kSparseAdamPSSendIdx},
-                                                                 {kSparseFtrl, kSparseFtrlPSSendIdx}};
 
 // The barrier function which should be called before doing scaling out/in operations.
 // It's easy for us to scale out/in nodes after one iteration is completed and keep consistent.

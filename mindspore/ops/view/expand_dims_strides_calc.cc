@@ -16,48 +16,45 @@
 
 #include "view/expand_dims_strides_calc.h"
 #include <memory>
+#include <utility>
 
 namespace mindspore::ops {
-constexpr size_t kExpandDimsInputsNum = 2;
+TensorStorageInfoPtrList ExpandDimsStrideCalc(const std::vector<int64_t> &old_shape,
+                                              const std::vector<int64_t> &old_strides,
+                                              const TensorStorageInfoPtr &storage_info, const int64_t &axis) {
+  auto [ori_shape, ori_strides, storage_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
 
-TensorStorageInfoPtrList ExpandDimsStrideCalc(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
-                                              const int64_t &axis) {
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
-  auto old_storage_offset = old_tensor_info->old_offset;
+  bool is_contiguous = storage_info ? storage_info->is_contiguous : true;
+
+  int64_t old_dim = old_shape.size();
+  int64_t axis_new = DynamicDimWrap(axis, old_dim + 1);
 
   auto new_shape = old_shape;
   auto new_strides = old_strides;
-
-  int64_t dim_size = SizeToLong(new_shape.size());
-
-  auto axis_new = DynamicDimWrap(axis, new_shape.size() + 1);
-  int64_t tmp_strides = axis_new >= dim_size ? 1 : new_shape[axis_new] * new_strides[axis_new];
-  (void)new_strides.insert(new_strides.begin() + axis_new, tmp_strides);
+  int64_t new_stride = axis_new >= old_dim ? 1 : old_shape[axis_new] * old_strides[axis_new];
   (void)new_shape.insert(new_shape.begin() + axis_new, 1);
+  (void)new_strides.insert(new_strides.begin() + axis_new, new_stride);
+
   auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
-  return {new_storage_info};
+    std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), storage_offset,
+                                        std::move(ori_shape), std::move(ori_strides), is_contiguous);
+
+  return {std::move(new_storage_info)};
 }
 
-TensorStorageInfoPtrList ExpandDimsBasicTypeCalc(const PrimitivePtr &prim,
-                                                 const mindspore::tensor::TensorPtr &input_tensor,
+TensorStorageInfoPtrList ExpandDimsBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                  const int64_t &axis) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  return ExpandDimsStrideCalc(old_tensor_info, axis);
+  return ExpandDimsStrideCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), axis);
 }
 
 TensorStorageInfoPtrList ExpandDimsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<IntegerImm>()) {
     return {};
   }
-
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   auto axis = GetValue<int64_t>(inputs[kInputIndex1]);
-  return ExpandDimsStrideCalc(old_tensor_info, axis);
+  return ExpandDimsBasicTypeCalc(input_tensor, axis);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(ExpandDims, ExpandDimsCalc);

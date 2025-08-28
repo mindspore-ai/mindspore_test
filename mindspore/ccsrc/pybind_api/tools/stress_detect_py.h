@@ -21,7 +21,7 @@
 
 namespace mindspore {
 // Detect device stress
-int StressDetect();
+int StressDetect(const std::string &detect_type);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_PYBIND_API_HAL_STRESS_DETECT_PY_H

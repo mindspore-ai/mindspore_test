@@ -17,7 +17,7 @@
 import numpy as np
 import mindspore
 from mindspore.ops import composite as C
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, _Function
 from mindspore import nn
 from mindspore import ops
 from mindspore.common.api import _pynative_executor
@@ -538,3 +538,53 @@ def test_requires_grad_false():
     grads = mindspore.grad(net, weights=[net.p1, net.p2])(x)
     assert np.allclose(grads[1][0].asnumpy(), np.array([12.0], dtype=np.float32))
     assert np.allclose(grads[1][1].asnumpy(), np.array([0.0], dtype=np.float32))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_backward_final_callback_recompute():
+    """
+    Feature: Backward Final Callback
+    Description: Test add backward final callback in recompute
+    Expectation: Success.
+    """
+    record = []
+
+    def callback1():
+        record.append(1)
+
+    def callback2():
+        record.append(2)
+
+    class CustomOp(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            return x
+
+        @staticmethod
+        def backward(ctx, grad):
+            _pynative_executor.queue_backward_final_callback(callback2)
+            return grad
+
+    def tensor_hook_fn(_):
+        _pynative_executor.queue_backward_final_callback(callback1)
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.linear = nn.Linear(2, 3)
+            self.linear.weight.register_hook(tensor_hook_fn)
+
+        def construct(self, x):
+            x1 = CustomOp.apply(x)
+            return self.linear(x1)
+
+    x = Tensor([3.0, 1.0])
+    x.register_hook(lambda _: record.append(0))
+    net = Net()
+    net.recompute()
+    grad_fn = mindspore.grad(net, grad_position=(0,), weights=net.trainable_params())
+    grad_fn(x)
+    assert record == [2, 0, 1]

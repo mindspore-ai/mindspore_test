@@ -16,11 +16,11 @@
 
 #include "kernel/gpu/arrays/copy_with_slice_gpu_kernel.h"
 #include <functional>
-#include "plugin/res_manager/gpu/device/cuda_driver.h"
+#include "plugin/gpu/res_manager/symbol_interface/cuda_driver.h"
 #include "utils/log_adapter.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/copy_with_slice_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "plugin/device/gpu/hal/device/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {

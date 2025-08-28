@@ -19,7 +19,6 @@
 #include "kernel/cpu/eigen/bessel_k0e_cpu_kernel.h"
 
 #include "mindspore/ops/infer/bessel_k0e.h"
-#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

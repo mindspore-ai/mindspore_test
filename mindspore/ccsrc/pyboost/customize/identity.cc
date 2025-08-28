@@ -17,6 +17,7 @@
 #include "mindspore/ccsrc/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
+#include "ir/dtype/tensor_type.h"
 
 namespace mindspore {
 namespace kernel {
