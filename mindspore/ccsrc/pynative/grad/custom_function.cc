@@ -206,8 +206,8 @@ ValuePtrList PyBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Custom backward function output is empty!";
   }
-  auto gradient_tensors = PostProcess(gradient_values);
   runtime::Pipeline::Get().WaitFrontend();
+  auto gradient_tensors = PostProcess(gradient_values);
   MS_LOG(DEBUG) << "End PyBackwardNode CallBackward";
   return gradient_tensors;
 }
