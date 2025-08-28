@@ -407,6 +407,13 @@ static py::buffer_info GetPyBufferInfo(const TensorPtr &tensor) {
     tensor->data_c(), tensor->DataItemSize(), GetPyTypeFormat(tensor->data_type()), tensor->DataDim(), shape, strides};
 }
 
+static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
+  std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
+  return py::buffer_info{
+    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
+}
+
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
   auto &shape = tensor.shape();
   py::tuple dims(shape.size());
@@ -686,6 +693,33 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
   }
   return AsNumpy(*tensor_for_copy);
+}
+
+py::array TensorPybind::NumpyNonBlocking(const Tensor &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  const auto &device_address = tensor.device_address();
+  if (device_address == nullptr) {
+    MS_LOG(EXCEPTION) << "Tensor " << tensor.ToString() << " is uninitialized. "
+                      << "Maybe you need to call Tensor.init_data first.";
+  }
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(EXCEPTION) << "Only support convert CPU Tensor to Numpy array, but got Tensor on "
+                      << device::GetDeviceNameByType(device_address->GetDeviceType());
+  }
+  py::object owner = py::cast(device_address);
+  if (device_address->has_data()) {
+    const auto &data = device_address->data();
+    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
+    if (raw_data != nullptr) {
+      return raw_data->py_array(owner);
+    }
+  }
+  // Create numpy array by buffer protocol.
+  auto info = GetPyBufferInfo(tensor);
+  py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
+                         ? py::detail::npy_format_descriptor<bfloat16>::dtype()
+                         : py::dtype(info);
+  return py::array(np_dtype, info.shape, info.strides, info.ptr, owner);
 }
 
 py::array TensorPybind::AsNumpy(const Tensor &tensor) {

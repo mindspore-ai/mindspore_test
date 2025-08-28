@@ -2852,41 +2852,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bmm')(self, mat2)
 
-    def to(self, dtype):
-        r"""
-        Performs tensor dtype conversion.
-
-        Note:
-            - If the `self` Tensor already has the correct `mindspore.dtype`, then self is returned.
-              Otherwise, the returned tensor is a copy of `self` with the desired mindspore.dtype.
-            - When converting complex numbers to boolean type, the imaginary part of the complex number is not
-              taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
-
-        Args:
-            dtype (dtype.Number, bool): The valid data type of the output tensor. Only constant value is allowed.
-                Only Support type bool in PyNative mode.
-
-        Returns:
-            Tensor, converted to the specified `dtype`.
-
-        Raises:
-            TypeError: If `dtype` is not a Number.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-            >>> input_x = Tensor(input_np)
-            >>> dtype = mindspore.int32
-            >>> output = input_x.to(dtype)
-            >>> print(output.dtype)
-            Int32
-        """
-        return self if self.dtype == dtype else self._to(dtype)
 
     def type(self, dtype=None):
         r"""

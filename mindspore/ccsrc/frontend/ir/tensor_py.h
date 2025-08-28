@@ -153,6 +153,8 @@ class FRONTEND_EXPORT TensorPybind {
 
   static py::array SyncAsNumpy(const Tensor &tensor);
 
+  static py::array NumpyNonBlocking(const Tensor &tensor);
+
   static py::array AsNumpy(const Tensor &tensor);
 
   static py::tuple GetPyTupleShape(const Tensor &tensor);

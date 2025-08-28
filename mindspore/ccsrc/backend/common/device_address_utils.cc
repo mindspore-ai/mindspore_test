@@ -1123,6 +1123,11 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
     MS_EXCEPTION_IF_NULL(tensor);
+    if (tensor->device_address()) {
+      MS_LOG(DEBUG) << "Output tensor " << tensor->ToString() << " already has device address "
+                    << tensor->device_address()->ToString();
+      continue;
+    }
     auto tensor_size = LongToSize(tensor->DataNBytes());
     const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(

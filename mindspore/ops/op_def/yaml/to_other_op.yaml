@@ -1,0 +1,24 @@
+#operator to_other
+to_other:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+    non_blocking:
+      dtype: bool
+      default: False
+    copy:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: ToOtherAscend
+    CPU: ToOtherCPU
+    GPU: ToOtherGPU
