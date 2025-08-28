@@ -52,9 +52,6 @@
 #include "backend/common/kernel_graph/session_factory.h"
 #include "include/backend/debug/debugger/proto_exporter.h"
 #ifdef ENABLE_DUMP_IR
-#include "tools/rdr/graph_exec_order_recorder.h"
-#include "include/common/debug/rdr/recorder_manager.h"
-#include "tools/rdr/graph_recorder.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -238,8 +235,7 @@ void SessionBasic::DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const {
   bool save_graphs = context_ptr->CanDump(kIntroductory);
   auto &json_parser = DumpJsonParser::GetInstance();
   json_parser.Parse();
-  if (!save_graphs && !json_parser.e2e_dump_enabled() && !json_parser.async_dump_enabled() &&
-      !mindspore::RecorderManager::Instance().RdrEnable()) {
+  if (!save_graphs && !json_parser.e2e_dump_enabled() && !json_parser.async_dump_enabled()) {
     return;
   }
   for (auto &graph : graphs) {
@@ -249,13 +245,6 @@ void SessionBasic::DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const {
       continue;
     }
 
-    std::string name = "graph_build." + std::to_string(graph->graph_id());
-    DumpGraphParams dump_params = {true, static_cast<int>(kWholeStack)};
-    (void)mindspore::RDR::RecordAnfGraph(SUBMODULE_ID, name, graph, dump_params, ".ir;.pb");
-
-    auto &kernels = graph->execution_order();
-    std::string exec_order_name = "graph_exec_order." + std::to_string(graph->graph_id());
-    (void)mindspore::RDR::RecordGraphExecOrder(SUBMODULE_ID, exec_order_name, kernels);
     if (save_graphs) {
       std::string file_name = "graph_build_" + std::to_string(graph->graph_id()) + ".ir";
       DumpIR(file_name, graph, true, kWholeStack);

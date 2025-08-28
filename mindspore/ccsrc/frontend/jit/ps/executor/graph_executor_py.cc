@@ -43,9 +43,6 @@
 #include "frontend/parallel/strategy.h"
 
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#endif
 #include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
@@ -343,9 +340,6 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   if (is_auto_parallel) {
     ParallelPostProcess(phase, CompileCacheContext::GetInstance().UseCompileCache());
   }
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::Snapshot();
-#endif
   CleanCompileRes(resource);
   PhaseManager::GetInstance().ClearPhase();
   PhaseManager::GetInstance().ClearJitConfig();
@@ -425,9 +419,6 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
     ParallelPostProcess(phase_, CompileCacheContext::GetInstance().UseCompileCache());
   }
   PROF_END(ParallelPostProcess);
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::Snapshot();
-#endif
   PROF_START(CleanCompileRes);
   CleanCompileRes(resource);
   EventMessage::PrintCompileEndMsg(phase_, obj_desc_);

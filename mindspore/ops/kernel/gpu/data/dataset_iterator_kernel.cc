@@ -27,9 +27,6 @@
 #include "plugin/gpu/profiler/gpu_profiling.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "kernel/gpu/gpu_common.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#endif
 
 namespace mindspore {
 namespace kernel {
@@ -125,9 +122,6 @@ bool DatasetIteratorKernelMod::ReadDevice(std::vector<DataQueueItem> *data) {
         }
         continue;
       } else {
-#ifdef ENABLE_DUMP_IR
-        mindspore::RDR::TriggerAll();
-#endif
         MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', get data timeout. Queue name: " << queue_name_;
       }
     }

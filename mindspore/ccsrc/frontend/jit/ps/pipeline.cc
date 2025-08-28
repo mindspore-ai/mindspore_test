@@ -61,11 +61,6 @@
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 
-#ifdef ENABLE_DUMP_IR
-#include "tools/rdr/graph_recorder.h"
-#include "include/common/debug/rdr/recorder_manager.h"
-#endif
-
 #include "frontend/operator/py_execute_py.h"  // Only include one-time in the whole project.
 
 namespace mindspore {
@@ -528,30 +523,6 @@ void CheckInterpretNodeLineInfos() {
 }
 
 #ifdef ENABLE_DUMP_IR
-void RDRRecordGraph(const size_t action_index, const size_t action_size, const std::string &filename,
-                    const FuncGraphPtr &graph) {
-  if (mindspore::RecorderManager::Instance().RdrEnable()) {
-    MS_LOG(INFO) << "Recording FuncGraph in pipeline using RDR.";
-    if (graph != nullptr) {
-      auto graph_clone = BasicClone(graph);
-      if (graph_clone != nullptr) {
-        DumpGraphParams dump_params = {false, static_cast<int>(kTopStack)};
-        if (action_index == action_size) {
-          dump_params.dump_mode = static_cast<int>(kWholeStack);
-        }
-        (void)mindspore::RDR::RecordAnfGraph(SUBMODULE_ID, filename, graph_clone, dump_params, ".ir");
-      } else {
-        MS_LOG(WARNING) << "Clone FuncGraph failed in pipeline, no FuncGraph recording in RDR.";
-      }
-    } else {
-      MS_LOG(WARNING) << "Pipeline Resource has no FuncGraph, no FuncGraph recording in RDR";
-    }
-    MS_LOG(INFO) << "Recording FuncGraph in pipeline end.";
-  }
-}
-#endif
-
-#ifdef ENABLE_DUMP_IR
 std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name) {
   std::ostringstream oss;
   int spaces = 2;
@@ -653,8 +624,6 @@ void Pipeline::Run() {
       }
       FuncGraphPtr graph = resource_->func_graph();
 #ifdef ENABLE_DUMP_IR
-      std::string filename = GetBaseNameForIR(SizeToLong(i), action.first);
-      RDRRecordGraph(i, actions_.size(), filename, graph);
       RecordIR(i, actions_.size(), action.first, graph, &user_graph);
 #endif
       SaveGraphForReadability(action.first, graph, resource_);
@@ -767,9 +736,6 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
   app_init->set_abstract(abstract_none);
   // Before the graph compiling, need reset the iter num.
   ConfigManager::GetInstance().ResetIterNum();
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::ResetRecorder();
-#endif
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);

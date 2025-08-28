@@ -16,34 +16,13 @@
 
 #include "backend/ge_backend/runtime/actor/recorder_actor.h"
 #include <string>
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#include "tools/rdr/mem_address_recorder.h"
-#endif
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 void RecorderActor::RecordInfo(const std::string op_name, const KernelLaunchAddr *launch_info,
-                               OpContext<KernelTensor> *const op_context) {
-  MS_EXCEPTION_IF_NULL(launch_info);
-  MS_EXCEPTION_IF_NULL(op_context);
-
-#ifdef ENABLE_DUMP_IR
-  if (op_name.empty()) {
-    MS_LOG(WARNING) << "GPU kernel's op_name is empty, do not record its memory address in RDR.";
-    return;
-  }
-  std::string name = "mem_address_list";
-  if (!RecorderManager::Instance().CheckRdrMemIsRecord()) {
-    (void)RDR::RecordMemAddressInfo(SUBMODULE_ID, name);
-    RecorderManager::Instance().SetRdrMemIsRecord(true);
-  } else {
-    (void)RDR::UpdateMemAddress(SUBMODULE_ID, name, op_name, *launch_info);
-  }
-#endif
-}
+                               OpContext<KernelTensor> *const op_context) {}
 
 void RecorderActor::RecordOnStepEnd(OpContext<KernelTensor> *const op_context) {
   MS_EXCEPTION_IF_NULL(op_context);

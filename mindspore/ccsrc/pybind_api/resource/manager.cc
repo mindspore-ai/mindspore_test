@@ -72,8 +72,6 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 #ifdef ENABLE_DUMP_IR
-#include "tools/rdr/graph_recorder.h"
-#include "include/common/debug/rdr/recorder_manager.h"
 #include "ir/cell.h"
 #endif
 
@@ -86,9 +84,6 @@ namespace mindspore {
 void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }
 
 void MemoryRecycle() {
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::ResetRecorder();
-#endif
   pipeline::ReclaimOptimizer();
   ad::g_k_prims.clear();
   ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
@@ -123,10 +118,6 @@ void ClearResPart1() {
   runtime::RuntimePipeline::GetInstance().WorkerJoin();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
   RecordExitStatus();
-#ifdef ENABLE_DUMP_IR
-  mindspore::RDR::Snapshot();
-  mindspore::RDR::ResetRecorder();
-#endif
   runtime::GraphScheduler::GetInstance().Clear();
   MemTrackerInstanceClear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();

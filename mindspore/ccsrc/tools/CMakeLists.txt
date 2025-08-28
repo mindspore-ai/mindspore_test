@@ -5,10 +5,6 @@ add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
 set(_DEBUG_SRC_LIST)
 
-if(ENABLE_DUMP_IR)
-    file(GLOB_RECURSE _RDR_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "rdr/*.cc")
-endif()
-
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -53,9 +49,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
 
-set_property(SOURCE ${_DEBUG_SRC_LIST} ${_RDR_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
-    SUBMODULE_ID=mindspore::SubModuleId::SM_DEBUG)
-list(APPEND _DEBUG_SRC_LIST ${_RDR_SRC_LIST})
 file(GLOB_RECURSE _ERROR_HANDLER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/error_handler/*.cc")
 list(APPEND _DEBUG_SRC_LIST ${_ERROR_HANDLER_LIST})
 list(LENGTH _DEBUG_SRC_LIST debug_files_size)
