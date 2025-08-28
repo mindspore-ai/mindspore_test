@@ -2124,6 +2124,7 @@ def _export(net, file_name, file_format, *inputs, **kwargs):
     if file_format == 'AIR':
         _save_air(net, file_name, *inputs, **kwargs)
     elif file_format == 'ONNX':
+        logger.warning("mindspore.export(file_format='ONNX') will be deleted, please use mindspore.onnx.export()")
         _save_onnx(net, file_name, *inputs, **kwargs)
     elif file_format == 'MINDIR':
         _save_mindir(net, file_name, *inputs, **kwargs)

@@ -2214,6 +2214,24 @@ class _CellGraphExecutor:
             return None
         return self._graph_executor.get_func_graph_proto(exec_id, ir_type, incremental)
 
+    def _get_onnx_func_graph_proto(self, obj, exec_id, use_prefix=False, input_names=None, output_names=None,
+                                   opset_version=11, export_params=True, keep_initializers_as_inputs=False,
+                                   dynamic_axes=None, extra_save_params=False, save_file_dir=None):
+        """Get graph proto from pipeline."""
+        if use_prefix:
+            exec_id = exec_id + '.' + obj.arguments_key
+        if self._graph_executor.has_compiled(exec_id) is False:
+            return None
+        if input_names is None:
+            input_names = []
+        if output_names is None:
+            output_names = []
+        if dynamic_axes is None:
+            dynamic_axes = {}
+        return self._graph_executor.get_onnx_func_graph_proto(exec_id, input_names, output_names, opset_version,
+                                                              export_params, keep_initializers_as_inputs, dynamic_axes,
+                                                              extra_save_params, save_file_dir)
+
     def get_optimize_graph_proto(self, obj):
         """Return optimize graph binary proto."""
         exec_id = _real_phase(obj.phase, obj)

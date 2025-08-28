@@ -248,6 +248,12 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_func_graph_proto", &GraphExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.")
+    .def("get_onnx_func_graph_proto", &GraphExecutorPy::GetOnnxFuncGraphProto, py::arg("phase") = py::str(""),
+         py::arg("input_names") = py::list(), py::arg("output_names") = py::list(),
+         py::arg("opset_version") = py::int_(11), py::arg("export_params") = py::bool_(true),
+         py::arg("keep_initializers_as_inputs") = py::bool_(false), py::arg("dynamic_axes") = py::dict(),
+         py::arg("extra_save_params") = py::bool_(false), py::arg("save_file_dir") = py::str(""),
+         "Get graph proto string by onnx.")
     .def("get_params", &GraphExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
