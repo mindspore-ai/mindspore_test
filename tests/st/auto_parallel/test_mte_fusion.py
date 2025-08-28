@@ -45,7 +45,7 @@ def test_matmul_reduce_scatter_forward():
 def test_ms_disable_lccl_kernels_list():
     '''
     Feature: MTE fusion.
-    Description: Test environment MS_DISABLE_LCCL_KERNELS_LIST in dyrun mode.
+    Description: Test environment MS_DISABLE_LCCL_KERNELS_LIST.
     Expectation: Run success
     '''
     ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True "
