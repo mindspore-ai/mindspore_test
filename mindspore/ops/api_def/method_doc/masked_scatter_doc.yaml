@@ -28,9 +28,9 @@ masked_scatter:
             >>> import numpy as np
             >>> import mindspore
             >>> from mindspore import Tensor
-            >>> source = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
+            >>> x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
             >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool_)
-            >>> tensor = Tensor(np.array([5., 6., 7.]), mindspore.float32)
-            >>> output = source.masked_scatter(mask, tensor)
+            >>> source = Tensor(np.array([5., 6., 7.]), mindspore.float32)
+            >>> output = x.masked_scatter(mask, source)
             >>> print(output)
             [5. 6. 3. 7.]
