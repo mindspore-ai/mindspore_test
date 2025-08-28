@@ -27,7 +27,7 @@
 #include "utils/ms_utils.h"
 #include "utils/file_utils.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
-#include "kernel/cpu/dynamic_akg/dynamic_akg_cpu_kernel_mod.h"
+#include "plugin/cpu/kernel_executor/dynamic_akg/dynamic_akg_cpu_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {

@@ -21,8 +21,8 @@
 #include <memory>
 #include <unordered_map>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "plugin/device/cpu/kernel/akg/akg_kernel_loader.h"
-#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_manager.h"
+#include "plugin/cpu/kernel_executor/akg/akg_kernel_loader.h"
+#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_manager.h"
 #include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
 
 namespace mindspore {

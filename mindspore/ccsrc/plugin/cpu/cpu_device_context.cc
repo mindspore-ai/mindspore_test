@@ -30,7 +30,7 @@
 #include "plugin/cpu/graph_optimizer/pass/inference/insert_format_transform_op.h"
 #include "plugin/cpu/graph_optimizer/somas/cpu_somas.h"
 #ifdef ENABLE_AKG
-#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
+#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_build.h"
 #endif
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "plugin/cpu/kernel_executor/cpu_kernel.h"
