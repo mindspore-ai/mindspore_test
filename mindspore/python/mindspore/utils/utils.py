@@ -126,6 +126,10 @@ class RSCPluginHandle:
         self.tft_env, _ = _getenv()
         self._check_env()
         self.msmgr = None
+        self.init_taskd_agent = None
+        self.start_taskd_agent = None
+        self.register_func = None
+        self.using_agent = False
 
     def _check_env(self):
         """Check env"""
@@ -135,17 +139,39 @@ class RSCPluginHandle:
         """Check env"""
         return self.enable
 
-    def register_callback(self, func_map: dict):
-        """Register function"""
-        if not isinstance(func_map, dict):
-            raise ValueError(f"The value of 'func_map' should be a dict, bug got:{func_map}.")
-        if self.msmgr is None:
-            try:
-                from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
-                self.msmgr = MSRunPlugin()
-            except Exception as e:  # pylint: disable=broad-except
-                logger.warning(f"Import mindx failed: {str(e)}, process controlled by msrun.")
+    def _register_by_agent(self, func_map):
+        """ register by taskd agent"""
+        try:
+            from taskd.api.taskd_agent_api import init_taskd_agent, start_taskd_agent, register_func
+            self.init_taskd_agent = init_taskd_agent
+            self.start_taskd_agent = start_taskd_agent
+            self.register_func = register_func
+            self.using_agent = True
+        except ImportError as e:
+            logger.warning(f"Import task agent: {str(e)}, try to using mindx plugin.")
+            return False
+        try:
+            logger.warning(f"register callbacks to taskd agent")
+            if not self.init_taskd_agent({"Framework": "MindSpore"}):
+                logger.warning(f"Init taskd agent failed, try to using mindx plugin.")
                 return False
+            for name, func in func_map.items():
+                self.register_func(name, func)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(f"Register callback func failed: {str(e)}, try to using mindx plugin.")
+            return False
+        return True
+
+    def _register_by_plugin(self, func_map):
+        """ register by mindx msrun_plugin"""
+        # will delete in the future
+        self.using_agent = False
+        try:
+            from taskd.python.framework.agent.ms_mgr.msrun_plugin import MSRunPlugin
+            self.msmgr = MSRunPlugin()
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(f"Import mindx failed: {str(e)}, process controlled by msrun.")
+            return False
         try:
             for name, func in func_map.items():
                 self.msmgr.register_callbacks(name, func)
@@ -154,11 +180,26 @@ class RSCPluginHandle:
             return False
         return True
 
+    def register_callback(self, func_map: dict):
+        """Register function"""
+        if not isinstance(func_map, dict):
+            raise ValueError(f"The value of 'func_map' should be a dict, bug got:{func_map}.")
+        if self._register_by_agent(func_map):
+            return True
+        if self._register_by_plugin(func_map):
+            return True
+        return False
+
     def start(self):
         """Start execute taskd agent"""
-        if self.msmgr is None:
-            raise RuntimeError(f"Mindx unavailable, can not start training.")
-        self.msmgr.start()
+        if self.using_agent:
+            logger.warning(f"start by taskd agent")
+            self.start_taskd_agent()
+        else:
+            logger.warning(f"start by mindx")
+            if self.msmgr is None:
+                raise RuntimeError(f"Mindx unavailable, can not start training.")
+            self.msmgr.start()
 
 
 class TftHandle:
