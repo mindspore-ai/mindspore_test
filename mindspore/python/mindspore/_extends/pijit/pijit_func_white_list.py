@@ -135,12 +135,10 @@ from mindspore.hal.event import Event
 from mindspore.hal.memory import memory_stats, memory_reserved, max_memory_allocated, reset_peak_memory_stats, \
     memory_summary, memory_allocated, max_memory_reserved, reset_max_memory_allocated, reset_max_memory_reserved
 from mindspore.multiprocessing import Process
-from mindspore.mindrecord.shardsegment import ShardSegment
-from mindspore.mindrecord.shardreader import ShardReader
-from mindspore.mindrecord.shardindexgenerator import ShardIndexGenerator
-from mindspore.mindrecord.shardwriter import ShardWriter
-from mindspore.mindrecord.shardheader import ShardHeader
 from mindspore.mindrecord.config import encrypt, decrypt
+from mindspore.mindrecord import FileWriter
+from mindspore.mindrecord import FileReader
+from mindspore.mindrecord import MindPage
 from mindspore.parallel._ps_context import ps_context
 from mindspore.parallel.algo_parameter_config import _AlgoParameterConfig
 from mindspore.parallel._utils import _reset_op_id
@@ -564,13 +562,11 @@ _func_map = {
     function_id(reset_max_memory_allocated): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(Process.run): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(Process.start): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(ShardSegment.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(ShardReader.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(ShardIndexGenerator.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(ShardWriter.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(ShardHeader.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(encrypt): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(decrypt): FUNC_KEY_PIJIT_FORBIDDEN,
+    function_id(FileWriter.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
+    function_id(FileReader.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
+    function_id(MindPage.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(ps_context): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_AlgoParameterConfig.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_reset_op_id): FUNC_KEY_PIJIT_FORBIDDEN,

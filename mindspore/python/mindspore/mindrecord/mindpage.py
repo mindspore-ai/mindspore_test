@@ -16,8 +16,8 @@
 This module is to support reading page from MindRecord.
 """
 
-from .shardsegment import ShardSegment
-from .shardutils import check_parameter
+from .core.shardsegment import ShardSegment
+from .core.shardutils import check_parameter
 from .common.exceptions import ParamValueError, ParamTypeError, MRMDefineCategoryError
 from .config import _get_enc_key, _get_dec_mode, decrypt
 

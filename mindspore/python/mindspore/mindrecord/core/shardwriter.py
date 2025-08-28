@@ -18,7 +18,7 @@ This module is to write data into mindrecord.
 import numpy as np
 import mindspore._c_mindrecord as ms
 from mindspore import log as logger
-from .common.exceptions import MRMOpenError, MRMOpenForAppendError, MRMInvalidHeaderSizeError, \
+from mindspore.mindrecord.common.exceptions import MRMOpenError, MRMOpenForAppendError, MRMInvalidHeaderSizeError, \
     MRMInvalidPageSizeError, MRMSetHeaderError, MRMWriteDatasetError, MRMCommitError
 
 __all__ = ['ShardWriter']

@@ -17,8 +17,8 @@ This module is to read page from mindrecord.
 """
 import mindspore._c_mindrecord as ms
 from mindspore import log as logger
-from .shardutils import populate_data, SUCCESS
-from .shardheader import ShardHeader
+from mindspore.mindrecord.core.shardutils import populate_data, SUCCESS
+from mindspore.mindrecord.core.shardheader import ShardHeader
 
 __all__ = ['ShardSegment']
 
