@@ -283,19 +283,6 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
     MS_LOG(INFO) << "Disable kbk sub graph mode because the executor mode is not kbk.";
     return false;
   }
-
-  for (const auto &graph : graphs) {
-    MS_EXCEPTION_IF_NULL(graph);
-    // Note: Kbk sub graph mode doesn't support Fallback feature currently.
-    if (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty() &&
-        !graph->is_any_type_input()) {
-      MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
-                   << ", graph mode: " << device::run_mode_to_name_map.at(graph->RunMode())
-                   << ", has inline sub graph: " << !(graph->inline_sub_graph_kernels().empty());
-      return false;
-    }
-  }
-
   return true;
 }
 

@@ -353,13 +353,6 @@ bool EnableRuntimePipeline() {
   if (disable_runtime_pipeline) {
     return false;
   }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
-    return false;
-  }
-
   return true;
 }
 
@@ -1030,14 +1023,6 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
     MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
                   << ", inner index: " << inner_index << ", address: " << device_tensor
                   << " from graph parameter store.";
-    return;
-  }
-  if (device_tensor->GetSize() == 0) {
-    // The device tensor will not allocate a valid ptr, but it would be send to actor to decrease the ref count,
-    // so the ref count should be add.
-    kernel_tensor->IncreaseNewRefCount(from_aid.Name());
-    MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
-                  << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
     return;
   }
 
