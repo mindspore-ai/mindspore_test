@@ -12,6 +12,9 @@ empty:
             dtype: int
             arg_handler: str_to_enum
             default: None
+        pin_memory:
+            dtype: bool
+            default: False
     returns:
         y:
             dtype: tensor

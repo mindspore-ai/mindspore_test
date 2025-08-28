@@ -47,6 +47,7 @@ class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
 
   void *Alloc(size_t size, uint32_t stream_id) override;
   bool Free(void *address_ptr) override;
+  bool IsPinned() override;
 
  private:
   std::shared_ptr<SwapManager> swap_manager_{nullptr};

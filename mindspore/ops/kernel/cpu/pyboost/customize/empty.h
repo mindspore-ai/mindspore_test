@@ -26,7 +26,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::TensorPtr EmptyCPUCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
-                                    const std::optional<Int64ImmPtr> &dtype, const std::optional<Int64ImmPtr> &device);
+                                    const std::optional<Int64ImmPtr> &dtype, const std::optional<Int64ImmPtr> &device,
+                                    const BoolImmPtr &pin_memory = std::make_shared<BoolImm>(false));
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

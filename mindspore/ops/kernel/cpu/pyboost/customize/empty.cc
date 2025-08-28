@@ -62,8 +62,9 @@ device::DeviceType GetEmptyDeviceName(const std::optional<Int64ImmPtr> &device) 
 }  // namespace
 
 tensor::TensorPtr EmptyCPUCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
-                                    const std::optional<Int64ImmPtr> &dtype, const std::optional<Int64ImmPtr> &device) {
-  MS_LOG(DEBUG) << "Call Empty start";
+                                    const std::optional<Int64ImmPtr> &dtype, const std::optional<Int64ImmPtr> &device,
+                                    const BoolImmPtr &pin_memory) {
+  MS_LOG(DEBUG) << "Call EmptyCPUCustomize start";
   ShapeVector output_shape = GetShape(size);
   TypeId data_type = GetDataType(dtype);
   auto device_type = GetEmptyDeviceName(device);
@@ -74,6 +75,21 @@ tensor::TensorPtr EmptyCPUCustomize(const std::shared_ptr<OpRunner> &op, const V
   std::vector<tensor::TensorPtr> outputs;
   PyBoostUtils::CreateOutputTensor(data_type, output_shape, &outputs);
   PyBoostUtils::PrepareOpOutputs(device_ctx, op->stream_id(), outputs);
+  if (pin_memory->value()) {
+    if (device_type != device::DeviceType::kCPU) {
+      MS_LOG(EXCEPTION) << "Only CPU tensor can be pinned. device should be CPU.";
+    }
+    auto ascend_device_ctx = runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend);
+    if (ascend_device_ctx == nullptr || ascend_device_ctx->device_res_manager_ == nullptr) {
+      MS_LOG(EXCEPTION) << "Cannot find Ascend device context. ascend_device_ctx or device_res_manager is null.";
+    }
+    auto pin_memory_allocator = ascend_device_ctx->device_res_manager_->pin_mem_allocator();
+    for (size_t i = 0; i < outputs.size(); ++i) {
+      auto &tensor = outputs[i];
+      auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
+      device_address->set_allocator(pin_memory_allocator);
+    }
+  }
   op->set_outputs(outputs);
 
   // Async

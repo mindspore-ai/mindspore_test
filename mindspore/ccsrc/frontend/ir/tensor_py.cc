@@ -36,6 +36,8 @@
 #include "utils/value_utils.h"
 #include "ir/device_address_maker.h"
 #include "ir/tensor_new.h"
+#include "runtime/pynative/op_runner.h"
+#include "utils/ms_utils_secure.h"
 
 namespace mindspore {
 namespace tensor {
@@ -325,6 +327,47 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   device_address->set_data(std::move(tensor_data));
 
   return std::make_shared<Tensor>(dtype, shape, device_address);
+}
+
+TensorPtr TensorPybind::MakePinMemoryTensor(const tensor::TensorPy &tensor) {
+  const auto &base_tensor = tensor.GetTensor();
+  const auto &shape = base_tensor->shape();
+  const auto &dtype = base_tensor->data_type();
+  auto tensor_size = LongToSize(base_tensor->DataNBytes());
+
+  const auto &base_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  if (device::IsAscendDeviceType(base_device_address->GetDeviceType())) {
+    MS_LOG(EXCEPTION) << "Only CPU tensor can be pinned.The source tensor should be CPU tensor.";
+  }
+
+  // auto tensor_data = tensor::MakeTensorData(dtype, shape);
+  auto device_address = DeviceAddressMaker(nullptr, dtype, shape)
+                          .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+                          .make_device_address();
+  auto ascend_device_ctx = runtime::OpRunner::GetDeviceContext(device::DeviceType::kAscend);
+  if (ascend_device_ctx == nullptr || ascend_device_ctx->device_res_manager_ == nullptr) {
+    MS_LOG(EXCEPTION) << "Cannot find Ascend device context. ascend_device_ctx or device_res_manager is null.";
+  }
+  auto pin_memory_allocator = ascend_device_ctx->device_res_manager_->pin_mem_allocator();
+  std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_allocator(pin_memory_allocator);
+  auto device_ctx = runtime::OpRunner::GetDeviceContext(device::DeviceType::kCPU);
+  bool allocate_mem_ret = device_ctx->device_res_manager_->AllocateMemory(
+    std::dynamic_pointer_cast<device::DeviceAddress>(device_address).get());
+  if (!allocate_mem_ret) {
+    MS_LOG(EXCEPTION) << "Tensor.pin_memory allocate memory failed!";
+  }
+
+  const void *pin_data_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->GetPtr();
+  // H2H copy
+  auto memcpy_ret = common::huge_memcpy(reinterpret_cast<uint8_t *>(const_cast<void *>(pin_data_ptr)), tensor_size,
+                                        reinterpret_cast<uint8_t *>(base_tensor->data_c()), tensor_size);
+  if (memcpy_ret != EOK) {
+    MS_LOG(EXCEPTION) << "memcpy failed!";
+  }
+
+  TensorPtr tensorPtrRes = std::make_shared<Tensor>(dtype, shape, device_address);
+  tensorPtrRes->set_need_pipeline_sync(true);
+  return tensorPtrRes;
 }
 
 void TensorPybind::SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value) {

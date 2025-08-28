@@ -53,6 +53,8 @@ class AddressAllocator {
    * @return true if free succeeds, false otherwise
    */
   virtual bool Free(void *address_ptr) = 0;
+
+  virtual bool IsPinned() { return false; }
 };
 
 // DevicePointer encapsulates pointer and reference count-related operations, and supports custom allocator and
