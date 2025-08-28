@@ -15,12 +15,13 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 
+import mindspore as ms
 from mindspore import ops
 from mindspore import Tensor
-import mindspore as ms
+
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 
 
 @test_utils.run_with_cell

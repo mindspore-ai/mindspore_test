@@ -15,8 +15,10 @@
 # pylint: disable=unused-variable
 import pytest
 import numpy as np
+
 import mindspore as ms
 from mindspore import ops, mint, jit
+
 from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
