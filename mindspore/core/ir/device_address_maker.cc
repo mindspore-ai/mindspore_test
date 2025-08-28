@@ -77,6 +77,16 @@ DeviceAddressPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, t
   return ret;
 }
 
+DeviceAddressPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, void *device_data_ptr,
+                                   size_t device_offset, device::DeviceType device_type) {
+  // Create device address with offset and don't init the data.
+  auto ret = DeviceAddressMaker(AddressOffset(device_data_ptr, device_offset), data_type, shape)
+               .set_deleter([](void *, bool) {})
+               .set_maker(GetDeviceAddressMaker(device_type))
+               .make_device_address();
+  return ret;
+}
+
 template DeviceAddressPtr MakeDeviceAddress<int64_t>(TypeId, int64_t);
 template DeviceAddressPtr MakeDeviceAddress<int32_t>(TypeId, int32_t);
 template DeviceAddressPtr MakeDeviceAddress<int16_t>(TypeId, int16_t);

@@ -329,6 +329,11 @@ class TensorIndex final {
   static py::object SetItemIndexByIndexType(const TensorIndex &index, const py::object &py_index,
                                             const ShapeVector &data_shape, const TypePtr &data_type,
                                             const TensorIndexType &value_type, bool is_parameter);
+
+  // ****************************************tensor index refactor**************************************
+  static TensorPtr TensorGetItem(const TensorPtr &py_data, const py::object &py_index, PyObject **py_result);
+  static TensorPtr TensorSetItem(TensorPtr py_data, const py::object &py_index, const py::object &py_value);
+
   static py::handle py_index_handle_;
   static py::handle py_value_handle_;
   static bool is_ascend_;

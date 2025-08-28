@@ -1929,6 +1929,10 @@ def tensor_quant_matmul(x1, x2, scale, *, offset=None, pertoken_scale=None, bias
     raise NotImplementedError('quant_matmul only supports Ascend.')
 
 
+def tensor_index(input, value):
+    raise NotImplementedError("index only supports Ascend.")
+
+
 def tensor_gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
     raise NotImplementedError("gmm has not been implemented by python.")
 
