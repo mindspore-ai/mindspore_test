@@ -8,7 +8,7 @@ as_strided:
         This is an experimental API that is subject ot change or deletion.
 
     Args:
-        input (Tensor): The input tensor. The shape of tensor is :math: `(x_1, x_2, ..., x_R)` .
+        input (Tensor): The input tensor. The shape of tensor is :math:`(x_1, x_2, ..., x_R)` .
         size (tuple[int]): The shape of the output tensor.
         stride (tuple[int]): The stride of the output tensor.
         storage_offset (int, optional): The offset in the underlying storage of the output tensor. If ``None``,
