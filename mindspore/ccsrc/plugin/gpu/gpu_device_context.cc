@@ -22,7 +22,7 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_build.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_task.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"

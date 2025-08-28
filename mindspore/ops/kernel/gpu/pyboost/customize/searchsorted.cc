@@ -17,7 +17,6 @@
 #include "kernel/gpu/pyboost/customize/searchsorted.h"
 #include <memory>
 #include <utility>
-#include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 

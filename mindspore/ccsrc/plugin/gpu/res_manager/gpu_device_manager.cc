@@ -18,7 +18,7 @@
 
 #include <algorithm>
 
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
 

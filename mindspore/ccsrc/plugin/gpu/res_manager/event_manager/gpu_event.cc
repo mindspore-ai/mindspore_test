@@ -15,7 +15,7 @@
  */
 
 #include "plugin/gpu/res_manager/event_manager/gpu_event.h"
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
 
 namespace mindspore::device::gpu {

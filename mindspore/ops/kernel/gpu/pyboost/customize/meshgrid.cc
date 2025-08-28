@@ -17,7 +17,6 @@
 #include "kernel/gpu/pyboost/customize/meshgrid.h"
 #include <memory>
 #include <utility>
-#include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "mindspore/ccsrc/pyboost/customize/meshgrid.h"
 
 namespace mindspore {
