@@ -133,6 +133,7 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
   new_param->set_is_top_graph_param(old_param->is_top_graph_param());
   ScopePtr scope = GetNodeScope(node);
   new_param->set_scope(scope);
+  new_param->set_format(old_param->format());
 
   CloneTensorHook(old_param, new_param);
 

@@ -64,6 +64,8 @@
 namespace mindspore {
 namespace runtime {
 uint32_t GraphCompilerInfo::backend_graph_id_ = 0;
+constexpr auto kAttrBpropValueNodeRefCount = "bprop_value_node_ref_count";
+constexpr auto kAttrValueNodeForwardOuputFlags = "value_node_forward_output_flags";
 
 namespace {
 void SetSummaryNodesRefCount(const KernelGraph *graph) {
@@ -276,6 +278,71 @@ void CollectValueNodeForKernelGraph(const KernelGraphPtr &graph) {
   }
 }
 
+HashMap<ValueNodePtr, size_t> GetGraphValueNodeRefCounts(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  HashMap<ValueNodePtr, size_t> value_node_ref_counts;
+  // For example:
+  //   %1 MakeTuple(V1, V2)
+  //   %2 TupleGetItem(0, %1)
+  //   %3 Kernel(%2)
+  // V2 is not used by kernel. Need to remove.
+  auto execution_nodes = graph->execution_order();
+  for (auto &node : execution_nodes) {
+    std::vector<session::KernelWithIndex> real_inputs;
+    common::AnfAlgo::GetRealInputs(node, &real_inputs);
+    for (auto &real_input : real_inputs) {
+      auto input = real_input.first;
+      MS_EXCEPTION_IF_NULL(input);
+      if (input->isa<ValueNode>()) {
+        auto value_node = input->cast<ValueNodePtr>();
+        value_node_ref_counts[value_node] += 1;
+      }
+    }
+  }
+
+  // ValueNodes as graph outputs
+  auto outputs = common::AnfAlgo::GetAllOutput(graph->output());
+  for (auto &output : outputs) {
+    MS_EXCEPTION_IF_NULL(output);
+    if (output->isa<ValueNode>()) {
+      auto value_node = output->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(value_node);
+      value_node_ref_counts[value_node] += 1;
+    }
+  }
+
+  return value_node_ref_counts;
+}
+
+void RemoveUnusedValueNodes(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto value_node_ref_counts = GetGraphValueNodeRefCounts(graph);
+  for (const auto &value_node : graph->graph_value_nodes()) {
+    MS_EXCEPTION_IF_NULL(value_node);
+    auto iter = value_node_ref_counts.find(value_node);
+    if (iter == value_node_ref_counts.end()) {
+      MS_LOG(DEBUG) << "Remove unused ValueNode " << value_node->DebugString();
+      graph->RemoveNodeFromGraph(value_node);
+    }
+  }
+}
+
+// The device address of graph value node need to release
+// if the value node is output of forward_graph in PyNative mode.
+void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  HashMap<std::string, size_t> tensor_counts;
+  std::vector<size_t> value_node_ref_count_list;
+  std::vector<bool> value_node_forward_output_flags;
+  for (auto &value_node : graph->graph_value_nodes()) {
+    MS_EXCEPTION_IF_NULL(value_node);
+    (void)value_node_ref_count_list.emplace_back(SIZE_MAX);
+    (void)value_node_forward_output_flags.emplace_back(false);
+  }
+  graph->set_attr(kAttrBpropValueNodeRefCount, MakeValue(value_node_ref_count_list));
+  graph->set_attr(kAttrValueNodeForwardOuputFlags, MakeValue(value_node_forward_output_flags));
+}
+
 GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrList &outputs,
                                  const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -342,6 +409,10 @@ GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrLi
   CollectValueNodeForKernelGraph(graph);
   DeviceAddressUtils::CreateValueNodeDeviceAddress(device_context, graph);
   DeviceAddressUtils::CreateGraphOutputDeviceAddress(device_context, graph);
+
+  if (JitPipelineCompiling()) {
+    GenerateRefCountForBpropValueNode(graph);
+  }
   return graph->graph_id();
 }
 
@@ -403,7 +474,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                                     const DeviceContext *device_context,
-                                    const backend::BackendJitConfig &backend_jit_config, bool run_in_pynative) {
+                                    const backend::BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(segment);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -419,12 +490,12 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, device_context, run_in_pynative);
+  return CompileGraph(kernel_graph, io_nodes, device_context);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                                    const DeviceContext *device_context, bool run_in_pynative) {
+                                    const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -433,7 +504,6 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   if (common::AnfAlgo::IsAnyTypeInput(io_nodes.first)) {
     return CompileAnyTypeInputGraph(kernel_graph, outputs, device_context);
   }
-  kernel_graph->erase_flag(kFlagPyNativeRunInGraph);
   kernel_graph->UpdateGraphAquireGilAttr();
 
   kernel_graph->set_run_mode(device::RunMode::kKernelMode);
@@ -459,14 +529,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   kernel_graph->SetOptimizerFlag();
 
   GraphId graph_id = 0;
-  if (run_in_pynative) {
-    MS_EXCEPTION_IF_NULL(session_);
-    // kernel_graph kernel does not support pynative mode now, print a warning here.
-    graphkernel::GraphKernelFlags::GetInstance().CheckSupport();
-    graph_id = kernel_graph->graph_id();
-  } else {
-    graph_id = CompileGraphImpl(kernel_graph, device_context, run_in_pynative);
-  }
+  graph_id = CompileGraphImpl(kernel_graph, device_context);
 
   kernel_graph->set_front_outputs(outputs);
   kernel_graph->set_root_graph_id(graph_id);
@@ -474,14 +537,10 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   ResetNodeId({kernel_graph});
   session_->DumpGraphs({kernel_graph});
 
-  // The kernel_graph is not compiled yet in PyNative Mode.
-  // Need to cache output latter when the kernel_graph is compiled.
-  if (!run_in_pynative) {
-    // Cache the backend kernel_graph output nodes to front nodes with output index.
-    auto backend_node = kernel_graph->output();
-    MS_EXCEPTION_IF_NULL(backend_node);
-    kernel_graph->CacheGraphOutputToFrontNodeWithIndex({backend_node}, outputs);
-  }
+  // Cache the backend kernel_graph output nodes to front nodes with output index.
+  auto backend_node = kernel_graph->output();
+  MS_EXCEPTION_IF_NULL(backend_node);
+  kernel_graph->CacheGraphOutputToFrontNodeWithIndex({backend_node}, outputs);
   AnfAlgo::UpdateGraphValidRefPair(kernel_graph);
 
   MS_LOG(INFO) << "Status record: end compile graph. graph id: " << graph_id;
@@ -651,8 +710,7 @@ void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
   }
 }
 
-GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context,
-                                        bool run_in_pynative) const {
+GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(session_);
@@ -737,6 +795,11 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   PROF_END(CreateDeviceAddress);
 
   SetSummaryNodesRefCount(graph.get());
+  RemoveUnusedValueNodes(graph);
+  if (JitPipelineCompiling()) {
+    GenerateRefCountForBpropValueNode(graph);
+  }
+
 #ifdef ENABLE_DUMP_IR
   // Dump .pb graph after graph optimization.
   if (context->CanDump(kIntroductory)) {

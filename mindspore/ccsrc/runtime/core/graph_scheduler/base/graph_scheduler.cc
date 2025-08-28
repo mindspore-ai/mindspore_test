@@ -129,7 +129,7 @@ bool GetNeedSyncStream(const GraphCompilerInfo &graph_compiler_info) {
     MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#No graphs found in GraphCompilerInfo";
   }
   MS_EXCEPTION_IF_NULL(graphs[0]);
-  return !graphs[0]->has_flag(kFlagPyNativeRunInGraph);
+  return GraphPipelineCompiling();
 }
 
 int64_t GetLoopCount(const GraphCompilerInfo &graph_compiler_info) {
@@ -143,7 +143,7 @@ int64_t GetLoopCount(const GraphCompilerInfo &graph_compiler_info) {
   MS_EXCEPTION_IF_NULL(graphs[0]);
   auto loop_count = ConfigManager::GetInstance().iter_num();
   if ((graph_compiler_info.strategy_ == GraphExecutionStrategy::kStep) ||
-      (graphs.size() == 1 && graphs[0]->is_loop_count_sink()) || graphs[0]->has_flag(kFlagPyNativeRunInGraph)) {
+      (graphs.size() == 1 && graphs[0]->is_loop_count_sink()) || JitPipelineCompiling()) {
     loop_count = 1;
   }
 

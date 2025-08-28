@@ -779,6 +779,16 @@ class MS_CORE_API Parameter final : public ANode {
   /// \return True if this Parameter is dynamic len, otherwise false.
   bool dynamic_len() const;
 
+  /// \brief Set format.
+  ///
+  /// \param[in] format String.
+  void set_format(std::string format);
+
+  /// \brief Get format.
+  ///
+  /// \return format.
+  std::string format() const;
+
   /// \brief Set groups attr in FRACTAL_Z format.
   ///
   /// \param[in] fracz_group Groups attr in FRACTAL_Z format.
@@ -817,6 +827,7 @@ class MS_CORE_API Parameter final : public ANode {
  private:
   void Init();
   struct FormatAttr {
+    std::string format = "";
     int64_t fracz_group = 1;
     int64_t input_size = 0;
     int64_t hidden_size = 0;

@@ -476,7 +476,6 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
     return;
   }
   MS_LOG(DEBUG) << "Start create kernel output device address for graph:" << graph->ToString();
-  bool is_pynative_bprop_graph = graph->has_flag(kFlagIsPynativeBpropGraph);
   auto outputs = common::AnfAlgo::GetAllOutput(graph->output());
 
   const std::vector<CNodePtr> &kernels = graph->execution_order();
@@ -486,8 +485,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       continue;
     }
 
-    bool is_from_persistent_mem =
-      (is_gradient_out || (is_pynative_bprop_graph && (find(outputs.begin(), outputs.end(), kernel) != outputs.end())));
+    bool is_from_persistent_mem = is_gradient_out;
 
     auto output_size = AnfAlgo::GetOutputAddressNum(kernel);
     const bool is_move_to = IsPrimitiveCNode(kernel, prim::kPrimMoveTo);

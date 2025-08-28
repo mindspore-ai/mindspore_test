@@ -173,11 +173,21 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
     resource->set_func_graph(fg);
     auto manager = resource->manager();
     manager->AddFuncGraph(resource->func_graph(), true);
+    pipeline::JitCompilingScope jit_compiling_scope;
     (void)TaskEmitAction(resource);
     (void)ExecuteAction(resource);
     jit_forward_resource[cache_key] = resource;
   } else {
     resource = it->second;
+  }
+  pipeline::JitRunningScope jit_running_scope;
+  VectorRef outputs;
+  if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(fg->output(), arg_list, &outputs)) {
+    if (outputs.empty()) {
+      return VectorRef();
+    } else {
+      return outputs[0];
+    }
   }
   BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
   auto result = (*run)(arg_list);

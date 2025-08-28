@@ -576,14 +576,14 @@ def test_grad_jit_primal_graph():
         def construct(self, data, indices):
             return ops.gather(data, indices, 0)
 
-    context.set_context(mode=1, jit_level="O2")
+    context.set_context(mode=1)
     input_params = Tensor(np.array([[8, 9], [10, 11], [12, 13], [14, 15]]).astype(np.float32))
     input_indices = Tensor(np.array([[5, 2], [8, 5]]).astype(np.int32))
     dyn_x = Tensor(shape=(None, 2), dtype=mstype.float32)
     dyn_y = Tensor(shape=(None, 2), dtype=mstype.int32)
     net = Net()
     net.set_inputs(dyn_x, dyn_y)
-    ops.grad(net)(input_params, input_indices)
+    jit(ops.grad(net), backend="ms_backend")(input_params, input_indices)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')

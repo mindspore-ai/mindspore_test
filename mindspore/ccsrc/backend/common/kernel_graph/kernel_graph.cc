@@ -112,6 +112,54 @@ void SetInternalOutputAttr(const AnfNodePtr &node) {
   cnode->set_input(kAnfPrimitiveIndex, prim_node);
   common::AnfAlgo::SetNodeAttr(kAttrIsInternalOutputNopNode, MakeValue(true), node);
 }
+
+void ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) {
+  if (kOpAssignKernelNameList.find(common::AnfAlgo::GetCNodeName(cnode)) == kOpAssignKernelNameList.end()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << "Only supported to change the node [Assign , AssignSub, AssignAdd] node's input feature map "
+         "flag but got the node :"
+      << cnode->DebugString();
+  }
+  auto input_node = common::AnfAlgo::GetInputNode(cnode, 0);
+  MS_EXCEPTION_IF_NULL(input_node);
+  auto assign_value_node = common::AnfAlgo::GetInputNode(cnode, 1);
+  if (AnfAlgo::IsFeatureMapOutput(input_node)) {
+    return;
+  }
+  if (!AnfAlgo::IsFeatureMapOutput(input_node) && AnfAlgo::IsFeatureMapOutput(assign_value_node)) {
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(input_node->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    kernel_info->set_feature_map_flag(true);
+  }
+}
+
+void SetKernelInfoForCNode(const CNodePtr &node, const std::shared_ptr<device::KernelInfo> kernel_info) {
+  if (kOpAssignKernelNameList.find(common::AnfAlgo::GetCNodeName(node)) != kOpAssignKernelNameList.end()) {
+    ResetAssignInputFeatureMapFlag(node);
+  }
+#if defined(__APPLE__)
+  std::vector<int> feature_map_input_indexs;
+#else
+  std::vector<size_t> feature_map_input_indexs;
+#endif
+  kernel_info->set_feature_map_flag(false);
+  size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
+  for (size_t index = 0; index < input_num; ++index) {
+    if (AnfAlgo::IsFeatureMapInput(node, index)) {
+      kernel_info->set_feature_map_flag(true);
+      feature_map_input_indexs.push_back(index);
+    }
+  }
+  if (common::AnfAlgo::GetInputTensorNum(node) == 0) {
+    kernel_info->set_feature_map_flag(true);
+  }
+  if (AnfUtils::IsRealKernel(node)) {
+    // if the node only has the primitive(such as getNext) or the node's input has a feature map input
+    // then the node's output is a feature map output
+    common::AnfAlgo::SetNodeAttr(kIsFeatureMapOutput, MakeValue(kernel_info->is_feature_map()), node);
+    common::AnfAlgo::SetNodeAttr(kIsFeatureMapInputList, MakeValue(feature_map_input_indexs), node);
+  }
+}
 }  // namespace
 
 AnfNodePtr KernelGraph::MakeValueNode(const AnfNodePtr &node) const {
@@ -304,57 +352,13 @@ void KernelGraph::CreateKernelInfoFromNewParameter(const CNodePtr &cnode) const 
   }
 }
 
-void KernelGraph::ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) const {
-  if (kOpAssignKernelNameList.find(common::AnfAlgo::GetCNodeName(cnode)) == kOpAssignKernelNameList.end()) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode)
-      << "Only supported to change the node [Assign , AssignSub, AssignAdd] node's input feature map "
-         "flag but got the node :"
-      << cnode->DebugString();
-  }
-  auto input_node = common::AnfAlgo::GetInputNode(cnode, 0);
-  MS_EXCEPTION_IF_NULL(input_node);
-  auto assign_value_node = common::AnfAlgo::GetInputNode(cnode, 1);
-  if (AnfAlgo::IsFeatureMapOutput(input_node)) {
-    return;
-  }
-  if (!AnfAlgo::IsFeatureMapOutput(input_node) && AnfAlgo::IsFeatureMapOutput(assign_value_node)) {
-    auto kernel_info = dynamic_cast<device::KernelInfo *>(input_node->kernel_info());
-    MS_EXCEPTION_IF_NULL(kernel_info);
-    kernel_info->set_feature_map_flag(true);
-  }
-}
-
 void KernelGraph::SetKernelInfoForNode(const AnfNodePtr &node) const {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_info = std::make_shared<device::KernelInfo>();
   MS_EXCEPTION_IF_NULL(kernel_info);
   node->set_kernel_info(kernel_info);
   if (node->isa<CNode>()) {
-    if (kOpAssignKernelNameList.find(common::AnfAlgo::GetCNodeName(node)) != kOpAssignKernelNameList.end()) {
-      ResetAssignInputFeatureMapFlag(node->cast<CNodePtr>());
-    }
-#if defined(__APPLE__)
-    std::vector<int> feature_map_input_indexs;
-#else
-    std::vector<size_t> feature_map_input_indexs;
-#endif
-    kernel_info->set_feature_map_flag(false);
-    size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
-    for (size_t index = 0; index < input_num; ++index) {
-      if (AnfAlgo::IsFeatureMapInput(node, index)) {
-        kernel_info->set_feature_map_flag(true);
-        feature_map_input_indexs.push_back(index);
-      }
-    }
-    if (common::AnfAlgo::GetInputTensorNum(node) == 0) {
-      kernel_info->set_feature_map_flag(true);
-    }
-    if (AnfUtils::IsRealKernel(node)) {
-      // if the node only has the primitive(such as getNext) or the node's input has a feature map input
-      // then the node's output is a feature map output
-      common::AnfAlgo::SetNodeAttr(kIsFeatureMapOutput, MakeValue(kernel_info->is_feature_map()), node);
-      common::AnfAlgo::SetNodeAttr(kIsFeatureMapInputList, MakeValue(feature_map_input_indexs), node);
-    }
+    SetKernelInfoForCNode(node->cast<CNodePtr>(), kernel_info);
     return;
   }
   auto kernel_build_info_builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
@@ -374,12 +378,16 @@ void KernelGraph::SetKernelInfoForNode(const AnfNodePtr &node) const {
     bool is_weight = common::AnfAlgo::IsParameterWeight(parameter);
     kernel_info->set_feature_map_flag(!is_weight);
     types.push_back(is_weight ? kTypeUnknown : common::AnfAlgo::GetOutputInferDataType(parameter, 0));
-    if (is_weight && parameter->param_info() != nullptr && !parameter->param_info()->storage_format().empty()) {
-      std::string store_fmt = parameter->param_info()->storage_format();
-      MS_LOG(DEBUG) << "Update desc format from set format"
-                    << ", storage format: " << store_fmt << ", pre param: " << node->DebugString()
-                    << ", full name: " << node->ToString();
-      formats[0] = store_fmt;
+    if (parameter->param_info() != nullptr) {
+      if (is_weight && !parameter->param_info()->storage_format().empty()) {
+        std::string store_fmt = parameter->param_info()->storage_format();
+        MS_LOG(DEBUG) << "Update desc format from set format"
+                      << ", storage format: " << store_fmt << ", pre param: " << node->DebugString()
+                      << ", full name: " << node->ToString();
+        formats[0] = store_fmt;
+      } else if (!parameter->format().empty()) {
+        formats[0] = parameter->format();
+      }
     }
   }
   // set parameter initaial device data type
@@ -426,6 +434,7 @@ ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
     if (common::AnfAlgo::IsParameterWeight(parameter)) {
       new_parameter->set_default_param(parameter->default_param_raw());
     }
+    new_parameter->set_format(parameter->format());
   } else {
     // The created parameter name is empty, so set name to ensure that the parameter name is unique.
     new_parameter->set_name(new_parameter->UniqueName());
