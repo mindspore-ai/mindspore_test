@@ -44,9 +44,9 @@ bool CompactTensorLiveness::Run(const FuncGraphPtr &func_graph) {
     auto cnode = node->cast<CNodePtr>();
     auto user = mng->node_users()[cnode].front().first;
     if (auto user_cnode = user->cast<CNodePtr>(); user_cnode != nullptr) {
-      const auto iter = std::find_if(
-        user_cnode->inputs().cbegin() + 1, user_cnode->inputs().cend(),
-        [&node, &target_nodes](const AnfNodePtr &n) { return n->isa<CNode>() && target_nodes.count(n) == 0; });
+      const auto iter =
+        std::find_if(user_cnode->inputs().cbegin() + 1, user_cnode->inputs().cend(),
+                     [&target_nodes](const AnfNodePtr &n) { return n->isa<CNode>() && target_nodes.count(n) == 0; });
       if (iter != user_cnode->inputs().end()) {
         // Insert update_state_node, need mount a monad node.
         auto u = NewValueNode(kUMonad);

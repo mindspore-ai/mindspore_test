@@ -53,41 +53,6 @@ constexpr auto kIsFeatureMapInputList = "IsFeatureMapInputList";
 constexpr size_t k5dDims = 5;
 const std::set<std::string> kOpAssignKernelNameList = {mindspore::kAssignOpName, mindspore::kAssignAddOpName,
                                                        mindspore::kAssignSubOpName};
-
-AnfNodePtrList GetCallRealOutputs(const AnfNodePtr &call_node) {
-  auto item_with_index =
-    common::AnfAlgo::VisitKernelWithReturnType(call_node, 0, false, {prim::kPrimTupleGetItem, prim::kPrimMakeTuple});
-  AnfNodePtr node = item_with_index.first;
-  MS_EXCEPTION_IF_NULL(node);
-  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimMakeTuple)) {
-    auto outputs = common::AnfAlgo::GetAllOutput(node);
-    std::set<AnfNodePtr> memo;
-    AnfNodePtrList new_output;
-    for (auto &output : outputs) {
-      if (memo.find(output) != memo.end()) {
-        continue;
-      }
-      memo.insert(output);
-      new_output.push_back(output);
-    }
-    if (new_output.size() == 1 && common::AnfAlgo::CheckPrimitiveType(new_output[0], prim::kPrimCall)) {
-      node = new_output[0];
-    }
-  }
-  if (!common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCall)) {
-    return {node};
-  }
-  AnfNodePtrList real_inputs;
-  auto child_graphs = AnfAlgo::GetCallSwitchKernelGraph(node->cast<CNodePtr>());
-  for (const auto &child_graph : child_graphs) {
-    MS_EXCEPTION_IF_NULL(child_graph);
-    auto real_input = child_graph->output();
-    auto child_real_inputs = GetCallRealOutputs(real_input);
-    std::copy(child_real_inputs.begin(), child_real_inputs.end(), std::back_inserter(real_inputs));
-  }
-  return real_inputs;
-}
-
 bool IsSameLabel(const CNodePtr &left, const CNodePtr &right) {
   if (left == right) {
     return true;
