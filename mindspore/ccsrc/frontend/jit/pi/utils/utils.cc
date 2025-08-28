@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <iomanip>
 #include "ir/tensor.h"
+#include "ir/tensor_data.h"
 #include "ir/map_tensor.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"

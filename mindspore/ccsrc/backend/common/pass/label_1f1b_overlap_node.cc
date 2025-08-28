@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <queue>
+#include <unordered_set>
 #include <vector>
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
