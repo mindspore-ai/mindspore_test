@@ -36,7 +36,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"

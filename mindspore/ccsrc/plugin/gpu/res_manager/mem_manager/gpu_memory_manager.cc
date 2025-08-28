@@ -17,7 +17,7 @@
 #include "plugin/gpu/res_manager/mem_manager/gpu_memory_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/convert_utils.h"
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 namespace mindspore {

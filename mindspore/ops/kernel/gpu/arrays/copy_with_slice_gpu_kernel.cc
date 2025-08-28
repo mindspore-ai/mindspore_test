@@ -20,7 +20,7 @@
 #include "utils/log_adapter.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/copy_with_slice_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "plugin/gpu/kernel_executor/gpu_common.h"
+#include "kernel/gpu/gpu_common.h"
 
 namespace mindspore {
 namespace kernel {
