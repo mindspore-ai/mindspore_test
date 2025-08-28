@@ -6322,7 +6322,7 @@ def conv1d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
             When bias is ``None`` , zeros will be used. Default: ``None`` .
         stride (Union[int, tuple[int], list[int]], optional): The movement stride of the 1D convolution kernel.
-            The data type is an integer or a tuple of one integer. Default: ``1`` .` .
+            The data type is an integer or a tuple of one integer. Default: ``1`` .
         padding (Union[int, tuple[int], list[int], str], optional): The number of padding
             on the input.
             The data type is an integer or a tuple of one integer or string {`valid`, `same`}.

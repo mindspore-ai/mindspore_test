@@ -1497,7 +1497,7 @@ def all_to_all_v_c(output, input, send_count_matrix, group=None, async_op=False)
     Args:
         output (Tensor): the output tensor is gathered concatenated from remote ranks.
         input (Tensor): tensor to be scattered to remote rank.
-        send_count_matrix (list[int]) - The sending and receiving parameters of all ranks,
+        send_count_matrix (list[int]): The sending and receiving parameters of all ranks,
             :math:`\text{send_count_matrix}[i*\text{rank_size}+j]` represents the amount of data sent by
             rank i to rank j, and the basic unit is first dimension sizes. Among them, `rank_size`
             indicates the size of the communication group.
