@@ -35,6 +35,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
+#include "frontend/parallel/device_manager.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/parallel/costmodel_context.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32))
@@ -73,6 +74,7 @@ using OpLib = mindspore::kernel::OpLib;
 using ParallelContext = mindspore::parallel::ParallelContext;
 using StrategyInfo = mindspore::parallel::StrategyInfo;
 using StrategyLayout = mindspore::parallel::StrategyLayout;
+using ParallelCommManager = mindspore::parallel::ParallelCommManager;
 using CostModelContext = mindspore::parallel::CostModelContext;
 using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
@@ -547,6 +549,11 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("global_network_layout", &StrategyLayout::global_network_layout, "Get global network rank param strategy.")
     .def("local_network_layout", &StrategyLayout::local_network_layout, "Get local network rank param strategy.")
     .def("clear_strategy_metadata", &StrategyLayout::clear_strategy_metadata, "Clear global network strategy info.");
+  MS_LOG(INFO) << "Start ParallelCommManager...";
+  (void)py::class_<ParallelCommManager, std::shared_ptr<ParallelCommManager>>(m, "ParallelCommManager")
+    .def_static("get_instance", &ParallelCommManager::GetInstance, "Get parallel comm manager instance.")
+    .def("set_hccl_groups", &ParallelCommManager::SetHcclGroups, "Record hccl_groups created by rank_list.")
+    .def("hccl_groups", &ParallelCommManager::HcclGroups, "Weather hccl_groups has been created by rank_list.");
   MS_LOG(INFO) << "Start CostModelContext...";
   (void)py::class_<CostModelContext, std::shared_ptr<CostModelContext>>(m, "CostModelContext")
     .def_static("get_instance", &CostModelContext::GetInstance, "Get cost_model context instance.")

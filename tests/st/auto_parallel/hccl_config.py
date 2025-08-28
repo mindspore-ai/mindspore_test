@@ -15,10 +15,11 @@
 
 import mindspore.nn as nn
 from mindspore import context
+from mindspore._c_expression import GroupOptions
 from mindspore.common import set_seed, lazy_inline
 from mindspore.nn.utils import no_init_parameters
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint, LossMonitor
-from mindspore.communication.management import init, get_rank
+from mindspore.communication.management import init, get_rank, create_group, destroy_group
 from mindspore.parallel.strategy import get_strategy_metadata, enable_save_strategy_online
 from tests.st.auto_parallel.utils.dataset_utils import FakeData
 from tests.st.auto_parallel.utils._utils import set_parallel_mode, clean_all_ckpt_files, save_ir_graphs
@@ -137,3 +138,57 @@ def test_hccl_config():
     param_list = train_info[1]["layer2.weight"]
     param_layout = param_list[0].to_dict()
     assert param_layout['tensor_map'] == (-1, -1)
+
+
+def test_union_hccl_groups():
+    """
+    Feature: Union hccl groups creation.
+    Description: If hccl groups has been created in python by create_group, it will not be created repeatedly in C++.
+    Expectation: run success.
+    """
+    group0 = "customed groups 0-1, 0"
+    options0 = GroupOptions()
+    options0.hccl_config = {}
+
+    group1 = "customed groups 0-1, 1"
+    options1 = GroupOptions()
+    options1.hccl_config = {"hccl_buffer_size": 400}
+
+    group2 = "customed groups 0-1, 2"
+    options2 = GroupOptions()
+    options2.hccl_config = {"hccl_buffer_size": 100}
+
+    group3 = "customed groups 0-1, 3"
+    options3 = GroupOptions()
+    options3.hccl_config = {"hccl_buffer_size": 200}
+
+    # case 1, create_group, destroy before parallel, create default
+    epoch = 0
+    rank_ids = [0, 1]
+    if get_rank() in rank_ids:
+        create_group(group0, rank_ids, options0)
+        destroy_group(group0)
+    semi_auto_dp2_mp2_pp2(cur_root_dir=f"./test_union_hccl_groups/run_{epoch}", opt_config=None)
+
+    # case 2, create_group, reused in parallel
+    epoch += 1
+    rank_ids = [0, 1]
+    if get_rank() in rank_ids:
+        create_group(group1, rank_ids, options1)
+        create_group(group2, rank_ids, options2)
+    semi_auto_dp2_mp2_pp2(cur_root_dir=f"./test_union_hccl_groups/run_{epoch}", opt_config=None)
+
+    # case 3, destroy group, create default
+    epoch += 1
+    rank_ids = [0, 1]
+    if get_rank() in rank_ids:
+        destroy_group(group1)
+        destroy_group(group2)
+    semi_auto_dp2_mp2_pp2(cur_root_dir=f"./test_union_hccl_groups/run_{epoch}", opt_config=None)
+
+    # case 4, create group again, reused in parallel
+    epoch += 1
+    rank_ids = [0, 1]
+    if get_rank() in rank_ids:
+        create_group(group3, rank_ids, options3)
+    semi_auto_dp2_mp2_pp2(cur_root_dir=f"./test_union_hccl_groups/run_{epoch}", opt_config=None)
