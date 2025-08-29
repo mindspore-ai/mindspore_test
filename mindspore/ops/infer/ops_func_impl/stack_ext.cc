@@ -143,27 +143,10 @@ TypePtr StackExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto elements = tuple_type->elements();
   MS_CHECK_VALUE(elements.size() >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg("size of elements", elements.size(),
                                                                                    kGreaterEqual, 1, primitive));
-  MS_EXCEPTION_IF_NULL(elements[kInputIndex0]);
-  auto first_element = elements[kInputIndex0]->cast<TensorTypePtr>();
-  if (MS_UNLIKELY(first_element == nullptr)) {
-    MS_EXCEPTION(TypeError) << "Infer type failed.";
-  }
-  auto out_type = first_element->element();
-  MS_EXCEPTION_IF_NULL(out_type);
 
-  if (MS_LIKELY(!tuple_type->dynamic_len())) {
-    for (size_t i = 1; i < elements.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(elements[i]);
-      auto cur_element = elements[i]->cast<TensorTypePtr>();
-      MS_EXCEPTION_IF_NULL(cur_element);
-      auto element_type = cur_element->element();
-      MS_EXCEPTION_IF_NULL(element_type);
-      if (out_type->ToString() != element_type->ToString()) {
-        MS_EXCEPTION(TypeError) << "All input must have the same data type(input[" << i
-                                << "] data type = " << element_type->ToString()
-                                << ", the first type= " << out_type->ToString() << ")!";
-      }
-    }
+  auto out_type = elements[kInputIndex0];
+  for (TypePtr element_type : elements) {
+    out_type = PromoteType(out_type, element_type, primitive->name());
   }
   return std::make_shared<TensorType>(out_type);
 }
@@ -206,26 +189,11 @@ TypePtrList StackExtFuncImpl::InferType(const PrimitivePtr &primitive, const Val
     elements.push_back(tensor->Dtype());
   }
 
-  auto out_type = elements[0];
-  MS_EXCEPTION_IF_NULL(out_type);
-
-  // Check all element' types is valid:
-  // 1. all same
-  // 2. is one of the common_valid_types_with_complex_and_bool.
-  if (MS_UNLIKELY(std::any_of(elements.cbegin(), elements.cend(),
-                              [&out_type](const TypePtr &type) { return type != out_type; }))) {
-    std::ostringstream buffer;
-    buffer << "The primitive[" << primitive->name() << "]'s input arguments must be same, but got ";
-    for (size_t i = 0; i < elements.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(elements[i]);
-      buffer << "element[" << i << "]:" << elements[i]->ToString();
-      if (i != (elements.size() - 1)) {
-        buffer << ", ";
-      }
-    }
-    buffer << ".";
-    MS_LOG(EXCEPTION) << buffer.str();
+  auto out_type = elements[kInputIndex0];
+  for (TypePtr element_type : elements) {
+    out_type = PromoteType(out_type, element_type, primitive->name());
   }
+
   if (MS_UNLIKELY(std::all_of(common_valid_types_with_complex_and_bool.cbegin(),
                               common_valid_types_with_complex_and_bool.cend(),
                               [&out_type](const TypePtr &type) { return out_type != type; }))) {
