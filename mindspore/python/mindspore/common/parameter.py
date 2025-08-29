@@ -255,7 +255,7 @@ class Parameter(Tensor_):
         init_param = getattr(cls, "init_param", True)
         input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc, init_param)
         new_type = Parameter._get_base_class(input_class)
-        obj = input_class.__new__(new_type)
+        obj = input_class.__new__(new_type) # pylint: disable=too-many-function-args
         input_class.__init__(obj, *class_init_args)
         # it's better to make the Initializer a kind of tensor.
         obj.init_mode = None
@@ -612,11 +612,13 @@ class Parameter(Tensor_):
         if self.cache_shape:
             x.cache_shape = self.cache_shape
         if init != 'same':
-            shape = self.shape
+            # Use local shape if 'self' has layout
+            shape = self.local_shape
             dtype = self.dtype
             tensor = initializer(init, shape=shape, dtype=dtype)
             x.set_data(tensor)
             x.init = tensor.init
+            x.local_to_global(self.layout)
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)

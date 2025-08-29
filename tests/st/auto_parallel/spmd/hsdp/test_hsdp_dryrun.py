@@ -14,6 +14,7 @@
 # ============================================================================
 import os
 import numpy as np
+import mindspore as ms
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
 from mindspore.communication.management import init
@@ -53,7 +54,7 @@ def run_hsdp_with_layout(w_layout, data_layout, label_layout):
     optimizer_level = "level1"
     hsdp(net, shard_size, threshold, optimizer_level)
 
-    optimizer = nn.SGD(net.trainable_params(), 1e-2)
+    optimizer = nn.Adam(net.trainable_params(), 1e-2)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
 
     train_steps = 2
