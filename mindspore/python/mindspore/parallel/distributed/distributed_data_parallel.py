@@ -82,7 +82,7 @@ class DistributedDataParallel(nn.Cell):
         ``Ascend``
 
     Examples:
-        .. note:
+        .. note::
             - Current API does not support GPU/CPU version of MindSpore
             - When enabling recomputation or gradient freezing, the model should be wrapped by
               `DistributedDataParallel` at the outermost layer.

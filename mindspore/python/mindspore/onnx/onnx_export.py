@@ -42,7 +42,7 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
         - When `file_name` does not have a suffix, the system will automatically add the suffix `.onnx` .
 
     Args:
-        net (Union[Celel, function]): MindSpore network.
+        net (Union[Cell, function]): MindSpore network.
         inputs (Union[Tensor, list, tuple, Number, bool]): It represents the inputs of the `net` , if the network has
             multiple inputs, set them together.
         file_name (str): File name of the model to be exported.
