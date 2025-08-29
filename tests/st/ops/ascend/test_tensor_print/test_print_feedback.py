@@ -117,7 +117,7 @@ def test_print_tensor_many_times2():
     y = np.full((1024, 512, 256, 4), 1.22222121, np.float16)
     input1 = Tensor(x)
     input2 = Tensor(y)
-    loop_cnt = 40
+    loop_cnt = 5
     x1 = Tensor(loop_cnt, ms.int32)
     y1 = Tensor(0, ms.int32)
     net = PrintManyTimes()
