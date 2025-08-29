@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/inplace_sign_aclnn_kernel.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/customize/inplace_sign_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_sign {
 
 void InplaceSignAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
@@ -34,5 +35,6 @@ bool InplaceSignAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceSign, InplaceSignAclnnKernelMod);
+}  // namespace inplace_sign
 }  // namespace kernel
 }  // namespace mindspore

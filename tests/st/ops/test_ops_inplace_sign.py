@@ -54,8 +54,8 @@ def test_inplace_sign(context_mode):
     expect_grad = np.zeros_like(x, dtype=np.float32)
     output = inplace_sign_forward_func(ms.Tensor(x))
     output_grad = inplace_sign_backward_func(ms.Tensor(x))
-    np.allclose(output.asnumpy(), expect_out, rtol=1e-5, equal_nan=True)
-    np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
+    assert np.allclose(output.asnumpy(), expect_out, rtol=1e-5, equal_nan=True)
+    assert np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
@@ -73,7 +73,7 @@ def test_sign_dynamic_shape():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_sign_bfloat16(context_mode):
+def test_sign_float16(context_mode):
     """
     Feature: test sign_ functional API.
     Description: testcase for sign_ functional API.
@@ -88,5 +88,5 @@ def test_sign_bfloat16(context_mode):
 
     output = inplace_sign_forward_func(ms.Tensor(x, dtype=ms.float16))
     output_grad = inplace_sign_backward_func(ms.Tensor(x, dtype=ms.float16))
-    np.allclose(output.asnumpy(), expect_out, rtol=1e-4, equal_nan=True)
-    np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)
+    assert np.allclose(output.asnumpy(), expect_out, rtol=1e-4, equal_nan=True)
+    assert  np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)

@@ -18,10 +18,11 @@
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
-#include "kernel/ascend/opapi/aclnn_kernel_mod.h"
+#include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_sign {
 
 class InplaceSignAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceSignAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_sign
 }  // namespace kernel
 }  // namespace mindspore
 
