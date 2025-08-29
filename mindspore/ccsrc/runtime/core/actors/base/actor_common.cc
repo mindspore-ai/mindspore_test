@@ -441,7 +441,8 @@ bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &dst_device_tensor, con
     return ret;
   }();
   if (!sync_stream_on_demand || !enable_sync_stream_on_demand) {
-    device::DeviceContextKey host_key = {dst_device_tensor->GetDeviceType(), dst_device_tensor->device_id()};
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(dst_device_tensor->GetDeviceType()),
+                                         dst_device_tensor->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -477,7 +478,7 @@ bool SyncStreamOnDemandForDeviceAddress(const DeviceTensorPtr &dst_device_tensor
                                      : dst_device_tensor->GetDeviceType();
   auto ms_context = MsContext::GetInstance();
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::DeviceContextKey host_key = {device_type, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_type), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -539,7 +540,7 @@ void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceCo
   // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.
   if ((device_context == nullptr) || (device_context->GetDeviceType() != device_tensor->GetDeviceType())) {
     const auto &new_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->GetDeviceType(), device_tensor->device_id()});
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(new_device_context);
     new_device_context->device_res_manager_->FreeMemory(device_tensor);
   } else {
@@ -743,18 +744,18 @@ void MemoryTraceManager::AddKernelMemoryTraceBlock(const KernelMemoryTraceBlockP
   (*kernel_memory_trace_blocks_)[device_context].emplace_back(block);
 }
 
-const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>> &
-MemoryTraceManager::GetMergeBlocks() {
+const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>>
+  &MemoryTraceManager::GetMergeBlocks() {
   return merged_memory_trace_blocks_;
 }
 
-const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &
-MemoryTraceManager::GetAllKernelBlocksnfo() {
+const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>
+  &MemoryTraceManager::GetAllKernelBlocksnfo() {
   return kernel_to_block_;
 }
 
-const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> &
-MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
+const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>
+  &MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
   return kernel_tensor_to_kernel_mem_blocks_;
 }
 
@@ -1026,7 +1027,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
   }
 
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->GetDeviceType(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
 
   if (device_tensor->GetPtr() == nullptr) {
     auto mem_type = kernel_tensor->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight
@@ -1091,7 +1092,7 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
     MS_EXCEPTION_IF_NULL(type);
     auto device_type = graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_type, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      {device::GetDeviceNameByType(device_type), MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
     auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress();
     auto new_kernel_tensor = std::make_shared<kernel::KernelTensor>(new_device_tensor, shape, type, nullptr);
     new_kernel_tensor->set_size(LongToSize(tensor->DataNBytes()));

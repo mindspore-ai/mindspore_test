@@ -144,9 +144,10 @@ int64_t MoveTo::GetTensorDevice(const KernelTensor *tensor) {
 
 device::SwapManagerPtr MoveTo::GetSwapManager(const KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
+  const auto &device_name = device::GetDeviceNameByType(tensor->GetDeviceType());
   const auto device_id = tensor->device_id();
   const auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({tensor->GetDeviceType(), device_id});
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   return device_context->device_res_manager_->swap_manager();

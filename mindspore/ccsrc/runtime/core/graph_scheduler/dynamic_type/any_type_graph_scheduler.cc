@@ -118,8 +118,7 @@ void AnyTypeGraphScheduler::Optimize(const ActorSetPtr &actor_set,
           kernel_tensors[0]->GetShape(), kernel_tensors[0]->GetType(),
           backend_node_with_index.first->cast<ValueNodePtr>()->value(), nullptr, kernel_tensors[0]->size(),
           kernel_tensors[0]->GetStringFormat(), kernel_tensors[0]->dtype_id(), kernel_tensors[0]->GetShapeVector(),
-          device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-          device_context->device_context_key().device_id_);
+          device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
         MS_LOG(INFO) << "Create kernel tensor without setting stream id.";
         MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString()
                       << " for actor:" << any_type_kernel_actor->GetAID();

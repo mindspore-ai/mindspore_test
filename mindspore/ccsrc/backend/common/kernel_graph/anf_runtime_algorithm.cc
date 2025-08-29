@@ -1083,7 +1083,7 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
                                                         const std::string &format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -1101,7 +1101,7 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
 KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
                                                         uint32_t device_id, const UserDataPtr &user_data) {
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -2601,7 +2601,8 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
   }
   if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
-    device::DeviceContextKey host_key = {device_address->GetDeviceType(), device_address->device_id()};
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_address->GetDeviceType()),
+                                         device_address->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

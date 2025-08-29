@@ -213,7 +213,7 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
 #ifdef WITH_BACKEND
   if (!graph->is_from_single_op()) {
     auto cpu_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
+      {kCPUDevice, device_context->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(cpu_context);
     auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_context->GetKernelExecutor().get());
     MS_EXCEPTION_IF_NULL(cpu_executor);
@@ -636,7 +636,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
 #ifdef WITH_BACKEND
     if (!graph->is_from_single_op()) {
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
+        {kCPUDevice, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
       auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
       MS_EXCEPTION_IF_NULL(cpu_executor);
@@ -747,7 +747,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 #ifdef WITH_BACKEND
     if (!graph->is_from_single_op()) {
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
+        {kCPUDevice, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
       auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
       MS_EXCEPTION_IF_NULL(cpu_executor);

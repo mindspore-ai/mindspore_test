@@ -39,8 +39,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
   const auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
   // get device
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
   MS_EXCEPTION_IF_NULL(device_ctx);
   device_ctx->Initialize();
 
@@ -58,9 +57,10 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(device_ptr) << ", size:" << src->Size()
                   << ", shape:" << src->shape() << ", data_type:" << TypeIdToString(src->data_type());
     MS_EXCEPTION_IF_NULL(src_device_address);
-    device::DeviceContextKey new_host_key = {src_device_address->GetDeviceType(), src_device_address->device_id()};
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(src_device_address->GetDeviceType()),
+                                         src_device_address->device_id()};
     device::DeviceContext *host_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(new_host_key);
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 

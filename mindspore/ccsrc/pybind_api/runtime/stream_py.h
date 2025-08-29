@@ -51,7 +51,7 @@ class StreamPy {
 
   std::string device_name() const {
     MS_EXCEPTION_IF_NULL(device_ctx_);
-    return device::GetDeviceNameByType(device_ctx_->device_context_key().device_name_);
+    return device_ctx_->device_context_key().device_name_;
   }
 
   uint32_t device_id() const {

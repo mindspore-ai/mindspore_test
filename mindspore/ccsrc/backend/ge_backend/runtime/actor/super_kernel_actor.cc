@@ -299,7 +299,7 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const contex
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -385,7 +385,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -498,7 +498,8 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
                  << " to device address:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
                  << " size:" << copy_device_tensor->GetSize() << ", type:" << copy_device_tensor->GetDeviceType()
                  << ", is ref node need copy back:" << is_parameters_need_copy_[i] << " for actor:" << GetAID();
-    device::DeviceContextKey host_key = {copy_device_tensor->GetDeviceType(), copy_device_tensor->device_id()};
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(copy_device_tensor->GetDeviceType()),
+                                         copy_device_tensor->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -544,7 +545,7 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context)
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

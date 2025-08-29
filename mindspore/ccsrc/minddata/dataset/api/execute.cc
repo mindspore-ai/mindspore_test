@@ -100,8 +100,7 @@ Status Execute::InitResource(MapTargetDevice device_type, uint32_t device_id) {
       auto ms_context = MsContext::GetInstance();
       RETURN_UNEXPECTED_IF_NULL(ms_context);
       device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
-         ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+        {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
       RETURN_UNEXPECTED_IF_NULL(device_context_);
       device_context_->Initialize();
       RETURN_UNEXPECTED_IF_NULL(device_context_->device_res_manager_);

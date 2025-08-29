@@ -162,7 +162,7 @@ enum class KernelTransformType {
 #define SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, op_context, device_context, kernel_name, alloc_size) \
   do {                                                                                                             \
     std::string message = "#umsg#Memory not enough:#umsg#";                                                        \
-    if ((device_context).device_context_key().device_name_ == device::DeviceType::kCPU) {                          \
+    if ((device_context).device_context_key().device_name_ == "CPU") {                                             \
       message += "Memory isn't enough and alloc failed, kernel name: " + (kernel_name) +                           \
                  ", alloc size: " + std::to_string(alloc_size) + "B.";                                             \
     } else {                                                                                                       \

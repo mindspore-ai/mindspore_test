@@ -35,7 +35,7 @@ class ActorCommonTest : public UT::Common {
     MS_REGISTER_DEVICE(kAscendDeviceName, TestDeviceContext);
     auto ms_context = MsContext::GetInstance();
     ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, 0);
-    DeviceContextKey device_context_key{device::DeviceType::kAscend, device_id_};
+    DeviceContextKey device_context_key{kAscendDeviceName, device_id_};
     device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_context_key);
   }
 

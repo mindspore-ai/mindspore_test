@@ -1235,7 +1235,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
       continue;
     }
     MS_EXCEPTION_IF_NULL(another_device_tensor);
-    auto another_device_name = another_device_tensor->GetDeviceType();
+    auto another_device_name = device::GetDeviceNameByType(another_device_tensor->GetDeviceType());
     const auto &another_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {another_device_name, device_context->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(another_device_context);
@@ -1321,8 +1321,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       if (device_tensor->GetDeviceType() != device_context->GetDeviceType()) {
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
           {backend_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-          device_tensor->GetShapeVector(),
-          device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+          device_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
           device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
         host_kernel_tensor = kernel_tensor;
@@ -1451,7 +1450,8 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     if (host_tensor_address == nullptr) {
       tensor->set_device_address(kernel_tensor->device_address());
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {kernel_tensor->device_address()->GetDeviceType(), kernel_tensor->device_address()->device_id()});
+        {device::GetDeviceNameByType(kernel_tensor->device_address()->GetDeviceType()),
+         kernel_tensor->device_address()->device_id()});
       SyncTensorData(tensor, kernel_tensor, node, device_context, context, GraphExecutionStrategy::kPipeline,
                      UCEException::GetInstance().is_reboot_node());
     } else {

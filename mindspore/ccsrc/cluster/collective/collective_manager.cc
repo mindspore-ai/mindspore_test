@@ -561,7 +561,7 @@ uint32_t CollectiveManager::local_rank_id() const { return local_rank_id_; }
 uint32_t CollectiveManager::local_rank_size() const { return local_rank_size_; }
 
 bool CollectiveManager::InitHostCommlib() {
-  device::DeviceContextKey host_key = {device::DeviceType::kCPU, 0};
+  device::DeviceContextKey host_key = {"CPU", 0};
   host_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_ctx_);
   MS_EXCEPTION_IF_NULL(host_ctx_->device_res_manager_);
@@ -606,7 +606,7 @@ bool CollectiveManager::InitDeviceCommLib() {
   if (!device_lib_supported_) {
     device_type = kCPUDevice;
   }
-  device::DeviceContextKey device_key = {device::GetDeviceTypeByName(device_type), device_id};
+  device::DeviceContextKey device_key = {device_type, device_id};
   device_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // We can initialize device context now because device id(local_rank_id_) is already assigned.

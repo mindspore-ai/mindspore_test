@@ -563,7 +563,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
       auto device_tensor = tensor_info.kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
+      device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                           device_tensor->device_id()};
       device::DeviceContext *host_context =
         device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
       MS_EXCEPTION_IF_NULL(host_context);
@@ -593,7 +594,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -697,7 +698,8 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+                                       device_tensor->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -819,7 +821,7 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
