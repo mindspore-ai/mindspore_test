@@ -29,7 +29,7 @@
 #include <vector>
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/data_saver.h"
-#include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
+#include "plugin/gpu/profiler/gpu_profiling_utils.h"
 
 namespace mindspore {
 namespace profiler {

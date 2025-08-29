@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
+#include "plugin/ascend/profiler/parallel_strategy_profiling.h"
 #include <fstream>
 #include "sys/stat.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/parallel_context.h"
-#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
+#include "plugin/ascend/profiler/ascend_profiling.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
 #include "utils/file_utils.h"

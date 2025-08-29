@@ -27,7 +27,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/hccl_adapter/plugin/hccl_plugin.h"
-#include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
+#include "plugin/ascend/profiler/mstx/mstx_dispatcher.h"
 
 namespace mindspore {
 namespace profiler {

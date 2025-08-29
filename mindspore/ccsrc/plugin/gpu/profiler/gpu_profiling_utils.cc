@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
+#include "plugin/gpu/profiler/gpu_profiling_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

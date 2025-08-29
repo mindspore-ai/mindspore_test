@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
-#include "plugin/device/cpu/hal/profiler/cpu_data_saver.h"
+#include "plugin/cpu/profiler/cpu_profiling.h"
+#include "plugin/cpu/profiler/cpu_data_saver.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

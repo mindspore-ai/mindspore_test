@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#include "plugin/cpu/profiler/cpu_profiling.h"
 #include "tools/profiler/data_saver.h"
 namespace mindspore {
 namespace profiler {

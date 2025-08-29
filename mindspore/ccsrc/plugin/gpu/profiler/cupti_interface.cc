@@ -22,7 +22,7 @@
 #undef SM_DEBUG
 #endif
 #include "utils/log_adapter.h"
-#include "plugin/device/gpu/hal/profiler/cupti_interface.h"
+#include "plugin/gpu/profiler/cupti_interface.h"
 
 namespace mindspore {
 namespace profiler {

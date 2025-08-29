@@ -13,7 +13,8 @@ file(GLOB_RECURSE ASCEND_910B_OBJ_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_context.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_address_maker.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/graph_optimizer/*.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/kernel_executor/*.cc")
+  "${CMAKE_CURRENT_SOURCE_DIR}/kernel_executor/*.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.cc")
 
 set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/ascend")
 

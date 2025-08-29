@@ -56,7 +56,7 @@
 #include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#include "plugin/cpu/profiler/cpu_profiling.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
 #endif
