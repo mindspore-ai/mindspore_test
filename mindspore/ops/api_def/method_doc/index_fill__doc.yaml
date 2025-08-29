@@ -1,0 +1,48 @@
+index_fill_:
+  description: |
+    index_fill_(dim, index, value) -> Tensor
+
+    Fills the elements under the `dim` dimension of the `self` Tensor with the input `value`
+    by selecting the indices in the order given in `index`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        While calculating the gradient of `value` , the value of `index` must be in the range `[0, self.shape[dim])` ,
+        if it is out of range, the result is undefined.
+
+    Args:
+        dim (int): Dimension along which to fill the `self` Tensor.
+        index (Tensor): Indices of the `self` Tensor to fill in. The `index` must be a 0D or 1D Tensor with dtype int32
+            or int64.
+        value (Union[Tensor, Number, bool]): Value to fill the `self` Tensor. The `value` is a number or a bool or a
+            tensor whose data type is number or bool. If `value` is a Tensor, it must be a 0D Tensor.
+
+    Returns:
+        Tensor, the shape and the data type are the same as those of `self` .
+
+    Raises:
+        TypeError: If the data type of `index` is not int32 or int64.
+        RuntimeError: If `dim` is out of range :math:`[-self.ndim, self.ndim)`.
+        RuntimeError: If the rank of `index` is greater than 1.
+        RuntimeError: If `value` is a Tensor and its rank is not equal to 0.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]), mindspore.int32)
+        >>> dim = 1
+        >>> index = Tensor(np.array([0, 2]), mindspore.int32)
+        >>> value = Tensor(0, mindspore.int32)
+        >>> output = x.index_fill_(dim, index, value)
+        >>> print(output)
+        [[ 0  2  0]
+         [ 0  5  0]]
+        >>> print(x)
+        [[ 0  2  0]
+         [ 0  5  0]]
