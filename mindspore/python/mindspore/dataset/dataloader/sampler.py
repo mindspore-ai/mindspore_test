@@ -155,7 +155,7 @@ class BatchSampler(Sampler[list[int]]):
         if not isinstance(batch_size, int) or isinstance(batch_size, bool):
             raise TypeError(f"batch_size must be int, but got: {type(batch_size).__name__}")
         if batch_size <= 0:
-            raise ValueError(f"batch_size must be a positive integer value, but got batch_size = {batch_size}")
+            raise ValueError(f"batch_size must be positive, but got batch_size = {batch_size}")
         if not isinstance(drop_last, bool):
             raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}")
 

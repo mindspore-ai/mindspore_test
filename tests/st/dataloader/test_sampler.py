@@ -412,7 +412,7 @@ def test_dataloader_batch_sampler_exception():
     assert error_msssage in str(error_info.value)
 
     # 2.Verify that the batch_size parameter is less than or equal to 0.
-    error_msssage = "batch_size must be a positive integer value, but got batch_size = 0"
+    error_msssage = "batch_size must be positive, but got batch_size = 0"
     with pytest.raises(ValueError) as error_info:
         batch_size = 0
         _ = BatchSampler(sampler, batch_size, drop_last=False)
