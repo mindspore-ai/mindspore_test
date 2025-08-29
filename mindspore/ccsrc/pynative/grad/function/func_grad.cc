@@ -21,7 +21,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "ir/graph_utils.h"
+#include "ir/func_graph_cloner.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/utils/hook.h"
@@ -581,9 +582,31 @@ void ProcessForwardOutput(const ValuePtrList &flatten_outputs, const TensorPtrSe
   ProcessPost(flatten_outputs, dirty_tensors, output_tensors, num_diff_tensors);
 }
 
+bool CheckTupleNeedGrad(const ValueSequencePtr &seq) {
+  const auto &elements = seq->value();
+  for (const auto &element : elements) {
+    if (element->isa<ValueSequence>()) {
+      const auto &arg_tuple = element->cast<ValueSequencePtr>();
+      if (CheckTupleNeedGrad(arg_tuple)) {
+        return True;
+      }
+    } else if (element->isa<tensor::Tensor>()) {
+      const auto &tensor = element->cast<tensor::TensorPtr>();
+      if (impl::RequiresGrad(tensor)) {
+        return True;
+      }
+    }
+  }
+  return false;
+}
+
 std::vector<bool> GetNeedGradIndexes(const VectorRef &args) {
   std::vector<bool> need_grad_indexes;
   std::transform(args.begin(), args.end(), std::back_inserter(need_grad_indexes), [](const auto &arg) {
+    if (utils::isa<ValueSequence>(arg)) {
+      const auto &arg_tuple = utils::cast<ValueSequencePtr>(arg);
+      return CheckTupleNeedGrad(arg_tuple);
+    }
     if (!utils::isa<tensor::Tensor>(arg)) {
       return false;
     }
@@ -930,6 +953,9 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   const auto &need_grad_indexes = GetNeedGradIndexes(args_);
   mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes);
+  const auto &new_args_and_graph = ad::FilterGraph(args_, added_args_, func_graph_, cache_key_, &next_edges_);
+  func_graph_ = new_args_and_graph.first;
+  added_args_ = new_args_and_graph.second;
   auto graph_call_back = AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = DeviceManagerConf::GetInstance()->device_type();

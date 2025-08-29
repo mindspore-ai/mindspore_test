@@ -107,6 +107,7 @@ const char kTupleTransform[] = "tuple_transform";
 const char kAddRecomputation[] = "add_recomputation";
 const char kCseAfterRecomputation[] = "cse_after_recomputation";
 const char kBackendPass[] = "backend_pass";
+const char kSymbolEngineOpt[] = "symbol_engine_optimizer";
 
 using BuiltInTypeMap = mindspore::HashMap<int64_t, mindspore::HashMap<std::string, Any>>;
 

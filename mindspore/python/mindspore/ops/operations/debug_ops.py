@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """debug_ops"""
+import inspect
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
 from mindspore._c_expression import TensorPy as Tensor_
@@ -511,14 +512,15 @@ class Morph(PrimitiveWithInfer):
 
     .. note::
         - This primitive is only supported in GRAPH_MODE.
-        - `fn` must satisfy the syntax constraints of the graph mode.
-        - Users do not need to implement a custom backward function.
+        - A user-defined bprop (by argument: `bprop_fn`) is allowed for `Morph`.
+        - `fn` and `bprop_fn` must satisfy the syntax constraints of the graph mode.
         - `vararg`, `kwarg`, `kwonlyargs` and free variables are not supported in user-defined function.
 
     Args:
-        fn (Function): Mindspore's function, user-defined function.
-        infer_shape (Function): Mindspore's function, user-defined infer_shape function.
-        infer_dtype (Function): Mindspore's function, user-defined infer_dtype function.
+        fn (Function): MindSpore's function, user-defined function.
+        infer_shape (Function): MindSpore's function, user-defined infer_shape function.
+        infer_dtype (Function): MindSpore's function, user-defined infer_dtype function.
+        bprop_fn (Function): MindSpore's function, user-defined bprop function, default: ``None``.
 
     Inputs:
         The inputs of user-defined `fn`.
@@ -579,13 +581,27 @@ class Morph(PrimitiveWithInfer):
         weight1_grad [ 700. 1600. 2700.]
     """
     @prim_attr_register
-    def __init__(self, fn, infer_shape, infer_dtype):
+    def __init__(self, fn, infer_shape, infer_dtype, bprop_fn=None):
         self.add_prim_attr('side_effect_backprop', True)
         self.add_prim_attr('side_effect_mem', True)
         self.add_prim_attr('side_effect_io', True)
-        self.add_prim_attr('__metamorphosis__', fn)
         self._infer_shape = infer_shape
         self._infer_dtype = infer_dtype
+
+        self.add_prim_attr('__metamorphosis__', True)
+        self.__morph_fn__ = fn
+        self.__morph_bprop_fn__ = None
+        if bprop_fn:
+            self._check_fn_supported(fn)
+            self.__morph_bprop_fn__ = bprop_fn
+
+    def _check_fn_supported(self, fn):
+        fn_sig = inspect.signature(fn)
+        for param in fn_sig.parameters.values():
+            if not (param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD and param.default is inspect.Parameter.empty):
+                raise ValueError(f"When use `bprop` in Morph, Morph `fn` only support positional or keyword parameters "
+                                 f"with default value is empty, but got param '{param.name}' "
+                                 f"of kind '{param.kind.name}' with default value '{param.default}'.")
 
     def infer_shape(self, *args):
         return self._infer_shape(*args)

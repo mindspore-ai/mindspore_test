@@ -222,6 +222,7 @@ class FuncGraphSpecializer : public std::enable_shared_from_this<FuncGraphSpecia
   std::pair<AbstractBasePtrList, AbstractBasePtr> BuildFromBroadedArgs(const EvaluatorPtr &eval,
                                                                        const AbstractBasePtrList &args_abs_list);
   void UpdateNewCNodeInputs(const AnfNodePtr &node, const AnfNodePtr &new_node);
+  void UpdatePartialAbstractClosureBoundNode(const AnfNodePtr &new_node);
   bool GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs);
 };
 using FuncGraphSpecializerPtr = std::shared_ptr<FuncGraphSpecializer>;

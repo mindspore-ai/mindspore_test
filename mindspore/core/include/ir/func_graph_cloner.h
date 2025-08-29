@@ -89,6 +89,9 @@ class MS_CORE_API Cloner {
   bool preset_abstract() const { return preset_abstract_; }
   void set_preset_abstract(bool preset_abstract) { preset_abstract_ = preset_abstract; }
 
+  bool clone_for_recompute() const { return clone_for_recompute_; }
+  void set_clone_for_recompute(bool clone_for_recompute) { clone_for_recompute_ = clone_for_recompute; }
+
   GraphFilterFunc lifting_func_graph_filter() const { return lifting_func_graph_filter_; }
   void set_lifting_func_graph_filter(GraphFilterFunc filter) { lifting_func_graph_filter_ = filter; }
 
@@ -134,6 +137,7 @@ class MS_CORE_API Cloner {
   bool clone_all_child_graphs_;
   bool clone_all_used_graphs_;
   bool preset_abstract_{true};
+  bool clone_for_recompute_;
   GraphFilterFunc lifting_func_graph_filter_;
   TraceInfoPtr relation_;
   TraceInfoPtr target_relation_;

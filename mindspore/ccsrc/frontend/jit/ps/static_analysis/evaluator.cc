@@ -28,6 +28,7 @@
 #include "abstract/utils.h"
 #include "include/common/fallback.h"
 #include "frontend/jit/ps/debug/trace.h"
+#include "include/common/utils/recompute_helper.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
 #include "utils/trace_info.h"
@@ -39,6 +40,7 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "frontend/operator/composite/composite.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -603,6 +605,9 @@ FuncGraphPtr MetaFuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, cons
     meta_func_graph_->set_scope_name(scope_->name());
   }
   if (this->bound_node() != nullptr) {
+    if (meta_func_graph_->isa<prim::RecomputeBlock>() && WithRecomputedScope(bound_node())) {
+      MS_LOG(EXCEPTION) << "The cell passed into the recompute api should be set recomputed only once.";
+    }
     auto node_debug_info = bound_node()->debug_info();
     TraceGuard trace_guard(MakeTraceInfo<TraceGenMetaFuncGraph>(node_debug_info));  // Allow null debug info.
     if (node_debug_info != nullptr) {
@@ -624,7 +629,10 @@ FuncGraphPtr MetaFuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, cons
   if (meta_func_graph_->isa<expander::bprop::BpropMetaFuncGraph>()) {
     cloned_func_graph = GetCloneBpropGraph(meta_func_graph_, generated_func_graph_, this->bound_node(), scope_);
   } else {
-    cloned_func_graph = BasicClone(generated_func_graph_, false, std::make_shared<UpdateInfo>(scope_, debug_info));
+    // The scope with recompute prefix in recompute block should not be overwritten.
+    auto update_info =
+      meta_func_graph_->isa<prim::RecomputeBlock>() ? nullptr : std::make_shared<UpdateInfo>(scope_, debug_info);
+    cloned_func_graph = BasicClone(generated_func_graph_, false, update_info);
   }
   func_graph_cache_[args_abs_list] = cloned_func_graph;
   MS_EXCEPTION_IF_NULL(engine);

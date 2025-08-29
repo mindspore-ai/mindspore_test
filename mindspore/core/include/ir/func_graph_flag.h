@@ -30,6 +30,7 @@ const char FUNC_GRAPH_FLAG_SPARSE_BPROP[] = "sparse_bprop";
 const char FUNC_GRAPH_FLAG_NO_INLINE[] = "no_inline";
 const char FUNC_GRAPH_FLAG_CELL_REUSE[] = "cell_reuse";
 const char FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER[] = "lazy_inline_order";
+const char FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER_CLONE[] = "lazy_inline_order_clone";
 const char FUNC_GRAPH_FLAG_AFTER_BLOCK[] = "after_block";
 const char FUNC_GRAPH_FLAG_CORE[] = "core";
 const char FUNC_GRAPH_FLAG_K_GRAPH[] = "k_graph";
