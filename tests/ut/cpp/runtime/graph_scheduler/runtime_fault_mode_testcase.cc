@@ -215,7 +215,7 @@ TEST_F(RuntimeFaultModeTest, InvalidIOSize) {
   manager->AddFuncGraph(func_graph);
 
   auto parser = std::make_shared<ControlNodeParser>();
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   std::vector<DeviceContext *> device_contexts(kernel_graphs.size(), device_context.get());
   try {
@@ -352,7 +352,7 @@ TEST_F(RuntimeFaultModeTest, InvalidFuncGraph1) {
   manager->AddFuncGraph(func_graph);
 
   auto parser = std::make_shared<ControlNodeParser>();
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   std::vector<DeviceContext *> device_contexts(kernel_graphs.size(), device_context.get());
   try {
@@ -477,7 +477,7 @@ TEST_F(RuntimeFaultModeTest, InvalidFuncGraph2) {
   manager->AddFuncGraph(func_graph);
 
   auto parser = std::make_shared<ControlNodeParser>();
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   std::vector<DeviceContext *> device_contexts(kernel_graphs.size(), device_context.get());
   try {
@@ -519,7 +519,7 @@ TEST_F(RuntimeFaultModeTest, InvalidActorSet) {
   actor_set->data_prepare_actor_ = data_prepare_actor;
 
   // Build super kernel actor.
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto graph = std::make_shared<KernelGraph>();
   auto super_kernel_actor = std::make_shared<SuperKernelActor>(actor_name, graph, "", device_context.get(),
@@ -560,7 +560,7 @@ TEST_F(RuntimeFaultModeTest, OutofMemory) {
   AID aid;
   auto &memory_manager_actor = MemoryManagerActor::GetInstance();
   auto device_tensor = std::make_shared<TestDeviceAddress>(nullptr, 2048, "format", TypeId::kNumberTypeUInt16, "CPU");
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
   std::vector<KernelTensorPtr> alloc_list{kernel_tensor};
@@ -601,7 +601,7 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   kernel_graph->set_execution_order({add_node});
   kernel_graph->CacheGraphOutputToFrontNodeWithIndex({add_node}, {add_node});
 
-  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
+  DeviceContextKey device_context_key{"CPU", 0};
   const char device_name[] = "CPU";
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);

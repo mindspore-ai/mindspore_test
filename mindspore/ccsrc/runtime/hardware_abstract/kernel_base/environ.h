@@ -69,7 +69,7 @@ class Environ {
     for (const auto &value : values_) {
       MS_EXCEPTION_IF_NULL(value.second);
       const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device::GetDeviceTypeByName(value.second->device_name_), value.second->device_id_});
+        {value.second->device_name_, value.second->device_id_});
       MS_EXCEPTION_IF_NULL(device_context);
       device_context->device_res_manager_->FreeMemory(value.second->addr_);
     }

@@ -448,7 +448,7 @@ void ControlActor::CreateHeterDeviceTensor(KernelTensor *const node_kernel_tenso
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key = {device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -697,7 +697,8 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &shape = addr_list[0]->device_address()->GetShapeVector();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
 
-  device::DeviceContextKey host_key{addr_list[0]->GetDeviceType(), addr_list[0]->device_id()};
+  device::DeviceContextKey host_key{device::GetDeviceNameByType(addr_list[0]->GetDeviceType()),
+                                    addr_list[0]->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -796,7 +797,7 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContextKey host_key{device_name, device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

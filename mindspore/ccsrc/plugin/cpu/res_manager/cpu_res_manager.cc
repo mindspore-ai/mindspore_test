@@ -99,7 +99,8 @@ std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMe
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
     MS_EXCEPTION_IF_NULL(tensor->device_address());
-    device::DeviceContextKey host_key = {device_address->GetDeviceType(), device_address->device_id()};
+    device::DeviceContextKey host_key = {GetDeviceNameByType(device_address->GetDeviceType()),
+                                         device_address->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -411,7 +412,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {DeviceType::kCPU, device_id};
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -423,7 +424,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {DeviceType::kCPU, device_id};
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -434,7 +435,7 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {DeviceType::kCPU, device_id};
+    device::DeviceContextKey host_key = {GetDeviceNameByType(DeviceType::kCPU), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

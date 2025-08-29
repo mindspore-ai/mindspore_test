@@ -204,8 +204,8 @@ void MSBackend::WaitTaskFinish() const {
 }
 
 void MSBackend::SyncStream() {
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceTypeByName(device_name_), device_id_});
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 

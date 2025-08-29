@@ -272,7 +272,7 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     return;
   }
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->GetDeviceType(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   if (device_tensor->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get())) {
@@ -330,7 +330,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
 
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->GetShapeVector(), device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+        device_tensor->GetShapeVector(), device_context->device_context_key().device_name_,
         device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       auto other_type_device_tensor = kernel_tensor->device_address();
@@ -376,8 +376,7 @@ void PersisitValueNode(const KernelGraphPtr &graph, const DeviceContext *device_
                    << " node device tensor:" << device_tensor->ToString();
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {input_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-        device_tensor->GetShapeVector(),
-        device::GetDeviceNameByType(real_device_context->device_context_key().device_name_),
+        device_tensor->GetShapeVector(), real_device_context->device_context_key().device_name_,
         real_device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       auto other_type_device_tensor = kernel_tensor->device_address();

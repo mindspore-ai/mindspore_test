@@ -580,10 +580,10 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   const auto &shape = addr_list[0]->device_address()->GetShapeVector();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {addr_list[0]->device_address()->GetDeviceType(), addr_list[0]->device_address()->device_id()});
+    {device::GetDeviceNameByType(addr_list[0]->device_address()->GetDeviceType()),
+     addr_list[0]->device_address()->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  const auto device_name = device::GetDeviceNameByType(device_context->device_context_key().device_name_);
 
   abstract::BaseShapePtrList shape_list(addr_list.size(), addr_list[0]->GetShape());
   auto tuple_shape = std::make_shared<abstract::TupleShape>(shape_list);
@@ -591,10 +591,10 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   auto tuple_type = std::make_shared<Tuple>(type_list);
   MS_LOG(DEBUG) << "Create kernel tensor by shape:" << tuple_shape->ToString() << " type:" << tuple_type->ToString()
                 << " in device address:" << addr_list[0]->device_address();
-  const auto &new_kernel_tensor =
-    AnfAlgo::CreateKernelTensor(tuple_shape, tuple_type, nullptr, nullptr, total_size,
-                                addr_list[0]->device_address()->format(), addr_list[0]->device_address()->type_id(),
-                                total_shape, device_name, device_context->device_context_key().device_id_);
+  const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
+    tuple_shape, tuple_type, nullptr, nullptr, total_size, addr_list[0]->device_address()->format(),
+    addr_list[0]->device_address()->type_id(), total_shape, device_context->device_context_key().device_name_,
+    device_context->device_context_key().device_id_);
   new_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
@@ -621,7 +621,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   auto tmp_kernel_tensor = AnfAlgo::CreateKernelTensor(
     new_device_tensor->GetMutablePtr(), addr_list[0]->device_address()->GetSize(),
     kernel::GetFormatFromStrToEnum(addr_list[0]->device_address()->format()), addr_list[0]->device_address()->type_id(),
-    shape, device_name, device_context->device_context_key().device_id_);
+    shape, device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
   tmp_kernel_tensor->set_stream_id(addr_list[0]->device_address()->stream_id());
   const auto &tmp_device_tensor = tmp_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(tmp_device_tensor);
@@ -663,8 +663,7 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceTypeByName(context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET)),
-     context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET), context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 
@@ -672,8 +671,7 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
   auto tuple_type = std::make_shared<Tuple>();
   const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
     tuple_shape, tuple_type, nullptr, nullptr, 0, kOpFormat_DEFAULT, TypeId::kNumberTypeInt64, ShapeVector(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-    device_context->device_context_key().device_id_);
+    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
   const auto &new_device_tensor = new_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(new_device_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
@@ -711,7 +709,7 @@ void ControlActor::ResetState(OpContext<KernelTensor> *const context) {
         continue;
       }
       const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->GetDeviceType(), device_tensor->device_id()});
+        {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
       MS_EXCEPTION_IF_NULL(device_context);
       FreeMemoryByDeviceContext(device_tensor, device_context);
       kernel_tensor->set_new_ref_count(0);

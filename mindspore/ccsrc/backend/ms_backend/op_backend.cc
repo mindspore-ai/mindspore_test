@@ -105,8 +105,7 @@ std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoP
                                                                          output_format, output_type, index);
     const auto &new_kernel_tensor = AnfAlgo::CreateKernelTensor(
       real_abstract->GetShape()->Clone(), real_abstract->GetType()->Clone(), real_abstract->GetValue(), nullptr,
-      address_size, output_format, output_type, shape,
-      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      address_size, output_format, output_type, shape, device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_, cache_output_kernel_tensor->user_data());
     new_kernel_tensor->set_stream_id(stream_id);
     MS_LOG(DEBUG) << "Create addr for node:" << output_node->DebugString()
@@ -557,7 +556,8 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   device::DeviceAddressPtrList output_addr_list;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {base_op_run_info.device_target, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {device::GetDeviceNameByType(base_op_run_info.device_target),
+     MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_context);
 
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {
@@ -572,8 +572,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
 
       auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
-        device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-        device_context->device_context_key().device_id_);
+        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
       MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
       kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
       kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));

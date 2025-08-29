@@ -219,8 +219,7 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
       sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
       device_address->format(), device_address->type_id(), device_address->GetShapeVector(),
-      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-      device_context->device_context_key().device_id_);
+      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
     auto new_address = kernel_tensor->device_address().get();
@@ -296,8 +295,7 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
       const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
         device_address->format(), device_address->type_id(), old_kernel_tensor->GetShapeVector(),
-        device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-        device_context->device_context_key().device_id_);
+        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
       MS_LOG(DEBUG) << "Create new kernel tensor for node that has no corresponding backend node:"
@@ -2457,7 +2455,7 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
         parser->FetchBackendParameterWithContextByFrontParameter(formal_parameter);
       const auto &node_with_index = node_with_index_with_context.first;
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {cur_device_tensor->GetDeviceType(), cur_device_tensor->device_id()});
+        {device::GetDeviceNameByType(cur_device_tensor->GetDeviceType()), cur_device_tensor->device_id()});
       if (to_actor->device_contexts_.size() > i) {
         to_actor->device_contexts_[i] = device_context;
       }

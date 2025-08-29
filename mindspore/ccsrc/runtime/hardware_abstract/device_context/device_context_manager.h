@@ -64,7 +64,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
   // The difference between this method and 'GetOrCreateDeviceContext' is this method only query device context by
   // device target(without device id) since MindSpore only supports 'single process, single device'.
   DeviceContextPtr GetDeviceContext(const std::string &device_target);
-  MultiStreamControllerPtr &GetMultiStreamController(const DeviceType &device_name);
+  MultiStreamControllerPtr &GetMultiStreamController(const std::string &device_name);
   void UpdateDeviceContextKey(const DeviceContextKey &old_key, const DeviceContextKey &new_key);
   void ClearDeviceContexts();
   void ChildAfterFork();
@@ -91,9 +91,9 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
   // The string converted from DeviceContextKey -> DeviceContextPtr.
   std::map<std::string, DeviceContextPtr> device_contexts_;
   // The name of device -> vector of DeviceContextPtr.
-  std::map<DeviceType, DeviceContextPtr> backend_to_device_context_;
+  std::map<std::string, DeviceContextPtr> backend_to_device_context_;
   // The name of device -> DeviceContextCreator.
-  std::map<DeviceType, DeviceContextCreator> device_context_creators_;
+  std::map<std::string, DeviceContextCreator> device_context_creators_;
   // record error message of dlopen, print when create device_context failed.
   std::stringstream dlopen_error_msg_;
 
@@ -102,7 +102,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
 
   // Since multi device is not supported currently, here use device target type to improve performance.
   // Device target type : 0, 1, 2, 3, and real device support : 'GPU' 'Ascend' 'CPU'.
-  std::map<DeviceType, MultiStreamControllerPtr> multi_stream_controllers_;
+  std::map<std::string, MultiStreamControllerPtr> multi_stream_controllers_;
 };
 
 class RUNTIME_HARDWARE_EXPORT DeviceContextRegister {

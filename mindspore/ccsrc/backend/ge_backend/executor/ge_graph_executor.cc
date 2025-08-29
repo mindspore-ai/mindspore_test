@@ -1406,7 +1406,7 @@ void GeGraphExecutor::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  device::DeviceContextKey host_key = {device::DeviceType::kAscend, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device::DeviceType::kAscend), device_id};
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   auto ascend_res_manager = static_cast<device::ascend::AscendResManager *>(device_context->device_res_manager_.get());
   MS_EXCEPTION_IF_NULL(ascend_res_manager);

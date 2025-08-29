@@ -40,7 +40,8 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
   std::string status;
   if (blocking) {
     status = "SyncDeviceToHost";
-    device::DeviceContextKey host_key = {src_device_ptr->GetDeviceType(), src_device_ptr->device_id()};
+    device::DeviceContextKey host_key = {GetDeviceNameByType(src_device_ptr->GetDeviceType()),
+                                         src_device_ptr->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -67,7 +68,7 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
   auto ret = true;
   std::string status;
   if (blocking) {
-    DeviceContextKey host_key = {dst_device_ptr->GetDeviceType(), dst_device_ptr->device_id()};
+    DeviceContextKey host_key = {GetDeviceNameByType(dst_device_ptr->GetDeviceType()), dst_device_ptr->device_id()};
     DeviceContext *host_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -107,8 +108,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
   auto dst_addr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto target_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({GetDeviceTypeByName(to), device_id});
+  auto target_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({to, device_id});
   MS_EXCEPTION_IF_NULL(target_context);
   target_context->Initialize();
   auto stream_id = target_context->device_res_manager_->GetCurrentStreamId();
@@ -121,7 +121,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
     auto host_shape = src_tensor->shape();
 
-    device::DeviceContextKey host_key = {GetDeviceTypeByName(to), device_id};
+    device::DeviceContextKey host_key = {to, device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

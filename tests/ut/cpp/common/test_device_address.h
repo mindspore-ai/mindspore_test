@@ -60,11 +60,14 @@ class TestDeviceAddress : public DeviceAddress {
   TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
       : DeviceAddress(ptr, size, device_name) {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
-      : DeviceAddress(ptr, size, format, type_id, device_name) {}
+      : DeviceAddress(ptr, size, format, type_id, device_name) {
+  }
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
-  bool IsPtrValid() const { return GetDevicePtr() != nullptr; }
+  bool IsPtrValid() const {
+    return GetDevicePtr() != nullptr;
+  }
   DeviceType GetDeviceType() const { return device_type_; }
 
   void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
@@ -132,7 +135,7 @@ class TestResManager : public device::DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress() const {
     auto device_address = std::make_shared<TestDeviceAddress>();
-    device_address->SetDeviceType(device_context_->device_context_key().device_name_);
+    device_address->SetDeviceType(device::GetDeviceTypeByName(device_context_->device_context_key().device_name_));
     return device_address;
   }
   bool LoadCollectiveCommLib() { return false; }
@@ -263,7 +266,7 @@ class TestGraphExecutor {
       const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, 0, false);
       MS_EXCEPTION_IF_NULL(device_tensor);
       auto context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->GetDeviceType(), device_tensor->device_id()});
+        {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
       MS_EXCEPTION_IF_NULL(context);
       context->device_res_manager_->AllocateMemory(device_tensor.get(), device_tensor->stream_id());
       MS_LOG(INFO) << "Alloc memory in run graph";

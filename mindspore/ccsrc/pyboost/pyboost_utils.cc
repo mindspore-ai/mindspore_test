@@ -168,7 +168,7 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
                                                    const std::vector<KernelTensor *> &inputs,
                                                    const std::vector<KernelTensor *> &outputs, bool with_prim_attr) {
   MS_EXCEPTION_IF_NULL(device_context);
-  const auto &device_name = device::GetDeviceNameByType(device_context->device_context_key().device_name_);
+  const auto &device_name = device_context->device_context_key().device_name_;
   const auto &op_name = prim->name();
 
   auto &cache_helper = kernel::KernelModCache::GetInstance();
@@ -224,14 +224,14 @@ DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr 
   GilReleaseWithCheck gil_release;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {old_device_address->GetDeviceType(), old_device_address->device_id()});
+    {device::GetDeviceNameByType(old_device_address->GetDeviceType()), old_device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto address_size = GetTypeByte(TypeIdToType(old_device_address->type_id())) * SizeOf(storage_info->shape);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, old_device_address->type_id(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_name_), stream_id);
+    device_context->device_context_key().device_name_, stream_id);
 
   if (!device_context->GetKernelExecutor()->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
                                                               {old_device_address}, {new_device_address}, stream_id)) {
@@ -271,7 +271,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   // Create view output address
   auto output_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, input_device_address->GetSize(), output_tensor->shape(), DEFAULT_FORMAT, output_tensor->data_type(),
-    device::GetDeviceNameByType(device_context->device_context_key().device_name_), input_device_address->stream_id());
+    device_context->device_context_key().device_name_, input_device_address->stream_id());
   MS_EXCEPTION_IF_NULL(output_device_address);
   output_device_address->set_tensor_storage_info(storage_info);
   output_device_address->set_device_pointer(input_device_address->device_pointer());
@@ -485,10 +485,9 @@ std::vector<kernel::KernelTensorPtr> PyBoostUtils::CreateWorkSpaceKernelTensors(
   const auto &workspace_sizes = kernel_mod->GetWorkspaceSizeList();
   std::vector<kernel::KernelTensorPtr> workspaces_kernel_tensors;
   for (const auto workspace_size : workspace_sizes) {
-    auto kernel_tensor =
-      AnfAlgo::CreateKernelTensor(nullptr, workspace_size, Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-                                  device::GetDeviceNameByType(device_context->device_context_key().device_name_),
-                                  device_context->device_context_key().device_id_);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, workspace_size, Format::DEFAULT_FORMAT, kTypeUnknown,
+                                                     ShapeVector(), device_context->device_context_key().device_name_,
+                                                     device_context->device_context_key().device_id_);
     (void)workspaces_kernel_tensors.emplace_back(kernel_tensor);
   }
 

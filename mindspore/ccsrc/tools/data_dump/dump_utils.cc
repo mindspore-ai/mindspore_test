@@ -225,7 +225,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     MS_VLOG(VL_DUMP) << "Data is nullptr for file: " << filepath << ", skip it.";
     return true;
   }
-  device::DeviceContextKey host_key = {addr.GetDeviceType(), addr.device_id()};
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -307,7 +307,7 @@ void DumpToFile(const std::string &file_name, const std::string &dump_str) {
 mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress &addr, const std::string &tensor_name,
                                                      const ShapeVector &host_shape, TypeId host_type, bool trans_flag,
                                                      bool async_copy) {
-  device::DeviceContextKey host_key = {addr.GetDeviceType(), addr.device_id()};
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

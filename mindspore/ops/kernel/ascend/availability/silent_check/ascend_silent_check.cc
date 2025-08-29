@@ -689,10 +689,9 @@ KernelTensorPtr SilentChecker::GenerateKernelTensor(TypeId dtype_id, const Shape
   auto mem_size = UnitSizeInBytes(dtype_id) * num_elems;
   void *addr =
     alloc_dev ? device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex) : nullptr;
-  auto tensor =
-    AnfAlgo::CreateKernelTensor(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
-                                device::GetDeviceNameByType(device_context_->device_context_key().device_name_),
-                                device_context_->device_context_key().device_id_);
+  auto tensor = AnfAlgo::CreateKernelTensor(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
+                                            device_context_->device_context_key().device_name_,
+                                            device_context_->device_context_key().device_id_);
   tensor->set_stream_id(kDefaultStreamIndex);
   tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
   tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));

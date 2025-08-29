@@ -789,7 +789,7 @@ void MSBackendBase::CompileGraphFromSegment(const FuncGraphPtr &func_graph, cons
     MS_LOG(INFO) << "Compile normal segment, the first node: " << segment->nodes_[0]->DebugString();
 
     // Get the device context.
-    const auto &cur_device_name = device::GetDeviceTypeByName(GetCNodeTarget(segment->nodes_[0]));
+    const auto &cur_device_name = GetCNodeTarget(segment->nodes_[0]);
     auto device_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({cur_device_name, device_id_});
     MS_EXCEPTION_IF_NULL(device_context);
@@ -939,8 +939,7 @@ bool MSBackendBase::DumpBackendInfo() {
     const auto &graph_id = graph_id_to_device_context.first;
     MS_EXCEPTION_IF_NULL(graph_id_to_device_context.second);
     const auto &device_id = graph_id_to_device_context.second->device_context_key().device_id_;
-    const auto &device_name =
-      device::GetDeviceNameByType(graph_id_to_device_context.second->device_context_key().device_name_);
+    const auto &device_name = graph_id_to_device_context.second->device_context_key().device_name_;
     kernel_graph_json[kGraphId] = graph_id;
     kernel_graph_json[kKernelGraphToDeviceId] = device_id;
     kernel_graph_json[kKernelGraphToDeviceName] = device_name;
@@ -1055,8 +1054,7 @@ bool MSBackendBase::LoadBackendInfo(const nlohmann::json &data_json) {
       for (const auto &kernelgraph : kernel_graph_json) {
         const auto &graph_id = kernelgraph[kGraphId].get<GraphId>();
         const auto &graph_device_id = kernelgraph[kKernelGraphToDeviceId].get<GraphId>();
-        const auto &graph_device_name =
-          device::GetDeviceTypeByName(kernelgraph[kKernelGraphToDeviceName].get<std::string>());
+        const auto &graph_device_name = kernelgraph[kKernelGraphToDeviceName].get<std::string>();
         const auto &device_context =
           device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({graph_device_name, graph_device_id});
         MS_EXCEPTION_IF_NULL(device_context);
@@ -1431,7 +1429,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
   auto tensor_device_size = device_tensor->GetSize();
   MS_EXCEPTION_IF_NULL(tensor_device_ptr);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->GetDeviceType(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 
@@ -1455,7 +1453,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
-      split_tensor_shape, device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      split_tensor_shape, device_context->device_context_key().device_name_,
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(element_types[i]);
     kernel_tensor->SetShape((*tensor_shape)[i]);
@@ -1689,8 +1687,8 @@ MSBackendBase::MSBackendBase() {
   MS_EXCEPTION_IF_NULL(ms_context);
   device_name_ = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceTypeByName(device_name_), device_id});
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   uint64_t start_time = profiler::GetClockSyscnt();
   device_context->Initialize();
@@ -1759,8 +1757,8 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   device_name_ = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceTypeByName(device_name_), device_id_});
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);

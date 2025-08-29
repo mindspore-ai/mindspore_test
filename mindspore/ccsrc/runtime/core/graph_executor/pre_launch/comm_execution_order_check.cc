@@ -249,8 +249,8 @@ void Process::AllGatherExecuteOrderHash(std::unique_ptr<char[]> *output_host_buf
   uint32_t device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const std::string &device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
-  const auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceTypeByName(device_target), device_id});
+  const auto device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   auto comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(kCommGroupName);
 

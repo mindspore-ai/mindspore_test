@@ -85,7 +85,7 @@ void AscendDeviceContext::InitializeForAclop() const {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device::DeviceContextKey host_key = {device::DeviceType::kAscend, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(device::DeviceType::kAscend), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

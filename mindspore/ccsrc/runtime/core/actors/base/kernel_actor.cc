@@ -626,8 +626,7 @@ void KernelActor::ConvertInputContiguous(OpContext<KernelTensor> *const context)
         auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
         auto kernel_tensor = AnfAlgo::CreateKernelTensor(
           nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
-          device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_name_),
-          device_contexts_[0]->device_context_key().device_id_);
+          device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
         kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
         kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
         kernel_tensor->set_stream_id(stream_id);
@@ -810,10 +809,9 @@ void KernelActor::FetchWorkspaceDeviceTensor() {
       return;
     }
     for (size_t i = workspace_kernel_tensors_.size(); i < workspace_sizes.size(); ++i) {
-      auto kernel_tensor =
-        AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-                                    device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_name_),
-                                    device_contexts_[0]->device_context_key().device_id_);
+      auto kernel_tensor = AnfAlgo::CreateKernelTensor(
+        nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
+        device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
       kernel_tensor->set_stream_id(kernel_info_->stream_id());
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
@@ -1066,7 +1064,7 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
     auto new_kernel_tensor = AnfAlgo::CreateKernelTensor(
       pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
       real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
-      real_input_info->shape_, device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_name_),
+      real_input_info->shape_, device_contexts_[0]->device_context_key().device_name_,
       device_contexts_[0]->device_context_key().device_id_, kernel_tensor->user_data());
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     auto pre_stream_id = pre_kernel_tensor->stream_id();
