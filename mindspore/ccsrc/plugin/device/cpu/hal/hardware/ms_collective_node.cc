@@ -30,7 +30,7 @@ bool CollectiveNode::Start(const uint32_t &timeout) {
   config_ = std::make_unique<FileConfiguration>(PSContext::instance()->config_file_path());
   MS_EXCEPTION_IF_NULL(config_);
   if (!config_->Initialize()) {
-    MS_LOG(WARNING) << "Failed to initialize the configuration for this mccl collective node.";
+    MS_LOG(INFO) << "Failed to initialize the configuration for this mccl collective node.";
   }
 
   InitServerHandler();
