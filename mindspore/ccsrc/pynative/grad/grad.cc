@@ -192,7 +192,7 @@ void SetSensValue(const prim::GradOperationPtr &grad, const InputArgsInfoPtr &in
   }
 }
 
-GradParamPtr CreateOpGradParam(const OpGradInfoPtr &grad_info, const TopCellInfoPtr &top_cell) {
+GradParamPtr CreateOpGradParam(const OpGradInfoPtr &grad_info) {
   auto grad_param = std::make_shared<GradParam>(grad_info);
   BpropExpander::FreeUselessValues(BpropCallback(grad_info->op_prim, &grad_info->input_value, &grad_info->out_value));
   return grad_param;
@@ -827,11 +827,11 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr, const 
   MS_LOG(DEBUG) << "Eval run begin";
   MS_EXCEPTION_IF_NULL(top_cell_);
   auto cur_top_cell = top_cell_;
-  auto engine = std::make_shared<autograd::AutoDiff>(top_input_args_info_->out_value,
+  auto engine = std::make_shared<autograd::AutoDiff>(top_input_args_info_->out_value, false,
                                                      cur_top_cell->is_high_order_top_cell(), is_run_recompute_);
   autograd::AutoDiffGuard auto_diff_guard(engine);
   top_cell_->set_grad_is_running(true);
-  auto grads = engine->RunBackward(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
+  auto grads = engine->RunGradFunc(top_input_args_info_->input_arg_value_vec, w_args, p_args, grad_attr,
                                    collect_default_weights, has_aux, sens);
   engine->RunFinalCallback();
   top_cell_ = cur_top_cell;
@@ -1132,8 +1132,7 @@ void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const OpGradInfo
 }
 
 void GradExecutor::DoOpGrad(const OpGradInfoPtr &grad_info) const {
-  top_cell()->GetOpInfo(grad_info, grad_info->op_prim->name(), false);
-  auto &&grad_param = CreateOpGradParam(grad_info, top_cell());
+  auto &&grad_param = CreateOpGradParam(grad_info);
   if (forward()->enable_async()) {
     auto task = [grad_param]() { autograd::KPynativeOp(grad_param); };
     DispatchGradQueueTask(std::move(task));

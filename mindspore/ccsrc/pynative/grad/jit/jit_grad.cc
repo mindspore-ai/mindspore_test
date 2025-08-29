@@ -227,7 +227,10 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
 
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info);
   grad_param->is_jit_graph = true;
-  grad_param->is_high_order = grad_executor->top_cell()->is_high_order_top_cell();
+  // For adapter backward interface, we can not know high order info in forward step. So
+  // when top cell is nullptr, we set high order false, this cause high order can not use with backward api use jit.
+  grad_param->is_high_order =
+    grad_executor->TopCellNoCheck() == nullptr ? false : grad_executor->top_cell()->is_high_order_top_cell();
   grad_param->is_control_flow = compile_info_.is_control_flow_;
   // As long as the jit is in the process of dynamic shape,
   // let it run actor execution to avoid backend pass
@@ -242,12 +245,12 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
 void Jit::RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                                    const FuncGraphPtr &jit_forward_graph) const {
   int save_graphs = MsContext::GetInstance()->CanDump(kIntroductory);
-  if (save_graphs) {
+  const auto &top_cell = grad_executor->TopCellNoCheck();
+  if (save_graphs && top_cell != nullptr) {
     CNodePtr jit_cnode = nullptr;
     MakeCNodeForJit(op_run_info, grad_executor, jit_forward_graph, &jit_cnode);
     MS_EXCEPTION_IF_NULL(jit_cnode);
     const auto &out_id = PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
-    const auto &top_cell = grad_executor->top_cell();
     top_cell->SetNodeMapInGraphInfoMap(out_id, jit_cnode);
   }
 }
@@ -260,12 +263,6 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   MS_EXCEPTION_IF_NULL(jit_forward_graph->output());
   const auto &forward_output_abs = jit_forward_graph->output()->abstract();
   MS_EXCEPTION_IF_NULL(forward_output_abs);
-
-  // Step 1: Get jit op info
-  const auto &top_cell = grad_executor->top_cell();
-  MS_EXCEPTION_IF_NULL(top_cell);
-  top_cell->GetOpInfo(op_run_info->op_grad_info, op_run_info->base_op_run_info.op_name, true);
-
   auto &&grad_param = CreateJitGradParam(op_run_info, grad_executor, jit_forward_graph, jit_grad_graph);
   if (!autograd::KPynativeWithFProp(grad_param)) {
     MS_LOG(EXCEPTION) << "Failed to make adjoint for jit cnode";
@@ -280,7 +277,11 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   MS_LOG(DEBUG) << "jit actual output value: " << op_run_info->real_out->ToString() << ", output id "
                 << PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
   RecordForwardGraphForJit(op_run_info, grad_executor, jit_forward_graph);
-  top_cell->set_jit_out_has_dict(grad_param->jit_out_has_dict);
+  const auto &top_cell = grad_executor->TopCellNoCheck();
+  // When use flow auto grad, top cell may be nullptr;
+  if (top_cell != nullptr) {
+    top_cell->set_jit_out_has_dict(grad_param->jit_out_has_dict);
+  }
 }
 
 bool Jit::GetJitGradGraph(const pipeline::ResourcePtr &resource, const std::string &phase) {

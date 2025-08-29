@@ -42,10 +42,27 @@ enum class InputType {
 namespace pynative::autograd {
 class BackwardNode;
 }  // namespace pynative::autograd
-
-class TensorBackwardHook;
-using TensorBackwardHookPtr = std::shared_ptr<TensorBackwardHook>;
 using BackwardNodePtr = std::shared_ptr<pynative::autograd::BackwardNode>;
+
+namespace tensor {
+class Tensor;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
+}  // namespace tensor
+
+class GradHookInterface {
+ public:
+  [[nodiscard]] virtual bool requires_grad(const tensor::TensorPtr &self) const = 0;
+  virtual void set_requires_grad(const tensor::TensorPtr &self, bool requires_grad) = 0;
+  [[nodiscard]] virtual bool retains_grad(const tensor::TensorPtr &self) const = 0;
+  virtual void retain_grad(const tensor::TensorPtr &self) = 0;
+  [[nodiscard]] virtual tensor::TensorPtr grad(const tensor::TensorPtr &self) const = 0;
+  virtual void set_grad(const tensor::TensorPtr &self, const tensor::TensorPtr &grad) = 0;
+  [[nodiscard]] virtual BackwardNodePtr grad_node(const tensor::TensorPtr &self) const = 0;
+  [[nodiscard]] virtual bool is_leaf(const tensor::TensorPtr &self) const = 0;
+  [[nodiscard]] virtual size_t output_index(const tensor::TensorPtr &self) const = 0;
+  virtual ~GradHookInterface() = default;
+};
+using GradHookInterfacePtr = std::unique_ptr<GradHookInterface>;
 
 class AutoGradMetaInterface {
  public:
@@ -55,7 +72,12 @@ class AutoGradMetaInterface {
   virtual void set_input_type(InputType input_type) = 0;
   [[nodiscard]] virtual size_t output_index() const = 0;
   virtual void set_output_index(size_t output_index) = 0;
-  virtual void Reset() = 0;
+  [[nodiscard]] virtual bool requires_grad() const = 0;
+  virtual void set_requires_grad(bool requires_grad) = 0;
+  [[nodiscard]] virtual const tensor::TensorPtr &grad() const = 0;
+  virtual void set_grad(const tensor::TensorPtr &update_grad) = 0;
+  [[nodiscard]] virtual bool retains_grad() const = 0;
+  virtual void set_retains_grad(bool retains_grad) = 0;
   virtual bool is_view() const = 0;
   virtual ~AutoGradMetaInterface() = default;
 };

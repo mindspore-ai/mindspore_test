@@ -92,6 +92,7 @@ class PyBackwardNode : public BackwardNode {
   ValuePtrList PostProcess(const ValuePtrList &gradient_value) override;
   void Release() override;
   void SetOutAbstract(abstract::AbstractBasePtr out_abstract) { out_abstract_ = std::move(out_abstract); }
+  void SetOutputSize(size_t output_size) { output_size_ = output_size; }
 
  private:
   py::function backward_fn_;

@@ -40,4 +40,12 @@ PyObject *PyObjManager::GetAbcModule() {
   }
   return abc_module_;
 }
+
+PyObject *PyObjManager::GetHookUtilsClass() {
+  if (hook_utils_class_ == nullptr) {
+    const auto hook_handle_module = PyImport_ImportModule("mindspore.common.hook_handle");
+    hook_utils_class_ = PyObject_GetAttrString(hook_handle_module, "_HookUtils");
+  }
+  return hook_utils_class_;
+}
 }  // namespace mindspore

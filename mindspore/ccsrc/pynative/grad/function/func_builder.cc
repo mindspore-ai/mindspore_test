@@ -257,6 +257,14 @@ NodePtr FuncBuilder::Shape(const NodePtr &node, bool tensor) {
   }
 }
 
+void FuncBuilder::MarkSharedGradTensor(const NodePtr &lhs, const NodePtr &rhs) {
+  if (lhs.get() == rhs.get()) {
+    auto tensor = lhs->Value()->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    tensor->set_user_data("kSharedGradTensor", std::make_shared<bool>(true));
+  }
+}
+
 NodePtrList FuncBuilder::ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs) {
   size_t input_size = inputs.size();
   ShapeArray const_args;
@@ -1070,7 +1078,10 @@ NodePtr FuncBuilder::Sqrt(const NodePtr &x) { return NativeFunc::Sqrt(x); }
 
 NodePtr FuncBuilder::Square(const NodePtr &input) { return NativeFunc::Square(input); }
 
-NodePtr FuncBuilder::StackExt(const NodePtr &tensors, const NodePtr &dim) { return NativeFunc::StackExt(tensors, dim); }
+NodePtr FuncBuilder::StackExt(const NodePtr &tensors, const NodePtr &dim) {
+  tensors->SetValue(FillZeros(tensors->Value(), tensors->abstract()));
+  return NativeFunc::StackExt(tensors, dim);
+}
 
 NodePtr FuncBuilder::SubExt(const NodePtr &input, const NodePtr &other, const NodePtr &alpha) {
   return NativeFunc::SubExt(input, other, alpha);

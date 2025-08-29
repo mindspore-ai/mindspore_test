@@ -21,18 +21,6 @@
 
 namespace mindspore {
 namespace pynative {
-void TopCellInfo::GetOpInfo(const OpGradInfoPtr &grad_info, const std::string &op_name, bool is_jit_graph) const {
-  // Dynamic shape no need do value node replace
-  if (use_dynamic_shape_process_ && !is_jit_graph) {
-    MS_LOG(DEBUG) << "Current top cell is in dynamic process";
-    ++op_index_;
-    return;
-  }
-  grad_info->op_info.clear();
-  grad_info->op_index = op_index_;
-  grad_info->op_info += op_name + "-" + std::to_string(op_index_);
-}
-
 void TopCellInfo::Clear() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyNativeGradClearTopCell,

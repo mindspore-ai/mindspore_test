@@ -11,7 +11,7 @@ PyObject* ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DT
     const auto type = GetPredictOutTypeByName(prim->name());
     static auto top_type = GetPredictOutTypeByOutputNum(op_run_info->op_prim, type);
 
-    auto py_output = tensor::MakeTuple<tensor::TensorWrapper, ${output_num}>();
+    auto py_output = tensor::MakeTuple<tensor::TensorWrapper, ${output_num}, ${has_side_effect}>();
     auto promises = tensor::TransformPromise(py_output);
 
     auto comm_handle_py = std::make_shared<hal::CommHandlePy>(runtime::OpRunner::GetDeviceContext(target));
