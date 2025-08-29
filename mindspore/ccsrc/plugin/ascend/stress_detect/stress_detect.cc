@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/stress_detect.h"
+#include "plugin/ascend/stress_detect/stress_detect.h"
 #include <string>
 #include <thread>
 #include <future>
