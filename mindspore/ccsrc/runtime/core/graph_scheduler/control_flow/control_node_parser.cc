@@ -1964,7 +1964,7 @@ void CollectDeviceContextByDynamicLen(const CNodePtr &cnode, const FuncGraphPtr 
     MS_LOG(EXCEPTION) << "Invalid parameter context size:" << parameter_contexts.size()
                       << " parameter size:" << para_num;
   }
-  for (size_t i = para_num - arg_num; i < para_num; ++i) {
+  for (size_t i = 0; i < arg_num; ++i) {
     size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(cnode->input(i + 1)->abstract());
     for (size_t j = 0; j < output_num; ++j) {
       arg_context->emplace_back(parameter_contexts[0]);
