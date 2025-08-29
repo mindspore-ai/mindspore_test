@@ -18,7 +18,7 @@
 #include <string>
 
 #include "common/common_test.h"
-#include "ps/core/cluster_config.h"
+#include "cluster/rpc/core/cluster_config.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "utils/ms_utils.h"
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "ps/core/communicator/ssl_client.h"
-#include "ps/core/communicator/ssl_wrapper.h"
+#include "cluster/rpc/core/communicator/ssl_client.h"
+#include "cluster/rpc/core/communicator/ssl_wrapper.h"
 #include "utils/ms_exception.h"
 #include "cluster/rpc/tcp/ssl_socket_operation.h"
 

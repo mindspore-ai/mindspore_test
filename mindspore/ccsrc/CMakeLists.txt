@@ -126,7 +126,6 @@ endif()
 
 
 set(BACKEND_COMMON_SUB_COMP
-        ps
         tools
         cluster
         kernel

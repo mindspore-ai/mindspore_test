@@ -35,8 +35,8 @@
 #include "utils/distributed_meta.h"
 #include "nlohmann/json.hpp"
 #include "include/backend/distributed/ps/ps_context.h"
-#include "ps/core/comm_util.h"
-#include "ps/core/cluster_config.h"
+#include "cluster/rpc/core/comm_util.h"
+#include "cluster/rpc/core/cluster_config.h"
 #include "include/common/debug/common.h"
 #include "utils/ms_exception.h"
 

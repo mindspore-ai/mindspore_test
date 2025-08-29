@@ -21,6 +21,7 @@ if(NOT ENABLE_CPU OR WIN32 OR APPLE)
             endif()
         endforeach()
     endforeach()
+    list(APPEND _CLUSTER_SRC_FILES "rpc/core/ps_context.cc")
 endif()
 
 set_property(SOURCE ${_CLUSTER_SRC_FILES} PROPERTY COMPILE_DEFINITIONS

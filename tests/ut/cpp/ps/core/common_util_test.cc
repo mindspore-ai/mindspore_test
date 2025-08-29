@@ -15,7 +15,7 @@
  */
 
 #include "common/common_test.h"
-#include "ps/core/comm_util.h"
+#include "cluster/rpc/core/comm_util.h"
 
 #include <memory>
 #include <thread>
