@@ -20,6 +20,9 @@
 #include "kernel/cpu/resize_bicubic_grad_cpu_kernel.h"
 #include <limits>
 #include <utility>
+#include <array>
+#include <memory>
+#include <numeric>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic_grad.h"
 
@@ -29,35 +32,32 @@ namespace resize_bicubic_grad_cpu {
 namespace {
 constexpr size_t kResizeBicubicGradInputsNum = 4;
 constexpr size_t kResizeBicubicGradOutputNum = 1;
-constexpr int64_t cached_values_hand_max = 4;
-constexpr size_t caseid3 = 3;
-constexpr int64_t calnum8 = 8;
-constexpr int64_t calnum5 = 5;
-constexpr int64_t calnum4 = 4;
-constexpr int64_t calnum3 = 3;
-constexpr int64_t calnum2 = 2;
+constexpr int64_t kCachedValuesHandMax = 4;
+constexpr int64_t kCalnum8 = 8;
+constexpr int64_t kCalnum5 = 5;
+constexpr int64_t kCalnum4 = 4;
+constexpr int64_t kCalnum3 = 3;
+constexpr int64_t kCalnum2 = 2;
+constexpr size_t i0 = 0;
+constexpr size_t i1 = 1;
+constexpr size_t i2 = 2;
+constexpr size_t i3 = 3;
+constexpr size_t kResizeBicubicGradRank = 4;
 static const int64_t kTableSize = (1 << 10);
 const int64_t kParallelDataNum = 1024 * 256;
-std::vector<int64_t> resize_shape;
-std::vector<int64_t> origin_shape;
-bool align_corners = false;
-bool half_pixel_centers = false;
-int64_t origin_chw;
-int64_t origin_hw;
-int64_t resized_chw;
-int64_t resized_hw;
 }  // namespace
 
 struct ResizerGradState {
-  void CalculateSize(const std::vector<int64_t> &resize_shape, const std::vector<int64_t> &origin_shape) {
+  void CalculateSize(const std::vector<int64_t> &resize_shape, const std::vector<int64_t> &origin_shape,
+                     bool align_corners_flag) {
     batch_size = resize_shape[kIndex0];
     channels = resize_shape[kIndex1];
     resized_height = resize_shape[kIndex2];
     resized_width = resize_shape[kIndex3];
     original_height = origin_shape[kIndex2];
     original_width = origin_shape[kIndex3];
-    height_scale = Scaling(original_height, resized_height, align_corners);
-    width_scale = Scaling(original_width, resized_width, align_corners);
+    height_scale = Scaling(original_height, resized_height, align_corners_flag);
+    width_scale = Scaling(original_width, resized_width, align_corners_flag);
     origin_chw = channels * original_height * original_width;
     origin_hw = original_height * original_width;
     resized_chw = resized_height * resized_width * channels;
@@ -71,18 +71,55 @@ struct ResizerGradState {
   int64_t resized_width;
   float height_scale;
   float width_scale;
+  int64_t origin_chw;
+  int64_t origin_hw;
+  int64_t resized_chw;
+  int64_t resized_hw;
 };
 
-struct WeightsAndIndices {
-  float weight_0;
-  float weight_1;
-  float weight_2;
-  float weight_3;
-  int64_t index_0;
-  int64_t index_1;
-  int64_t index_2;
-  int64_t index_3;
+class ResizeBicubicGradWeightsInfo {
+ public:
+  ResizeBicubicGradWeightsInfo() : weights{}, indices{}, advance(0) {}
+
+  std::array<float, kResizeBicubicGradRank> weights;
+  std::array<int64_t, kResizeBicubicGradRank> indices;
   size_t advance;
+
+  inline void SetWeightsAndIndices(const int64_t in_loc, const int64_t limit, const int64_t offset,
+                                   const std::vector<float> &coeffs_table, const bool use_keys_cubic) {
+    auto clamp = [&](int64_t v) -> int64_t { return std::min(limit - 1, std::max<int64_t>(0, v)); };
+    if (use_keys_cubic) {
+      indices[0] = clamp(in_loc - 1);
+      indices[1] = clamp(in_loc);
+      indices[2] = clamp(in_loc + 1);
+      indices[3] = clamp(in_loc + kCalnum2);
+      weights[0] = (indices[0] == in_loc - 1 ? coeffs_table[offset * kCalnum2 + 1] : 0.0f);
+      weights[1] = (indices[1] == in_loc ? coeffs_table[offset * kCalnum2] : 0.0f);
+      weights[2] = (indices[2] == in_loc + 1 ? coeffs_table[(kTableSize - offset) * kCalnum2] : 0.0f);
+      weights[3] = (indices[3] == in_loc + kCalnum2 ? coeffs_table[(kTableSize - offset) * kCalnum2 + 1] : 0.0f);
+      NormalizeWeightsIfNeeded();
+    } else {
+      weights[0] = coeffs_table[offset * kCalnum2 + 1];
+      weights[1] = coeffs_table[offset * kCalnum2];
+      weights[2] = coeffs_table[(kTableSize - offset) * kCalnum2];
+      weights[3] = coeffs_table[(kTableSize - offset) * kCalnum2 + 1];
+      indices[0] = clamp(in_loc - 1);
+      indices[1] = clamp(in_loc);
+      indices[2] = clamp(in_loc + 1);
+      indices[3] = clamp(in_loc + kCalnum2);
+    }
+  }
+
+  inline void SetAdvance(const size_t v) { advance = v; }
+
+  inline void NormalizeWeightsIfNeeded() {
+    const float weight_sum = weights[0] + weights[1] + weights[2] + weights[3];
+    if (std::abs(weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
+      const float one_over_weight_sum = 1.0f / weight_sum;
+      std::transform(weights.begin(), weights.end(), weights.begin(),
+                     [one_over_weight_sum](float w) { return w * one_over_weight_sum; });
+    }
+  }
 };
 
 struct HalfPixelScalerGrad {
@@ -101,10 +138,10 @@ class CachedInterpolationCalculator {
  public:
   CachedInterpolationCalculator() : indexes_{-1, -1, -1, -1} {}
   inline size_t Advance(const int64_t x_0, const int64_t x_1, const int64_t x_2, const int64_t x_3) {
-    const std::array<int64_t, 4> new_x_indices{{x_0, x_1, x_2, x_3}};
+    const std::array<int64_t, kResizeBicubicGradRank> new_x_indices{{x_0, x_1, x_2, x_3}};
     size_t cached_values_hand = 0;
     size_t new_indices_hand = 0;
-    while (cached_values_hand < cached_values_hand_max) {
+    while (cached_values_hand < kCachedValuesHandMax) {
       if (indexes_[cached_values_hand] == new_x_indices[new_indices_hand]) {
         if (new_indices_hand < cached_values_hand) {
           indexes_[new_indices_hand] = indexes_[cached_values_hand];
@@ -115,199 +152,155 @@ class CachedInterpolationCalculator {
         cached_values_hand++;
       }
     }
-    std::vector<int64_t> values = {x_0, x_1, x_2, x_3};
-    for (size_t i = new_indices_hand; i <= caseid3; ++i) {
-      indexes_[i] = values[i];
-    }
+    std::copy(new_x_indices.begin() + new_indices_hand, new_x_indices.end(), indexes_.begin() + new_indices_hand);
     return new_indices_hand;
   }
 
  private:
-  int64_t indexes_[4];
+  std::array<int64_t, kResizeBicubicGradRank> indexes_;
 };
 
-const float *InitCoeffsTable_(const double a) {
-  float *coeffs_table = new float[(kTableSize + 1) * 2];
-  for (int64_t i = 0; i <= kTableSize; ++i) {
-    float x = i * 1.0 / kTableSize;
-    coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
-    x += 1.0;
-    coeffs_table[i * calnum2 + 1] = ((a * x - calnum5 * a) * x + calnum8 * a) * x - calnum4 * a;
-  }
+const std::vector<float> &GetCoeffsTable(const bool use_keys_cubic) {
+  auto init_coeffs_table = [](const double val) -> std::vector<float> {
+    constexpr float kInvTableSize = 1.0f / kTableSize;
+    std::vector<float> coeffs_table((kTableSize + 1) * kCalnum2, 0);
 
-  return coeffs_table;
-}
-
-const float *GetCoeffsTable_(const bool use_keys_cubic) {
-  if (use_keys_cubic) {
-    static const float *coeffs_table = InitCoeffsTable_(-0.5f);
+    for (int i = 0; i <= kTableSize; ++i) {
+      float x = i * kInvTableSize;
+      auto base_position = i * kCalnum2;
+      coeffs_table[base_position] = ((val + kCalnum2) * x - (val + kCalnum3)) * x * x + 1;
+      x += 1.0f;
+      coeffs_table[base_position + 1] = ((val * x - kCalnum5 * val) * x + kCalnum8 * val) * x - kCalnum4 * val;
+    }
     return coeffs_table;
-  }
-  static const float *coeffs_table = InitCoeffsTable_(-0.75f);
-  return coeffs_table;
-}
+  };
 
-inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
+  static const std::vector<float> keys_coeffs_table = init_coeffs_table(-0.5f);
+  static const std::vector<float> mitchell_coeffs_table = init_coeffs_table(-0.75f);
+  return use_keys_cubic ? keys_coeffs_table : mitchell_coeffs_table;
+}
 
 template <typename Scaler, bool use_keys_cubic>
 inline void GetWeightsAndIndicesGrad(const float scale, const int64_t out_loc, const int64_t limit,
-                                     WeightsAndIndices *out) {
+                                     ResizeBicubicGradWeightsInfo *out) {
   const Scaler scaler;
   const float in_loc_f = scaler(out_loc, scale);
   const int64_t in_loc = std::floor(in_loc_f);
   const float delta = in_loc_f - in_loc;
   const int64_t offset = lrintf(delta * kTableSize);
-  const float *coeffs_table = GetCoeffsTable_(use_keys_cubic);
-  if (use_keys_cubic) {
-    out->index_0 = Bound(in_loc - 1, limit);
-    out->weight_0 = (out->index_0 == in_loc - 1 ? coeffs_table[offset * calnum2 + 1] : 0.0f);
-    out->index_1 = Bound(in_loc, limit);
-    out->weight_1 = (out->index_1 == in_loc ? coeffs_table[offset * calnum2] : 0.0f);
-    out->index_2 = Bound(in_loc + 1, limit);
-    out->weight_2 = (out->index_2 == in_loc + 1 ? coeffs_table[(kTableSize - offset) * calnum2] : 0.0f);
-    out->index_3 = Bound(in_loc + calnum2, limit);
-    out->weight_3 = (out->index_3 == in_loc + calnum2 ? coeffs_table[(kTableSize - offset) * calnum2 + 1] : 0.0f);
+  const auto &coeffs_table = GetCoeffsTable(use_keys_cubic);
 
-    const float weight_sum = out->weight_0 + out->weight_1 + out->weight_2 + out->weight_3;
-    if (std::abs(weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
-      const float one_over_weight_sum = 1.0f / weight_sum;
-      out->weight_0 *= one_over_weight_sum;
-      out->weight_1 *= one_over_weight_sum;
-      out->weight_2 *= one_over_weight_sum;
-      out->weight_3 *= one_over_weight_sum;
-    }
-  } else {
-    out->weight_0 = coeffs_table[offset * calnum2 + 1];
-    out->weight_1 = coeffs_table[offset * calnum2];
-    out->weight_2 = coeffs_table[(kTableSize - offset) * calnum2];
-    out->weight_3 = coeffs_table[(kTableSize - offset) * calnum2 + 1];
-    out->index_0 = Bound(in_loc - 1, limit);
-    out->index_1 = Bound(in_loc, limit);
-    out->index_2 = Bound(in_loc + 1, limit);
-    out->index_3 = Bound(in_loc + calnum2, limit);
-  }
+  out->SetWeightsAndIndices(in_loc, limit, offset, coeffs_table, use_keys_cubic);
 }
 
-static void ComputeGradientXWeightsAndIndices(const ResizerGradState &RGS, const bool half_pixel_centers_,
-                                              std::vector<WeightsAndIndices> *x_wais) {
+static void ComputeGradientXWeightsAndIndices(const ResizerGradState &stat, const bool half_pixel_centers_,
+                                              std::vector<ResizeBicubicGradWeightsInfo> *x_wais) {
   CachedInterpolationCalculator calc;
   if (half_pixel_centers_) {
-    for (int64_t x = 0; x < RGS.resized_width; ++x) {
-      GetWeightsAndIndicesGrad<HalfPixelScalerGrad, true>(RGS.width_scale, x, RGS.original_width,
+    for (int64_t x = 0; x < stat.resized_width; ++x) {
+      GetWeightsAndIndicesGrad<HalfPixelScalerGrad, true>(stat.width_scale, x, stat.original_width,
                                                           &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.advance = calc.Advance(x_wai.index_0, x_wai.index_1, x_wai.index_2, x_wai.index_3);
+      x_wai.SetAdvance(calc.Advance(x_wai.indices[i0], x_wai.indices[i1], x_wai.indices[i2], x_wai.indices[i3]));
     }
   } else {
-    for (int64_t x = 0; x < RGS.resized_width; ++x) {
-      GetWeightsAndIndicesGrad<LegacyScalerGrad, false>(RGS.width_scale, x, RGS.original_width,
+    for (int64_t x = 0; x < stat.resized_width; ++x) {
+      GetWeightsAndIndicesGrad<LegacyScalerGrad, false>(stat.width_scale, x, stat.original_width,
                                                         &(*x_wais)[static_cast<size_t>(x)]);
       auto &x_wai = (*x_wais)[static_cast<size_t>(x)];
-      x_wai.advance = calc.Advance(x_wai.index_0, x_wai.index_1, x_wai.index_2, x_wai.index_3);
+      x_wai.SetAdvance(calc.Advance(x_wai.indices[i0], x_wai.indices[i1], x_wai.indices[i2], x_wai.indices[i3]));
     }
   }
 }
 
-const int64_t Calindex(const ResizerGradState &RGS, const int64_t &x1, const int64_t &x2, const int64_t &x3,
-                       const int64_t &x4, bool flag_) {
-  if (!flag_) {
-    return x1 * origin_chw + x2 * origin_hw + x3 * RGS.original_width + x4;
-  } else {
-    return x1 * resized_chw + x2 * resized_hw + x3 * RGS.resized_width + x4;
-  }
-}
-
 template <typename T>
-void ResizeCommomCalc(const ResizerGradState &RGS, const bool half_pixel_centers,
-                      const std::vector<WeightsAndIndices> &x_wais, const bool flag, const float *input_grad,
-                      T *output_grad, int64_t b, int64_t c, int64_t y) {
-  WeightsAndIndices y_wai;
+void ResizeCommomCalc(const ResizerGradState &stat, const bool half_pixel_centers,
+                      const std::vector<ResizeBicubicGradWeightsInfo> &x_wais, const float *input_grad, T *output_grad,
+                      int64_t b, int64_t c, int64_t y) {
+#define UNROLL_4X4_LOOP(y_wai, x_wai, curr_input_grad, output_grad_index, b, c, output_grad)                           \
+  do {                                                                                                                 \
+    const float grad_val = curr_input_grad;                                                                            \
+    const auto &y_weights = y_wai.weights;                                                                             \
+    const auto &y_indices = y_wai.indices;                                                                             \
+    const auto &x_weights = x_wai.weights;                                                                             \
+    const auto &x_indices = x_wai.indices;                                                                             \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i0])] += T(grad_val * y_weights[i0] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i1])] += T(grad_val * y_weights[i0] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i2])] += T(grad_val * y_weights[i0] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i0], x_indices[i3])] += T(grad_val * y_weights[i0] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i0])] += T(grad_val * y_weights[i1] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i1])] += T(grad_val * y_weights[i1] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i2])] += T(grad_val * y_weights[i1] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i1], x_indices[i3])] += T(grad_val * y_weights[i1] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i0])] += T(grad_val * y_weights[i2] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i1])] += T(grad_val * y_weights[i2] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i2])] += T(grad_val * y_weights[i2] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i2], x_indices[i3])] += T(grad_val * y_weights[i2] * x_weights[i3]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i0])] += T(grad_val * y_weights[i3] * x_weights[i0]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i1])] += T(grad_val * y_weights[i3] * x_weights[i1]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i2])] += T(grad_val * y_weights[i3] * x_weights[i2]); \
+    output_grad[output_grad_index(b, c, y_indices[i3], x_indices[i3])] += T(grad_val * y_weights[i3] * x_weights[i3]); \
+  } while (0)
+
+  auto input_grad_index = [&stat](int64_t x1, int64_t x2, int64_t x3, int64_t x4) -> int64_t {
+    return x1 * stat.resized_chw + x2 * stat.resized_hw + x3 * stat.resized_width + x4;
+  };
+
+  auto output_grad_index = [&stat](int64_t x1, int64_t x2, int64_t x3, int64_t x4) -> int64_t {
+    return x1 * stat.origin_chw + x2 * stat.origin_hw + x3 * stat.original_width + x4;
+  };
+
+  ResizeBicubicGradWeightsInfo y_wai;
   if (half_pixel_centers) {
-    GetWeightsAndIndicesGrad<HalfPixelScalerGrad, true>(RGS.height_scale, y, RGS.original_height, &y_wai);
+    GetWeightsAndIndicesGrad<HalfPixelScalerGrad, true>(stat.height_scale, y, stat.original_height, &y_wai);
   } else {
-    GetWeightsAndIndicesGrad<LegacyScalerGrad, false>(RGS.height_scale, y, RGS.original_height, &y_wai);
+    GetWeightsAndIndicesGrad<LegacyScalerGrad, false>(stat.height_scale, y, stat.original_height, &y_wai);
   }
-  for (int64_t x = 0; x < RGS.resized_width; ++x) {
-    const WeightsAndIndices &x_wai = x_wais[static_cast<size_t>(x)];
-    float curr_input_grad = input_grad[Calindex(RGS, b, c, y, x, flag)];
-    // row 0 of 0, 1, 2, 3
-    output_grad[Calindex(RGS, b, c, y_wai.index_0, x_wai.index_0, !flag)] +=
-      T(curr_input_grad * y_wai.weight_0 * x_wai.weight_0);
-    output_grad[Calindex(RGS, b, c, y_wai.index_0, x_wai.index_1, !flag)] +=
-      T(curr_input_grad * y_wai.weight_0 * x_wai.weight_1);
-    output_grad[Calindex(RGS, b, c, y_wai.index_0, x_wai.index_2, !flag)] +=
-      T(curr_input_grad * y_wai.weight_0 * x_wai.weight_2);
-    output_grad[Calindex(RGS, b, c, y_wai.index_0, x_wai.index_3, !flag)] +=
-      T(curr_input_grad * y_wai.weight_0 * x_wai.weight_3);
 
-    // row 1 of 0, 1, 2, 3
-    output_grad[Calindex(RGS, b, c, y_wai.index_1, x_wai.index_0, !flag)] +=
-      T(curr_input_grad * y_wai.weight_1 * x_wai.weight_0);
-    output_grad[Calindex(RGS, b, c, y_wai.index_1, x_wai.index_1, !flag)] +=
-      T(curr_input_grad * y_wai.weight_1 * x_wai.weight_1);
-    output_grad[Calindex(RGS, b, c, y_wai.index_1, x_wai.index_2, !flag)] +=
-      T(curr_input_grad * y_wai.weight_1 * x_wai.weight_2);
-    output_grad[Calindex(RGS, b, c, y_wai.index_1, x_wai.index_3, !flag)] +=
-      T(curr_input_grad * y_wai.weight_1 * x_wai.weight_3);
+  for (int64_t x = 0; x < stat.resized_width; ++x) {
+    const ResizeBicubicGradWeightsInfo &x_wai = x_wais[static_cast<size_t>(x)];
+    float curr_input_grad = input_grad[input_grad_index(b, c, y, x)];
 
-    // row 2 of 0, 1, 2, 3
-    output_grad[Calindex(RGS, b, c, y_wai.index_2, x_wai.index_0, !flag)] +=
-      T(curr_input_grad * y_wai.weight_2 * x_wai.weight_0);
-    output_grad[Calindex(RGS, b, c, y_wai.index_2, x_wai.index_1, !flag)] +=
-      T(curr_input_grad * y_wai.weight_2 * x_wai.weight_1);
-    output_grad[Calindex(RGS, b, c, y_wai.index_2, x_wai.index_2, !flag)] +=
-      T(curr_input_grad * y_wai.weight_2 * x_wai.weight_2);
-    output_grad[Calindex(RGS, b, c, y_wai.index_2, x_wai.index_3, !flag)] +=
-      T(curr_input_grad * y_wai.weight_2 * x_wai.weight_3);
-
-    // row 3 of 0, 1, 2, 3
-    output_grad[Calindex(RGS, b, c, y_wai.index_3, x_wai.index_0, !flag)] +=
-      T(curr_input_grad * y_wai.weight_3 * x_wai.weight_0);
-    output_grad[Calindex(RGS, b, c, y_wai.index_3, x_wai.index_1, !flag)] +=
-      T(curr_input_grad * y_wai.weight_3 * x_wai.weight_1);
-    output_grad[Calindex(RGS, b, c, y_wai.index_3, x_wai.index_2, !flag)] +=
-      T(curr_input_grad * y_wai.weight_3 * x_wai.weight_2);
-    output_grad[Calindex(RGS, b, c, y_wai.index_3, x_wai.index_3, !flag)] +=
-      T(curr_input_grad * y_wai.weight_3 * x_wai.weight_3);
+    UNROLL_4X4_LOOP(y_wai, x_wai, curr_input_grad, output_grad_index, b, c, output_grad);
   }
+
+#undef UNROLL_4X4_LOOP
 }
 
 template <typename T>
-void CalNonUtil(const ResizerGradState &RGS, const bool half_pixel_centers,
-                const std::vector<WeightsAndIndices> &x_wais, const bool flag, const float *input_grad,
-                T *output_grad) {
-  for (int64_t b = 0; b < RGS.batch_size; ++b) {
-    for (int64_t c = 0; c < RGS.channels; ++c) {
-      for (int64_t y = 0; y < RGS.resized_height; ++y) {
-        ResizeCommomCalc(RGS, half_pixel_centers, x_wais, flag, input_grad, output_grad, b, c, y);
+void CalNonUtil(const ResizerGradState &stat, const bool half_pixel_centers,
+                const std::vector<ResizeBicubicGradWeightsInfo> &x_wais, const float *input_grad, T *output_grad) {
+  for (int64_t b = 0; b < stat.batch_size; ++b) {
+    for (int64_t c = 0; c < stat.channels; ++c) {
+      for (int64_t y = 0; y < stat.resized_height; ++y) {
+        ResizeCommomCalc(stat, half_pixel_centers, x_wais, input_grad, output_grad, b, c, y);
       }
     }
   }
 }
 
 template <typename T>
-inline void ResizeBicubicGrad(const float *input_grad, const ResizerGradState &RGS, const bool half_pixel_centers_,
+inline void ResizeBicubicGrad(const float *input_grad, const ResizerGradState &stat, const bool half_pixel_centers_,
                               T *output_grad) {
-  std::vector<WeightsAndIndices> x_wais(RGS.resized_width);
-  ComputeGradientXWeightsAndIndices(RGS, half_pixel_centers_, &x_wais);
-  const bool flag = true;
-  bool utils_flag = false;
-  if (RGS.original_width * RGS.original_height * RGS.channels * RGS.batch_size >= kParallelDataNum) {
-    utils_flag = true;
+  std::vector<ResizeBicubicGradWeightsInfo> x_wais(stat.resized_width);
+  ComputeGradientXWeightsAndIndices(stat, half_pixel_centers_, &x_wais);
+  bool need_parallel = false;
+  if (stat.original_width * stat.original_height * stat.channels * stat.batch_size >= kParallelDataNum) {
+    need_parallel = true;
   }
-  if (utils_flag) {
+  if (need_parallel) {
     auto task = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; ++i) {
-        const int64_t b = SizeToLong(i) / (RGS.channels * RGS.resized_height);
-        const int64_t c = SizeToLong(i) / RGS.resized_height % RGS.channels;
-        const int64_t y = SizeToLong(i) % RGS.resized_height;
-        ResizeCommomCalc(RGS, half_pixel_centers_, x_wais, flag, input_grad, output_grad, b, c, y);
+        const int64_t b = SizeToLong(i) / (stat.channels * stat.resized_height);
+        const int64_t c = SizeToLong(i) / stat.resized_height % stat.channels;
+        const int64_t y = SizeToLong(i) % stat.resized_height;
+        ResizeCommomCalc(stat, half_pixel_centers_, x_wais, input_grad, output_grad, b, c, y);
       }
     };
-    const size_t parallel_num = static_cast<size_t>(RGS.batch_size * RGS.channels * RGS.resized_height);
+    const size_t parallel_num = static_cast<size_t>(stat.batch_size * stat.channels * stat.resized_height);
     CPUKernelUtils::ParallelFor(task, parallel_num);
   } else {
-    CalNonUtil(RGS, half_pixel_centers_, x_wais, flag, input_grad, output_grad);
+    CalNonUtil(stat, half_pixel_centers_, x_wais, input_grad, output_grad);
   }
 }
 
@@ -330,10 +323,10 @@ int ResizeBicubicGradCPUKernelMod::Resize(const std::vector<KernelTensor *> &inp
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  resize_shape = inputs.at(kIndex0)->GetDeviceShapeVector();
-  origin_shape = inputs.at(kIndex1)->GetDeviceShapeVector();
-  align_corners = inputs.at(kIndex2)->GetValueWithCheck<bool>();
-  half_pixel_centers = inputs.at(kIndex3)->GetValueWithCheck<bool>();
+  resize_shape_ = inputs.at(kIndex0)->GetDeviceShapeVector();
+  origin_shape_ = inputs.at(kIndex1)->GetDeviceShapeVector();
+  align_corners_ = inputs.at(kIndex2)->GetValueWithCheck<bool>();
+  half_pixel_centers_ = inputs.at(kIndex3)->GetValueWithCheck<bool>();
   return KRET_OK;
 }
 
@@ -348,9 +341,9 @@ bool ResizeBicubicGradCPUKernelMod::LaunchKernel(const std::vector<KernelTensor 
   if (memset_s(dx, dx_size, 0, dx_size) != EOK) {
     MS_EXCEPTION(ValueError) << "Memset Failed!";
   }
-  ResizerGradState sta;
-  sta.CalculateSize(resize_shape, origin_shape);
-  ResizeBicubicGrad(dy, sta, half_pixel_centers, dx);
+  ResizerGradState stat;
+  stat.CalculateSize(resize_shape_, origin_shape_, align_corners_);
+  ResizeBicubicGrad(dy, stat, half_pixel_centers_, dx);
   return true;
 }
 
