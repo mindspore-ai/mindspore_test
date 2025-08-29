@@ -45,10 +45,10 @@ def default_convert(data):
     to a :class:`mindspore.Tensor`.
     If the input is not an NumPy array, it is left unchanged.
     This is used as the default function for collation when both `batch_sampler` and `batch_size`
-    are NOT defined in :class:`~mindspore.dataset.dataloader.DataLoader`.
+    are NOT defined in :class:`mindspore.dataset.dataloader.DataLoader`.
 
     The general input type to output type mapping is similar to that
-    of :func:`~mindspore.dataset.dataloader.DataLoader.default_collate`. See the description there for more details.
+    of :func:`mindspore.dataset.dataloader.DataLoader.default_collate`. See the description there for more details.
 
     Args:
         data: a single data point to be converted
@@ -111,6 +111,8 @@ def collate(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]
 
     Args:
         batch: a single batch to be collated
+
+    Keyword Args:
         collate_fn_map: Optional dictionary mapping from element type to the corresponding collate function.
             If the element type isn't present in this dictionary,
             this function will go through each key of the dictionary in the insertion order to
@@ -196,7 +198,7 @@ def default_collate(batch):
     The exact output type can be a :class:`mindspore.Tensor`, a `Sequence` of :class:`mindspore.Tensor`, a
     Collection of :class:`mindspore.Tensor`, or left unchanged, depending on the input type.
     This is used as the default function for collation when
-    `batch_size` or `batch_sampler` is defined in :class:`~mindspore.dataset.DataLoader`.
+    `batch_size` or `batch_sampler` is defined in :class:`mindspore.dataset.dataloader.DataLoader`.
 
     Here is the general input type (based on the type of the element within the batch) to output type mapping:
 

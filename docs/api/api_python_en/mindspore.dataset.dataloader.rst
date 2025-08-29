@@ -6,20 +6,20 @@ This module provides iterators for loading datasets. It supports loading both Ma
 Data Loader
 ---------------
 
-.. msautosummary::
+.. autosummary::
     :toctree: dataset_dataloader
     :nosignatures:
-    :template: classtemplate_inherited.rst
+    :template: classtemplate_dataset.rst
 
     mindspore.dataset.dataloader.DataLoader
 
 Datasets
 ------------
 
-.. msautosummary::
+.. autosummary::
     :toctree: dataset_dataloader
     :nosignatures:
-    :template: classtemplate_inherited.rst
+    :template: classtemplate_dataset.rst
 
     mindspore.dataset.dataloader.Dataset
     mindspore.dataset.dataloader.IterableDataset
@@ -28,10 +28,10 @@ Datasets
 Samplers
 ------------
 
-.. msautosummary::
+.. autosummary::
     :toctree: dataset_dataloader
     :nosignatures:
-    :template: classtemplate_inherited.rst
+    :template: classtemplate_dataset.rst
 
     mindspore.dataset.dataloader.Sampler
     mindspore.dataset.dataloader.SequentialSampler
@@ -42,10 +42,10 @@ Samplers
 Collate Functions
 ---------------------
 
-.. msautosummary::
+.. autosummary::
     :toctree: dataset_dataloader
     :nosignatures:
-    :template: classtemplate_inherited.rst
+    :template: classtemplate_dataset.rst
 
     mindspore.dataset.dataloader.default_collate
     mindspore.dataset.dataloader.default_convert
@@ -54,9 +54,9 @@ Collate Functions
 Utilities
 -------------
 
-.. msautosummary::
+.. autosummary::
     :toctree: dataset_dataloader
     :nosignatures:
-    :template: classtemplate_inherited.rst
+    :template: classtemplate_dataset.rst
 
     mindspore.dataset.dataloader.get_worker_info
