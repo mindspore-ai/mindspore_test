@@ -45,6 +45,13 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_pipeline_stages
     :members:
 
+{% elif fullname=="mindspore.parallel.distributed.DistributedDataParallel" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: allocate_buffers_for_parameters, final_grad_reduce, construct, broadcast_coalesced
+    :members:
+
 {% elif fullname=="mindspore.profiler.profile" %}
 {{ fullname | underline }}
 
