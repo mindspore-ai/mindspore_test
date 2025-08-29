@@ -25,7 +25,6 @@ from mindspore import context, Tensor
 
 grad = C.GradOperation(get_all=True)
 
-
 def check_keyword_in_ir(ir_path, kernel, keyword):
     cmd = f"grep '= {kernel}' {ir_path}"
     print(f'===== cmd: {cmd}', flush=True)
@@ -202,23 +201,22 @@ def test_ms_disable_lccl_kernels_list():
     assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
     print(f'===== end graph_build_2 +++', flush=True)
 
-    # Black list for non kernels, AllGather go lccl, AllGatherMatmul go lccl.
-    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = ","
+    # Black list for multiple 'AllGather's, AllGather go hccl, AllGatherMatmul go lccl.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "AllGather,AllGather,AllGather"
     net3 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
     out0 = net3(x)[0].asnumpy()
     out1 = net3(x)[1].asnumpy()
     print("====================================================="
           f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
     path = './graph_lccl_kernels_list/rank_0/graph_build_3_*'
-    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
-    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
     assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
     assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
     print(f'===== end graph_build_3 +++', flush=True)
 
-    # Black list for wrong spelling 'Allgather' and correct 'AllGatherMatmul',
-    # Allgather go lccl, AllGatherMatmul go aclnn(no 'collective_comm_lib' tag).
-    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "Allgather,AllGatherMatmul"
+    # Black list for non kernels, AllGather go lccl, AllGatherMatmul go lccl.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = ","
     net4 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
     out0 = net4(x)[0].asnumpy()
     out1 = net4(x)[1].asnumpy()
@@ -227,22 +225,37 @@ def test_ms_disable_lccl_kernels_list():
     path = './graph_lccl_kernels_list/rank_0/graph_build_4_*'
     assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
     assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
-    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
     assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
     print(f'===== end graph_build_4 +++', flush=True)
 
-    # Black list for correct 'AllGather' and  'AllGatherMatmul', Allgather go hccl, AllGatherMatmul go aclnn.
-    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "AllGather,AllGatherMatmul"
+    # Black list for wrong spelling 'Allgather' and correct 'AllGatherMatmul',
+    # Allgather go lccl, AllGatherMatmul go aclnn(no 'collective_comm_lib' tag).
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "Allgather,AllGatherMatmul"
     net5 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
     out0 = net5(x)[0].asnumpy()
     out1 = net5(x)[1].asnumpy()
     print("====================================================="
           f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
     path = './graph_lccl_kernels_list/rank_0/graph_build_5_*'
+    assert check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
+    assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
+    print(f'===== end graph_build_5 +++', flush=True)
+
+    # Black list for correct 'AllGather' and  'AllGatherMatmul', Allgather go hccl, AllGatherMatmul go aclnn.
+    os.environ['MS_DISABLE_LCCL_KERNELS_LIST'] = "AllGather,AllGatherMatmul"
+    net6 = AllGatherMatmulNet(seq_len, hidden_size, dp, mp)
+    out0 = net6(x)[0].asnumpy()
+    out1 = net6(x)[1].asnumpy()
+    print("====================================================="
+          f"\n output0:\n{out0}, \n output1:\n{out1},", flush=True)
+    path = './graph_lccl_kernels_list/rank_0/graph_build_6_*'
     assert not check_keyword_in_ir(path, kernel_allgather, keyword_lccl)
     assert check_keyword_in_ir(path, kernel_allgather, keyword_hccl)
     assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_lccl)
     assert not check_keyword_in_ir(path, kernel_allgathermatmul, keyword_hccl)
-    print(f'===== end graph_build_5 +++', flush=True)
+    print(f'===== end graph_build_6 +++', flush=True)
 
     os.environ['MS_DEV_SAVE_GRAPHS'] = str(0)
