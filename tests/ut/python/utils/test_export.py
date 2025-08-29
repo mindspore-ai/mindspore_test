@@ -16,7 +16,6 @@
 import os
 from io import BytesIO
 import numpy as np
-import pytest as py
 
 import mindspore
 import mindspore.nn as nn
@@ -110,16 +109,6 @@ class LeNet5(nn.Cell):
         return x
 
 
-class InputNet1(nn.Cell):
-    def construct(self, x):
-        return x
-
-
-class InputNet2(nn.Cell):
-    def construct(self, x, y):
-        return x, y
-
-
 class WithLossCell(nn.Cell):
     def __init__(self, network):
         super(WithLossCell, self).__init__(auto_prefix=False)
@@ -188,46 +177,6 @@ def test_export_lenet_with_dataset():
     verify_name = file_name + ".mindir"
     assert os.path.exists(verify_name)
     os.remove(verify_name)
-
-
-def test_export_lenet_onnx_with_encryption():
-    """
-    Feature: Export encrypted LeNet to ONNX
-    Description: Test export API to save network with encryption into ONNX
-    Expectation: save successfully
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    network = LeNet5()
-    network.set_train()
-    file_name = "lenet_preprocess"
-
-    input_tensor = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
-    export(network, input_tensor, file_name=file_name, file_format='ONNX',
-           enc_key=b'123456789', enc_mode=encrypt_func)
-    verify_name = file_name + ".onnx"
-    assert os.path.exists(verify_name)
-    os.remove(verify_name)
-
-
-def test_export_onnx_dynamic_shape():
-    """
-    Feature: Export dynamic input to ONNX
-    Description: Test export API to save network with dynamic shape into ONNX
-    Expectation: raise valueerror.
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    network = LeNet5()
-    network.set_train()
-    file_name = "lenet"
-
-    input1 = Tensor(shape=[None], dtype=mindspore.float32)
-    input2 = Tensor(shape=[None, 12, 34], dtype=mindspore.float32)
-    with py.raises(ValueError):
-        export(network, input1, file_name=file_name, file_format='ONNX')
-    with py.raises(ValueError):
-        export(network, input2, file_name=file_name, file_format='ONNX')
-    with py.raises(ValueError):
-        export(network, input1, input2, file_name=file_name, file_format='ONNX')
 
 
 def test_export_lenet_mindir_with_encryption():

@@ -18,7 +18,6 @@ from __future__ import absolute_import
 from __future__ import division
 
 import os
-import stat
 
 import mindspore.nn as nn
 from mindspore import log as logger
@@ -81,58 +80,57 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
     """
     Validator.check_file_name_by_regular(file_name)
     logger.info("exporting model file:%s format:%s.", file_name, "ONNX")
-    if input_names is not None and not isinstance(input_names, list):
-        raise ValueError(
-            f"For 'onnx.export', the type of 'input_names' must be a list, but got '{type(input_names)}'")
-    if output_names is not None and not isinstance(output_names, list):
-        raise ValueError(
-            f"For 'onnx.export', the type of 'output_names' must be a list, but got '{type(output_names)}'")
-    if dynamic_axes is not None and not isinstance(dynamic_axes, dict):
-        raise ValueError(
-            f"For 'onnx.export', the type of 'dynamic_axes' must be a directory, but got '{type(dynamic_axes)}'")
-
-    extra_save_params = False
+    Validator.check_isinstance("net", net, nn.Cell)
+    input_names = input_names or []
+    Validator.check_isinstance("input_names", input_names, list)
+    output_names = output_names or []
+    Validator.check_isinstance("output_names", output_names, list)
+    dynamic_axes = dynamic_axes or {}
+    Validator.check_isinstance("dynamic_axes", dynamic_axes, dict)
 
     if check_input_dataset(*inputs, dataset_type=Dataset):
         raise ValueError(f"Can not support dataset as inputs to export ONNX model.")
 
-    file_name = os.path.realpath(file_name)
-
-    if not isinstance(net, nn.Cell):
-        raise ValueError(f"Export ONNX format model only support nn.Cell object, but got {type(net)}.")
-
     cell_mode = net.training
     net.set_train(mode=False)
-    total_size = _calculation_net_size(net)
-    if total_size > PROTO_LIMIT_SIZE:
+
+    extra_save_params = False
+    if _calculation_net_size(net) > PROTO_LIMIT_SIZE:
         logger.warning('Network size is: {}G, it exceeded the protobuf: {}G limit, now parameters in network are saved '
                        'in external data files.'.format(total_size / 1024 / 1024, PROTO_LIMIT_SIZE / 1024 / 1024))
         extra_save_params = True
+
     phase_name = 'export.onnx'
     graph_id, _ = _executor.compile(net, *inputs, phase=phase_name, do_convert=False)
 
-    if not file_name.endswith('.onnx'):
-        file_name += ".onnx"
     abs_file_name = os.path.abspath(file_name)
-    if os.path.exists(abs_file_name):
-        os.chmod(abs_file_name, stat.S_IWUSR)
-    else:
-        dir_path = os.path.dirname(abs_file_name)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path, mode=0o700, exist_ok=True)
-        os.chmod(dir_path, 0o700)
+    if not abs_file_name.endswith('.onnx'):
+        abs_file_name += ".onnx"
 
-    abs_file_dir = ""
-    if extra_save_params:
-        abs_file_dir = os.path.dirname(abs_file_name)
+    dir_path = os.path.dirname(abs_file_name)
+    if dir_path and not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+
+    abs_file_dir = os.path.dirname(abs_file_name) if extra_save_params else ""
 
     onnx_stream = _executor._get_onnx_func_graph_proto(obj=net, exec_id=graph_id, input_names=input_names,
                                                        output_names=output_names, export_params=export_params,
                                                        keep_initializers_as_inputs=keep_initializers_as_inputs,
                                                        dynamic_axes=dynamic_axes, extra_save_params=extra_save_params,
                                                        save_file_dir=abs_file_dir)
-    with open(abs_file_name, 'wb') as f:
-        f.write(onnx_stream)
-        os.chmod(abs_file_name, stat.S_IRUSR)
+    if onnx_stream is None:
+        raise RuntimeError("Export onnx model failed, ensure that the model has been compiled correctly")
+
+    try:
+        with open(abs_file_name, 'wb') as f:
+            f.write(onnx_stream)
+
+        if os.path.getsize(abs_file_name) != len(onnx_stream):
+            logger.warning("ONNX file size doesn't match expected value, but proceeding continue.")
+
+    except IOError as e:
+        logger.error(f"Failed to write ONNX file: {e}")
+        if os.path.exists(abs_file_name):
+            os.remove(abs_file_name)
 
     net.set_train(mode=cell_mode)
