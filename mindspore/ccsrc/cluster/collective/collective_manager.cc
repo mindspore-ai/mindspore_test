@@ -490,6 +490,8 @@ bool CollectiveManager::Finalize() {
   }
 
   std::function<bool()> finalize_comm_lib_func = [&, this]() {
+    // Ensure all comms are initialized to avoid exiting error.
+    (void)WaitAllCommInitDone();
     if (need_host_collective_) {
       MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
       MS_LOG(INFO) << "Start finalizing host communication lib.";
