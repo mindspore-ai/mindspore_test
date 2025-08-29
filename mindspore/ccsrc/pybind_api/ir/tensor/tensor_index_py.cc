@@ -2790,6 +2790,12 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
                                      "TensorGetItem");
   runtime::Pipeline::Get().WaitFrontend();
   kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
+  MS_EXCEPTION_IF_NULL(pynative_executor);
+  kernel::pyboost::OpRunStatus::Get().set_run_info(
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
+                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
+                              pynative_executor->forward_executor()->device_target()));
   if (py::isinstance<py::bool_>(py_index)) {
     TensorPtr self_viewed = DoExpandDims(self, 0);
     TensorPtr index_for_bool = py::cast<py::bool_>(py_index) == py::bool_(true) ? tensor_1d : empty_tensor_1d;
@@ -2876,6 +2882,12 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
                                      "TensorSetItem");
   runtime::Pipeline::Get().WaitFrontend();
   kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
+  MS_EXCEPTION_IF_NULL(pynative_executor);
+  kernel::pyboost::OpRunStatus::Get().set_run_info(
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
+                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
+                              pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   TensorPtr tensor_value;
   TypePtr self_dtype = TypeIdToType(self->data_type());
