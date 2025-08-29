@@ -156,11 +156,6 @@ void ClearResPart2() {
   MS_LOG(INFO) << "Start clear BackendManager...";
   backend::BackendManager::GetInstance().Clear();
   MS_LOG(INFO) << "End clear BackendManager...";
-
-  MS_LOG(INFO) << "Start clear device context...";
-  device::DeviceContextManager::GetInstance().ClearDeviceContexts();
-  MS_LOG(INFO) << "End clear device context.";
-
   MS_LOG(INFO) << "Start clear CollectiveManager...";
   // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper in ClearDeviceContexts
   (void)distributed::collective::CollectiveManager::instance()->Finalize();
@@ -170,6 +165,10 @@ void ClearResPart2() {
   // ClusterContext should be finalized only after all communication groups have been cleared.
   pipeline::FinalizeCluster();
   MS_LOG(INFO) << "End clear ClusterContext.";
+
+  MS_LOG(INFO) << "Start clear device context...";
+  device::DeviceContextManager::GetInstance().ClearDeviceContexts();
+  MS_LOG(INFO) << "End clear device context.";
 
   MS_LOG(INFO) << "Start clear AnalysisResultCacheMgr...";
   abstract::AnalysisResultCacheMgr::GetInstance().Clear();

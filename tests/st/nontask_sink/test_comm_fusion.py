@@ -123,11 +123,11 @@ def test_hccl_allgather_fusion_by_attr():
     ir_allgather_num1 = find_file('rank_0/graph_build_0*.ir', ' AllGather')
     assert ir_allgather_num1 == '4'
 
-    net2 = AllGatherFusionNet(True)
+    net2 = AllGatherFusionNet(False)
     output2 = net2(Tensor(input_x, mstype.float32), Tensor(input_x, mstype.float32),
                    Tensor(input_x, mstype.float32), Tensor(input_x, mstype.float32))
     ir_allgather_num2 = find_file('rank_0/graph_build_1*.ir', ' AllGather')
-    assert ir_allgather_num2 == '2'
+    assert ir_allgather_num2 == '4'
 
     expect_output = [[2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2, 2, 2],
                      [2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2, 2, 2]]
@@ -181,11 +181,11 @@ def test_hccl_reducescatter_fusion_by_attr():
     ir_reducescatter_num1 = find_file('rank_0/graph_build_0*.ir', ' ReduceScatter')
     assert ir_reducescatter_num1 == '4'
 
-    net2 = ReduceScatterFusionNet(True)
+    net2 = ReduceScatterFusionNet(False)
     output2 = net2(Tensor(input_x, mstype.float32), Tensor(input_x, mstype.float32),
                    Tensor(input_x, mstype.float32), Tensor(input_x, mstype.float32))
     ir_reducescatter_num2 = find_file('rank_0/graph_build_1*.ir', ' ReduceScatter')
-    assert ir_reducescatter_num2 == '2'
+    assert ir_reducescatter_num2 == '4'
 
     expect_output = [[16], [16], [16], [16]]
     for i in range(4):
