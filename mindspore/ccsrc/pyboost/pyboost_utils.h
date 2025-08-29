@@ -164,10 +164,11 @@ class PYBOOST_API PyBoostUtils {
       MS_EXCEPTION_IF_NULL(kernel_tensor_list);
       MS_EXCEPTION_IF_NULL(kernel_tensor_ptr_list);
 
-      const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
-        std::make_shared<abstract::TensorShape>(ShapeVector()), kTypeNone, kNone, nullptr, 0, kOpFormat_DEFAULT,
-        kTypeNone->type_id(), ShapeVector(), device_context->device_context_key().device_name_,
-        device_context->device_context_key().device_id_);
+      const auto &kernel_tensor =
+        AnfAlgo::CreateKernelTensor(std::make_shared<abstract::TensorShape>(ShapeVector()), kTypeNone, kNone, nullptr,
+                                    0, kOpFormat_DEFAULT, kTypeNone->type_id(), ShapeVector(),
+                                    device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+                                    device_context->device_context_key().device_id_);
       kernel_tensor->set_stream_id(stream_id);
       (void)kernel_tensor_list->emplace_back(kernel_tensor.get());
       (void)kernel_tensor_ptr_list->emplace_back(kernel_tensor);

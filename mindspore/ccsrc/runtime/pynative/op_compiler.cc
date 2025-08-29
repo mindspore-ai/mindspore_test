@@ -227,8 +227,8 @@ OpCompilerInfoPtr OpCompiler::Compile(const session::BackendOpRunInfoPtr &op_run
   *single_op_cache_hit = false;
   // Generate kernel graph.
   MS_EXCEPTION_IF_NULL(session_);
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device::GetDeviceTypeByName(device_name), device_id});
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
   py::gil_scoped_acquire acquire_gil;

@@ -362,7 +362,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
         auto fix_kernel_tensor = AnfAlgo::CreateKernelTensor(
           kernel_tensor->GetShape(), kernel_tensor->GetType(), kernel_tensor->GetValueTrack(), nullptr,
           real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
-          real_input_info->shape_, cur_device_context->device_context_key().device_name_,
+          real_input_info->shape_, device::GetDeviceNameByType(cur_device_context->device_context_key().device_name_),
           cur_device_context->device_context_key().device_id_, kernel_tensor->user_data());
         MS_EXCEPTION_IF_NULL(kernel_tensor->GetShape());
         fix_kernel_tensor->SetShape(kernel_tensor->GetShape()->Clone());

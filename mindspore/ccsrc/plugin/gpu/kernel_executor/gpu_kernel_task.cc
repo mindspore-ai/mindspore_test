@@ -88,11 +88,13 @@ bool GpuContiguousKernelTask::RunWithRet() {
     // No need shape_addr and strides_addr, when tensor is contiguous
     auto shape_kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      device_context->device_context_key().device_id_);
 
     auto strides_kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+      device_context->device_context_key().device_id_);
 
     shape_dev_addr = shape_kernel_tensor->device_address();
     strides_dev_addr = strides_kernel_tensor->device_address();

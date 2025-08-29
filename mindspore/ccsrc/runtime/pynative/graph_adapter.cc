@@ -68,7 +68,8 @@ device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {value_node, 0}, nullptr, tensor_size, output_format, data_type, AnfAlgo::GetRuntimePaddingShape(value_node, 0),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+    device::GetDeviceNameByType(device_context->device_context_key().device_name_),
+    device_context->device_context_key().device_id_);
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
   return kernel_tensor->device_address();
 }
@@ -166,10 +167,11 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
     auto device_tensor = old_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
 
-    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), old_kernel_tensor->format(),
-                                                     device_tensor->type_id(), old_kernel_tensor->GetShapeVector(),
-                                                     real_device_context->device_context_key().device_name_,
-                                                     real_device_context->device_context_key().device_id_);
+    auto kernel_tensor =
+      AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), old_kernel_tensor->format(),
+                                  device_tensor->type_id(), old_kernel_tensor->GetShapeVector(),
+                                  device::GetDeviceNameByType(real_device_context->device_context_key().device_name_),
+                                  real_device_context->device_context_key().device_id_);
 
     kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(old_kernel_tensor->GetShapeVector()),
                                std::make_shared<TensorType>(TypeIdToType(old_kernel_tensor->dtype_id())), nullptr);

@@ -43,8 +43,8 @@ bool HcomBarrierKernel::Init(const std::vector<KernelTensor *> &inputs, const st
     auto context_ptr = mindspore::MsContext::GetInstance();
     uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    auto device_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device::GetDeviceTypeByName(device_name), device_id});
     lccl_barrier_data_ = device_context->device_res_manager_->AllocateMemory(kBarrierDataSize);
     MS_EXCEPTION_IF_NULL(lccl_barrier_data_);
     // Set buffer value to all 0.
