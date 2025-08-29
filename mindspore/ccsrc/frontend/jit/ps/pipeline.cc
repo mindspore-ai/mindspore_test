@@ -52,7 +52,6 @@
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
-#include "backend/ms_backend/graph_partition.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
@@ -715,7 +714,7 @@ bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t ba
   }
 #endif
 
-  if (name == kMsConvert || name == kMsVm || name == "ge") {
+  if (name == "ms" || name == "vm" || name == "ge") {
 #ifdef WITH_BACKEND
     if (iter_num == -1) {
       iter_num = INT32_MAX;

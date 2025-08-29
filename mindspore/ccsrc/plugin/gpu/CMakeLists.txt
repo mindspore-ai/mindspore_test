@@ -7,12 +7,11 @@ include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CU
 set(GPU_SUB_COMP
         graph_optimizer
         kernel_executor
-        res_manager)
+        res_manager
+        profiler)
 
 if(ENABLE_GPU)
-    file(GLOB GPU_DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "*.cc"
-        "profiler/*.cc")
+    file(GLOB GPU_DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(APPEND GPU_SUB_OBJECTS_SRC ${GPU_DEVICE_SRC_LIST})
     foreach(g_comp ${GPU_SUB_COMP})
         add_subdirectory(${g_comp})

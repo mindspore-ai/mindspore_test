@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pynative/graph_adapter.h"
+#include "runtime/core/graph_scheduler/base/graph_adapter.h"
 
 #include <string>
 #include <memory>

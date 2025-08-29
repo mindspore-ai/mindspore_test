@@ -72,7 +72,6 @@
 #include "utils/phase.h"
 #include "utils/compile_config.h"
 #include "load_mindir/infer_mindir.h"
-#include "backend/ms_backend/graph_partition.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "tools/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -1801,7 +1800,7 @@ void OriginSetRunMode(const ResourcePtr &resource) {
     }
     bool exist_while =
       std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
-    if (device_target == kAscendDevice && backend != kMsVm && !exist_while) {
+    if (device_target == kAscendDevice && backend != "vm" && !exist_while) {
       MS_LOG(INFO) << "Run graph mode with multigraph sink.";
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, true);
     } else {
@@ -1859,7 +1858,7 @@ bool TaskEmitAction(const ResourcePtr &resource) {
     func_graph->SetMultiTarget();
   }
 
-  if (backend != kMsConvert && backend != kGeVm) {
+  if (backend != "ms" && backend != "ge") {
     resource->SetResult(kNoBackend, true);
     MS_LOG(INFO) << "No backend.";
     return true;

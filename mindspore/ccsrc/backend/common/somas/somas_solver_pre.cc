@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "backend/ms_backend/somas_solver_pre.h"
+#include "backend/common/somas/somas_solver_pre.h"
 #include <cstdio>
 #include <fstream>
 #include <memory>
