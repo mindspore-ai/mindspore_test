@@ -38,6 +38,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendSnapshotMgr : public SnapshotMgr {
   AscendSnapshotMgr(const AscendSnapshotMgr &) = delete;
   AscendSnapshotMgr &operator=(const AscendSnapshotMgr &) = delete;
 
+  void Clear();
+
   void RecordEvent(aclrtStream stream);
   void ResetEvent(aclrtStream stream);
   void StreamWaitEvent(aclrtStream stream);

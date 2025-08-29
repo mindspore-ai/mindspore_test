@@ -53,7 +53,18 @@ AscendSnapshotMgrPtr AscendSnapshotMgr::GetInstance() {
   return ptr_inst;
 }
 
-AscendSnapshotMgr::~AscendSnapshotMgr() { (void)CALL_ASCEND_API(aclrtDestroyEvent, async_copy_event_); }
+void AscendSnapshotMgr::Clear() {
+  Reset();
+  if (async_copy_event_ != nullptr) {
+    auto ret = CALL_ASCEND_API(aclrtDestroyEvent, async_copy_event_);
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Call aclrtDestroyEvent failed with return value " << ret;
+    }
+    async_copy_event_ = nullptr;
+  }
+}
+
+AscendSnapshotMgr::~AscendSnapshotMgr() { Clear(); }
 
 void AscendSnapshotMgr::RecordEvent(aclrtStream stream) {
   aclError ret = CALL_ASCEND_API(aclrtRecordEvent, async_copy_event_, stream);
