@@ -125,7 +125,7 @@ mindspore/python/mindspore/common/_tensor_docs.py
 mindspore/python/mindspore/common/_tensor_cpp_method.py
 mindspore/ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/
 mindspore/ops/kernel/ascend/aclnn/pyboost_impl/internal/functions/
-mindspore/ccsrc/plugin/device/ascend/kernel/internal/pyboost/auto_gen/
+mindspore/ops/kernel/ascend/internal/pyboost/auto_gen/
 
 # ascendc compile
 mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
@@ -135,10 +135,10 @@ mindspore/ops/kernel/ascend/ascendc/prebuild/x86_64/custom_ascendc_ops
 custom_workspace
 
 # leftover internal kernel files after extraction
-mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernels_internal
-mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernels_dependency
-mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_internal
-mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_dependency
+mindspore/ops/kernel/ascend/internal/prebuild/aarch64/*ms_kernels_internal
+mindspore/ops/kernel/ascend/internal/prebuild/aarch64/*ms_kernels_dependency
+mindspore/ops/kernel/ascend/internal/prebuild/x86_64/*ms_kernels_internal
+mindspore/ops/kernel/ascend/internal/prebuild/x86_64/*ms_kernels_dependency
 
 # tools
 .cursorignore

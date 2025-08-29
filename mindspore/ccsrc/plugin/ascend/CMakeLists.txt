@@ -26,8 +26,6 @@ file(GLOB_RECURSE KENREL_SRC_910B
         "${ASCEND_PLUGIN_PATH}/kernel/hccl/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/custom/*.cc"
-        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_kernel_build.cc"
-        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_ascend_adapter.cc"
         )
 
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})

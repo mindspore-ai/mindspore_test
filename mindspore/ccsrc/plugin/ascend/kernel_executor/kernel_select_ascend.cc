@@ -31,7 +31,7 @@
 #include "kernel/ascend/atb/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "kernel/ascend/internal/internal_kernel_build.h"
 #include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "plugin/device/ascend/kernel/custom/custom_kernel_factory.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
