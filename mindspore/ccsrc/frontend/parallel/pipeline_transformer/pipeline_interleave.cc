@@ -758,7 +758,7 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   auto recv_prim = GetCNodePrimitive(recv);
   MS_EXCEPTION_IF_NULL(recv_prim);
   recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[src_stage]));
-  recv->set_abstract(node->abstract());
+  recv->set_abstract(param->abstract());
   recv->AddPrimalAttr(CHUNK, MakeValue(chunk));
   recv->AddPrimalAttr(STAGE, MakeValue(dst_stage));
   recv->AddPrimalAttr(ORDER, MakeValue(order));
