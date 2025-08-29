@@ -31,32 +31,26 @@ _T_co = TypeVar("_T_co", covariant=True)
 
 
 class DistributedSampler(Sampler[_T_co]):
-    r"""Sampler that restricts data loading to a subset of the dataset.
+    """
+    A sampler that partitioning datasets for distributed training.
 
     Args:
-        dataset: Dataset used for sampling.
-        num_replicas (int, optional): Number of processes participating in
-            distributed training. By default, :attr:`world_size` is retrieved from the
-            current distributed group.
-        rank (int, optional): Rank of the current process within :attr:`num_replicas`.
-            By default, :attr:`rank` is retrieved from the current distributed
-            group.
-        shuffle (bool, optional): If ``True`` (default), sampler will shuffle the
-            indices.
-        seed (int, optional): random seed used to shuffle the sampler if
-            :attr:`shuffle=True`. This number should be identical across all
-            processes in the distributed group. Default: ``0``.
-        drop_last (bool, optional): if ``True``, then the sampler will drop the
-            tail of the data to make it evenly divisible across the number of
-            replicas. If ``False``, the sampler will add extra indices to make
-            the data evenly divisible across the replicas. Default: ``False``.
+        dataset (Dataset): Dataset used for sampling.
+        num_replicas (int, optional): Number of shards participating in distributed training. Default: ``None`` .
+        rank (int, optional): The sequence number of the current process within `num_replicas`. Default: ``None`` .
+        shuffle (bool, optional): Whether the sampler shuffle samples randomly. Default: ``True`` .
+        seed (int, optional): When `shuffle` is set to `True` , the seed value used for randomizing the sampler.
+            Default: ``0`` .
+        drop_last (bool, optional): Whether the sampler discards trailing data. If ``True`` ,
+            the sampler discards trailing data to enable equal distribution across all shards;
+            if ``False`` , the sampler adds extra indices to enable equal distribution across shards.
+            Default: ``False`` .
 
-    Example::
-        >>> sampler = DistributedSampler(dataset)
-        >>> loader = DataLoader(dataset, shuffle=None, sampler=sampler
-        ...                     num_replicas=2, rank=0)
-        >>> for data in loader:
-        ...     print(data)
+    Examples:
+        >>> from mindspore.dataset.dataloader import DistributedSampler
+        >>>
+        >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        >>> sampler = DistributedSampler(dataset, num_replicas=3, rank=0)
     """
 
     def __init__(
@@ -69,6 +63,16 @@ class DistributedSampler(Sampler[_T_co]):
             drop_last: Optional[bool] = False,
     ) -> None:
         super().__init__(dataset)
+        if num_replicas is not None and not isinstance(num_replicas, int):
+            raise TypeError(f"num_replicas must be int, but got: {type(num_replicas).__name__}")
+        if rank is not None and not isinstance(rank, int):
+            raise TypeError(f"rank must be int, but got: {type(rank).__name__}")
+        if not isinstance(shuffle, bool):
+            raise TypeError(f"shuffle must be bool, but got: {type(shuffle).__name__}")
+        if not isinstance(seed, int):
+            raise TypeError(f"seed must be int, but got: {type(seed).__name__}")
+        if not isinstance(drop_last, bool):
+            raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}")
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("MindSpore distributed feature is not available.")
@@ -93,7 +97,6 @@ class DistributedSampler(Sampler[_T_co]):
         self.drop_last = drop_last
         self.epoch = 0
 
-        # If the dataset length is evenly divisible by replicas or not to drop
         if len(self.dataset) % self.num_replicas == 0 or not self.drop_last:
             self.num_samples = math.ceil(len(self.dataset) / self.num_replicas)
         else:
@@ -110,7 +113,6 @@ class DistributedSampler(Sampler[_T_co]):
             indices = list(range(len(self.dataset)))
 
         if not self.drop_last:
-            # add extra samples to make it evenly divisible
             padding_size = self.total_samples - len(indices)
             if padding_size <= len(indices):
                 indices += indices[:padding_size]
@@ -119,11 +121,9 @@ class DistributedSampler(Sampler[_T_co]):
                     :padding_size
                 ]
         else:
-            # remove tail of data
             indices = indices[: self.total_samples]
         assert len(indices) == self.total_samples
 
-        # subsample
         indices = indices[self.rank : self.total_samples : self.num_replicas]
         assert len(indices) == self.num_samples
 
@@ -133,14 +133,12 @@ class DistributedSampler(Sampler[_T_co]):
         return self.num_samples
 
     def set_epoch(self, epoch: int) -> None:
-        r"""
+        """
         Set the epoch for this sampler.
-
-        When :attr:`shuffle=True`, this ensures all replicas
-        use a different random ordering for each epoch. Otherwise, the next iteration of this
-        sampler will yield the same ordering.
 
         Args:
             epoch (int): Epoch number.
         """
+        if not isinstance(epoch, int):
+            raise TypeError(f"epoch must be int, but got: {type(epoch).__name__}")
         self.epoch = epoch
