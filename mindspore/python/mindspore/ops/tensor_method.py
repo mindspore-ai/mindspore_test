@@ -1820,8 +1820,10 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
 def tensor_index_fill_(input, dim, index, value):
     raise NotImplementedError('Tensor.index_fill_ only supports Ascend.')
 
+
 def tensor_index_copy_(input, dim, index, tensor):
     raise NotImplementedError('Tensor.index_copy_ only supports Ascend.')
+
 
 def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
@@ -1836,8 +1838,10 @@ def tensor_inplace_sub(input, other, *, alpha=1):
         return sub(input, other)
     return sub_ext(input, other, alpha=alpha)
 
+
 def tensor_new_full(input, size, fill_value, *, dtype=None):
     raise NotImplementedError("new_full method support Ascend only")
+
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")
@@ -1868,6 +1872,7 @@ def all_gather_matmul(
     For details, please refer to :func:`mindspore.ops.all_gather_matmul`.
     """
     raise NotImplementedError('all_gather_matmul only supports Ascend.')
+
 
 def conv1d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     raise NotImplementedError('conv1d only supports Ascend.')
