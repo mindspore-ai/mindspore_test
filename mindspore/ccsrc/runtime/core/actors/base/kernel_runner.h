@@ -210,6 +210,7 @@ class KernelRunner {
                                OpContext<KernelTensor> *const context) const;
 
   std::vector<const DeviceContext *> device_contexts_;
+  const DeviceContext *real_output_device_context_;
 
   KernelTransformType type_;
 

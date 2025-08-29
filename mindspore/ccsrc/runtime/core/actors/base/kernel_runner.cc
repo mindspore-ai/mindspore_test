@@ -245,6 +245,7 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   debug_aid_ = debug_aid;
   recorder_aid_ = recorder_aid;
   (void)device_contexts_.emplace_back(device_context);
+  real_output_device_context_ = device_context;
   is_dynamic_shape_ = common::AnfAlgo::IsDynamicShape(kernel_) || common::AnfAlgo::IsDynamicSequence(kernel_);
 
   kernel_async_infer_aid_ = KernelAsyncInferActor::GetInstance()->GetAID();
@@ -309,6 +310,16 @@ void KernelRunner::Init() {
   InitInputInfo();
   InitOutputInfo();
   InitWorkspaceInfo();
+  if (!output_kernel_tensors_.empty() && output_kernel_tensors_[0] &&
+      output_kernel_tensors_[0]->GetDeviceType() != device_contexts_[0]->GetDeviceType()) {
+    real_output_device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device::GetDeviceNameByType(output_kernel_tensors_[0]->GetDeviceType()),
+       device_contexts_[0]->device_context_key().device_id_});
+    MS_EXCEPTION_IF_NULL(real_output_device_context_);
+    if (!real_output_device_context_->initialized()) {
+      const_cast<DeviceContext *>(real_output_device_context_)->Initialize();
+    }
+  }
 
   // Set flag to check input contiguous
   if (kernel::NeedCheckInputContiguous(kernel_)) {
@@ -893,15 +904,15 @@ void KernelRunner::TraceDynamicMemory() {
     }
     MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
       std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(), kOutputMem,
-                                               i, kernel_tensor.get()),
-      device_contexts_[0]);
+                                               i, kernel_tensor.get(), real_output_device_context_),
+      real_output_device_context_);
   }
 
   for (size_t i = 0; i < workspace_kernel_tensors_.size(); i++) {
     const auto &kernel_tensor = workspace_kernel_tensors_[i];
     MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
       std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                               kWorkspaceMem, i, kernel_tensor.get()),
+                                               kWorkspaceMem, i, kernel_tensor.get(), device_contexts_[0]),
       device_contexts_[0]);
   }
 }
