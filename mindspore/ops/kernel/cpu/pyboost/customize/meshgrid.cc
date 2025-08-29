@@ -29,10 +29,10 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
-  MS_LOG(DEBUG) << "Nonzero CPU start";
-  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, device::DeviceType::kCPU);
-  MS_LOG(DEBUG) << "NonZero CPU end";
+                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
+  MS_LOG(DEBUG) << "Nonzero CPU call start";
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing);
+  MS_LOG(DEBUG) << "NonZero CPU call end";
   return output;
 }
 }  // namespace pyboost

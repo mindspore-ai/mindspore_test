@@ -14,6 +14,8 @@ meshgrid:
             dtype: tuple[tensor]
     function:
         disable: True
+    view: True
+    bprop_expander: False
     dispatch:
         enable: True
         Ascend: MeshgridAscend

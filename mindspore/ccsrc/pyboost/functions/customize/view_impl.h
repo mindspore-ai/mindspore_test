@@ -29,5 +29,6 @@ mindspore::tensor::TensorPtr view_as_impl(const mindspore::tensor::TensorPtr &in
                                           const mindspore::tensor::TensorPtr &other);
 mindspore::tensor::TensorPtr expand_as_impl(const mindspore::tensor::TensorPtr &input,
                                             const mindspore::tensor::TensorPtr &other);
+std::vector<tensor::TensorPtr> meshgrid_impl(const ValueTuplePtr &tensors_list, const int64_t &indexing_imm);
 }  // namespace mindspore::kernel::pyboost
 #endif  // MINDSPORE_MINDSPORE_CCSRC_PYBOOST_FUNCTIONS_CUSTOMIZE_VIEW_IMPL_H_
