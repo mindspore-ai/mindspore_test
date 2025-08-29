@@ -1543,9 +1543,22 @@ void ControlNodeScheduler::LinkArrowByValueNode(const AnfNodePtr &value_node, Co
       if (!value->isa<ValueTuple>() && from_index > 0) {
         from_index = 0;
       } else {
-        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
-          << "#dmsg#Runtime error info:#dmsg#Invalid output address index:" << from_index
-          << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
+        const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(value_node.get());
+        if (!kernel_tensors.empty() && kernel_tensors[0] != nullptr) {
+          if (value_node->kernel_info() == nullptr) {
+            auto kernel_info = std::make_shared<device::KernelInfo>();
+            MS_EXCEPTION_IF_NULL(kernel_info);
+            std::shared_ptr<KernelBuildInfoBuilder> builder = std::make_shared<KernelBuildInfoBuilder>();
+            MS_EXCEPTION_IF_NULL(builder);
+            kernel_info->set_select_kernel_build_info(builder->Build());
+            value_node->set_kernel_info(kernel_info);
+          }
+          AnfAlgo::SetOutputKernelTensor(kernel_tensors[0], from_index, value_node.get());
+        } else {
+          MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
+            << "#dmsg#Runtime error info:#dmsg#Invalid output address index:" << from_index
+            << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
+        }
       }
     }
     to_actor->local_kernel_tensors_[to_index] = {AnfAlgo::GetOutputKernelTensor(value_node, from_index, false),

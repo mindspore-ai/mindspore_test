@@ -338,6 +338,63 @@ void GenerateRefCountForBpropValueNode(const KernelGraphPtr &graph) {
   graph->set_attr(kAttrValueNodeForwardOuputFlags, MakeValue(value_node_forward_output_flags));
 }
 
+void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  for (const auto &kernel : graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    mindspore::ops::OpDefPtr op_def = mindspore::ops::GetOpDef(common::AnfAlgo::GetCNodeName(kernel));
+    if (op_def == nullptr || kernel->kernel_info() == nullptr) {
+      continue;
+    }
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+    if (op_plugin_path != nullptr && op_def->is_graph_view_) {
+      auto build_info = kernel_info->select_kernel_build_info();
+      if (build_info != nullptr) {
+        const auto output_size = build_info->GetOutputNum();
+        for (size_t i = 0; i < output_size; ++i) {
+          kernel_info->AddRefMap(i, 0);
+        }
+        MS_LOG(DEBUG) << "Add ref pair: " << output_size
+                      << " output to the first input for kernel: " << kernel->fullname_with_scope();
+      }
+    }
+    for (size_t i = 0; i < op_def->returns_.size(); ++i) {
+      if (op_def->returns_[i].inplace_input_index_ != -1) {
+        MS_LOG(DEBUG) << "Add ref pair:" << i << ", " << op_def->returns_[i].inplace_input_index_
+                      << " for kernel:" << kernel->fullname_with_scope();
+        kernel_info->AddRefMap(i, op_def->returns_[i].inplace_input_index_);
+      }
+    }
+  }
+}
+
+void SetRefMapForAnyTypeGraph(const KernelGraphPtr &graph) {
+  SetRefInfoForKernelGraph(graph);
+  for (const auto &cnode : graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(cnode->kernel_info());
+    if (kernel_info == nullptr) {
+      continue;
+    }
+    for (const auto &ref : kernel_info->out_in_ref_map()) {
+      size_t output_index = ref.first;
+      size_t input_index = ref.second;
+      auto final_pair = std::make_pair(cnode, output_index);
+      auto origin_pair = common::AnfAlgo::VisitKernel(common::AnfAlgo::GetInputNode(cnode, input_index), 0);
+      // Add to graph only if the input is not a monad.
+      if (!HasAbstractUMonad(origin_pair.first) && !HasAbstractIOMonad(origin_pair.first)) {
+        graph->AddRefCorrespondPairs(final_pair, origin_pair);
+        MS_LOG(INFO) << "The reference relation output " << final_pair.first->fullname_with_scope()
+                     << ", output index: " << final_pair.second << " to input "
+                     << origin_pair.first->fullname_with_scope() << ", output index: " << origin_pair.second
+                     << " for graph:" << graph->ToString();
+      }
+    }
+  }
+}
+
 GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrList &outputs,
                                  const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -408,6 +465,7 @@ GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrLi
   if (JitPipelineCompiling()) {
     GenerateRefCountForBpropValueNode(graph);
   }
+  SetRefMapForAnyTypeGraph(graph);
   return graph->graph_id();
 }
 
@@ -673,38 +731,6 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
   }
   MS_LOG(INFO) << "Status record: end use cache to compile graph kbk for: " << func_graph->ToString();
   return true;
-}
-
-void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  for (const auto &kernel : graph->execution_order()) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    mindspore::ops::OpDefPtr op_def = mindspore::ops::GetOpDef(common::AnfAlgo::GetCNodeName(kernel));
-    if (op_def == nullptr || kernel->kernel_info() == nullptr) {
-      continue;
-    }
-    auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
-    MS_EXCEPTION_IF_NULL(kernel_info);
-    static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
-    if (op_plugin_path != nullptr && op_def->is_graph_view_) {
-      auto build_info = kernel_info->select_kernel_build_info();
-      if (build_info != nullptr) {
-        const auto output_size = build_info->GetOutputNum();
-        for (size_t i = 0; i < output_size; ++i) {
-          kernel_info->AddRefMap(i, 0);
-        }
-        MS_LOG(DEBUG) << "Add ref pair: " << output_size
-                      << " output to the first input for kernel: " << kernel->fullname_with_scope();
-      }
-    }
-    for (size_t i = 0; i < op_def->returns_.size(); ++i) {
-      if (op_def->returns_[i].inplace_input_index_ != -1) {
-        MS_LOG(DEBUG) << "Add ref pair:" << i << ", " << op_def->returns_[i].inplace_input_index_
-                      << " for kernel:" << kernel->fullname_with_scope();
-        kernel_info->AddRefMap(i, op_def->returns_[i].inplace_input_index_);
-      }
-    }
-  }
 }
 
 GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context) const {
