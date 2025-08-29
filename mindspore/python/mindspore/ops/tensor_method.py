@@ -1954,6 +1954,10 @@ def tensor_masked_scatter(input, mask, source):
     return masked_scatter(input, mask, source)
 
 
+def tensor_inplace_masked_scatter(input, mask, source):
+    return F.inplace_masked_scatter(input, mask, source)
+
+
 def tensor_broadcast_to(x, shape):
     return F.broadcast_to(x, shape)
 
