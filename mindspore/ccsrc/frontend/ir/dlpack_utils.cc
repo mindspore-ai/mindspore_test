@@ -19,17 +19,25 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "common/kernel.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "utils/log_adapter.h"
+#include "ir/device_type.h"
 #include "ir/tensor_storage_info.h"
-#include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/device_address_utils.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
+#include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace tensor {
 namespace {
+constexpr int kBits8 = 8;
+constexpr int kBits16 = 16;
+constexpr int kBits32 = 32;
+constexpr int kBits64 = 64;
+constexpr int kLanes1 = 1;
+
 bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides) {
   if (shape.size() == 0) {
     return true;
@@ -72,63 +80,63 @@ DLDataType DLPackUtils::GetDLDataType(const TypeId &type_id) {
   switch (type_id) {
     case kNumberTypeFloat32:
       dtype.code = kDLFloat;
-      dtype.bits = 32;
-      dtype.lanes = 1;
+      dtype.bits = kBits32;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeFloat64:
       dtype.code = kDLFloat;
-      dtype.bits = 64;
-      dtype.lanes = 1;
+      dtype.bits = kBits64;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeFloat16:
       dtype.code = kDLFloat;
-      dtype.bits = 16;
-      dtype.lanes = 1;
+      dtype.bits = kBits16;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeBFloat16:
       dtype.code = kDLBfloat;
-      dtype.bits = 16;
-      dtype.lanes = 1;
+      dtype.bits = kBits16;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeInt8:
       dtype.code = kDLInt;
-      dtype.bits = 8;
-      dtype.lanes = 1;
+      dtype.bits = kBits8;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeInt16:
       dtype.code = kDLInt;
-      dtype.bits = 16;
-      dtype.lanes = 1;
+      dtype.bits = kBits16;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeInt32:
       dtype.code = kDLInt;
-      dtype.bits = 32;
-      dtype.lanes = 1;
+      dtype.bits = kBits32;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeInt64:
       dtype.code = kDLInt;
-      dtype.bits = 64;
-      dtype.lanes = 1;
+      dtype.bits = kBits64;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeUInt8:
       dtype.code = kDLUInt;
-      dtype.bits = 8;
-      dtype.lanes = 1;
+      dtype.bits = kBits8;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeUInt16:
       dtype.code = kDLUInt;
-      dtype.bits = 16;
-      dtype.lanes = 1;
+      dtype.bits = kBits16;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeUInt32:
       dtype.code = kDLUInt;
-      dtype.bits = 32;
-      dtype.lanes = 1;
+      dtype.bits = kBits32;
+      dtype.lanes = kLanes1;
       break;
     case kNumberTypeUInt64:
       dtype.code = kDLUInt;
-      dtype.bits = 64;
-      dtype.lanes = 1;
+      dtype.bits = kBits64;
+      dtype.lanes = kLanes1;
       break;
     default:
       MS_LOG(EXCEPTION) << "Unsupported data type: " << type_id;
@@ -147,11 +155,11 @@ DLDevice DLPackUtils::GetDLDevice(size_t device_id) {
 TypeId DLPackUtils::GetTypeId(const DLDataType &dtype) {
   TypeId type_id = kTypeUnknown;
   if (dtype.code == kDLFloat) {
-    if (dtype.bits == 32) {
+    if (dtype.bits == kBits32) {
       type_id = kNumberTypeFloat32;
-    } else if (dtype.bits == 64) {
+    } else if (dtype.bits == kBits64) {
       type_id = kNumberTypeFloat64;
-    } else if (dtype.bits == 16) {
+    } else if (dtype.bits == kBits16) {
       type_id = kNumberTypeFloat16;
     } else {
       MS_LOG(EXCEPTION) << "Unsupported float bits: " << dtype.bits;
@@ -159,25 +167,25 @@ TypeId DLPackUtils::GetTypeId(const DLDataType &dtype) {
   } else if (dtype.code == kDLBfloat) {
     type_id = kNumberTypeBFloat16;
   } else if (dtype.code == kDLInt) {
-    if (dtype.bits == 8) {
+    if (dtype.bits == kBits8) {
       type_id = kNumberTypeInt8;
-    } else if (dtype.bits == 16) {
+    } else if (dtype.bits == kBits16) {
       type_id = kNumberTypeInt16;
-    } else if (dtype.bits == 32) {
+    } else if (dtype.bits == kBits32) {
       type_id = kNumberTypeInt32;
-    } else if (dtype.bits == 64) {
+    } else if (dtype.bits == kBits64) {
       type_id = kNumberTypeInt64;
     } else {
       MS_LOG(EXCEPTION) << "Unsupported int bits: " << dtype.bits;
     }
   } else if (dtype.code == kDLUInt) {
-    if (dtype.bits == 8) {
+    if (dtype.bits == kBits8) {
       type_id = kNumberTypeUInt8;
-    } else if (dtype.bits == 16) {
+    } else if (dtype.bits == kBits16) {
       type_id = kNumberTypeUInt16;
-    } else if (dtype.bits == 32) {
+    } else if (dtype.bits == kBits32) {
       type_id = kNumberTypeUInt32;
-    } else if (dtype.bits == 64) {
+    } else if (dtype.bits == kBits64) {
       type_id = kNumberTypeUInt64;
     } else {
       MS_LOG(EXCEPTION) << "Unsupported uint bits: " << dtype.bits;
@@ -225,30 +233,33 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
   }
 
   // only support Ascend now.
-  const auto &ms_device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto ms_context = MsContext::GetInstance();
+  auto ms_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &ms_device = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::DeviceType::kAscend, ms_device_id};
   if (ms_device != kAscendDevice) {
     MS_LOG(EXCEPTION) << "Only support Ascend device now, but got " << ms_device;
   }
-  const auto &ms_device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   if (ms_device_id != static_cast<uint32_t>(device_id)) {
     MS_LOG(EXCEPTION) << "Device id not match, expect " << ms_device_id << ", but got " << device_id;
   }
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, ms_device_id});
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
+  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto address_size = GetTypeByte(TypeIdToType(type_id)) * SizeOf(ori_shape);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, type_id,
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
-  device_address->set_device_shape(ori_shape);
+    device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
+
+  device_address->SetShapeVector(ori_shape);
   device_address->set_tensor_storage_info(storage_info);
   tensor->set_device_address(device_address);
-  tensor->set_contiguous_callback([](const DeviceSyncPtr &device_address) -> DeviceSyncPtr {
+  tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
     MS_EXCEPTION_IF_NULL(device_address);
-    auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device_address);
+    auto device_addr = device_address;
     MS_EXCEPTION_IF_NULL(device_addr);
     // as_numpy sync promise contiguous run_sync
     return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr, true);
@@ -260,7 +271,7 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
   device_address->set_from_mem_pool(false);
 
   // update deleter
-  auto ref_cnt = device_address->pointer_ref_count();
+  auto ref_cnt = device_address->device_pointer();
   ref_cnt->set_deleter([dlpack = dlpack](void *, bool) {
     if (dlpack == nullptr) {
       return;
@@ -284,6 +295,7 @@ struct DLMTensor {
 static void deleter(DLManagedTensor *arg) { delete static_cast<DLMTensor *>(arg->manager_ctx); }
 
 DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
+  MS_EXCEPTION_IF_NULL(src);
   DLMTensor *dlm_tensor = new DLMTensor();
   dlm_tensor->shape = src->shape();
   dlm_tensor->strides = src->stride();
@@ -314,7 +326,7 @@ DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
   dlm_tensor->tensor.dl_tensor.shape = view->storage_info()->shape.data();
   dlm_tensor->tensor.dl_tensor.strides = view->storage_info()->strides.data();
   dlm_tensor->tensor.dl_tensor.byte_offset = 0;
-  auto offset = mindspore::abstract::TypeIdSize(view->data_type()) * view->storage_offset();
+  auto offset = mindspore::abstract::TypeIdSize(view->data_type()) * static_cast<size_t>(view->storage_offset());
   dlm_tensor->tensor.dl_tensor.data = static_cast<char *>(const_cast<void *>(view_address->GetPtr())) + offset;
   if (dlm_tensor->tensor.dl_tensor.data == nullptr) {
     MS_LOG(EXCEPTION) << "Data is nullptr";

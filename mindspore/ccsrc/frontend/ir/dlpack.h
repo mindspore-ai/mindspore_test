@@ -193,7 +193,7 @@ typedef struct {
   DLDevice device;
   /*! \brief Number of dimensions */
   int32_t ndim;
-  /*! \brief The data type of the pointer*/
+  /*! \brief The data type of the pointer */
   DLDataType dtype;
   /*! \brief The shape of the tensor */
   const int64_t *shape;

@@ -1288,7 +1288,6 @@ static PyObject *TensorPython_FromDLPack(PyObject *self, PyObject *args) {
     return nullptr;
   }
   py::object dlpack_capsule = py::reinterpret_borrow<py::object>(tensor_obj);
-  // 将返回的TensorPtr转换为Python对象
   TensorPtr tensor = TensorPybind::FromDLPack(dlpack_capsule);
   return tensor::PackTensor(tensor);
   HANDLE_MS_EXCEPTION_END
@@ -1296,7 +1295,6 @@ static PyObject *TensorPython_FromDLPack(PyObject *self, PyObject *args) {
 
 static PyObject *TensorPython_ToDLPack(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  // 直接传递Python层Tensor对象
   py::object tensor_py = py::reinterpret_borrow<py::object>(self);
   py::object result = TensorPybind::ToDLPack(tensor_py);
   return result.release().ptr();
