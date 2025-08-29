@@ -51,7 +51,7 @@ class PyboostKernelInfoAdapterGenerator(BaseGenerator):
         self.kernel_info_adapter_cpp_template = template.PYBOOST_INTERNAL_KERNEL_INFO_ADAPTER_CPP_TEMPLATE
         self.kernel_info_adapter_register_template = Template(KERNEL_INFO_ADAPTER_REGISTER)
         self.merged_op_headers_template = Template(
-            "#include \"plugin/device/ascend/kernel/internal/pyboost/${operator_name}.h\"\n")
+            "#include \"kernel/ascend/internal/pyboost/${operator_name}.h\"\n")
 
     def generate(self, work_path, op_protos):
         """

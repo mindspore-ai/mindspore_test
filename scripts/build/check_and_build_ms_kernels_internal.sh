@@ -35,7 +35,7 @@ if [[ "$(uname)" != Linux || ("$(arch)" != x86_64 && "$(arch)" != aarch64) ]]; t
   echo "[WARNING] Internal kernels only supports linux system, x86_64 or aarch64 CPU arch."
   return
 fi
-file_path=${BASEPATH}/mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/$(arch)
+file_path=${BASEPATH}/mindspore/ops/kernel/ascend/internal/prebuild/$(arch)
 
 internal_file_name=${file_path}/ms_kernels_internal.tar.gz
 if [[ ! -f "${internal_file_name}" ]]; then

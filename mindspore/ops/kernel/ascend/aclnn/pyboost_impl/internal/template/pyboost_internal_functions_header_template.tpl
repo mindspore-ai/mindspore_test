@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/auto_gen/kernel_info_adapter.h"
+#include "kernel/ascend/internal/pyboost/auto_gen/kernel_info_adapter.h"
 
 namespace mindspore {
 namespace kernel {

@@ -91,6 +91,6 @@ MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost
 MS_PYBOOST_BASE_PATH = "mindspore/ccsrc/pyboost"
 MS_PYBOOST_INTERNAL_FUNCTIONS_AUTO_GEN_PATH = os.path.join(MS_OPS_KERNEL_PATH,
                                                            "ascend/aclnn/pyboost_impl/internal/functions")
-MS_INTERNAL_PYBOOST_GEN_PATH = "mindspore/ccsrc/plugin/device/ascend/kernel/internal/pyboost/auto_gen"
-MS_PLUGIN_INTERNAL_PATH = "mindspore/ccsrc/plugin/device/ascend/kernel/internal"
+MS_INTERNAL_PYBOOST_GEN_PATH = "mindspore/ops/kernel/ascend/internal/pyboost/auto_gen"
+MS_PLUGIN_INTERNAL_PATH = "mindspore/ops/kernel/ascend/internal"
 MS_OPS_PYBOOST_INTERNAL = "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/internal"
