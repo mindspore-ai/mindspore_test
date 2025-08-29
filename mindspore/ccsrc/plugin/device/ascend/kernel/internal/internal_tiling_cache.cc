@@ -445,5 +445,12 @@ bool InternalTilingCache::Insert(uint64_t key, const TilingCacheItemPtr &ti_ptr)
   cache_[key] = ti_ptr;
   return true;
 }
+
+void InternalTilingCache::SetItemToPermanent(TilingCacheItemPtr ti_ptr) {
+  static const auto kPermanentRef = 0x80000000;
+  if (ti_ptr != nullptr) {
+    ti_ptr->ref_count_ += kPermanentRef;
+  }
+}
 }  // namespace kernel
 }  // namespace mindspore

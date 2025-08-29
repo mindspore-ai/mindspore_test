@@ -206,6 +206,7 @@ class InternalTilingCache {
   void Unbind(const TilingCacheItemPtr &item);
   bool Insert(uint64_t key, const TilingCacheItemPtr &ti_ptr);
   std::vector<TilingCacheItemPtr> CombOutSuspectedUselessItems();
+  void SetItemToPermanent(TilingCacheItemPtr ti_ptr);
 
   template <typename... Args>
   static inline uint64_t GenerateKey(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
