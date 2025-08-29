@@ -26,14 +26,15 @@
 namespace mindspore {
 namespace kernel {
 namespace index_fill_tensor {
+std::vector<int64_t> IndexFillTensorAscend::GetIndexArray(const std::vector<KernelTensor *> &inputs) {
+  std::vector<int64_t> convertedIndex = {};
+  auto index_shape = inputs[kIndex2]->GetShapeVector();
+  if (std::any_of(index_shape.begin(), index_shape.end(), [](const auto &dim) { return dim == 0; })) {
+    return convertedIndex;
+  }
 
-void IndexFillTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<KernelTensor *> &outputs) {
-  dim_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
-  value_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex3]);
-  std::vector<int64_t> convertedIndex;
-  auto alpha_dtype_id = inputs[kIndex2]->dtype_id();
-  switch (alpha_dtype_id) {
+  auto index_dtype_id = inputs[kIndex2]->dtype_id();
+  switch (index_dtype_id) {
     case kNumberTypeInt64: {
       auto index = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
       convertedIndex.assign(index.begin(), index.end());
@@ -60,9 +61,18 @@ void IndexFillTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
       break;
     }
     default:
-      MS_LOG(EXCEPTION) << "IndexAddExt only support int32, int64, int16, int8, and uint8, but got "
-                        << TypeIdToString(alpha_dtype_id);
+      MS_LOG(EXCEPTION) << "IndexFillTensor only support int32, int64, int16, int8, and uint8, but got "
+                        << TypeIdToString(index_dtype_id);
   }
+
+  return convertedIndex;
+}
+
+void IndexFillTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                             const std::vector<KernelTensor *> &outputs) {
+  dim_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  value_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex3]);
+  auto convertedIndex = GetIndexArray(inputs);
   GetWorkspaceForResize(inputs[kIndex0], dim_, convertedIndex, value_, outputs[kIndex0]);
 }
 
@@ -70,38 +80,15 @@ bool IndexFillTensorAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto alpha_dtype_id = inputs[kIndex2]->dtype_id();
-  std::vector<int64_t> convertedIndex;
-  switch (alpha_dtype_id) {
-    case kNumberTypeInt64: {
-      auto index = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex2]);
-      convertedIndex.assign(index.begin(), index.end());
-      break;
-    }
-    case kNumberTypeInt32: {
-      auto index = device::ascend::ConvertKernelTensor<std::vector<int32_t>>(inputs[kIndex2]);
-      convertedIndex.assign(index.begin(), index.end());
-      break;
-    }
-    case kNumberTypeInt16: {
-      auto index = device::ascend::ConvertKernelTensor<std::vector<int16_t>>(inputs[kIndex2]);
-      convertedIndex.assign(index.begin(), index.end());
-      break;
-    }
-    case kNumberTypeInt8: {
-      auto index = device::ascend::ConvertKernelTensor<std::vector<int8_t>>(inputs[kIndex2]);
-      convertedIndex.assign(index.begin(), index.end());
-      break;
-    }
-    case kNumberTypeUInt8: {
-      auto index = device::ascend::ConvertKernelTensor<std::vector<uint8_t>>(inputs[kIndex2]);
-      convertedIndex.assign(index.begin(), index.end());
-      break;
-    }
-    default:
-      MS_LOG(EXCEPTION) << "IndexAddExt only support int32, int64, int16, int8, and uint8, but got "
-                        << TypeIdToString(alpha_dtype_id);
+  auto convertedIndex = GetIndexArray(inputs);
+  auto input_shape = inputs[kIndex0]->GetShapeVector();
+  if (convertedIndex.empty() &&
+      std::any_of(input_shape.begin(), input_shape.end(), [](const auto &dim) { return dim == 0; })) {
+    MS_LOG(DEBUG) << "aclnnIndexFillTensor throws 'CopyNpuToNpuOp' error when 'self' and 'index' are empty tensors, "
+                  << "because we allocated NPU memory for empty 'self' tensor. So we skip launching in this case.";
+    return true;
   }
+
   RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, convertedIndex, value_, outputs[kIndex0]);
   return true;
 }

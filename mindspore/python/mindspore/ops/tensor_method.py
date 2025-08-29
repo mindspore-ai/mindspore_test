@@ -1823,6 +1823,10 @@ def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
 
 
+def tensor_index_copy_(input, dim, index, tensor):
+    raise NotImplementedError('Tensor.index_copy_ only supports Ascend.')
+
+
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
 
