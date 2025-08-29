@@ -35,6 +35,8 @@ void Trunc(const T *in0, T *out0, size_t start, size_t end) {
       out0[index] = in0[index];
     } else if constexpr ((std::is_same_v<T, float>) || (std::is_same_v<T, double>)) {
       out0[index] = std::trunc(in0[index]);
+    } else if (std::is_same_v<T, mindspore::BFloat16>) {
+      out0[index] = mindspore::BFloat16(std::trunc(static_cast<float>(in0[index])));
     }
   }
 }
@@ -72,6 +74,8 @@ bool TruncCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs
     ret = LaunchKernel<uint8_t>(inputs, outputs);
   } else if (dtype_ == kNumberTypeInt32) {
     ret = LaunchKernel<int32_t>(inputs, outputs);
+  } else if (dtype_ == kNumberTypeBFloat16) {
+    ret = LaunchKernel<mindspore::BFloat16>(inputs, outputs);
   } else {
     MS_EXCEPTION(TypeError) << "Unsupported input data type for operator [" << kernel_name_
                             << "]: " << TypeIdToType(dtype_)->ToString();
@@ -97,6 +101,7 @@ bool TruncCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 
 std::vector<KernelAttr> TruncCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {
+    KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kNumberTypeBFloat16),
     KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
     KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
     KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),

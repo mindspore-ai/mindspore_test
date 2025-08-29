@@ -233,6 +233,7 @@ from .math_func import (
     digamma,
     lgamma,
     tensor_div,
+    tensor_div_,
     div,
     divide,
     true_divide,

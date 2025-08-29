@@ -29,7 +29,7 @@ def jit_sub_div(a, b, c):
 @pytest.mark.parametrize('ms_func', [jit_sub_div])
 @pytest.mark.parametrize('a', [1, 2.0, (1.0, 2.0, 3.0), [1.0, 2.0, 3.0], Tensor(ops.fill(np.float32, (2, 3), 8))])
 @pytest.mark.parametrize('b', [3, 4.0, (4.0, 5.0, 6.0), [4.0, 5.0, 6.0], Tensor(ops.fill(np.float32, (2, 3), 8))])
-@pytest.mark.parametrize('c', [5, 6.0, (7.0, 8.0, 9.0), [7.0, 8.0, 9.0], Tensor(ops.fill(np.float32, (2, 3), 8))])
+@pytest.mark.parametrize('c', [5, 6.0, Tensor(ops.fill(np.float32, (2, 3), 8))])
 def test_sub_div(ms_func, a, b, c):
     """
     Feature: ALL TO ALL

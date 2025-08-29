@@ -197,6 +197,8 @@ std::shared_ptr<CpuKernelFunc> SpecializeArithFunc() {
 }
 using DivCpuFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>()>;
 static std::vector<std::pair<KernelAttr, DivCpuFuncCreator>> kernel_attr_list = {
+  {KernelAttr().AddInputAttr(kNumberTypeBFloat16).AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kNumberTypeBFloat16),
+   SpecializeArithFunc<bfloat16, bfloat16>},
   {KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeFloat32),
    SpecializeArithFunc<bool, float>},
   {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeFloat32),

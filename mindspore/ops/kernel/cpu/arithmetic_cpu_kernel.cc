@@ -861,7 +861,12 @@ static std::map<std::string, std::vector<std::pair<KernelAttr, ArithmeticCpuFunc
        .AddOutputAttr(kNumberTypeComplex128),
      SpecializeArithFunc<complex128>}}},
   {kMul,
-   {{KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
+   {{KernelAttr()
+       .AddInputAttr(kNumberTypeBFloat16)
+       .AddInputAttr(kNumberTypeBFloat16)
+       .AddOutputAttr(kNumberTypeBFloat16),
+     SpecializeArithFunc<bfloat16>},
+    {KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
      SpecializeArithFunc<bool>},
     {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
      SpecializeArithFunc<int8_t>},
@@ -975,7 +980,14 @@ static std::map<std::string, std::vector<std::pair<KernelAttr, ArithmeticCpuFunc
        .AddOutputAttr(kNumberTypeComplex128),
      SpecializeArithFunc<complex128>}}},
   {kFloorDiv,
-   {{KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
+   {{KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithFunc<bool>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeBFloat16)
+       .AddInputAttr(kNumberTypeBFloat16)
+       .AddOutputAttr(kNumberTypeBFloat16),
+     SpecializeArithFunc<bfloat16>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
      SpecializeArithFunc<int8_t>},
     {KernelAttr().AddInputAttr(kNumberTypeInt16).AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt16),
      SpecializeArithFunc<int16_t>},

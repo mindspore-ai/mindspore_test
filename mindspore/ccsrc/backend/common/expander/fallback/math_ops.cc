@@ -489,6 +489,17 @@ REG_FALLBACK_BUILDER("Max").SetBody(BODYFUNC(ib) { return {BuilderForMaxorMin(ib
 
 REG_FALLBACK_BUILDER("Min").SetBody(BODYFUNC(ib) { return {BuilderForMaxorMin(ib, "ReduceMin")}; });
 
+REG_FALLBACK_BUILDER("Divs").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(x), ib->GetDtype(y), "Divs");
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto y_tensor = ib->ScalarToTensor(y, y->dtype());
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->Cast(y_tensor, promote_type);
+  return {ib->Div(x_cast, y_cast)};
+});
+
 REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto input_y = ib->GetInput(kIndex1);
@@ -507,6 +518,42 @@ REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
     return {ib->Emit("FloorDiv", {input_x, input_y})};
   } else if (mode_opt.value() == ops::RoundingMode::TRUNC) {
     auto div_out = ib->Cast(ib->Div(input_x, input_y), ib->GetDtype(input_x)->type_id());
+    return {ib->Emit("Trunc", {div_out})};
+  } else {
+    MS_LOG(EXCEPTION) << "DivMod abstract failed.";
+  }
+});
+
+REG_FALLBACK_BUILDER("DivMods").SetBody(BODYFUNC(ib) {
+  auto input_x = ib->GetInput(kIndex0);
+  auto input_y = ib->GetInput(kIndex1);
+  auto rounding_mode = ib->GetInput(kIndex2);
+
+  auto mode_type = rounding_mode->abstract()->BuildType();
+  MS_EXCEPTION_IF_NULL(mode_type);
+  if (mode_type->isa<TypeNone>()) {
+    return {ib->Div(input_x, input_y)};
+  }
+
+  auto mode_value_ptr = rounding_mode->BuildValue();
+  auto mode_opt = mindspore::GetScalarValue<int64_t>(mode_value_ptr);
+
+  auto x_type = ib->GetDtype(input_x);
+  auto promote_type = x_type;
+  if (x_type->type_id() == kNumberTypeBool) {
+    promote_type = input_y->dtype();
+  } else if (kIntergralSet.find(x_type->type_id()) != kIntergralSet.end() &&
+             kFloatSet.find(input_y->dtype()->type_id()) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  }
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_x_cast = ib->Cast(input_x, promote_type);
+  auto input_y_cast = ib->ScalarToTensor(input_y, promote_type);
+
+  if (mode_opt.value() == ops::RoundingMode::FLOOR) {
+    return {ib->Emit("FloorDiv", {input_x_cast, input_y_cast})};
+  } else if (mode_opt.value() == ops::RoundingMode::TRUNC) {
+    auto div_out = ib->Cast(ib->Div(input_x_cast, input_y_cast), ib->GetDtype(input_x_cast)->type_id());
     return {ib->Emit("Trunc", {div_out})};
   } else {
     MS_LOG(EXCEPTION) << "DivMod abstract failed.";
