@@ -38,7 +38,7 @@
 #include "plugin/ascend/graph_optimizer/gpto/gpto.h"
 #include "plugin/ascend/res_manager/error_manager/param_restore.h"
 #include "plugin/ascend/res_manager/error_manager/collective_comm_monitor.h"
-#include "plugin/device/ascend/hal/hardware/stress_detect.h"
+#include "plugin/ascend/stress_detect/stress_detect.h"
 #include "plugin/ascend/kernel_executor/rts/rt_kernel_build.h"
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
