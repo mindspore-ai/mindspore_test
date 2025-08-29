@@ -171,6 +171,8 @@ class FRONTEND_EXPORT TensorPybind {
 
   static void Load(const Tensor &tensor);
 
+  static bool SharedMemory(const TensorPtr &tensor);
+
   // move tensor from device to host, or host to device asynchronously
   static TensorPtr MoveTo(const Tensor &self, const std::string &to, bool blocking = True);
 
