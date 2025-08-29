@@ -5,6 +5,8 @@ add_subdirectory(plugin/ascend)
 # TODO: remove internal
 add_subdirectory(plugin/device/ascend/kernel/internal)
 add_subdirectory(backend/ge_backend)
+# TODO: remove internal
+enable_directory_when_only_build_plugins(plugin/device/ascend/kernel/internal)
 enable_directory_when_only_build_plugins(plugin/ascend)
 enable_directory_when_only_build_plugins(plugin/ascend/res_manager/collective)
 enable_directory_when_only_build_plugins(plugin/ascend/res_manager/hccl_adapter/plugin)
