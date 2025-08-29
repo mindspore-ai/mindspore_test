@@ -95,8 +95,7 @@ bool MetaServerNode::Finalize(bool force) {
   }
   if (topo_state_ != TopoState::kFinished && !force &&
       (recovery::IsEnableRepeatRegister() || (abnormal_node_num_ == 0 && !recovery::IsEnableRepeatRegister()))) {
-    MS_LOG(WARNING) << "The meta server node can not be finalized because there are still " << nodes_.size()
-                    << " alive nodes.";
+    MS_LOG(WARNING) << "Cluster currently has " << nodes_.size() << " alive nodes.";
     return false;
   } else {
     if (abnormal_node_num_ > 0) {

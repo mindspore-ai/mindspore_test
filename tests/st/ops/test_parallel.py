@@ -85,7 +85,7 @@ def run_test(
             --join True \
             --master_port {port} \
             --log_dir {log_dir.as_posix()} \
-            pytest -vra --disable-warnings -k '{filter_}' {test_script}::{test_name}
+            pytest -vra --disable-warnings {test_script}::{test_name}
     ''')
     if status != 0:
         raise RuntimeError(f'Test failed with status {status}, please check {log_dir.as_posix()} for more details.')
