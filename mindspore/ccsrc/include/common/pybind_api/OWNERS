@@ -1,6 +1,7 @@
 approvers:
-- ginfung #
-- limingqi107
+- chujinjin #
+- hwcaifubi
+- luochao60
 
 options:
     no_parent_owners: true
