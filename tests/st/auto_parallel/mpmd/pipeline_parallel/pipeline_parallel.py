@@ -190,6 +190,7 @@ def build_send_recv_info(stage_index, model_config, per_batch_size, seq_length):
         send_info_list.append(send_info)
     return send_info_list, recv_info_list
 
+
 def build_pipeline_stage(model_config, pp_group, send_info_list, recv_info_list):
     stage_kwargs = {
         'stage_num': model_config.num_stages,
@@ -303,6 +304,140 @@ def test_schedule_1f1b():
 
     send_info_list, recv_info_list = build_send_recv_info(stage_index, model_config, per_batch_size,
                                                           seq_length)
+
+    # parameter
+    pipeline_stage = build_pipeline_stage(model_config, pp_group, send_info_list, recv_info_list)
+
+    input_shape = (per_batch_size * micro_batch_num, seq_length)
+    input_ids = Tensor(np.ones(input_shape), dtype=ms.int32)  # (b, s)
+    targets = Tensor(np.ones(input_shape), dtype=ms.int32)
+
+    schedule = Schedule1F1B(pipeline_stage, micro_batch_num)
+    if stage_index == 0:
+        schedule.run(input_ids)
+    elif stage_index == model_config.num_stages - 1:
+        outputs = schedule.run()
+        loss = calculate_loss(outputs, targets, micro_batch_num)
+        assert np.allclose([loss], [5.383], atol=1e-3)
+    else:
+        schedule.run()
+
+
+def build_send_recv_info_dynamic_shape(stage_index, model_config, seq_length):
+    recv_info_list = []
+    send_info_list = []
+    if stage_index == 0:
+        send_info = P2PInfo(shape=[-1, seq_length, model_config.hidden_size], dtype=ms.float16, dyn_shape=True)
+        send_info_list.append(send_info)
+    elif stage_index == model_config.num_stages - 1:
+        # for forward recv
+        recv_info = P2PInfo(shape=[-1, seq_length, model_config.hidden_size], dtype=ms.float16, dyn_shape=True)
+        recv_info_list.append(recv_info)
+    else:
+        # for forward recv
+        recv_info = P2PInfo(shape=[-1, seq_length, model_config.hidden_size], dtype=ms.float16, dyn_shape=True)
+        recv_info_list.append(recv_info)
+        # for forward send
+        send_info = P2PInfo(shape=[-1, seq_length, model_config.hidden_size], dtype=ms.float16, dyn_shape=True)
+        send_info_list.append(send_info)
+    return send_info_list, recv_info_list
+
+
+def test_pipeline_dynamic_shape():
+    """
+    Feature: Pipeline schedule 1f1b + dynamic shape
+    Description: Execute micro batches according to schedule
+    Expectation: Run success.
+    """
+    init("hccl")
+    model_config = build_model_config()
+    # layer config
+    rank_id = get_rank()
+
+    device_num = get_group_size()
+    device_num_per_stage = device_num // model_config.num_stages
+    stage_index = rank_id // device_num_per_stage
+
+    per_batch_size = 2
+    seq_length = 32
+    ms.set_seed(0)
+
+    micro_batch_num = 8
+
+    model_config.stage_idx = stage_index
+
+    rank_ids = [0, 1, 2, 3]
+    pp_group = "pp_group"
+    create_group(pp_group, rank_ids)
+
+    send_info_list, recv_info_list = build_send_recv_info_dynamic_shape(stage_index, model_config, seq_length)
+
+    # parameter
+    pipeline_stage = build_pipeline_stage(model_config, pp_group, send_info_list, recv_info_list)
+
+    input_shape = (per_batch_size * micro_batch_num, seq_length)
+    input_ids = Tensor(np.ones(input_shape), dtype=ms.int32)  # (b, s)
+    targets = Tensor(np.ones(input_shape), dtype=ms.int32)
+
+    schedule = Schedule1F1B(pipeline_stage, micro_batch_num)
+    if stage_index == 0:
+        schedule.run(input_ids)
+    elif stage_index == model_config.num_stages - 1:
+        outputs = schedule.run()
+        loss = calculate_loss(outputs, targets, micro_batch_num)
+        assert np.allclose([loss], [5.383], atol=1e-3)
+    else:
+        schedule.run()
+
+
+def build_send_recv_info_dynamic_rank(stage_index, model_config):
+    recv_info_list = []
+    send_info_list = []
+    if stage_index == 0:
+        send_info = P2PInfo(shape=None, dtype=ms.float16, dyn_rank=True)
+        send_info_list.append(send_info)
+    elif stage_index == model_config.num_stages - 1:
+        # for forward recv
+        recv_info = P2PInfo(shape=None, dtype=ms.float16, dyn_rank=True)
+        recv_info_list.append(recv_info)
+    else:
+        # for forward recv
+        recv_info = P2PInfo(shape=None, dtype=ms.float16, dyn_rank=True)
+        recv_info_list.append(recv_info)
+        # for forward send
+        send_info = P2PInfo(shape=None, dtype=ms.float16, dyn_rank=True)
+        send_info_list.append(send_info)
+    return send_info_list, recv_info_list
+
+
+def test_pipeline_dynamic_rank():
+    """
+    Feature: Pipeline schedule 1f1b + dynamic rank
+    Description: Execute micro batches according to schedule
+    Expectation: Run success.
+    """
+    init("hccl")
+    model_config = build_model_config()
+    # layer config
+    rank_id = get_rank()
+
+    device_num = get_group_size()
+    device_num_per_stage = device_num // model_config.num_stages
+    stage_index = rank_id // device_num_per_stage
+
+    per_batch_size = 2
+    seq_length = 32
+    ms.set_seed(0)
+
+    micro_batch_num = 8
+
+    model_config.stage_idx = stage_index
+
+    rank_ids = [0, 1, 2, 3]
+    pp_group = "pp_group"
+    create_group(pp_group, rank_ids)
+
+    send_info_list, recv_info_list = build_send_recv_info_dynamic_rank(stage_index, model_config)
 
     # parameter
     pipeline_stage = build_pipeline_stage(model_config, pp_group, send_info_list, recv_info_list)

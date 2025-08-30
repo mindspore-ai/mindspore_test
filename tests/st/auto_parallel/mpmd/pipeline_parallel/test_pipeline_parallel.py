@@ -50,3 +50,27 @@ def test_schedule_1f1b_less_micro():
     case_name = "test_schedule_1f1b_less_micro"
     master_port = 12346
     run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
+def test_pipeline_dynamic_shape():
+    """
+    Feature: schedule 1f1b.
+    Description: Test schedule 1f1b.
+    Expectation: Run success.
+    """
+    case_name = "test_pipeline_dynamic_shape"
+    master_port = 12346
+    run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
+def test_pipeline_dynamic_rank():
+    """
+    Feature: schedule 1f1b.
+    Description: Test schedule 1f1b.
+    Expectation: Run success.
+    """
+    case_name = "test_pipeline_dynamic_rank"
+    master_port = 12346
+    run_case(case_name, master_port)

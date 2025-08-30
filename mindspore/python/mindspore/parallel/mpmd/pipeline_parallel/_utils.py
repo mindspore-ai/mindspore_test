@@ -114,3 +114,38 @@ class _MicroBatch(nn.Cell):
         strided_slice_end[cur_arg_batch_dim] = micro_batch_end
         micro_input = ops.strided_slice(input, strided_slice_begin, strided_slice_end, strided_slice_strides)
         return micro_input
+
+
+class _RecvInfo:
+    """
+    Used for construct forward Receive operation and backward Send operation.
+    """
+    def __init__(self, dtype, shape, src_stage, dyn_shape, dyn_rank):
+        self._src_stage = src_stage
+        self.buffer = None
+        self._shape = shape
+        self._dtype = dtype
+        self._dyn_shape = dyn_shape
+        self._dyn_rank = dyn_rank
+        self.src_stage = src_stage
+
+    @classmethod
+    def from_instance(cls, recv_info):
+        return cls(recv_info.dtype, recv_info.shape, recv_info.src_stage,
+                   recv_info.dyn_shape, recv_info.dyn_rank)
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def dtype(self):
+        return self._dtype
+
+    @property
+    def dyn_shape(self):
+        return self._dyn_shape
+
+    @property
+    def dyn_rank(self):
+        return self._dyn_rank
