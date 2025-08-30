@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
+#include "kernel/ascend/custom/custom_kernel_build.h"
 
 #include <string>
-#include <utility>
 #include <vector>
-#include <map>
-#include <set>
-#include <unordered_map>
 
 #include "kernel/ascend/kernel_plugin.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "plugin/device/ascend/kernel/custom/custom_kernel_factory.h"
-#include "plugin/device/ascend/kernel/custom/custom_kernel_internal.h"
+#include "kernel/ascend/custom/custom_kernel_factory.h"
+#include "kernel/ascend/custom/custom_kernel_internal.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_context.h"

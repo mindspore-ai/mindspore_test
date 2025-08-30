@@ -24,7 +24,6 @@ file(GLOB_RECURSE HAL_SRC_910B "${ASCEND_PLUGIN_PATH}/hal/*.cc")
 file(GLOB_RECURSE KENREL_SRC_910B
         "${ASCEND_PLUGIN_PATH}/kernel/hccl/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
-        "${ASCEND_PLUGIN_PATH}/kernel/custom/*.cc"
         )
 
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
