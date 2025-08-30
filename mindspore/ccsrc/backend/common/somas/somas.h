@@ -27,7 +27,7 @@
 
 #include "utils/hash_map.h"
 #include "utils/somas/somas_node.h"
-#include "backend/ms_backend/somas_solver_pre.h"
+#include "backend/common/somas/somas_solver_pre.h"
 #include "utils/somas/somas_stream.h"
 #include "utils/somas/somas_parameter.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -60,7 +60,7 @@ struct Block {
 void MergeBlocks(std::vector<Block> *block_list, std::stack<Block> *merged_blocks);
 
 enum class UnReuseType { kUnReuseAll, kUnReuseInput, kUnReuseOutput, kUnReuseWorkspace };
-class BACKEND_EXPORT Somas {
+class BACKEND_COMMON_EXPORT Somas {
  public:
   // Constructors/Destructors
   Somas() = default;
@@ -230,7 +230,7 @@ using SomasPtr = std::shared_ptr<Somas>;
 using SomasCreator = std::function<std::shared_ptr<Somas>()>;
 
 // @todo will delete when old runtime remove
-class BACKEND_EXPORT SomasManager {
+class BACKEND_COMMON_EXPORT SomasManager {
  public:
   static SomasManager &Instance();
   void Register(device::DeviceType device_type, SomasCreator &&creator) {

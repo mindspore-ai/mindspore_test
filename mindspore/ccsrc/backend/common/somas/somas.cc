@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "backend/ms_backend/somas.h"
+#include "backend/common/somas/somas.h"
 #include <algorithm>
 #include <fstream>
 #include <iterator>

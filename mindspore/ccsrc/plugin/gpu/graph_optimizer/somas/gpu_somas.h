@@ -20,7 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "backend/ms_backend/somas.h"
+#include "backend/common/somas/somas.h"
 #include "ir/device_type.h"
 
 namespace mindspore {
