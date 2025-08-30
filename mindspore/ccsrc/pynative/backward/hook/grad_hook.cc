@@ -103,6 +103,7 @@ void GradHook::set_requires_grad(const TensorPtr &self, bool requires_grad) {
   }
   grad_meta->set_requires_grad(requires_grad);
   if (impl::GetUnsafeGradNodeImpl(self) == nullptr && requires_grad) {
+    MS_LOG(DEBUG) << "create leaf tensor requires grad true" << self->ToString();
     grad_meta->set_grad_node(std::make_shared<autograd::LeafNode>(
       self->param_info() != nullptr ? self->param_info()->name() : "input_" + std::to_string(self->id()), self,
       self->shape(), self->Dtype(), self->is_parameter()));

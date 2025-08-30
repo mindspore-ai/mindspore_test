@@ -60,12 +60,15 @@ TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self) {
   return kernel::pyboost::view(self, self->shape());
 }
 
-void MarkInputsNeedGrad(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx, const py::args &inputs,
-                        std::vector<TensorMeta> *inputs_meta) {
+void ProcessInputs(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx, const py::args &inputs,
+                   std::vector<TensorMeta> *inputs_meta) {
   size_t inputs_size = inputs.size();
   std::vector<bool> is_tensor_input;
   is_tensor_input.reserve(inputs_size);
   py::tuple need_grad_input = py::tuple(inputs_size);
+  // Convert input object to tensors.
+  TensorPtrSet input_base_tensors;
+  input_base_tensors.reserve(inputs_size);
   for (size_t i = 0; i < inputs_size; ++i) {
     const auto tensor = tensor::ConvertToTensor(inputs[i]);
     if (tensor != nullptr) {
@@ -74,6 +77,8 @@ void MarkInputsNeedGrad(const std::shared_ptr<FunctionContext> &context, const F
       need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
       (void)context->inputs.emplace_back(tensor);
       (void)inputs_meta->emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
+      (void)context->input_value_grad_type.emplace_back(AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));
+      input_base_tensors.insert(tensor);
     } else {
       (void)is_tensor_input.emplace_back(false);
       need_grad_input[i] = py::bool_(false);
@@ -83,6 +88,7 @@ void MarkInputsNeedGrad(const std::shared_ptr<FunctionContext> &context, const F
   }
   ctx->set_is_tensor_input(is_tensor_input);
   ctx->set_needs_input_grad(need_grad_input);
+  context->input_base_tensors = input_base_tensors;
 }
 }  // namespace
 
@@ -243,20 +249,6 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
   MS_LOG(DEBUG) << "Parse info, dirty size: " << context->dirty_tensors.size()
                 << ", non_diff size: " << context->non_diff_tensors.size()
                 << "saved_tensors size: " << context->to_save_tensors.size();
-
-  // Convert input object to tensors.
-  TensorPtrSet input_base_tensors;
-  input_base_tensors.reserve(context->inputs.size());
-  for (size_t i = 0; i < context->inputs.size(); ++i) {
-    const auto &input_value = context->inputs[i];
-    if (!input_value->isa<None>()) {
-      (void)context->input_value_grad_type.emplace_back(
-        AutoGradUtil::SetValueGradInfo(input_value, InputType::kConstant));
-      auto base_tensor = input_value->cast<tensor::TensorPtr>();
-      input_base_tensors.insert(base_tensor);
-    }
-  }
-  context->input_base_tensors = input_base_tensors;
 }
 
 py::object FunctionBase::saved_tensors() const {
@@ -303,7 +295,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
 
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
-  MarkInputsNeedGrad(context, ctx, inputs, &inputs_meta);
+  ProcessInputs(context, ctx, inputs, &inputs_meta);
   auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
   const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta);
   UpdateNextEdges(custom_fn, context->inputs);
