@@ -14,6 +14,7 @@
 # ============================================================================
 import os
 import numpy as np
+from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
@@ -69,11 +70,12 @@ def get_device_layout():
     layout = Layout(device_matrix, alias_name, rank_list)
     return layout
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def hsdp_with_dp_layout():
     """
     Feature: hsdp
     Description: test hsdp with data parallel layout
-    Expectation: compile success
+    Expectation: run success
     """
     layout = get_device_layout()
     w_layout = layout("None", "None")
@@ -81,11 +83,12 @@ def hsdp_with_dp_layout():
     label_layout = layout("dp", "None")
     run_hsdp_with_layout(w_layout, data_layout, label_layout)
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def hsdp_with_mp_layout():
     """
     Feature: hsdp
     Description: test hsdp with model parallel layout
-    Expectation: compile success
+    Expectation: run success
     """
     layout = get_device_layout()
     w_layout = layout("mp", "None")

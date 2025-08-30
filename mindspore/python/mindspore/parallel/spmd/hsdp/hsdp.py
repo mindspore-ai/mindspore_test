@@ -70,6 +70,7 @@ def hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_
         apply hybrid sharded data parallel.
 
         Args:
+            cell(Cell): The cell to apply hsdp.
             shard_size (int, optional): Set the optimizer weight shard group size if you want to specific the
                 maximum group size across devices when the parallel optimizer is
                 enabled. The numerical range can be (0, device_num]. Default value is 1,

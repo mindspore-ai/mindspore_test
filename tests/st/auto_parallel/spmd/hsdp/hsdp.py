@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
@@ -19,7 +20,6 @@ from mindspore import nn, ops
 from mindspore.communication import init
 from mindspore.parallel.spmd.hsdp import hsdp
 
-init()
 ms.set_seed(1)
 
 def create_dataset(batch_size):
@@ -112,43 +112,75 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
         i += 1
 
 def test_pure_dp():
+    init()
     hsdp_without_accumulate_grad(shard_size=1)
 
 def test_zero1_fully_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=8, optimizer_level="level1")
 
 def test_zero1_partial_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=4, optimizer_level="level1")
 
 def test_zero2_fully_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=8, optimizer_level="level2")
 
 def test_zero2_partial_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=4, optimizer_level="level2")
 
 def test_zero3_fully_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=8, optimizer_level="level3")
 
 def test_zero3_partial_shard():
+    init()
     hsdp_without_accumulate_grad(shard_size=4, optimizer_level="level3")
 
 def test_pure_dp_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=1, micro_step=8)
 
 def test_zero1_fully_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=8, optimizer_level="level1", micro_step=8)
 
 def test_zero1_partial_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level1", micro_step=8)
 
 def test_zero2_fully_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=8, optimizer_level="level2", micro_step=8)
 
 def test_zero2_partial_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level2", micro_step=8)
 
 def test_zero3_fully_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=8, optimizer_level="level3", micro_step=8)
 
 def test_zero3_partial_shard_with_acc_grad():
+    init()
     hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_no_dp():
+    '''
+    Feature: apply hsdp with single node.
+    Description: apply hsdp with single node.
+    Expectation: Run success
+    '''
+    hsdp_without_accumulate_grad(shard_size=1)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_no_dp_with_acc_grad():
+    '''
+    Feature: apply hsdp with single node gradient accumulation.
+    Description: apply hsdp with single node gradient accumulation.
+    Expectation: Run success
+    '''
+    hsdp_with_accumulate_grad(shard_size=1, micro_step=8)

@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+from tests.mark_utils import arg_mark
 from mindspore import nn
 from mindspore.parallel import Layout
 from mindspore.nn.utils import no_init_parameters
@@ -38,6 +39,7 @@ def hsdp_param_to_unsharded(net):
     hsdp_param.to_unsharded()
     hsdp_param.zero_acc_grad()
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_param_to_unsharded():
     """
     Feature: hsdp param.
@@ -49,6 +51,7 @@ def test_hsdp_param_to_unsharded():
     net = nn.Dense(in_channels, out_channels, weight_init="ones")
     hsdp_param_to_unsharded(net)
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_to_unsharded():
     """
     Feature: hsdp not init param.
@@ -61,6 +64,7 @@ def test_hsdp_no_init_param_to_unsharded():
         net = nn.Dense(in_channels, out_channels, weight_init="ones")
     hsdp_param_to_unsharded(net)
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_param_with_layout():
     """
     Feature: hsdp param with layout.
@@ -80,6 +84,7 @@ def test_hsdp_param_with_layout():
 
     hsdp_param_to_unsharded(net)
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_with_layout():
     """
     Feature: hsdp no init param with layout.

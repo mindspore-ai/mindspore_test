@@ -14,7 +14,7 @@
 # ============================================================================
 """HSDP cell state"""
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
-from mindspore import Parameter, Tensor
+from mindspore import Parameter, Tensor, ops
 
 
 class HSDPState:
@@ -50,7 +50,7 @@ class HSDPState:
             return
         for param in self.sharded_hsdp_params:
             param.to_sharded()
-        self.is_shard.set_data(Tensor(True))
+        ops.assign(self.is_shard, Tensor(True))
 
     def unshard(self):
         """change parameters to unsharded state"""
@@ -58,4 +58,4 @@ class HSDPState:
             return
         for param in self.sharded_hsdp_params:
             param.to_unsharded()
-        self.is_shard.set_data(Tensor(False))
+        ops.assign(self.is_shard, Tensor(False))
