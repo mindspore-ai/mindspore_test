@@ -15,7 +15,7 @@
 
 import numpy as np
 import mindspore as ms
-from mindspore import ops, nn, Tensor, Symbol
+from mindspore import ops, nn, Tensor, Symbol, enable_dynamic
 from mindspore.ops import functional as F
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
@@ -94,19 +94,20 @@ def test_symbol_pynativemode_setinputs():
     assert net(x, x).shape == (16, 8)
 
 
-@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_symbol_pynativemode_signature():
+def test_symbol_pynativemode_enable_dynamic():
     """
     Feature: Symbol
-    Description: pynativemode, set symbolic info with input_signature
+    Description: pynativemode, set symbolic info with enable dynamic
     Expectation: success
     """
     s1 = Symbol(max=16, unique=True)
     s2 = Symbol(min=4, unique=True)
     x_dyn = Tensor(shape=[s1, s1], dtype=ms.float32)
     y_dyn = Tensor(shape=[s2, s2], dtype=ms.float32)
-    @jit(input_signature=(x_dyn, y_dyn))
+
+    @enable_dynamic(x=x_dyn, y=y_dyn)
+    @jit
     def add_func(x, y):
         return F.tensor_add(x, y)
 

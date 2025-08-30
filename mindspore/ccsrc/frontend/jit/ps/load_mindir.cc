@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "utils/log_adapter.h"
-#include "abstract/abstract_value.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "utils/check_convert_utils.h"
 #include "load_mindir/infer_mindir.h"

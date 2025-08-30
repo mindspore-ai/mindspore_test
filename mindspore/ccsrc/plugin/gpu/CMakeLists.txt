@@ -7,7 +7,8 @@ include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CU
 set(GPU_SUB_COMP
         graph_optimizer
         kernel_executor
-        res_manager)
+        res_manager
+        profiler)
 
 if(ENABLE_GPU)
     file(GLOB GPU_DEVICE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
@@ -27,8 +28,7 @@ endif()
 if(ENABLE_GPU)
     set(PLUGIN_GPU_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/gpu/hal")
     file(GLOB_RECURSE GPU_PLUGIN_SRC_LIST
-        "${PLUGIN_GPU_PATH}/device/distribution/*.cc"
-        "${PLUGIN_GPU_PATH}/profiler/*.cc")
+        "${PLUGIN_GPU_PATH}/device/distribution/*.cc")
     list(REMOVE_ITEM GPU_PLUGIN_SRC_LIST
             "${PLUGIN_GPU_PATH}/device/distribution/collective_wrapper.cc"
             "${PLUGIN_GPU_PATH}/device/distribution/mpi_wrapper.cc"

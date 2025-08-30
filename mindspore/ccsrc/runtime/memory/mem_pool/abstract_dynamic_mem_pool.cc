@@ -506,9 +506,8 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
  *    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
  *                    If the expansion fails, try to malloc from persistent pool.
  */
-inline std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size,
-                                                                                  bool from_persistent_mem,
-                                                                                  uint32_t stream_id) {
+std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
+                                                                           uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
 
   auto mem_buf = allocator->Malloc(align_size);

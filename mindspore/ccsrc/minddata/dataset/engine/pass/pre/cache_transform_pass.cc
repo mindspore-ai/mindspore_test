@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include <vector>
 #include "minddata/dataset/engine/pass/pre/cache_transform_pass.h"
+
+#include <vector>
+
 #include "minddata/dataset/engine/operation/datasetops/cache_lookup_node.h"
 #include "minddata/dataset/engine/operation/datasetops/cache_merge_node.h"
 #include "minddata/dataset/engine/operation/datasetops/cache_node.h"

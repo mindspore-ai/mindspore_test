@@ -31,7 +31,6 @@
 #include <functional>
 #include "abstract/abstract_value.h"
 #include "mindapi/base/format.h"
-#include "abstract/dshape.h"
 #include "include/api/format.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/utils.h"

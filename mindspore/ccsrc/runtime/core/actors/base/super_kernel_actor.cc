@@ -545,7 +545,8 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *co
           for (auto &block : kernel_mem_block) {
             MS_EXCEPTION_IF_NULL(block);
             if (block->mem_type_ == kOutputMem) {
-              kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(nullptr);
+              auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
+              kernel_tensor->set_device_ptr(nullptr);
             } else {
               kernel_actor->workspace_kernel_tensors_.at(block->index_)->set_device_ptr(nullptr);
             }
@@ -582,14 +583,16 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_act
     const auto &kernel_mem_block = iter->second;
     const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
     MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
-    const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->device_contexts_[0]);
+    const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->real_output_device_context_);
     for (auto &block : kernel_mem_block) {
       MS_EXCEPTION_IF_NULL(block);
       void *ptr = merge_blocks.at(block->in_memory_trace_block_index_)->start_ + block->offset_in_memory_trace_block_;
       MS_EXCEPTION_IF_NULL(ptr);
       if (block->mem_type_ == kOutputMem) {
         if (!safe_update) {
-          kernel_actor->output_kernel_tensors_.at(block->index_)->set_device_ptr(ptr);
+          auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
+          kernel_tensor->set_device_ptr(ptr);
+
         } else {
           auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
           std::lock_guard<SpinLock> lock(block->lock_);
@@ -607,7 +610,6 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_act
 void SuperKernelActor::SetInputTraceMemory(const KernelRunnerPtr &kernel_actor) const {
   const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
   MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
-  const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_actor->device_contexts_[0]);
 
   const auto &kernel_tensor_to_kernel_mem_blocks = MemoryTraceManager::GetInstance().GetKernelTensorToMemBlocksInfo();
   MS_EXCEPTION_IF_NULL(kernel_tensor_to_kernel_mem_blocks);
@@ -618,6 +620,7 @@ void SuperKernelActor::SetInputTraceMemory(const KernelRunnerPtr &kernel_actor) 
       continue;
     }
     auto &kernel_mem_block = iter->second;
+    const auto &merge_blocks = merge_blocks_with_device_context->at(kernel_mem_block->device_context_);
     void *ptr = merge_blocks.at(kernel_mem_block->in_memory_trace_block_index_)->start_ +
                 kernel_mem_block->offset_in_memory_trace_block_;
 
@@ -641,7 +644,7 @@ void SuperKernelActor::AllocateTraceMemory(OpContext<KernelTensor> *const contex
       static const size_t kMemoryAlignSize = 1024;
       void *block_addr = device_context->device_res_manager_->AllocateMemory(block->size_ + kMemoryAlignSize);
       if (block_addr == nullptr) {
-        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *(device_contexts_[0]),
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                     GetAID().Name(), block->size_);
       }
       block->start_ = reinterpret_cast<uint8_t *>(block_addr);
@@ -1210,6 +1213,10 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
         &(kernel_actor->max_ref_cnt_output_list_), kernel_actor->device_contexts_[0], context, kernel_actor->GetAID());
     }
 
+    const auto &event_array = comm_iter->second;
+    auto &wait_event = event_array[0];
+    wait_event->WaitEventWithoutReset(0);
+
     auto &llm_manager = LLMManager::GetInstance();
     bool need_force_resize =
       llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_;
@@ -1218,10 +1225,6 @@ void SuperKernelActor::DispatchSerialLaunchKernels(OpContext<KernelTensor> *cons
       kernel_actor->FetchOutputDeviceTensor(nullptr);
       kernel_actor->FetchWorkspaceDeviceTensor();
     }
-
-    const auto &event_array = comm_iter->second;
-    auto &wait_event = event_array[0];
-    wait_event->WaitEventWithoutReset(0);
 
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin serial launch kernel: "
                                          << kernel_actor->kernel_->fullname_with_scope();
@@ -1820,7 +1823,10 @@ void SuperKernelActor::PartitionParallelDispatchKernels() {
     auto &llm_manager = LLMManager::GetInstance();
     const auto &kernel_name = kernel_actor->kernel_mod_->kernel_name();
     bool need_force_resize = llm_manager.need_force_resize(kernel_name) || kernel_actor->is_dynamic_value_;
-    if (need_force_resize || common::AnfAlgo::IsCommunicationFusionOp(kernel_name)) {
+    // The heterogeneous operator like MoveTo, device context type maybe 'Ascend' type, but output DeviceAddress type is
+    // 'CPU'.
+    bool is_heter_op = (kernel_actor->real_output_device_context_ != kernel_actor->device_contexts_[0]);
+    if (need_force_resize || common::AnfAlgo::IsCommunicationFusionOp(kernel_name) || is_heter_op) {
       serial_launch_kernels_.push_back(kernel_actor);
       continue;
     }

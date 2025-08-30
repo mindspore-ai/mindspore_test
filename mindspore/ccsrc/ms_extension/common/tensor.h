@@ -79,6 +79,13 @@ class EXTENSION_API Tensor {
   TypeId data_type() const;
 
   /**
+   * @brief [API] Retrieves the format of the Tensor.
+   * @return The format of the Tensor.
+   * @throws If the Tensor is not defined, use "DefaultFormat".
+   */
+  std::string format() const;
+
+  /**
    * @brief [API] Retrieves the shape of the Tensor.
    * @return A reference to the shape vector of the Tensor.
    * @throws If the Tensor is not defined, an exception is thrown.

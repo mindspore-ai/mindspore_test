@@ -311,15 +311,21 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         max_size = 0
         self_index = 0
+        mark_side_effect_str = "pynative::PyNativeAlgo::PyBoost::MarkSideEffect(self);"
+        has_side_effect = False
         for tensor_proto in func_protos:
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
             self_index = self._get_input_tensor_index(tensor_proto)
+            if op_proto.op_view or op_proto.op_inplace:
+                has_side_effect = True
         cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+        mark_side_effect = mark_side_effect_str if has_side_effect else ""
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(cpp_func_name=cpp_func_name,
                                                                              func_name=func_api_name,
                                                                              signatures=signatures_str,
+                                                                             mark_side_effect=mark_side_effect,
                                                                              dispatch_cases=dispatch_cases,
                                                                              max_args=max_size,
                                                                              self_index=self_index,

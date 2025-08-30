@@ -13,19 +13,18 @@ file(GLOB_RECURSE ASCEND_910B_OBJ_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_context.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/ascend_device_address_maker.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/graph_optimizer/*.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/kernel_executor/*.cc")
+  "${CMAKE_CURRENT_SOURCE_DIR}/kernel_executor/*.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/stress_detect/*.cc")
 
 set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/ascend")
 
 file(GLOB_RECURSE HAL_SRC_910B "${ASCEND_PLUGIN_PATH}/hal/*.cc")
 
 file(GLOB_RECURSE KENREL_SRC_910B
-        "${ASCEND_PLUGIN_PATH}/kernel/acl/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/hccl/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/custom/*.cc"
-        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_kernel_build.cc"
-        "${ASCEND_PLUGIN_PATH}/kernel/internal/internal_ascend_adapter.cc"
         )
 
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})

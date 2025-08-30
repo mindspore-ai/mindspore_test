@@ -39,6 +39,7 @@ class FuncBuilder : public BpropBuilder {
   NodePtr EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) override;
   NodePtr EmitValue(const ValuePtr &value) override;
   NodePtr Shape(const NodePtr &node, bool tensor = false) override;
+  void MarkSharedGradTensor(const NodePtr &lhs, const NodePtr &rhs) override;
   NodePtrList ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs) override;
   NodePtrList ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs,
                         const std::vector<int64_t> &value_depend) override;

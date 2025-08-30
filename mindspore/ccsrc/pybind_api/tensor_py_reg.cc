@@ -35,6 +35,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "pybind_api/storage_py.h"
+#include "pybind_api/backward_node_py.h"
 
 namespace mindspore {
 namespace tensor {
@@ -300,31 +301,39 @@ extern int TensorPython_set_VirtualFlag(PyObject *self, PyObject *value, void *)
 extern PyObject *TensorPython_get_grad(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetGrad();
-  return sliceNumOfPersistentData.release().ptr();
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  auto grad = obj->value.GetTensor()->grad();
+  if (grad == nullptr) {
+    Py_RETURN_NONE;
+  }
+  return tensor::PackTensor(grad);
   HANDLE_MS_EXCEPTION_END
 }
 
 extern int TensorPython_set_grad(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetGrad(py::reinterpret_borrow<py::object>(value));
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
-extern PyObject *TensorPython_get_grad_fn(PyObject *self, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetGradFn();
-  return sliceNumOfPersistentData.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern int TensorPython_set_grad_fn(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetGradFn(py::reinterpret_borrow<py::object>(value));
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  if (!IsTensorPy(value) && value != Py_None) {
+    MS_LOG(EXCEPTION) << "Value should be a tensor or none!";
+  }
+  if (value == Py_None) {
+    obj->value.GetTensor()->set_grad(nullptr);
+    return 0;
+  }
+  PyType<TensorPy> *grad_tensor_py = reinterpret_cast<PyType<TensorPy> *>(value);
+  auto leaf_tensor = obj->value.GetTensor();
+  auto grad_tensor = grad_tensor_py->value.GetTensor();
+  if (grad_tensor->shape() != leaf_tensor->shape() || grad_tensor->data_type() != leaf_tensor->data_type()) {
+    MS_LOG(EXCEPTION) << "The grad dtype and shape should be same as source tensor but got dtype: "
+                      << grad_tensor->Dtype() << " vs " << leaf_tensor->Dtype() << " shape: " << grad_tensor->shape()
+                      << " vs " << leaf_tensor->shape();
+  }
+  leaf_tensor->set_grad(grad_tensor);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
@@ -332,33 +341,83 @@ extern int TensorPython_set_grad_fn(PyObject *self, PyObject *value, void *) {
 extern PyObject *TensorPython_get_requires_grad(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetRequiresGrad();
-  return sliceNumOfPersistentData.release().ptr();
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  bool requires_grad = obj->value.GetTensor()->requires_grad();
+  return PyBool_FromLong(requires_grad);
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_get_is_leaf(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  bool is_leaf = obj->value.GetTensor()->is_leaf();
+  return PyBool_FromLong(is_leaf);
   HANDLE_MS_EXCEPTION_END
 }
 
 extern int TensorPython_set_requires_grad(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetRequiresGrad(py::reinterpret_borrow<py::object>(value));
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  if (!PyBool_Check(value)) {
+    PyErr_SetString(PyExc_TypeError, "The requires_grad property value must be a boolean.");
+  }
+  obj->value.GetTensor()->set_requires_grad(value == Py_True);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
-extern PyObject *TensorPython_get_retain_grad(PyObject *self, void *) {
+extern PyObject *TensorPython_retains_grad(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  py::object sliceNumOfPersistentData = obj->value.GetRetainGrad();
-  return sliceNumOfPersistentData.release().ptr();
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  bool retains_grad = obj->value.GetTensor()->retains_grad();
+  return PyBool_FromLong(retains_grad);
   HANDLE_MS_EXCEPTION_END
 }
 
-extern int TensorPython_set_retain_grad(PyObject *self, PyObject *value, void *) {
+extern PyObject *TensorPython_grad_node(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  obj->value.SetRetainGrad(py::reinterpret_borrow<py::object>(value));
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  auto grad_node = obj->value.GetTensor()->grad_node();
+  return pynative::autograd::Wrap(grad_node);
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_get_version(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  const auto &tensor = obj->value.GetTensor();
+  runtime::Pipeline::Get().WaitBpropStage();
+  const auto version = tensor->version().current_version();
+  return PyLong_FromSize_t(version);
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_get_output_index(PyObject *self, void *) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  const auto &tensor = obj->value.GetTensor();
+  return PyLong_FromSize_t(tensor->output_index());
+  HANDLE_MS_EXCEPTION_END
 }
 
 static PyGetSetDef PyTensorPython_getseters[] = {
@@ -445,10 +504,13 @@ static PyGetSetDef PyTensorPython_getseters[] = {
    NULL},
   {"symbolic_shape", (getter)TensorPython_get_SymbolicShape, nullptr, "Get the symbolic shape.", NULL},
   {"_grad", (getter)TensorPython_get_grad, TensorPython_set_grad, "Get the _grad.", NULL},
-  {"_grad_fn", (getter)TensorPython_get_grad_fn, TensorPython_set_grad_fn, "Get the _grad_fn.", NULL},
-  {"_requires_grad", (getter)TensorPython_get_requires_grad, TensorPython_set_requires_grad, "Get the _requires_grad.",
-   NULL},
-  {"_retain_grad", (getter)TensorPython_get_retain_grad, TensorPython_set_retain_grad, "Get the _retain_grad.", NULL},
+  {"_requires_grad", (getter)TensorPython_get_requires_grad, (setter)TensorPython_set_requires_grad,
+   "Get the requires_grad.", nullptr},
+  {"_is_leaf", (getter)TensorPython_get_is_leaf, nullptr, "Get is leaf.", nullptr},
+  {"_retains_grad", (getter)TensorPython_retains_grad, nullptr, "Get the retains_grad.", NULL},
+  {"_grad_node", (getter)TensorPython_grad_node, nullptr, "Get the backward node.", NULL},
+  {"_version", (getter)TensorPython_get_version, nullptr, "Get tensor's version.", NULL},
+  {"_output_index", (getter)TensorPython_get_output_index, nullptr, "Get tensor's output index."},
   {NULL}  // Sentinel
 };
 
@@ -1127,6 +1189,43 @@ extern PyObject *TensorPython_SetLoad(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_RequiresGrad(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  MS_EXCEPTION_IF_NULL(self);
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  bool requires_grad = true;
+  if (!PyArg_ParseTuple(args, "|p", &requires_grad)) {
+    return nullptr;
+  }
+  obj->value.GetTensor()->set_requires_grad(requires_grad);
+  Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_RetainGrad(PyObject *self, PyObject *) {
+  HANDLE_MS_EXCEPTION
+  MS_EXCEPTION_IF_NULL(self);
+  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
+  if (obj->value.has_side_effect()) {
+    runtime::Pipeline::Get().WaitFrontend();
+  }
+  obj->value.GetTensor()->retain_grad();
+  Py_RETURN_NONE;
+  HANDLE_MS_EXCEPTION_END
+}
+
+extern PyObject *TensorPython_SetSharedMemory(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  auto ret = TensorPybind::SharedMemory(tensor->value.GetTensor());
+  if (!ret) {
+    MS_LOG(WARNING) << "Failed to create shared memory between host and device";
+  }
+  Py_INCREF(self);
+  return self;
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorPython_getstate(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyObject *state;
@@ -1490,6 +1589,10 @@ static PyMethodDef Tensor_methods[] = {
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},
   {"_load", (PyCFunction)TensorPython_SetLoad, METH_VARARGS, "SetLoad."},
+  {"requires_grad_", (PyCFunction)TensorPython_RequiresGrad, METH_VARARGS, "RequiresGrad."},
+  {"_retain_grad", (PyCFunction)TensorPython_RetainGrad, METH_NOARGS, "Set the tensor needs to retain the gradient."},
+  {"_shared_host_memory_with_device_", (PyCFunction)TensorPython_SetSharedMemory, METH_NOARGS,
+   "shared host memory with device."},
   {NULL, NULL, 0, NULL}};
 
 extern void TensorPy_pydealloc(PyObject *obj) {

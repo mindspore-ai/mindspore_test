@@ -23,25 +23,25 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
+                    InferInfoParam{ShapeVector{2,}, kNumberTypeInt32},
                     InferInfoParam{ShapeVector{}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
+                    InferInfoParam{ShapeVector{2,}, kNumberTypeInt32},
                     InferInfoParam{ShapeVector{}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
+                    InferInfoParam{ShapeVector{2,}, kNumberTypeInt32},
                     InferInfoParam{ShapeVector{}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalarList<int64_t>({0, 2})},
+                    InferInfoParam{ShapeVector{2,}, kNumberTypeInt32},
                     InferInfoParam{ShapeVector{}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   return generator.Generate();

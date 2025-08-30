@@ -26,7 +26,6 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "abstract/abstract_value.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"

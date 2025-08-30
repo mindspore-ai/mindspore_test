@@ -46,7 +46,7 @@ py::handle TensorIndex::py_index_handle_ = py::none();
 py::handle TensorIndex::py_value_handle_ = py::none();
 bool TensorIndex::is_ascend_ = false;
 IndexOpType TensorIndex::index_op_type_ = IndexOpType::GetItem;
-py::module TensorIndex::np_module_ = py::module::import("numpy");
+py::module TensorIndex::np_module_ = py::module();
 static const std::vector<TypeId> kIntTypes{kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
 // ****************************************tensor index refactor**************************************
 ShapeVector empty_shape_1d = {0};
@@ -2077,6 +2077,7 @@ py::object TensorIndex::GetItemIndexInfo(const py::object &py_data, const py::ob
   MS_EXCEPTION_IF_NULL(new_py_index);
   TensorIndex::py_index_handle_ = new_py_index;
   TensorIndex::is_ascend_ = is_ascend;
+  TensorIndex::np_module_ = py::module::import("numpy");
   TensorIndex::index_op_type_ = IndexOpType::GetItem;
   TensorIndex index(new_py_index);
   CheckGetItemIndex(index.type());
@@ -2695,6 +2696,7 @@ TensorPtr ProcessDimInMultiDimIndex(const TensorPtr &prev_result, const TensorPt
 
 TensorPtr ProcessMultiDimIndex(const TensorPtr &self, const py::tuple &indexes, TensorPtrList *remain_indexes,
                                const int indexed_dims) {
+  static py::module np_module = py::module::import("numpy");
   TensorPtr self_viewed = self;
   int dim = 0;
   int orig_dim = 0;
@@ -2702,7 +2704,7 @@ TensorPtr ProcessMultiDimIndex(const TensorPtr &self, const py::tuple &indexes, 
     py::object py_index = indexes[i];
     if (py::isinstance<py::list>(py_index) || py::isinstance<py::tuple>(py_index) ||
         py::isinstance<py::array>(py_index)) {
-      py::array np_index = TensorIndex::np_module_.attr("array")(py_index).cast<py::array>();
+      py::array np_index = np_module.attr("array")(py_index).cast<py::array>();
       TypePtr index_dtype = np_index.dtype().kind() == 'b' ? kBool : kInt64;
       TensorPtr tensor_ptr = TensorPybind::MakeTensor(np_index, index_dtype);
       py_index = py::cast(tensor_ptr);
@@ -2790,6 +2792,12 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
                                      "TensorGetItem");
   runtime::Pipeline::Get().WaitFrontend();
   kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
+  MS_EXCEPTION_IF_NULL(pynative_executor);
+  kernel::pyboost::OpRunStatus::Get().set_run_info(
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
+                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
+                              pynative_executor->forward_executor()->device_target()));
   if (py::isinstance<py::bool_>(py_index)) {
     TensorPtr self_viewed = DoExpandDims(self, 0);
     TensorPtr index_for_bool = py::cast<py::bool_>(py_index) == py::bool_(true) ? tensor_1d : empty_tensor_1d;
@@ -2876,6 +2884,12 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
                                      "TensorSetItem");
   runtime::Pipeline::Get().WaitFrontend();
   kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
+  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
+  MS_EXCEPTION_IF_NULL(pynative_executor);
+  kernel::pyboost::OpRunStatus::Get().set_run_info(
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
+                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
+                              pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   TensorPtr tensor_value;
   TypePtr self_dtype = TypeIdToType(self->data_type());

@@ -20,6 +20,8 @@
 #ifndef _MSC_VER
 #include <cxxabi.h>
 #endif
+#include "utils/log_adapter.h"
+
 namespace mindspore {
 const int RET_SUCCESS = 0;
 const int RET_FAILED = 1;

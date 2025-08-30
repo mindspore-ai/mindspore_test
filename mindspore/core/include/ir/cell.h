@@ -23,7 +23,6 @@
 
 #include "utils/hash_map.h"
 #include "abstract/abstract_value.h"
-#include "utils/misc.h"
 
 namespace mindspore {
 using abstract::AbstractBasePtr;

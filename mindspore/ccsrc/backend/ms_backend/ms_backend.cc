@@ -42,7 +42,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
 #include "runtime/pynative/op_runner.h"
-#include "runtime/pynative/graph_adapter.h"
+#include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #ifdef ENABLE_DEBUGGER

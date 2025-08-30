@@ -24,7 +24,6 @@
 #include <vector>
 #include <tuple>
 #include "ir/scalar.h"
-#include "symbolic_shape/symbol.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"

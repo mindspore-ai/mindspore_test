@@ -206,15 +206,18 @@ InputType SetValueGradInfoForTensor(const ValuePtr &value, InputType grad_type) 
   if (tensor_value->is_parameter() && grad_type != InputType::kInput) {
     grad_type = InputType::kParameter;
     if (AutoGradUtil::IsParamRequiresGrad(tensor_value) && auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
-      auto fn = std::make_shared<autograd::LeafNode>(tensor_value->param_info()->name(), tensor_value->shape(),
-                                                     tensor_value->Dtype());
+      auto fn = std::make_shared<autograd::LeafNode>(tensor_value->param_info()->name(), tensor_value,
+                                                     tensor_value->shape(), tensor_value->Dtype());
+      auto_grad_meta_data->set_requires_grad(true);
       auto_grad_meta_data->set_grad_node(fn);
     }
   }
   auto_grad_meta_data->set_input_type(grad_type);
   if (grad_type == InputType::kInput && auto_grad_meta_data->UnsafeGetGradNodeImpl() == nullptr) {
     MS_LOG(DEBUG) << "Build leaf node for input";
-    auto fn = std::make_shared<autograd::LeafNode>("input", tensor_value->shape(), tensor_value->Dtype(), false);
+    auto fn = std::make_shared<autograd::LeafNode>("input_" + std::to_string(tensor_value->id()), tensor_value,
+                                                   tensor_value->shape(), tensor_value->Dtype(), false);
+    auto_grad_meta_data->set_requires_grad(true);
     auto_grad_meta_data->set_grad_node(fn);
   }
   return grad_type;
@@ -322,7 +325,9 @@ InputType AutoGradUtil::SetTensorGradInfo(const tensor::TensorPtr &tensor) {
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
     tensor->set_auto_grad_meta_data(auto_grad_meta_data);
     if (IsParamRequiresGrad(tensor)) {
-      auto fn = std::make_shared<autograd::LeafNode>(tensor->param_info()->name(), tensor->shape(), tensor->Dtype());
+      auto fn =
+        std::make_shared<autograd::LeafNode>(tensor->param_info()->name(), tensor, tensor->shape(), tensor->Dtype());
+      auto_grad_meta_data->set_requires_grad(true);
       auto_grad_meta_data->set_grad_node(fn);
     }
   }
@@ -387,11 +392,13 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
                                          autograd::CreationType creation_type, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(output);
   auto view_meta = autograd::impl::GetViewAutogradMetaImpl(src_tensor);
+  autograd::ViewAutoGradMetaDataPtr cur_view_meta;
   if (view_meta != nullptr) {
     output->set_version(src_tensor->version());
-    output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
+    cur_view_meta = std::make_shared<autograd::ViewAutoGradMetaData>(
       view_meta->view_info().Union(), requires_grad ? InputType::kOpOutput : InputType::kUnkown,
-      creation_type != autograd::CreationType::kDefault ? creation_type : view_meta->creation_type()));
+      creation_type != autograd::CreationType::kDefault ? creation_type : view_meta->creation_type());
+    output->set_auto_grad_meta_data(cur_view_meta);
   } else {
     if (src_tensor->auto_grad_meta_data() == nullptr) {
       // If base tensor is input of view op, we need construct auto_grad_meta_data for base tensor, to
@@ -401,8 +408,9 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
       auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
       src_tensor->set_auto_grad_meta_data(auto_grad_meta_data);
       if (IsParamRequiresGrad(src_tensor) && autograd::impl::GetUnsafeGradNodeImpl(src_tensor) == nullptr) {
-        auto fn = std::make_shared<autograd::LeafNode>(src_tensor->param_info()->name(), src_tensor->shape(),
-                                                       src_tensor->Dtype());
+        auto fn = std::make_shared<autograd::LeafNode>(src_tensor->param_info()->name(), src_tensor,
+                                                       src_tensor->shape(), src_tensor->Dtype());
+        auto_grad_meta_data->set_requires_grad(true);
         auto_grad_meta_data->set_grad_node(fn);
       }
     }
@@ -415,8 +423,12 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
     base_tensor->set_device_address(nullptr);
     ViewInfo view_info(base_tensor);
     output->set_version(src_tensor->version());
-    output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
-      std::move(view_info), requires_grad ? InputType::kOpOutput : InputType::kUnkown, creation_type));
+    cur_view_meta = std::make_shared<autograd::ViewAutoGradMetaData>(
+      std::move(view_info), requires_grad ? InputType::kOpOutput : InputType::kUnkown, creation_type);
+    output->set_auto_grad_meta_data(cur_view_meta);
+  }
+  if (!requires_grad) {
+    PyNativeAlgo::PyBoost::UpdateVersionAsync(cur_view_meta, output->version());
   }
 }
 
@@ -530,14 +542,8 @@ bool AutoGradUtil::NeedGrad(const tensor::TensorPtr &input_tensor) {
   if (input_tensor->is_parameter()) {
     return IsParamRequiresGrad(input_tensor);
   }
-  if (autograd::impl::GetUnsafeGradNodeImpl(input_tensor) != nullptr) {
-    return true;
-  }
-  const auto &view_auto_grad_data = autograd::impl::GetViewAutogradMetaImpl(input_tensor);
-  if (!view_auto_grad_data) {
-    return false;
-  }
-  return NeedGrad(view_auto_grad_data->view_info().base());
+  auto grad_meta = input_tensor->auto_grad_meta_data();
+  return grad_meta != nullptr && grad_meta->requires_grad();
 }
 
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
@@ -744,6 +750,22 @@ void AutoGradUtil::BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodeP
   }
 }
 
+namespace {
+std::string GenerateCacheKeyWithGradInfo(const FuncGraphPtr &call_graph, const std::string &cache_key) {
+  if (common::GetCompileConfig("GRAD_JIT_FILTER") != "1") {
+    return cache_key;
+  }
+  constexpr auto need_grad_hash = "need_grad_hash";
+  const auto &call_graph_attrs = call_graph->attrs();
+  auto need_hash_iter = call_graph_attrs.find(need_grad_hash);
+  if (need_hash_iter == call_graph_attrs.end()) {
+    MS_LOG(WARNING) << "Failed to find need_grad_hash for graph " << call_graph->ToString();
+    return cache_key;
+  }
+  return cache_key + "_" + std::to_string(GetValue<size_t>(need_hash_iter->second));
+}
+}  // namespace
+
 CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
                                              const GraphCallCondition &graph_call_condition) {
   // kFlagJitCallGraph is set true to avoid compilig call_graph whe compiling the main graph
@@ -754,7 +776,10 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
   call_graph->set_flag(kFlagIsPynativeBpropGraph, true);
   pipeline::ResourcePtr resource;
   constexpr auto kNeedCompile = "NeedCompile";
-  const auto it = jit_call_graph_compile_cache_.find(cache_key);
+
+  const std::string &cache_key_with_grad_info = GenerateCacheKeyWithGradInfo(call_graph, cache_key);
+  MS_LOG(INFO) << "cache_key_with_grad_info: " << cache_key_with_grad_info;
+  const auto it = jit_call_graph_compile_cache_.find(cache_key_with_grad_info);
   bool need_compile = (it == jit_call_graph_compile_cache_.end());
   if (need_compile) {
     resource = std::make_shared<pipeline::Resource>();
@@ -769,7 +794,7 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
       }
     }
     if (graph_call_condition.is_jit_graph_) {
-      (void)jit_call_graph_compile_cache_.emplace(cache_key, resource);
+      (void)jit_call_graph_compile_cache_.emplace(cache_key_with_grad_info, resource);
     }
     resource->SetResult(kNeedCompile, true);
   } else {
@@ -790,7 +815,6 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
           g->set_flag(kFlagJitCallGraph, false);
         }
       }
-      pipeline::JitCompilingScope jit_compiling_scope;
       (void)TaskEmitAction(resource);
       (void)ExecuteAction(resource);
       resource->SetResult(kNeedCompile, false);
@@ -974,6 +998,18 @@ TensorPtr AutoGradUtil::ViewAsSelfWithNoGrad(const TensorPtr &self) {
   return kernel::pyboost::view(self, self->shape());
 }
 
+TensorPtr AutoGradUtil::Add(const TensorPtr &input, const TensorPtr &other) {
+  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  return kernel::pyboost::add(input, other);
+}
+
+TensorPtr AutoGradUtil::Clone(const TensorPtr &input) {
+  kernel::pyboost::OpStatus status{false, false, 0, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
+  return kernel::pyboost::clone(input);
+}
+
 bool BpropCallback::IsNotRequiresGrad(size_t index) const {
   // Check Tensor need grad.
   runtime::Pipeline::Get().WaitBpropStage();
@@ -982,6 +1018,18 @@ bool BpropCallback::IsNotRequiresGrad(size_t index) const {
 
 void BpropCallback::FreeDeviceAddress(ValuePtr *value) const {
   *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+}
+
+AutoGradGuard::AutoGradGuard(bool require_grad) {
+  origin_require_grad_ = kernel::pyboost::OpRunStatus::Get().RequireGrad();
+  origin_enable_grad_ = PyNativeExecutor::GetInstance()->enable_grad();
+  kernel::pyboost::OpRunStatus::Get().SetRequireGrad(require_grad);
+  PyNativeExecutor::GetInstance()->set_enable_grad(require_grad);
+}
+
+AutoGradGuard::~AutoGradGuard() {
+  kernel::pyboost::OpRunStatus::Get().ResetRequireGrad(origin_require_grad_);
+  PyNativeExecutor::GetInstance()->set_enable_grad(origin_enable_grad_);
 }
 }  // namespace pynative
 }  // namespace mindspore

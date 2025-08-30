@@ -20,6 +20,7 @@
 #include "base/base.h"
 #include "ir/anf.h"
 #include "utils/log_adapter.h"
+#include "utils/misc.h"
 
 namespace mindspore {
 

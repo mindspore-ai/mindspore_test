@@ -14,7 +14,9 @@ if(ENABLE_CPU)
         "kernel_executor/mpi/mpi_adapter.cc"
         "kernel_executor/mpi/mpi_export.cc"
         "res_manager/collective/mpi_collective_comm_lib.cc"
-        "res_manager/collective/mpi_communication_group.cc")
+        "res_manager/collective/mpi_communication_group.cc"
+        "profiler/cpu_profiling.cc"
+        "profiler/cpu_data_saver.cc")
     if(WIN32 OR APPLE)
         list(REMOVE_ITEM _CPU_SRC_LIST
             "res_manager/collective/ms_collective_comm_lib.cc"

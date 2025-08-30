@@ -19,7 +19,7 @@
 
 #include "include/common/utils/utils.h"
 #ifdef ENABLE_DEBUGGER
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#include "plugin/cpu/profiler/cpu_profiling.h"
 #endif
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "utils/convert_utils_base.h"

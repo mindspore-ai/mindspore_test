@@ -21,22 +21,18 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include "ir/anf.h"
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
 #include "utils/ordered_map.h"
 #include "pynative/grad/hook_py.h"
-
-namespace mindspore {
-namespace session {
-class KernelGraph;
-}
-using KernelGraphPtr = std::shared_ptr<session::KernelGraph>;
-}  // namespace mindspore
+#include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
+constexpr char kCallBackwradTwiceErr[] =
+  "Try to backward the graph twice,  Specify retain_graph=True, if you want call again";
 class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
@@ -104,28 +100,33 @@ class COMMON_EXPORT AutoGradMetaData : public AutoGradMetaInterface {
   explicit AutoGradMetaData(const InputType input_type) : input_type_(input_type) {}
   explicit AutoGradMetaData(BackwardNodePtr grad_node, const InputType input_type = InputType::kConstant)
       : grad_node_(std::move(grad_node)), input_type_(input_type) {}
+  [[nodiscard]] const tensor::TensorPtr &grad() const override { return grad_; }
+  void set_grad(const tensor::TensorPtr &grad) override { grad_ = grad; }
   [[nodiscard]] BackwardNodePtr UnsafeGetGradNodeImpl() const override { return grad_node_; }
   void set_grad_node(const BackwardNodePtr &grad_node) override { grad_node_ = grad_node; }
   [[nodiscard]] InputType input_type() const override { return input_type_; }
   void set_input_type(InputType input_type) override { input_type_ = input_type; }
   [[nodiscard]] size_t output_index() const override { return output_index_; }
   void set_output_index(size_t output_index) override { output_index_ = output_index; }
-  // Reset Parameter auto grad meta
-  void Reset() override {
-    grad_node_ = nullptr;
-    output_index_ = 0;
-    input_type_ = InputType::kUnkown;
-  }
+  [[nodiscard]] bool requires_grad() const override;
+  void set_requires_grad(bool requires_grad) override { requires_grad_ = requires_grad; }
+  [[nodiscard]] bool retains_grad() const override { return retains_grad_; }
+  void set_retains_grad(bool retains_grad) override { retains_grad_ = retains_grad; }
   bool is_view() const override { return false; }
   ~AutoGradMetaData() override = default;
 
  private:
+  tensor::TensorPtr grad_{nullptr};
   // grad_node for call grad fn.
-  BackwardNodePtr grad_node_;
+  BackwardNodePtr grad_node_{nullptr};
   // Type of grad tensor
   InputType input_type_{InputType::kUnkown};
   // Index of op output tensors.
   size_t output_index_{0};
+  // whether tensor requires grad.
+  bool requires_grad_{false};
+  // whether tensor retains grad.
+  bool retains_grad_{false};
 };
 
 using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
@@ -154,7 +155,7 @@ enum class CreationType {
   kCustomBprop,
 };
 
-class ViewAutoGradMetaData final : public AutoGradMetaData {
+class COMMON_EXPORT ViewAutoGradMetaData final : public AutoGradMetaData {
  public:
   ViewAutoGradMetaData(const ViewInfo &&view_info, InputType input_type,
                        CreationType creation_type = CreationType::kDefault)
@@ -164,7 +165,9 @@ class ViewAutoGradMetaData final : public AutoGradMetaData {
   void set_version_attr(uint32_t version) { version_attr_ = version; }
   CreationType creation_type() { return creation_type_; }
   void set_creation_type(const CreationType &creation_type) { creation_type_ = creation_type; }
+  [[nodiscard]] bool requires_grad() const override;
   bool is_view() const override { return true; }
+  ~ViewAutoGradMetaData() override = default;
 
  private:
   ViewInfo view_info_;
@@ -192,6 +195,8 @@ struct Edge {
 };
 
 using CppTensorHookList = std::vector<std::unique_ptr<CppTensorBackwardNodePreHook>>;
+using PyTensorHookMap = OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>>;
+using RetainGradHookMap = std::unordered_map<size_t, std::unique_ptr<RetainGradHook>>;
 
 class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardNode> {
  public:
@@ -211,6 +216,9 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \param[in] grads Grads is this node output's gradients.
   virtual ValuePtrList CallBackward(const ValuePtrList &grads) { return {}; }
 
+  /// \brief Is node a leaf.
+  virtual bool IsLeaf() { return false; }
+
   /// \brief Postprocess gradients from func to align with next_edges.
   /// \param[in] gradient_value Gradients value is gradients result from func
   /// which need postprocess.
@@ -219,14 +227,45 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
 
   /// \brief Add python tensor hook.
   /// \param id
-  /// \param hook
-  void AddPyTensorHook(uint64_t id, std::unique_ptr<PyTensorBackwardNodePreHook> &&hook) {
-    py_tensor_pre_hooks_[id] = std::move(hook);
+  /// \param hook_fn
+  void AddPyTensorHook(uint64_t id, std::unique_ptr<PyTensorBackwardNodePreHook> &&hook_fn) {
+    if (!py_tensor_pre_hooks_) {
+      py_tensor_pre_hooks_ = std::make_unique<PyTensorHookMap>();
+    }
+    (*py_tensor_pre_hooks_)[id] = std::move(hook_fn);
   }
 
   /// \brief Remove python tensor hook.
   /// \param id
-  void RemovePyTensorHook(uint64_t id) { (void)py_tensor_pre_hooks_.erase(id); }
+  void RemovePyTensorHook(uint64_t id) { (void)py_tensor_pre_hooks_->erase(id); }
+
+  /// \brief Add retain grad hook.
+  /// \param output_idx
+  /// \param hook_fn
+  void AddRetainGradHook(size_t output_idx, std::unique_ptr<RetainGradHook> &&hook_fn) {
+    if (!retain_grad_hooks_) {
+      retain_grad_hooks_ = std::make_unique<RetainGradHookMap>();
+    }
+    (*retain_grad_hooks_)[output_idx] = std::move(hook_fn);
+  }
+
+  /// \brief Pop retain grad hook.
+  /// \param output_idx
+  /// \return Popped retain gradient hook.
+  std::unique_ptr<RetainGradHook> PopRetainGradHook(size_t output_idx) {
+    MS_EXCEPTION_IF_NULL(retain_grad_hooks_);
+    auto hook_fn = std::move((*retain_grad_hooks_)[output_idx]);
+    (void)retain_grad_hooks_->erase(output_idx);
+    return hook_fn;
+  }
+
+  /// \brief Set Python Pre Hook
+  /// \param hook_fn
+  void SetPyPreHook(std::unique_ptr<PyBackwardNodePreHook> &&hook_fn) { py_pre_hook_ = std::move(hook_fn); }
+
+  /// \brief Set Python Post Hook
+  /// \param hook_fn
+  void SetPyPostHook(std::unique_ptr<PyBackwardNodePostHook> &&hook_fn) { py_post_hook_ = std::move(hook_fn); }
 
   /// \brief Add cpp tensor hook.
   /// \param[in] hook
@@ -239,8 +278,12 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
 
   /// check next edges is all not defined.
   /// \return true
-  bool IsEmpty();
+  bool IsEmpty() const;
 
+  /// \brief The PostProcess function is used to represent this node's inputs, which can
+  /// backpropagation gradients. this interface can be modified.
+  /// \return next edges
+  std::vector<Edge> &mutable_next_edges() { return next_edges_; }
   /// \brief The PostProcess function is used to represent this node's inputs, which can
   /// backpropagation gradients.
   /// \return next edges
@@ -259,6 +302,10 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return name
   const std::string &name() const { return name_; }
 
+  /// \brief Unique id of this Node.
+  /// \return unique id
+  std::string UniqueId() const { return name_ + "-" + std::to_string(seq_id_); }
+
   /// \brief Check func to check whether the version of input is changed.
   /// \return check_func
   const std::function<void(const std::string &op_name)> &check_func() const { return check_func_; }
@@ -266,15 +313,24 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \brief Set check func.
   void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
 
-  /// \brief Python tensor pre hook for backward node.
-  /// \return hook map
-  const OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> &py_tensor_pre_hooks() const {
-    return py_tensor_pre_hooks_;
-  }
-
   /// \brief Cpp tensor pre hook for backward node.
   /// \return hook list
   const std::unique_ptr<CppTensorHookList> &cpp_tensor_pre_hooks() const { return cpp_tensor_pre_hooks_; }
+  /// \brief Python tensor hook for backward node.
+  /// \return py_tensor_pre_hooks
+  const std::unique_ptr<PyTensorHookMap> &py_tensor_pre_hooks() const noexcept { return py_tensor_pre_hooks_; }
+
+  /// \brief RetainGrad hook for backward node.
+  /// \return retain_grad_hooks
+  const std::unique_ptr<RetainGradHookMap> &retain_grad_hooks() const noexcept { return retain_grad_hooks_; }
+
+  /// \brief Python pre hook for backward node.
+  /// \return py_pre_hook
+  const std::unique_ptr<PyBackwardNodePreHook> &py_pre_hook() const noexcept { return py_pre_hook_; }
+
+  /// \brief Python post hook for backward node.
+  /// \return py_post_hook
+  const std::unique_ptr<PyBackwardNodePostHook> &py_post_hook() const noexcept { return py_post_hook_; }
 
   /// \brief The sequence number of current node.
   /// \return sequence number
@@ -292,15 +348,27 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   /// \return string
   std::string ToString() const;
 
+  /// \brief Create derived backward node with custom deleter.
+  /// \return backward node
+  template <typename Derived, typename... Args>
+  static std::shared_ptr<Derived> Create(Args &&... args) {
+    return std::shared_ptr<Derived>(new Derived(std::forward<Args>(args)...), CustomDeleter);
+  }
+
  protected:
+  static void CustomDeleter(BackwardNode *grad_node);
   std::vector<Edge> next_edges_;
   std::string name_;
   std::function<void(const std::string &op_name)> check_func_{nullptr};
-  // Tensor hooks
-  OrderedMap<uint64_t, std::unique_ptr<PyTensorBackwardNodePreHook>> py_tensor_pre_hooks_;
-  std::unique_ptr<CppTensorHookList> cpp_tensor_pre_hooks_{};
   size_t seq_id_;
   size_t output_size_;
+
+  // Tensor Hook -> RetainGrad Hook -> Capture Grad -> BackwardNode Pre Hook -> CallBackward -> BackwardNode Post Hook
+  std::unique_ptr<PyTensorHookMap> py_tensor_pre_hooks_{nullptr};
+  std::unique_ptr<RetainGradHookMap> retain_grad_hooks_{nullptr};
+  std::unique_ptr<CppTensorHookList> cpp_tensor_pre_hooks_{};
+  std::unique_ptr<PyBackwardNodePreHook> py_pre_hook_{nullptr};
+  std::unique_ptr<PyBackwardNodePostHook> py_post_hook_{nullptr};
 };
 using BackwardNodePtr = std::shared_ptr<BackwardNode>;
 

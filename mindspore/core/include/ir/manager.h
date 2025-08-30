@@ -29,7 +29,6 @@
 #include <memory>
 #include <functional>
 
-#include "utils/misc.h"
 #include "utils/signal.h"
 #include "utils/hash_map.h"
 #include "utils/compact_set.h"

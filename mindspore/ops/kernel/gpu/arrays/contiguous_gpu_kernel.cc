@@ -21,6 +21,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/as_strided_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/gpu_common.h"
+#include "utils/misc.h"
 
 namespace mindspore {
 namespace kernel {

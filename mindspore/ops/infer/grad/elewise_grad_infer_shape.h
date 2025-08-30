@@ -19,7 +19,6 @@
 
 #include <vector>
 #include "abstract/abstract_value.h"
-#include "abstract/dshape.h"
 #include "ir/anf.h"
 
 namespace mindspore {

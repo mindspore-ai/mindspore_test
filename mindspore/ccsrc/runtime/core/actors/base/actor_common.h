@@ -190,7 +190,7 @@ enum MemoryType {
 
 struct KernelMemoryTraceBlock {
   KernelMemoryTraceBlock(const CNodePtr &kernel, void *start, size_t size, MemoryType mem_type, size_t index,
-                         kernel::KernelTensor *kernel_tensor)
+                         kernel::KernelTensor *kernel_tensor, const DeviceContext *device_context)
       : kernel_(kernel),
         start_(reinterpret_cast<uint8_t *>(start)),
         end_(reinterpret_cast<uint8_t *>(start) + size),
@@ -199,7 +199,8 @@ struct KernelMemoryTraceBlock {
         index_(index),
         kernel_tensor_(kernel_tensor),
         in_memory_trace_block_index_(0),
-        offset_in_memory_trace_block_(0) {}
+        offset_in_memory_trace_block_(0),
+        device_context_(device_context) {}
 
   CNodePtr kernel_;
   uint8_t *start_;
@@ -211,6 +212,7 @@ struct KernelMemoryTraceBlock {
 
   size_t in_memory_trace_block_index_;
   size_t offset_in_memory_trace_block_;
+  const DeviceContext *device_context_;
   SpinLock lock_;
 };
 

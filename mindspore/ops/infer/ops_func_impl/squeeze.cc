@@ -36,6 +36,14 @@ namespace ops {
 namespace {
 int64_t CalRealDim(const int64_t &axis, const size_t &dim_size) {
   auto size = SizeToLong(dim_size);
+  if (size == 0) {
+    // dim should be in [-1, 0] while input is scalar tensor.
+    if (axis >= -1 && axis <= 0) {
+      return 0;
+    }
+    MS_EXCEPTION(ValueError) << "dim value error. dim:" << axis << ", dim value should be in [-1, 0].";
+  }
+
   if (size * -1 <= axis && axis < size) {
     if (axis < 0) {
       return axis + size;
@@ -89,6 +97,11 @@ BaseShapePtr SqueezeFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
     return std::make_shared<abstract::Shape>(ret_shape);
   }
+
+  if (ndim == 0) {
+    return in_shape->Clone();
+  }
+
   // if the squeeze dimension is the dynamic dim, return dynamic rank.
   if (std::any_of(real_dim_vec.begin(), real_dim_vec.end(),
                   [&](int64_t i) { return in_shape_vec[i] == abstract::Shape::kShapeDimAny; })) {

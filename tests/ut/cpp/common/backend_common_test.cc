@@ -122,7 +122,7 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   func_graph->set_manager(new_manager);
 
   const std::string kDefaultDeviceName = "CPU";
-  auto graph_partition = std::make_shared<compile::GraphPartition>(compile::GetMSNonlinearOps(), kMsConvert);
+  auto graph_partition = std::make_shared<compile::GraphPartition>(compile::GetMSNonlinearOps(), "ms");
   bool multi_target = false;
   auto segments = graph_partition->Partition(func_graph, &multi_target);
   if (segments.empty()) {

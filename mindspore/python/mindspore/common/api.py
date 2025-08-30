@@ -838,6 +838,7 @@ class _JitExecutor:
         else:
             _pynative_executor.set_dynamic_input(self.fn, *compile_args)
         logger.info(f"dynamic shape compile_args: {compile_args}")
+        Validator.check_symbolic_shape(compile_args, args_list)
         return compile_args
 
     def _generate_compile_args_by_set_inputs(self, args_list):
@@ -1555,6 +1556,20 @@ def _parameter_broadcast(obj):
                 broadcast_params_dict[param_name] = param
     broadcast_phase = "_broadcast_subgraph"
     _build_broadcast_graph(broadcast_params_dict, broadcast_phase)
+
+
+def _run_in_jit():
+    """In jit, this function always returns true. Otherwise, returns false."""
+    def _temp_func():
+        return 0
+
+    from mindspore.ops.primitive import constexpr
+
+    @constexpr(check=False)
+    def _check_func(func):
+        return func is None
+
+    return _check_func(_temp_func)
 
 
 class _no_grad(contextlib.ContextDecorator):

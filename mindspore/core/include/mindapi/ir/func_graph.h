@@ -25,7 +25,6 @@
 #include "mindapi/ir/common.h"
 #include "mindapi/ir/anf.h"
 #include "mindapi/ir/primitive.h"
-#include "mindapi/ir/value.h"
 #include "mindapi/ir/utils.h"
 
 namespace mindspore {

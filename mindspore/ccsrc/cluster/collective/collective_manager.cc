@@ -311,8 +311,8 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                                                  const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
-  MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
-                  << ", async: " << config.async;
+  MS_LOG(INFO) << "Start to create communication group: " << group_name << " " << group_ranks
+               << ", async: " << config.async;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -490,6 +490,8 @@ bool CollectiveManager::Finalize() {
   }
 
   std::function<bool()> finalize_comm_lib_func = [&, this]() {
+    // Ensure all comms are initialized to avoid exiting error.
+    (void)WaitAllCommInitDone();
     if (need_host_collective_) {
       MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
       MS_LOG(INFO) << "Start finalizing host communication lib.";

@@ -511,6 +511,8 @@ inline aclScalar *ConvertType(const ScalarPtr &value) {
     converter.ConvertValue(value, AttrDeclType<double>(), &acl_scalar);
   } else if (value->isa<BF16Imm>()) {
     converter.ConvertValue(value, AttrDeclType<bfloat16>(), &acl_scalar);
+  } else if (value->isa<FP16Imm>()) {
+    converter.ConvertValue(value, AttrDeclType<float16>(), &acl_scalar);
   } else {
     MS_LOG(EXCEPTION) << "Currently not support value: " << value->ToString();
   }
@@ -711,6 +713,9 @@ inline ScalarPtr ConvertKernelTensor<ScalarPtr>(mindspore::kernel::KernelTensor 
     } else if (tensor->dtype_id() == kNumberTypeBFloat16) {
       auto value = tensor->GetValueWithCheck<bfloat16>();
       value_ptr = std::make_shared<BF16Imm>(value);
+    } else if (tensor->dtype_id() == kNumberTypeFloat16) {
+      auto value = tensor->GetValueWithCheck<float16>();
+      value_ptr = std::make_shared<FP16Imm>(value);
     } else {
       MS_LOG(EXCEPTION) << "Currently not support value type: " << tensor->dtype_id();
     }

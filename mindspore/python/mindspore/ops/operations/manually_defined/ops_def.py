@@ -1628,7 +1628,13 @@ def infer_value_for_Concat(tensors, axis):
         return None
 
     tensor_to_concat = [x.asnumpy() for x in tensors]
-    return Tensor(np.concatenate(tensor_to_concat, axis), dtype=tensors[0].dtype)
+    out = np.concatenate(tensor_to_concat, axis)
+    if out.dtype != np.float32:
+        return Tensor(out)
+    for x in tensors:
+        if x.dtype in [mstype.float16, mstype.float32]:
+            return Tensor(out)
+    return Tensor(out, dtype=mstype.bfloat16)
 
 
 def infer_value_for_GatherD(input, dim, index):

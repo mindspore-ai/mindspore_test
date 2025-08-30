@@ -389,11 +389,13 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &ori_func_graph, const opt::Opt
                          [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
     new_func_graph = pipeline::Renormalize(res, need_renormalize_func, new_args_spec);
 
+    auto manager = optimizer->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    need_renormalize_func->set_manager(manager);
+
     if (ori_func_graph->parent() != nullptr) {
       res->set_func_graph(new_func_graph);
       res->set_args_abs(new_args_spec);
-      auto manager = optimizer->manager();
-      MS_EXCEPTION_IF_NULL(manager);
       new_func_graph->set_manager(manager);
       for (auto sub_func : new_func_graph->func_graphs_used_total()) {
         if (sub_func->has_flag("J_INNER_FUNC")) {

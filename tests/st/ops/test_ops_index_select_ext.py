@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops
 from mindspore.ops.auto_generate import index_select_ext
 from tests.st.utils import test_utils
 from tests.st.ops.test_tools.test_op import TEST_OP
@@ -34,7 +33,7 @@ def index_select_ext_forward_func(input_x, axis, index):
 
 @test_utils.run_with_cell
 def index_select_ext_backward_func(input_x, axis, index):
-    return ops.grad(index_select_ext_forward_func, (0))(input_x, axis, index)
+    return ms.grad(index_select_ext_forward_func, (0))(input_x, axis, index)
 
 
 def generate_expect_forward_output(input_np, axis, index_np):
@@ -69,6 +68,33 @@ def test_func_index_select_ext_normal(context_mode):
     grad = index_select_ext_backward_func(ms.Tensor(input_np1), axis1, ms.Tensor(index_np1))
     expect1 = np.array([[[1, 2, 2], [1, 2, 2]], [[1, 2, 2], [1, 2, 2]]]).astype(np.float32)
     np.testing.assert_allclose(grad.asnumpy(), expect1, rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_func_index_select_ext_scalar_index(context_mode):
+    """
+    Feature: pyboost function.
+    Description: test function index_select_ext with scalar tensor index.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
+
+    input_np = generate_random_input((2, 3, 3, 4), np.float32)
+    axis = -1
+    index_np1 = np.array(1).astype(np.int64)
+    index_np2 = np.array([1,]).astype(np.int64)
+
+    output1 = index_select_ext_forward_func(ms.Tensor(input_np), axis, ms.Tensor(index_np1))
+    output2 = index_select_ext_forward_func(ms.Tensor(input_np), axis, ms.Tensor(index_np2))
+    np.testing.assert_allclose(output2.asnumpy(), output1.asnumpy(), rtol=0)
+
+    grad1 = index_select_ext_backward_func(ms.Tensor(input_np), axis, ms.Tensor(index_np1))
+    grad2 = index_select_ext_backward_func(ms.Tensor(input_np), axis, ms.Tensor(index_np2))
+    np.testing.assert_allclose(grad2.asnumpy(), grad1.asnumpy(), rtol=0)
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',

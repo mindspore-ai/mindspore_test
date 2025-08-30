@@ -37,6 +37,7 @@ class IndexFillScalarAscend : public AclnnKernelMod {
  private:
   int64_t dim_ = 0;
   ScalarPtr value_ = nullptr;
+  std::vector<int64_t> GetIndexArray(const std::vector<KernelTensor *> &inputs);
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace index_fill_scalar

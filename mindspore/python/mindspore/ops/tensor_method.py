@@ -1814,8 +1814,17 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
     return _tensor_div(x_sum, nums - ddof)
 
 
+# 1222
+def tensor_index_fill_(input, dim, index, value):
+    raise NotImplementedError('Tensor.index_fill_ only supports Ascend.')
+
+
 def tensor_kthvalue(input, k, dim=-1, keepdim=False):
     raise ValueError("should not come here for kthvalue py_method.")
+
+
+def tensor_index_copy_(input, dim, index, tensor):
+    raise NotImplementedError('Tensor.index_copy_ only supports Ascend.')
 
 
 def tensor_sub_empty_(input, other, alpha=1):
@@ -1949,6 +1958,10 @@ def tensor_real(input):
 
 def tensor_imag(input):
     return ops.imag(input)
+
+def tensor_inplace_masked_scatter(input, mask, source):
+    return F.inplace_masked_scatter(input, mask, source)
+
 
 def tensor_broadcast_to(x, shape):
     return F.broadcast_to(x, shape)

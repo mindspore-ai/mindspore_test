@@ -87,6 +87,8 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
             None
         """
         for op_proto in op_protos:
+            if is_op_multi_output(op_proto.op_returns):
+                print(op_proto.op_name)
             if op_proto.op_dispatch is None:
                 continue
             op_parser = OpTemplateParser(op_proto)

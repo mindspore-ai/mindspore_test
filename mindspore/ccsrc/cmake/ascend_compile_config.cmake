@@ -2,8 +2,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 add_subdirectory(plugin/ascend/res_manager)
 add_subdirectory(plugin/ascend/res_manager/collective)
 add_subdirectory(plugin/ascend)
-# TODO: remove internal
-add_subdirectory(plugin/device/ascend/kernel/internal)
 add_subdirectory(backend/ge_backend)
 enable_directory_when_only_build_plugins(plugin/ascend)
 enable_directory_when_only_build_plugins(plugin/ascend/res_manager/collective)

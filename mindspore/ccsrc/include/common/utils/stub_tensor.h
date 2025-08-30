@@ -28,7 +28,6 @@
 #include "base/base.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "mindapi/base/shape_vector.h"
 #include "abstract/abstract_value.h"
 #include "utils/simple_info.h"
 #include "mindspore/ccsrc/include/common/visible.h"

@@ -37,6 +37,7 @@ from mindspore.ops.functional_overload import all_gather_matmul, matmul_reduce_s
 from mindspore.ops.composite import *
 from mindspore.ops.operations import *
 from mindspore.ops.function import *
+from mindspore.ops.communication import *
 from mindspore.ops.functional import *
 from mindspore.ops._utils import arg_dtype_cast, arg_handler
 
@@ -55,4 +56,5 @@ __all__.extend(composite.__all__)
 __all__.extend(operations.__all__)
 __all__.extend(functional.__all__)
 __all__.extend(function.__all__)
+__all__.extend(communication.__all__)
 __all__.extend(auto_generate.__all__)

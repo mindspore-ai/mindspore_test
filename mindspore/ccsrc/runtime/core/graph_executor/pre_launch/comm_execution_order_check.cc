@@ -16,7 +16,6 @@
 #include <memory>
 #include <map>
 #include "ops_utils/op_constants.h"
-#include "abstract/abstract_value.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"

@@ -1,0 +1,480 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/sparse_apply_ftrl_cpu_kernel.h"
+#include <functional>
+#include <limits>
+#include <memory>
+#include <map>
+#include <utility>
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+
+#include "infer/fused_sparse_ftrl.h"
+#include "infer/sparse_apply_ftrl.h"
+#include "ops_utils/op_utils.h"
+
+namespace mindspore {
+namespace kernel {
+namespace sparse_apply_ftrl_cpu {
+using namespace sparse_optimizer_cpu;
+namespace {
+// "var","accum","linear","grad","indices"
+constexpr size_t kVarIndex = 0;
+constexpr size_t kAccumIndex = 1;
+constexpr size_t kLinearIndex = 2;
+constexpr size_t kGradIndex = 3;
+constexpr size_t kIndicesIndex = 4;
+constexpr size_t kSparseApplyFtrlInputsNum = 5;
+constexpr size_t kSparseApplyFtrlWorkspaceSize = 4;
+constexpr size_t kSizeGap = 16;
+constexpr float kPowToSqrtValue = 0.5;
+constexpr char kKernelName[] = "SparseApplyFtrl";
+
+using KernelRunFunc = SparseApplyFtrlCpuKernelMod::KernelRunFunc;
+using FusedKernelRunFunc = FusedSparseFtrlCpuKernelMod::KernelRunFunc;
+
+template <typename T>
+void ComputeFtrl(MultiThreadComputeParams<T> *input_params, size_t start, size_t end) {
+  MS_EXCEPTION_IF_NULL(input_params);
+  auto var = input_params->var_;
+  auto accum = input_params->accum_;
+  auto linear = input_params->linear_;
+  const auto lr = input_params->lr_;
+  const auto l1 = input_params->l1_;
+  const auto l2_plus = 2 * input_params->l2_;
+  const auto lr_power = input_params->lr_power_;
+  const auto unique_sparse_grad = input_params->sparse_grad_;
+  const auto var_first_dim_size = input_params->var_first_dim_size_;
+  const auto var_outer_dim_size = input_params->var_outer_dim_size_;
+  for (size_t i = start; i < end; ++i) {
+    T index = unique_sparse_grad.indices_[i];
+    if (index < 0 || LongToSize(index) >= var_first_dim_size) {
+      MS_LOG(ERROR) << "For '" << kKernelName << "', each element in 'indices' must be in range [0, "
+                    << SizeToLong(var_first_dim_size) << "), but got " << index;
+    }
+    size_t start_index = var_outer_dim_size * static_cast<size_t>(index);
+    size_t end_index = start_index + var_outer_dim_size;
+    for (size_t j = start_index, k = var_outer_dim_size * i; j < end_index; ++j, ++k) {
+      auto summed_grad = unique_sparse_grad.value_[k];
+      auto accum_new = accum[j] + summed_grad * summed_grad;
+      float y;
+      linear[j] += summed_grad;
+      if (std::fabs(lr_power + kPowToSqrtValue) <= std::numeric_limits<float>::epsilon()) {
+        y = std::sqrt(accum_new);
+        linear[j] -= ((y - std::sqrt(accum[j])) / lr) * var[j];
+      } else {
+        y = std::pow(accum_new, -lr_power);
+        linear[j] -= ((y - std::pow(accum[j], -lr_power)) / lr) * var[j];
+      }
+      accum[j] = accum_new;
+      auto x = Sign(linear[j]) * l1 - linear[j];
+      y = y / lr + l2_plus;
+      var[j] = std::fabs(linear[j]) > l1 ? x / y : 0;
+    }
+  }
+}
+}  // namespace
+
+template <typename T>
+void FusedSparseFtrlCpuKernelMod::InitWorkspaceSize() {
+  (void)workspace_size_list_.emplace_back(indices_size_ * var_outer_dim_size_ * sizeof(float));
+  (void)workspace_size_list_.emplace_back(indices_size_ * sizeof(T));
+  (void)workspace_size_list_.emplace_back(indices_size_ * var_outer_dim_size_ * sizeof(float));
+  (void)workspace_size_list_.emplace_back(indices_size_ * sizeof(T));
+}
+
+bool FusedSparseFtrlCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &outputs) {
+  if (inputs.empty() || outputs.empty()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', it got empty inputs or outputs, which is invalid.";
+    return false;
+  }
+  if (inputs.size() != kSparseApplyFtrlInputsNum) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', input size must be " << kSparseApplyFtrlInputsNum << ", but got "
+                  << inputs.size();
+    return false;
+  }
+  lr_ = GetValue<float>(primitive_->GetAttr(kAttrLr));
+  if (lr_ <= 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr' must be a positive scalar, but got " << lr_;
+    return false;
+  }
+  l1_ = GetValue<float>(primitive_->GetAttr(ops::kL1));
+  if (l1_ < 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l1' must be a non-negative scalar, but got " << l1_;
+    return false;
+  }
+  l2_ = GetValue<float>(primitive_->GetAttr(ops::kL2));
+  if (l2_ < 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l2' must be a non-negative scalar, but got " << l2_;
+    return false;
+  }
+  lr_power_ = GetValue<float>(primitive_->GetAttr(ops::kLrPower));
+  if (lr_power_ > 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr_power' must be a non-negative scalar, but got " << lr_power_;
+    return false;
+  }
+  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
+    return false;
+  }
+  return true;
+}
+
+void FusedSparseFtrlCpuKernelMod::ResetResource() noexcept {
+  output_size_list_.clear();
+  workspace_size_list_.clear();
+  indices_data_type_ = kNumberTypeInt32;
+  indices_size_ = 0;
+  var_first_dim_size_ = 0;
+  var_outer_dim_size_ = 1;
+}
+
+int FusedSparseFtrlCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &outputs) {
+  ResetResource();
+  int ret = KernelMod::Resize(inputs, outputs);
+  if (ret != KRET_OK) {
+    return ret;
+  }
+  ShapeVector var_shape = inputs[kVarIndex]->GetShapeVector();
+  ShapeVector accum_shape = inputs[kAccumIndex]->GetShapeVector();
+  ShapeVector linear_shape = inputs[kLinearIndex]->GetShapeVector();
+  ShapeVector grad_shape = inputs[kGradIndex]->GetShapeVector();
+  ShapeVector indices_shape = inputs[kIndicesIndex]->GetShapeVector();
+  if (var_shape.empty()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'var' must be at least 1-D, but got scalar or None.";
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, accum_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'accum' must be the same as the shape of 'var', "
+                     "but got the shape of 'accum': "
+                  << accum_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, linear_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'linear' must be the same as the shape of 'var', "
+                     "but got the shape of 'linear': "
+                  << linear_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (var_shape.size() != grad_shape.size()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'grad' must be the same as the dimension of "
+                     "'var', but got the dimension of 'grad': "
+                  << grad_shape.size() << " and the dimension of 'var': " << var_shape.size() << ".";
+    return KRET_RESIZE_FAILED;
+  }
+  var_first_dim_size_ = LongToSize(var_shape[0]);
+  for (size_t i = 1; i < var_shape.size(); ++i) {
+    if (var_shape[i] != grad_shape[i]) {
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "', the shape of 'var' and 'grad' must be equal in dimension i=" << i
+                    << ", but got 'var_shape[i]': " << var_shape[i] << " and 'grad_shape[i]': " << grad_shape[i];
+      return KRET_RESIZE_FAILED;
+    }
+    var_outer_dim_size_ *= LongToSize(var_shape[i]);
+  }
+  if (indices_shape.size() != 1) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'indices' must be a 1-D vector, but got "
+                  << indices_shape.size() << "-D.";
+    return KRET_RESIZE_FAILED;
+  }
+  indices_size_ = LongToSize(indices_shape[0]);
+  if (grad_shape[0] != SizeToLong(indices_size_)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the first dimension value of 'grad' must be equal to "
+                     "the first dimension value of 'indices', but got the first dimension value of 'grad': "
+                  << grad_shape[0] << ", and the first dimension value of 'indices': " << indices_size_;
+    return KRET_RESIZE_FAILED;
+  }
+  indices_data_type_ = inputs[kIndicesIndex]->dtype_id();
+  if (indices_data_type_ == kNumberTypeInt32) {
+    InitWorkspaceSize<int>();
+  } else if (indices_data_type_ == kNumberTypeInt64) {
+    InitWorkspaceSize<int64_t>();
+  } else {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the dtype of 'indices' must be int32 or int64, but got "
+                  << TypeIdToType(indices_data_type_)->ToString();
+
+    return KRET_RESIZE_FAILED;
+  }
+  return KRET_OK;
+}
+
+const std::vector<std::pair<KernelAttr, FusedKernelRunFunc>> &FusedSparseFtrlCpuKernelMod::GetFuncList() const {
+  static const std::vector<std::pair<KernelAttr, FusedKernelRunFunc>> func_list = {
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeInt32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutInRef(0, 0),
+     &FusedSparseFtrlCpuKernelMod::LaunchKernel<int>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutInRef(0, 0),
+     &FusedSparseFtrlCpuKernelMod::LaunchKernel<int64_t>}};
+  return func_list;
+}
+
+template <typename T>
+bool FusedSparseFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                               const std::vector<kernel::KernelTensor *> &workspace,
+                                               const std::vector<kernel::KernelTensor *> &) const {
+  auto *var = GetDeviceAddress<float>(inputs, 0);
+  auto *accum = GetDeviceAddress<float>(inputs, 1);
+  auto *linear = GetDeviceAddress<float>(inputs, 2);
+  auto *grad = GetDeviceAddress<float>(inputs, 3);
+  auto *indices = GetDeviceAddress<T>(inputs, 4);
+  auto *new_grad = GetDeviceAddress<float>(workspace, 0);
+  auto *new_indices = GetDeviceAddress<T>(workspace, 1);
+  auto *workspace_grad = GetDeviceAddress<float>(workspace, 2);
+  auto *workspace_indices = GetDeviceAddress<T>(workspace, 3);
+
+  SparseGradient<T> unique_sparse_grad({new_grad, new_indices, indices_size_});
+  SparseGradient<T> workspace_sparse_grad({workspace_grad, workspace_indices, indices_size_});
+  SparseGradient<T> input_sparse_grad({grad, indices, indices_size_});
+  ReduceSparseGradientParam<T> param;
+  param.input_grad_ = &input_sparse_grad;
+  param.workspace_grad_ = &workspace_sparse_grad;
+  param.output_grad_ = &unique_sparse_grad;
+  param.max_index_ = var_first_dim_size_;
+  param.value_stride_ = var_outer_dim_size_;
+  BucketReduceSparseGradient(param);
+
+  MultiThreadComputeParams<T> input_params;
+  input_params.var_ = var;
+  input_params.accum_ = accum;
+  input_params.linear_ = linear;
+  input_params.lr_ = lr_;
+  input_params.l1_ = l1_;
+  input_params.l2_ = l2_;
+  input_params.lr_power_ = lr_power_;
+  input_params.sparse_grad_ = unique_sparse_grad;
+  input_params.var_first_dim_size_ = var_first_dim_size_;
+  input_params.var_outer_dim_size_ = var_outer_dim_size_;
+  MultiThreadCompute<T>(ComputeFtrl<T>, &input_params, unique_sparse_grad.indices_size_);
+  return true;
+}
+
+bool SparseApplyFtrlCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &outputs) {
+  if (inputs.empty() || outputs.empty()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', it got empty inputs or outputs, which is invalid.";
+    return false;
+  }
+  if (inputs.size() != kSparseApplyFtrlInputsNum) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', input size must be " << kSparseApplyFtrlInputsNum << ", but got "
+                  << inputs.size();
+    return false;
+  }
+  lr_ = GetValue<float>(primitive_->GetAttr(kAttrLr));
+  if (lr_ <= 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr' must be a positive scalar, but got " << lr_;
+    return false;
+  }
+  l1_ = GetValue<float>(primitive_->GetAttr(ops::kL1));
+  if (l1_ < 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l1' must be a non-negative scalar, but got " << l1_;
+    return false;
+  }
+  l2_ = GetValue<float>(primitive_->GetAttr(ops::kL2));
+  if (l2_ < 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'l2' must be a non-negative scalar, but got " << l2_;
+    return false;
+  }
+  lr_power_ = GetValue<float>(primitive_->GetAttr(ops::kLrPower));
+  if (lr_power_ > 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', 'lr_power' must be a non-negative scalar, but got " << lr_power_;
+    return false;
+  }
+  batch_rank_ = ops::get_batch_rank(primitive_);
+  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
+    return false;
+  }
+  return true;
+}
+
+void SparseApplyFtrlCpuKernelMod::ResetResource() noexcept {
+  output_size_list_.clear();
+  indices_data_type_ = kNumberTypeInt32;
+  indices_size_ = 0;
+  var_first_dim_size_ = 0;
+  var_outer_dim_size_ = 1;
+}
+
+int SparseApplyFtrlCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &outputs) {
+  ResetResource();
+  int ret = KernelMod::Resize(inputs, outputs);
+  if (ret != KRET_OK) {
+    return ret;
+  }
+  ShapeVector var_shape = inputs[kVarIndex]->GetShapeVector();
+  ShapeVector accum_shape = inputs[kAccumIndex]->GetShapeVector();
+  ShapeVector linear_shape = inputs[kLinearIndex]->GetShapeVector();
+  ShapeVector grad_shape = inputs[kGradIndex]->GetShapeVector();
+  ShapeVector indices_shape = inputs[kIndicesIndex]->GetShapeVector();
+  if (batch_rank_ > 0) {
+    batch_size_ = std::accumulate(var_shape.begin(), var_shape.begin() + batch_rank_, 1, std::multiplies<int64_t>());
+    if (batch_size_ == 0) {
+      MS_LOG(ERROR) << "For '" << kernel_name_
+                    << "', batch_size_ must be greater than 0, but got batch_size: " << batch_size_;
+      return KRET_RESIZE_FAILED;
+    }
+    var_inner_size_ =
+      std::accumulate(var_shape.begin() + batch_rank_, var_shape.end(), size_t(1), std::multiplies<size_t>());
+    indices_inner_size_ =
+      std::accumulate(indices_shape.begin() + batch_rank_, indices_shape.end(), size_t(1), std::multiplies<size_t>());
+    grad_inner_size_ =
+      std::accumulate(grad_shape.begin() + batch_rank_, grad_shape.end(), size_t(1), std::multiplies<size_t>());
+  }
+  if (var_shape.empty()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'var' must be at least 1-D, but got scalar or None.";
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, accum_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'accum' must be the same as the shape of 'var', "
+                     "but got the shape of 'accum': "
+                  << accum_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, linear_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'linear' must be the same as the shape of 'var', "
+                     "but got the shape of 'linear': "
+                  << linear_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (var_shape.size() != grad_shape.size()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'grad' must be the same as the dimension of "
+                     "'var', but got the dimension of 'grad': "
+                  << grad_shape.size() << " and the dimension of 'var': " << var_shape.size() << ".";
+    return KRET_RESIZE_FAILED;
+  }
+  var_first_dim_size_ = var_shape[batch_rank_];
+  for (size_t i = batch_rank_ + 1; i < var_shape.size(); ++i) {
+    if (var_shape[i] != grad_shape[i]) {
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "', the shape of 'var' and 'grad' must be equal in dimension i=" << i
+                    << ", but got 'var_shape[i]': " << var_shape[i] << " and 'grad_shape[i]': " << grad_shape[i];
+      return KRET_RESIZE_FAILED;
+    }
+    var_outer_dim_size_ *= var_shape[i];
+  }
+  if (indices_shape.size() != LongToSize(batch_rank_ + 1)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'indices' must be a " << (batch_rank_ + 1)
+                  << "-D vector, but got " << indices_shape.size() << "-D.";
+    return KRET_RESIZE_FAILED;
+  }
+  indices_size_ = indices_shape[batch_rank_];
+  if (grad_shape[batch_rank_] != SizeToLong(indices_size_)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the first dimension value of 'grad' must be equal to "
+                     "the first dimension value of 'indices', but got the first dimension value of 'grad': "
+                  << grad_shape[batch_rank_] << ", and the first dimension value of 'indices': " << indices_size_;
+    return KRET_RESIZE_FAILED;
+  }
+  return KRET_OK;
+}
+
+const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyFtrlCpuKernelMod::GetFuncList() const {
+  static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeInt32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutInRef(0, 0)
+       .AddOutInRef(1, 1)
+       .AddOutInRef(2, 2),
+     &SparseApplyFtrlCpuKernelMod::LaunchKernel<float, int>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32)
+       .AddOutInRef(0, 0)
+       .AddOutInRef(1, 1)
+       .AddOutInRef(2, 2),
+     &SparseApplyFtrlCpuKernelMod::LaunchKernel<float, int64_t>}};
+  return func_list;
+}
+
+template <typename T, typename S>
+bool SparseApplyFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                               const std::vector<kernel::KernelTensor *> &workspace,
+                                               const std::vector<kernel::KernelTensor *> &) const {
+  auto *var = GetDeviceAddress<T>(inputs, kVarIndex);
+  auto *accum = GetDeviceAddress<T>(inputs, kAccumIndex);
+  auto *linear = GetDeviceAddress<T>(inputs, kLinearIndex);
+  auto *grad = GetDeviceAddress<T>(inputs, kGradIndex);
+  auto *indices = GetDeviceAddress<S>(inputs, kIndicesIndex);
+
+  for (int64_t index = 0; index < batch_size_; index++) {
+    SparseGradient<S> input_sparse_grad({grad, indices, indices_size_});
+    MultiThreadComputeParams<S> input_params;
+    input_params.var_ = var;
+    input_params.accum_ = accum;
+    input_params.linear_ = linear;
+    input_params.lr_ = lr_;
+    input_params.l1_ = l1_;
+    input_params.l2_ = l2_;
+    input_params.lr_power_ = lr_power_;
+    input_params.sparse_grad_ = input_sparse_grad;
+    input_params.var_first_dim_size_ = var_first_dim_size_;
+    input_params.var_outer_dim_size_ = var_outer_dim_size_;
+    if (indices_size_ < kSizeGap) {
+      ComputeFtrl(&input_params, 0, indices_size_);
+    } else {
+      MultiThreadCompute<S>(ComputeFtrl<S>, &input_params, indices_size_);
+    }
+    // apply offset to all address pointers.
+    var += var_inner_size_;
+    accum += var_inner_size_;
+    linear += var_inner_size_;
+    grad += grad_inner_size_;
+    indices += indices_inner_size_;
+  }
+  return true;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseFtrl, FusedSparseFtrlCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyFtrl, SparseApplyFtrlCpuKernelMod);
+}  // namespace sparse_apply_ftrl_cpu
+}  // namespace kernel
+}  // namespace mindspore

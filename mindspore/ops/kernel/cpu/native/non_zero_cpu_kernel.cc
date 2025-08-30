@@ -1,0 +1,173 @@
+/**
+ * Copyright 2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/non_zero_cpu_kernel.h"
+#include <algorithm>
+#include <typeinfo>
+#include <functional>
+
+namespace mindspore {
+namespace kernel {
+namespace non_zero_cpu {
+namespace {
+constexpr size_t kInputNum = 1;
+constexpr size_t kOutputNum = 1;
+constexpr size_t kInputMinDim = 1;
+constexpr size_t kOutputDim = 2;
+}  // namespace
+
+bool NonZeroCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
+  auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
+  auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
+  if (!is_match) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', it does not support this kernel data type: " << kernel_attr;
+    return false;
+  }
+  kernel_func_ = func_list_[index].second;
+  data_size_ = abstract::TypeIdSize(inputs[kIndex0]->dtype_id());
+  index_size_ = abstract::TypeIdSize(outputs[kIndex0]->dtype_id());
+  return true;
+}
+
+int NonZeroCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  auto ret = KernelMod::Resize(inputs, outputs);
+  if (ret != KRET_UNKNOWN_OUT_SHAPE && ret != KRET_OK) {
+    return ret;
+  }
+  ResetResource();
+  auto input_shape = inputs[kIndex0]->GetDeviceShapeVector();
+  (void)std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(input_shape_),
+                       [](int64_t x) { return x < 0 ? 0 : LongToSize(x); });
+  input_size_ = std::accumulate(input_shape_.begin(), input_shape_.end(), size_t(1), std::multiplies<size_t>{});
+  if (input_size_ == 0) {
+    return KRET_UNKNOWN_SHAPE;
+  }
+  input_rank_ = input_shape_.size();
+
+  output_size_list_.push_back(input_size_ * input_shape_.size() * index_size_);
+  return KRET_OK;
+}
+
+void NonZeroCpuKernelMod::ResetResource() noexcept {
+  real_output_size_ = 0;
+  input_shape_.clear();
+  output_size_list_.clear();
+  workspace_size_list_.clear();
+}
+
+template <typename T>
+bool NonZeroCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                       const std::vector<kernel::KernelTensor *> &outputs) {
+  if (input_size_ == 0) {
+    return true;
+  }
+
+  if (inputs[kIndex0]->GetShapeVector().size() == 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'x' must be greater than or equal to 1, but got 0.";
+    return false;
+  }
+  auto input_addr = static_cast<T *>(inputs[0]->device_ptr());
+  auto output_addr = static_cast<int64_t *>(outputs[0]->device_ptr());
+  real_output_size_ = NonZeroCompute(input_addr, output_addr, input_size_);
+  return true;
+}
+
+void NonZeroCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
+                                                   const std::vector<KernelTensor *> &outputs) {
+  std::vector<int64_t> new_output_shape = {SizeToLong(real_output_size_), SizeToLong(input_shape_.size())};
+  outputs[kIndex0]->SetShapeVector(new_output_shape);
+  outputs[kIndex0]->set_size(real_output_size_ * input_shape_.size() * index_size_);
+}
+
+template <typename T>
+size_t NonZeroCpuKernelMod::NonZeroCompute(const T *input, int64_t *output, size_t input_num) {
+  size_t non_zero_count = 0;
+  std::vector<size_t> dim_strides(input_rank_, 1);
+
+  for (size_t i = input_rank_ - 1; i >= 1; --i) {
+    dim_strides[i - 1] = dim_strides[i] * input_shape_[i];
+  }
+
+  for (size_t elem_i = 0; elem_i < input_num; ++elem_i) {
+    auto zero = static_cast<T>(0);
+    if constexpr (std::is_same_v<T, double>) {
+      if (common::IsDoubleEqual(input[elem_i], zero)) {
+        continue;
+      }
+    } else {
+      if constexpr (std::is_same_v<T, float>) {
+        if (common::IsFloatEqual(input[elem_i], zero)) {
+          continue;
+        }
+      } else {
+        if (input[elem_i] == zero) {
+          continue;
+        }
+      }
+    }
+    size_t index = elem_i;
+    for (size_t pos_j = 0; pos_j < input_rank_; ++pos_j) {
+      output[non_zero_count * input_rank_ + pos_j] = static_cast<int64_t>(index / dim_strides[pos_j]);
+      index %= dim_strides[pos_j];
+    }
+    non_zero_count++;
+  }
+  return non_zero_count;
+}
+
+std::vector<std::pair<KernelAttr, NonZeroCpuKernelMod::NonZeroFunc>> NonZeroCpuKernelMod::func_list_ = {
+  {KernelAttr().AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<bool>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<int8_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<int16_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<int32_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<int64_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<uint8_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<uint16_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<uint32_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<uint64_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<float16>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<float>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<double>},
+  {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<complex64>},
+  {KernelAttr().AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kNumberTypeInt64),
+   &NonZeroCpuKernelMod::LaunchKernel<complex128>}};
+
+std::vector<KernelAttr> NonZeroCpuKernelMod::GetOpSupport() {
+  std::vector<KernelAttr> support_list;
+  (void)std::transform(func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
+                       [](const std::pair<KernelAttr, NonZeroFunc> &item) { return item.first; });
+  return support_list;
+}
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonZero, NonZeroCpuKernelMod);
+}  // namespace non_zero_cpu
+}  // namespace kernel
+}  // namespace mindspore
