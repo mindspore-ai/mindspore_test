@@ -2627,6 +2627,7 @@ DEF_PURE_SHAPE_CALC(g_tile)
     auto max_sz = x_sz > multiples_sz ? x_sz : multiples_sz;
     return {2 * max_sz, max_sz};
   });
+
 REG_BPROP_BUILDER("Tile").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto input_multiples = ib->GetInput(i1);
@@ -3580,7 +3581,16 @@ REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) 
     }
     const auto [pre_reduce, new_shape, reduce] = RepeatGradShapesCalcCommonFunc(input_shape, repeats_val);
     if (!pre_reduce.empty()) {
-      grad = ib->SumExt(grad, ib->Value(pre_reduce), ib->Value<bool>(false));
+      // There are multiple calls of ReduceSum in benchmark, doing so to make sure the precision consistency.
+      if (ops::UseOptimizedOpImpl()) {
+        MS_LOG(DEBUG) << "Using optimized operator implementation in Repeat's backward.";
+        grad = ib->SumExt(grad, ib->Value(pre_reduce), ib->Value<bool>(false));
+      } else {
+        for (size_t i = 0; i < pre_reduce.size(); ++i) {
+          std::vector<int64_t> reduce_axis = {0};
+          grad = ib->SumExt(grad, ib->Value(reduce_axis), ib->Value<bool>(false));
+        }
+      }
     }
     if (!reduce.empty()) {
       // Slow path when need to call reduce: not all of repeats are all 1.

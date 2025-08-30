@@ -366,6 +366,11 @@ static inline void CheckType(const std::set<TypeId> &valid_types, const TypeId &
   }
 }
 
+static inline bool UseOptimizedOpImpl() {
+  static const bool use_optimize_op_impl = common::GetEnv("MS_OPTIMIZE_OP_IMPL") == "1";
+  return use_optimize_op_impl;
+}
+
 #define RETURN_IF_OPTIONAL_HAS_VALUE(opt) \
   do {                                    \
     if (opt.has_value()) {                \

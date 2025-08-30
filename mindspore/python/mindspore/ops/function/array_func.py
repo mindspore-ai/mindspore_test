@@ -3551,7 +3551,7 @@ def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=re
     return matrix_set_diag_v3_op(x, diagonal, k)
 
 
-def meshgrid_ext(*tensors, indexing='ij'):
+def meshgrid_ext(*tensors, indexing=None):
     """
     Generates coordinate matrices from given coordinate tensors.
 
