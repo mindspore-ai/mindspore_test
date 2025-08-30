@@ -556,6 +556,7 @@ from .nn_func import (
     conv2d,
     conv_transpose2d,
     sigmoid,
+    inplace_sigmoid,
     soft_margin_loss,
     logsigmoid,
     relu,
