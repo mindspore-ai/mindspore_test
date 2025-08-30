@@ -2853,7 +2853,7 @@ TensorPtr DoView(const TensorPtr &self, const ShapeVector &shape) {
 TensorPtr DoInplaceCopy(TensorPtr dst, const TensorPtr &src) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "aclnnInplaceCopy");
-  return kernel::pyboost::inplace_copy(dst, src, std::make_shared<BoolImm>(true));
+  return kernel::pyboost::inplace_copy(dst, src, std::make_shared<BoolImm>(false));
 }
 
 TensorPtr DoCopy(TensorPtr dst, const TensorPtr &src) {
