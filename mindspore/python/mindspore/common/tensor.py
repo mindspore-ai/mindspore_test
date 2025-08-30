@@ -713,7 +713,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         if self.ndim <= 1:
             return self
-        return self.transpose(-1, -2)
+        return self.transpose()
 
     @staticmethod
     def from_numpy(array):
