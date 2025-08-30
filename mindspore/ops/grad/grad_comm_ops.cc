@@ -174,7 +174,7 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
   auto op_type = GetStringFromNode(op);
   auto group = ib->GetInput(i3);
 
-  if (op_type == "sum") {
+  if (op_type != "sum") {
     MS_LOG(EXCEPTION) << "The reducescatter bprop only support ReduceOp.SUM until now.";
   }
 
