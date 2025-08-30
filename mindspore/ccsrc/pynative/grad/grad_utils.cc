@@ -815,7 +815,6 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
           g->set_flag(kFlagJitCallGraph, false);
         }
       }
-      pipeline::JitCompilingScope jit_compiling_scope;
       (void)TaskEmitAction(resource);
       (void)ExecuteAction(resource);
       resource->SetResult(kNeedCompile, false);
