@@ -140,6 +140,18 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
             MS_LOG(EXCEPTION) << "For InplaceCopyH2D, aclrtMemcpyAsync call failed with error = " << ret_rt_memcpy
                               << ", src_ptr: " << src_ptr << ", dst_ptr: " << dst_ptr << ", copySize: " << src->Size();
           }
+
+          auto src_device_address = src->device_address();
+          MS_EXCEPTION_IF_NULL(src_device_address);
+          std::function<void(void)> callback_func = [src_device_address, stream_id]() {
+            MS_LOG(DEBUG) << "InplaceCopyH2D Callback_func exec, src device sync:" << src_device_address
+                          << " use count:" << src_device_address.use_count() << " stream id:" << stream_id;
+          };
+
+          if (!device_context->device_res_manager_->LaunchCallback(callback_func, stream_id)) {
+            MS_LOG(EXCEPTION) << "InplaceCopyH2D LaunchCallback failed, stream id:" << stream_id;
+          }
+
           auto sync_mode = runtime::RuntimeConf::GetInstance()->launch_blocking();
           if (sync_mode && !device_context->device_res_manager_->SyncStream(stream_id)) {
             MS_LOG(EXCEPTION) << "SyncStream failed for InplaceCopyH2D AsyncCopy.";
