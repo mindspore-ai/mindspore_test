@@ -26,7 +26,6 @@
 
 #include "utils/hash_map.h"
 #include "utils/ordered_map.h"
-#include "abstract/abstract_value.h"
 #include "ir/primitive.h"
 #include "ir/signature.h"
 #include "pybind11/pybind11.h"

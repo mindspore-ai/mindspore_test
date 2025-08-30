@@ -21,7 +21,6 @@
 #include <string>
 #include <utility>
 
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/utils.h"
 #include "symbolic_shape/operation.h"
 #include "symbolic_shape/operation_builder.h"
@@ -29,6 +28,10 @@
 
 namespace mindspore {
 namespace symshape {
+class Symbol;
+using SymbolPtr = std::shared_ptr<Symbol>;
+using SymbolPtrList = std::vector<SymbolPtr>;
+
 namespace ops {
 class OPS_API InferShapeOp : public Operation {
  public:

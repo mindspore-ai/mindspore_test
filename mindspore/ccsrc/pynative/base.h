@@ -87,8 +87,6 @@ struct OpGradInfo {
   OperatorType operator_type{OperatorType::kDefault};
   // If recompute, we record weight_size.
   size_t weight_size{0};
-  size_t op_index{0};
-  std::string op_info;
   PrimitivePtr op_prim{nullptr};
   abstract::AbstractBasePtrList input_abs{};
   abstract::AbstractBasePtr out_abs{nullptr};

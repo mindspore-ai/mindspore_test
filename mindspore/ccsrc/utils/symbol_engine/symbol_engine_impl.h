@@ -27,7 +27,6 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation_builder.h"
 #include "symbolic_shape/operation.h"
 #include "include/common/visible.h"
@@ -37,6 +36,9 @@ namespace mindspore {
 namespace symshape {
 class SymbolEngine;
 class SymbolEngineImpl;
+class Symbol;
+using SymbolPtr = std::shared_ptr<Symbol>;
+
 /// \brief When a CNode's input[0] is also a CNode, it's a SpecialCNode.
 class COMMON_EXPORT SpecialCNodeHelper {
  public:

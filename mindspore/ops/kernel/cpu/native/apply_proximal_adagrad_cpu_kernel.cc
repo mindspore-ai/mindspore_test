@@ -1,0 +1,173 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/apply_proximal_adagrad_cpu_kernel.h"
+#include <algorithm>
+#include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
+#include "kernel/cpu/nnacl/op_base.h"
+#include "kernel/cpu/nnacl/fp32_grad/apply_proximal_adagrad_fp32.h"
+#include "kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h"
+#include "ops_utils/op_utils.h"
+
+namespace mindspore {
+namespace kernel {
+namespace apply_proximal_adagrad_cpu {
+constexpr size_t kApplyProximalAdagradInputsNum = 6;
+constexpr size_t kVarIndex = 0;
+constexpr size_t kAccIndex = 1;
+constexpr size_t kLRIndex = 2;
+constexpr size_t kL1Index = 3;
+constexpr size_t kL2Index = 4;
+constexpr size_t kGradIndex = 5;
+
+bool ApplyProximalAdagradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &outputs) {
+  batch_rank_ = ops::get_batch_rank(primitive_);
+  auto input_type_id = inputs[0]->dtype_id();
+  if (input_type_id != kNumberTypeFloat32) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "',  does not support " << TypeIdToString(input_type_id);
+    return false;
+  }
+  unit_size_ = sizeof(float);
+
+  return true;
+}
+
+int ApplyProximalAdagradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                             const std::vector<KernelTensor *> &outputs) {
+  int ret = KernelMod::Resize(inputs, outputs);
+  if (ret != 0) {
+    return ret;
+  }
+  std::vector<int64_t> var_shape = inputs[kVarIndex]->GetShapeVector();
+  std::vector<int64_t> accum_shape = inputs[kAccIndex]->GetShapeVector();
+  std::vector<int64_t> lr_shape = inputs[kLRIndex]->GetShapeVector();
+  std::vector<int64_t> l1_shape = inputs[kL1Index]->GetShapeVector();
+  std::vector<int64_t> l2_shape = inputs[kL2Index]->GetShapeVector();
+  std::vector<int64_t> grad_shape = inputs[kGradIndex]->GetShapeVector();
+  if (var_shape.empty()) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'var' must be at least 1-D, but got scalar or None.";
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, accum_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'accum' must be the same as the shape of 'var', "
+                     "but got the shape of 'accum': "
+                  << accum_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (!IsSameShape(var_shape, grad_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'grad' must be the same as the shape of 'var', "
+                     "but got the shape of 'grad': "
+                  << grad_shape << " and the shape of 'var': " << var_shape;
+    return KRET_RESIZE_FAILED;
+  }
+
+  if (!IsSameShape(lr_shape, l1_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'lr' must be the same as the shape of 'l1', "
+                     "but got the shape of 'lr': "
+                  << lr_shape << " and the shape of 'l1': " << l1_shape;
+    return KRET_RESIZE_FAILED;
+  }
+
+  if (!IsSameShape(lr_shape, l2_shape)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape of 'lr' must be the same as the shape of 'l2', "
+                     "but got the shape of 'lr': "
+                  << lr_shape << " and the shape of 'l2': " << l2_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  if (batch_rank_ < 0 || lr_shape.size() != static_cast<size_t>(batch_rank_)) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the shape size of 'lr' must be equal to 'batch_rank', "
+                     "but got the shape of 'lr': "
+                  << lr_shape << " and 'batch_rank': " << batch_rank_;
+    return KRET_RESIZE_FAILED;
+  }
+
+  batch_size_ = 1;
+  if (!lr_shape.empty()) {
+    batch_size_ = std::accumulate(lr_shape.begin(), lr_shape.end(), batch_size_, std::multiplies<int64_t>());
+  }
+  if (batch_size_ <= 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', batch_size_ must be greater than 0, but got batch_size: " << batch_size_;
+    return KRET_RESIZE_FAILED;
+  }
+
+  input_elements_ = std::accumulate(var_shape.begin(), var_shape.end(), 1, std::multiplies<int64_t>());
+  input_elements_ = input_elements_ / batch_size_;
+  if (batch_rank_ > 1) {
+    if (var_shape.size() < lr_shape.size()) {
+      MS_LOG(ERROR) << "For '" << kernel_name_
+                    << "', the shape size of 'var' must be greater than 'lr_shape', but got the shape of 'var': "
+                    << var_shape << " and 'lr_shape': " << lr_shape;
+      return KRET_RESIZE_FAILED;
+    }
+    std::vector<int64_t> var_batch_shape(var_shape.begin(), var_shape.begin() + batch_rank_);
+    if (!IsSameShape(lr_shape, var_batch_shape)) {
+      MS_LOG(ERROR) << "For '" << kernel_name_
+                    << "', the batch shape of 'var' must be the same as the shape of 'lr', "
+                       "but got the batch shape of 'var': "
+                    << var_batch_shape << " and the shape of 'lr': " << lr_shape;
+      return KRET_RESIZE_FAILED;
+    }
+  }
+
+  return ret;
+}
+
+bool ApplyProximalAdagradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
+                                              const std::vector<kernel::KernelTensor *> &workspace,
+                                              const std::vector<kernel::KernelTensor *> &) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kApplyProximalAdagradInputsNum, kernel_name_);
+  auto var = reinterpret_cast<float *>(inputs[kVarIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(var);
+  auto accum = reinterpret_cast<float *>(inputs[kAccIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(accum);
+  auto lr = reinterpret_cast<float *>(inputs[kLRIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(lr);
+  auto l1 = reinterpret_cast<float *>(inputs[kL1Index]->device_ptr());
+  MS_EXCEPTION_IF_NULL(l1);
+  auto l2 = reinterpret_cast<float *>(inputs[kL2Index]->device_ptr());
+  MS_EXCEPTION_IF_NULL(l2);
+  auto grad = reinterpret_cast<float *>(inputs[kGradIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(grad);
+
+  auto task = [this, &var, &accum, &lr, &l1, &l2, &grad](size_t start, size_t end) {
+    auto cur_input_elements = end - start;
+    for (int64_t b = 0; b < batch_size_; b++) {
+      auto offset = b * input_elements_ + start;
+      auto var_cur = var + offset;
+      auto accum_cur = accum + offset;
+      auto grad_cur = grad + offset;
+
+      ApplyProximalAdagradOpt(var_cur, accum_cur, lr[b], l1[b], l2[b], grad_cur, cur_input_elements);
+    }
+  };
+
+  ParallelLaunchAutoSearch(task, input_elements_, this, &parallel_search_info_, pool_);
+
+  return true;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyProximalAdagrad, ApplyProximalAdagradCpuKernelMod);
+}  // namespace apply_proximal_adagrad_cpu
+}  // namespace kernel
+}  // namespace mindspore

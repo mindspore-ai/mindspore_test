@@ -25,21 +25,21 @@ corresponding sub-module.
 # common
 from .common.exceptions import *
 
+# internal
+from .core.shardheader import ShardHeader
+from .core.shardindexgenerator import ShardIndexGenerator
+from .core.shardreader import ShardReader
+from .core.shardsegment import ShardSegment
+from .core.shardutils import MAX_CONSUMER_COUNT
+from .core.shardutils import SUCCESS, FAILED  # export
+from .core.shardwriter import ShardWriter
+
 # export
 from .filewriter import FileWriter
 from .filereader import FileReader
 from .mindpage import MindPage
-from .core.shardutils import SUCCESS, FAILED
 from .tools.cifar10_to_mr import Cifar10ToMR
 from .tools.cifar100_to_mr import Cifar100ToMR
 from .tools.imagenet_to_mr import ImageNetToMR
 from .tools.mnist_to_mr import MnistToMR
-
-# internal
-from .core.shardheader import ShardHeader
-from .core.shardreader import ShardReader
-from .core.shardsegment import ShardSegment
-from .core.shardindexgenerator import ShardIndexGenerator
-from .core.shardwriter import ShardWriter
-from .core.shardutils import MAX_CONSUMER_COUNT  # function
 

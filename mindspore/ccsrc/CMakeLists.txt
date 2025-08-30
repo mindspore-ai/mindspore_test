@@ -71,7 +71,7 @@ endif()
 
 set(PROFILER_SUB_COMP
     tools/profiler
-    plugin/device/cpu/hal/profiler
+    plugin/cpu/profiler
 )
 
 foreach(_comp ${PROFILER_SUB_COMP})

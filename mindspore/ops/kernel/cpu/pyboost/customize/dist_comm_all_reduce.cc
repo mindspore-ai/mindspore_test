@@ -22,6 +22,7 @@
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "utils/misc.h"
 #endif
 
 namespace mindspore {

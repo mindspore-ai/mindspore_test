@@ -39,8 +39,11 @@ foreach(_comp ${ASCEND_KERNEL_COMP})
 endforeach()
 
 list(APPEND ASCEND_KERNEL_SRC "atb/atb_kernel_build.cc")
+list(APPEND ASCEND_KERNEL_SRC "internal/internal_kernel_build.cc")
+list(APPEND ASCEND_KERNEL_SRC "internal/internal_ascend_adapter.cc")
 
 add_subdirectory(atb)
+add_subdirectory(internal)
 
 set_property(SOURCE ${ASCEND_KERNEL_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
 add_library(mindspore_ops_ascend SHARED ${ASCEND_KERNEL_SRC})

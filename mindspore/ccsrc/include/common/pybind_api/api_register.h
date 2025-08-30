@@ -72,12 +72,18 @@ FRONTEND_EXPORT void RegPyNativeExecutor(const py::module *m);
 FRONTEND_EXPORT void RegisterPyBoostFunction(py::module *m);
 FRONTEND_EXPORT void RegisterCustomizeFunction(py::module *m);
 FRONTEND_EXPORT void RegisterCellBackwardHookFunction(py::module *m);
+FRONTEND_EXPORT void RegisterDetachFunction(py::module *m);
 FRONTEND_EXPORT void RegisterFunctional(py::module *m);
 FRONTEND_EXPORT void RegDirectOps(py::module *m);
 namespace distributed {
 FRONTEND_EXPORT void RegReducer(py::module *m);
 }
 }  // namespace pynative
+
+namespace pynative::autograd {
+FRONTEND_EXPORT void RegBackwardFunction(py::module *m);
+FRONTEND_EXPORT void RegBackwardNode(py::module *m);
+}  // namespace pynative::autograd
 
 namespace pijit {
 FRONTEND_EXPORT void RegPIJitInterface(py::module *m);

@@ -20,7 +20,7 @@ from mindspore.nn import Cell
 from mindspore.common import Tensor, Parameter
 from mindspore.common.lazy_inline import lazy_inline
 import mindspore.ops.operations as P
-from mindspore import ops, nn, jit, context
+from mindspore import ops, nn, jit, context, recompute
 from tests.mark_utils import arg_mark
 
 
@@ -86,6 +86,44 @@ def test_recompute_block_recompute1():
             return out
 
     save_graphs_path = "./test_recompute_under_gradjit1"
+    context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
+
+    x = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
+    net = Net()
+    grad_net = Grad(net)
+    grad_net(x)
+
+    para = '= Conv2D(%'
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, os.path.join(save_graphs_path, "opt_backward_[0-9]*.ir"))],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "2"
+
+    if os.path.exists(save_graphs_path):
+        shutil.rmtree(save_graphs_path)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_recompute_block_recompute1_with_func_api():
+    """
+    Feature: Sub cell recompute under gradjit
+    Description: LeNet block is set recompute by the cell recompute api.
+    Expectation: Run successfully.
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.block = LeNet()
+
+        @jit
+        def construct(self, x):
+            out = recompute(self.block, x)
+            out = ops.Abs()(out)
+            return out
+
+    save_graphs_path = "./test_recompute_block_recompute1_with_func_api"
     context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
 
     x = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)

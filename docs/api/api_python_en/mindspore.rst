@@ -103,9 +103,7 @@ Serialization
     :template: classtemplate.rst
 
     mindspore.async_ckpt_thread_status
-    mindspore.check_checkpoint
     mindspore.ckpt_to_safetensors
-    mindspore.convert_model
     mindspore.export
     mindspore.get_ckpt_path_with_strategy
     mindspore.load
@@ -114,7 +112,6 @@ Serialization
     mindspore.load_mindir
     mindspore.load_param_into_net
     mindspore.onnx.export
-    mindspore.parse_print
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir

@@ -181,7 +181,9 @@ mindspore.Tensor
     mindspore.Tensor.imag
     mindspore.Tensor.index_add
     mindspore.Tensor.index_add_
+    mindspore.Tensor.index_copy_
     mindspore.Tensor.index_fill
+    mindspore.Tensor.index_fill_
     mindspore.Tensor.index_put
     mindspore.Tensor.index_put_
     mindspore.Tensor.index_select
@@ -234,6 +236,7 @@ mindspore.Tensor
     mindspore.Tensor.masked_fill
     mindspore.Tensor.masked_fill_
     mindspore.Tensor.masked_scatter
+    mindspore.Tensor.masked_scatter_
     mindspore.Tensor.masked_select
     mindspore.Tensor.matmul
     mindspore.Tensor.max

@@ -3,12 +3,12 @@ transpose:
         Transpose dimensions of the input tensor according to input permutation.
     
         Note:
-            On GPU and CPU, if the value of `input_perm` is negative, its actual value is `input_perm[i] + rank(input)`.
-            Negative value of `input_perm` is not supported on Ascend.
+            On GPU and CPU, if the value of `dims` is negative, its actual value is `dims[i] + rank(input)`.
+            Negative value of `dims` is not supported on Ascend.
     
         Args:
             input (Tensor): The input tensor.
-            input_perm (tuple[int]): Specify the new axis ordering.
+            dims (Union[tuple[int], list[int]]): Specify the new axis ordering.
     
         Returns:
             Tensor

@@ -312,6 +312,8 @@ class COMMON_EXPORT Emitter {
     return EmitValue(tensor_ptr);
   }
 
+  virtual void MarkSharedGradTensor(const NodePtr &lhs, const NodePtr &rhs) {}
+
   /// \brief get the ExpanderInferPtr
   const ExpanderInferPtr &infer() const { return infer_; }
 

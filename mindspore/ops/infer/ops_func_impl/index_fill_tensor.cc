@@ -16,17 +16,30 @@
 
 #include "infer/ops_func_impl/index_fill_tensor.h"
 #include <memory>
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
 ShapeArray IndexFillTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const InferInfoPtrList &input_args) const {
-  return {input_args[0]->GetShape()};
+  const auto &index = input_args[kIndex2];
+  const auto &index_shape = index->GetShape();
+  if (MS_UNLIKELY(!index->IsDynamicRank() && index_shape.size() > 1)) {
+    MS_EXCEPTION(ValueError) << "'index' should be a 0 or 1-dimensional tensor, but got '" << index_shape.size() << ".";
+  }
+
+  const auto &value = input_args[kIndex3];
+  const auto &value_shape = value->GetShape();
+  if (MS_UNLIKELY(!value->IsDynamicRank() && value_shape.size() != 0)) {
+    MS_EXCEPTION(ValueError) << "'value' should be a 0-dimensional tensor, but got '" << value_shape.size() << ".";
+  }
+
+  return {input_args[kIndex0]->GetShape()};
 }
 
 std::vector<TypeId> IndexFillTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                                        const InferInfoPtrList &input_args) const {
-  return {input_args[0]->GetType()};
+  return {input_args[kIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

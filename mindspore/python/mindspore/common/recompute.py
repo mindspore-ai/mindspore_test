@@ -22,11 +22,10 @@ from mindspore.common.tensor import Tensor
 from mindspore import ops
 from mindspore.ops.composite import GradOperation
 from mindspore.common._register_for_recompute import recompute_registry
-from mindspore.common.api import _pynative_executor, _no_grad
+from mindspore.common.api import _pynative_executor, _no_grad, _run_in_jit
 from mindspore.common.generator import get_rng_state, set_rng_state
 from mindspore.train.amp import AmpDecorator
 from mindspore._c_expression.amp import get_curr_amp_strategy
-from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
 
 class _WrapCell(Cell):
@@ -211,22 +210,15 @@ def _detach_input(input_arg):
 def _check_validation(block):
     if not isinstance(block, Cell):
         raise TypeError("Recompute function now only support block which inherited from Cell!")
-    if block.construct.__code__.co_name == "staging_specialize":
-        logger.warning('Block\'s construct method decorated by @jit that recompute '
-                       'function will not come into effect.')
 
 
-@jit_forbidden_register
 def recompute(block, *args, **kwargs):
     r"""
     This function is used to reduce memory, when run block, rather than
     storing the intermediate activation computed in forward pass, we will recompute it in backward pass.
 
     Note:
-        - Recompute function only support block which inherited from Cell object.
-        - This function interface now only support pynative mode. you can use Cell.recompute interface
-          in graph mode.
-        - When use recompute function, block object should not decorated by @jit.
+        Recompute function only support block which inherited from Cell object.
 
     Args:
         block (Cell): Block to be recompute.
@@ -238,7 +230,6 @@ def recompute(block, *args, **kwargs):
 
     Raises:
         TypeError: If `block` is not Cell object.
-        AssertionError: If execute mode is not PYNATIVE_MODE.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -272,6 +263,8 @@ def recompute(block, *args, **kwargs):
     """
 
     _check_validation(block)
+    if _run_in_jit():  # @jit.cond: True
+        return ops.recompute_block(block)(*args, **kwargs)
     return _RecomputeCell(block)(*args, **kwargs)
 
 

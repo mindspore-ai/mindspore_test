@@ -27,6 +27,10 @@ namespace kernel {
 KernelModPtr CustomKernelBuild(const AnfNodePtr &anf_node);
 bool IsRegisteredCustomKernel(const AnfNodePtr &anf_node);
 bool IsEnableCustomNode(const AnfNodePtr &node);
+
+void ProcessCustomKernelFormatMapping(const CNodePtr &kernel, std::vector<std::string> *input_formats,
+                                      std::vector<std::string> *output_formats);
+
 }  // namespace kernel
 }  // namespace mindspore
 

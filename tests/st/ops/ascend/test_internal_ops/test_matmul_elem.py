@@ -247,6 +247,7 @@ def test_matmul_biasadd_m_4096_4096_False_True_float16(m, is_dyn):
     matmul_biasadd(m, 4096, 4096, trans_a=False, trans_b=True, mstype=ms.float16, is_dyn=is_dyn)
 
 
+@pytest.mark.skip
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard

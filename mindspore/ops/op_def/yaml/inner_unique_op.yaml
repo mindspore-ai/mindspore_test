@@ -1,0 +1,22 @@
+#operator inner_unique
+inner_unique:
+  args:
+    input:
+      dtype: tensor
+    sorted:
+      dtype: bool
+      default: True
+    return_inverse:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+    inverse_indices:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InnerUniqueAscend
+    GPU: None

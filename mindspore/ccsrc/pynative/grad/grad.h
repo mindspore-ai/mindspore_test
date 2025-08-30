@@ -79,6 +79,7 @@ class PYNATIVE_EXPORT GradExecutor {
     MS_EXCEPTION_IF_NULL(top_cell_);
     return top_cell_;
   }
+  inline TopCellInfoPtr TopCellNoCheck() const { return top_cell_; }
   inline JitPtr jit() const {
     MS_EXCEPTION_IF_NULL(jit_);
     return jit_;

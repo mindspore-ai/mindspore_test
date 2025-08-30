@@ -26,7 +26,6 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation_builder.h"
 #include "symbolic_shape/operation.h"
 #include "include/common/visible.h"
@@ -35,6 +34,9 @@
 namespace mindspore {
 namespace symshape {
 class SymbolEngine;
+class Symbol;
+using SymbolPtr = std::shared_ptr<Symbol>;
+
 class COMMON_EXPORT SymbolEnginePIJIT : public SymbolEngine {
  public:
   explicit SymbolEnginePIJIT(const FuncGraphPtr &fg) : SymbolEngine(fg) {}

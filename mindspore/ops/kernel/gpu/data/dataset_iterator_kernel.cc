@@ -24,7 +24,7 @@
 #include "kernel/gpu/data/dataset_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
-#include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
+#include "plugin/gpu/profiler/gpu_profiling.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "kernel/gpu/gpu_common.h"
 #ifdef ENABLE_DUMP_IR

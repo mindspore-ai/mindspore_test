@@ -1,0 +1,22 @@
+#operator inplace_index_fill_scalar
+inplace_index_fill_scalar:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+        index:
+            dtype: tensor
+        value:
+            dtype: number
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InplaceIndexFillScalarAscend

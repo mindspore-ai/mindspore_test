@@ -19,6 +19,7 @@ from mindspore import Tensor, jit, ops
 
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import assert_graph_compile_status, pi_jit_with_config
+from tests.st.pi_jit.conftest import run_in_subprocess
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -158,6 +159,7 @@ def test_alias_define_5():
     assert_graph_compile_status(func, 0, 1, 2)
 
 
+@run_in_subprocess({'GLOG_v': '1', 'MS_SUBMODULE_LOG_v': '{PI:0}'})
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_guard_for_argument_of_function_type_v1():
     """

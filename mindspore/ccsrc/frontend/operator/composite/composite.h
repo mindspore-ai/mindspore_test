@@ -34,7 +34,6 @@
 #include "frontend/operator/composite/multitype_funcgraph.h"
 #include "frontend/operator/composite/starred_operation.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
-#include "utils/misc.h"
 #include "utils/any.h"
 #include "ir/meta_func_graph.h"
 
@@ -524,6 +523,15 @@ class GetDependDoutTuple : public MetaFuncGraph {
   friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
     return lhs.name_ == rhs.name_;
   }
+};
+
+class RecomputeBlock : public MetaFuncGraph {
+ public:
+  explicit RecomputeBlock(const std::string &name) : MetaFuncGraph(name) {}
+  ~RecomputeBlock() override = default;
+  MS_DECLARE_PARENT(RecomputeBlock, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const RecomputeBlock &lhs, const RecomputeBlock &rhs) { return lhs.name_ == rhs.name_; }
 };
 }  // namespace prim
 }  // namespace mindspore

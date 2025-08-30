@@ -29,6 +29,7 @@
 #include "utils/ms_utils.h"
 #include "utils/shape_utils.h"
 #include "ir/dtype/type.h"
+#include "ir/tensor_data.h"
 #include "ir/tensor_storage_info.h"
 #include "mindapi/base/format.h"
 #include "mindapi/base/types.h"
@@ -59,6 +60,8 @@ class AddressAllocator {
   virtual bool Free(void *address_ptr) = 0;
 
   virtual bool IsPinned() { return false; }
+
+  virtual void *GetHostPtrByDevicePtr(void *devicePtr) { return nullptr; }
 };
 
 // DevicePointer encapsulates pointer and reference count-related operations, and supports custom allocator and

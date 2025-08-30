@@ -614,6 +614,9 @@ def cat(tensors, dim=0):
 
         (x_1, x_2, ..., \sum_{i=1}^Nx_{mi}, ..., x_R)
 
+    .. warning::
+        Input tensor of inconsistent types are not supported in Graph Mode under Dynamic Shape.
+
     Args:
         tensors (Union[tuple, list]): A tuple or a list of input tensors.
             Suppose there are two tensors in this tuple or list, namely t1 and t2.
@@ -625,7 +628,6 @@ def cat(tensors, dim=0):
 
     Returns:
         Tensor, the shape is :math:`(x_1, x_2, ..., \sum_{i=1}^Nx_{mi}, ..., x_R)`.
-        The data type is the same with `tensors`.
 
     Raises:
         TypeError: If `dim` is not an int.
@@ -661,6 +663,9 @@ def cat(tensors, dim=0):
 def concat(tensors, dim=0):
     r"""
     Alias for :func:`mindspore.mint.cat`.
+
+    .. warning::
+        Input tensor of inconsistent types are not supported in Graph Mode under Dynamic Shape.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

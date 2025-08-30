@@ -23,7 +23,6 @@
 #include "mindapi/ir/common.h"
 #include "mindapi/ir/abstract.h"
 #include "mindapi/ir/primitive.h"
-#include "mindapi/ir/value.h"
 
 namespace mindspore::api {
 /// \brief AnfNode is the basic class of the IR graph node.

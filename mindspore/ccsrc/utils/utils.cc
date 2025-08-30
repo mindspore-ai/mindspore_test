@@ -41,6 +41,7 @@
 #include "utils/ms_context.h"
 #include "ir/graph_utils.h"
 #include "ir/func_graph_flag.h"
+#include "ir/primitive.h"
 
 #if !defined(BUILD_LITE)
 #include "pybind11/pybind11.h"

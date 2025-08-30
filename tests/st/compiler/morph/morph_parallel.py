@@ -19,6 +19,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops as ops
 import mindspore.runtime as rt
+from mindspore import Layout
 from mindspore.communication import get_rank, init, get_group_size
 
 def infer_dtype(*args):
@@ -38,13 +39,25 @@ def all2allv(x, rank_id):
 
     return x
 
+def double_grad(x):
+    return x * 2
+
+def bprop_fn(x, rank_id, out, dout):
+    return (double_grad(dout), double_grad(dout))
+
 class MorpTestNet(nn.Cell):
-    def __init__(self):
+    def __init__(self, rank_id, dp):
         super(MorpTestNet, self).__init__()
-        self.rank_id = get_rank()
-        self.dp = get_group_size()
+        self.rank_id = rank_id
+        self.dp = dp
         self.add = ops.Add().shard(((self.dp,), (self.dp,)))
-        self.morph = ops.Morph(all2allv, infer_shape, infer_dtype)
+        self.layout = Layout((self.dp,), ("dp",))
+        self.morph = ops.Morph(all2allv, infer_shape, infer_dtype, bprop_fn=bprop_fn)
+        self.morph.add_prim_attr("self_define_shard", True)
+        self.morph.shard(
+            in_strategy=(self.layout("dp",),),
+            out_strategy=(self.layout("dp",),)
+        )
 
     def construct(self, x1, x2):
         o1 = self.add(x1, x2)
@@ -65,6 +78,24 @@ def test_semi_auto_parallel():
     x1 = ms.Tensor(np.arange(1, 9), dtype=ms.float32)
     x2 = ms.Tensor(np.arange(1, 9) * 0.1, dtype=ms.float32)
 
-    net = MorpTestNet()
-    out = net(x1, x2)
-    print("out: ", out)
+    rank_id = get_rank()
+    dp = get_group_size()
+
+    net = MorpTestNet(rank_id, dp)
+    grad_op = ops.GradOperation(get_all=True)
+    grad_net = grad_op(net)
+
+    grad = grad_net(x1, x2)
+    dx1 = grad[0].asnumpy()
+    dx2 = grad[1].asnumpy()
+
+    if rank_id == 0:
+        rank0_dx1 = np.array([1] * 4 + [0] * 4, dtype=np.float32)
+        rank0_dx2 = np.array(list(map(double_grad, [2] * 4)) + [0] * 4, dtype=np.float32)
+        np.allclose(dx1, rank0_dx1)
+        np.allclose(dx2, rank0_dx2)
+    else:
+        rank1_dx1 = np.array([0] * 4 + [1] * 4, dtype=np.float32)
+        rank1_dx2 = np.array([0] * 4 + list(map(double_grad, [2] * 4)), dtype=np.float32)
+        np.allclose(dx1, rank1_dx1)
+        np.allclose(dx2, rank1_dx2)

@@ -72,7 +72,6 @@
 #include "utils/phase.h"
 #include "utils/compile_config.h"
 #include "load_mindir/infer_mindir.h"
-#include "backend/ms_backend/graph_partition.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "tools/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
@@ -929,6 +928,35 @@ void SetCalledSubGraphMixedPrecisionFlag(const FuncGraphPtr &func_graph) {
     }
   }
 }
+
+void MergeClonedLazyInlineOrderGraph(const FuncGraphPtr &top_graph) {
+  auto manager = top_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  HashMap<int, FuncGraphPtr> order_fgs;
+  auto all_func_graphs = top_graph->func_graphs_used_total();
+  for (auto &fg : all_func_graphs) {
+    MS_EXCEPTION_IF_NULL(fg);
+    auto order_value = fg->get_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
+    if (order_value == nullptr) {
+      continue;
+    }
+    if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER_CLONE)) {
+      continue;
+    }
+    auto order = GetValue<int>(order_value);
+    auto iter = order_fgs.find(order);
+    if (iter == order_fgs.end()) {
+      order_fgs.emplace(order, fg);
+      continue;
+    }
+    auto cnodes_index = fg->func_graph_cnodes_index();
+    for (auto &cnode_index : cnodes_index) {
+      MS_EXCEPTION_IF_NULL(cnode_index.first);
+      auto call_node = cnode_index.first->first;
+      manager->SetEdge(call_node, cnode_index.first->second, NewValueNode(iter->second));
+    }
+  }
+}
 }  // namespace
 
 // Make the reusable cell to be the reusable function graph.
@@ -937,6 +965,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
   bool cell_reused = false;
   auto func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
+  MergeClonedLazyInlineOrderGraph(func_graph);
   std::multimap<int, FuncGraphPtr> order_fgs;
   for (auto &fg : func_graph->func_graphs_used_total()) {
     auto order_value = fg->get_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
@@ -1771,7 +1800,7 @@ void OriginSetRunMode(const ResourcePtr &resource) {
     }
     bool exist_while =
       std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
-    if (device_target == kAscendDevice && backend != kMsVm && !exist_while) {
+    if (device_target == kAscendDevice && backend != "vm" && !exist_while) {
       MS_LOG(INFO) << "Run graph mode with multigraph sink.";
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, true);
     } else {
@@ -1829,7 +1858,7 @@ bool TaskEmitAction(const ResourcePtr &resource) {
     func_graph->SetMultiTarget();
   }
 
-  if (backend != kMsConvert && backend != kGeVm) {
+  if (backend != "ms" && backend != "ge") {
     resource->SetResult(kNoBackend, true);
     MS_LOG(INFO) << "No backend.";
     return true;
@@ -2219,6 +2248,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
     if (IsEnableSilentCheck()) {
       (void)jit_passes.emplace_back(kSilentCheck, SilentCheckPass);
     }
+    (void)jit_passes.emplace_back(kSymbolEngineOpt, SymbolEngineOptGroup);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }
 

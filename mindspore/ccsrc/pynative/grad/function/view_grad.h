@@ -48,6 +48,10 @@ void DoViewGrad(const TensorPtr &input_tensor, const TensorPtr &output_tensor, c
       auto output_meta_data = output_tensor->auto_grad_meta_data();
       output_meta_data->set_grad_node(view_grad_node);
     }
+    auto view_meta = impl::GetViewAutogradMetaImpl(output_tensor);
+    if (view_meta != nullptr) {
+      view_meta->set_version_attr(output_tensor->version().current_version());
+    }
   }
 }
 

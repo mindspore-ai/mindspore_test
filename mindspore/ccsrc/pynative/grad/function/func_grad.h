@@ -74,6 +74,7 @@ class HookBackwardNode : public BackwardNode {
   HookBackwardNode(const string &name, PrimitivePyPtr prim, VectorRef &&args, size_t output_size,
                    abstract::AbstractBasePtr out_abstract)
       : BackwardNode(name, output_size), prim_(std::move(prim)), args_(args), out_abstract_(std::move(out_abstract)) {}
+  ~HookBackwardNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   void Release() override;
 
@@ -97,6 +98,7 @@ class GraphBackwardNode : public BackwardNode {
         saved_output_(std::move(saved_output)),
         cache_key_(std::move(cache_key)),
         graph_call_condition_(is_control_flow, is_jit_graph, jit_out_has_dict, true) {}
+  ~GraphBackwardNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   // Update nullptr grad.
   ValuePtrList LazeUpdateZeroGradient(const ValuePtrList &dout, FuncBuilder *func_builder, const ValuePtr &output);
@@ -113,20 +115,23 @@ class GraphBackwardNode : public BackwardNode {
 
 class LeafNode : public BackwardNode {
  public:
-  explicit LeafNode(const string &name, std::vector<int64_t> shape, TypePtr dtype, bool is_parameter = true,
-                    bool should_execute = true)
+  explicit LeafNode(const string &name, tensor::TensorPtr leaf_tensor, std::vector<int64_t> shape, TypePtr dtype,
+                    bool is_parameter = true, bool should_execute = true)
       : BackwardNode(name, UINT64_MAX, 1),
+        leaf_tensor_(std::move(leaf_tensor)),
         shape_(std::move(shape)),
         dtype_(std::move(dtype)),
         is_parameter_(is_parameter),
         should_execute_(should_execute) {}
   ~LeafNode() override = default;
-  ValuePtrList CallBackward(const ValuePtrList &grads) override { return {}; }
+  ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  bool IsLeaf() override { return true; }
   ValuePtr Zeros(const std::shared_ptr<FuncBuilder> &func_impl);
   bool should_execute() const { return should_execute_; }
   bool is_parameter() const { return is_parameter_; }
 
  private:
+  std::weak_ptr<Tensor> leaf_tensor_;
   std::vector<int64_t> shape_;
   TypePtr dtype_;
   bool is_parameter_;
@@ -227,18 +232,20 @@ PYNATIVE_EXPORT tensor::TensorPtrList SearchUnusedParameters(const tensor::Tenso
 
 struct GradientContext {
   struct CapturedGradient {
-    explicit CapturedGradient(size_t input_index) : input_index(input_index) {}
+    CapturedGradient() = default;
+    explicit CapturedGradient(bool need_capture_grad) : need_capture(need_capture_grad) {}
     void SetGradient(const tensor::TensorPtr &tensor_grad) { grad = tensor_grad; }
-    tensor::TensorPtr grad;
-    size_t input_index;
+    void SetNeedCapture(bool need_capture_grad) { need_capture = need_capture_grad; }
+    tensor::TensorPtr grad{nullptr};
+    bool need_capture{false};
   };
+  using CapturedGradientVec = std::vector<CapturedGradient>;
   GradientContext() : requires_backward(false), captured_grad(nullptr) {}
-  explicit GradientContext(bool requires_backward, std::unique_ptr<CapturedGradient> capture_grad = nullptr)
+  explicit GradientContext(bool requires_backward, std::unique_ptr<CapturedGradientVec> capture_grad = nullptr)
       : requires_backward(requires_backward), captured_grad(std::move(capture_grad)) {}
   [[nodiscard]] bool ShouldExecute() const { return requires_backward || captured_grad != nullptr; }
-
   bool requires_backward;
-  std::unique_ptr<CapturedGradient> captured_grad{nullptr};
+  std::unique_ptr<CapturedGradientVec> captured_grad{nullptr};
 };
 
 struct NodeStatus {
@@ -259,7 +266,7 @@ class AutoDiff : public AutoDiffInterface {
   /// \param output
   /// \param high_order
   /// \param is_run_recompute
-  AutoDiff(const ValuePtr &output, bool high_order, bool is_run_recompute);
+  AutoDiff(const ValuePtr &output, bool keep_graph, bool high_order, bool is_run_recompute);
   DISABLE_COPY_AND_ASSIGN(AutoDiff)
   /// Calculate gradients of leaf nodes from outputs.
   /// \param inputs
@@ -270,9 +277,11 @@ class AutoDiff : public AutoDiffInterface {
   /// \param has_aux
   /// \param sens
   /// \return grads of weights and inputs.
-  ValuePtr RunBackward(const ValuePtrList &inputs, const tensor::TensorPtrList &weights,
+  ValuePtr RunGradFunc(const ValuePtrList &inputs, const tensor::TensorPtrList &weights,
                        const std::vector<size_t> &grad_position, const GradAttr &grad_attr,
                        bool collect_default_weights, bool has_aux, const ValuePtr &sens = nullptr);
+
+  ValuePtr RunBackward(const ValuePtrList &inputs, const ValuePtr &sens, bool accumulate_grad);
   /// Check the given node is in exec grad graph.
   /// \param node
   /// \return true if in grad graph
@@ -301,14 +310,10 @@ class AutoDiff : public AutoDiffInterface {
   /// \param inputs
   /// \param grad_attr
   /// \param grad_position
-  inline void PruningInput(const ValuePtrList &inputs, const GradAttr &grad_attr,
-                           const std::vector<size_t> &grad_position);
-
-  /// Pruning weights of grad graph, if some weights do not need grad.
-  /// \param weights
-  /// \param grad_attr
-  inline void PruningWeights(const std::vector<BackwardNodePtr> &weights, const GradAttr &grad_attr);
-
+  void PruningInput(const ValuePtrList &inputs, const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
+  /// Pruning input grad of grad graph
+  /// \param inputs
+  void PruningInput(const ValuePtrList &inputs, bool accumulate_grad);
   /// Pruning grad graph.
   /// \param inputs
   /// \param weights
@@ -317,9 +322,11 @@ class AutoDiff : public AutoDiffInterface {
   void PruningGradGraph(const ValuePtrList &inputs, const std::vector<BackwardNodePtr> &weights,
                         const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
 
+  void PruningGradNode();
+
   /// Compute in degree of grad node from grad graph,
   /// which used for judging node whether can be execute.
-  void ComputeDependencies();
+  void ComputeNodeInDegree();
   /// Update dependencies for grad node which accept None gradient, to keep dependencies correct.
   /// \param root
   /// \param input_buffer
@@ -380,8 +387,10 @@ class AutoDiff : public AutoDiffInterface {
 
   /// Get grad from tensor.
   /// \param val
+  /// \param get_grad_from_tensor whether get grad from tensor.
+  /// \param run_tensor_hook whether execute hook of leaf node which not in grad graph.
   /// \return grad
-  ValuePtr GetTensorGrad(const ValuePtr &val);
+  ValuePtr GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool is_run_backward_api);
   /// Get grad from grad node.
   /// \param grad_node
   /// \return grad
@@ -392,8 +401,10 @@ class AutoDiff : public AutoDiffInterface {
   /// \param weight_param_is_tuple
   /// \return
   ValuePtr GetWeightGrads(bool grad_weights, const std::vector<BackwardNodePtr> &weights, bool weight_param_is_tuple);
+  inline void CaptureTensorGrads(const ValuePtrList &gradient_in,
+                                 const std::unordered_map<BackwardNode *, GradientContext>::iterator &ctx_iter);
   std::unordered_map<BackwardNode *, GradientContext> gradient_contexts_;
-  std::unordered_map<BackwardNode *, int32_t> dependencies_;
+  std::unordered_map<BackwardNode *, int32_t> node_in_degree_;
   std::unordered_set<BackwardNode *> node_used_in_graph_;
   std::vector<std::function<void()>> final_callbacks_{};
   ValuePtrList flatten_sens_out_{};
@@ -402,6 +413,7 @@ class AutoDiff : public AutoDiffInterface {
   BackwardNodePtr graph_root_{nullptr};
   std::shared_ptr<FuncBuilder> func_impl_;
   device::DeviceType device_target_;
+  bool keep_graph_{false};
   bool high_order_{false};
   bool is_run_recompute_{false};
 };

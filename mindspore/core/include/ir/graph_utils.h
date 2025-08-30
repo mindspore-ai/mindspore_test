@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "ir/anf.h"
-#include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "mindapi/base/macros.h"

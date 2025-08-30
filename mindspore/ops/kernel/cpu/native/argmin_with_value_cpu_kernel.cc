@@ -1,0 +1,260 @@
+/**
+ * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <string>
+
+#include "kernel/cpu/native/argmin_with_value_cpu_kernel.h"
+
+namespace mindspore {
+namespace kernel {
+namespace argmin_with_value_cpu {
+namespace {
+constexpr size_t kArgMinWithValueInputsNum = 3;
+constexpr size_t kArgMinWithValueOutputsNum = 2;
+constexpr char kKernelName[] = "ArgMinWithValue";
+
+size_t get_element_num(const std::vector<size_t> &shape) {
+  size_t size = 1;
+  for (size_t i = 0; i < shape.size(); i++) {
+    size *= shape[i];
+  }
+  return size;
+}
+
+template <typename T>
+bool check_validation(const std::vector<size_t> &shape, const size_t num_before_axis, const size_t num_after_axis,
+                      const std::vector<kernel::KernelTensor *> &inputs,
+                      const std::vector<kernel::KernelTensor *> &outputs, size_t index_output_idx,
+                      size_t value_output_idx) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kArgMinWithValueInputsNum, kKernelName);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kArgMinWithValueOutputsNum, kKernelName);
+  size_t data_size = sizeof(T);
+  size_t input_size = get_element_num(shape) * data_size;
+  size_t output_num = num_before_axis * num_after_axis;
+  size_t index_output_size = output_num * sizeof(int64_t);
+  size_t value_output_size = output_num * data_size;
+  if (inputs[0]->size() != input_size) {
+    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of 'x' must be " << input_size
+                      << ", but got the memory size is " << inputs[0]->size();
+  }
+  if (outputs[index_output_idx]->size() != index_output_size) {
+    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 1st output must be " << index_output_size
+                      << ", but got the memory size is " << outputs[0]->size();
+  }
+  if (outputs[value_output_idx]->size() != value_output_size) {
+    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 2nd output must be " << value_output_size
+                      << ", but got the memory size is " << outputs[1]->size();
+  }
+  return true;
+}
+}  // namespace
+
+template <typename T>
+bool ArgMinWithValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                               const std::vector<kernel::KernelTensor *> &,
+                                               const std::vector<kernel::KernelTensor *> &outputs) {
+  if (!check_validation<T>(shape_, num_before_axis_, num_after_axis_, inputs, outputs, index_output_idx,
+                           value_output_idx)) {
+    return false;
+  }
+
+  const auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *index = GetDeviceAddress<int64_t>(outputs, index_output_idx);
+  auto *value = GetDeviceAddress<T>(outputs, value_output_idx);
+
+  auto task = [&](size_t start, size_t end) {
+    for (size_t pos = start; pos < end; pos++) {
+      size_t i = pos / num_after_axis_;
+      size_t j = pos % num_after_axis_;
+      size_t src_index_j = i * dim_axis_ * num_after_axis_ + j;
+
+      T min_value = input[src_index_j];
+      int32_t min_index = 0;
+      for (size_t k = 0; k < dim_axis_; k++) {
+        size_t src_index_k = k * num_after_axis_ + src_index_j;
+        if (input[src_index_k] < min_value) {
+          min_value = input[src_index_k];
+          min_index = SizeToInt(k);
+        }
+      }
+      auto dst_index = i * num_after_axis_ + j;
+      index[dst_index] = min_index;
+      value[dst_index] = min_value;
+    }
+  };
+  ParallelLaunchAutoSearch(task, num_before_axis_ * num_after_axis_, this, &parallel_search_info_);
+
+  return true;
+}
+
+bool ArgMinWithValueCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &outputs) {
+  auto input_type_id = inputs.at(kIndex0)->dtype_id();
+  switch (input_type_id) {
+    case kNumberTypeFloat64:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<double>;
+      break;
+    case kNumberTypeFloat32:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<float>;
+      break;
+    case kNumberTypeFloat16:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<float16>;
+      break;
+    case kNumberTypeInt64:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<int64_t>;
+      break;
+    case kNumberTypeInt32:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<int32_t>;
+      break;
+    case kNumberTypeInt16:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<int16_t>;
+      break;
+    case kNumberTypeInt8:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<int8_t>;
+      break;
+    case kNumberTypeUInt64:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<uint64_t>;
+      break;
+    case kNumberTypeUInt32:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<uint32_t>;
+      break;
+    case kNumberTypeUInt16:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<uint16_t>;
+      break;
+    case kNumberTypeUInt8:
+      kernel_func_ = &ArgMinWithValueCpuKernelMod::LaunchKernel<uint8_t>;
+      break;
+    default:
+      MS_LOG(EXCEPTION) << "Argmin kernel does not support " << TypeIdToString(input_type_id);
+  }
+
+  return true;
+}
+
+int ArgMinWithValueCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  shape_ = Convert2SizeTClipNeg(inputs.at(kIndex0)->GetDeviceShapeVector());
+  size_t shape_len = shape_.size();
+  int64_t axis = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  auto input_shape = inputs.at(kIndex0)->GetShapeVector();
+  if (CheckNullInput(input_shape)) {
+    MS_LOG(EXCEPTION) << kernel_name_ << " cannot deal with empty input. Please try other inputs.";
+  }
+  axis += static_cast<int64_t>(shape_len);
+  if (shape_len == 0) {
+    if (axis != -1 && axis != 0) {
+      MS_LOG(EXCEPTION) << "For ArgMinWithValue with 0d input tensor, axis must be one of 0 or -1, but got " << axis
+                        << ".";
+    }
+    axis = 0;
+  }
+  num_before_axis_ = 1;
+  num_after_axis_ = 1;
+  dim_axis_ = 0;
+  if (shape_len > 0) {
+    axis = axis % SizeToLong(shape_len);
+    for (size_t i = 0; i < shape_len; i++) {
+      if (SizeToLong(i) < axis) {
+        num_before_axis_ *= shape_[i];
+      } else if (SizeToLong(i) > axis) {
+        num_after_axis_ *= shape_[i];
+      }
+    }
+    dim_axis_ = shape_[LongToSize(axis)];
+  }
+
+  return KRET_OK;
+}
+
+std::vector<KernelAttr> ArgMinWithValueCpuKernelMod::GetOpSupport() {
+  static std::vector<KernelAttr> kernel_attr_list = {
+    KernelAttr()
+      .AddInputAttr(kNumberTypeFloat64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeFloat64),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeFloat32)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeFloat32),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeFloat16)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeFloat16),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeInt64),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeInt32)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeInt32),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeInt16)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeInt16),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeInt8)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeInt8),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeUInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeUInt64),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeUInt32)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeUInt32),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeUInt16)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeUInt16),
+    KernelAttr()
+      .AddInputAttr(kNumberTypeUInt8)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+      .AddOutputAttr(kNumberTypeInt64)
+      .AddOutputAttr(kNumberTypeUInt8),
+  };
+  return kernel_attr_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ArgMinWithValue, ArgMinWithValueCpuKernelMod);
+}  // namespace argmin_with_value_cpu
+}  // namespace kernel
+}  // namespace mindspore

@@ -1619,6 +1619,7 @@ REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   if (y->need_compute_grad_out()) {
     dy = dout;
   }
+  ib->MarkSharedGradTensor(dx, dy);
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
@@ -1650,6 +1651,7 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
   auto dx_cast = x->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(x)) : ib->OutZeros(x);
   auto dy_cast = y->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(y)) : ib->OutZeros(y);
+  ib->MarkSharedGradTensor(dx, dy);
   return {dx_cast, dy_cast, ib->OutZeros(alpha)};
 });
 
@@ -1714,6 +1716,7 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
   auto input_cast = x->need_compute_grad_out() ? ib->Cast(ret[0], ib->GetDtype(x)) : ib->OutZeros(x);
   auto other_cast = y->need_compute_grad_out() ? ib->Cast(ret[1], ib->GetDtype(y)) : ib->OutZeros(y);
+  ib->MarkSharedGradTensor(input_cast, other_cast);
   return {input_cast, other_cast, ib->OutZeros(alpha)};
 });
 

@@ -30,6 +30,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/graph_utils.h"
+#include "ir/func_graph_cloner.h"
 #include "abstract/abstract_value.h"
 #include "abstract/abstract_function.h"
 #include "abstract/dshape.h"
@@ -2815,6 +2816,61 @@ FuncGraphPtr GetDependDoutTuple::GenerateFuncGraph(const AbstractBasePtrList &ar
     return fg;
   }
   fg->set_output(fg_dout_tuple);
+  return fg;
+}
+
+namespace {
+bool HasSetRecompute(const FuncGraphPtr &fg) {
+  if (fg->has_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE)) {
+    return true;
+  }
+  if (fg->has_flag(FUNC_GRAPH_FLAG_PROXY_GRAPH)) {
+    auto output_cnode = dyn_cast<CNode>(fg->output());
+    if (output_cnode == nullptr) {
+      return false;
+    }
+    auto call_fg = GetValueNode<FuncGraphPtr>(output_cnode->input(0));
+    if (call_fg == nullptr) {
+      return false;
+    }
+    return call_fg->has_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE);
+  }
+  return false;
+}
+}  // namespace
+
+FuncGraphPtr RecomputeBlock::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  if (args_abs_list.size() != 1) {
+    MS_LOG(INTERNAL_EXCEPTION) << "The input size of RecomputeBlock should be 1.";
+  }
+  MS_EXCEPTION_IF_NULL(args_abs_list[0]);
+  auto abs_func = dyn_cast<AbstractFunction>(args_abs_list[0]);
+  if (abs_func == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For 'RecomputeBlock', the first argument must be a func_graph, but got "
+                               << args_abs_list[0]->ToString();
+  }
+  auto real_fn = abs_func->cast<abstract::FuncGraphAbstractClosurePtr>();
+  MS_EXCEPTION_IF_NULL(real_fn);
+  auto origin_fg = real_fn->func_graph();
+  MS_EXCEPTION_IF_NULL(origin_fg);
+  Cloner cloner({origin_fg}, false, true, true);
+  cloner.set_clone_for_recompute(true);
+  cloner.Run();
+  auto cloned_fg_iter = cloner.cloned_func_graphs().find(origin_fg);
+  if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, origin_fg->return_node())
+      << "Clone func graph failed! " << origin_fg->ToString();
+  }
+  auto cloned_fg = cloned_fg_iter->second;
+  MS_EXCEPTION_IF_NULL(cloned_fg);
+  cloned_fg->set_python_obj(origin_fg->python_obj());
+  if (!HasSetRecompute(origin_fg)) {
+    cloned_fg->set_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE, true);
+  }
+  parse::UpdateRecomputeScope(cloned_fg);
+  auto fg = std::make_shared<FuncGraph>();
+  (void)fg->add_parameter();
+  fg->set_output(NewValueNode(cloned_fg));
   return fg;
 }
 }  // namespace prim

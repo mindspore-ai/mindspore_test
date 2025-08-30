@@ -25,8 +25,9 @@ namespace mindspore {
 namespace opt {
 class AddCastRmsNormCastFusion : public PatternProcessPass {
  public:
-  explicit AddCastRmsNormCastFusion(bool multigraph = true)
-      : PatternProcessPass("add_cast_rms_norm_cast_fusion", multigraph) {
+  explicit AddCastRmsNormCastFusion(const std::string &pass_name = "add_cast_rms_norm_cast_fusion",
+                                    bool multigraph = true)
+      : PatternProcessPass(pass_name, multigraph) {
     x1_ = std::make_shared<Var>();
     x2_ = std::make_shared<Var>();
     gamma_ = std::make_shared<Var>();
@@ -36,14 +37,15 @@ class AddCastRmsNormCastFusion : public PatternProcessPass {
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
- private:
-  std::vector<std::string> MustExistPrimitiveName() const override;
-
+ protected:
   VarPtr x1_;
   VarPtr x2_;
   VarPtr gamma_;
   VarPtr eps_;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_RMSNORM_FUSION_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_CAST_RMSNORM_CAST_FUSION_H_

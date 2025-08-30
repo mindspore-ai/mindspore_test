@@ -1,0 +1,178 @@
+/**
+ * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/upsample_nearest_3d_cpu_kernel.h"
+#include <string>
+#include <utility>
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+
+namespace mindspore {
+namespace kernel {
+namespace upsample_nearest_3d_cpu {
+namespace {
+const double kValueZero = 0.;
+}  // namespace
+
+void UpsampleNearest3DCpuKernelMod::ComputeNearestIndex(int64_t *const indices, const int64_t stride,
+                                                        const int64_t input_szie, const int64_t output_size,
+                                                        const double scale) const {
+  auto loop = [&](int64_t begin, int64_t end) {
+    for (int64_t out_idx = begin; out_idx < end; ++out_idx) {
+      size_t in_idx = NearestIndex(static_cast<size_t>(out_idx), static_cast<size_t>(input_szie),
+                                   static_cast<size_t>(output_size), scale);
+      indices[out_idx] = static_cast<int64_t>(in_idx) * stride;
+    }
+  };
+  float block_size = 64.0;
+  ParallelLaunch(loop, static_cast<size_t>(output_size), block_size);
+}
+
+bool UpsampleNearest3DCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &outputs) {
+  auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
+  auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
+  if (!is_match) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', it does not support this kernel type: " << kernel_attr;
+    return false;
+  }
+  kernel_func_ = func_list_[index].second;
+  unit_size_ = sizeof(int64_t);
+  return true;
+}
+
+int UpsampleNearest3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = NativeCpuKernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  // shape
+  x_shape_ = inputs.at(kIndex0)->GetShapeVector();
+  x_shape_.insert(x_shape_.end(), kIndex5 - x_shape_.size(), 1);
+  y_shape_ = outputs.at(kIndex0)->GetShapeVector();
+  y_shape_.insert(y_shape_.end(), kIndex5 - y_shape_.size(), 1);
+  // apply workspace
+  workspace_size_list_.push_back(unit_size_ * LongToSize(y_shape_[kIndex2]));
+  workspace_size_list_.push_back(unit_size_ * LongToSize(y_shape_[kIndex3]));
+  workspace_size_list_.push_back(unit_size_ * LongToSize(y_shape_[kIndex4]));
+
+  // none_list
+  auto type_idx1 = inputs[kIndex1]->GetType();
+  MS_EXCEPTION_IF_NULL(type_idx1);
+  auto output_size_none = type_idx1->isa<TypeNone>();
+  auto scales_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<float>>();
+  bool scales_none = !scales_opt.has_value();
+  if (output_size_none == scales_none) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', only one of output_size or scales should be specified.";
+    return KRET_RESIZE_FAILED;
+  }
+  if (scales_none) {
+    scales_ = std::vector<float>(kIndex3, kValueZero);
+  } else {
+    scales_ = scales_opt.value();
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
+  }
+  return KRET_OK;
+}
+
+template <typename T>
+bool UpsampleNearest3DCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
+                                                 const std::vector<KernelTensor *> &workspace,
+                                                 const std::vector<KernelTensor *> &outputs) {
+  auto x_ptr = GetDeviceAddress<T>(inputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(x_ptr);
+  auto y_ptr = GetDeviceAddress<T>(outputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(y_ptr);
+
+  int64_t channels = x_shape_[kIndex0] * x_shape_[kIndex1];
+  int64_t input_depth = x_shape_[kIndex2];
+  int64_t input_height = x_shape_[kIndex3];
+  int64_t input_width = x_shape_[kIndex4];
+  int64_t input_slice_size = input_depth * input_height * input_width;
+
+  int64_t output_depth = y_shape_[kIndex2];
+  int64_t output_height = y_shape_[kIndex3];
+  int64_t output_width = y_shape_[kIndex4];
+  int64_t output_slice_size = output_depth * output_height * output_width;
+
+  if (input_depth == output_depth && input_height == output_height && input_width == output_width) {
+    auto cpy_ret = memcpy_s(y_ptr, outputs[kIndex0]->size(), x_ptr, outputs[kIndex0]->size());
+    if (cpy_ret != EOK) {
+      MS_EXCEPTION(MemoryError) << "For " << kernel_name_ << ", memcpy_s to output failed.";
+    }
+    return true;
+  }
+
+  int64_t *const d_helper = GetDeviceAddress<int64_t>(workspace, kIndex0);
+  int64_t *const h_helper = GetDeviceAddress<int64_t>(workspace, kIndex1);
+  int64_t *const w_helper = GetDeviceAddress<int64_t>(workspace, kIndex2);
+  MS_EXCEPTION_IF_NULL(d_helper);
+  MS_EXCEPTION_IF_NULL(d_helper);
+  MS_EXCEPTION_IF_NULL(d_helper);
+  ComputeNearestIndex(d_helper, input_height * input_width, input_depth, output_depth, scales_[kIndex0]);
+  ComputeNearestIndex(h_helper, input_width, input_height, output_height, scales_[kIndex1]);
+  ComputeNearestIndex(w_helper, 1, input_width, output_width, scales_[kIndex2]);
+
+  auto loop3d = [&](int64_t begin, int64_t end) {
+    int64_t n{0};
+    int64_t od{0};
+    int64_t oh{0};
+
+    (void)DataIndexInit(&begin, &n, &channels, &od, &output_depth, &oh, &output_height);
+    for (int64_t i = begin; i < end; ++i) {
+      int64_t id = d_helper[od];
+      int64_t ih = h_helper[oh];
+      T *dst_ptr = y_ptr + n * output_slice_size + od * output_height * output_width + oh * output_width;
+      T *src_ptr = x_ptr + n * input_slice_size + id + ih;
+      for (int64_t ow = 0; ow < output_width; ++ow) {
+        dst_ptr[ow] = src_ptr[w_helper[ow]];
+      }
+
+      (void)DataIndexStep(&n, &channels, &od, &output_depth, &oh, &output_height);
+    }
+  };
+  float block_size = 1.0;
+  ParallelLaunch(loop3d, static_cast<size_t>(channels * output_depth * output_height), block_size);
+
+  return true;
+}
+#define UpsampleNearest3D_CPU_KERNEL_REG(M_S, T)                               \
+  std::make_pair(KernelAttr()                                                  \
+                   .AddInputAttr(M_S)                                          \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOutputAttr(M_S),                                        \
+                 &UpsampleNearest3DCpuKernelMod::LaunchKernel<T>)
+
+std::vector<std::pair<KernelAttr, UpsampleNearest3DCpuKernelMod::KernelRunFunc>>
+  UpsampleNearest3DCpuKernelMod::func_list_ = {UpsampleNearest3D_CPU_KERNEL_REG(kNumberTypeUInt8, uint8_t),
+                                               UpsampleNearest3D_CPU_KERNEL_REG(kNumberTypeFloat16, float16),
+                                               UpsampleNearest3D_CPU_KERNEL_REG(kNumberTypeFloat32, float),
+                                               UpsampleNearest3D_CPU_KERNEL_REG(kNumberTypeFloat64, double)};
+
+std::vector<KernelAttr> UpsampleNearest3DCpuKernelMod::GetOpSupport() {
+  std::vector<KernelAttr> support_list;
+  (void)std::transform(
+    func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
+    [](const std::pair<KernelAttr, UpsampleNearest3DCpuKernelMod::KernelRunFunc> &pair) { return pair.first; });
+  return support_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1D, UpsampleNearest3DCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2D, UpsampleNearest3DCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3D, UpsampleNearest3DCpuKernelMod);
+}  // namespace upsample_nearest_3d_cpu
+}  // namespace kernel
+}  // namespace mindspore

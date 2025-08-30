@@ -1,0 +1,17 @@
+#operator masked_fill_scalar
+masked_fill_scalar:
+    args:
+        input:
+            dtype: tensor
+        mask:
+            dtype: tensor
+        value:
+            dtype: number
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: MaskedFillScalarAscend

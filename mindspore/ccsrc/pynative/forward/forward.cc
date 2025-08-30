@@ -509,7 +509,6 @@ bool ForwardExecutor::ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info,
   CreateViewOpOutputs(op_run_info, view_input_tensor, task_type, storage_infos, is_tuple_output);
 
   if (op_run_info->requires_grad || task_type != runtime::KernelTaskType::kNORMAL_VIEW_TASK) {
-    const auto &top_cell = op_run_info->requires_grad ? grad()->top_cell() : nullptr;
     for (size_t index = 0; index < op_run_info->input_size; ++index) {
       const ValuePtr &input_object = op_run_info->op_grad_info->input_value[index];
       PyNativeAlgo::DataConvert::MarkInputs(op_run_info, input_object, index);

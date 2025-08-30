@@ -34,7 +34,7 @@
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/pynative/graph_adapter.h"
+#include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "include/backend/visible.h"
 #include "backend/ms_backend/ms_backend_base.h"
 #include "runtime/pynative/op_runner.h"
