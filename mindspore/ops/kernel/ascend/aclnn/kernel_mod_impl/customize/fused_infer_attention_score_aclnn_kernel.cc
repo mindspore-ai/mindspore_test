@@ -111,7 +111,6 @@ bool FusedInferAttentionScoreAscend::Init(const std::vector<KernelTensor *> &inp
   auto &llm_manager = LLMManager::GetInstance();
   llm_manager.add_force_resize_kernel(kernel_name_);
 
-  SetScalarParam(inputs);
   return true;
 }
 

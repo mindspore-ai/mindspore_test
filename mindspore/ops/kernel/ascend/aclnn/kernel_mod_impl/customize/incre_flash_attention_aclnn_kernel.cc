@@ -62,7 +62,7 @@ void IncreFlashAttentionAscend::SetScalarParam(const std::vector<KernelTensor *>
   scale_value_d_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex17]));
   num_key_value_heads_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
 
-  block_size_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
+  block_size_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
   inner_precise_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
   return;
 }
