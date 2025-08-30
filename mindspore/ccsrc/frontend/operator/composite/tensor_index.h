@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "utils/hash_map.h"
-#include "utils/misc.h"
 #include "ir/meta_func_graph.h"
 #include "utils/ms_utils.h"
 #include "utils/check_convert_utils.h"

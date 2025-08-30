@@ -17,10 +17,8 @@
 #ifndef MINDSPORE_CORE_UTILS_MISC_H_
 #define MINDSPORE_CORE_UTILS_MISC_H_
 
-#include <memory>
 #include <string>
-#include <sstream>
-#include "utils/log_adapter.h"
+#include "mindapi/base/macros.h"
 #include "mindapi/base/type_id.h"
 
 namespace mindspore {

@@ -61,7 +61,6 @@
 #include "frontend/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "abstract/abstract_value.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif

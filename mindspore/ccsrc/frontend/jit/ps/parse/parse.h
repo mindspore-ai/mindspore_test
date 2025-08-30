@@ -29,7 +29,6 @@
 #include <memory>
 
 #include "utils/hash_map.h"
-#include "utils/misc.h"
 #include "ir/anf.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "include/common/utils/python_adapter.h"

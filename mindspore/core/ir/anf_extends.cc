@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "ir/visitor.h"
+#include "ir/primitive.h"
 #include "ir/scope.h"
 #include "ir/func_graph.h"
 #include "utils/anf_utils.h"

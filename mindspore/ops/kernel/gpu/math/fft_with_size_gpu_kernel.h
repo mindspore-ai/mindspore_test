@@ -30,6 +30,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fft_with_size_impl.cuh"
+#include "utils/misc.h"
 
 namespace mindspore {
 namespace kernel {

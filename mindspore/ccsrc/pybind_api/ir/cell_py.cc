@@ -18,7 +18,6 @@
 #include <string>
 
 #include "include/common/pybind_api/api_register.h"
-#include "abstract/abstract_value.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 
 namespace mindspore {
