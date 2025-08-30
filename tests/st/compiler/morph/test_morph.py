@@ -49,7 +49,7 @@ def fn(a, b, c, d):
     return NUMBER_5 * a * b * c * d
 
 def bprop(a, b, c, d, out, dout):
-    return (dout * b * c *d * NUMBER_5 * NUMBER_2, dout, dout, dout)
+    return (dout * b * c * d * NUMBER_5 * NUMBER_2, dout, dout, dout)
 
 class TestNet0(nn.Cell):
     def __init__(self, bprop_fn=None):
@@ -107,12 +107,36 @@ class TestNet3(nn.Cell):
         out = o * self.weight1
         return out
 
+
+class TestNet4(nn.Cell):
+    def __init__(self):
+        super(TestNet4, self).__init__()
+        self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+        self.number_5 = NUMBER_5
+        self.number_2 = NUMBER_2
+        self.morph = ops.Morph(self.morph_fn, infer_shape, infer_dtype, bprop_fn=self.morph_bprop_fn)
+
+    def morph_fn(self, a, b, c, d):
+        return self.number_5 * a * b * c * d
+
+    def morph_bprop_fn(self, a, b, c, d, out, dout):
+        return (dout * b * c * d * self.number_5 * self.number_2, dout, dout, dout)
+
+    def construct(self, x):
+        o = x * self.weight0
+        o = self.morph(o, default_b, default_c, default_d)
+        out = o * self.weight1
+        return out
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("net, with_bprop_fn, morph_call_time", [
     (TestNet0(), False, 1),
     (TestNet1(), False, 1),
     (TestNet2(), False, 3),
-    (TestNet3(bprop_fn=bprop), True, 3)])
+    (TestNet3(bprop_fn=bprop), True, 3),
+    (TestNet4(), True, 1)])
 def test_morph_graph_mode(net, with_bprop_fn, morph_call_time):
     """
     Feature: Morph Primitive

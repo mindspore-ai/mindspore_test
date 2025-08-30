@@ -26,7 +26,6 @@ import types
 from collections import namedtuple
 from typing import NamedTuple
 from textwrap import dedent
-from functools import wraps
 import builtins
 import numpy
 
@@ -918,51 +917,6 @@ def hook_wrapper(hook_fn):
             return dout
         return fdout
     return inner
-
-
-def wrap_fn_as_cell(fn, bprop_fn=None):
-    """
-    Creates a nn.Cell that wraps the given forward function `fn` and optional custom bprop function.
-
-    Args:
-        fn (Callable): The forward function.
-        bprop_fn (Callable, optional): The custom backward function. If provided, the returned Cell
-            will have a `bprop` method for gradient computation.
-
-    Returns:
-        nn.Cell: A cell that executes `fn` in forward and `bprop_fn` in backward if specified.
-    """
-    if bprop_fn:
-        class WrapperNet(nn.Cell):
-            """
-            Inner net that wraps fn and bprop inside.
-            """
-            def __init__(self) -> None:
-                super().__init__()
-
-            @wraps(fn)
-            def construct(self, *args, **kwargs):
-                return fn(*args, **kwargs)
-
-            @wraps(bprop_fn)
-            def bprop(self, *args):
-                """
-                Bprop function of Cell.
-                """
-                return bprop_fn(*args)
-    else:
-        class WrapperNet(nn.Cell):
-            """
-            Inner net that wraps fn inside.
-            """
-            def __init__(self) -> None:
-                super().__init__()
-
-            @wraps(fn)
-            def construct(self, *args, **kwargs):
-                return fn(*args, **kwargs)
-
-    return WrapperNet()
 
 
 class Parser:

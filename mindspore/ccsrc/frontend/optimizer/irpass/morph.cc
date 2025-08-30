@@ -156,17 +156,30 @@ FuncGraphPtr CreateMorphGraph(const PrimitivePtr &prim) {
   if (fn.is_none()) {
     MS_LOG(EXCEPTION) << "Primitive " << prim->name() << " does not have __morph_fn__ attribute.";
   }
-  auto bprop_fn = py::getattr(py_obj, "__morph_bprop_fn__", py::none());
 
-  auto morph_cell =
-    python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_WRAP_FN_AS_CELL, fn, bprop_fn);
-  ValuePtr morph_value = nullptr;
-  bool succ = parse::ConvertData(morph_cell, &morph_value);
-  if (!succ || morph_value == nullptr || !morph_value->isa<FuncGraph>()) {
-    MS_LOG(EXCEPTION) << "Failed to convert morph cell to funcgraph.";
+  ValuePtr morph_fn = nullptr;
+  bool succ = parse::ConvertData(fn, &morph_fn);
+  if (!succ || morph_fn == nullptr || !morph_fn->isa<FuncGraph>()) {
+    MS_LOG(EXCEPTION) << "Failed to convert morph fn to funcgraph.";
   }
 
-  return morph_value->cast<FuncGraphPtr>();
+  auto morph_fg = morph_fn->cast<FuncGraphPtr>();
+
+  auto bprop_fn = py::getattr(py_obj, "__morph_bprop_fn__", py::none());
+  if (!bprop_fn.is_none()) {
+    ValuePtr morph_bprop_fn = nullptr;
+    succ = parse::ConvertData(bprop_fn, &morph_bprop_fn);
+    if (!succ || morph_bprop_fn == nullptr || !morph_bprop_fn->isa<FuncGraph>()) {
+      MS_LOG(EXCEPTION) << "Failed to convert morph bprop fn to funcgraph.";
+    }
+    auto morph_bprop_fg = morph_bprop_fn->cast<FuncGraphPtr>();
+    (void)morph_fg->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(morph_bprop_fg));
+    (void)morph_bprop_fg->transforms().emplace("primal", FuncGraphTransform(morph_fg));
+    morph_fg->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+    morph_fg->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
+  }
+
+  return morph_fg;
 }
 }  // namespace
 
