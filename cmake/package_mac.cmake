@@ -129,16 +129,6 @@ if(ENABLE_CPU)
     )
 endif()
 
-if(ENABLE_MPI)
-    if(ENABLE_CPU)
-        install(
-            TARGETS mpi_adapter
-            DESTINATION ${INSTALL_LIB_DIR}
-            COMPONENT mindspore
-        )
-    endif()
-endif()
-
 if(ENABLE_GPU)
     install(
         TARGETS gpu_queue

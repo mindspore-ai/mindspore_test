@@ -11,8 +11,6 @@ endif()
 if(ENABLE_CPU)
     file(GLOB_RECURSE _CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
     list(REMOVE_ITEM _CPU_SRC_LIST
-        "kernel_executor/mpi/mpi_adapter.cc"
-        "kernel_executor/mpi/mpi_export.cc"
         "res_manager/collective/mpi_collective_comm_lib.cc"
         "res_manager/collective/mpi_communication_group.cc"
         "profiler/cpu_profiling.cc"
@@ -37,12 +35,6 @@ if(ENABLE_CPU)
     endif()
 
     if(ENABLE_MPI)
-        set(_CPU_MPI_SRC_LIST "kernel_executor/mpi/mpi_adapter.cc" "kernel_executor/mpi/mpi_export.cc")
-        set_property(SOURCE ${_CPU_MPI_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
-            SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
-        add_library(mpi_adapter SHARED ${_CPU_MPI_SRC_LIST})
-        target_link_libraries(mpi_adapter PRIVATE mindspore::ompi mindspore::pybind11_module -ldl mindspore::securec)
-
         set(_CPU_MPI_COLLECTIVE_SRC_LIST
             "res_manager/collective/mpi_collective_comm_lib.cc"
             "res_manager/collective/mpi_communication_group.cc"
