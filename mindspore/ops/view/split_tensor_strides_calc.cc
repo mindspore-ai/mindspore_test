@@ -40,6 +40,9 @@ TensorStorageInfoPtrList SplitTensorStridesCalc(const std::vector<int64_t> &old_
 
   // Calculate the number of sub tensors after segmentation
   auto num_splits = (old_shape[wrap_dim] + split_size - 1) / split_size;
+  MS_CHECK_VALUE(num_splits > 0, CheckAndConvertUtils::FormatCommMsg("For SplitTensor, given input shape: ", old_shape,
+                                                                     ", split_size: ", split_size, ", dim ", dim,
+                                                                     ", the output num is 0."));
 
   // Create a storage information list
   std::vector<TensorStorageInfoPtr> storage_info_list;

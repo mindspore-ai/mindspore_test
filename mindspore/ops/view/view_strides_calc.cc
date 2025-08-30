@@ -26,10 +26,12 @@ TensorStorageInfoPtrList ViewStridesCalc(const std::vector<int64_t> &cur_shape, 
                                          const std::vector<int64_t> &shape) {
   TensorStorageInfoPtrList storage_info_list;
   auto new_storage_info = ReshapeStridesCalc(cur_shape, cur_strides, cur_storage_info, shape);
-  if (MS_LIKELY(new_storage_info)) {
-    storage_info_list.push_back(std::move(new_storage_info));
+  if (MS_UNLIKELY(new_storage_info == nullptr)) {
+    MS_EXCEPTION(ValueError)
+      << "view shape " << shape << " is not compatible with input tensor's shape " << cur_shape << " and stride "
+      << cur_strides << " (at least one dimension spans across two contiguous subspaces). Use .reshape(...) instead.";
   }
-  return storage_info_list;
+  return {std::move(new_storage_info)};
 }
 
 TensorStorageInfoPtrList ViewBasicTypeCalc(const tensor::TensorPtr &input_tensor, const std::vector<int64_t> &shape) {

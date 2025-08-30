@@ -55,13 +55,30 @@ class PYBOOST_API PyBoostUtils {
                                                                            const device::DeviceContext *device_context,
                                                                            const std::string &op_name);
 
-  // Create output tensors
-  static void CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::TensorPtr> *outputs);
+ private:
+  // Create view output tensor
+  static tensor::TensorPtr CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                              const TensorStorageInfoPtr &storage_info, const TypeId output_type);
+
+ public:
+  // Create view output tensors
   static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                  const TensorStorageInfoPtr &storage_info, std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
                                  const TensorStorageInfoPtrList &storage_info_list,
                                  std::vector<tensor::TensorPtr> *outputs);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                 const std::pair<TensorStorageInfoPtr, TypeId> &view_info,
+                                 std::vector<tensor::TensorPtr> *outputs);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                 const std::pair<std::vector<TensorStorageInfoPtr>, TypeId> &view_info,
+                                 std::vector<tensor::TensorPtr> *outputs);
+  static void CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                 const std::pair<std::vector<TensorStorageInfoPtr>, std::vector<TypeId>> &view_info,
+                                 std::vector<tensor::TensorPtr> *outputs);
+
+  // Create output tensors
+  static void CreateOutputTensor(const AbstractBasePtr &abstract, std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const ValueSimpleInfoPtr &output_value_simple_info,
                                  std::vector<tensor::TensorPtr> *outputs);
   static void CreateOutputTensor(const TypeId &type_id, const ShapeVector &shape_vector,
