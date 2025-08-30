@@ -30,7 +30,7 @@
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "plugin/cpu/graph_optimizer/pass/base/cpu_pass_utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

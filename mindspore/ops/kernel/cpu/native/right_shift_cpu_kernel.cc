@@ -17,7 +17,7 @@
 #include "kernel/cpu/native/right_shift_cpu_kernel.h"
 #include <vector>
 #include <memory>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

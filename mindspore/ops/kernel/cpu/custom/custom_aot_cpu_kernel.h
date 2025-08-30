@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_OP_PLUGIN_CPU_KERNEL_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_OP_PLUGIN_CPU_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_AOT_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_AOT_CPU_KERNEL_H_
 
 #include <vector>
 #include <string>
 #include <map>
-#include "plugin/cpu/kernel_executor/custom/custom_kernel_input_info.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
+#include "utils/custom_aot_extra.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
 
-class BACKEND_EXPORT CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
+class OPS_HOST_API CustomAOTCpuKernelMod : public NativeCpuKernelMod {
  public:
-  CustomOpPluginCpuKernelMod() = default;
-  ~CustomOpPluginCpuKernelMod() = default;
+  CustomAOTCpuKernelMod() : handle_(nullptr), init_func_(nullptr), aot_func_(nullptr) {}
+  ~CustomAOTCpuKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -46,8 +47,11 @@ class BACKEND_EXPORT CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
 
   std::string file_path_;
   std::string func_name_;
+  void *handle_{nullptr};
+  int (*init_func_)(int *, int64_t **, const char **, AotExtra *);
+  int (*aot_func_)(int, void **, int *, int64_t **, const char **, void *, void *);
 
-  KernelInputInfoImpl kernel_info_;
+  AotExtraImpl attrs_;
 
  private:
   void SetKernelPath();
@@ -55,4 +59,4 @@ class BACKEND_EXPORT CustomOpPluginCpuKernelMod : public NativeCpuKernelMod {
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_OP_PLUGIN_CPU_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_CUSTOM_AOT_CPU_KERNEL_H_

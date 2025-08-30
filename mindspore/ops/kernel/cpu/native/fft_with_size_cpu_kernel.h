@@ -23,7 +23,7 @@
 #include <complex>
 #include <string>
 #include <map>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 

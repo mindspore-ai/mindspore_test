@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_mod.h"
+#include "kernel/cpu/akg/akg_cpu_kernel_mod.h"
 
 #include <sys/mman.h>
 #include <sys/stat.h>

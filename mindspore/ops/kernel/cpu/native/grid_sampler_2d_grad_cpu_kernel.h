@@ -15,7 +15,7 @@
 #include <functional>
 #include <utility>
 #include <tuple>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_2d_grad.h"
 

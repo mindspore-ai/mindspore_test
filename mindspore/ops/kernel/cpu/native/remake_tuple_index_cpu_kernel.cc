@@ -21,7 +21,7 @@
 
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ops/infer/remake_tuple_index.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

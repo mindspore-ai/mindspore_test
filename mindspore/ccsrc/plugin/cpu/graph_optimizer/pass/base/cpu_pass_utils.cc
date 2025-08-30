@@ -23,7 +23,7 @@
 #include "ir/func_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"

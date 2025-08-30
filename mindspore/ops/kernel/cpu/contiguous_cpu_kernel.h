@@ -22,11 +22,12 @@
 #include <utility>
 #include "ir/tensor_storage_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class ContiguousCpuKernel : public NativeCpuKernelMod {
+class OPS_HOST_API ContiguousCpuKernel : public NativeCpuKernelMod {
  public:
   ContiguousCpuKernel() = default;
   ~ContiguousCpuKernel() = default;

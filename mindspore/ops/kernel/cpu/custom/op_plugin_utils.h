@@ -19,7 +19,8 @@
 
 #include <string>
 #include <vector>
-#include "plugin/cpu/kernel_executor/custom/custom_kernel_input_info.h"
+#include "kernel/cpu/custom/custom_kernel_input_info.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore::kernel {
 struct OpPluginKernelParam {
@@ -32,16 +33,15 @@ struct OpPluginKernelParam {
   void *stream{nullptr};
 };
 
-BACKEND_EXPORT void *GetOpPluginHandle();
-BACKEND_EXPORT bool IsOpPluginKernel(const std::string &op_name);
-BACKEND_EXPORT const std::vector<std::string> &GetAllOpPluginKernelNames();
-BACKEND_EXPORT int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **params, int *ndims,
-                                        int64_t **shapes, const char **type_pointer_list, void *kernel_info,
-                                        void *stream = nullptr);
-BACKEND_EXPORT int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param);
-BACKEND_EXPORT OpPluginKernelParam CreateOpPluginParam(const std::vector<KernelTensor *> &inputs,
-                                                       const std::vector<KernelTensor *> &outputs,
-                                                       const std::vector<KernelTensor *> &workspace);
+void *GetOpPluginHandle();
+OPS_HOST_API bool IsOpPluginKernel(const std::string &op_name);
+const std::vector<std::string> &GetAllOpPluginKernelNames();
+int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **params, int *ndims, int64_t **shapes,
+                         const char **type_pointer_list, void *kernel_info, void *stream = nullptr);
+int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param);
+OpPluginKernelParam CreateOpPluginParam(const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &outputs,
+                                        const std::vector<KernelTensor *> &workspace);
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUSTOM_OP_PLUGIN_UTILS_H_

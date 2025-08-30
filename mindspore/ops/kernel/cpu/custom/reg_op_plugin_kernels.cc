@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/custom/custom_op_plugin_kernel.h"
-#include "plugin/cpu/kernel_executor/custom/op_plugin_utils.h"
+#include "kernel/cpu/custom/custom_op_plugin_kernel.h"
+#include "kernel/cpu/custom/op_plugin_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore::kernel {

@@ -21,17 +21,12 @@
 #include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/misc.h"
 #endif
 
 namespace mindspore {
 namespace kernel {
-#if defined(__linux__) && defined(WITH_BACKEND)
-using device::CollectiveOpReduceType::Reduce_Sum;
-using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
-#endif
 namespace pyboost {
 void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &other_tensor,
                                  const ValueTuplePtr &scatter_list, const Int64ImmPtr &rank_size,
@@ -80,9 +75,9 @@ void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const Tens
     const auto &group_str = GetValue<std::string>(group);
     size_t type_len = GetDataTypeSize(in_addr[0]->dtype_id());
 
-    bool ret =
-      MsCollectiveCommLib::GetInstance().Scatter(in_addr[0]->device_ptr(), other_addr[0]->device_ptr(),
-                                                 out_size / type_len, in_addr[0]->dtype_id(), src_rank, group_str);
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->host_comm_lib();
+    bool ret = comm_lib->Scatter(in_addr[0]->device_ptr(), other_addr[0]->device_ptr(), out_size / type_len,
+                                 in_addr[0]->dtype_id(), src_rank, group_str);
     if (!ret) {
       MS_LOG(EXCEPTION) << "Scatter failed.";
     }

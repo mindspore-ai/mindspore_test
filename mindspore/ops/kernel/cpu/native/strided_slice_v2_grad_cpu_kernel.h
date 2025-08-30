@@ -22,7 +22,7 @@
 #include <vector>
 #include <map>
 #include "kernel/cpu/nnacl/fp32_grad/strided_slice_grad.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {

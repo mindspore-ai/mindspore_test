@@ -15,7 +15,7 @@
  */
 
 #include <complex>
-#include "plugin/device/cpu/kernel/copy_with_slice_cpu_kernel.h"
+#include "kernel/cpu/copy_with_slice_cpu_kernel.h"
 
 #include "utils/log_adapter.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"

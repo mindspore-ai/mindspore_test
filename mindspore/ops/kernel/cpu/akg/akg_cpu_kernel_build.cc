@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_build.h"
+#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
 #include <memory>
 #include "kernel/framework_utils.h"
-#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_mod.h"
+#include "kernel/cpu/akg/akg_cpu_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

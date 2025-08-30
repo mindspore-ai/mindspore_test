@@ -22,11 +22,12 @@
 #include <functional>
 #include "ir/tensor_storage_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class CopyWithSliceCpuKernel : public NativeCpuKernelMod {
+class OPS_HOST_API CopyWithSliceCpuKernel : public NativeCpuKernelMod {
  public:
   CopyWithSliceCpuKernel() = default;
   ~CopyWithSliceCpuKernel() = default;

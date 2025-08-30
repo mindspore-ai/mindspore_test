@@ -21,10 +21,11 @@
 #include "kernel/graph_kernel/akg/akg_kernel_build.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "base/base.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class AkgCpuKernelBuilder : public AkgKernelBuilder {
+class OPS_HOST_API AkgCpuKernelBuilder : public AkgKernelBuilder {
  public:
   AkgCpuKernelBuilder() = default;
   ~AkgCpuKernelBuilder() = default;

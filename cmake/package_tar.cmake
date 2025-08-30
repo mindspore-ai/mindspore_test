@@ -32,7 +32,7 @@ install(
 
 if(ENABLE_CPU)
     install(
-        TARGETS mindspore_ops_host LIBRARY
+        TARGETS mindspore_ops_cpu LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP

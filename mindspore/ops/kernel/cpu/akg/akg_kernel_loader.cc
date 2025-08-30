@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/akg/akg_kernel_loader.h"
+#include "kernel/cpu/akg/akg_kernel_loader.h"
 #include <sys/mman.h>
 #include <unistd.h>
 #include <dlfcn.h>

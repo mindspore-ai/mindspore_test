@@ -19,7 +19,6 @@
 #include <unordered_map>
 #include <functional>
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "plugin/cpu/kernel_executor/pyexecute/py_execute_cpu_kernel.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"

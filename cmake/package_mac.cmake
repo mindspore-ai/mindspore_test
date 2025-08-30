@@ -57,7 +57,7 @@ endif()
 
 if(ENABLE_CPU AND NOT WIN32)
     install(
-        TARGETS mindspore_ops_host LIBRARY
+        TARGETS mindspore_ops_cpu LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP
@@ -124,6 +124,11 @@ if(ENABLE_CPU)
         DESTINATION ${INSTALL_LIB_DIR} RENAME libdnnl.2.dylib COMPONENT mindspore)
     install(
         TARGETS nnacl
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_cpu
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
     )

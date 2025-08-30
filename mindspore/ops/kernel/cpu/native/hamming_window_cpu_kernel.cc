@@ -21,7 +21,7 @@
 #include <functional>
 #include "mindspore/ops/infer/hamming_window.h"
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/native/arithmetic_cpu_kernel.h"
 
 namespace mindspore {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 
 #include <algorithm>
 #include <utility>

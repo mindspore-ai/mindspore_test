@@ -28,16 +28,16 @@
 #include "kernel/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "kernel/graph_kernel_info.h"
-#include "include/backend/visible.h"
+#include "plugin/cpu/visible.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
 using kernel::DataType;
 bool IsVmapNotSupported(const CNodePtr &node);
-BACKEND_EXPORT std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &apply_kernel_ptr);
+CPU_EXPORT std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &apply_kernel_ptr);
 
-class BACKEND_EXPORT CPUGraphKernelInfo : public GraphKernelInfo {
+class CPU_EXPORT CPUGraphKernelInfo : public GraphKernelInfo {
  public:
   CPUGraphKernelInfo() = default;
   virtual ~CPUGraphKernelInfo() = default;

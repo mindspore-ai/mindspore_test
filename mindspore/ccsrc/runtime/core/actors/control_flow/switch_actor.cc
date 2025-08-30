@@ -16,9 +16,9 @@
 
 #include "runtime/core/actors/control_flow/switch_actor.h"
 #include "runtime/core/actors/control_flow/entrance_actor.h"
-#include "plugin/cpu/kernel_executor/pyexecute/py_execute_cpu_kernel.h"
 #include "runtime/core/actors/base/output_actor.h"
 #include "runtime/hardware_abstract/utils.h"
+#include "include/common/fallback.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/core/include/ir/tensor_new.h"

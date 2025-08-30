@@ -30,10 +30,10 @@
 #include "plugin/cpu/graph_optimizer/pass/inference/insert_format_transform_op.h"
 #include "plugin/cpu/graph_optimizer/somas/cpu_somas.h"
 #ifdef ENABLE_AKG
-#include "plugin/cpu/kernel_executor/akg/akg_cpu_kernel_build.h"
+#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
 #endif
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "plugin/cpu/kernel_executor/kernel_select/kernel_select_cpu.h"
 #include "plugin/cpu/kernel_executor/kernel_select/cpu_kernel_task.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
@@ -69,13 +69,12 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_constants.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "runtime/core/graph_scheduler/base/move_to.h"
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
-#include "plugin/cpu/kernel_executor/custom/op_plugin_utils.h"
-#include "plugin/cpu/kernel_executor/custom/custom_op_plugin_kernel.h"
+#include "kernel/cpu/contiguous_cpu_kernel.h"
+#include "kernel/cpu/custom/op_plugin_utils.h"
+#include "kernel/cpu/custom/custom_op_plugin_kernel.h"
 
 namespace mindspore {
 namespace device {

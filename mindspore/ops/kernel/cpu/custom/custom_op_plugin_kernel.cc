@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/cpu/kernel_executor/custom/custom_op_plugin_kernel.h"
+#include "kernel/cpu/custom/custom_op_plugin_kernel.h"
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
@@ -26,10 +26,10 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "plugin/device/cpu/kernel/cpu_common.h"
+#include "kernel/cpu/cpu_common.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "plugin/cpu/kernel_executor/custom/op_plugin_utils.h"
+#include "kernel/cpu/custom/op_plugin_utils.h"
 
 namespace mindspore {
 namespace kernel {

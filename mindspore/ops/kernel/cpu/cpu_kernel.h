@@ -29,14 +29,14 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
+#include "kernel/cpu/cpu_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "ir/anf.h"
 #include "actor/actormgr.h"
 #include "include/common/thread_pool.h"
-#include "include/backend/visible.h"
+#include "kernel/cpu/utils/visible.h"
 
 using mindspore::kernel::Address;
 using mindspore::kernel::AddressPtr;
@@ -139,7 +139,7 @@ struct ParallelSearchInfo {
   size_t max_pow{6};
 };
 
-class BACKEND_EXPORT NativeCpuKernelMod : public CpuKernelMod {
+class OPS_HOST_API NativeCpuKernelMod : public CpuKernelMod {
  public:
   NativeCpuKernelMod() = default;
   ~NativeCpuKernelMod() override = default;
@@ -178,7 +178,7 @@ class BACKEND_EXPORT NativeCpuKernelMod : public CpuKernelMod {
   inline static mindspore::HashMap<std::string, std::vector<KernelAttr>> support_map_;
 };
 
-class BACKEND_EXPORT CpuKernelFunc {
+class CpuKernelFunc {
  public:
   CpuKernelFunc() = default;
   virtual ~CpuKernelFunc() = default;
@@ -210,7 +210,7 @@ class BACKEND_EXPORT CpuKernelFunc {
   ParallelSearchInfo parallel_search_info_;
 };
 
-class BACKEND_EXPORT CPUKernelUtils {
+class CPUKernelUtils {
  public:
   static void ExpandDimsTo4(ShapeVector *shape);
   static size_t CalcOffset(const ShapeVector &shape, size_t dim0, size_t dim1, size_t dim2, size_t dim3);
@@ -248,7 +248,7 @@ class BACKEND_EXPORT CPUKernelUtils {
   }
 };
 
-class BACKEND_EXPORT BroadcastIterator {
+class BroadcastIterator {
  public:
   BroadcastIterator(ShapeVector input_shape_a, ShapeVector input_shape_b, ShapeVector output_shape);
   virtual ~BroadcastIterator() = default;
@@ -273,11 +273,11 @@ class BACKEND_EXPORT BroadcastIterator {
   int output_dimension_{0};
 };
 
-void BACKEND_EXPORT GetBroadCastIndex(const std::vector<size_t> &unaligned_input_shape,
-                                      const std::vector<size_t> &output_shape, std::vector<size_t> *index_list);
+void GetBroadCastIndex(const std::vector<size_t> &unaligned_input_shape, const std::vector<size_t> &output_shape,
+                       std::vector<size_t> *index_list);
 
 // Broadcast for multi_inputs and single output
-class BACKEND_EXPORT MultipleBroadcastIterator {
+class MultipleBroadcastIterator {
  public:
   using shape_info = ShapeVector;
   MultipleBroadcastIterator(std::vector<shape_info> multi_inputs, shape_info output_shape);
@@ -299,7 +299,7 @@ class BACKEND_EXPORT MultipleBroadcastIterator {
   int output_dimension_{0};
 };
 
-class BACKEND_EXPORT TransposeIterator {
+class TransposeIterator {
  public:
   TransposeIterator(ShapeVector output_shape, std::vector<size_t> axes, const ShapeVector &input_shape);
   virtual ~TransposeIterator() = default;
@@ -317,16 +317,15 @@ class BACKEND_EXPORT TransposeIterator {
   size_t pos_{0};
 };
 
-BACKEND_EXPORT ActorThreadPool *GetActorMgrInnerThreadPool();
-void BACKEND_EXPORT ParallelLaunch(const CTask &task, size_t count, float block_size = 128.0, Content content = nullptr,
-                                   ThreadPool *pool = nullptr);
-void BACKEND_EXPORT ParallelLaunch(const std::vector<common::Task> &tasks, Content content = nullptr,
-                                   ThreadPool *pool = nullptr);
-void BACKEND_EXPORT ParallelLaunchAutoSearch(const CTask &task, size_t count, Content content,
-                                             ParallelSearchInfo *parallel_search_info, ThreadPool *pool = nullptr);
+OPS_HOST_API ActorThreadPool *GetActorMgrInnerThreadPool();
+void ParallelLaunch(const CTask &task, size_t count, float block_size = 128.0, Content content = nullptr,
+                    ThreadPool *pool = nullptr);
+void ParallelLaunch(const std::vector<common::Task> &tasks, Content content = nullptr, ThreadPool *pool = nullptr);
+void ParallelLaunchAutoSearch(const CTask &task, size_t count, Content content,
+                              ParallelSearchInfo *parallel_search_info, ThreadPool *pool = nullptr);
 
 // Deal with pytorch style axis iteration, to iterate every value on specific axis
-class BACKEND_EXPORT AxisIterator {
+class AxisIterator {
  public:
   AxisIterator() = default;
   virtual ~AxisIterator() = default;
@@ -355,7 +354,7 @@ class BACKEND_EXPORT AxisIterator {
 };
 
 template <size_t Ndim>
-class BACKEND_EXPORT NdTensorIterator {
+class NdTensorIterator {
  public:
   template <typename... Indexes>
   NdTensorIterator(int64_t first_dim, Indexes... rest_dims)
@@ -406,7 +405,7 @@ class BACKEND_EXPORT NdTensorIterator {
   const std::array<int64_t, Ndim> dims_;
   const int64_t size_;
 };
-int BACKEND_EXPORT Sign(float x);
+int Sign(float x);
 }  // namespace kernel
 }  // namespace mindspore
 

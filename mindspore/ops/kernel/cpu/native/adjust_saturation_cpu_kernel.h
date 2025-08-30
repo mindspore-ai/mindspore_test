@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DECIVE_CPU_ADJUST_SATURATION_CPU_KERNEL_H_
 #define MINDSPORE_CCSRC_PLUGIN_DECIVE_CPU_ADJUST_SATURATION_CPU_KERNEL_H_
 #include <vector>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 
 namespace mindspore {

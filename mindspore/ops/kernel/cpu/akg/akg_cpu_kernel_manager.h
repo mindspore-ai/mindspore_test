@@ -24,7 +24,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/kash/kernel_pack.h"
-#include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
+#include "kernel/cpu/cpu_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {

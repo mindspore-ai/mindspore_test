@@ -23,6 +23,7 @@
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #endif
 
 namespace mindspore {
@@ -30,7 +31,6 @@ namespace kernel {
 namespace broadcast_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
 #endif
 
 bool BroadcastCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -71,9 +71,9 @@ bool BroadcastCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().Broadcast(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
-                                                          data_size / sizeof(float), input_dtype_, root_rank_,
-                                                          kMCCLGlobalGroupName);
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  bool ret = comm_lib->Broadcast(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float),
+                                 input_dtype_, root_rank_, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "BroadcastCPUKernelMod launch failed.";
   }

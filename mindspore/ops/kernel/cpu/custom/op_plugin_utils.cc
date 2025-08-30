@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/cpu/kernel_executor/custom/op_plugin_utils.h"
+#include "kernel/cpu/custom/op_plugin_utils.h"
 #if defined(_WIN32)
 #include <windows.h>
 #define DL_OPEN(path)                                                                                   \

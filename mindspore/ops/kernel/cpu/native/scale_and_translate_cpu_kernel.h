@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 #include "kernel/cpu/utils/sampling_kernels.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"

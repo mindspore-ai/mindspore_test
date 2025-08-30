@@ -22,7 +22,7 @@
 #include <cmath>
 
 #include "kernel/cpu/native/arithmetic_cpu_kernel.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 #include "kernel/cpu/nnacl/fp32/power_fp32.h"

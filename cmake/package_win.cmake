@@ -181,7 +181,12 @@ if(ENABLE_CPU)
     COMPONENT mindspore
   )
   install(
-    TARGETS mindspore_ops_host
+    TARGETS mindspore_cpu
+    DESTINATION ${INSTALL_LIB_DIR}
+    COMPONENT mindspore
+  )
+  install(
+    TARGETS mindspore_ops_cpu
     DESTINATION ${INSTALL_PLUGIN_DIR}
     COMPONENT mindspore
   )

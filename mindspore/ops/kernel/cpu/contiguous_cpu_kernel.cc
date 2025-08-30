@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
+#include "kernel/cpu/contiguous_cpu_kernel.h"
 #include <functional>
 #include <complex>
 #include "utils/log_adapter.h"

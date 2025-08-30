@@ -20,17 +20,12 @@
 #include <string>
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/misc.h"
 #endif
 
 namespace mindspore {
 namespace kernel {
-#if defined(__linux__) && defined(WITH_BACKEND)
-using device::CollectiveOpReduceType::Reduce_Sum;
-using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
-#endif
 namespace pyboost {
 void DistCommIsendCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                const Int64ImmPtr &dst, const StringImmPtr &group, const Int64ImmPtr &tag) {
@@ -48,8 +43,9 @@ void DistCommIsendCPUCustomize(const std::shared_ptr<OpRunner> &op, const Tensor
     auto in_addr = input_address_info.first;
     const auto &group_str = GetValue<std::string>(group);
     size_t type_len = GetDataTypeSize(in_addr[0]->dtype_id());
-    bool ret = MsCollectiveCommLib::GetInstance().Send(in_addr[0]->device_ptr(), in_addr[0]->size() / type_len,
-                                                       in_addr[0]->dtype_id(), dst_rank, group_str);
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->host_comm_lib();
+    bool ret = comm_lib->Send(in_addr[0]->device_ptr(), in_addr[0]->size() / type_len, in_addr[0]->dtype_id(), dst_rank,
+                              group_str);
     if (!ret) {
       MS_LOG(EXCEPTION) << "Send failed.";
     }
