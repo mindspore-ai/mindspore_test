@@ -941,3 +941,22 @@ def test_setitem_index_none(mode):
     x_np = np.arange(6 * 7 * 8 * 9).reshape((6, 7, 8, 9)).astype(np.float32)
     x_np[None] *= 3
     assert np.allclose(x_np, x.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_setitem_repeatly():
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem repeatedly
+    Expectation: success
+    """
+    x = Tensor([1, 2, 3])
+    x[0] = -1
+    assert np.allclose(np.array([-1, 2, 3]), x.asnumpy())
+    x[0] = -2
+    assert np.allclose(np.array([-2, 2, 3]), x.asnumpy())
+    x = Tensor([False, True])
+    x[0] = True
+    assert np.allclose(np.array([True, True]), x.asnumpy())
+    x[1] = False
+    assert np.allclose(np.array([True, False]), x.asnumpy())
