@@ -1121,7 +1121,8 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
     MS_EXCEPTION_IF_NULL(tensor);
-    if (tensor->device_address()) {
+    if (tensor->device_address() != nullptr &&
+        tensor->device_address()->GetDeviceType() == DeviceManagerConf::GetInstance()->device_type()) {
       MS_LOG(DEBUG) << "Output tensor " << tensor->ToString() << " already has device address "
                     << tensor->device_address()->ToString();
       continue;
