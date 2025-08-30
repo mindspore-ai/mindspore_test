@@ -3072,6 +3072,9 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
     and shared memory. This logic no longer uses the Python multi-process pool, in_queue, and out_queue for
     data transferring.
     """
+    # Release the lock which had been holded in map_op.cc::Launch()/batch_op.cc::Launch()
+    cde.unlock_shm_id_and_msg_id_mutex()
+
     # Initialize C++ side signal handlers
     cde.register_worker_handlers()
 
