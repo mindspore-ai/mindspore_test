@@ -8,7 +8,7 @@ squeeze:
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        axis (Union[int, tuple(int)]): Specifies the dimension indexes of shape to be removed, which will remove
+        axis (Union[int, tuple(int), list(int)]): Specifies the dimension indexes of shape to be removed, which will remove
             all the dimensions of size 1 in the given axis parameter. If specified, it must be int32 or int64.
             Default: ``()`` .
 
