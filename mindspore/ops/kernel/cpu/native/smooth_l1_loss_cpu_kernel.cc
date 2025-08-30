@@ -1,0 +1,148 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/smooth_l1_loss_cpu_kernel.h"
+#include <algorithm>
+#include <utility>
+#include <string>
+#include <map>
+#include <functional>
+
+namespace mindspore {
+namespace kernel {
+namespace smooth_l1_loss_cpu {
+namespace {
+constexpr size_t kSmoothL1LossInputsNum = 4;
+constexpr size_t kSmoothL1LossOutputsNum = 1;
+}  // namespace
+
+template <typename T>
+void SmoothL1LossCpuKernelMod::CalElements(const T *predict_addr, const T *target_addr, T *result_addr) {
+  T zero = static_cast<T>(0.0);
+  T half = static_cast<T>(0.5);
+  T beta = static_cast<T>(beta_);
+  auto task = [&](size_t start, size_t end) {
+    for (uint64_t i = start; i < end; ++i) {
+      T diff = predict_addr[i] - target_addr[i];
+      if (diff < zero) {
+        diff = -diff;
+      }
+      if (diff < beta) {
+        result_addr[i] = half * diff * diff / beta;
+      } else {
+        result_addr[i] = diff - (half * beta);
+      }
+    }
+  };
+  ParallelLaunchAutoSearch(task, tensor_size_, this, &parallel_search_info_);
+  return;
+}
+
+template <typename T>
+bool SmoothL1LossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &workspace,
+                                            const std::vector<kernel::KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSmoothL1LossInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSmoothL1LossOutputsNum, kernel_name_);
+  const auto *predict_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  const auto *target_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
+  T *result_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  if (reduction_ == Reduction::NONE) {
+    CalElements(predict_addr, target_addr, result_addr);
+    return true;
+  }
+
+  T *workspace_addr = reinterpret_cast<T *>(workspace[0]->device_ptr());
+  CalElements(predict_addr, target_addr, workspace_addr);
+
+  double tmp_sum{0};
+  for (int64_t i = 0; i < tensor_size_; ++i) {
+    tmp_sum += static_cast<double>(workspace_addr[i]);
+  }
+  result_addr[0] = static_cast<T>(tmp_sum);
+  if (reduction_ == Reduction::REDUCTION_SUM) {
+    return true;
+  }
+
+  result_addr[0] /= static_cast<T>(tensor_size_);
+  return true;
+}
+
+bool SmoothL1LossCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                    const std::vector<KernelTensor *> &outputs) {
+  if (inputs.size() != kSmoothL1LossInputsNum || outputs.size() != kSmoothL1LossOutputsNum) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be " << kSmoothL1LossInputsNum << " and "
+                  << kSmoothL1LossOutputsNum << ", but got " << inputs.size() << " and " << outputs.size();
+    return false;
+  }
+
+  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
+    return false;
+  }
+
+  return true;
+}
+
+int SmoothL1LossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                     const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  beta_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  if (beta_ <= 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
+                               << ", but got " << beta_ << ".";
+  }
+  reduction_ = static_cast<Reduction>(inputs[kIndex3]->GetValueWithCheck<int64_t>());
+  // when reduction is not set to none, we need extra space to record the result, with the same size with predict_size.
+  if (reduction_ != Reduction::NONE) {
+    this->workspace_size_list_.push_back(inputs[0]->size());
+  }
+
+  auto predict_shape = inputs[kIndex0]->GetShapeVector();
+  auto target_shape = inputs[kIndex1]->GetShapeVector();
+  if (predict_shape != target_shape) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the predict_shape should be same as target_shape, but got predict_shape: " << predict_shape
+                  << ", and target_shape" << target_shape;
+    return KRET_RESIZE_FAILED;
+  }
+  tensor_size_ = std::accumulate(predict_shape.begin(), predict_shape.end(), int64_t(1), std::multiplies<int64_t>());
+  return KRET_OK;
+}
+
+#define SMOOTH_L1_LOSS_CPU_REG(MS_T, T)                  \
+  KernelAttr()                                           \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+    .AddOutputAttr(MS_T),                                \
+    &SmoothL1LossCpuKernelMod::LaunchKernel<T>
+
+const std::vector<std::pair<KernelAttr, SmoothL1LossCpuKernelMod::KernelRunFunc>>
+  &SmoothL1LossCpuKernelMod::GetFuncList() const {
+  static const std::vector<std::pair<KernelAttr, SmoothL1LossCpuKernelMod::KernelRunFunc>> func_list = {
+    {SMOOTH_L1_LOSS_CPU_REG(kNumberTypeFloat32, float)},
+    {SMOOTH_L1_LOSS_CPU_REG(kNumberTypeFloat64, double)},
+  };
+  return func_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SmoothL1Loss, SmoothL1LossCpuKernelMod);
+}  // namespace smooth_l1_loss_cpu
+}  // namespace kernel
+}  // namespace mindspore

@@ -74,8 +74,8 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
-#include "plugin/device/cpu/kernel/custom/op_plugin_utils.h"
-#include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
+#include "plugin/cpu/kernel_executor/custom/op_plugin_utils.h"
+#include "plugin/cpu/kernel_executor/custom/custom_op_plugin_kernel.h"
 
 namespace mindspore {
 namespace device {

@@ -1,0 +1,121 @@
+/**
+ * Copyright 2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <algorithm>
+#include "kernel/cpu/native/nth_element_cpu_kernel.h"
+
+#include "mindspore/ops/infer/nth_element.h"
+namespace mindspore {
+namespace kernel {
+namespace nth_element_cpu {
+namespace {
+constexpr size_t kNthElementInputsNum = 2;
+constexpr size_t kNthElementOutputsNum = 1;
+constexpr size_t kParallelDataNums = 32 * 1024;
+}  // namespace
+
+bool NthElementCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kNthElementInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kNthElementOutputsNum, kernel_name_);
+  reverse_ = GetValue<bool>(primitive_->GetAttr(ops::kReverse));
+  return MatchKernelFunc(kernel_name_, inputs, outputs);
+}
+
+int NthElementCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  input_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
+  output_shape_ = outputs[kIndex0]->GetShapeVector();
+  input_elements_ = SizeOf(input_shape_);
+  output_elements_ = SizeOf(output_shape_);
+  return KRET_OK;
+}
+
+template <typename T>
+bool NthElementCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &,
+                                          const std::vector<KernelTensor *> &outputs) {
+  auto *n_data = GetDeviceAddress<int32_t>(inputs, kIndex1);
+  input_n_val_ = *n_data;
+  if (input_n_val_ < 0 || input_n_val_ >= static_cast<int>(input_shape_.back())) {
+    MS_LOG(ERROR) << "For NthElement, the value of input n must be in [0, input.shape[-1]), "
+                  << "but got " << input_n_val_ << ".";
+    return false;
+  }
+  auto last_dim = input_shape_.back();
+  if (reverse_) {
+    input_n_val_ = static_cast<int32_t>(last_dim - input_n_val_ - 1);
+  }
+  size_t index = IntToSize(input_n_val_);
+  T *input_addrs = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addrs = GetDeviceAddress<T>(outputs, kIndex0);
+  if (input_elements_ <= kParallelDataNums) {
+    std::vector<T> buf(last_dim);
+    for (size_t i = 0; i < output_elements_; i++) {
+      const T *input_start = input_addrs + SizeToLong(i) * last_dim;
+      const T *input_end = input_start + last_dim;
+      (void)std::copy(input_start, input_end, buf.begin());
+      std::nth_element(buf.begin(), buf.begin() + input_n_val_, buf.end());
+      output_addrs[i] = buf[index];
+    }
+  } else {
+    auto shard_nth_element = [this, &last_dim, &input_addrs, &output_addrs, &index](size_t start, size_t end) {
+      std::vector<T> buf(last_dim);
+      for (size_t i = start; i < end; ++i) {
+        const T *input_start = input_addrs + SizeToLong(i) * last_dim;
+        const T *input_end = input_start + last_dim;
+        (void)std::copy(input_start, input_end, buf.begin());
+        std::nth_element(buf.begin(), buf.begin() + input_n_val_, buf.end());
+        output_addrs[i] = buf[index];
+      }
+    };
+    ParallelLaunchAutoSearch(shard_nth_element, output_elements_, this, &parallel_search_info_);
+  }
+  return true;
+}
+
+const std::vector<std::pair<KernelAttr, NthElementCpuKernelMod::KernelRunFunc>> &NthElementCpuKernelMod::GetFuncList()
+  const {
+  static const std::vector<std::pair<KernelAttr, NthElementCpuKernelMod::KernelRunFunc>> func_list = {
+    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat32),
+     &NthElementCpuKernelMod::LaunchKernel<float>},
+    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat16),
+     &NthElementCpuKernelMod::LaunchKernel<float16>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt8),
+     &NthElementCpuKernelMod::LaunchKernel<int8_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt16),
+     &NthElementCpuKernelMod::LaunchKernel<uint16_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt16).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt16),
+     &NthElementCpuKernelMod::LaunchKernel<int16_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeUInt8),
+     &NthElementCpuKernelMod::LaunchKernel<uint8_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+     &NthElementCpuKernelMod::LaunchKernel<int32_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt64),
+     &NthElementCpuKernelMod::LaunchKernel<int64_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeFloat64),
+     &NthElementCpuKernelMod::LaunchKernel<double>},
+  };
+  return func_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NthElement, NthElementCpuKernelMod);
+// }
+}  // namespace nth_element_cpu
+}  // namespace kernel
+}  // namespace mindspore

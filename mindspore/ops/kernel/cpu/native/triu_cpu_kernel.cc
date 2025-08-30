@@ -1,0 +1,190 @@
+/**
+ * Copyright 2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <Eigen/Dense>
+#include <algorithm>
+#include "kernel/cpu/native/triu_cpu_kernel.h"
+
+namespace mindspore {
+namespace kernel {
+namespace triu_cpu {
+namespace {
+constexpr size_t kTriuInputsNum = 2;
+constexpr size_t kTriuOutputsNum = 1;
+constexpr size_t kDim = 2;
+constexpr size_t kDiagonalIndex = 1;
+}  // namespace
+
+bool TriuCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]);
+  input_dtype_ = inputs.at(kIndex0)->dtype_id();
+  return true;
+}
+
+int TriuCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]);
+  MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
+  diagonal_ = inputs[kDiagonalIndex]->GetValueWithCheck<int64_t>();
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  input_shape_ = inputs.at(kIndex0)->GetShapeVector();
+  input_dims_ = input_shape_.size();
+  if (input_dims_ < kDim) {
+    MS_LOG(EXCEPTION)
+      << "For Triu, the input tensor's rank must be at least 2 for 'Triu' Op, but input tensor's rank is "
+      << input_dims_ << ".";
+  }
+  return KRET_OK;
+}
+
+template <typename T>
+bool TriuCpuKernelMod::TriuCompute(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &outputs) {
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]);
+  MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kTriuInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kTriuOutputsNum, kernel_name_);
+  if (IsShapeNone(input_shape_)) {
+    return true;
+  }
+  auto input_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
+  auto output_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
+  size_t input_size = 1;
+  for (size_t i = 0; i < input_dims_; ++i) {
+    input_size *= input_shape_[i];
+  }
+
+  using MatrixMap = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
+
+  auto matrix_width = input_shape_[input_dims_ - 2];
+  auto matrix_height = input_shape_[input_dims_ - 1];
+  auto matrix_size = matrix_width * matrix_height;
+  auto matrixs_num = input_size / matrix_size;
+
+  for (int64_t k = 0; k < SizeToLong(matrixs_num); ++k) {
+    MatrixMap input(input_addr + k * SizeToLong(matrix_size), matrix_width, matrix_height);
+    MatrixMap output(output_addr + k * SizeToLong(matrix_size), matrix_width, matrix_height);
+    output = input.template triangularView<Eigen::Upper>();
+    if (diagonal_ < 0) {
+      for (int64_t j = 0; j < SizeToLong(matrix_height); j++) {
+        for (int64_t i = j + 1; i <= j - diagonal_ && i < SizeToLong(matrix_width); i++) {
+          output(i, j) = input(i, j);
+        }
+      }
+    } else {
+      for (int64_t i = 0; i < SizeToLong(matrix_width); i++) {
+        for (int64_t j = i; j < i + diagonal_ && j < SizeToLong(matrix_height); j++) {
+          output(i, j) = static_cast<T>(0.0);
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool TriuCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
+                              const std::vector<kernel::KernelTensor *> &,
+                              const std::vector<kernel::KernelTensor *> &outputs) {
+  switch (input_dtype_) {
+    case kNumberTypeUInt8:
+      return TriuCompute<uint8_t>(inputs, outputs);
+    case kNumberTypeUInt16:
+      return TriuCompute<uint16_t>(inputs, outputs);
+    case kNumberTypeUInt32:
+      return TriuCompute<uint32_t>(inputs, outputs);
+    case kNumberTypeUInt64:
+      return TriuCompute<uint64_t>(inputs, outputs);
+    case kNumberTypeInt8:
+      return TriuCompute<int8_t>(inputs, outputs);
+    case kNumberTypeInt16:
+      return TriuCompute<int16_t>(inputs, outputs);
+    case kNumberTypeInt32:
+      return TriuCompute<int32_t>(inputs, outputs);
+    case kNumberTypeInt64:
+      return TriuCompute<int64_t>(inputs, outputs);
+    case kNumberTypeFloat16:
+      return TriuCompute<float16>(inputs, outputs);
+    case kNumberTypeFloat32:
+      return TriuCompute<float>(inputs, outputs);
+    case kNumberTypeFloat64:
+      return TriuCompute<double>(inputs, outputs);
+    case kNumberTypeBool:
+      return TriuCompute<bool>(inputs, outputs);
+    default:
+      MS_LOG(ERROR) << "Unsupported data type.";
+  }
+  return true;
+}
+
+std::vector<KernelAttr> TriuCpuKernelMod::GetOpSupport() {
+  static std::vector<KernelAttr> support_list = {KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt8)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt8),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeUInt64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeUInt64),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt8)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt8),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeInt64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeInt64),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat16)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat16),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat32)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat32),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeFloat64)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeFloat64),
+                                                 KernelAttr()
+                                                   .AddInputAttr(kNumberTypeBool)
+                                                   .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                   .AddOutputAttr(kNumberTypeBool)};
+  return support_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Triu, TriuCpuKernelMod);
+}  // namespace triu_cpu
+}  // namespace kernel
+}  // namespace mindspore

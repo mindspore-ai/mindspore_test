@@ -1,0 +1,209 @@
+/**
+ * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/native/upsample_nearest_3d_grad_cpu_kernel.h"
+#include <string>
+#include <utility>
+#include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
+
+namespace mindspore {
+namespace kernel {
+namespace upsample_nearest_3d_grad_cpu {
+namespace {
+const double kValueZero = 0.;
+constexpr auto kUpsampleNearest3DGradInputsNum = 3;
+constexpr auto kUpsampleNearest3DGradOutputNum = 1;
+// GRAIN_SIZE for Parallel
+constexpr size_t kGrainSize = 32768;
+}  // namespace
+void UpsampleNearest3DGradCpuKernelMod::ComputeNearestIndex(int64_t *const indices, const int64_t stride,
+                                                            const int64_t input_szie, const int64_t output_size,
+                                                            const double scale) const {
+  auto loop = [&](int64_t begin, int64_t end) {
+    for (int64_t out_idx = begin; out_idx < end; ++out_idx) {
+      auto in_idx = NearestIndex(static_cast<size_t>(out_idx), static_cast<size_t>(input_szie),
+                                 static_cast<size_t>(output_size), scale);
+      indices[out_idx] = static_cast<int64_t>(in_idx) * stride;
+    }
+  };
+  float block_size = 64.0;
+  ParallelLaunch(loop, static_cast<size_t>(output_size), block_size);
+}
+
+bool UpsampleNearest3DGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
+                                             const std::vector<KernelTensor *> &outputs) {
+  auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
+  auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
+  if (!is_match) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', it does not support this kernel type: " << kernel_attr;
+    return false;
+  }
+  kernel_func_ = func_list_[index].second;
+  return true;
+}
+
+int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                              const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = NativeCpuKernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  output_shape_ = inputs.at(kIndex0)->GetDeviceShapeVector();
+  output_shape_.insert(output_shape_.end(), kIndex5 - output_shape_.size(), 1);
+  input_shape_ = outputs.at(kIndex0)->GetDeviceShapeVector();
+  input_shape_.insert(input_shape_.end(), kIndex5 - input_shape_.size(), 1);
+  // workspace
+  size_t unit_size = sizeof(int64_t);
+  workspace_size_list_.push_back(unit_size * static_cast<size_t>(output_shape_[kIndex2]));
+  workspace_size_list_.push_back(unit_size * static_cast<size_t>(output_shape_[kIndex3]));
+  workspace_size_list_.push_back(unit_size * static_cast<size_t>(output_shape_[kIndex4]));
+
+  auto type = inputs[kIndex2]->GetType();
+  MS_EXCEPTION_IF_NULL(type);
+  auto output_size_none = type->isa<TypeNone>();
+  auto scales_opt = inputs[kIndex3]->GetOptionalValueWithCheck<std::vector<float>>();
+  bool scales_none = !scales_opt.has_value();
+  if (output_size_none == scales_none) {
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "', only one of output_size or scales should be specified.";
+    return KRET_RESIZE_FAILED;
+  }
+
+  if (!output_size_none) {
+    scales_ = std::vector<float>(kIndex3, kValueZero);
+  } else {
+    scales_ = scales_opt.value();
+    if (scales_.empty()) {
+      MS_LOG(ERROR) << "For " << kernel_name_ << " can't get scales input! ";
+      return KRET_RESIZE_FAILED;
+    }
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
+  }
+
+  return KRET_OK;
+}
+
+template <typename T, typename S>
+bool UpsampleNearest3DGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                                     const std::vector<kernel::KernelTensor *> &workspace,
+                                                     const std::vector<kernel::KernelTensor *> &outputs) {
+  // the input grad of backward process is the output of forward process
+  auto grad_output_ptr = GetDeviceAddress<T>(inputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(grad_output_ptr);
+  const int64_t total = CPUKernelUtils::CalcElementNum(input_shape_);
+  S *grad_input_ptr = nullptr;
+  bool is_fp16 = std::is_same<T, float16>::value;
+  // define for fp16
+  std::vector<S> grad_input_copy(1, 0);
+  if (is_fp16) {
+    grad_input_copy.resize(total, 0);
+    grad_input_ptr = grad_input_copy.data();
+    MS_EXCEPTION_IF_NULL(grad_input_ptr);
+  } else {
+    grad_input_ptr = GetDeviceAddress<S>(outputs, kIndex0);
+    MS_EXCEPTION_IF_NULL(grad_input_ptr);
+    int ret = memset_s(outputs[kIndex0]->device_ptr(), outputs[kIndex0]->size(), 0, outputs[kIndex0]->size());
+    if (ret != EOK) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s error. Error no: " << ret;
+    }
+  }
+
+  // treat nbatch and channels as one dimension
+  int64_t channels = input_shape_[kIndex0] * input_shape_[kIndex1];
+  int64_t input_depth = input_shape_[kIndex2];
+  int64_t input_height = input_shape_[kIndex3];
+  int64_t input_width = input_shape_[kIndex4];
+
+  int64_t output_depth = output_shape_[kIndex2];
+  int64_t output_height = output_shape_[kIndex3];
+  int64_t output_width = output_shape_[kIndex4];
+
+  int64_t output_slice_size = output_depth * output_height * output_width;
+  int64_t input_slice_size = input_depth * input_height * input_width;
+
+  int64_t *const d_helper = GetDeviceAddress<int64_t>(workspace, kIndex0);
+  MS_EXCEPTION_IF_NULL(d_helper);
+  int64_t *const h_helper = GetDeviceAddress<int64_t>(workspace, kIndex1);
+  MS_EXCEPTION_IF_NULL(h_helper);
+  int64_t *const w_helper = GetDeviceAddress<int64_t>(workspace, kIndex2);
+  MS_EXCEPTION_IF_NULL(w_helper);
+  (void)ComputeNearestIndex(d_helper, input_height * input_width, input_depth, output_depth,
+                            static_cast<double>(scales_[kIndex0]));
+  (void)ComputeNearestIndex(h_helper, input_width, input_height, output_height, static_cast<double>(scales_[kIndex1]));
+  (void)ComputeNearestIndex(w_helper, 1, input_width, output_width, static_cast<double>(scales_[kIndex2]));
+
+  auto loop3d = [&](int64_t begin, int64_t end) {
+    for (int64_t c = begin; c < end; ++c) {
+      for (int64_t od = 0; od < output_depth; ++od) {
+        int64_t id = d_helper[od];
+
+        for (int64_t oh = 0; oh < output_height; ++oh) {
+          int64_t ih = h_helper[oh];
+
+          for (int64_t ow = 0; ow < output_width; ++ow) {
+            int64_t iw = w_helper[ow];
+
+            int64_t output_offset = c * output_slice_size + od * output_height * output_width + oh * output_width + ow;
+            int64_t input_offset = c * input_slice_size + id + ih + iw;
+            grad_input_ptr[input_offset] += static_cast<S>(grad_output_ptr[output_offset]);
+          }
+        }
+      }
+    }
+  };
+  float block_size = static_cast<float>(kGrainSize) / output_slice_size;
+  ParallelLaunch(loop3d, static_cast<size_t>(channels), block_size);
+  // memcopy and cast for fp16
+  if (is_fp16) {
+    T *real_input_ptr = GetDeviceAddress<T>(outputs, kIndex0);
+    MS_EXCEPTION_IF_NULL(real_input_ptr);
+    auto task_fp16 = [&](int64_t begin, int64_t end) {
+      for (int64_t idx = begin; idx < end; ++idx) {
+        real_input_ptr[idx] = static_cast<T>(grad_input_ptr[idx]);
+      }
+    };
+    ParallelLaunch(task_fp16, static_cast<size_t>(total), block_size);
+  }
+  return true;
+}
+
+#define UpsampleNearest3D_GRAD_CPU_KERNEL_REG(M_S, T, S)                       \
+  std::make_pair(KernelAttr()                                                  \
+                   .AddInputAttr(M_S)                                          \
+                   .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)           \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeInt64)   \
+                   .AddOptionalInputAttr(kObjectTypeTuple, kNumberTypeFloat32) \
+                   .AddOutputAttr(M_S),                                        \
+                 &UpsampleNearest3DGradCpuKernelMod::LaunchKernel<T, S>)
+
+std::vector<std::pair<KernelAttr, UpsampleNearest3DGradCpuKernelMod::KernelRunFunc>>
+  UpsampleNearest3DGradCpuKernelMod::func_list_ = {
+    UpsampleNearest3D_GRAD_CPU_KERNEL_REG(kNumberTypeFloat16, float16, float),
+    UpsampleNearest3D_GRAD_CPU_KERNEL_REG(kNumberTypeFloat32, float, float),
+    UpsampleNearest3D_GRAD_CPU_KERNEL_REG(kNumberTypeFloat64, double, double)};
+
+std::vector<KernelAttr> UpsampleNearest3DGradCpuKernelMod::GetOpSupport() {
+  std::vector<KernelAttr> support_list;
+  (void)std::transform(
+    func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
+    [](const std::pair<KernelAttr, UpsampleNearest3DGradCpuKernelMod::KernelRunFunc> &pair) { return pair.first; });
+  return support_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1DGrad, UpsampleNearest3DGradCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2DGrad, UpsampleNearest3DGradCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3DGrad, UpsampleNearest3DGradCpuKernelMod);
+}  // namespace upsample_nearest_3d_grad_cpu
+}  // namespace kernel
+}  // namespace mindspore
