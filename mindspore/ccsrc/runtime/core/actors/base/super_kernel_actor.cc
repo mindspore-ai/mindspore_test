@@ -1513,7 +1513,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   }
   if (device_context->GetDeviceType() != node_device_tensor->GetDeviceType()) {
     device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(node_device_tensor->GetDeviceType()), node_device_tensor->device_id()});
+      {node_device_tensor->GetDeviceType(), node_device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   }
@@ -2490,7 +2490,6 @@ void SuperKernelActor::SetFreePositionForKernelActor() {
       MS_LOG(EXCEPTION) << "Invalid device context, context size:" << kernel_actor->device_contexts().size()
                         << " for actor:" << kernel_actor->GetAID();
     }
-    auto kernel_device_context_key = kernel_actor->device_contexts()[0]->device_context_key();
 
     SetInputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);
     SetOutputFreePositionForKernelActor(kernel_actor, kernel_to_context_key, graph_device_context_key, &checked_nodes);
@@ -2774,8 +2773,8 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   if (enable_trace_memory_ && graph_phase_.find("increment") != std::string::npos) {
     MS_LOG(EXCEPTION)
       << "Find heterogeneous operators in graph: " << graph_->ToString() << ", the input[" << input_index << "] of ["
-      << device_context->device_context_key().device_name_ << "] op(" << kernel->fullname_with_scope() << ") is ["
-      << input_device_context->device_context_key().device_name_ << "] op(" << input_kernel->fullname_with_scope()
+      << device_context->device_context_key().device_type_ << "] op(" << kernel->fullname_with_scope() << ") is ["
+      << input_device_context->device_context_key().device_type_ << "] op(" << input_kernel->fullname_with_scope()
       << "). Trace memory feature can not work in this case. Please eliminate heterogeneity(cpu "
          "kernel), or disable trace memory feature by export MS_ENABLE_TRACE_MEMORY=off. Note: Disabling the trace "
          "memory feature will degrade memory management performance. Additionally, it will automatically disable "

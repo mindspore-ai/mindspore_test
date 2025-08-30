@@ -118,7 +118,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     if (!address->GetPtr()) {
       continue;
     }
-    device::DeviceContextKey host_key = {device::GetDeviceNameByType(address->GetDeviceType()), address->device_id()};
+    device::DeviceContextKey host_key = {address->GetDeviceType(), address->device_id()};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

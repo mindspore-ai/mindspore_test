@@ -37,7 +37,7 @@ std::vector<KernelTensorPtr> CalStatisticAsync(const std::string &stat_name, con
   if (kernel->CheckDataType(dtype)) {
     return kernel->LaunchKernelAsync(input, stream_id);
   } else {
-    const auto &device_name = device_context->device_context_key_.device_name_;
+    const auto &device_name = device::GetDeviceNameByType(device_context->device_context_key_.device_type_);
     const auto &type_name = TypeIdToString(dtype);
     WarningOnce(device_name, type_name, stat_name);
     return {nullptr};

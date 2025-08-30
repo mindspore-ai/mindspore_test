@@ -20,7 +20,6 @@
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -178,7 +177,7 @@ void ExitActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context)
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -361,7 +360,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key{device_name, device_id};
+    device::DeviceContextKey host_key{device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);

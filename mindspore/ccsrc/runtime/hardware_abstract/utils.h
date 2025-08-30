@@ -25,11 +25,11 @@
 namespace mindspore {
 namespace device {
 struct ResKey {
-  DeviceType device_name_;
+  DeviceType device_type_;
   uint32_t device_id_{0};
-  std::string ToString() const { return GetDeviceNameByType(device_name_) + "_" + std::to_string(device_id_); }
+  std::string ToString() const { return GetDeviceNameByType(device_type_) + "_" + std::to_string(device_id_); }
 
-  std::string DeviceName() const { return GetDeviceNameByType(device_name_); }
+  std::string DeviceName() const { return GetDeviceNameByType(device_type_); }
 };
 
 inline std::vector<size_t> GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list) {

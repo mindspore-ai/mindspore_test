@@ -47,7 +47,7 @@ void CommHandle::RecordEvent(size_t stream_id) {
 
 void CommHandle::UpdateTaskId(size_t stream_id) {
   auto &controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_ctx_->device_context_key().device_name_);
+    device_ctx_->device_context_key().device_type_);
   controller->Refresh();
   auto task_id = controller->LaunchTaskIdOnStream(stream_id);
   *task_id_on_stream_ = task_id;
@@ -76,7 +76,7 @@ void CommHandle::ReleaseMultiStreamEvent(size_t cur_stream_id) {
   // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
   // id.
   (void)device::DeviceContextManager::GetInstance()
-    .GetMultiStreamController(device_ctx_->device_context_key().device_name_)
+    .GetMultiStreamController(device_ctx_->device_context_key().device_type_)
     ->WaitEvent(*task_id_on_stream_, *record_stream_id_, cur_stream_id);
 }
 

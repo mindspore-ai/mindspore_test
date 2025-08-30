@@ -748,7 +748,7 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
     MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range.";
   }
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
+    {device_tensor->GetDeviceType(), device_tensor->device_id()});
   to_actor->device_contexts_[output_position] = device_context;
 }
 
@@ -1601,8 +1601,8 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_address->device_pointer()->ptr(), device_address->size(), device_address->GetShapeVector(),
-    kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
-    device_address->stream_id());
+    kernel_tensor->format(), device_address->type_id(),
+    device::GetDeviceNameByType(device_context->device_context_key().device_type_), device_address->stream_id());
   new_device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_user_data(kernel_tensor->user_data());

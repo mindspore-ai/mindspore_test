@@ -293,12 +293,12 @@ const DeviceContext *FetchRealDeviceContext(const AnfNodePtr &node, const Device
     }
   }
 
-  if (target.empty() || (target == device_context->device_context_key().device_name_)) {
+  if (target.empty() || (target == device::GetDeviceNameByType(device_context->device_context_key().device_type_))) {
     return device_context;
   }
 
   const auto &real_device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {target, device_context->device_context_key().device_id_});
+    {device::GetDeviceTypeByName(target), device_context->device_context_key().device_id_});
   MS_EXCEPTION_IF_NULL(real_device_context);
   real_device_context->Initialize();
   return real_device_context;
@@ -313,8 +313,9 @@ DeviceContextManager &DeviceContextManager::GetInstance() {
 }
 
 void DeviceContextManager::Register(const std::string &device_name, DeviceContextCreator &&device_context_creator) {
-  if (device_context_creators_.find(device_name) == device_context_creators_.end()) {
-    (void)device_context_creators_.emplace(device_name, device_context_creator);
+  auto device_type = GetDeviceTypeByName(device_name);
+  if (device_context_creators_.find(device_type) == device_context_creators_.end()) {
+    (void)device_context_creators_.emplace(device_type, device_context_creator);
   }
 }
 
@@ -443,7 +444,7 @@ void DeviceContextManager::RegisterDeviceStatelessFunc(py::module *m) {
 
 DeviceContext *DeviceContextManager::GetOrCreateDeviceContext(const DeviceContextKey &device_context_key) {
   std::string device_context_key_str = device_context_key.ToString();
-  std::string name = device_context_key.device_name_;
+  DeviceType type = device_context_key.device_type_;
 
   auto device_context_iter = device_contexts_.find(device_context_key_str);
   if (device_context_iter != device_contexts_.end()) {
@@ -451,17 +452,17 @@ DeviceContext *DeviceContextManager::GetOrCreateDeviceContext(const DeviceContex
   }
 
   std::shared_ptr<DeviceContext> device_context;
-  auto creator_iter = device_context_creators_.find(name);
+  auto creator_iter = device_context_creators_.find(type);
   if (creator_iter != device_context_creators_.end()) {
     device_context = (creator_iter->second)(device_context_key);
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     device_contexts_[device_context_key_str] = device_context;
-    backend_to_device_context_[name] = device_context;
-    multi_stream_controllers_[name] =
+    backend_to_device_context_[type] = device_context;
+    multi_stream_controllers_[type] =
       std::make_shared<MultiStreamController>(device_context->device_res_manager_.get());
   } else {
-    MS_LOG(EXCEPTION) << "Create device context failed, please make sure target device:" << name
+    MS_LOG(EXCEPTION) << "Create device context failed, please make sure target device:" << type
                       << " is available, error message of loading plugins: " << std::endl
                       << GetErrorMsg();
   }
@@ -469,14 +470,14 @@ DeviceContext *DeviceContextManager::GetOrCreateDeviceContext(const DeviceContex
 }
 
 DeviceContextPtr DeviceContextManager::GetDeviceContext(const std::string &device_target) {
-  if (backend_to_device_context_.count(device_target) == 0) {
+  if (backend_to_device_context_.count(GetDeviceTypeByName(device_target)) == 0) {
     MS_LOG(INFO) << "Device context of device " << device_target << " is not created yet.";
     return nullptr;
   }
-  return backend_to_device_context_[device_target];
+  return backend_to_device_context_[GetDeviceTypeByName(device_target)];
 }
 
-MultiStreamControllerPtr &DeviceContextManager::GetMultiStreamController(const std::string &device_name) {
+MultiStreamControllerPtr &DeviceContextManager::GetMultiStreamController(const DeviceType &device_name) {
   auto &&iter = multi_stream_controllers_.find(device_name);
   if (iter != multi_stream_controllers_.end()) {
     return iter->second;

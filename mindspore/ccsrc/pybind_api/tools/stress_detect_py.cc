@@ -27,7 +27,7 @@ namespace {
 DeviceContext *GetDeviceCtx() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {device::GetDeviceTypeByName(device_name), MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   MS_EXCEPTION_IF_NULL(device_ctx);
 
   device_ctx->Initialize();
@@ -40,7 +40,7 @@ int StressDetect(const std::string &detect_type) {
   MS_EXCEPTION_IF_NULL(device_ctx);
   runtime::Pipeline::Get().WaitAll();
   auto &controller =
-    device::DeviceContextManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_name_);
+    device::DeviceContextManager::GetInstance().GetMultiStreamController(device_ctx->device_context_key().device_type_);
   controller->Refresh();
   (void)controller->SyncAllStreams();
   MS_EXCEPTION_IF_NULL(device_ctx->GetKernelExecutor());

@@ -73,7 +73,7 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
     [stream, event = event_, record_stream_id = record_stream_id_, task_id_on_stream = task_id_on_stream_]() {
       auto record_fn = [stream, event, record_stream_id, task_id_on_stream]() {
         auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-          stream->device_ctx()->device_context_key().device_name_);
+          stream->device_ctx()->device_context_key().device_type_);
         multi_stream_controller->Refresh();
         auto task_id = multi_stream_controller->LaunchTaskIdOnStream(record_stream_id);
         *task_id_on_stream = task_id;
@@ -130,7 +130,7 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
         // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
         // id.
         (void)device::DeviceContextManager::GetInstance()
-          .GetMultiStreamController(stream->device_ctx()->device_context_key().device_name_)
+          .GetMultiStreamController(stream->device_ctx()->device_context_key().device_type_)
           ->WaitEvent(*task_id_on_stream, record_stream_id, stream->stream_id());
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -174,7 +174,7 @@ void EventPy::Synchronize() {
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // Clear cross stream memory event which task id less than task_id_on_stream.
   (void)device::DeviceContextManager::GetInstance()
-    .GetMultiStreamController(device_ctx_->device_context_key().device_name_)
+    .GetMultiStreamController(device_ctx_->device_context_key().device_type_)
     ->WaitEvent(*task_id_on_stream_, record_stream_id_);
 }
 

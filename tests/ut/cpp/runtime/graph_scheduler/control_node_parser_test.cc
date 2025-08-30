@@ -181,7 +181,7 @@ TEST_F(ControlNodeParserTest, Parse) {
   manager->AddFuncGraph(func_graph);
 
   auto parser = std::make_shared<ControlNodeParser>();
-  DeviceContextKey device_context_key{"CPU", 0};
+  DeviceContextKey device_context_key{device::DeviceType::kCPU, 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   std::vector<DeviceContext *> device_contexts(kernel_graphs.size(), device_context.get());
 

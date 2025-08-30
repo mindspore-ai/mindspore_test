@@ -212,7 +212,7 @@ void InsertEventForInput(uint32_t stream_id, const DeviceContext *device_context
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-      device_context->device_context_key().device_name_);
+      device_context->device_context_key().device_type_);
     MS_EXCEPTION_IF_NULL(multi_stream_controller);
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -313,8 +313,7 @@ void KernelRunner::Init() {
   if (!output_kernel_tensors_.empty() && output_kernel_tensors_[0] &&
       output_kernel_tensors_[0]->GetDeviceType() != device_contexts_[0]->GetDeviceType()) {
     real_output_device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device::GetDeviceNameByType(output_kernel_tensors_[0]->GetDeviceType()),
-       device_contexts_[0]->device_context_key().device_id_});
+      {output_kernel_tensors_[0]->GetDeviceType(), device_contexts_[0]->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(real_output_device_context_);
     if (!real_output_device_context_->initialized()) {
       const_cast<DeviceContext *>(real_output_device_context_)->Initialize();
@@ -602,7 +601,8 @@ bool KernelRunner::ConvertInputContiguousForSingleKernelTensor(OpContext<KernelT
     auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
-      device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+      device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
+      device_contexts_[0]->device_context_key().device_id_);
     kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
     kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
     kernel_tensor->set_stream_id(stream_id);
@@ -690,7 +690,8 @@ void KernelRunner::ConvertInputContiguous(OpContext<KernelTensor> *const context
         auto address_size = GetTypeByte(TypeIdToType(input_device_tensor->type_id())) * SizeOf(old_storage_info->shape);
         auto kernel_tensor = AnfAlgo::CreateKernelTensor(
           nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensor->type_id(), old_storage_info->shape,
-          device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+          device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
+          device_contexts_[0]->device_context_key().device_id_);
         kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensor->type_id())));
         kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
         kernel_tensor->set_stream_id(stream_id);
@@ -784,9 +785,10 @@ void KernelRunner::FetchWorkspaceDeviceTensor() {
       return;
     }
     for (size_t i = workspace_kernel_tensors_.size(); i < workspace_sizes.size(); ++i) {
-      auto kernel_tensor = AnfAlgo::CreateKernelTensor(
-        nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
-        device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+      auto kernel_tensor =
+        AnfAlgo::CreateKernelTensor(nullptr, workspace_sizes[i], Format::DEFAULT_FORMAT, kTypeUnknown, ShapeVector(),
+                                    device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
+                                    device_contexts_[0]->device_context_key().device_id_);
       kernel_tensor->set_stream_id(kernel_info_->stream_id());
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
@@ -1067,7 +1069,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
     auto new_kernel_tensor = AnfAlgo::CreateKernelTensor(
       pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
       real_input_info->size_, kernel::GetFormatFromEnumToStr(real_input_info->format_), real_input_info->type_id_,
-      real_input_info->shape_, device_contexts_[0]->device_context_key().device_name_,
+      real_input_info->shape_, device::GetDeviceNameByType(device_contexts_[0]->device_context_key().device_type_),
       device_contexts_[0]->device_context_key().device_id_, kernel_tensor->user_data());
     auto pre_stream_id = pre_kernel_tensor->stream_id();
     if (pre_stream_id == UINT32_MAX) {
@@ -1616,7 +1618,7 @@ bool KernelRunner::LaunchKernel(OpContext<KernelTensor> *const context, bool is_
   }
 
   auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_contexts_[0]->device_context_key().device_name_);
+    device_contexts_[0]->device_context_key().device_type_);
   bool ret = false;
   if (!ActorDispatcher::enable_async_launch_kernel()) {
     std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
@@ -1674,7 +1676,7 @@ bool KernelRunner::LaunchKernelHP(OpContext<KernelTensor> *const context, bool i
     }
   } else {
     auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-      device_contexts_[0]->device_context_key().device_name_);
+      device_contexts_[0]->device_context_key().device_type_);
     if (!ActorDispatcher::enable_async_launch_kernel()) {
       std::lock_guard<std::mutex> lock(multi_stream_controller->GetStreamMutex(kernel_info_->stream_id()));
       ProcessMultiStreamBeforeKernelLaunch(context);
@@ -1702,14 +1704,14 @@ void KernelRunner::ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> 
   auto stream_id = kernel_info_->stream_id();
   // Update output_kernel_tensors_ with task id on stream.
   auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_context->device_context_key().device_name_);
+    device_context->device_context_key().device_type_);
   auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(stream_id);
   // Adapter for mc2 kernel, need more process later.
   if (is_mc2_kernel_) {
     multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, kWorldGroupStreamIndex);
   }
   MS_LOG(DEBUG) << "device context : " << device_context
-                << ", name : " << device_context->device_context_key().device_name_ << ", stream id : " << stream_id
+                << ", type : " << device_context->device_context_key().device_type_ << ", stream id : " << stream_id
                 << ", actor name : " << GetAID().Name() << ", task_id_on_stream : " << task_id_on_stream << ".";
   if (INT64_MAX == task_id_on_stream) {
     // Cpu kernel task id on stream is meanless.
@@ -1834,7 +1836,7 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
       // Record event on stream.
       auto device_context = device_contexts_[0];
       auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-        device_context->device_context_key().device_name_);
+        device_context->device_context_key().device_type_);
       multi_stream_controller->RecordEvent(*task_id_on_stream_, stream_id, cross_stream_addresses_);
     }
   }
@@ -1843,7 +1845,7 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
   // Add ref processes for sync stream on demand.
   if (!rw_write_index_.empty() && stream_id != kDefaultStreamIndex) {
     auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-      device_contexts_[0]->device_context_key().device_name_);
+      device_contexts_[0]->device_context_key().device_type_);
     multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, stream_id);
   }
 }

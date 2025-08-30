@@ -1155,8 +1155,7 @@ void SwapCache(const py::object &host_, const py::object &device_, const py::obj
   MS_EXCEPTION_IF_NULL(device_ptr);
 
   auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_addr->GetDeviceType()),
-                                       device_addr->device_id()};
+  device::DeviceContextKey host_key = {device_addr->GetDeviceType(), device_addr->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

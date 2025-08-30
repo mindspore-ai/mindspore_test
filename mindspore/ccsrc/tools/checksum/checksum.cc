@@ -53,8 +53,7 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
     return out_tensor;
   }
 
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-                                       device_tensor->device_id()};
+  device::DeviceContextKey host_key = {device_tensor->GetDeviceType(), device_tensor->device_id()};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
@@ -77,7 +76,7 @@ void CheckSumViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
   // multi stream protect
   auto stream_id = AnfAlgo::GetStreamId(cnode);
   auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_context->device_context_key().device_name_);
+    device_context->device_context_key().device_type_);
   if (stream_id != kDefaultStreamIndex) {
     multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
   }
@@ -107,7 +106,7 @@ void CheckSumViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device_name, device_id};
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);

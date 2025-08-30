@@ -22,7 +22,6 @@
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "tools/profiler/profiling.h"
-#include "utils/ms_context.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
@@ -45,7 +44,7 @@ void ProfilerActor::AscendStepStart(const std::vector<KernelGraphPtr> &graphs) {
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key = {device_name, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -74,7 +73,7 @@ void ProfilerActor::AscendStepEnd() {
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key = {device_name, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
@@ -119,7 +118,7 @@ void ProfilerActor::ProfilerOnStepEnd(OpContext<KernelTensor> *const op_context,
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key = {device_name, device_id};
+    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
     device::DeviceContext *host_context =
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
     MS_EXCEPTION_IF_NULL(host_context);
