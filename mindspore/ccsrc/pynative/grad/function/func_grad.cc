@@ -911,6 +911,13 @@ void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &input
   grad_node->set_next_edges(std::move(next_edges));
 }
 
+void UpdateVersion(const tensor::TensorPtr &output) {
+  auto view_meta = impl::GetViewAutogradMetaImpl(output);
+  if (view_meta != nullptr) {
+    view_meta->set_version_attr(output->version().current_version());
+  }
+}
+
 ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
