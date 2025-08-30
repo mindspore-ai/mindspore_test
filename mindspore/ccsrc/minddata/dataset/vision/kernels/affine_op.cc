@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "minddata/dataset/vision/kernels/affine_op.h"
+
 #include <random>
 #include <vector>
 
-#include "minddata/dataset/vision/kernels/affine_op.h"
 #include "minddata/dataset/vision/kernels/image_utils.h"
 #include "minddata/dataset/vision/kernels/math_utils.h"
 #include "minddata/dataset/util/random.h"

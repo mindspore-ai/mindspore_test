@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include "minddata/dataset/engine/pass/pre/epoch_ctrl_pass.h"
+
+#include <algorithm>
+
 #include "minddata/dataset/engine/operation/datasetops/epoch_ctrl_node.h"
 #include "minddata/dataset/engine/operation/datasetops/root_node.h"
 #include "minddata/dataset/engine/operation/datasetops/data_queue_node.h"
