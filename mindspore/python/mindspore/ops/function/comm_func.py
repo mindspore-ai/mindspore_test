@@ -221,7 +221,17 @@ comm_funcs = [
     'scatter_tensor',
     'all_to_all_v_c'
 ]
-_COMM_ENABLE_PLACE  =  {item: True for item in comm_funcs}
+
+_COMM_ENABLE_PLACE = {item: True for item in comm_funcs}
+
+
+def is_inplace_func():
+    """if is inplace func name."""
+    global _COMM_ENABLE_PLACE
+    caller_name = sys._getframe(1).f_code.co_name # pylint: disable=protected-access
+    if caller_name in _COMM_ENABLE_PLACE:
+        return _COMM_ENABLE_PLACE[caller_name]
+    return False
 
 
 def set_comm_ops_inplace(is_enable, func_list=None):
@@ -1443,7 +1453,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
 
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True:
+    if is_inplace_func() is True:
         output = dist_comm_all_reduce_op(tensor, op, group)
         _, handle = _deal_comm_outputs(output, async_op)
         return handle
@@ -1517,7 +1527,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
     """
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True and \
+    if is_inplace_func() is True and \
        not isinstance(output_tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the output tensor must be tensor")
     if group is None:
@@ -1532,7 +1542,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     group_size = get_cache_group_size(group)
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True:
+    if is_inplace_func() is True:
         output = dist_comm_all_gather_into_tensor_op(
             output_tensor, input_tensor, group_size, group
         )
@@ -1607,7 +1617,7 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
          [1. 1. 1. 1.]
          [1. 1. 1. 1.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -1698,7 +1708,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
     """
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the input tensor must be tensor")
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True and \
+    if is_inplace_func() is True and \
        not isinstance(output, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the output tensor must be tensor")
     if not isinstance(op, str):
@@ -1719,7 +1729,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     rank_size = get_cache_group_size(group)
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True:
+    if is_inplace_func() is True:
         out = dist_comm_reduce_scatter_tensor_op(output, input, rank_size, op, group)
         _, handle = _deal_comm_outputs(out, async_op)
         return handle
@@ -1796,7 +1806,7 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
          [2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(op, str):
         raise TypeError("For reduce_scatter_tensor_uneven, the input op type must be str")
@@ -1884,7 +1894,7 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
         Process with rank 1: [[2. 2. 2. 2. 2. 2. 2. 2.]
                              [2. 2. 2. 2. 2. 2. 2. 2.]],
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For reduce, the input tensor must be tensor")
@@ -2053,7 +2063,7 @@ def batch_isend_irecv(p2p_op_list):
         rank 1:
         1.0
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     tensors = []
     op_types = []
@@ -2160,7 +2170,7 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
         [[4. 5.]
          [6. 7.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For scatter_tensor, the input tensor must be tensor")
@@ -2255,7 +2265,7 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
                               [0. 0.],
                               [0. 0.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For gather_into_tensor, the input tensor must be tensor")
@@ -2337,7 +2347,7 @@ def broadcast(tensor, src, group=None, async_op=False):
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For broadcast, the input tensor must be tensor")
@@ -2568,7 +2578,7 @@ def recv(tensor, src=0, group=None, tag=0):
         )
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
 
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True:
+    if is_inplace_func() is True:
         output = dist_comm_irecv_op(tensor, tag, _src, group)
         _deal_comm_outputs(output, False)
         return 0
@@ -2736,7 +2746,7 @@ def irecv(tensor, src=0, group=None, tag=0):
         raise TypeError("For irecv, the src must be int")
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
 
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is True:
+    if is_inplace_func() is True:
         output = dist_comm_irecv_op(tensor, tag, _src, group)
         _, handle = _deal_comm_outputs(output, True)
         return handle
@@ -2841,7 +2851,7 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
     send_flatten_tensor = cat(send_flatten_tensor)
     rank_size = get_cache_group_size(group)
 
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         _check_all_tensors_or_tuple(output_tensor_list)
         for tensor in output_tensor_list:
             if isinstance(tensor, Tensor):
@@ -3013,7 +3023,7 @@ def all_to_all_single(output,
     _input = input.reshape(-1)
     rank_size = get_cache_group_size(group)
 
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         if isinstance(output_split_sizes, list):
             output_split_sizes = tuple(output_split_sizes)
         if isinstance(input_split_sizes, list):
@@ -3123,7 +3133,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
 
 
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(tensor_list)
     _check_all_tensor_same_dtype(tensor_list)
@@ -3206,7 +3216,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
          [2. 2. 2. 2. 2. 2. 2. 2.]]
 
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(input_list)
     _check_all_tensor_same_dtype(input_list)
@@ -3302,7 +3312,7 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
         [[1. 1.]
          [1. 1.]]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(scatter_list)
     _check_all_tensor_same_dtype_and_shape(scatter_list)
@@ -3393,13 +3403,11 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
         [[ 0.00000000e+00,  1.00000000e+00],
          [ 2.00000000e+00,  3.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 0.00000000e+00,  1.00000000e+00], [ 2.00000000e+00,  3.00000000e+00]])]
-        [Tensor(shape=[2, 2], dtype=Float32, value=
-        [[ 0.00000000e+00,  1.00000000e+00],
+        [Tensor(shape=[2, 2], dtype=Float32, value=[[ 0.00000000e+00,  1.00000000e+00],
          [ 2.00000000e+00,  3.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 0.00000000e+00,  1.00000000e+00], [ 2.00000000e+00,  3.00000000e+00]])]
         # rank_1
-        [Tensor(shape=[2, 2], dtype=Float32, value=
-        [[ 0.00000000e+00,  0.00000000e+00],
+        [Tensor(shape=[2, 2], dtype=Float32, value=[[ 0.00000000e+00,  0.00000000e+00],
          [ 0.00000000e+00,  0.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 0.00000000e+00,  0.00000000e+00], [ 0.00000000e+00,  0.00000000e+00]])]
         [Tensor(shape=[2, 2], dtype=Float32, value=
@@ -3407,7 +3415,7 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
          [ 0.00000000e+00,  0.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 0.00000000e+00,  0.00000000e+00], [ 0.00000000e+00,  0.00000000e+00]])]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For gather, the input tensor must be tensor")
@@ -3484,7 +3492,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
         # rank_1
         [{1: 2}]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3577,7 +3585,7 @@ def gather_object(obj, object_gather_list=None, dst=0, group=None):
         # rank_0
         ['test', {1: 2}]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3658,7 +3666,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
         >>> print(obj)
         ['test', 12, {1: 2}]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3744,7 +3752,7 @@ def all_gather_object(object_list, obj, group=None):
         # rank_1
         ['test', {1: 2}]
     """
-    if _COMM_ENABLE_PLACE[sys._getframe().f_code.co_name] is not True:
+    if is_inplace_func() is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
