@@ -25,6 +25,11 @@ class Net(nn.Cell):
         return x.t()
 
 
+class TNet(nn.Cell):
+    def construct(self, x):
+        return x.T
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level2',
           card_mark='onecard',
@@ -41,4 +46,23 @@ def test_tensor_t(mode):
     net = Net()
     output = net(x)
     expect_output = [[1, 2], [2, 3], [3, 4]]
+    assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_tensor_T(mode):
+    """
+    Feature: tensor.T
+    Description: Verify the result of t
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    x = Tensor(np.arange(1, 9, 1).reshape((2, 2, 2)), ms.float32)
+    net = TNet()
+    output = net(x)
+    expect_output = [[[1, 5], [3, 7]], [[2, 6], [4, 8]]]
     assert np.allclose(output.asnumpy(), expect_output)
