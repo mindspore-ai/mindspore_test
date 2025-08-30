@@ -37,7 +37,7 @@ class DistributedSampler(Sampler[_T_co]):
     Args:
         dataset (Dataset): Dataset used for sampling.
         num_replicas (int, optional): Number of shards participating in distributed training. Default: ``None`` .
-        rank (int, optional): The sequence number of the current process within `num_replicas`. Default: ``None`` .
+        rank (int, optional): The sequence number of the current shard within `num_replicas`. Default: ``None`` .
         shuffle (bool, optional): Whether the sampler shuffle samples randomly. Default: ``True`` .
         seed (int, optional): When `shuffle` is set to `True` , the seed value used for randomizing the sampler.
             Default: ``0`` .

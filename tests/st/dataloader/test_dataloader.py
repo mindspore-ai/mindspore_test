@@ -404,7 +404,7 @@ class TestDataLoaderParamValidation:
         (
             (0.5, TypeError, "batch_size must be int"),
             (False, TypeError, "batch_size must be int"),
-            (0, ValueError, "batch_size must be a positive integer value"),
+            (0, ValueError, "batch_size must be positive"),
         ),
     )
     def test_dataloader_invalid_batch_size(self, batch_size_case):
