@@ -614,35 +614,41 @@ void TraverseGraphMap(
   const std::function<std::shared_ptr<FuncGraph>(const PrimitivePtr, const AbstractFunctionPtr)> &get_prim_graph) {
   MS_EXCEPTION_IF_NULL(manager_ptr);
   MS_EXCEPTION_IF_NULL(tr);
+  auto is_prim_array_map_reduce_skip = [](const PrimitivePtr &value, int64_t key, bool key_is_const) {
+    if (value == nullptr) {
+      return false;
+    }
+    bool is_prim_array_map = !(prim::kPrimArrayMap->name().compare(value->name()));
+    bool is_prim_array_reduce = !(prim::kPrimArrayReduce->name().compare(value->name()));
+    return key == 1 && key_is_const && (is_prim_array_map || is_prim_array_reduce);
+  };
   for (const auto &fg : fgs) {
     MS_EXCEPTION_IF_NULL(fg);
     for (const auto &ct_any : fg->value_nodes()) {
       AnfNodePtr const_primitive_node = ct_any.first;
-      if (const_primitive_node != nullptr && IsValueNode<Primitive>(const_primitive_node)) {
-        auto users = manager_ptr->node_users()[const_primitive_node];
-        for (auto &use : users) {
-          CNodePtr node = use.first->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(node);
-          if (node->func_graph() != fg) {
-            continue;
-          }
-          int64_t key = use.second;
-          if (key != 0) {
-            MS_EXCEPTION_IF_NULL(node->input(0));
-            bool key_is_const = node->input(0)->isa<ValueNode>();
-            PrimitivePtr value = GetValueNode<PrimitivePtr>(node->input(0));
-            if (value != nullptr) {
-              bool is_prim_array_map = !(prim::kPrimArrayMap->name().compare(value->name()));
-              bool is_prim_array_reduce = !(prim::kPrimArrayReduce->name().compare(value->name()));
-              if (key == 1 && key_is_const && (is_prim_array_map || is_prim_array_reduce)) {
-                continue;
-              }
-            }
-            FuncGraphPtr g = get_prim_graph(GetValueNode<PrimitivePtr>(const_primitive_node),
-                                            dyn_cast<AbstractFunction>(const_primitive_node->abstract()));
-            tr->SetEdge(node, key, NewValueNode(g));
-          }
+      if (const_primitive_node == nullptr || !IsValueNode<Primitive>(const_primitive_node)) {
+        continue;
+      }
+      auto users = manager_ptr->node_users()[const_primitive_node];
+      for (auto &use : users) {
+        CNodePtr node = use.first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(node);
+        if (node->func_graph() != fg) {
+          continue;
         }
+        MS_EXCEPTION_IF_NULL(node->input(0));
+        bool key_is_const = node->input(0)->isa<ValueNode>();
+        int64_t key = use.second;
+        if (key == 0) {
+          continue;
+        }
+        PrimitivePtr value = GetValueNode<PrimitivePtr>(node->input(0));
+        if (is_prim_array_map_reduce_skip(value, key, key_is_const)) {
+          continue;
+        }
+        FuncGraphPtr g = get_prim_graph(GetValueNode<PrimitivePtr>(const_primitive_node),
+                                        dyn_cast<AbstractFunction>(const_primitive_node->abstract()));
+        tr->SetEdge(node, key, NewValueNode(g));
       }
     }
   }

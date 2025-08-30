@@ -15,11 +15,11 @@
  */
 
 #include <algorithm>
+#include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 #include "include/common/utils/comm_manager.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/cpu/profiler/cpu_profiling.h"
 #endif
-#include "plugin/gpu/res_manager/mem_manager/gpu_memory_allocator.h"
 #include "plugin/gpu/res_manager/symbol_interface/cuda_driver.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

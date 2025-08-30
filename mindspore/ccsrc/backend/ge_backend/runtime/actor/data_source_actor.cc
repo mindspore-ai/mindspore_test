@@ -153,6 +153,66 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(bool enable_async_copy,
   }
 }
 
+namespace {
+void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const kernel::KernelTensorPtr &kernel_tensor,
+                                  bool enable_async_copy, const KernelWithIndex &node_index,
+                                  OpContext<KernelTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(host_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(context);
+  auto device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+  host_context->device_res_manager_->BindDeviceToCurrentThread(false);
+  // No used device address need skip.
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+    MS_LOG(DEBUG) << "Data source actor input kernel tensor is not used:" << kernel_tensor->ToString();
+    return;
+  }
+  auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
+  // Sync data from host_tensor_device_address to device_tensor.
+  if (tensor_device_address != nullptr) {
+    if (tensor_device_address == device_tensor) {
+      return;
+    }
+    if (!host_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
+    }
+    return;
+  }
+  if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
+    MS_LOG(INFO) << "Empty tuple sync";
+    return;
+  }
+
+  MS_EXCEPTION_IF_NULL(node_index.first);
+  if (enable_async_copy) {
+    MS_LOG(INFO) << "Node : " << node_index.first->DebugString();
+    if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+    }
+  } else {
+    if (!host_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
+    }
+  }
+
+  if (IsDynamic(device_tensor->GetShapeVector())) {
+    device_tensor->SetShapeVector(host_tensor->shape());
+  }
+}
+}  // namespace
+
 void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -181,57 +241,10 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
   PROFILER_START(start_time);
   auto enable_async_copy = ms_context->IsEnableInferBoost() || is_infer_phase_;
   try {
+    KernelWithIndex empty_node{nullptr, 0};
     for (size_t i = 0; i < host_tensors.size(); ++i) {
-      auto &host_tensor = host_tensors[i];
-      auto &device_tensor = kernel_tensors[i]->device_address();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      MS_EXCEPTION_IF_NULL(host_tensor);
-      auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-      const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-      device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-      device::DeviceContext *host_context =
-        device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-      MS_EXCEPTION_IF_NULL(host_context);
-      MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-      host_context->device_res_manager_->BindDeviceToCurrentThread(false);
-      // No used device address need skip.
-      if (TEST_FLAG(kernel_tensors[i]->flag(), device::kDeviceAddressFlagNotUsed)) {
-        MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
-        continue;
-      }
-      auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
-      // Sync data from host_tensor_device_address to device_tensor.
-      if (tensor_device_address != nullptr) {
-        if (tensor_device_address == device_tensor) {
-          continue;
-        }
-        if (!host_context->device_res_manager_->SyncAllStreams() ||
-            !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
-        }
-        continue;
-      }
-      if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
-        MS_LOG(INFO) << "Empty tuple sync";
-        continue;
-      }
-
-      if (enable_async_copy) {
-        MS_LOG(INFO) << "Index :" << i
-                     << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
-        if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
-        }
-      } else {
-        if (!host_context->device_res_manager_->SyncAllStreams() ||
-            !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
-        }
-      }
-
-      if (IsDynamic(device_tensor->GetShapeVector())) {
-        device_tensor->SetShapeVector(host_tensor->shape());
-      }
+      CopyHostTensorToKernelTensor(host_tensors[i], kernel_tensors[i], enable_async_copy,
+                                   i < data_node_with_indexs_.size() ? data_node_with_indexs_[i] : empty_node, context);
     }
     AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors);
   } catch (const std::exception &e) {

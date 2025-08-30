@@ -894,6 +894,60 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
   }
 }
 
+void CopyHostTensorToDeviceTensor(const AnfNodePtr &backend_node, const AnfNodePtr &front_node,
+                                  const KernelTensorPtr &node_kernel_tensor, DeviceAddressPtr host_tensor_address,
+                                  DeviceAddressPtr device_tensor, OpContext<KernelTensor> *const context,
+                                  std::shared_ptr<KernelTensor> host_kernel_tensor, GraphExecutionStrategy strategy,
+                                  std::set<AnfNode *> address_modified_input_nodes) {
+  MS_EXCEPTION_IF_NULL(backend_node);
+  MS_EXCEPTION_IF_NULL(front_node);
+  MS_EXCEPTION_IF_NULL(context);
+  MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+  MS_EXCEPTION_IF_NULL(host_tensor_address);
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  MS_EXCEPTION_IF_NULL(host_kernel_tensor);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
+  device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+  MS_EXCEPTION_IF_NULL(host_context);
+  MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+
+  if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
+    MS_LOG(INFO) << "The device type is not equal, host tensor type:" << host_tensor_address->GetDeviceType()
+                 << ", device tensor type:" << device_tensor->GetDeviceType();
+    // The fake heterogeneous scenario.
+    if (DeviceTensorStore::GetInstance().Fetch(front_node.get()).size() == 1) {
+      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
+      std::abort();
+    }
+  } else if (host_tensor_address != device_tensor) {
+    // In the scenario of training + inference , the device address of the weight node can not be changed when
+    // multi-graphs sink mode is set.
+    if (node_kernel_tensor->is_ptr_persisted() ||
+        !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
+                                     kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
+      if ((device_tensor->GetPtr() == nullptr) &&
+          (!host_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, backend_node->fullname_with_scope(),
+                                                    device_tensor->GetSize());
+      }
+      if (!host_context->device_res_manager_->SyncAllStreams() ||
+          !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex)) {
+        std::string error_info = "Sync data error.";
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy, (*context), error_info);
+      }
+      host_tensor_address = device_tensor;
+    } else {
+      (void)address_modified_input_nodes.insert(backend_node.get());
+      host_kernel_tensor->set_flag(node_kernel_tensor->flag());
+    }
+  }
+}
+
 // Prepare the device data for persistent device tensor of weight node from host tensor.
 void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node,
                                                 const TensorPtr &tensor, OpContext<KernelTensor> *const context) {
@@ -924,16 +978,12 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   host_kernel_tensor->set_device_address(host_tensor_address);
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = false;
+
   if (host_tensor_address != device_tensor) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    device::DeviceContextKey host_key = {device::GetDeviceTypeByName(device_name), device_id};
-    device::DeviceContext *host_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
-    MS_EXCEPTION_IF_NULL(host_context);
-    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     if (host_tensor_address->GetDeviceType() != device::GetDeviceTypeByName(device_name)) {
       if (device_tensor->GetDeviceType() != device::GetDeviceTypeByName(device_name)) {
         const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
@@ -953,36 +1003,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     }
     MS_EXCEPTION_IF_NULL(host_tensor_address);
 
-    if (host_tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
-      MS_LOG(INFO) << "The device type is not equal, host tensor type:" << host_tensor_address->GetDeviceType()
-                   << ", device tensor type:" << device_tensor->GetDeviceType();
-      // The fake heterogeneous scenario.
-      if (DeviceTensorStore::GetInstance().Fetch(front_node.get()).size() == 1) {
-        MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
-        std::abort();
-      }
-    } else if (host_tensor_address != device_tensor) {
-      // In the scenario of training + inference , the device address of the weight node can not be changed when
-      // multi-graphs sink mode is set.
-      if (node_kernel_tensor->is_ptr_persisted() ||
-          !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
-                                       kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
-        if ((device_tensor->GetPtr() == nullptr) &&
-            (!host_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
-          SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, backend_node->fullname_with_scope(),
-                                                      device_tensor->GetSize());
-        }
-        if (!host_context->device_res_manager_->SyncAllStreams() ||
-            !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex)) {
-          std::string error_info = "Sync data error.";
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
-        }
-        host_tensor_address = device_tensor;
-      } else {
-        (void)address_modified_input_nodes_.insert(backend_node.get());
-        host_kernel_tensor->set_flag(node_kernel_tensor->flag());
-      }
-    }
+    CopyHostTensorToDeviceTensor(backend_node, front_node, node_kernel_tensor, host_tensor_address, device_tensor,
+                                 context, host_kernel_tensor, real_strategy_, address_modified_input_nodes_);
   }
   // Maybe the same host_tensor_address corresponds to the different front_node in shared weight scene,
   // so need update the device tensor store always.

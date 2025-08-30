@@ -113,7 +113,7 @@ FuncGraphPtr GetFilteredGradGraph(const std::string &cache_key, size_t hash_key)
 }
 
 namespace {
-using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
+using VmEvalPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {prim::kPrimStopGradient,   prim::kPrimUpdateState,
                                                              prim::kPrimMirror,         prim::kPrimVirtualDiv,
                                                              prim::kPrimMutable,        prim::kPrimInsertGradientOf,
@@ -257,7 +257,7 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
       return outputs[0];
     }
   }
-  BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
+  VmEvalPtr run = resource->GetResult(pipeline::kOutput).cast<VmEvalPtr>();
   auto result = (*run)(arg_list);
   MS_LOG(INFO) << "Finish running funcgraph: " << fg->ToString() << " , result: " << result.ToString();
   return result;
