@@ -22,7 +22,6 @@
 #include "ir/anf.h"
 #include "frontend/operator/ops.h"
 #include "ir/manager.h"
-#include "abstract/dshape.h"
 #include "frontend/jit/ps/resource.h"
 
 namespace mindspore {

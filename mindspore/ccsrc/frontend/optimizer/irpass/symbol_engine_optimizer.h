@@ -20,11 +20,12 @@
 #include "ir/func_graph.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/optimizer.h"
-#include "symbolic_shape/symbol.h"
 
 namespace mindspore {
 namespace opt {
 namespace irpass {
+using mindspore::symshape::ListSymbolPtr;
+
 class SymbolEngineBuilder {
  public:
   explicit SymbolEngineBuilder(bool only_dynshape_graph = true) : only_dynshape_graph_(only_dynshape_graph) {}

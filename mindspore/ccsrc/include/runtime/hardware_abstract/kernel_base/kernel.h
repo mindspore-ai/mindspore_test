@@ -26,7 +26,6 @@
 #include <variant>
 #include <vector>
 #include <algorithm>
-#include "abstract/dshape.h"
 #include "ir/format_utils.h"
 #include "include/api/format.h"
 #include "ir/anf.h"

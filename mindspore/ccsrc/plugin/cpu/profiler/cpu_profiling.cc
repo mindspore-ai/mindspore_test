@@ -18,6 +18,7 @@
 #include "plugin/cpu/profiler/cpu_data_saver.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "abstract/dshape.h"
 
 namespace mindspore {
 namespace profiler {

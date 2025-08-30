@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation.h"
 #include "symbolic_shape/symbol_visitor.h"
 #include "kernel/graph_kernel/symbol_engine/jit/syntax.h"

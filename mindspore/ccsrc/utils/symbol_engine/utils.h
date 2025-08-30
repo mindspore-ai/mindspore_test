@@ -26,7 +26,6 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "symbolic_shape/symbol.h"
 #include "symbolic_shape/operation_builder.h"
 #include "symbolic_shape/operation.h"
 #include "include/common/visible.h"
