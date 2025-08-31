@@ -36,10 +36,17 @@ tensor::TensorPtr LLMManager::get_graph_input(const std::string &name) {
 }
 
 void LLMManager::add_graph_input(const std::string &name, tensor::TensorPtr tensor) {
-  if (tensor->device_address() != nullptr && tensor->device_address()->GetDeviceType() != device::DeviceType::kCPU) {
-    tensor = tensor->cpu();
+  static const std::vector<std::string> kUglyPAInputLensNames = {"actual_seq_kvlen", "batch_valid_length", "q_seq_lens",
+                                                                 "actual_seq_qlen"};
+  auto is_ugly_pa_input_lens_name = std::any_of(kUglyPAInputLensNames.begin(), kUglyPAInputLensNames.end(),
+                                                [&name](const std::string &name_iter) { return name_iter == name; });
+  if (is_ugly_pa_input_lens_name) {
+    MS_LOG(INFO) << "add_graph_input name: " << name;
+    if (tensor->device_address() != nullptr && tensor->device_address()->GetDeviceType() != device::DeviceType::kCPU) {
+      tensor = tensor->cpu();
+    }
+    graph_inputs_map_[name] = tensor;
   }
-  graph_inputs_map_[name] = tensor;
 }
 
 void LLMManager::reset_graph_inputs() { graph_inputs_map_.clear(); }
