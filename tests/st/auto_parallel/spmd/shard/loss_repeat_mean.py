@@ -22,22 +22,18 @@ from mindspore.parallel import Layout
 
 
 class SimpleModel(nn.Cell):
-    def __init__(self, input_size, output_size, strategy_list):
+    def __init__(self, input_size, output_size):
         super().__init__()
         self.weight = ms.Parameter(
-            Tensor(np.random.randn(input_size, output_size).astype(np.float32)),
+            Tensor(np.ones([input_size, output_size]).astype(np.float32)),
             name='weight'
         )
-        self.cell_list = ms.nn.CellList()
-        for in_strategy, out_strategy in strategy_list:
-            relu_net = ms.mint.nn.ReLU()
-            relu_net.shard(in_strategy=in_strategy, out_strategy=out_strategy)
-            self.cell_list.append(relu_net)
+
+        self.relu = ms.mint.nn.ReLU()
 
     def construct(self, x):
         x = ms.mint.matmul(x, self.weight)
-        for cell in self.cell_list:
-            x = cell(x)
+        x = self.relu(x)
         return x
 
 
@@ -45,6 +41,10 @@ def create_dtensor(data, layout):
     """create_dtensor"""
     tensor = Tensor(data, dtype=ms.float32)
     return tensor.local_to_global(layout)
+
+
+def create_tensor(data):
+    return Tensor(data, dtype=ms.float32)
 
 
 def print_layout_info(tensor, name):
@@ -60,49 +60,59 @@ def print_layout_info(tensor, name):
         print(f"{name} has no layout information")
 
 
-def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
-    D.init()
-    input_size = 256
-    output_size = 128
-    batch_size = 4
-    learning_rate = 0.01
-    epochs = 2
+def run_standalone(x, input_size, output_size, learning_rate=0.01, epochs=2):
+    model = SimpleModel(input_size, output_size)
 
-    model = SimpleModel(input_size, output_size, strategy_list)
-
-    def forward_fn(data, label):
+    def forward_fn(data):
         logits = model(data)
         return logits
 
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
     grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
-    np_x = np.random.randn(batch_size, input_size).astype(np.float32)
-    np_target = np.random.randn(batch_size, output_size).astype(np.float32)
-    x = create_dtensor(np_x, x_layout)
-    target = create_dtensor(np_target, target_layout)
-    print_layout_info(x, "Input X")
-    model.weight = model.weight.local_to_global(w_layout)
-    print_layout_info(model.weight, "Input w")
-    print_layout_info(target, "Input target")
+
+    x = create_tensor(x)
+
+    ret_loss = None
+    ret_grads = None
     for epoch in range(epochs):
         start = time.time()
-        (loss_value, grads) = grad_fn(x, target)
+        (loss_value, grads) = grad_fn(x)
         optimizer(grads)
         end = time.time()
-        print(f"Epoch: {epoch+1}/{epochs}, Loss shape: {loss_value.shape}, Time: {end - start}")
+        ret_loss = loss_value
+        ret_grads = grads
+        print(f"[standalone] Epoch: {epoch+1}/{epochs}, Loss: {loss_value}, Time: {end - start}")
+
+    return ret_loss, ret_grads
 
 
-base_device_matrix = (2, 4)  # dp=2, mp=4
-base_alias_name = ("dp", "mp")
-base_rank_list = list(range(8))
+def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, learning_rate=0.01,
+                 epochs=2):
+    model = SimpleModel(local_input_size, local_output_size)
 
-base_device_matrix2 = (8,)
-base_alias_name2 = ("dp_mp",)
-base_rank_list2 = list(range(8))
+    def forward_fn(data):
+        logits = model(data)
+        return logits
 
-base_device_matrix3 = (2, 2, 2)
-base_alias_name3 = ("cp", "ep", "tp")
-base_rank_list3 = list(range(8))
+    optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
+    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
+
+    x = create_dtensor(local_x, x_layout)
+    model.weight = model.weight.local_to_global(w_layout)
+    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+
+    ret_loss = None
+    ret_grads = None
+    for epoch in range(epochs):
+        start = time.time()
+        (loss_value, grads) = grad_fn(x)
+        optimizer(grads)
+        end = time.time()
+        ret_loss = loss_value
+        ret_grads = grads
+        print(f"[parallel] Epoch: {epoch+1}/{epochs}, Loss: {loss_value}, Time: {end - start}")
+
+    return ret_loss, ret_grads
 
 
 def test_loss_repeat_mean():
@@ -111,27 +121,29 @@ def test_loss_repeat_mean():
     Description: Test loss repeat mean.
     Expectation: Run success.
     '''
-    layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    layout2 = Layout(base_device_matrix2, base_alias_name2, base_rank_list2)
-    x_layout = layout("dp", "None")
-    w_layout = layout("None", "None")
-    target_layout = layout("dp", "None")
+    D.init()
 
-    in_strategy_1 = (layout("None", "None"),)
-    out_strategy_1 = None
+    # standalone
+    batch_size = 4
+    input_size = 32
+    output_size = 2
+    batch_size = 4
 
-    in_strategy_2 = (layout2("dp_mp", "None"),)
-    out_strategy_2 = (layout2("None", "dp_mp"),)
+    x = np.ones([batch_size, input_size]).astype(np.float32)
+    standalone_loss, _ = run_standalone(x, input_size, output_size)
 
-    in_strategy_3 = (layout("mp", "dp"),)
-    out_strategy_3 = (layout("dp", "None"),)
+    # parallel
+    dp = 1
+    mp = 8
+    local_batch_size = batch_size // dp
+    local_input_size = input_size // mp
+    local_output_size = output_size
+    local_x = np.ones([local_batch_size, local_input_size]).astype(np.float32)
+    layout = Layout((dp, mp), ("dp", "mp"))
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    relu_strategy = ((layout("None", "None"),), (layout("None", "None"),))
+    parallel_loss, _ = run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy)
 
-    strategy_list = ((in_strategy_1, out_strategy_1),
-                     (in_strategy_2, out_strategy_2),
-                     (in_strategy_3, out_strategy_3))
-    run_scenario_with_bprop(
-        x_layout,
-        w_layout,
-        target_layout,
-        strategy_list=strategy_list
-    )
+    # compare
+    assert np.allclose(standalone_loss.asnumpy(), parallel_loss.asnumpy(), 0.001, 0.001)

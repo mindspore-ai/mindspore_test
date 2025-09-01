@@ -15,6 +15,7 @@
 """shard"""
 
 import mindspore as ms
+import mindspore.communication as comm
 from mindspore._c_expression import TensorTransform
 from mindspore import log as logger
 from mindspore.communication import get_rank, create_group
@@ -95,6 +96,8 @@ class TensorRedistribution:
     def _construct_all_concat_new(self, x, *args):
         """args: (concat_dim, concat_size, group)"""
         rank_list = list(args[2])
+        if len(rank_list) <= 1:
+            return x
         concat_dim = args[0]
         group = _get_comm_group(rank_list)
         x = x.contiguous()
@@ -209,10 +212,10 @@ class TensorRedistribution:
         group = layout.get_comm_group_by_axis(dev_dim, self.rank_id)
         if op == 'mean':
             dev_num = layout.device_metrix[layout.alias_name.index(dev_dim)]
-            _ = ms.mint.distributed.all_reduce(x, 'sum', group)
+            x, _ = comm.comm_func.all_reduce(x, 'sum', group)
             x = x / dev_num
         else:
-            _ = ms.mint.distributed.all_reduce(x, op, group)
+            x, _ = comm.comm_func.all_reduce(x, op, group)
         logger.warning(f"Do AllReduce-{op} along {dev_dim}. group: {group}")
         return x
 
