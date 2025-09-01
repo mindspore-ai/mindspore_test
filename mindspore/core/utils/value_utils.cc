@@ -301,15 +301,17 @@ TYPEID_TRAIT(kNumberTypeComplex128, std::complex<double>)
 
 template <typename T>
 T TensorItem(const tensor::TensorPtr &tensor) {
-  if (tensor->DataItemSize() != sizeof(T)) {
-    MS_EXCEPTION(TypeError) << "The tensor's type is " << TypeIdToString(tensor->data_type()) << ", which is not "
+  // Wait tasks finish before get Tensor data itemsize.
+  // There is implicit copy for input Tensor, which may change the Tensor device_address.
+  auto cpu_tensor = tensor->cpu();
+  if (cpu_tensor->DataItemSize() != sizeof(T)) {
+    MS_EXCEPTION(TypeError) << "The tensor's type is " << TypeIdToString(cpu_tensor->data_type()) << ", which is not "
                             << TypeIdToString(TypeIdTrait<T>::type_id);
   }
-  if (tensor->DataSize() != 1) {
-    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor->DataSize() << ","
+  if (cpu_tensor->DataSize() != 1) {
+    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << cpu_tensor->DataSize() << ","
                              << " more than one element is ambiguous.";
   }
-  auto cpu_tensor = tensor->cpu();
   auto data = cpu_tensor->data_c();
   if constexpr (std::is_same_v<T, std::complex<float>>) {
     return std::complex<float>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))};
