@@ -44,6 +44,7 @@ aclrtGetTaskIdFromExceptionInfoFunObj aclrtGetTaskIdFromExceptionInfo_ = nullptr
 aclrtGetThreadIdFromExceptionInfoFunObj aclrtGetThreadIdFromExceptionInfo_ = nullptr;
 aclrtLaunchCallbackFunObj aclrtLaunchCallback_ = nullptr;
 aclrtMallocFunObj aclrtMalloc_ = nullptr;
+aclrtMallocAlign32FunObj aclrtMallocAlign32_ = nullptr;
 aclrtMallocHostFunObj aclrtMallocHost_ = nullptr;
 aclrtMemcpyFunObj aclrtMemcpy_ = nullptr;
 aclrtMemcpyAsyncFunObj aclrtMemcpyAsync_ = nullptr;
@@ -116,6 +117,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtGetThreadIdFromExceptionInfo_ = DlsymAscendFuncObj(aclrtGetThreadIdFromExceptionInfo, handler);
   aclrtLaunchCallback_ = DlsymAscendFuncObj(aclrtLaunchCallback, handler);
   aclrtMalloc_ = DlsymAscendFuncObj(aclrtMalloc, handler);
+  aclrtMallocAlign32_ = DlsymAscendFuncObj(aclrtMallocAlign32, handler);
   aclrtMallocHost_ = DlsymAscendFuncObj(aclrtMallocHost, handler);
   aclrtMemcpy_ = DlsymAscendFuncObj(aclrtMemcpy, handler);
   aclrtMemcpyAsync_ = DlsymAscendFuncObj(aclrtMemcpyAsync, handler);
@@ -184,6 +186,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtGetThreadIdFromExceptionInfo);
   ASSIGN_SIMU(aclrtLaunchCallback);
   ASSIGN_SIMU(aclrtMalloc);
+  ASSIGN_SIMU(aclrtMallocAlign32);
   ASSIGN_SIMU(aclrtMallocHost);
   ASSIGN_SIMU(aclrtMemcpy);
   ASSIGN_SIMU(aclrtMemcpyAsync);

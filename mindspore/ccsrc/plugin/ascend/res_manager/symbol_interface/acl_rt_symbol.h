@@ -44,6 +44,7 @@ ORIGIN_METHOD_WITH_SIMU(aclrtGetTaskIdFromExceptionInfo, uint32_t, const aclrtEx
 ORIGIN_METHOD_WITH_SIMU(aclrtGetThreadIdFromExceptionInfo, uint32_t, const aclrtExceptionInfo *)
 ORIGIN_METHOD_WITH_SIMU(aclrtLaunchCallback, aclError, aclrtCallback, void *, aclrtCallbackBlockType, aclrtStream)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtMalloc, aclError, void **, size_t, aclrtMemMallocPolicy)
+ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtMallocAlign32, aclError, void **, size_t, aclrtMemMallocPolicy)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtMallocHost, aclError, void **, size_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtMemcpy, aclError, void *, size_t, const void *, size_t, aclrtMemcpyKind)
 ORIGIN_METHOD_WITH_SIMU(aclrtMemcpyAsync, aclError, void *, size_t, const void *, size_t, aclrtMemcpyKind, aclrtStream)

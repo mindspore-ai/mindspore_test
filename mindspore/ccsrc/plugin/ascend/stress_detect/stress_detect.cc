@@ -21,6 +21,7 @@
 #include <memory>
 #include <utility>
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
+#include "plugin/ascend/res_manager/mem_manager/ascend_memory_adapter.h"
 #include "mindspore/core/include/utils/device_manager_conf.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
@@ -105,33 +106,33 @@ int LaunchHccsTask(const device::DeviceContext *device_context, void *group_comm
   constexpr uint64_t kSize = 1024;
   workspace_size = workspace_size * kSize * kSize * kSize;
   void *workspace_addr = nullptr;
-  auto workspace_device_address = runtime::DeviceAddressUtils::CreateWorkspaceAddressWithoutKernelTensor(
-    device_context, device_context->device_res_manager_->DefaultStream(), workspace_size, true);
-  if (workspace_device_address->GetMutablePtr() == nullptr) {
-    MS_LOG(WARNING) << " Can't allocate workspace memory size: " << workspace_size << " for HCCS stress detect task";
-    return kDetectFailed;
-  }
   auto ascend_path = mindspore::device::ascend::GetAscendPath();
   auto lib_path = ascend_path + GetLibAscendMLName();
   void *lib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
   if (lib_handle == nullptr) {
     MS_LOG(EXCEPTION) << lib_path << " was not found. Exiting HCCS stress detect task.";
   }
-  workspace_addr = workspace_device_address->GetMutablePtr();
   const auto *amlp2p_func = dlsym(lib_handle, kNameAmlP2PDetectOnline);
   if ((amlp2p_func == nullptr) || (group_comm == nullptr)) {
     MS_LOG(WARNING) << kNameAmlP2PDetectOnline << " not found in CANN or group comm not found, skipping P2P test.";
     return kDetectFailed;
   } else {
+    workspace_addr = device::ascend::AscendMemAdapter::GetInstance()->MallocAlign32FromRts(workspace_size);
+    if (workspace_addr == nullptr) {
+      MS_LOG(WARNING) << " Can't allocate workspace memory size: " << workspace_size << " for HCCS stress detect task";
+      return kDetectFailed;
+    }
     auto p2p_api_func = reinterpret_cast<int (*)(int32_t, void *, const AmlP2PDetectAttr *)>(amlp2p_func);
     AmlP2PDetectAttr p2p_attr;
     p2p_attr.workspaceSize = workspace_size;
     p2p_attr.workspace = workspace_addr;
     int ret = p2p_api_func(device_context->device_context_key().device_id_, group_comm, &p2p_attr);
 
-    MS_LOG(WARNING) << "P2P detection executed - device_id: " << device_context->device_context_key().device_id_
-                    << ", workspaceSize: " << p2p_attr.workspaceSize << ", workspace: " << p2p_attr.workspace
-                    << ", comm: " << group_comm;
+    MS_LOG(INFO) << "P2P detection executed - device_id: " << device_context->device_context_key().device_id_
+                 << ", workspaceSize: " << p2p_attr.workspaceSize << ", workspace: " << p2p_attr.workspace
+                 << ", comm: " << group_comm;
+
+    device::ascend::AscendMemAdapter::GetInstance()->FreeAlign32ToRts(workspace_addr);
     return ret;
   }
 }

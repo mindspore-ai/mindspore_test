@@ -322,6 +322,40 @@ uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
   return ptr;
 }
 
+uint8_t *AscendMemAdapter::MallocAlign32FromRts(size_t size) const {
+  uint8_t *ptr = nullptr;
+  auto ret = CALL_ASCEND_API(aclrtMallocAlign32, reinterpret_cast<void **>(&ptr), size, ACL_MEM_TYPE_HIGH_BAND_WIDTH);
+  if (ret != ACL_RT_SUCCESS) {
+    MS_LOG(WARNING) << "Call rtMallocAlign32 to allocate device memory failed.";
+    if (ret == ACL_ERROR_RT_MEMORY_ALLOCATION) {
+      auto context_ptr = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(context_ptr);
+      unsigned int device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      size_t free_size = 0;
+      size_t total = 0;
+      (void)CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &free_size, &total);
+      MS_LOG(WARNING) << "MallocAlign32 device memory failed, size[" << size << "], ret[" << ret << "], "
+                      << "device " << device_id << ", available MOC size:" << total << ", free size:" << free_size;
+    } else {
+      MS_LOG(WARNING) << "MallocAlign32 device memory failed, size[" << size << "], ret[" << ret << "]";
+    }
+  } else {
+    MS_LOG(INFO) << "Call rtMallocAlign32 to allocate device memory Success, size: " << size
+                 << " bytes, address start: " << reinterpret_cast<void *>(ptr)
+                 << ", address end: " << reinterpret_cast<void *>(ptr + size);
+  }
+  return ptr;
+}
+
+bool AscendMemAdapter::FreeAlign32ToRts(void *devPtr) const {
+  auto ret = CALL_ASCEND_API(aclrtFree, devPtr);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(ERROR) << "aclrtFree mem [" << devPtr << "] fail, ret[" << ret << "]";
+    return false;
+  }
+  return true;
+}
+
 bool AscendMemAdapter::FreeToRts(void *devPtr, const size_t size) const {
   if (devPtr != nullptr) {
     if (AscendGmemAdapter::GetInstance().is_eager_free_enabled()) {
