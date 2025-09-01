@@ -195,6 +195,7 @@ const char PYTHON_FUNC_GRAPH_FLAGS[] = "_func_graph_flags";
 const char CUSTOM_BPROP_NAME[] = "bprop";
 const char STAGE_NAME[] = "_pipeline_stage";
 const char SEGMENT_NAME[] = "_pipeline_segment";
+const char CONTAIN_KWARGS_INPUT[] = "contain_kwargs_input";
 
 // Define python cell attributes and methods
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";

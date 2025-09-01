@@ -772,6 +772,22 @@ void ApplyCellHooks(const AnfNodePtr &resolved_node, const py::object &obj, cons
 }
 }  // namespace
 
+void UnsetTraceTag(const py::object &obj) {
+  const std::string trace_tag = "__trace_func__";
+  const std::string construct_func = "construct";
+  if (py::hasattr(obj, construct_func.c_str())) {
+    const auto &construct_obj = py::getattr(obj, construct_func.c_str());
+    if (py::hasattr(construct_obj, trace_tag.c_str())) {
+      py::delattr(construct_obj, trace_tag.c_str());
+      MS_LOG(WARNING)
+        << "Trace mode in ast mode does not support getting kwargs. Pure ast mode will be executed instead";
+    }
+  } else if (py::hasattr(obj, trace_tag.c_str())) {
+    py::delattr(obj, trace_tag.c_str());
+    MS_LOG(WARNING) << "Trace mode in ast mode does not support getting kwargs. Pure ast mode will be executed instead";
+  }
+}
+
 AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space,
                                    const SymbolPtr &symbol, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -782,6 +798,9 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
                 << ", loc: " << trace::GetDebugInfoStr(node->debug_info());
   TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(trace::GetSourceCodeDebugInfo(node->debug_info())));
   auto obj = GetSymbolObject(name_space, symbol, node);
+  if (node->has_user_data(CONTAIN_KWARGS_INPUT)) {
+    UnsetTraceTag(obj);
+  }
   AnfNodePtr resolved_node = ResolveObjectAndAddToManager(manager, obj, node);
   if (IsPrimitive(resolved_node, prim::kPrimTraceGraph)) {
     auto cell_obj = name_space->module_obj();

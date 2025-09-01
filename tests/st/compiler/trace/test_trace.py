@@ -903,7 +903,7 @@ def test_trace_8():
     assert res == 6
 
 
-@arg_mark(plat_marks=["platform_ascend910b", "platform_gpu"], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_trace_setitem():
     """
@@ -993,3 +993,41 @@ def test_trace_9():
     assert list(z) == list(d.items())
     assert q == dict.fromkeys(["one", "two", "three"], 0) and r
     assert new_d == {}
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_with_kwargs():
+    """
+    Feature: JIT trace function nested by JIT ast with kwargs
+    Description: JIT trace function nested by JIT ast with kwargs
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    def jit_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a=a, x=x, y=y, self_x=self.x)
+            return jit_func(a=a, x=x, y=y, self_x=self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit

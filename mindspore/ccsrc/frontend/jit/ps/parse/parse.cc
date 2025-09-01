@@ -1889,6 +1889,7 @@ CNodePtr MakeUnpackCall(const FuncGraphPtr &func_graph, const AnfNodePtr &call_f
   auto unpack_call_op = NewValueNode(prim::kPrimDoUnpackCall);
   unpack_call_nodes.push_back(unpack_call_op);
   unpack_call_nodes.push_back(call_function_node);
+  call_function_node->set_user_data(CONTAIN_KWARGS_INPUT, std::make_shared<bool>(true));
   (void)std::transform(packed_arguments.begin(), packed_arguments.end(), std::back_inserter(unpack_call_nodes),
                        [](AnfNodePtr node) -> AnfNodePtr { return node; });
   CNodePtr unpack_call = func_graph->NewCNodeInOrder(std::move(unpack_call_nodes));

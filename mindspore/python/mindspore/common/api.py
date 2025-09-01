@@ -1351,7 +1351,7 @@ def jit(
     elif capture_mode == "bytecode":
         wrap_func = PIJitCaptureContext(fullgraph=fullgraph, jit_config=jit_config)
     else:
-        wrap_func = _jit_trace()
+        wrap_func = _jit_trace(jit_config)
 
     if function is not None:
         return wrap_func(function)

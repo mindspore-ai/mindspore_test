@@ -65,7 +65,8 @@ class TraceRecorder {
   FuncGraphPtr InitTopGraph(const DebugInfoPtr &debug_info);
   void BeginGraph(const py::object &func_name, const py::object &phase, const py::list &file_names,
                   const py::list &linenos, const py::args &args);
-  void EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args);
+  void EndGraph(const py::list &file_names, const py::list &linenos, const py::dict &jit_config,
+                const py::args &output_args);
   void NewFuncGraphNode(const py::tuple &info, const py::args &inputs);
   void NewNode(const py::object &prim_obj, const py::tuple &op_info, const py::args &inputs);
   void ProcessNewNode(const PrimitivePtr &prim, const py::object &prim_res, const DebugInfoPtr &debug_info,
@@ -74,7 +75,7 @@ class TraceRecorder {
                              const py::object &prim_res, const DebugInfoPtr debug_info, const py::args &inputs,
                              bool do_signature);
   std::pair<AnfNodePtrList, AbstractBasePtrList> GenerateInputs(const py::args &inputs, const DebugInfoPtr &debug_info);
-  py::object RunGraph(const py::object &phase, const py::tuple &args);
+  py::object RunGraph(const py::object &phase, const py::dict &jit_config, const py::tuple &args);
 
   void SyncTensorNode(const py::object &old_tensor_obj, const py::object &new_tensor_obj);
   bool BuildingTraceGraph() { return !graph_stack_.empty(); }

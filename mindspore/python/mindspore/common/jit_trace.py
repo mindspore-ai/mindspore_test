@@ -28,6 +28,7 @@ from mindspore._c_expression import TraceRecorder as tr
 from mindspore._c_expression import JitExecutor_
 from mindspore._c_expression import TensorPy as Tensor, CSRTensor, COOTensor
 from mindspore._c_expression import typing
+from mindspore.common.jit_config import JitConfig
 
 
 class TraceJitContext(JitContext):
@@ -123,19 +124,19 @@ def nested_run(obj, cell, *args):
     return file_names, linenos, res
 
 
-def _jit_trace():
+def _jit_trace(jit_config):
     """Return the wrapped function for trace mode jit."""
     def wrap_func(fn):
         if hasattr(fn, "construct"):
             if isinstance(fn, ms.nn.Cell):
                 # Bound the cell object to get the self arg.
-                return types.MethodType(_jit_trace()(fn.construct.__func__), fn)
+                return types.MethodType(_jit_trace(jit_config)(fn.construct.__func__), fn)
             if isinstance(fn, type) and issubclass(fn, ms.nn.Cell):
-                fn.construct = _jit_trace()(fn.construct)
+                fn.construct = _jit_trace(jit_config)(fn.construct)
             return fn
 
         if isinstance(fn, types.MethodType):
-            return types.MethodType(_jit_trace()(fn.__func__), fn.__self__)
+            return types.MethodType(_jit_trace(jit_config)(fn.__func__), fn.__self__)
 
         if not isinstance(fn, types.FunctionType):
             logger.warning(f"The fn should be function, method or cell instance/class, but got {fn}")
@@ -150,6 +151,10 @@ def _jit_trace():
             if jit_context():
                 return fn(*args, **kwargs)
             # Start trace process.
+            if jit_config:
+                jit_config_dict = jit_config.jit_config_dict
+            else:
+                jit_config_dict = JitConfig().jit_config_dict
             if kwargs:
                 bound_arguments = inspect.signature(fn).bind(*args, **kwargs)
                 bound_arguments.apply_defaults()
@@ -170,14 +175,16 @@ def _jit_trace():
             line_str = fn.__code__.co_filename + ":" + str(fn.__code__.co_firstlineno)
             generate_name = generate_name + '#[' + line_str + ']'
 
-            new_compile = _jit_trace_begin(generate_name, *jit_args)
+            new_compile = _jit_trace_begin(
+                generate_name, *jit_args, jit_config=jit_config_dict)
             if new_compile:
                 fn_res = fn(*args, **kwargs)
                 logger.debug(f'fn: {fn}, fn_res: {fn_res}, line: {line_str}')
                 # Use fn's output to build func graph's output.
-                output = _jit_trace_end(fn_res)
+                output = _jit_trace_end(fn_res, jit_config=jit_config_dict)
             else:
-                output = _jit_trace_end(None)  # Run with compilation.
+                # Run with compilation.
+                output = _jit_trace_end(None, jit_config=jit_config_dict)
             logger.debug(f'output: {output}')
             return output
 
@@ -224,7 +231,7 @@ def _get_args_for_run(args):
     return tuple(new_args)
 
 
-def _jit_trace_begin(fn_name, *args):
+def _jit_trace_begin(fn_name, *args, **kwargs):
     """
     Start to build a MindIR func graph for a code snippet by trace method.
 
@@ -257,6 +264,10 @@ def _jit_trace_begin(fn_name, *args):
         ...
         >>> out = tensor_add(x, y)
     """
+    if "jit_config" in kwargs:
+        jit_config = kwargs["jit_config"]
+    else:
+        jit_config = JitConfig().jit_config_dict
     global _using_trace
     if _using_trace:
         raise RuntimeError(
@@ -279,7 +290,7 @@ def _jit_trace_begin(fn_name, *args):
     if not _compile_only and phase in _trace_compile_cache:
         logger.debug('Had compiled, just run.')
         _trace_jit_context.compiled = True
-        output = tr.get_instance().run_graph(phase, args)
+        output = tr.get_instance().run_graph(phase, jit_config, args)
         from mindspore.common.api import _convert_python_data
         _trace_jit_context.result = _convert_python_data(output)
         logger.debug(f'jit trace result: {_trace_jit_context.result}')
@@ -295,7 +306,7 @@ def _jit_trace_begin(fn_name, *args):
     return True
 
 
-def _jit_trace_end(*output_args):
+def _jit_trace_end(*output_args, **kwargs):
     """
     Finish building a MindIR func graph for a code snippet by trace method.
 
@@ -330,19 +341,23 @@ def _jit_trace_end(*output_args):
         ...
         >>> out = tensor_add(x, y)
     """
+    if "jit_config" in kwargs:
+        jit_config = kwargs["jit_config"]
+    else:
+        jit_config = JitConfig().jit_config_dict
     if _trace_jit_context.compiled:
         output = _trace_jit_context.result
         logger.debug(f'jit trace result: {output}')
     else:
         logger.debug(f'output_args: {output_args}')
         file_names, linenos = _get_caller_lines()
-        tr.get_instance().end_graph(file_names, linenos, *output_args)
+        tr.get_instance().end_graph(file_names, linenos, jit_config, *output_args)
         if _compile_only:
             output = output_args[0] if len(output_args) == 1 else output_args
         else:
             args = _get_args_for_run(_trace_jit_context.args)
             output = tr.get_instance().run_graph(
-                _trace_jit_context.phase, args)
+                _trace_jit_context.phase, jit_config, args)
             from mindspore.common.api import _convert_python_data
             output = _convert_python_data(output)
             logger.debug(f'jit trace result: {output}')
