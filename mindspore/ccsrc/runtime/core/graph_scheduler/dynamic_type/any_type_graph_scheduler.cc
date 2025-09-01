@@ -34,6 +34,22 @@ std::vector<AnyTypeKernelActorPtr> AnyTypeGraphScheduler::Build(const GraphCompi
     if (!graph->is_any_type_input()) {
       continue;
     }
+
+    const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
+    for (const auto &output : outputs) {
+      if (output.second == 0 || output.first == nullptr || output.first->abstract() == nullptr ||
+          !output.first->abstract()->isa<abstract::AbstractSequence>()) {
+        continue;
+      }
+      const auto &seq_abs = output.first->abstract()->cast<abstract::AbstractSequencePtr>();
+      MS_EXCEPTION_IF_NULL(seq_abs);
+      if (seq_abs->dynamic_len()) {
+        MS_LOG_WITH_NODE(EXCEPTION, output.first)
+          << "Unsupported output: tuple output with dynamic len is not supported in JIT fallback, graph id:"
+          << graph->graph_id() << ".";
+      }
+    }
+
     if (graph->execution_order().empty()) {
       MS_LOG(INFO) << "The graph " << graph->graph_id() << " is an empty graph and skips building.";
       continue;
