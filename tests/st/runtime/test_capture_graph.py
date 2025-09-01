@@ -97,8 +97,9 @@ def test_kv_cache_for_capture_graph():
 
     for _ in range(input_len):
         new_input_data = P.Add()(input_data1, 1)
-        k_cache_list1.append(new_input_data)
-        v_cache_list1.append(new_input_data)
+        new_input_data_view = new_input_data.view(new_input_data.shape)
+        k_cache_list1.append(new_input_data_view)
+        v_cache_list1.append(new_input_data_view)
 
     net = Net1()
     net.set_inputs(dyn_input_data, mutable(dyn_k_cache_list), mutable(dyn_v_cache_list))

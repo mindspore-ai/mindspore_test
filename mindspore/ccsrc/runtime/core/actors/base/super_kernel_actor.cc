@@ -774,38 +774,14 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
       << ", kernel tensor info: " << kernel_tensor->ToString()
       << " super kernel actor context:" << device_contexts_[0]->device_context_key().ToString()
       << " kernel actor context:" << kernel_actor->device_contexts()[0]->device_context_key().ToString();
-    auto device_tensor = kernel_tensor->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    const auto storage_info = device_tensor->GetTensorStorageInfo();
-    if (storage_info && IsNonContinuousInputValid()) {
-      if (is_first_user) {
-        HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
-      }
-      if (!kernel_actor->ConvertInputContiguousForSingleKernelTensor(context, kernel_tensor, kernel_input_index)) {
-        kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
-      }
-    } else {
-      kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
-      if (is_first_user) {
-        HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
-      }
-      kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
-                                          context, enable_infer_boost_);
-    }
-  }
-}
 
-bool SuperKernelActor::IsNonContinuousInputValid() {
-  if (enable_infer_boost_) {
-    if (enable_capture_graph_) {
-      return true;
+    kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
+    if (is_first_user) {
+      HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
     }
-    if (enable_trace_memory_) {
-      return true;
-    }
-    return false;
+    kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
+                                        context, enable_infer_boost_);
   }
-  return false;
 }
 
 void SuperKernelActor::HandleFirstUserInputMemoryFree(const KernelRunnerPtr &kernel_actor, size_t kernel_input_index) {
