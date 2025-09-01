@@ -291,10 +291,12 @@ class LeafViewCopyNet(nn.Cell):
         x.copy_(y)
         return x
 
+
 class OverlapViewCopyNet(nn.Cell):
     def construct(self, x, y):
         x.copy_(y)
         return x
+
 
 class MsViewInplaceHasBprop(nn.Cell):
     def construct(self, x, y):
@@ -312,7 +314,7 @@ class MsViewInplaceHasBprop(nn.Cell):
 class TorchViewInplaceHasBprop(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x, y):
-        z = x*2
+        z = x * 2
         b = z.as_strided((3, 3), (3, 1))
         b.copy_(y)
         return b
@@ -322,6 +324,7 @@ class TorchViewInplaceHasBprop(torch.autograd.Function):
         a = torch.tensor(np.array([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]]).astype(np.float32))
         b = torch.tensor(np.array([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]]).astype(np.float32))
         return a, b
+
 
 @arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
@@ -773,6 +776,10 @@ def test_view_inplace_with_unsafe_view():
     assert np.allclose(grad.asnumpy(), np.array([[0., 0.], [2., 0.]], dtype=np.float32), 0.000001, 0.000001)
 
 
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_view_inplace_view_rebase_error():
     """
     Feature: Test view inplace valid.
@@ -808,3 +815,51 @@ def test_view_inplace_view_rebase_error():
         _pynative_executor.sync()
     assert ("A view of base is being rebase, "
             "which created in no_grad mode and inplace modified with grad mode enabled.") in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_base_tensor_is_no_requires_grad_and_view_tensor_is_leaf():
+    """
+    Feature: Test view inplace valid.
+    Description: When the base tensor of a view does not require gradient and
+                 the view tensor is a leaf node requiring gradient, version and
+                 creation_type check should not be triggered.
+    Expectation: Not raise error and the calculation result is correct.
+    """
+    x = ms.Tensor([2.0, 1.0])
+    x_view = x.view_as(x)
+    x_view += 1.0
+
+    # view tensor is leaf tensor
+    grad = ms.grad(lambda input_tensor: input_tensor * input_tensor, grad_position=0)(x_view)
+    assert np.allclose(grad.asnumpy(), np.array([6.0, 4.0], dtype=np.float32), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_base_tensor_is_no_requires_grad_and_view_tensor_is_non_leaf():
+    """
+    Feature: Test view inplace valid.
+    Description: When the base tensor of a view does not require gradient and
+                 the view tensor is a non-leaf node requiring gradient, version and
+                 creation_type check should be triggered.
+    Expectation: Raise runtime error.
+    """
+
+    def fn(x):
+        x_view1, _ = ops.split(x, 1)
+        ms.ops.stop_gradient_(x)
+        x += 1.0
+        return x_view1
+
+    x = ms.Tensor([[3., 2.], [2., 1.]])
+    with pytest.raises(RuntimeError) as err:
+        ms.grad(fn, grad_position=0)(x)
+        ms.runtime.synchronize()
+    assert "A view of base is being rebase" in str(err.value)
+    assert "This view is one of output for multi output operator" in str(err.value)

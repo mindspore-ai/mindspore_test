@@ -786,6 +786,11 @@ BackwardNodePtr SafeGetGradNodeImpl(const tensor::TensorPtr &tensor) {
     }
     return auto_grad_meta_data->UnsafeGetGradNodeImpl();
   }
+
+  if (tensor->is_leaf() && !view_meta->view_info().base()->requires_grad()) {
+    return view_meta->UnsafeGetGradNodeImpl();
+  }
+
   if (tensor->version().current_version() == view_meta->version_attr()) {
     return view_meta->UnsafeGetGradNodeImpl();
   }
