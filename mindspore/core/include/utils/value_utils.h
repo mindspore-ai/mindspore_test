@@ -118,6 +118,10 @@ MS_CORE_API std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value);
 template <typename T>
 MS_CORE_API std::optional<T> GetScalarValue(const ValuePtr &value);
 
+// ABI-safe interfaces: get scalar value through pointer (avoids cross-module std::optional issues)
+template <typename T>
+MS_CORE_API bool GetScalarValuePtr(const ValuePtr &value, T *out_value);
+
 // Get the scalar/std::string value with check
 template <typename T, typename std::enable_if<std::is_scalar<std::decay_t<T>>::value ||
                                               std::is_same_v<std::decay_t<T>, std::string>>::type * = nullptr>
