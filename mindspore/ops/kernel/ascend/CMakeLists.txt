@@ -9,6 +9,7 @@ set(ASCEND_KERNEL_COMP
         acl_ir
         aclnn
         akg
+        custom
         kernel_packet
 )
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/custom/custom_kernel_factory.h"
+#include "kernel/ascend/custom/custom_kernel_factory.h"
 #include <algorithm>
 #include <numeric>
 

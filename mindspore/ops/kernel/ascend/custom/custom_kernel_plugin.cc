@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/custom/custom_kernel_plugin.h"
+#include "kernel/ascend/custom/custom_kernel_plugin.h"
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "plugin/device/ascend/kernel/custom/custom_kernel_factory.h"
+#include "kernel/ascend/custom/custom_kernel_factory.h"
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

@@ -19,17 +19,17 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "kernel/ascend/visible.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-KernelModPtr CustomKernelBuild(const AnfNodePtr &anf_node);
-bool IsRegisteredCustomKernel(const AnfNodePtr &anf_node);
-bool IsEnableCustomNode(const AnfNodePtr &node);
+OPS_ASCEND_API KernelModPtr CustomKernelBuild(const AnfNodePtr &anf_node);
+OPS_ASCEND_API bool IsRegisteredCustomKernel(const AnfNodePtr &anf_node);
+OPS_ASCEND_API bool IsEnableCustomNode(const AnfNodePtr &node);
 
-void ProcessCustomKernelFormatMapping(const CNodePtr &kernel, std::vector<std::string> *input_formats,
-                                      std::vector<std::string> *output_formats);
+OPS_ASCEND_API void ProcessCustomKernelFormatMapping(const CNodePtr &kernel, std::vector<std::string> *input_formats,
+                                                     std::vector<std::string> *output_formats);
 
 }  // namespace kernel
 }  // namespace mindspore
