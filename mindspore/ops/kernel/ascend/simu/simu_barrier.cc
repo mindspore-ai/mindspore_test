@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/simu/simu_barrier.h"
+#include "kernel/ascend/simu/simu_barrier.h"
 
 namespace mindspore {
 namespace kernel {
