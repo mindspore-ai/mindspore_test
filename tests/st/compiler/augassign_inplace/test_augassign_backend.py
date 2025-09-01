@@ -90,3 +90,93 @@ def test_initial_scalar_body_tensor1():
     input_me_a = Tensor(2, ms.float32)
     input_me_b = Tensor(6, ms.float32)
     test_net(input_me_x, input_me_a, input_me_b)
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_fallback_assign_validation():
+    """
+    Feature: Support augassign inplace fallback with different input types
+    Description: Test augassign inplace fallback with different input types
+    Expectation: Run success.
+    """
+
+    @jit(backend='GE')
+    def inplace_add_ext(x, y):
+        x += Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_adds_ext(x, y):
+        x += y
+        return x
+
+    @jit(backend='GE')
+    def inplace_sub_ext(x, y):
+        x -= Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_sub_scalar(x, y):
+        x -= y
+        return x
+
+    @jit(backend='GE')
+    def inplace_mul(x, y):
+        x *= Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_muls(x, y):
+        x *= y
+        return x
+
+    @jit(backend='GE')
+    def inplace_div(x, y):
+        x /= Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_divs(x, y):
+        x /= y
+        return x
+
+    @jit(backend='GE')
+    def inplace_floor_divide(x, y):
+        x //= Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_floor_divides(x, y):
+        x //= y
+        return x
+
+    @jit(backend='GE')
+    def inplace_remainder_tensor_tensor(x, y):
+        x %= Tensor(y)
+        return x
+
+    @jit(backend='GE')
+    def inplace_remainder_tensor_scalar(x, y):
+        x %= y
+        return x
+
+    def test_assign_validation(f):
+        input_y = 2.5
+        input_x = Tensor(1)
+        input_x_dtype = input_x.dtype
+        output = f(input_x, input_y)
+        assert input_x_dtype == output.dtype
+
+    test_assign_validation(inplace_add_ext)
+    test_assign_validation(inplace_adds_ext)
+    test_assign_validation(inplace_sub_ext)
+    test_assign_validation(inplace_sub_scalar)
+    test_assign_validation(inplace_mul)
+    test_assign_validation(inplace_muls)
+    test_assign_validation(inplace_div)
+    test_assign_validation(inplace_divs)
+    test_assign_validation(inplace_floor_divide)
+    test_assign_validation(inplace_floor_divides)
+    test_assign_validation(inplace_remainder_tensor_tensor)
+    test_assign_validation(inplace_remainder_tensor_scalar)
