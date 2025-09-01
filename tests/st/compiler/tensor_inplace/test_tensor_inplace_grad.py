@@ -465,14 +465,14 @@ def test_inplace_backward_param_assign():
     x0 = Tensor(3, dtype=mstype.int32)
     x1 = Tensor(3, dtype=mstype.int32)
     graph_forward_res = Net()(x0)
-    grad = ops.GradOperation()
-    graph_backward_res = grad(Net())(x1)
+    grad_ops = ops.GradOperation()
+    graph_backward_res = grad_ops(Net())(x1)
 
     ms.set_context(mode=ms.PYNATIVE_MODE)
     x2 = Tensor(3, dtype=mstype.int32)
     x3 = Tensor(3, dtype=mstype.int32)
     pynative_forward_res = Net()(x2)
-    pynative_backward_res = grad(Net())(x3)
+    pynative_backward_res = grad_ops(Net())(x3)
 
     assert graph_forward_res == pynative_forward_res
     assert graph_backward_res == pynative_backward_res
