@@ -139,7 +139,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
             self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
         else:
             self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
-        self.hccl_code_generate_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
+        self.hccl_code_generate_path = "mindspore/ops/kernel/ascend/hccl/pyboost/auto_generate/"
         self.device = device
 
     def generate(self, work_path, op_protos):
@@ -339,7 +339,7 @@ must be provided for comm op {operator_name}")
 
             if is_ascend_comm_op:
                 customize_include = \
-                    f'#include "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/{operator_name.lower()}.h"\n'
+                    f'#include "mindspore/ops/kernel/ascend/hccl/pyboost/{operator_name.lower()}.h"\n'
             else:
                 if self.device == 'ascend':
                     customize_include = \
@@ -930,7 +930,7 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.ascend_gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
         self.cpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         self.gpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
-        self.hccl_gen_path = "mindspore/ccsrc/plugin/device/ascend/kernel/hccl/pyboost/auto_generate/"
+        self.hccl_gen_path = "mindspore/ops/kernel/ascend/hccl/pyboost/auto_generate/"
 
     def generate(self, work_path, op_protos):
         """

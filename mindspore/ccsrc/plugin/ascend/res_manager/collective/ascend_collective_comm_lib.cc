@@ -17,7 +17,7 @@
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "include/common/utils/utils.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/kernel/hccl/hcom_util.h"
+#include "kernel/ascend/hccl/hcom_util.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
