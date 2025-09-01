@@ -23,7 +23,7 @@
 #include <utility>
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "pynative/base.h"
+#include "pynative/utils/base.h"
 #include "include/common/pynative/variable.h"
 
 namespace mindspore {

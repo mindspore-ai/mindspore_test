@@ -24,7 +24,7 @@
 #include "frontend/jit/ps/executor/jit_executor_py.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
-#include "pynative/pynative_execute.h"
+#include "pynative/utils/pynative_execute.h"
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
@@ -204,7 +204,6 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterCellBackwardHookFunction(m);
   mindspore::pynative::RegisterDetachFunction(m);
   mindspore::pynative::RegisterFunctional(m);
-  mindspore::pynative::RegDirectOps(m);
   mindspore::pynative::distributed::RegReducer(m);
   mindspore::pynative::autograd::RegBackwardFunction(m);
   mindspore::pynative::autograd::RegBackwardNode(m);

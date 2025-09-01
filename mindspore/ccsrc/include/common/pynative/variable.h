@@ -27,7 +27,7 @@
 #include "ir/meta_grad_data.h"
 #include "ir/tensor.h"
 #include "utils/ordered_map.h"
-#include "pynative/grad/hook_py.h"
+#include "pynative/backward/hook/hook_py.h"
 #include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {

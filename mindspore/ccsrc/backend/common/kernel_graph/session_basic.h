@@ -34,7 +34,7 @@
 #include "include/common/utils/contract.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "utils/ms_context.h"
-#include "pynative/base.h"
+#include "pynative/utils/base.h"
 
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "include/backend/visible.h"

@@ -22,7 +22,7 @@
 #include "mindapi/base/format.h"
 #include "include/common/pybind_api/api_register.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "pynative/pynative_utils.h"
+#include "pynative/utils/pynative_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 
 namespace mindspore {

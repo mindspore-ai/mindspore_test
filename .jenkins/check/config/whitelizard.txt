@@ -44,7 +44,6 @@ mindspore/mindspore/ccsrc/pybind_api/init.cc:PYBIND11_MODULE
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute
-mindspore/mindspore/ccsrc/pynative/grad/ir/ir_bprop.cc:mindspore::pynative::autograd::IrBprop::GetBpropGraphFromExpander
 mindspore/mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ccsrc/pybind_api/utils/log_adapter_py.cc:mindspore::PyExceptionInitializer::HandleExceptionRethrow
 mindspore/mindspore/ccsrc/backend/common/kernel_graph/anf_runtime_algorithm.cc:mindspore::session::AnfRuntimeAlgorithm::FlattenInputArg
