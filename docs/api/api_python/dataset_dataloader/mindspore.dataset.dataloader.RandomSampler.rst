@@ -8,5 +8,5 @@ mindspore.dataset.dataloader.RandomSampler
     参数：
         - **data_source** (Dataset) - 要从中加载数据的数据集。
         - **replacement** (bool, 可选) - 是否开启放回采样。默认值： ``False`` 。
-        - **num_samples** (int, 可选) - 要抽取的样本数量。默认值： ``None`` ，将会设置为 `data_source` 的长度。
+        - **num_samples** (Union[int, None], 可选) - 要抽取的样本数量。默认值： ``None`` ，将会设置为 `data_source` 的长度。
         - **generator** (mindspore.Generator, 可选) - 采样时使用的生成器。默认值： ``None`` 。

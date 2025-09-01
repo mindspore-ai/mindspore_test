@@ -66,7 +66,7 @@ class RandomSampler(Sampler[int]):
     Args:
         data_source (Dataset): Dataset to be sampled.
         replacement (bool, optional): Whether to enable the return sampling. Default: ``False`` .
-        num_samples (int, optional): Number of samples to be drawn. Default: ``None`` ,
+        num_samples (Union[int, None], optional): Number of samples to be drawn. Default: ``None`` ,
             will be set to the length of `data_source` .
         generator (mindspore.Generator, optional): Generator used during sampling. Default: ``None`` .
 
@@ -135,7 +135,7 @@ class RandomSampler(Sampler[int]):
 
 class BatchSampler(Sampler[list[int]]):
     """
-   A sampler that generates mini-batch indices each time.
+    A sampler that generates mini-batch indices each time.
 
     Args:
         sampler (Union[Sampler, Iterable]): Sampler for generating indices.
