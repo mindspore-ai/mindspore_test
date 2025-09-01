@@ -53,8 +53,6 @@ ms::Tensor GenResultTensor(const ms::Tensor &t, int64_t dim, bool keep_dim, ms::
   return ms::Tensor(type_id, out_shape);
 }
 
-using namespace mindspore;
-using namespace mindspore::device::ascend;
 ms::Tensor npu_arg_min(const ms::Tensor &x, int64_t dim, bool keep_dim) {
   auto result = GenResultTensor(x, dim, keep_dim, ms::TypeId::kNumberTypeInt64);
   auto runner = std::make_shared<ms::pynative::AclnnOpRunner>("ReduceSum");

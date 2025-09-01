@@ -46,8 +46,6 @@ ms::Tensor GenResultTensor(const ms::Tensor &t, const std::vector<int64_t> &axis
   return ms::Tensor(type_id, out_shape);
 }
 
-using namespace mindspore;
-using namespace mindspore::device::ascend;
 ms::Tensor npu_abs_reduce_sum(const ms::Tensor &x, std::optional<std::vector<int64_t>> axis, bool keepdims,
                               std::optional<int64_t> dtype) {
   auto type_id = dtype.has_value() ? static_cast<ms::TypeId>(dtype.value()) : x.data_type();
