@@ -196,9 +196,6 @@ class KernelRunner {
   // Only aclnn kernel support no-contiguous input, so need make input contiguous.
   void ConvertInputContiguous(OpContext<KernelTensor> *const context);
 
-  bool ConvertInputContiguousForSingleKernelTensor(OpContext<KernelTensor> *const context,
-                                                   KernelTensorPtr input_kernel_tensor, size_t kernel_input_index);
-
   // Recover the inputs with contiguous.
   void RecoverInputs();
 

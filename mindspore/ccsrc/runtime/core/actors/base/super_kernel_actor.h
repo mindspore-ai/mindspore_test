@@ -223,8 +223,6 @@ class SuperKernelActor : public DebugAwareActor {
 
   void HandleFirstUserInputMemoryFree(const KernelRunnerPtr &kernel_actor, size_t kernel_input_index);
 
-  bool IsNonContinuousInputValid();
-
   // Prepare non top cell input, such as internal parameter msg input, control flow msg input and const value.
   bool FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_actor, OpContext<KernelTensor> *const context);
 

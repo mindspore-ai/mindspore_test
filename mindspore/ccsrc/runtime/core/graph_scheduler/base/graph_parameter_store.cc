@@ -227,9 +227,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
                                                     const std::vector<AnfNodePtr> &parameters) {
   bool isDyn = false;
   auto &llm_manager = LLMManager::GetInstance();
-  auto &cur_graph_phase = graph_compiler_info->graph_phase_;
-  auto enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
-                              (cur_graph_phase.find("increment") != std::string::npos);
+
   for (size_t l = 0; l < input_index.size(); ++l) {
     auto i = input_index[l];
     auto origin_parameter = parameters[l];
@@ -237,13 +235,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
     if (i >= buffers_.size()) {
       MS_LOG(EXCEPTION) << "Index " << i << " is out of range of buffers size: " << buffers_.size();
     }
-    auto buffer_inner_size = buffers_[i].size();
-    // List tensor input do not compare shape.
-    if (!enable_capture_graph) {
-      if (buffer_inner_size != 1) {
-        continue;
-      }
-    }
+
     const auto &input_tensor = buffers_[i][0];
     if (input_tensor == nullptr) {
       MS_LOG(ERROR) << "The input tensor is nullptr for arg outer index: " << i;
@@ -270,13 +262,7 @@ void GraphParameterStore::ConvertNormalInputContiguous(const std::vector<size_t>
       MS_LOG(EXCEPTION) << "Index " << i << " is out of range of buffers size: " << buffers_.size();
     }
     auto buffer_inner_size = buffers_[i].size();
-
-    if (buffer_inner_size != 1) {
-      if (buffers_[i][0] != nullptr && buffers_[i][0]->storage_info() != nullptr) {
-        MS_LOG(EXCEPTION) << "The input of tuple type contains non-contiguous inputs, which is not supported in the "
-                             "inference scenario.";
-      }
-    } else {
+    if (buffer_inner_size == 1) {
       const auto &input_tensor = buffers_[i][0];
       DeviceAddressUtils::ConvertContiguousTensorSync(input_tensor, 0);
     }
