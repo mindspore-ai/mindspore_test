@@ -63,11 +63,11 @@ class MS_CORE_API InferInfo {
 
   template <class T>
   T GetScalarValueWithCheck() {
-    const auto &opt = GetScalarValue<T>();
-    if (!opt.has_value()) {
+    T result;
+    if (!mindspore::GetScalarValuePtr<T>(GetValuePtr(), &result)) {
       MS_LOG(EXCEPTION) << "Unable to get scalar value, " << BaseDebugInfo();
     }
-    return opt.value();
+    return result;
   }
 
   template <class T>

@@ -144,6 +144,46 @@ template MS_CORE_API std::optional<double> GetScalarValue(const ValuePtr &value)
 template MS_CORE_API std::optional<float> GetScalarValue(const ValuePtr &value);
 template MS_CORE_API std::optional<bool> GetScalarValue(const ValuePtr &value);
 
+// ABI-safe implementation: avoid cross-module std::optional issues
+template <typename T>
+bool GetScalarValuePtr(const ValuePtr &value, T *out_value) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_EXCEPTION_IF_NULL(out_value);
+  auto opt = GetScalarValue<T>(value);
+  if (opt.has_value()) {
+    *out_value = opt.value();
+    return true;
+  }
+  return false;
+}
+
+// Specialization for std::string type
+template <>
+MS_CORE_API bool GetScalarValuePtr<std::string>(const ValuePtr &value, std::string *out_value) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_EXCEPTION_IF_NULL(out_value);
+
+  auto opt = GetScalarValue<std::string>(value);
+  if (opt.has_value()) {
+    *out_value = opt.value();
+    return true;
+  }
+  return false;
+}
+
+// Explicit instantiation for ABI-safe pointer interfaces
+template MS_CORE_API bool GetScalarValuePtr<int64_t>(const ValuePtr &value, int64_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<int32_t>(const ValuePtr &value, int32_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<int16_t>(const ValuePtr &value, int16_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<int8_t>(const ValuePtr &value, int8_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<uint64_t>(const ValuePtr &value, uint64_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<uint32_t>(const ValuePtr &value, uint32_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<uint16_t>(const ValuePtr &value, uint16_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<uint8_t>(const ValuePtr &value, uint8_t *out_value);
+template MS_CORE_API bool GetScalarValuePtr<double>(const ValuePtr &value, double *out_value);
+template MS_CORE_API bool GetScalarValuePtr<float>(const ValuePtr &value, float *out_value);
+template MS_CORE_API bool GetScalarValuePtr<bool>(const ValuePtr &value, bool *out_value);
+
 // This interface is only used to convert values of type Sequence or Tensor to std::vector.
 template <typename T>
 std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
