@@ -97,7 +97,7 @@ def test_method_transpose_python(mode):
     if mode == 0:
         assert "the perm value must be in" in str(error_info.value)
     elif mode == 1:
-        assert "dim value error." in str(error_info.value)
+        assert "Dimension out of range" in str(error_info.value)
     # axes's shape not equal to input's shape
     with pytest.raises(ValueError) as error_info:
         axes = (0, 1)
@@ -154,7 +154,7 @@ def test_method_transpose_pyboost(mode):
     with pytest.raises(ValueError) as error_info:
         net(x, 0, 3)
         _pynative_executor.sync()
-    assert "For primitive[TransposeExtView], the dim1 must be in " in str(error_info.value)
+    assert "Dimension out of range (expected to be in range of [-3, 3), but got 3)" in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],

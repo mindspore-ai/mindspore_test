@@ -94,8 +94,8 @@ int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr, bool wrap_scalar) {
     }
     return DynamicDimWrap(dim, 1, false);
   }
-  MS_EXCEPTION(ValueError) << "dim value error. dim:" << dim << ", dim value should be in [" << -dim_post_expr << ", "
-                           << dim_post_expr << ").";
+  MS_EXCEPTION(ValueError) << "Dimension out of range (expected to be in range of [" << -dim_post_expr << ", "
+                           << dim_post_expr << "), but got " << dim << ")";
 }
 
 OldTensorInfoPtr GetOldTensorInfo(const tensor::TensorPtr &tensor) {
