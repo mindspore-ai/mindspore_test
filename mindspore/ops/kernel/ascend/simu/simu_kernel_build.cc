@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
+#include "kernel/ascend/simu/simu_kernel_build.h"
 #include <string>
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/kernel/simu/simu_kernel.h"
+#include "kernel/ascend/simu/simu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"

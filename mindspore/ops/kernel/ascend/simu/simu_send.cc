@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_
-
-#include <memory>
-#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "kernel/ascend/simu/simu_send.h"
 
 namespace mindspore {
 namespace kernel {
-KernelModPtr SimuOpBuild(const AnfNodePtr &anf_node);
+bool SimuSendKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  if (inputs.empty()) {
+    MS_LOG(ERROR) << "Invalid simu send input size (" << inputs.size() << ").";
+    return false;
+  }
+
+  return true;
+}
 }  // namespace kernel
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_

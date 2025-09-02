@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_
 
-#include <vector>
-#include "plugin/device/ascend/kernel/simu/simu_kernel.h"
+#include <memory>
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class SimuBarrierKernel : public SimuKernel {
- public:
-  SimuBarrierKernel() = default;
-  ~SimuBarrierKernel() override = default;
-
-  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-};
-
-MS_SIMU_REG_KERNEL(Barrier, SimuBarrierKernel);
+OPS_ASCEND_API KernelModPtr SimuOpBuild(const AnfNodePtr &anf_node);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_KERNEL_BUILD_H_

@@ -11,6 +11,7 @@ set(ASCEND_KERNEL_COMP
         akg
         custom
         kernel_packet
+        simu
 )
 
 ### check dvm binary file ###

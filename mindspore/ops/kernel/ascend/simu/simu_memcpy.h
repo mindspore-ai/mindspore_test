@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "plugin/device/ascend/kernel/simu/simu_kernel.h"
+#include "kernel/ascend/simu/simu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

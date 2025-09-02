@@ -43,7 +43,7 @@
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
-#include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
+#include "kernel/ascend/simu/simu_kernel_build.h"
 #include "kernel/ascend/internal/internal_kernel_build.h"
 #include "kernel/ascend/custom/custom_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
