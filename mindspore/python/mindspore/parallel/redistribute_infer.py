@@ -628,6 +628,8 @@ class RedistributionOperatorInfer:
                 group = self.dev_mat_.GetDevicesAlongDim(rank, rank_list, tensor_map)
                 concat_dim = op[1][0]
                 concat_size = op[1][2]
+                if concat_size == 1:
+                    continue
                 ops_list.append(("all_concat", (concat_dim, concat_size, group)))
             elif op[0] == SPLIT_BY_AXIS:
                 tensor_map = [self.dev_ranks - 1 - d for d in op[1][1]] if isinstance(op[1][1], tuple) \
@@ -635,6 +637,8 @@ class RedistributionOperatorInfer:
                 group = self.dev_mat_.GetDevicesAlongDim(rank, rank_list, tensor_map)
                 split_dim = op[1][0]
                 split_size = op[1][2]
+                if split_size == 1:
+                    continue
                 ops_list.append(("all_split", (split_dim, split_size, group)))
             else:
                 tensor_map = [self.dev_ranks - 1 - d for d in op[1][3]] if isinstance(op[1][3], tuple) \
@@ -643,5 +647,7 @@ class RedistributionOperatorInfer:
                 concat_dim = op[1][2]
                 split_dim = op[1][1]
                 permute_size = op[1][0]
+                if permute_size == 1:
+                    continue
                 ops_list.append(("all_to_all", (split_dim, concat_dim, permute_size, group)))
         return ops_list

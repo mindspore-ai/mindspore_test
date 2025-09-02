@@ -84,9 +84,12 @@ class TensorRedistribution:
         concat_dim = args[-1]
         group = _get_comm_group(rank_list)
         x = x.contiguous()
-        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
-        _ = ms.mint.distributed.all_gather(empty_tensor, x, group)
-        return ms.mint.concat(empty_tensor, concat_dim)
+        output, _ = comm.comm_func.all_gather_into_tensor(x, group=group)
+        if concat_dim == 0:
+            return output
+        output_tensors = ms.ops.Split(output_num=len(rank_list))(output)
+        return ms.mint.concat(output_tensors, concat_dim)
+
 
     def _construct_strided_slice(self, x, *args):
         """args: (begin, end, strides)"""
@@ -96,34 +99,95 @@ class TensorRedistribution:
     def _construct_all_concat_new(self, x, *args):
         """args: (concat_dim, concat_size, group)"""
         rank_list = list(args[2])
-        if len(rank_list) <= 1:
-            return x
         concat_dim = args[0]
+        concat_size = args[1]
         group = _get_comm_group(rank_list)
         x = x.contiguous()
-        empty_tensor = [ms.mint.empty(x.shape, dtype=x.dtype) for _ in rank_list]
-        _ = ms.mint.distributed.all_gather(empty_tensor, x, group)
-        return ms.mint.concat(empty_tensor, concat_dim)
+        output, _ = comm.comm_func.all_gather_into_tensor(x, group=group)
+        if concat_dim == 0:
+            return output
+        output_tensors = ms.ops.Split(output_num=concat_size)(output)
+        return ms.mint.concat(output_tensors, concat_dim)
 
     def _construct_all_split(self, x, *args):
         """args: (split_dim, split_size, group)"""
         rank_list = list(args[2])
         split_dim = args[0]
-        split_size = x.shape[split_dim] // args[1]
+        split_size = args[1]
         idx = rank_list.index(self.rank_id)
-        return ms.mint.split(x, split_size, split_dim)[idx]
+        return ms.ops.Split(axis=split_dim, output_num=split_size)(x)[idx]
 
     def _construct_all_to_all(self, x, *args):
         """args: (split_dim, concat_dim, permute_size, group)"""
-        rank_list = list(args[3])
-        split_dim = args[0]
-        concat_dim = args[1]
-        permute_size = x.shape[split_dim] // args[2]
+        split_dim, concat_dim, split_count, rank_list = args
         group = _get_comm_group(rank_list)
-        send_tensor = ms.mint.split(x, permute_size, split_dim)
-        recv_tensor = [ms.mint.zeros_like(send_tensor[0]) for _ in rank_list]
-        _ = ms.mint.distributed.all_to_all(recv_tensor, send_tensor, group)
-        return ms.mint.concat(recv_tensor, concat_dim)
+        original_shape = x.shape
+
+        dim_size = original_shape[split_dim]
+        if dim_size % split_count != 0:
+            raise ValueError(f"Dimension {split_dim} with size {dim_size} "
+                             f"cannot be evenly split into {split_count} parts")
+
+        split_size = dim_size // split_count
+        x = x.contiguous()
+
+        final_shape = list(original_shape)
+        if split_dim != concat_dim:
+            final_shape[split_dim] = split_size
+            final_shape[concat_dim] = final_shape[concat_dim] * split_count
+        final_shape = tuple(final_shape)
+
+        pre_special_handle = all(original_shape[i] == 1 for i in range(split_dim))
+        if pre_special_handle:
+            reshape_shape = (split_count * split_size,) + original_shape[split_dim + 1:]
+            x_reshaped = x.view(reshape_shape)
+        else:
+            reshape_dims = list(original_shape)
+            reshape_dims[split_dim] = split_count
+            reshape_dims.insert(split_dim + 1, split_size)
+
+            trans_dims = list(range(len(reshape_dims)))
+            trans_dims.remove(split_dim)
+            trans_dims.insert(0, split_dim)
+
+            x_reshaped = x.reshape(reshape_dims).permute(trans_dims).contiguous()
+
+            reshape_shape = list(x_reshaped.shape)
+            reshape_shape[0] = reshape_shape[0] * reshape_shape[1]
+            reshape_shape.pop(1)
+            reshape_shape = tuple(reshape_shape)
+            x_reshaped = x_reshaped.reshape(reshape_shape)
+
+        output_tensor, _ = comm.comm_func.all_to_all_single_with_output_shape(
+            output_shape=reshape_shape,
+            tensor=x_reshaped,
+            group=group,
+            async_op=False
+        )
+
+        post_special_handle = all(final_shape[i] == 1 for i in range(concat_dim))
+        if post_special_handle:
+            return output_tensor.view(final_shape)
+
+        output_reshape = list(output_tensor.shape)
+        output_reshape[0] = split_count
+        output_reshape.insert(1, output_tensor.shape[0] // split_count)
+
+        out_trans_dims = list(range(len(output_reshape)))
+        first_dim = out_trans_dims.pop(0)
+        if concat_dim >= len(out_trans_dims):
+            out_trans_dims.append(first_dim)
+        else:
+            out_trans_dims.insert(concat_dim, first_dim)
+
+        final_output = output_tensor.reshape(output_reshape).permute(out_trans_dims).contiguous()
+
+        final_reshape = list(final_output.shape)
+        if concat_dim < len(final_reshape) - 1:
+            final_reshape[concat_dim] = final_reshape[concat_dim] * final_reshape[concat_dim + 1]
+            final_reshape.pop(concat_dim + 1)
+
+        return final_output.reshape(final_reshape)
 
     def _apply_eazy_redistribute(self, src_layout, dst_layout):
         """_apply_eazy_redistribute"""
@@ -224,14 +288,12 @@ class TensorRedistribution:
         dev_num = layout.device_matrix[layout.alias_name.index(dev_dim)]
         group = layout.get_comm_group_by_axis(dev_dim, self.rank_id)
         if axis > 0:
-            x = ms.mint.concat(ms.mint.split(x, x.shape[axis] // dev_num, dim=axis), dim=0)
-        output_shape = (x.shape[0] // dev_num,) + x.shape[1:]
-        output_tensor = ms.mint.empty(output_shape, dtype=x.dtype)
+            x = ms.mint.concat(ms.ops.Split(axis=axis, output_num=dev_num)(x), dim=0)
         if op == 'avg':
-            _ = ms.mint.distributed.reduce_scatter_tensor(output_tensor, x, 'sum', group)
+            output_tensor, _ = comm.comm_func.reduce_scatter_tensor(x, 'sum', group)
             output_tensor = output_tensor / dev_num
         else:
-            _ = ms.mint.distributed.reduce_scatter_tensor(output_tensor, x, op, group)
+            output_tensor, _ = comm.comm_func.reduce_scatter_tensor(x, 'sum', group)
         logger.warning(f"Do ReduceScatter-{op} along dev {dev_dim} at axis {axis}. group: {group}")
         return output_tensor
 
