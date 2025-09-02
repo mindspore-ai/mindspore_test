@@ -29,36 +29,37 @@ TensorStorageInfoPtrList RealImagViewBasicTypeCalc(const PrimitivePtr &prim, con
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   MS_EXCEPTION_IF_NULL(old_tensor_info);
 
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
+  auto new_shape = old_tensor_info->old_shape;
+  auto new_strides = old_tensor_info->old_strides;
+  auto ori_shape = old_tensor_info->ori_shape;
+  auto ori_strides = old_tensor_info->ori_strides;
   size_t old_storage_offset = old_tensor_info->old_offset;
-  int dim_size = SizeToLong(old_shape.size());
+  int dim_size = SizeToLong(new_shape.size());
+  int ori_dim_size = SizeToLong(ori_shape.size());
 
-  auto new_shape = old_shape;
-  if (is_complex_data_type && dim_size > 0) {
-    // we reexplained the complex storage into two parts, so the old shape is doubled, eg. complex64 to 2 float32
-    old_shape[dim_size - 1] *= 2;
-    old_strides[dim_size - 1] = 1;
-    for (int i = dim_size - 2; i >= 0; i--) {
-      old_strides[i] = old_strides[i + 1] * old_shape[i + 1];
-    }
-  }
-
-  auto new_strides = old_strides;
   auto new_storage_offset = old_storage_offset;
-
-  if (is_complex_data_type) {
-    // if dim_size is 0, the complex tensor is a scalar, so we don't need to calculate the strides
-    if (dim_size > 0) {
-      // complex has two parts, real and imag, they are stored one after another, so the stride is 2
-      new_strides[dim_size - 1] = 2;
+  if (is_complex_data_type && dim_size > 0 && ori_dim_size > 0) {
+    // if old tensor has shape, and because of the complex storage, the new stride is doubled
+    for (int i = 0; i < dim_size; i++) {
+      new_strides[i] *= 2;
     }
-    // real is first, imag is second
-    new_storage_offset = is_real ? old_storage_offset : old_storage_offset + 1;
+    // we reexplained the complex storage into two parts, so the original shape is doubled, eg. complex64 to 2 float32
+    ori_shape[ori_dim_size - 1] *= 2;
+    ori_strides[ori_dim_size - 1] = 1;
+    // recalculate the original strides with the new shape
+    for (int i = ori_dim_size - 2; i >= 0; i--) {
+      ori_strides[i] = ori_strides[i + 1] * ori_shape[i + 1];
+    }
+    new_storage_offset *= 2;
   }
 
-  return {std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_shape, old_strides,
-                                              IsContiguous(old_shape, new_strides))};
+  // for imag part, the storage offset need to add 1
+  if (is_complex_data_type && (!is_real)) {
+    new_storage_offset += 1;
+  }
+
+  return {
+    std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, ori_shape, ori_strides, false)};
 }
 
 TensorStorageInfoPtrList RealViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {

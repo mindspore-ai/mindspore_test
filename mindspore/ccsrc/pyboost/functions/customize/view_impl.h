@@ -29,5 +29,7 @@ mindspore::tensor::TensorPtr view_as_impl(const mindspore::tensor::TensorPtr &in
                                           const mindspore::tensor::TensorPtr &other);
 mindspore::tensor::TensorPtr expand_as_impl(const mindspore::tensor::TensorPtr &input,
                                             const mindspore::tensor::TensorPtr &other);
+mindspore::tensor::TensorPtr real_view_impl(const mindspore::tensor::TensorPtr &input);
+mindspore::tensor::TensorPtr imag_view_impl(const mindspore::tensor::TensorPtr &input);
 }  // namespace mindspore::kernel::pyboost
 #endif  // MINDSPORE_MINDSPORE_CCSRC_PYBOOST_FUNCTIONS_CUSTOMIZE_VIEW_IMPL_H_

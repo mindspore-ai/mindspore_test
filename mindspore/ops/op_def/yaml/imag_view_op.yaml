@@ -13,3 +13,4 @@ imag_view:
         enable: True
         Ascend: ImagViewAscend
         GPU: None
+        CPU: None

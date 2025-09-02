@@ -26,6 +26,8 @@
 #include "mindspore/core/include/utils/stream_guard.h"
 #include "mindspore/ops/view/reshape_strides_calc.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/view.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/imag_view.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/real_view.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
@@ -68,6 +70,26 @@ mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &in
   auto output = view_op->Call(contig_tensor, shape);
   IsSafeViewGuard safe_view_guard(false);
   reshape_grad_func(output, contig_tensor, shape);
+  return output;
+}
+
+mindspore::tensor::TensorPtr real_view_impl(const mindspore::tensor::TensorPtr &input) {
+  const auto &device_target = GetDeviceTarget();
+  static auto real_view_grad_func = AutoGradFactory::Get().ops_auto_grad_registers().RealViewGradFuncObj;
+
+  const auto view_op = CREATE_PYBOOST_OP(RealView, device_target);
+  auto output = view_op->Call(input);
+  real_view_grad_func(output, input);
+  return output;
+}
+
+mindspore::tensor::TensorPtr imag_view_impl(const mindspore::tensor::TensorPtr &input) {
+  const auto &device_target = GetDeviceTarget();
+  static auto imag_view_grad_func = AutoGradFactory::Get().ops_auto_grad_registers().ImagViewGradFuncObj;
+
+  const auto view_op = CREATE_PYBOOST_OP(ImagView, device_target);
+  auto output = view_op->Call(input);
+  imag_view_grad_func(output, input);
   return output;
 }
 

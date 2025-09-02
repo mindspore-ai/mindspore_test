@@ -13,3 +13,4 @@ real_view:
         enable: True
         Ascend: RealViewAscend
         GPU: None
+        CPU: None
