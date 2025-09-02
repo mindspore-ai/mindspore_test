@@ -13,20 +13,24 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+from typing import Optional
 import mindspore as ms
 import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
 from mindspore import nn, ops
 from mindspore.communication import init
 from mindspore.parallel.spmd.hsdp import hsdp
+from hsdp_test_common import Network, hsdp_network_ckpt_path
 
 ms.set_seed(1)
+ms.set_deterministic(True)
 
-def create_dataset(batch_size):
+def create_dataset(local_batch_size: int, num_shards: Optional[int] = None, shard_id: Optional[int] = None):
     dataset_path = "/home/workspace/mindspore_dataset/mnist/train"
-    rank_id = get_rank()
-    rank_size = get_group_size()
-    dataset = ds.MnistDataset(dataset_path, num_shards=rank_size, shard_id=rank_id)
+    if (num_shards is None) or (shard_id is None):
+        dataset = ds.MnistDataset(dataset_path, shuffle=False)
+    else:
+        dataset = ds.MnistDataset(dataset_path, num_shards=rank_size, shard_id=rank_id, shuffle=False)
     image_transforms = [
         ds.vision.Rescale(1.0 / 255.0, 0),
         ds.vision.Normalize(mean=(0.1307,), std=(0.3081,)),
@@ -35,31 +39,11 @@ def create_dataset(batch_size):
     label_transform = ds.transforms.TypeCast(ms.int32)
     dataset = dataset.map(image_transforms, 'image')
     dataset = dataset.map(label_transform, 'label')
-    dataset = dataset.batch(batch_size)
+    dataset = dataset.batch(local_batch_size)
     return dataset
 
-local_batch_size = 32
-data_set = create_dataset(local_batch_size)
-
-class Network(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.flatten = nn.Flatten()
-        self.dense_relu_sequential = nn.SequentialCell(
-            nn.Dense(28*28, 512, weight_init="normal", bias_init="zeros"),
-            nn.ReLU(),
-            nn.Dense(512, 512, weight_init="normal", bias_init="zeros"),
-            nn.ReLU(),
-            nn.Dense(512, 10, weight_init="normal", bias_init="zeros")
-        )
-
-    def construct(self, x):
-        x = self.flatten(x)
-        logits = self.dense_relu_sequential(x)
-        return logits
 
 loss_fn = nn.CrossEntropyLoss()
-
 def get_forward_fn(net):
     def forward_fn(data, label):
         logits = net(data)
@@ -67,32 +51,67 @@ def get_forward_fn(net):
         return loss, logits
     return forward_fn
 
-def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"):
-    net = Network()
-    hsdp(net, shard_size, threshold, optimizer_level)
+# Global hyper parameters:
+local_bs = 32
+dp_size = get_group_size()
+rank_id = get_rank()
+rank_size = get_group_size()
+learning_rate = 1e-3
+max_step = 10
 
-    optimizer = nn.SGD(net.trainable_params(), 1e-2)
+def make_baseline_by_standalone_run():
+    data_set = create_dataset(local_batch_size=local_bs * dp_size)
+    net = Network()
+    param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
+    param_not_load, _ = ms.load_param_into_net(net, param_dict)
+    assert not param_not_load, f"For hsdp test case, not completely load ckpt from {hsdp_network_ckpt_path}"
+    optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
 
     i = 0
-    rank_id = get_rank()
     for data, label in data_set:
         (loss, _), grads = grad_fn(data, label)
         optimizer(grads)
-        if rank_id == 0 and i % 10 == 0:
-            print("step: %s, loss is %s" % (i, loss))
+        if rank_id == 0:
+            print(f"step: {i}, loss: {loss}")
         i += 1
+        if i >= max_step:
+            break
+
+def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"):
+    data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
+    net = Network()
+    param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
+    param_not_load, _ = ms.load_param_into_net(net, param_dict)
+    assert not param_not_load, f"For hsdp test case, not completely load ckpt from {hsdp_network_ckpt_path}"
+    hsdp(net, shard_size, threshold, optimizer_level)
+    optimizer = nn.Adam(net.trainable_params(), learning_rate)
+    grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
+    loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
+    i = 0
+    for data, label in data_set:
+        (loss, _), grads = grad_fn(data, label)
+        optimizer(grads)
+        reduced_loss = loss_sync_allreduce(loss)
+        if rank_id == 0:
+            print(f"step: {i}, loss: {reduced_loss / dp_size}")
+        i += 1
+        if i >= max_step:
+            break
 
 def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1):
+    data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = Network()
+    param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
+    param_not_load, _ = ms.load_param_into_net(net, param_dict)
+    assert not param_not_load, f"For hsdp test case, not completely load ckpt from {hsdp_network_ckpt_path}"
     hsdp(net, shard_size, threshold, optimizer_level, accumulate_grad_step=micro_step)
 
-    optimizer = nn.SGD(net.trainable_params(), 1e-2)
+    optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
-
+    loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
     i = 0
-    rank_id = get_rank()
-    micro_size = local_batch_size // micro_step
+    micro_size = local_bs // micro_step
     for data, label in data_set:
         data_list = ops.split(data, micro_size)
         label_list = ops.split(label, micro_size)
@@ -106,10 +125,22 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
                 net.set_requires_grad_sync(True)
             (loss, _), grads = grad_fn(data_list[j], label_list[j])
             total_loss = total_loss + loss
+        reduced_loss = loss_sync_allreduce(total_loss)
         optimizer(grads)
-        if rank_id == 0 and i % 10 == 0:
-            print("step: %s, loss is %s" % (i, total_loss / micro_step))
+        if rank_id == 0:
+            print(f"step: {i}, loss: {reduced_loss / (micro_step * dp_size)}")
         i += 1
+        if i >= max_step:
+            break
+
+
+def test_standalone_run():
+    '''
+    Feature: Run the network with standalone mode
+    Description: run network with standalone, gbs = local_batch_size * dp_size
+    Expectation: Run success
+    '''
+    make_baseline_by_standalone_run()
 
 def test_pure_dp():
     init()
