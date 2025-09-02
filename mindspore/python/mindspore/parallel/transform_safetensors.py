@@ -15,6 +15,7 @@
 """Transform distributed safetensors"""
 from __future__ import absolute_import
 
+import copy
 import os
 import sys
 import glob
@@ -830,11 +831,43 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     _save_file_atomically(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
-def _extrace_number(file_name):
-    """get file last two number"""
-    number_ls = re.findall(r'\d+', file_name)
-    number_ls = [int(i) for i in number_ls]
-    return number_ls[-2:]
+def _extract_numbers(s):
+    """Extract all numbers from a string and convert them to integers."""
+    return [int(num) for num in re.findall(r'\d+', s)]
+
+
+def _extract_last_two_numbers(file_name):
+    """Get the last two numbers from a filename."""
+    all_numbers = _extract_numbers(file_name)
+    return all_numbers[-2:]
+
+
+def _find_most_matching_file(rank_ckpts, file_suffix, format):
+    """Finds the most matching checkpoint file based on the file_suffix."""
+    if file_suffix is None:
+        rank_ckpts.sort(key=_extract_last_two_numbers)
+    else:
+        pattern = rf'^_(\d+)-(\d+)_(\d+)$'
+        matches = re.search(pattern, file_suffix)
+        if matches is not None:
+            matched = [ckpt for ckpt in rank_ckpts if not ckpt.endswith(f"rank{file_suffix}.{format}")]
+            if len(matched) == 1:
+                return matched[0]
+        pattern = rf'^(\d+)-(\d+)_(\d+)$'
+        matches = re.search(pattern, file_suffix)
+        if matches is not None:
+            matched = [ckpt for ckpt in rank_ckpts if
+                       ckpt.endswith(f"_{file_suffix}.{format}") and not ckpt.endswith(f"rank_{file_suffix}.{format}")]
+            if len(matched) == 1:
+                return matched[0]
+        pattern = rf'^(\d+)_(\d+)$'
+        matches = re.search(pattern, file_suffix)
+        if matches is not None:
+            matched = [ckpt for ckpt in rank_ckpts if ckpt.endswith(f"-{file_suffix}.{format}")]
+            if len(matched) == 1:
+                return matched[0]
+        rank_ckpts.sort(key=lambda x: len(os.path.basename(x)), reverse=True)
+    return rank_ckpts[-1]
 
 
 def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
@@ -845,6 +878,9 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
         return {0: src_safetensors_dir}
     safetensors_rank_dir_list = os.path.join(src_safetensors_dir, "rank_[0-9]*")
     all_safetensor_files_map = {}
+    multiple_files_found_flag = False
+    multiple_files_list = None
+    chosen_file = None
     for safetensor_dir in glob.glob(safetensors_rank_dir_list):
         if not os.path.isdir(safetensor_dir):
             ms.log.warning("{} is not a directory.".format(safetensor_dir))
@@ -860,9 +896,18 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
         else:
             safetensor_file_name = os.path.join(safetensor_dir, f"*{file_suffix}.{format}")
         rank_ckpts = glob.glob(safetensor_file_name)
-        rank_ckpts.sort(key=_extrace_number)
-        if rank_ckpts:
-            all_safetensor_files_map[rank_id] = rank_ckpts[-1]
+        if len(rank_ckpts) > 1:
+            all_safetensor_files_map[rank_id] = _find_most_matching_file(rank_ckpts, file_suffix, format)
+            if not multiple_files_found_flag:
+                multiple_files_found_flag = True
+                multiple_files_list = copy.deepcopy(rank_ckpts)
+                chosen_file = all_safetensor_files_map[rank_id]
+        elif rank_ckpts:
+            all_safetensor_files_map[rank_id] = rank_ckpts[0]
+    if file_suffix is not None and multiple_files_found_flag:
+        logger.warning(f"When unified_safetensors files with file_suffix `{file_suffix}`, multiple files were found. "
+                       f"Showing one list: {multiple_files_list}; selected `{chosen_file}` from it. "
+                       f"Please check whether the file_suffix is set correctly.")
     return all_safetensor_files_map
 
 
