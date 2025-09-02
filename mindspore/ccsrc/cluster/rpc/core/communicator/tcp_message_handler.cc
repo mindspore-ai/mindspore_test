@@ -42,22 +42,27 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
           message_header_.message_proto_ = *reinterpret_cast<const Protos *>(header_);
           if (message_header_.message_proto_ != Protos::RAW && message_header_.message_proto_ != Protos::FLATBUFFERS &&
               message_header_.message_proto_ != Protos::PROTOBUF) {
-            MS_LOG(WARNING) << "The proto:" << message_header_.message_proto_ << " is illegal!";
+            MS_LOG(WARNING)
+              << "The proto:" << message_header_.message_proto_
+              << " is illegal! Failed to parse the message header and the message body will fail to be received.";
             Reset();
             return;
           }
           message_header_.message_meta_length_ =
             *reinterpret_cast<const uint32_t *>(header_ + sizeof(message_header_.message_proto_));
-          message_header_.message_length_ = *reinterpret_cast<const size_t *>(
+          message_header_.message_length_ = *reinterpret_cast<const uint64_t *>(
             header_ + sizeof(message_header_.message_proto_) + sizeof(message_header_.message_meta_length_));
-          if (message_header_.message_length_ >= UINT32_MAX) {
-            MS_LOG(WARNING) << "The message len:" << message_header_.message_length_ << " is too long.";
+          if (message_header_.message_length_ >= UINT64_MAX) {
+            MS_LOG(WARNING)
+              << "The message len:" << message_header_.message_length_
+              << " is too long.! Failed to parse the message header and the message body will fail to be received.";
             Reset();
             return;
           }
           if (message_header_.message_meta_length_ > message_header_.message_length_) {
             MS_LOG(WARNING) << "The message meta len " << message_header_.message_meta_length_ << " > the message len "
-                            << message_header_.message_length_;
+                            << message_header_.message_length_
+                            << "! Failed to parse the message header and the message body will fail to be received.";
             Reset();
             return;
           }
@@ -88,7 +93,7 @@ void TcpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
           std::shared_ptr<MessageMeta> pb_message = std::make_shared<MessageMeta>();
           MS_EXCEPTION_IF_NULL(pb_message);
           if (!pb_message->ParseFromArray(message_buffer_.data(), UintToInt(message_header_.message_meta_length_))) {
-            MS_LOG(ERROR) << "Parse protobuf MessageMeta failed";
+            MS_LOG(ERROR) << "Parse protobuf MessageMeta failed! Failed to receive the message body.";
             Reset();
             return;
           }
