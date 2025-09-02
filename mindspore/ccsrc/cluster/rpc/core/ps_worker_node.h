@@ -14,35 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_MS_COLLECTIVE_NODE_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_MS_COLLECTIVE_NODE_H_
+#ifndef MINDSPORE_CCSRC_PS_CORE_PS_WORKER_NODE_H_
+#define MINDSPORE_CCSRC_PS_CORE_PS_WORKER_NODE_H_
 
 #include <memory>
-#include "cluster/rpc/core/ps_worker_node.h"
-#include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "cluster/rpc/core/abstract_ps_node.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class BACKEND_EXPORT CollectiveNode : public PSWorkerNode {
+// This class is a derived class of WorkerNode specialized for Parameter Server. It is used to rewrite the logic
+// specific to Parameter Server mode training in WorkerNode. For example, the registration of Parameter Server's Worker
+// node is synchronous.
+class BACKEND_COMMON_EXPORT PSWorkerNode : public AbstractPSNode {
  public:
-  explicit CollectiveNode(const std::shared_ptr<distributed::cluster::topology::TcpNodeBase> &client_node)
-      : client_node_(client_node) {}
-  ~CollectiveNode() = default;
+  PSWorkerNode() = default;
+  ~PSWorkerNode() override = default;
 
   bool Start(const uint32_t &timeout = PSContext::instance()->cluster_config().cluster_available_timeout) override;
+  bool Stop() override;
   bool Finish(const uint32_t &timeout = kTimeoutInSeconds) override;
 
-  // Register the address of this collective node and then lookup the addresses of all the other nodes.
-  void SynchronizeAddresses();
-
- protected:
-  bool InitClientToScheduler() override;
+ private:
+  void Initialize();
 
  private:
-  std::shared_ptr<distributed::cluster::topology::TcpNodeBase> client_node_;
+  // The Worker node registers to the Scheduler node, and the registration of the Worker node of the Parameter Server
+  // is synchronous.
+  void Register(const std::shared_ptr<TcpClient> &client) override;
 };
 }  // namespace core
 }  // namespace ps
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_CPU_MS_COLLECTIVE_NODE_H_
+
+#endif  // MINDSPORE_CCSRC_PS_CORE_PS_WORKER_NODE_H_

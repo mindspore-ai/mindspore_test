@@ -24,7 +24,7 @@
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #include "include/backend/distributed/cluster/topology/tcp_node.h"
-#include "ps/core/comm_util.h"
+#include "cluster/rpc/core/comm_util.h"
 #include "cluster/topology/meta_server_node.h"
 #else
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"

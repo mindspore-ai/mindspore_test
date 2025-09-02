@@ -91,7 +91,8 @@ endif()
 file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ./backend/graph_optimizer_test_framework.cc ./symbol_engine/*.cc)
 # plugin/device/cpu/hal/test_ms_collective_topo.cc will also open 127.0.0.1:8090
-file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc)
+file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./cluster/rpc/core/*.cc ./cluster/rpc/tcp/*.cc
+        ./plugin/device/cpu/hal/*.cc)
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./place/*.cc)
 file(GLOB_RECURSE UT_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./stub/*.cc ./common/*.cc ./mock/*.cc
@@ -103,6 +104,7 @@ if(NOT ENABLE_CPU OR WIN32 OR APPLE)
     file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
             ./cluster/persistent/*.cc
             ./cluster/rpc/tcp/*.cc
+            ./cluster/rpc/core/*.cc
             ./cluster/topology/*.cc)
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
@@ -148,11 +150,11 @@ endif()
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/cluster/topology/*.cc"
         "../../../mindspore/ccsrc/cluster/rpc/tcp/*.cc"
+        "../../../mindspore/ccsrc/cluster/rpc/core/*.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/cpu_res_manager.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/mem_manager/cpu_memory_pool.cc"
         "../../../mindspore/ccsrc/plugin/cpu/res_manager/collective/ms_collective_topo.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
-        "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/*.cc"
         "../../../mindspore/ops/kernel/cpu/fused_ada_factor_cpu_kernel.cc"
@@ -231,10 +233,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${ASCEND_PLUGIN_PATH}/res_manager/symbol_interface/*.cc"
         )
 
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/core/communicator/task_executor.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/ps_context.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/rpc/core/communicator/task_executor.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_mod.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_build.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/cluster/topology/cluster_context.cc")

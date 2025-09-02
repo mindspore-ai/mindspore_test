@@ -15,7 +15,7 @@
  */
 
 #include "include/backend/distributed/rpc/tcp/tcp_client.h"
-#include "ps/core/communicator/ssl_client.h"
+#include "cluster/rpc/core/communicator/ssl_client.h"
 #include "cluster/rpc/tcp/tcp_comm.h"
 
 namespace mindspore {
