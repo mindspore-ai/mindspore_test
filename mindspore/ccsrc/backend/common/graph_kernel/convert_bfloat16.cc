@@ -298,8 +298,10 @@ bool ConvertBFloat16::Process(const FuncGraphPtr &func_graph) {
     }
     auto orig_output_type = cb->GetOutputType(node, 0);
     // update node abstract
-    auto new_abstract = UpdateAbstractDataType(node->abstract(), kFloat32);
-    node->set_abstract(new_abstract);
+    if (orig_output_type == kNumberTypeBFloat16) {
+      auto new_abstract = UpdateAbstractDataType(node->abstract(), kFloat32);
+      node->set_abstract(new_abstract);
+    }
     // update node build info
     UpdateBuildInfoInputDataType(node, kNumberTypeBFloat16, kNumberTypeFloat32);
     UpdateBuildInfoOutputDataType(node, kNumberTypeBFloat16, kNumberTypeFloat32);
