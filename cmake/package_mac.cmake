@@ -57,7 +57,7 @@ endif()
 
 if(ENABLE_CPU AND NOT WIN32)
     install(
-        TARGETS mindspore_ops_host LIBRARY
+        TARGETS mindspore_ops_cpu LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP
@@ -127,16 +127,11 @@ if(ENABLE_CPU)
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
     )
-endif()
-
-if(ENABLE_MPI)
-    if(ENABLE_CPU)
-        install(
-            TARGETS mpi_adapter
-            DESTINATION ${INSTALL_LIB_DIR}
-            COMPONENT mindspore
-        )
-    endif()
+    install(
+        TARGETS mindspore_cpu
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
 endif()
 
 if(ENABLE_GPU)

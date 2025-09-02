@@ -19,7 +19,7 @@
 #include <memory>
 #include <random>
 #include "mindspore/ops/infer/cauchy.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

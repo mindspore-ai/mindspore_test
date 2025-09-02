@@ -23,6 +23,7 @@
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #endif
 
 namespace mindspore {
@@ -30,7 +31,6 @@ namespace kernel {
 namespace allgather_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
 #endif
 
 bool AllGatherCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -70,8 +70,9 @@ bool AllGatherCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllGather(
-    inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float), input_dtype_, kMCCLGlobalGroupName);
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  bool ret = comm_lib->AllGather(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float),
+                                 input_dtype_, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllGatherCPUKernelMod launch failed.";
   }

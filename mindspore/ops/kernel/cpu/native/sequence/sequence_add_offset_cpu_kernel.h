@@ -21,7 +21,7 @@
 #include <utility>
 #include <map>
 #include <string>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ops/infer/sequence_add_offset.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 

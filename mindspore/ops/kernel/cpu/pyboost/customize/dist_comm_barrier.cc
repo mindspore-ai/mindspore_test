@@ -21,7 +21,7 @@
 #include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/misc.h"
 #endif
 
@@ -29,15 +29,13 @@ namespace mindspore {
 namespace kernel {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::CollectiveOpReduceType;
-using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
 void DistCommBarrierCPUCustomize(const std::shared_ptr<OpRunner> &op, const StringImmPtr &group) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   MS_LOG(DEBUG) << "Call start";
   const auto &group_str = GetValue<std::string>(group);
-  auto ranks = MsCollectiveCommLib::GetInstance().GetGroupRanks(group_str);
+  auto ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_str).size();
   TensorPtr input_tensor = tensor::from_vector(ShapeVector(ranks));
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});
@@ -49,9 +47,9 @@ void DistCommBarrierCPUCustomize(const std::shared_ptr<OpRunner> &op, const Stri
 
     auto in_addr = input_address_info.first;
     size_t type_len = GetDataTypeSize(in_addr[0]->dtype_id());
-    bool ret = MsCollectiveCommLib::GetInstance().AllReduce(in_addr[0]->device_ptr(), in_addr[0]->device_ptr(),
-                                                            in_addr[0]->size() / type_len, in_addr[0]->dtype_id(),
-                                                            CollectiveOpReduceType::Reduce_Sum, group_str);
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->host_comm_lib();
+    bool ret = comm_lib->AllReduce(in_addr[0]->device_ptr(), in_addr[0]->device_ptr(), in_addr[0]->size() / type_len,
+                                   in_addr[0]->dtype_id(), CollectiveOpReduceType::Reduce_Sum, group_str);
     if (!ret) {
       MS_LOG(EXCEPTION) << "AllReduce failed.";
     }

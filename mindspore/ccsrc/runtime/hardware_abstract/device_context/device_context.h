@@ -428,6 +428,8 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
 
   virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const { return false; }
 
+  virtual void RebuildKernelSelectBackoffOp(const std::vector<CNodePtr> &nodes) const { return; }
+
  protected:
   DeviceContext *device_context_{nullptr};
 };

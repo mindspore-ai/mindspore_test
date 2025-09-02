@@ -1,0 +1,57 @@
+/**
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CONTIGUOUS_CPU_KERNEL_H
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CONTIGUOUS_CPU_KERNEL_H
+
+#include <vector>
+#include <map>
+#include <utility>
+#include "ir/tensor_storage_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
+#include "kernel/cpu/utils/visible.h"
+
+namespace mindspore {
+namespace kernel {
+class OPS_HOST_API ContiguousCpuKernel : public NativeCpuKernelMod {
+ public:
+  ContiguousCpuKernel() = default;
+  ~ContiguousCpuKernel() = default;
+  bool LaunchContiguous(TypeId input_type_id, const device::DeviceAddressPtr &inputs,
+                        const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                        const device::DeviceAddressPtr &outputs);
+  bool LaunchContiguous(TypeId input_type_id, device::DeviceAddress *inputs,
+                        const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                        device::DeviceAddress *outputs);
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs) override {
+    MS_LOG(EXCEPTION) << "This api is not external";
+  }
+
+ private:
+  using ContiguousFunc = std::function<bool(ContiguousCpuKernel *, device::DeviceAddress *,
+                                            const TensorStorageInfoPtr &, device::DeviceAddress *, const int64_t &)>;
+
+  template <typename T>
+  bool LaunchContiguousImpl(device::DeviceAddress *inputs, const TensorStorageInfoPtr &input_storage_info,
+                            device::DeviceAddress *outputs, const int64_t &type_size);
+  static std::map<std::pair<TypeId, TypeId>, ContiguousFunc> func_list_;
+};
+}  // namespace kernel
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CONTIGUOUS_CPU_KERNEL_H

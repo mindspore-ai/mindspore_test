@@ -34,7 +34,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/ms_utils.h"
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

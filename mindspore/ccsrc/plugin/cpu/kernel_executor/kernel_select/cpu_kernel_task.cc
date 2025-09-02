@@ -15,8 +15,8 @@
  */
 
 #include "plugin/cpu/kernel_executor/kernel_select/cpu_kernel_task.h"
-#include "plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
-#include "plugin/device/cpu/kernel/copy_with_slice_cpu_kernel.h"
+#include "kernel/cpu/contiguous_cpu_kernel.h"
+#include "kernel/cpu/copy_with_slice_cpu_kernel.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore::device::cpu {

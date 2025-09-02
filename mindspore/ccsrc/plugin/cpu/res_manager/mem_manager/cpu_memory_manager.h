@@ -20,14 +20,14 @@
 #include <map>
 #include <memory>
 #include "ir/device_address.h"
-#include "include/backend/visible.h"
+#include "plugin/cpu/visible.h"
 #include "runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
-class BACKEND_EXPORT CPUMemoryManager : public MemoryManager {
+class CPU_EXPORT CPUMemoryManager : public MemoryManager {
  public:
   CPUMemoryManager() = default;
   virtual ~CPUMemoryManager();

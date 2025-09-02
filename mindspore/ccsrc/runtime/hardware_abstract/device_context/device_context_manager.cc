@@ -334,9 +334,14 @@ void DeviceContextManager::LoadPlugin() {
     return;
   }
 #ifdef _WIN32
-  auto plugin_file = plugin_path_ + "\\mindspore_gpu.dll";
-  if (access(plugin_file.c_str(), F_OK) != -1) {
-    (void)plugin_loader::PluginLoader::LoadDynamicLib(plugin_file, &plugin_maps_, &dlopen_error_msg_);
+  auto gpu_plugin_file = plugin_path_ + "\\mindspore_gpu.dll";
+  if (access(gpu_plugin_file.c_str(), F_OK) != -1) {
+    (void)plugin_loader::PluginLoader::LoadDynamicLib(gpu_plugin_file, &plugin_maps_, &dlopen_error_msg_);
+  }
+  // mindspore_cpu is not needed by other module, loading mindspore_cpu to register CPUDeviceManager in Windows
+  auto cpu_plugin_file = plugin_path_ + "\\mindspore_cpu.dll";
+  if (access(cpu_plugin_file.c_str(), F_OK) != -1) {
+    (void)plugin_loader::PluginLoader::LoadDynamicLib(cpu_plugin_file, &plugin_maps_, &dlopen_error_msg_);
   }
 #else
   DIR *dir = opendir(plugin_path_.c_str());

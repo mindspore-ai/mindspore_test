@@ -29,7 +29,7 @@
 #include "plugin/cpu/res_manager/collective/ms_collective_node.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #include "include/backend/distributed/cluster/topology/tcp_node.h"
-#include "include/backend/visible.h"
+#include "plugin/cpu/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -48,7 +48,7 @@ constexpr uint32_t kWaitDuration = 5;
 constexpr uint32_t kMSCollectiveRetryTime = 200;
 
 // The collective communication library for MindSpore self developed communication framework.
-class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
+class CPU_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
  public:
   static MsCollectiveCommLib &GetInstance() {
     static MsCollectiveCommLib instance;

@@ -43,7 +43,7 @@ class CPUKernelExecutor : public KernelExecutor {
 
   // Kernel that is not supported by other device can be backed off and rebuilt on the CPU.
   // The function will set kernel info and create kernel mod.
-  void RebuildKernelSelectBackoffOp(const std::vector<CNodePtr> &nodes) const;
+  void RebuildKernelSelectBackoffOp(const std::vector<CNodePtr> &nodes) const override;
 
   void PreprocessBeforeRun(const FuncGraphPtr &graph) const override;
 

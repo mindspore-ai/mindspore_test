@@ -163,7 +163,12 @@ if(ENABLE_CPU)
         COMPONENT mindspore
     )
     install(
-        TARGETS mindspore_ops_host LIBRARY
+        TARGETS mindspore_cpu
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ops_cpu LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP
@@ -172,11 +177,6 @@ endif()
 
 if(ENABLE_MPI)
     if(ENABLE_CPU)
-        install(
-            TARGETS mpi_adapter
-            DESTINATION ${INSTALL_LIB_DIR}
-            COMPONENT mindspore
-        )
         install(
           TARGETS mpi_collective
           DESTINATION ${INSTALL_LIB_DIR}

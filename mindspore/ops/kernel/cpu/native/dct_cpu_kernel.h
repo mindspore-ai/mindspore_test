@@ -20,7 +20,7 @@
 #include <vector>
 #include <complex>
 #include <utility>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "mindspore/ops/op_def/op_enum.h"

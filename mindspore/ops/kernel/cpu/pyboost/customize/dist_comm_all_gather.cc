@@ -23,17 +23,12 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/misc.h"
 #endif
 
 namespace mindspore {
 namespace kernel {
-#if defined(__linux__) && defined(WITH_BACKEND)
-using device::CollectiveOpReduceType::Reduce_Sum;
-using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
-#endif
 namespace pyboost {
 void DistCommAllGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &gather_list,
                                    const TensorPtr &input_tensor, const Int64ImmPtr &rank_size,
@@ -61,8 +56,9 @@ void DistCommAllGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const Va
     auto out_addr = output_address_info.first;
     const auto &group_str = GetValue<std::string>(group);
     auto type_len = GetDataTypeSize(in_addr[0]->dtype_id());
-    bool ret = MsCollectiveCommLib::GetInstance().AllGather(in_addr[0]->device_ptr(), out_addr[0]->device_ptr(),
-                                                            data_size / type_len, in_addr[0]->dtype_id(), group_str);
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->host_comm_lib();
+    bool ret = comm_lib->AllGather(in_addr[0]->device_ptr(), out_addr[0]->device_ptr(), data_size / type_len,
+                                   in_addr[0]->dtype_id(), group_str);
     if (!ret) {
       MS_LOG(EXCEPTION) << "AllGather failed.";
     }

@@ -229,7 +229,7 @@ void RegModuleHelper(py::module *m) {
 // Interface with python
 PYBIND11_MODULE(_c_expression, m) {
 #ifdef _WIN32
-  // Use dummy function to force link to mindspore_ops_host on windows
+  // Use dummy function to force link to mindspore_ops_cpu on windows
   mindspore::kernel::ForceLinkOpsHost();
 #endif
   // The OMP_NUM_THREADS has no effect when set in backend, so set it here in advance.

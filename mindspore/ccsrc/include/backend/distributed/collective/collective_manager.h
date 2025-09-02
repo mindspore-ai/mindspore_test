@@ -140,6 +140,8 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
 
   CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
 
+  CollectiveCommunicationLib *host_comm_lib() { return host_comm_lib_instance_; }
+
   void CacheInitedGroups(const std::string &name);
   void ClearCacheInitedGroups();
   size_t InitedGroupSize();

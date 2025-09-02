@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <complex>
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "base/float16.h"
 #include "kernel/cpu/utils/visible.h"
 

@@ -25,7 +25,7 @@
 
 #include "mindspore/ops/op_def/math_ops.h"
 
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include <map>
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/nnacl/kernel/pooling.h"
 #include "kernel/cpu/nnacl/pooling_parameter.h"
 

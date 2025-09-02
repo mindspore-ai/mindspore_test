@@ -41,7 +41,6 @@
 #include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
-#include "plugin/cpu/cpu_device_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -215,9 +214,7 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
     auto cpu_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(cpu_context);
-    auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_context->GetKernelExecutor().get());
-    MS_EXCEPTION_IF_NULL(cpu_executor);
-    cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
+    cpu_context->GetKernelExecutor()->RebuildKernelSelectBackoffOp(graph->execution_order());
   }
 #endif
   // Update needed dump kernels for mindRT.
@@ -638,9 +635,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
-      auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
-      MS_EXCEPTION_IF_NULL(cpu_executor);
-      cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
+      cpu_device_context->GetKernelExecutor()->RebuildKernelSelectBackoffOp(graph->execution_order());
     }
 #endif
     // dynamic shape pass of graphmode
@@ -749,9 +744,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
       auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
         {device::DeviceType::kCPU, device_context->device_context_key().device_id_});
       MS_EXCEPTION_IF_NULL(cpu_device_context);
-      auto cpu_executor = dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor().get());
-      MS_EXCEPTION_IF_NULL(cpu_executor);
-      cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
+      cpu_device_context->GetKernelExecutor()->RebuildKernelSelectBackoffOp(graph->execution_order());
     }
 #endif
     SetRefInfoForKernelGraph(graph);

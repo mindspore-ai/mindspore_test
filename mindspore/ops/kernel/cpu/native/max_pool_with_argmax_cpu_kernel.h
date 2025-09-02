@@ -21,7 +21,7 @@
 #include <vector>
 #include <utility>
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 

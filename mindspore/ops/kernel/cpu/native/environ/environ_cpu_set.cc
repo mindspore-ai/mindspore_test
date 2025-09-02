@@ -17,7 +17,8 @@
 #include "kernel/cpu/native/environ/environ_cpu_set.h"
 #include "runtime/hardware_abstract/kernel_base/environ_manager.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
+#include "utils/ms_context.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -68,7 +69,13 @@ bool EnvironSetCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, c
   int64_t host_key = input_key[kIndex0];
 
   // Alloc the value address, and free in the step end.
-  auto value_ptr = device::cpu::CPUMemoryPool::GetInstance().AllocTensorMem(value_size_);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::DeviceContextKey device_key = {device::DeviceType::kCPU, device_id};
+  device::DeviceContext *device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
+  auto value_ptr = device_context->device_res_manager_->AllocateMemory(value_size_);
   MS_EXCEPTION_IF_NULL(value_ptr);
   auto ret = memcpy_s(value_ptr, value_size_, input_value, value_size_);
   if (ret != 0) {

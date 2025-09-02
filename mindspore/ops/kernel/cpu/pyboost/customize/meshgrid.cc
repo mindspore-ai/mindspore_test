@@ -17,7 +17,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/meshgrid.h"
 
 #include "ir/scalar.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"

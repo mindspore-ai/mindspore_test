@@ -182,7 +182,7 @@ class MS_CORE_API DeviceAddress {
                          const KernelWithIndex &node_index, const std::string &device_name);
   explicit DeviceAddress(const DeviceAddress &other);
   DeviceAddress &operator=(const DeviceAddress &) = delete;
-  ~DeviceAddress();
+  virtual ~DeviceAddress();
 
   std::string ToString() const;
 

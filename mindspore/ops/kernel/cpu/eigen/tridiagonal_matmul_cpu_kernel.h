@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRIDIAGONAL_MATMUL_CPU_KERNEL_H_
 #include <map>
 #include <vector>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "mindspore/ccsrc/include/backend/anf_runtime_algorithm.h"
 

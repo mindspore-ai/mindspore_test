@@ -23,7 +23,7 @@
 
 #include "Eigen/Core"
 #include "ir/anf.h"
-#include "plugin/device/cpu/kernel/cpu_common.h"
+#include "kernel/cpu/cpu_common.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/python_fallback_running.h"

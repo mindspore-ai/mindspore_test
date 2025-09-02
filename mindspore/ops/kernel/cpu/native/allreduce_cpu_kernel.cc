@@ -22,6 +22,7 @@
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #endif
 
 namespace mindspore {
@@ -30,7 +31,6 @@ namespace allreduce_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::CollectiveOpReduceType::Reduce_Sum;
 using device::cpu::kMCCLGlobalGroupName;
-using device::cpu::MsCollectiveCommLib;
 #endif
 
 namespace {
@@ -76,9 +76,9 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
-                                                          data_size / sizeof(float), kNumberTypeFloat32, Reduce_Sum,
-                                                          kMCCLGlobalGroupName);
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  bool ret = comm_lib->AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float),
+                                 kNumberTypeFloat32, Reduce_Sum, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllReduceCPUKernelMod launch failed.";
   }

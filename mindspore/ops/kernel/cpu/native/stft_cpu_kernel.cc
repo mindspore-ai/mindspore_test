@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 
 #include "mindspore/ops/infer/stft.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 

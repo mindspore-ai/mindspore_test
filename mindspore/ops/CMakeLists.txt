@@ -23,5 +23,5 @@ if(NOT BUILD_LITE)
 
     add_subdirectory(kernel)
 
-    include(cmake/ops_host.cmake)
+    include(cmake/ops_cpu.cmake)
 endif()

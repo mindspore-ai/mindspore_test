@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ops/kernel/cpu/pyboost/customize/clamp_scalar.h"
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 

@@ -25,7 +25,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-#include "plugin/cpu/kernel_executor/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "nnacl/base/unsorted_segment_sum_base.h"
 
