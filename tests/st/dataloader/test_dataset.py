@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+""" Test for Dataset. """
 
+import numpy as np
 import pytest
 
-from mindspore.dataset.dataloader import Dataset, IterableDataset
+import mindspore as ms
+from mindspore.dataset.dataloader import Dataset, IterableDataset, TensorDataset
 from tests.mark_utils import arg_mark
 
 
@@ -71,3 +74,38 @@ def test_len_iterable_dataset():
     dataset = IterableDataset()
     with pytest.raises(TypeError, match="object of type 'IterableDataset' has no len()"):
         _ = len(dataset)
+
+
+class TestTensorDataset:
+    """ Class for testing TensorDataset. """
+
+    def test_getitem(self):
+        """
+        Feature: Test TensorDataset.
+        Description: Test the iteration of the TensorDataset.
+        Expectation: The result is as expected.
+        """
+        images = np.random.randint(0, 255, (10, 28, 28))
+        labels = np.random.randint(0, 10, (10,))
+        dataset = TensorDataset(ms.Tensor(images), ms.Tensor(labels))
+        for i, sample in enumerate(dataset):
+            np.testing.assert_array_equal(sample[0].asnumpy(), images[i])
+            np.testing.assert_array_equal(sample[1].asnumpy(), labels[i])
+
+    def test_len(self):
+        """
+        Feature: Test TensorDataset.
+        Description: Test the length of the TensorDataset.
+        Expectation: The result is as expected.
+        """
+        dataset = TensorDataset(ms.Tensor([0, 1, 2]), ms.Tensor([3, 4, 5]))
+        assert len(dataset) == 3
+
+    def test_invalid_tensors(self):
+        """
+        Feature: Test TensorDataset.
+        Description: Test the invalid tensors.
+        Expectation: Raise ValueError.
+        """
+        with pytest.raises(ValueError, match="All tensors must have the same size in the first dimension."):
+            TensorDataset(ms.Tensor([0, 1, 2]), ms.Tensor([3, 4, 5, 6]))

@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """Sampler module."""
 
 import itertools
 from typing import Generic, Iterable, Iterator, TypeVar, Union
 
 import mindspore as ms
-
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -31,6 +29,7 @@ class Sampler(Generic[_T_co]):
     Args:
         data_source (Dataset, optional): Dataset to be sampled. Default: ``None`` .
     """
+
     def __init__(self, data_source=None) -> None:
         pass
 
@@ -48,6 +47,7 @@ class SequentialSampler(Sampler):
         >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         >>> sampler = SequentialSampler(dataset)
     """
+
     def __init__(self, data_source) -> None:
         super().__init__(data_source)
         self.data_source = data_source
@@ -117,18 +117,14 @@ class RandomSampler(Sampler[int]):
 
         if self.replacement:
             for _ in range(self.num_samples // 32):
-                yield from ms.ops.randint(
-                    low=0, high=n, size=(32,), dtype=ms.int64, seed=seed
-                ).tolist()
-            yield from ms.ops.randint(
-                low=0, high=n, size=(self.num_samples % 32,), dtype=ms.int64, seed=seed
-            ).tolist()
+                yield from ms.ops.randint(low=0, high=n, size=(32,), dtype=ms.int64, seed=seed).tolist()
+            yield from ms.ops.randint(low=0, high=n, size=(self.num_samples % 32,), dtype=ms.int64, seed=seed).tolist()
         else:
             if seed is None:
                 seed = -1
             for _ in range(self.num_samples // n):
                 yield from ms.ops.randperm(n, seed=seed).tolist()
-            yield from ms.ops.randperm(n, seed=seed).tolist()[: self.num_samples % n]
+            yield from ms.ops.randperm(n, seed=seed).tolist()[:self.num_samples % n]
 
     def __len__(self) -> int:
         return self.num_samples
@@ -136,19 +132,26 @@ class RandomSampler(Sampler[int]):
 
 class BatchSampler(Sampler[list[int]]):
     """
-    A sampler that generates mini-batch indices each time.
+    Sampler that yields a mini-batch of indices each time.
 
     Args:
-        sampler (Union[Sampler, Iterable]): Sampler for generating indices.
-        batch_size (int): The size of the mini batch.
-        drop_last (bool): Whether to discard the last batch of data if the batch is smaller than `batch_size` .
+        sampler (Union[Sampler, Iterable]): Sampler used to generate individual indices.
+        batch_size (int): Size of the mini-batch.
+        drop_last (bool): Whether to drop the last batch if its size is less than `batch_size`.
 
     Examples:
         >>> from mindspore.dataset.dataloader import BatchSampler, SequentialSampler
         >>>
         >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         >>> sequential_sampler = SequentialSampler(dataset)
-        >>> batch_sampler = BatchSampler(sequential_sampler, 2, False)
+        >>>
+        >>> batch_sampler = BatchSampler(sequential_sampler, 4, False)
+        >>> print(list(batch_sampler))
+        [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        >>>
+        >>> batch_sampler = BatchSampler(sequential_sampler, 4, True)
+        >>> print(list(batch_sampler))
+        [[0, 1, 2, 3], [4, 5, 6, 7]]
     """
 
     def __init__(self, sampler: Union[Sampler, Iterable], batch_size: int, drop_last: bool) -> None:

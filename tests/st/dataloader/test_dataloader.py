@@ -27,9 +27,11 @@ import pytest
 
 import mindspore as ms
 from mindspore.dataset.dataloader import (
+    BatchSampler,
     DataLoader,
     Dataset,
     default_collate,
+    DistributedSampler,
     get_worker_info,
     IterableDataset,
     RandomSampler,
@@ -388,7 +390,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("dataset", (NotInheritIterableDataset(), NotImplementGetitemDataset()))
-    def test_dataloader_invalid_dataset(self, dataset):
+    def test_invalid_dataset(self, dataset):
         """
         Feature: Test DataLoader with invalid dataset.
         Description: Test the error message when the dataset does not inherit from Dataset or IterableDataset.
@@ -407,7 +409,7 @@ class TestDataLoaderParamValidation:
             (0, ValueError, "batch_size must be positive"),
         ),
     )
-    def test_dataloader_invalid_batch_size(self, batch_size_case):
+    def test_invalid_batch_size(self, batch_size_case):
         """
         Feature: Test DataLoader with invalid batch size.
         Description: Test the error message when the batch size is not an integer.
@@ -420,7 +422,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("shuffle", (0.5, []))
-    def test_dataloader_invalid_shuffle(self, shuffle):
+    def test_invalid_shuffle(self, shuffle):
         """
         Feature: Test DataLoader with invalid shuffle.
         Description: Test the error message when the shuffle is not a boolean.
@@ -438,7 +440,7 @@ class TestDataLoaderParamValidation:
             ([[0], [1], [2]], TypeError, "list indices must be integers or slices, not list"),
         ),
     )
-    def test_dataloader_invalid_sampler(self, sampler_case):
+    def test_invalid_sampler(self, sampler_case):
         """
         Feature: Test DataLoader with invalid sampler.
         Description: Test the error message when the sampler is not iterable or Iterator[int].
@@ -457,7 +459,7 @@ class TestDataLoaderParamValidation:
             ([0, 1, 2], TypeError, "is not iterable"),
         ),
     )
-    def test_dataloader_invalid_batch_sampler(self, batch_sampler_case):
+    def test_invalid_batch_sampler(self, batch_sampler_case):
         """
         Feature: Test DataLoader with invalid batch sampler.
         Description: Test the error message when the batch sampler is not iterable or Iterator[List[int]].
@@ -477,7 +479,7 @@ class TestDataLoaderParamValidation:
             (True, TypeError, "num_workers must be int"),
         ),
     )
-    def test_dataloader_invalid_num_workers(self, num_workers_case):
+    def test_invalid_num_workers(self, num_workers_case):
         """
         Feature: Test DataLoader with invalid num_workers.
         Description: Test the error message when the num_workers is not an integer or non-negative.
@@ -497,7 +499,7 @@ class TestDataLoaderParamValidation:
             (collate_fn_missing_param, TypeError, "takes .* positional arguments but .* was given"),
         ),
     )
-    def test_dataloader_invalid_collate_fn(self, collate_fn_case):
+    def test_invalid_collate_fn(self, collate_fn_case):
         """
         Feature: Test DataLoader with invalid collate_fn.
         Description: Test the error message when the collate_fn is not callable or arguments not match.
@@ -510,7 +512,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("pin_memory", (-1.0, 10, (0,)))
-    def test_dataloader_invalid_pin_memory(self, pin_memory):
+    def test_invalid_pin_memory(self, pin_memory):
         """
         Feature: Test DataLoader with invalid pin_memory.
         Description: Test the error message when the pin_memory is not a boolean.
@@ -522,7 +524,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("drop_last", (0.5, 0, []))
-    def test_dataloader_invalid_drop_last(self, drop_last):
+    def test_invalid_drop_last(self, drop_last):
         """
         Feature: Test DataLoader with invalid drop_last.
         Description: Test the error message when the drop_last is not a boolean.
@@ -541,7 +543,7 @@ class TestDataLoaderParamValidation:
             (-3, ValueError, "timeout must be non-negative"),
         ),
     )
-    def test_dataloader_invalid_timeout(self, timeout_case):
+    def test_invalid_timeout(self, timeout_case):
         """
         Feature: Test DataLoader with invalid timeout.
         Description: Test the error message when the timeout is not an integer or non-negative.
@@ -565,7 +567,7 @@ class TestDataLoaderParamValidation:
             ),
         ),
     )
-    def test_dataloader_invalid_worker_init_fn(self, worker_init_fn_case):
+    def test_invalid_worker_init_fn(self, worker_init_fn_case):
         """
         Feature: Test DataLoader with invalid worker_init_fn.
         Description: Test the error message when the worker_init_fn is not callable or arguments not match.
@@ -593,7 +595,7 @@ class TestDataLoaderParamValidation:
             ),
         ),
     )
-    def test_dataloader_invalid_multiprocessing_context(self, multiprocessing_context_context):
+    def test_invalid_multiprocessing_context(self, multiprocessing_context_context):
         """
         Feature: Test DataLoader with invalid multiprocessing_context.
         Description: Test the error message when the multiprocessing_context is not a valid start method or
@@ -606,7 +608,7 @@ class TestDataLoaderParamValidation:
             self.run_data_loader(multiprocessing_context=multiprocessing_context, num_workers=1)
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    def test_dataloader_multiprocessing_context_with_invalid_num_workers(self):
+    def test_multiprocessing_context_with_invalid_num_workers(self):
         """
         Feature: Test DataLoader with invalid num_workers.
         Description: Test the error message when the num_workers is 0.
@@ -620,7 +622,7 @@ class TestDataLoaderParamValidation:
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("multiprocessing_context",
                              ("fork", multiprocessing.get_context("fork"), ms.multiprocessing.get_context("fork")))
-    def test_dataloader_warns_with_multiprocessing_fork(self, multiprocessing_context):
+    def test_warns_with_multiprocessing_fork(self, multiprocessing_context):
         """
         Feature: Test DataLoader with multiprocessing_context.
         Description: Test the warning message when the multiprocessing_context is "fork".
@@ -631,7 +633,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("generator", (0.5, False))
-    def test_dataloader_invalid_generator(self, generator):
+    def test_invalid_generator(self, generator):
         """
         Feature: Test DataLoader with invalid generator.
         Description: Test the error message when the generator is not a mindspore.Generator.
@@ -650,7 +652,7 @@ class TestDataLoaderParamValidation:
             (0, ValueError, "prefetch_factor must be positive"),
         ),
     )
-    def test_dataloader_invalid_prefetch_factor(self, prefetch_factor_case):
+    def test_invalid_prefetch_factor(self, prefetch_factor_case):
         """
         Feature: Test DataLoader with invalid prefetch_factor.
         Description: Test the error message when the prefetch_factor is not an integer or non-negative.
@@ -663,7 +665,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("persistent_workers", (0.3, -1, []))
-    def test_dataloader_invalid_persistent_workers(self, persistent_workers):
+    def test_invalid_persistent_workers(self, persistent_workers):
         """
         Feature: Test DataLoader with invalid persistent_workers.
         Description: Test the error message when the persistent_workers is not a boolean.
@@ -674,7 +676,7 @@ class TestDataLoaderParamValidation:
             self.run_data_loader(persistent_workers=persistent_workers)
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    def test_dataloader_persistent_workers_without_multiprocessing(self):
+    def test_persistent_workers_without_multiprocessing(self):
         """
         Feature: Test DataLoader with persistent_workers without multiprocessing.
         Description: Test the error message when the persistent_workers is True and num_workers is 0.
@@ -689,7 +691,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("pin_memory_device", ("cuda", "npu"))
-    def test_dataloader_invalid_pin_memory_device(self, pin_memory_device):
+    def test_invalid_pin_memory_device(self, pin_memory_device):
         """
         Feature: Test DataLoader with invalid pin_memory_device.
         Description: Test the error message when the pin_memory_device is not a string.
@@ -701,7 +703,7 @@ class TestDataLoaderParamValidation:
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("in_order", (-10, 3.5, ()))
-    def test_dataloader_invalid_in_order(self, in_order):
+    def test_invalid_in_order(self, in_order):
         """
         Feature: Test DataLoader with invalid in_order.
         Description: Test the error message when the in_order is not a boolean.
@@ -750,6 +752,20 @@ class TestDataLoader:
         for _ in range(3):
             for index, data in enumerate(data_loader):
                 assert data == ms.tensor([index])
+
+    def test_batch_sampler(self):
+        """
+        Feature: Test DataLoader with batch sampler.
+        Description: Test the result of DataLoader with batch sampler.
+        Expectation: The result is as expected.
+        """
+
+        dataset = MyDataset(20)
+        sampler = DistributedSampler(dataset, num_replicas=2, rank=1, shuffle=False, drop_last=True)
+        batch_sampler = BatchSampler(sampler, batch_size=10, drop_last=True)
+        data_loader = DataLoader(dataset, batch_sampler=batch_sampler)
+        for data in data_loader:
+            np.testing.assert_array_equal(data.asnumpy(), np.array([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]))
 
 
 class TestMultiprocessingDataLoader:
