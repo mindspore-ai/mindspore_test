@@ -28,8 +28,7 @@ def print_(*input_x):
     Outputs the inputs to stdout.
     The outputs are printed to screen by default.
     It can also be saved in a file by setting the parameter  `print_file_path` in `context`.
-    :func:`mindspore.parse_print` can be employed to reload the data.
-    For more information, please refer to :func:`mindspore.set_context` and :func:`mindspore.parse_print`.
+    For more information, please refer to :func:`mindspore.set_context`.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
