@@ -72,6 +72,8 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemAdapter {
   [[nodiscard]] int64_t GetMsUsedHbmSize() const { return ms_used_hbm_size_; }
   static size_t GetRoundUpAlignSize(size_t input_size);
   static size_t GetRoundDownAlignSize(size_t input_size);
+  uint8_t *MallocAlign32FromRts(size_t size) const;
+  bool FreeAlign32ToRts(void *devPtr) const;
 
  protected:
   AscendMemAdapter() = default;
