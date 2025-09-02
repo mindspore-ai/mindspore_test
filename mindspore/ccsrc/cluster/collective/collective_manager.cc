@@ -492,6 +492,14 @@ bool CollectiveManager::Finalize() {
   std::function<bool()> finalize_comm_lib_func = [&, this]() {
     // Ensure all comms are initialized to avoid exiting error.
     (void)WaitAllCommInitDone();
+    stop_init_comm_ = true;
+    task_queue_blocker_.notify_one();
+    group_name_to_result_.clear();
+    task_list_.clear();
+    if (run_init_comm_task_thread_.joinable()) {
+      run_init_comm_task_thread_.join();
+    }
+
     if (need_host_collective_) {
       MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
       MS_LOG(INFO) << "Start finalizing host communication lib.";
@@ -508,14 +516,6 @@ bool CollectiveManager::Finalize() {
       MS_LOG(WARNING) << "Failed to finalize device communication library.";
     }
     MS_LOG(INFO) << "End finalizing device communication lib.";
-
-    stop_init_comm_ = true;
-    task_queue_blocker_.notify_one();
-    group_name_to_result_.clear();
-    task_list_.clear();
-    if (run_init_comm_task_thread_.joinable()) {
-      run_init_comm_task_thread_.join();
-    }
 
     inited_ = false;
     finalized_ = true;
