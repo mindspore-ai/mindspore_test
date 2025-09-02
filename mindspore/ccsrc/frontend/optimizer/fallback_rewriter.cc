@@ -2558,7 +2558,9 @@ class AfterOptARewriter : public BaseRewriter {
     const auto &inputs = cnode->inputs();
     auto cur_func = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(cur_func);
+    int64_t index = -1;
     for (const auto &input : inputs) {
+      index++;
       auto value_node = dyn_cast<ValueNode>(input);
       if (value_node == nullptr) {
         continue;
@@ -2586,7 +2588,9 @@ class AfterOptARewriter : public BaseRewriter {
         continue;
       }
       new_input->set_debug_info(value_node->debug_info());
-      (void)manager_->Replace(input, new_input);
+      // Avoid the presence of the same valueNode in multiple subgraphs,
+      // and free variables appear when using Replace to replace them.
+      (void)manager_->SetEdge(cnode, index, new_input);
       set_need_renormalized(true);
     }
   }
