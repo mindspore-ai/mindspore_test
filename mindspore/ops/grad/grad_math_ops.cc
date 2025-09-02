@@ -3877,6 +3877,18 @@ REG_BPROP_BUILDER("Imag").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("RealView").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(i2);
+  auto zero = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
+  return {ib->Complex(dout, zero)};
+});
+
+REG_BPROP_BUILDER("ImagView").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(i2);
+  auto zero = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
+  return {ib->Complex(zero, dout)};
+});
+
 REG_BPROP_BUILDER("Betainc").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto input_a = ib->GetInput(i0);
   auto input_b = ib->GetInput(i1);

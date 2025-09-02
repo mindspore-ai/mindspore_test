@@ -1233,12 +1233,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def real(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.real`.
-        """
-        return tensor_operator_registry.get('real')(self)
-
     def tanh_(self):
         r"""
         Computes hyperbolic tangent of self inplace element-wise. The Tanh function is defined as:
@@ -3427,12 +3421,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
-
-    def imag(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.imag`.
-        """
-        return tensor_operator_registry.get('imag')(self)
 
     def quantile(self, q, axis=None, keepdims=False):
         r"""
