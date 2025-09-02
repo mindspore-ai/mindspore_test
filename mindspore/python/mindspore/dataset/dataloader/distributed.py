@@ -18,7 +18,8 @@ import math
 from collections.abc import Iterator
 from typing import Optional, TypeVar
 
-import mindspore as ms
+import numpy as np
+
 import mindspore.mint.distributed as dist
 from mindspore.dataset.dataloader.dataset import Dataset
 from mindspore.dataset.dataloader.sampler import Sampler
@@ -105,10 +106,9 @@ class DistributedSampler(Sampler[_T_co]):
 
     def __iter__(self) -> Iterator[_T_co]:
         if self.shuffle:
-            g = ms.Generator()
-            g.manual_seed(self.seed + self.epoch)
+            g = np.random.default_rng(self.seed + self.epoch)
             # TODO: need to use mint operator on cpu backend
-            indices = ms.ops.randperm(len(self.dataset), seed=self.seed + self.epoch).tolist()
+            indices = g.permutation(len(self.dataset)).tolist()
         else:
             indices = list(range(len(self.dataset)))
 

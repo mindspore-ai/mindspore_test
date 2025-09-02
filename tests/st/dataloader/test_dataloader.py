@@ -183,13 +183,13 @@ def test_mapdataset_batch_shuffle():
     """
 
     dataset = MyDataset(10)
-    ms.set_seed(0)
-    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=False)
-    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[0, 2, 1], [5, 9, 8], [4, 7, 6], [3]])
+    generator = np.random.default_rng(0)
+    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=False, generator=generator)
+    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[4, 6, 2], [7, 3, 5], [9, 0, 8], [1]])
 
-    ms.set_seed(1)
-    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=True)
-    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[9, 0, 2], [5, 7, 4], [6, 3, 1]])
+    generator = np.random.default_rng(1)
+    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=True, generator=generator)
+    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[8, 4, 7], [0, 1, 2], [5, 9, 6]])
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -634,11 +634,11 @@ class TestDataLoaderParamValidation:
     def test_dataloader_invalid_generator(self, generator):
         """
         Feature: Test DataLoader with invalid generator.
-        Description: Test the error message when the generator is not a mindspore.Generator.
+        Description: Test the error message when the generator is not a numpy.random.Generator.
         Expectation: Raise TypeError.
         """
 
-        with pytest.raises(TypeError, match="generator must be mindspore.Generator"):
+        with pytest.raises(TypeError, match="generator must be numpy.random.Generator"):
             self.run_data_loader(generator=generator)
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

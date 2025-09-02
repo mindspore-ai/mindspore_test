@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """Sampler module."""
 
 import itertools
 from typing import Generic, Iterable, Iterator, TypeVar, Union
 
-import mindspore as ms
-
+import numpy as np
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -31,6 +29,7 @@ class Sampler(Generic[_T_co]):
     Args:
         data_source (Dataset, optional): Dataset to be sampled. Default: ``None`` .
     """
+
     def __init__(self, data_source=None) -> None:
         pass
 
@@ -48,6 +47,7 @@ class SequentialSampler(Sampler):
         >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         >>> sampler = SequentialSampler(dataset)
     """
+
     def __init__(self, data_source) -> None:
         super().__init__(data_source)
         self.data_source = data_source
@@ -68,7 +68,7 @@ class RandomSampler(Sampler[int]):
         replacement (bool, optional): Whether to enable the return sampling. Default: ``False`` .
         num_samples (Union[int, None], optional): Number of samples to be drawn. Default: ``None`` ,
             will be set to the length of `data_source` .
-        generator (mindspore.Generator, optional): Generator used during sampling. Default: ``None`` .
+        generator (np.random.Generator, optional): Generator used during sampling. Default: ``None`` .
 
     Examples:
         >>> from mindspore.dataset.dataloader import RandomSampler
@@ -91,8 +91,8 @@ class RandomSampler(Sampler[int]):
             raise TypeError(f"num_samples must be int, but got: {type(num_samples).__name__}")
         if num_samples is not None and num_samples <= 0:
             raise ValueError(f"num_samples must be a positive integer value, but got num_samples = {num_samples}")
-        if generator is not None and not isinstance(generator, ms.Generator):
-            raise TypeError(f"generator must be mindspore.Generator, but got: {type(generator).__name__}")
+        if generator is not None and not isinstance(generator, np.random.Generator):
+            raise TypeError(f"generator must be numpy.random.Generator, but got: {type(generator).__name__}")
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
@@ -106,29 +106,20 @@ class RandomSampler(Sampler[int]):
 
     def __iter__(self) -> Iterator[int]:
         n = len(self.data_source)
-        seed = ms.get_seed()
         if self.generator is None:
-            if seed is not None:
-                generator = ms.Generator()
-                generator.manual_seed(seed)
+            seed = np.random.randint(low=0, high=np.iinfo(np.int64).max + 1, dtype=np.int64)
+            generator = np.random.default_rng(seed)
         else:
             generator = self.generator
-            seed = generator.initial_seed()
 
         if self.replacement:
             for _ in range(self.num_samples // 32):
-                yield from ms.ops.randint(
-                    low=0, high=n, size=(32,), dtype=ms.int64, seed=seed
-                ).tolist()
-            yield from ms.ops.randint(
-                low=0, high=n, size=(self.num_samples % 32,), dtype=ms.int64, seed=seed
-            ).tolist()
+                yield from generator.integers(low=0, high=n, size=(32,), dtype=np.int64).tolist()
+            yield from generator.integers(low=0, high=n, size=(self.num_samples % 32,), dtype=np.int64).tolist()
         else:
-            if seed is None:
-                seed = -1
             for _ in range(self.num_samples // n):
-                yield from ms.ops.randperm(n, seed=seed).tolist()
-            yield from ms.ops.randperm(n, seed=seed).tolist()[: self.num_samples % n]
+                yield from generator.permutation(n).tolist()
+            yield from generator.permutation(n).tolist()[:self.num_samples % n]
 
     def __len__(self) -> int:
         return self.num_samples

@@ -216,11 +216,11 @@ def data_worker_fn(dataset, fetcher, num_workers, worker_id, index_queue, data_q
     try:
         try:
             cde.register_worker_handlers()
-            mindspore.device_context.cpu.op_tuning.threads_num(1)
 
             worker_seed = base_seed + worker_id
             random.seed(worker_seed)
-            mindspore.manual_seed(worker_seed)
+            mindspore.set_seed(worker_seed & 0xFFFFFFFF)  # set seed for mindspore.ops and mindspore.dataset
+            mindspore.manual_seed(worker_seed)  # set seed for mindspore.mint
             np.random.seed(_generate_state(base_seed, worker_id))
 
             global worker_info_local

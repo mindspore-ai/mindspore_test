@@ -124,23 +124,23 @@ def test_dataloader_random_sampler():
 
     dataset = MyDataset(10)
 
-    ms.set_seed(40)
-    expected_value = [ms.Tensor(6), ms.Tensor(6), ms.Tensor(7), ms.Tensor(9), ms.Tensor(0),
-                      ms.Tensor(2), ms.Tensor(7), ms.Tensor(1), ms.Tensor(8), ms.Tensor(3)]
-    sampler = RandomSampler(dataset, replacement=True)
+    generator = np.random.default_rng(40)
+    expected_value = [ms.Tensor([5]), ms.Tensor([7]), ms.Tensor([0]), ms.Tensor([6]), ms.Tensor([4]),
+                      ms.Tensor([9]), ms.Tensor([0]), ms.Tensor([0]), ms.Tensor([4]), ms.Tensor([6])]
+    sampler = RandomSampler(dataset, replacement=True, generator=generator)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
     assert result == expected_value
 
-    expected_value = [ms.Tensor(4), ms.Tensor(4), ms.Tensor(5)]
-    sampler = RandomSampler(dataset, replacement=True, num_samples=3)
+    expected_value = [ms.Tensor([0]), ms.Tensor([9]), ms.Tensor([7])]
+    sampler = RandomSampler(dataset, replacement=True, num_samples=3, generator=generator)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
     assert result == expected_value
 
-    expected_value = [ms.Tensor(9), ms.Tensor(5), ms.Tensor(0), ms.Tensor(3), ms.Tensor(1),
-                      ms.Tensor(2), ms.Tensor(7), ms.Tensor(8), ms.Tensor(4), ms.Tensor(6)]
-    sampler = RandomSampler(dataset, replacement=False)
+    expected_value = [ms.Tensor([2]), ms.Tensor([3]), ms.Tensor([5]), ms.Tensor([1]), ms.Tensor([6]),
+                      ms.Tensor([0]), ms.Tensor([8]), ms.Tensor([4]), ms.Tensor([7]), ms.Tensor([9])]
+    sampler = RandomSampler(dataset, replacement=False, generator=generator)
     dataloader = DataLoader(dataset, batch_size=1, sampler=sampler, shuffle=False)
     result = list(dataloader)
     assert result == expected_value
@@ -253,9 +253,8 @@ def test_dataloader_distributed_sampler_shuffle():
     sampler = DistributedSampler(dataset, shuffle=True, seed=1, num_replicas=2, rank=0)
     dataloader = DataLoader(dataset, batch_size=None, sampler=sampler)
     result = list(dataloader)
-    expect = [ms.Tensor(i) for i in [9, 2, 7, 6, 1]]
+    expect = [ms.Tensor(i) for i in [8, 7, 1, 5, 6]]
     compare_tensor_list(result, expect)
-    print(result)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -273,20 +272,17 @@ def test_dataloader_distributed_sampler_drop_last():
     result = list(dataloader)
     expect = [ms.Tensor(i) for i in [2, 5, 8, 1]]
     compare_tensor_list(result, expect)
-    print(result)
 
     sampler = DistributedSampler(dataset, shuffle=False, num_replicas=3, rank=2, drop_last=True)
     dataloader = DataLoader(dataset, batch_size=None, sampler=sampler)
     result = list(dataloader)
     expect = [ms.Tensor(i) for i in [2, 5, 8]]
     compare_tensor_list(result, expect)
-    print(result)
 
     sampler = DistributedSampler(dataset, shuffle=False, num_replicas=20, rank=0, drop_last=False)
     dataloader = DataLoader(dataset, batch_size=None, sampler=sampler)
     result = list(dataloader)
     expect = [ms.Tensor(i) for i in [2, 5, 8]]
-    print(result)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -310,23 +306,23 @@ def test_random_sampler():
     Description: Verify the functionality of the random sampler
     Expectation: Success
     """
-    ms.set_seed(40)
+    generator = np.random.default_rng(40)
 
     dataset = MyDataset(10)
 
     # Default parameters
-    result = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6]
-    random_sampler = RandomSampler(dataset)
+    result = [1, 7, 8, 5, 3, 4, 2, 0, 9, 6]
+    random_sampler = RandomSampler(dataset, generator=generator)
     assert list(random_sampler) == result
 
     # replacement is True
-    result_1 = [6, 6, 7, 9, 0, 2, 7, 1, 8, 3]
-    random_sampler_1 = RandomSampler(dataset, replacement=True)
+    result_1 = [6, 1, 0, 5, 0, 8, 3, 6, 2, 1]
+    random_sampler_1 = RandomSampler(dataset, replacement=True, generator=generator)
     assert list(random_sampler_1) == result_1
 
     # replacement is True and num_samples is 15
-    result_2 = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6, 9, 5, 0, 3, 1]
-    random_sampler_2 = RandomSampler(dataset, replacement=False, num_samples=15)
+    result_2 = [1, 2, 0, 5, 3, 7, 4, 9, 8, 6, 0, 7, 6, 5, 2]
+    random_sampler_2 = RandomSampler(dataset, replacement=False, num_samples=15, generator=generator)
     assert list(random_sampler_2) == result_2
 
 
@@ -361,7 +357,7 @@ def test_dataloader_random_sampler_exception():
     assert error_msssage in str(error_info.value)
 
     # 4.Verify that the generator parameter is not of type mindspore.Generator.
-    error_msssage = "generator must be mindspore.Generator, but got: int"
+    error_msssage = "generator must be numpy.random.Generator, but got: int"
     with pytest.raises(TypeError) as error_info:
         generator = 0
         _ = RandomSampler(dataset, generator=generator)
@@ -447,7 +443,7 @@ def test_distributed_sampler():
     distributed_sampler_2 = DistributedSampler(dataset, shuffle=False, num_replicas=3, rank=0, drop_last=True)
     assert list(distributed_sampler_2) == result_2
 
-    result_3 = [9, 5, 0, 3, 1, 2, 7, 8, 4, 6]
+    result_3 = [1, 7, 8, 5, 3, 4, 2, 0, 9, 6]
     distributed_sampler_3 = DistributedSampler(dataset, shuffle=True, seed=40)
     assert list(distributed_sampler_3) == result_3
 
