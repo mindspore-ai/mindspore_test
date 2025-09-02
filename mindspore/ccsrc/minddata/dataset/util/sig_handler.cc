@@ -115,6 +115,10 @@ void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
 
 /// \brief Release the shared memory and message queue when got signal TERM / CHLD
 void ReleaseShmAndMsg() {
+  if (g_shm_id.empty()) {
+    return;
+  }
+
   std::string current_pid = std::to_string(getpid());
   std::string ppid = std::to_string(getppid());
 

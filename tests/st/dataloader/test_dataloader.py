@@ -18,7 +18,6 @@ import multiprocessing
 import os
 import random
 import signal
-import subprocess
 import time
 
 import numpy as np
@@ -185,13 +184,13 @@ def test_mapdataset_batch_shuffle():
     """
 
     dataset = MyDataset(10)
-    ms.set_seed(0)
-    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=False)
-    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[0, 2, 1], [5, 9, 8], [4, 7, 6], [3]])
+    generator = np.random.default_rng(0)
+    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=False, generator=generator)
+    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[4, 6, 2], [7, 3, 5], [9, 0, 8], [1]])
 
-    ms.set_seed(1)
-    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=True)
-    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[9, 0, 2], [5, 7, 4], [6, 3, 1]])
+    generator = np.random.default_rng(1)
+    dataloader = DataLoader(dataset, batch_size=3, shuffle=True, drop_last=True, generator=generator)
+    compare_tensor_list([t.asnumpy() for t in list(dataloader)], [[8, 4, 7], [0, 1, 2], [5, 9, 6]])
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -636,11 +635,11 @@ class TestDataLoaderParamValidation:
     def test_invalid_generator(self, generator):
         """
         Feature: Test DataLoader with invalid generator.
-        Description: Test the error message when the generator is not a mindspore.Generator.
+        Description: Test the error message when the generator is not a numpy.random.Generator.
         Expectation: Raise TypeError.
         """
 
-        with pytest.raises(TypeError, match="generator must be mindspore.Generator"):
+        with pytest.raises(TypeError, match="generator must be numpy.random.Generator"):
             self.run_data_loader(generator=generator)
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -718,6 +717,16 @@ class TestDataLoader:
     """
     Test DataLoader.
     """
+
+    @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+    def test_import(self):
+        """
+        Feature: Test import DataLoader.
+        Description: Test the import of DataLoader.
+        Expectation: The import is successful.
+        """
+
+        assert DataLoader == ms.dataset.dataloader.DataLoader
 
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize("drop_last", (False, True))
@@ -930,8 +939,17 @@ class TestMultiprocessingDataLoader:
             for _ in multiprocess_data_loader:
                 os.kill(worker_group[0].pid, sig)
 
+    @staticmethod
+    def run_data_loader(num_workers, dataloader_ready, worker_ready):
+        dataloader_ready.set()
+        data_loader = DataLoader(MyDataset(100), num_workers=num_workers)
+        for index, _ in enumerate(data_loader):
+            # make sure every worker is ready
+            if index + 1 == num_workers:
+                worker_ready.set()
+
     @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    @pytest.mark.parametrize("sig", (signal.SIGKILL, signal.SIGINT))
+    @pytest.mark.parametrize("sig", (signal.SIGKILL, signal.SIGTERM, signal.SIGINT))
     def test_kill_main_process(self, sig):
         """
         Feature: Test DataLoader with kill main process.
@@ -939,34 +957,38 @@ class TestMultiprocessingDataLoader:
         Expectation: Raise RuntimeError.
         """
 
-        script_path = os.path.join(os.path.dirname(__file__), "run_data_loader.py")
-        process = subprocess.Popen(["python", script_path])
-        time.sleep(3)
-        assert psutil.pid_exists(process.pid)
+        num_workers = 8
 
+        # use spawn context to make sure the process is clean
+        mp_ctx = multiprocessing.get_context("spawn")
+        dataloader_ready = mp_ctx.Event()
+        worker_ready = mp_ctx.Event()
+        dataloader_process = mp_ctx.Process(target=self.run_data_loader,
+                                            args=(num_workers, dataloader_ready, worker_ready))
         child_processes = []
         try:
-            parent = psutil.Process(process.pid)
-            child_processes = []
-            while len(child_processes) != 8:
-                child_processes = [child.pid for child in parent.children(recursive=True)]
+            dataloader_process.start()
+            dataloader_ready.wait()
+            assert psutil.pid_exists(dataloader_process.pid)
+            worker_ready.wait()
+            child_processes = psutil.Process(dataloader_process.pid).children()
+            assert len(child_processes) == num_workers
 
-            os.kill(process.pid, sig)
-            process.wait(timeout=2)
-            assert not psutil.pid_exists(process.pid)
+            os.kill(dataloader_process.pid, sig)
+            dataloader_process.join()
+            assert not psutil.pid_exists(dataloader_process.pid)
 
             start_time = time.time()
-            while time.time() - start_time < 5:
-                remaining = [pid for pid in child_processes if psutil.pid_exists(pid)]
-                if not remaining:
+            while time.time() - start_time < 30:
+                if all(not p.is_running() for p in child_processes):
                     break
-                time.sleep(0.1)
+                time.sleep(1)
             else:
-                alive = [pid for pid in child_processes if psutil.pid_exists(pid)]
-                pytest.fail(f"Worker process is not finished: {alive}")
+                alive = [p.pid for p in child_processes if p.is_running()]
+                pytest.fail(f"Worker processes do not finish in 30 seconds: {alive}")
         finally:
-            if psutil.pid_exists(process.pid):
-                os.kill(process.pid, signal.SIGKILL)
-            for worker_pid in child_processes:
-                if psutil.pid_exists(worker_pid):
-                    os.kill(worker_pid, signal.SIGKILL)
+            if psutil.pid_exists(dataloader_process.pid):
+                dataloader_process.kill()
+            for worker_process in child_processes:
+                if worker_process.is_running():
+                    worker_process.kill()

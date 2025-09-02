@@ -16,7 +16,7 @@
 
 from typing import Generic, Iterable, Iterator, TypeVar
 
-from mindspore import Tensor
+from mindspore.common import Tensor
 
 _T_co = TypeVar("_T_co", covariant=True)
 
