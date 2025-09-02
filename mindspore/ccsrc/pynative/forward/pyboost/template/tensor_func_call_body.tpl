@@ -8,8 +8,8 @@ PyObject* TensorMethod${cpp_func_name}(PyObject* self, PyObject* py_args, PyObje
   auto parse_args = parser.Parse(py_args, py_kwargs, true);
   parse_args.InsertInputTensor(${self_index}, self);
 
-  auto backend = DeviceManagerConf::GetInstance()->device_type();
   #ifndef ENABLE_TEST
+    auto backend = DeviceManagerConf::GetInstance()->device_type();
     ${device_dispatcher}
     Py_RETURN_NONE;
   #else
