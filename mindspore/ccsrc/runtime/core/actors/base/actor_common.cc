@@ -1184,10 +1184,12 @@ device::DeviceAddressPtr PrepareOffloadedParameter(Tensor *tensor, const device:
   pinned_tensor_address->set_allocator(allocator);
   auto pin_mem_ptr = allocator->Alloc(size, kDefaultStreamIndex);
   if (pin_mem_ptr != nullptr && tensor_address->GetPtr() != nullptr) {
-    errno_t ret = memcpy_s(pin_mem_ptr, size, tensor_address->GetPtr(), size);
-    if (ret != EOK) {
-      MS_LOG(EXCEPTION) << "Copy from origin host ptr[" << tensor_address->GetPtr() << "] to pin memory[" << pin_mem_ptr
-                        << "failed, size: " << size;
+    if (!UseSimulationApi()) {
+      errno_t ret = memcpy_s(pin_mem_ptr, size, tensor_address->GetPtr(), size);
+      if (ret != EOK) {
+        MS_LOG(EXCEPTION) << "Copy from origin host ptr[" << tensor_address->GetPtr() << "] to pin memory["
+                          << pin_mem_ptr << "failed, size: " << size;
+      }
     }
   }
   pinned_tensor_address->set_ptr(pin_mem_ptr);
