@@ -27,12 +27,14 @@
 #include "mindapi/base/type_id.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/pynative/acl_adapter.h"
+#include "tools/profiler/profiler.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "backend/common/device_address_utils.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
+#include "backend/common/kernel_graph/session_factory.h"
 
 namespace mindspore {
 using runtime::DeviceAddressUtils;

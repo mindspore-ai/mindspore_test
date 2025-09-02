@@ -28,12 +28,14 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "include/backend/visible.h"
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pipeline/async_rqueue.h"
 
-namespace mindspore::runtime {
+namespace mindspore {
+using Tensor = tensor::Tensor;
+using TensorPtr = tensor::TensorPtr;
+namespace runtime {
 class BACKEND_EXPORT OpExecutor {
  public:
   static OpExecutor &GetInstance();
@@ -74,5 +76,6 @@ class BACKEND_EXPORT OpExecutor {
   std::function<void()> forward_callback_{nullptr};
   inline static bool async_for_graph_{false};
 };
-}  // namespace mindspore::runtime
+}  // namespace runtime
+}  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_EXECUTOR_H_

@@ -27,7 +27,7 @@
 #include <utility>
 #include "ir/anf.h"
 #include "include/backend/visible.h"
-#include "runtime/core/graph_executor/pre_launch/kernel_cache.h"
+#include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 
 namespace mindspore {
 namespace runtime {

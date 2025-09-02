@@ -31,6 +31,7 @@
 #include "async/async.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_exception.h"
 #include "utils/trace_base.h"
 #include "op_def/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
