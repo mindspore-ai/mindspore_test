@@ -68,7 +68,7 @@ class RandomSampler(Sampler[int]):
         replacement (bool, optional): Whether to enable the return sampling. Default: ``False`` .
         num_samples (Union[int, None], optional): Number of samples to be drawn. Default: ``None`` ,
             will be set to the length of `data_source` .
-        generator (np.random.Generator, optional): Generator used during sampling. Default: ``None`` .
+        generator (numpy.random.Generator, optional): Generator used during sampling. Default: ``None`` .
 
     Examples:
         >>> from mindspore.dataset.dataloader import RandomSampler
@@ -127,19 +127,26 @@ class RandomSampler(Sampler[int]):
 
 class BatchSampler(Sampler[list[int]]):
     """
-    A sampler that generates mini-batch indices each time.
+    Sampler that yields a mini-batch of indices each time.
 
     Args:
-        sampler (Union[Sampler, Iterable]): Sampler for generating indices.
-        batch_size (int): The size of the mini batch.
-        drop_last (bool): Whether to discard the last batch of data if the batch is smaller than `batch_size` .
+        sampler (Union[Sampler, Iterable]): Sampler used to generate individual indices.
+        batch_size (int): Size of the mini-batch.
+        drop_last (bool): Whether to drop the last batch if its size is less than `batch_size`.
 
     Examples:
         >>> from mindspore.dataset.dataloader import BatchSampler, SequentialSampler
         >>>
         >>> dataset = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         >>> sequential_sampler = SequentialSampler(dataset)
-        >>> batch_sampler = BatchSampler(sequential_sampler, 2, False)
+        >>>
+        >>> batch_sampler = BatchSampler(sequential_sampler, 4, False)
+        >>> print(list(batch_sampler))
+        [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9]]
+        >>>
+        >>> batch_sampler = BatchSampler(sequential_sampler, 4, True)
+        >>> print(list(batch_sampler))
+        [[0, 1, 2, 3], [4, 5, 6, 7]]
     """
 
     def __init__(self, sampler: Union[Sampler, Iterable], batch_size: int, drop_last: bool) -> None:

@@ -14,7 +14,9 @@
 # ==============================================================================
 
 import collections
+
 import numpy as np
+import pytest
 
 import mindspore as ms
 from mindspore.dataset.dataloader import DataLoader, Dataset, default_convert, default_collate
@@ -186,3 +188,30 @@ def test_collate_fn():
     dataloader = DataLoader(dataset, batch_size=2, collate_fn=my_collate)
     for data in dataloader:
         print(data)
+
+
+class TestDefaultConvert:
+    """ Test default_convert function. """
+
+    @pytest.mark.parametrize("data",
+                             (np.int8(-1), np.uint16(0), np.float32(3.14), np.bool_(True), np.complex64(1 + 2j)))
+    def test_type_should_convert(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with numpy primitive type that should be converted.
+        Expectation: The result is a Tensor.
+        """
+
+        assert default_convert(data) == ms.Tensor(data)
+        assert isinstance(default_convert(data), ms.Tensor)
+
+    @pytest.mark.parametrize("data", (np.str_("abc"), np.bytes_(b"0xffff")))
+    def test_type_should_not_convert(self, data):
+        """
+        Feature: Test default_convert function.
+        Description: Test default_convert function with numpy primitive type that should not be converted.
+        Expectation: The result is the same as the input.
+        """
+
+        assert default_convert(data) == data
+        assert isinstance(default_convert(data), type(data))

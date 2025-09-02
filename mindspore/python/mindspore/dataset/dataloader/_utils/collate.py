@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """
 Collate module.
 """
@@ -20,12 +19,11 @@ Collate module.
 import collections
 import copy
 import re
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
-import mindspore as ms
-
+from mindspore.common import float64, Tensor
 
 # S: bytes string type (bytes).
 # a: old version alias for bytes string type (same as S).
@@ -33,37 +31,64 @@ import mindspore as ms
 # O: Python object type.
 np_str_obj_array_pattern = re.compile(r"[SaUO]")
 
-default_collate_err_msg_format = ("default_collate: batch must contain tensors, numpy arrays, numbers, "
+DEFAULT_COLLATE_ERR_MSG_FORMAT = ("default_collate: batch must contain tensors, numpy arrays, numbers, "
                                   "dicts or lists; found {}")
 
 
-def default_convert(data):
-    r"""
-    Convert each NumPy array element into a :class:`mindspore.Tensor`.
+def default_convert(data: Any) -> Any:
+    """
+    Default function for converting each NumPy array element into a :class:`mindspore.Tensor`
+    when batching is disabled in :class:`~mindspore.dataset.dataloader.DataLoader`.
 
-    If the input is a `Sequence`, `Collection`, or `Mapping`, it tries to convert each element inside
-    to a :class:`mindspore.Tensor`.
-    If the input is not an NumPy array, it is left unchanged.
-    This is used as the default function for collation when both `batch_sampler` and `batch_size`
-    are NOT defined in :class:`mindspore.dataset.dataloader.DataLoader`.
-
-    The general input type to output type mapping is similar to that
-    of :func:`mindspore.dataset.dataloader.DataLoader.default_collate`. See the description there for more details.
+    * If the input is a NumPy array and its dtype is not `str`, `bytes` or `object`, convert it into
+      a :class:`mindspore.Tensor`;
+    * If the input is a NumPy numeric or boolean scalar, convert it into a :class:`mindspore.Tensor`;
+    * If the input is a :py:class:`~collections.abc.Mapping`, keep all the keys unchanged and convert
+      the value of each key by calling this function recursively;
+    * If the input is a :py:class:`~collections.abc.Sequence`, convert the element at each position
+      by calling this function recursively;
+    * Otherwise, leave it unchanged.
 
     Args:
-        data: a single data point to be converted
+        data (:py:class:`~typing.Any`): A single data to be converted.
+
+    Returns:
+        :py:class:`~typing.Any`, the converted data.
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore.dataset.dataloader import default_convert
+        >>>
+        >>> default_convert(np.array([0, 1, 2]))
+        Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])
+        >>>
+        >>> default_convert(np.int32(0))
+        Tensor(shape=[], dtype=Int32, value= 0)
+        >>>
+        >>> default_convert({"data": np.array([0, 1, 2])})
+        {'data': Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])}
+        >>>
+        >>> default_convert([np.array([0, 1, 2]), np.array([3, 4, 5])])
+        [Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]), Tensor(shape=[3], dtype=Int64, value= [3, 4, 5])]
+        >>>
+        >>> default_convert(np.array(["text"]))
+        array(['text'], dtype='<U4')
     """
+
     elem_type = type(data)
 
     # return if tensor
-    if isinstance(data, ms.Tensor):
+    if isinstance(data, Tensor):
         return data
+
+    if isinstance(data, (np.number, np.bool_)):
+        return Tensor(data)
 
     # only convert numeric numpy, ignore str/obj numpy
     if isinstance(data, np.ndarray):
         if np_str_obj_array_pattern.search(data.dtype.str) is not None:
             return data
-        return ms.Tensor.from_numpy(data)
+        return Tensor.from_numpy(data)
 
     if isinstance(data, collections.abc.Mapping):
         try:
@@ -102,35 +127,59 @@ def default_convert(data):
         return data
 
 
-def collate(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-    r"""
-    General collate function that handles collection type of element within each batch.
+def collate(
+        batch: list,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+) -> Any:
+    """
+    Collate the input batch of data by the appropriate function for each element type selected from the type
+    to collate function mapping defined in `collate_fn_map`.
 
-    The function also opens function registry to deal with specific element types. `default_collate_fn_map`
-    provides default collate functions for tensors, numpy arrays, numbers and strings.
+    All the elements in the batch should be of the same type.
+
+    * If the element type is in `collate_fn_map` or the element is a subclass of the type in `collate_fn_map`,
+      use the corresponding collate function to collate the batch;
+    * If the element is a :py:class:`~collections.abc.Mapping`, collate by key: for each key, collect the values
+      corresponding to that key from all mappings in the batch to form a new batch, recursively call this function
+      on that batch, and use the result as the new value for that key. All mappings in the batch must have the same
+      keys, and the types of values corresponding to each key must be the same;
+    * If the element is a :py:class:`~collections.abc.Sequence`, collate by position: for each position, collect the
+      elements at that position from all sequences in the batch to form a new batch, recursively call this function
+      on that batch, and use the result as the new element at that position. All sequences in the batch must have the
+      same length;
+    * Otherwise, raise an exception to indicate that the element type is not supported.
+
+    Each collate function requires a positional argument for `batch` and a keyword argument for `collate_fn_map`.
 
     Args:
-        batch: a single batch to be collated
+        batch (list): A batch of data to be collated.
 
     Keyword Args:
-        collate_fn_map: Optional dictionary mapping from element type to the corresponding collate function.
-            If the element type isn't present in this dictionary,
-            this function will go through each key of the dictionary in the insertion order to
-            invoke the corresponding collate function if the element type is a subclass of the key.
+        collate_fn_map (Optional[dict[Union[type, tuple[type, ...]], Callable]]): Mapping from element type
+            to the corresponding collate function. Default: ``None`` .
+
+    Returns:
+        :py:class:`~typing.Any`, the collated data.
 
     Examples:
-        >>> def collate_tensor_fn(batch, *, collate_fn_map):
-        ...     # Extend this function to handle batch of tensors
-        ...     return mindspore.ops.stack(batch, 0)
-        >>> def custom_collate(batch):
-        ...     collate_map = {mindspore.Tensor: collate_tensor_fn}
-        ...     return collate(batch, collate_fn_map=collate_map)
-        >>> # Extend `default_collate` by in-place modifying `default_collate_fn_map`
-        >>> default_collate_fn_map.update({mindspore.Tensor: collate_tensor_fn})
-
-    Note:
-        Each collate function requires a positional argument for batch and a keyword argument
-        for the dictionary of collate functions as `collate_fn_map`.
+        >>> import mindspore
+        >>> from mindspore.dataset.dataloader._utils.collate import collate
+        >>>
+        >>> def collate_int_fn(batch, *, collate_fn_map):
+        ...     return mindspore.tensor(batch)
+        >>>
+        >>> collate_map = {int: collate_int_fn}
+        >>>
+        >>> collate([0, 1, 2], collate_fn_map=collate_map)
+        Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])
+        >>>
+        >>> collate([{"data": 0, "label": 2},
+        ...          {"data": 1, "label": 3}], collate_fn_map=collate_map)
+        {'data': Tensor(shape=[2], dtype=Int64, value= [0, 1]), 'label': Tensor(shape=[2], dtype=Int64, value= [2, 3])}
+        >>>
+        >>> collate([(0, 3), (1, 4), (2, 5)], collate_fn_map=collate_map)
+        [Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]), Tensor(shape=[3], dtype=Int64, value= [3, 4, 5])]
     """
 
     elem = batch[0]
@@ -187,71 +236,118 @@ def collate(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]
             # or `__init__(iterable)` (e.g., `range`).
             return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
 
-    raise TypeError(default_collate_err_msg_format.format(elem_type))
+    raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem_type))
 
 
-def default_collate(batch):
-    r"""
-    Take in a batch of data and put the elements within the batch into a tensor with an additional
-    outer dimension - batch size.
+def collate_tensor_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+):
+    """ Collate function for :class:`mindspore.Tensor`. """
 
-    The exact output type can be a :class:`mindspore.Tensor`, a `Sequence` of :class:`mindspore.Tensor`, a
-    Collection of :class:`mindspore.Tensor`, or left unchanged, depending on the input type.
-    This is used as the default function for collation when
-    `batch_size` or `batch_sampler` is defined in :class:`mindspore.dataset.dataloader.DataLoader`.
+    return Tensor(np.stack(batch, axis=0))
 
-    Here is the general input type (based on the type of the element within the batch) to output type mapping:
 
-        * :class:`mindspore.Tensor` -> :class:`mindspore.Tensor` (with an added outer dimension batch size)
-        * NumPy Arrays -> :class:`mindspore.Tensor`
-        * `float` -> :class:`mindspore.Tensor`
-        * `int` -> :class:`mindspore.Tensor`
-        * `str` -> `str` (unchanged)
-        * `bytes` -> `bytes` (unchanged)
-        * `Mapping[K, V_i]` -> `Mapping[K, default_collate([V_1, V_2, ...])]`
-        * `NamedTuple[V1_i, V2_i, ...]` -> `NamedTuple[default_collate([V1_1, V1_2, ...]),
-          default_collate([V2_1, V2_2, ...]), ...]`
-        * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
-          default_collate([V2_1, V2_2, ...]), ...]`
+def collate_numpy_array_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+):
+    """ Collate function for :class:`numpy.ndarray`. """
+
+    elem = batch[0]
+    # array of string classes and object
+    if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
+        raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem.dtype))
+    return collate([Tensor.from_numpy(b) for b in batch], collate_fn_map=collate_fn_map)
+
+
+def collate_numpy_scalar_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None,
+):
+    """ Collate function for :class:`numpy.number`, :class:`numpy.bool_` and :class:`numpy.object_`. """
+
+    return Tensor(batch)
+
+
+def collate_float_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+):
+    """ Collate function for :class:`float`. """
+
+    return Tensor(batch, dtype=float64)
+
+
+def collate_int_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+):
+    """ Collate function for :class:`int`. """
+
+    return Tensor(batch)
+
+
+def collate_str_fn(
+        batch,
+        *,
+        collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None
+):
+    """ Collate function for :class:`str` and :class:`bytes`. """
+
+    return batch
+
+
+default_collate_fn_map: dict[Union[type, tuple[type, ...]], Callable] = {
+    Tensor: collate_tensor_fn,
+    np.ndarray: collate_numpy_array_fn,
+    (np.bool_, np.number, np.object_): collate_numpy_scalar_fn,
+    float: collate_float_fn,
+    int: collate_int_fn,
+    str: collate_str_fn,
+    bytes: collate_str_fn,
+}
+
+
+def default_collate(batch: list) -> Any:
+    """
+    Default function for concatenating a batch of data along the first dimension when batching is enabled
+    in :class:`~mindspore.dataset.dataloader.DataLoader`.
+
+    This function uses a predefined mapping from data types to their corresponding collate functions to
+    do the following type transformations, then collates the input batch according to the rules described
+    in :func:`~mindspore.dataset.dataloader._utils.collate.collate`:
+
+    * :py:class:`list` [:class:`mindspore.Tensor`] -> :class:`mindspore.Tensor`
+    * :py:class:`list` [:class:`numpy.ndarray`] -> :class:`mindspore.Tensor`
+    * :py:class:`list` [:py:class:`float`] -> :class:`mindspore.Tensor`
+    * :py:class:`list` [:py:class:`int`] -> :class:`mindspore.Tensor`
+    * :py:class:`list` [:py:class:`str`] -> :py:class:`list` [:py:class:`str`]
+    * :py:class:`list` [:py:class:`bytes`] -> :py:class:`list` [:py:class:`bytes`]
 
     Args:
-        batch: a single batch to be collated
+        batch (list): A batch of data to be collated.
+
+    Returns:
+        :py:class:`~typing.Any`, the collated data.
+
+    Examples:
+        >>> from mindspore.dataset.dataloader import default_collate
+        >>>
+        >>> default_collate([0, 1, 2])
+        Tensor(shape=[3], dtype=Int64, value= [0, 1, 2])
+        >>>
+        >>> default_collate([{"data": 0, "label": 2},
+        ...                  {"data": 1, "label": 3}])
+        {'data': Tensor(shape=[2], dtype=Int64, value= [0, 1]), 'label': Tensor(shape=[2], dtype=Int64, value= [2, 3])}
+        >>>
+        >>> default_collate([(0, 3), (1, 4), (2, 5)])
+        [Tensor(shape=[3], dtype=Int64, value= [0, 1, 2]), Tensor(shape=[3], dtype=Int64, value= [3, 4, 5])]
     """
-
-    def collate_tensor_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        return ms.Tensor(np.stack(batch, axis=0))
-
-    def collate_numpy_array_fn(batch,
-                               *,
-                               collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        elem = batch[0]
-        # array of string classes and object
-        if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
-            raise TypeError(default_collate_err_msg_format.format(elem.dtype))
-        return collate([ms.Tensor.from_numpy(b) for b in batch], collate_fn_map=collate_fn_map)
-
-    def collate_numpy_scalar_fn(batch,
-                                *,
-                                collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        return ms.Tensor.from_numpy(batch)
-
-    def collate_float_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        return ms.Tensor(batch, dtype=ms.float64)
-
-    def collate_int_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        return ms.Tensor(batch)
-
-    def collate_str_fn(batch, *, collate_fn_map: Optional[dict[Union[type, tuple[type, ...]], Callable]] = None):
-        return batch
-
-    default_collate_fn_map: dict[Union[type, tuple[type, ...]], Callable] = {
-        ms.Tensor: collate_tensor_fn,
-        np.ndarray: collate_numpy_array_fn,
-        (np.bool_, np.number, np.object_): collate_numpy_scalar_fn,
-        float: collate_float_fn,
-        int: collate_int_fn,
-        str: collate_str_fn,
-        bytes: collate_str_fn,
-    }
 
     return collate(batch, collate_fn_map=default_collate_fn_map)
