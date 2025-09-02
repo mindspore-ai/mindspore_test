@@ -720,6 +720,24 @@ ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val) {
 
 Int64ImmPtr PackBasicTypeToValue(const int64_t &val) { return std::make_shared<Int64Imm>(val); }
 
+std::optional<Int64ImmPtr> PackToValue(const std::optional<int64_t> &val) {
+  if (!val.has_value()) {
+    return std::nullopt;
+  }
+  return std::make_optional(PackBasicTypeToValue(val.value()));
+}
+
+Int64ImmPtr PackToValue(const int64_t &val) { return PackBasicTypeToValue(val); }
+
+std::optional<ValueTuplePtr> PackToValue(const std::optional<std::vector<int64_t>> &val) {
+  if (!val.has_value()) {
+    return std::nullopt;
+  }
+  return std::make_optional(PackBasicTypeToValue(val.value()));
+}
+
+ValueTuplePtr PackToValue(const std::vector<int64_t> &val) { return PackBasicTypeToValue(val); }
+
 namespace {
 size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }
 

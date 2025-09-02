@@ -10,8 +10,8 @@ mindspore.mint.as_strided
 
     参数：
         - **input** (Tensor) - 输入张量。张量的形状为 :math:`(x_1, x_2, ..., x_R)` 。
-        - **size** (tuple[int]) - 输出张量的形状。
-        - **stride** (tuple[int]) - 输出张量的步幅。
+        - **size** (Union[tuple[int], list[int]]) - 输出张量的形状。
+        - **stride** (Union[tuple[int], list[int]]) - 输出张量的步幅。
         - **storage_offset** (int, 可选) - 输出张量在底层存储中的偏移量。如果为 ``None``，则输出张量的 `storage_offset`
           将与输入张量一致。默认值： ``None``。
 

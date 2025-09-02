@@ -115,25 +115,20 @@ COMMON_EXPORT abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const
 COMMON_EXPORT ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val);
 COMMON_EXPORT Int64ImmPtr PackBasicTypeToValue(const int64_t &val);
 
+COMMON_EXPORT std::optional<Int64ImmPtr> PackToValue(const std::optional<int64_t> &val);
+
+COMMON_EXPORT Int64ImmPtr PackToValue(const int64_t &val);
+
+COMMON_EXPORT std::optional<ValueTuplePtr> PackToValue(const std::optional<std::vector<int64_t>> &val);
+
+COMMON_EXPORT ValueTuplePtr PackToValue(const std::vector<int64_t> &val);
+
 template <typename T>
 ValuePtr OptionalToValue(const std::optional<T> &val) {
   if (!val.has_value()) {
     return kNone;
   }
   return val.value();
-}
-
-template <typename T>
-auto PackToValue(const std::optional<T> &val) {
-  if (!val.has_value()) {
-    return kNone;
-  }
-  return PackToValue(val.value());
-}
-
-template <typename T>
-auto PackToValue(const T &val) {
-  return PackBasicTypeToValue(val);
 }
 
 }  // namespace mindspore
