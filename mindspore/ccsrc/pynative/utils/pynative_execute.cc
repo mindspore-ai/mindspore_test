@@ -36,7 +36,6 @@
 #include "tools/profiler/profiler.h"
 #include "tools/profiler/profiling.h"
 #include "ir/cell.h"
-#include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/python_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
 #include "runtime/pipeline/pipeline.h"

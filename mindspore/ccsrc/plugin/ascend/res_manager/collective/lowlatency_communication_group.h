@@ -23,7 +23,6 @@
 #include "lcal.h"
 #include "lcal_api.h"
 #include "runtime/hardware_abstract/collective/communication_group.h"
-#include "utils/dlopen_macro.h"
 
 using namespace Lcal;
 using LcclPtr = std::shared_ptr<Lccl>;

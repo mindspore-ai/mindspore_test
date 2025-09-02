@@ -25,7 +25,6 @@
 #include <algorithm>
 
 #include "mindspore/core/include/ir/tensor_new.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DEBUGGER

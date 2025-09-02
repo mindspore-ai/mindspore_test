@@ -40,7 +40,6 @@
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/debug_services.h"
 #include "tools/dump/utils.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "proto/debug_graph.pb.h"
 
 using debugger::GraphProto;

@@ -43,7 +43,6 @@
 #include "frontend/optimizer/irpass/symbol_resolver.h"
 #include "include/common/fallback.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "include/common/utils/hook.h"
 #include "utils/log_adapter.h"
 #include "utils/trace_info.h"
 #include "include/common/utils/tensor_py.h"

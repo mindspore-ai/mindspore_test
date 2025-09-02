@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/duplex_pipe.h"
+#include "runtime/hardware_abstract/kernel_base/duplex_pipe.h"
 
 namespace mindspore {
 DuplexPipe::~DuplexPipe() {}

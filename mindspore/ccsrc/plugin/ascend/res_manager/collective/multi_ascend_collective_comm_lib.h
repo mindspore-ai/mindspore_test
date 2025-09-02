@@ -32,7 +32,6 @@
 #include "plugin/ascend/res_manager/collective/multi_ascend_communication_group.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/collective/dvm_collective_comm_lib.h"
-#include "utils/dlopen_macro.h"
 
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))

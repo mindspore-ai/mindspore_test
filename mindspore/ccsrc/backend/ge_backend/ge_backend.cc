@@ -28,7 +28,7 @@
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "ir/device_address.h"

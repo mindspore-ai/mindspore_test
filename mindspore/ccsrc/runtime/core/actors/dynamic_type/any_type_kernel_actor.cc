@@ -21,7 +21,6 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/fallback.h"
-#include "include/common/utils/stub_tensor.h"
 #include "ir/graph_utils.h"
 #include "include/backend/py_execute_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

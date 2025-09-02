@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"

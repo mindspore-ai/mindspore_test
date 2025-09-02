@@ -23,7 +23,6 @@
 #endif
 #include <set>
 #include <string>
-#include "include/common/utils/parallel_context.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
@@ -39,6 +38,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "ir/func_graph.h"
 #include "ir/graph_utils.h"
 #include "ir/func_graph_flag.h"
 #include "ir/primitive.h"

@@ -25,7 +25,6 @@
 #include "ir/func_graph_cloner.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/primitive_utils.h"
-#include "include/common/utils/hook.h"
 #include "include/common/pynative/common_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"

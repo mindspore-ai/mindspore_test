@@ -44,7 +44,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "plugin/cpu/kernel_executor/kernel_select/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/custom_aclnn_utils.h"

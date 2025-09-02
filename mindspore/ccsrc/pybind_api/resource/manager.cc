@@ -39,7 +39,7 @@
 #include "utils/info.h"
 #include "utils/llm_manager.h"
 #include "include/common/utils/comm_manager.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "utils/interpret_node_recorder.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "frontend/jit/ps/fallback.h"
@@ -59,7 +59,6 @@
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "frontend/jit/ps/pass_config.h"
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"

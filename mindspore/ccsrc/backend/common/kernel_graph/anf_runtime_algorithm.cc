@@ -45,10 +45,9 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/common/convert_tensor_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "utils/trace_base.h"
@@ -178,6 +177,18 @@ bool ContainScalarOut(const AbstractBasePtr &abs) {
     return has_scalar_out;
   }
   return false;
+}
+
+void HalfToFloat(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto half_data = static_cast<const float16 *>(src);
+  auto float_data = static_cast<float *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    float tmp = half_to_float(half_data[i]);
+    float_data[i] = tmp;
+  }
 }
 }  // namespace
 
@@ -2645,7 +2656,7 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     constexpr size_t kFloat16TypeSize = 2;
     for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
-      device::HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
+      HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
       value += std::to_string(fp32);
       value += ", ";
     }

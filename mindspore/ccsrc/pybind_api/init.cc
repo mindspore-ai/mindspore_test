@@ -30,7 +30,6 @@
 #include "include/common/utils/python_adapter.h"
 #include "include/backend/debug/event_writer.h"
 #include "include/common/utils/config_manager.h"
-#include "include/common/utils/mpi/mpi_config.h"
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
@@ -393,11 +392,6 @@ PYBIND11_MODULE(_c_expression, m) {
     "Init Cluster without scheduler process");
   (void)m.def("set_cluster_exit_with_exception", &mindspore::distributed::set_cluster_exit_with_exception,
               "Set this process exits with exception.");
-
-  (void)py::class_<mindspore::MpiConfig, std::shared_ptr<mindspore::MpiConfig>>(m, "MpiConfig")
-    .def_static("get_instance", &mindspore::MpiConfig::GetInstance, "Get mpi config instance.")
-    .def("get_enable_mpi", &mindspore::MpiConfig::enable_mpi, "Get whether enable mpi.")
-    .def("set_enable_mpi", &mindspore::MpiConfig::set_enable_mpi, "Set whether to enable mpi.");
 
   (void)py::class_<TensorTransform, std::shared_ptr<TensorTransform>>(m, "TensorTransform")
     .def_static("get_instance", &TensorTransform::GetInstance, "Get tensor_transform instance.")

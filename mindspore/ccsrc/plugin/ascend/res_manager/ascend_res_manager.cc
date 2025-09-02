@@ -28,7 +28,6 @@
 
 #include "ir/tensor_new.h"
 #include "hccl/hccl.h"
-#include "utils/dlopen_macro.h"
 #include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_vmm_adapter.h"
@@ -59,6 +58,7 @@
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/convert_tensor_utils.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"

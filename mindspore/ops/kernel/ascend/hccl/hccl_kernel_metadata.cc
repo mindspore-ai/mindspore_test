@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/common/utils/utils.h"
 #include "kernel/ascend/hccl/hcom_util.h"
 #include "include/backend/anf_runtime_algorithm.h"

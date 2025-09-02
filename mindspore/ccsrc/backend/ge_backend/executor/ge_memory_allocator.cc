@@ -28,7 +28,6 @@
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_manager.h"
 #include "tools/profiler/profiling.h"

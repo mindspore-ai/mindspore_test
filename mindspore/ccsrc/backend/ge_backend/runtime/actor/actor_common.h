@@ -34,7 +34,6 @@
 #include "include/backend/kernel_graph.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
