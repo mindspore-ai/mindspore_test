@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 
 #include <cstdint>
+#include <mutex>
 #include <vector>
 #include <string>
 
@@ -36,11 +37,18 @@ extern void RegisterWorkerPIDs(int64_t id, const std::vector<int> &pids);
 /// \brief Deregister workers to be monitored by the watch dog.
 extern void DeregisterWorkerPIDs(int64_t id);
 
+extern std::mutex shm_msg_id_mtx_;
+
 extern void RegisterShmIDAndMsgID(std::string pid, int32_t shm_id, int32_t msg_id);
 
 extern void ReleaseShmAndMsg();
 
 /// \brief Called in Python Layer of main process
 extern void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids);
+
+/// \brief Manually release the shm_msg_id_mtx_
+/// When start multiple dataset iterators in the same time, it is necessary to acquire the lock before launching
+/// the map/batch subprocess in execution.cc, and then release this lock in the python _worker_loop(...) function.
+extern void UnlockShmIDAndMsgIDMutex();
 }  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_

@@ -86,5 +86,9 @@ PYBIND_REGISTER(RegisterShmIDAndMsgID, 0, ([](py::module *m) {
                                  RegisterShmIDAndMsgID(pid, shm_id, msg_id);
                                }));
                 }));
+
+PYBIND_REGISTER(UnlockShmIDAndMsgIDMutex, 0, ([](py::module *m) {
+                  (void)m->def("unlock_shm_id_and_msg_id_mutex", ([]() { UnlockShmIDAndMsgIDMutex(); }));
+                }));
 }  // namespace dataset
 }  // namespace mindspore

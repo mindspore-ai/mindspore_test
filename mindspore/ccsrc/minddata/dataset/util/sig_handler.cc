@@ -35,7 +35,7 @@ static std::unordered_map<int64_t, std::vector<int>> worker_groups = {};
 // value: the shm_id / msg_id
 // Scenario 1: When the main process is killed, the worker process will release shm & msg in SIGTERMHandler
 // Scenario 2: When the worker process is killed, the main process will release shm & msg in SIGCHLDHandler
-std::mutex shm_mgs_id_mtx_;                      // lock for g_shm_id & g_msg_id
+std::mutex shm_msg_id_mtx_;                      // lock for g_shm_id & g_msg_id
 static std::map<std::string, int32_t> g_shm_id;  // used by map / batch multiprocess mode data transfer
 static std::map<std::string, int32_t> g_msg_id;  // used by map / batch multiprocess mode data transfer
 
@@ -65,7 +65,7 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
-void DoReleaseShmAndMsg(const std::string &key) {
+void DoReleaseShmAndMsg(const std::string &key, bool need_lock = true) {
   // release the shm
   if (g_shm_id[key] != -1) {
     if (shmctl(g_shm_id[key], IPC_RMID, NULL) == -1 && errno != EINVAL) {
@@ -78,7 +78,7 @@ void DoReleaseShmAndMsg(const std::string &key) {
 
   // release the msg
   if (g_msg_id[key] != -1) {
-    if (msgctl(g_msg_id[key], IPC_RMID, 0) == -1 && errno != EINVAL) {
+    if (msgctl(g_msg_id[key], IPC_RMID, 0) == -1 && errno != EINVAL && errno != EIDRM) {
       MS_LOG(ERROR) << "msgctl delete msg_id: " << std::to_string(g_msg_id[key])
                     << " error. Errno: " << std::to_string(errno);
     } else {
@@ -86,8 +86,11 @@ void DoReleaseShmAndMsg(const std::string &key) {
     }
   }
 
-  {
-    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
+  if (need_lock) {
+    std::lock_guard<std::mutex> lock(shm_msg_id_mtx_);
+    g_shm_id[key] = -1;
+    g_msg_id[key] = -1;
+  } else {
     g_shm_id[key] = -1;
     g_msg_id[key] = -1;
   }
@@ -104,8 +107,10 @@ void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
         continue;
       }
 
-      // release the shm and msg
-      DoReleaseShmAndMsg(item.first);
+      // release the shm and msg, it's run in main process thread
+      // scenario 1: dataset.reset, when launch new worker processes, should close all old workers first which will
+      //             release the shm queue and msg queue
+      DoReleaseShmAndMsg(item.first, false);
     }
   }
   return;
@@ -375,11 +380,13 @@ void DeregisterWorkerPIDs(int64_t id) {
 
 void RegisterShmIDAndMsgID(std::string pid, int32_t shm_id, int32_t msg_id) {
   {
-    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
+    std::lock_guard<std::mutex> lock(shm_msg_id_mtx_);
     g_shm_id[pid] = shm_id;
     g_msg_id[pid] = msg_id;
   }
   MS_LOG(INFO) << "Update the shm_id to " << std::to_string(shm_id) << ", msg_id to " << std::to_string(msg_id)
                << " for pid: " << pid;
 }
+
+void UnlockShmIDAndMsgIDMutex() { shm_msg_id_mtx_.unlock(); }
 }  // namespace mindspore::dataset

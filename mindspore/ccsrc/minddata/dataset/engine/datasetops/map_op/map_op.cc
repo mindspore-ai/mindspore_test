@@ -36,6 +36,7 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/random.h"
+#include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/task_manager.h"
 #if defined(ENABLE_D)
 #include "minddata/dataset/vision/kernels/dvpp/acl_adapter.h"
@@ -916,7 +917,14 @@ Status MapOp::Launch() {
   // launch python multiprocessing. This will create the MP pool and shared memory if needed.
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for MapOp:" << id();
-    python_multiprocessing_runtime_->launch(id(), kMapOp, ftok_keys_);
+    {
+      // When start multiple dataset iterators in the same time, it is necessary to acquire the lock before launching
+      // the map/batch subprocess, and then release this lock in the python _worker_loop(...) function.
+      // Reason: When the first dataset map/batch thread holds the shm_msg_id_mtx_ lock, the second dataset's
+      // map/batch subprocess will be hang when it tries to use the shm_msg_id_mtx_ lock after starting.
+      std::lock_guard<std::mutex> lock(shm_msg_id_mtx_);
+      python_multiprocessing_runtime_->launch(id(), kMapOp, ftok_keys_);
+    }
     std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
     for (int i = 0; i < worker_ids.size(); i++) {
       BindThreadCoreForMindDataOp("dataset::MapOp", worker_ids[i], false);
