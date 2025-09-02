@@ -1719,6 +1719,7 @@ class Cell(Cell_):
         _init_auto_parallel_context(self)
         compile_args = self._get_compile_args(args)
         self._has_mutable_args_list = _get_mutable_flags(compile_args)
+        _cell_graph_executor._set_real_args(args, kwargs)
         _cell_graph_executor.compile(self, *compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
         _clear_auto_parallel_context(self)

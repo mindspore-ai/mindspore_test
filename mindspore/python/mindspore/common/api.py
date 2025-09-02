@@ -690,6 +690,7 @@ class _JitExecutor:
     def compile(self, method_name, *args, **kwargs):
         """Returns pipeline for the given args."""
         # Chose dynamic shape tensors or actual input tensors as compile args.
+        self._graph_executor.set_real_args(args, kwargs)
         compile_args = self._generate_compile_args(args)
         key_id = self._get_key_id()
         if self.input_signature is None:
@@ -2153,6 +2154,9 @@ class _CellGraphExecutor:
     def _update_param_node_default_input(self, phase, replace):
         new_param = {x.name: replace[x] for x in replace if id(x) != id(replace[x])}
         return self._graph_executor.updata_param_node_default_input(phase, new_param)
+
+    def _set_real_args(self, args, kwargs):
+        self._graph_executor.set_real_args(args, kwargs)
 
     def _get_shard_strategy(self, obj):
         real_phase = _real_phase(obj.phase, obj)

@@ -676,6 +676,29 @@ py::dict ExecutorPy::GetParams(const std::string &phase) {
   return parameter_dict;
 }
 
+void ExecutorPy::SetRealArguments(const py::tuple &args, const py::dict &kwargs) {
+  ValuePtrList arguments;
+  for (std::size_t i = 0; i < args.size(); ++i) {
+    ValuePtr converted = nullptr;
+    bool success = parse::ConvertData(args[i], &converted);
+    if (!success) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Fail to convert the " << i << "th argument, args[" << i
+                                 << "]: " << py::str(args[i]);
+    }
+    (void)arguments.emplace_back(converted);
+  }
+  for (const auto &item : kwargs) {
+    ValuePtr value = nullptr;
+    bool success = parse::ConvertData(py::cast<py::object>(item.second), &value);
+    if (!success) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Fail to convert the argument (" << py::str(item.first) << ": "
+                                 << py::str(item.second) << ").";
+    }
+    (void)arguments.emplace_back(value);
+  }
+  real_arguments_ = arguments;
+}
+
 void ExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs) {
   std::vector<symshape::SymbolInfoList> symbol_infos;
   symbol_infos.reserve(args_abs->size());

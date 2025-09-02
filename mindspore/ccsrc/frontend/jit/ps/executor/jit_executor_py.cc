@@ -170,6 +170,7 @@ bool JitExecutorPy::CompileInner(const py::object &source, const py::tuple &args
   auto args_abs = resource->args_abs();
   ConvertSymbolicShape(args, &args_abs);
   resource->set_args_abs(args_abs);
+  resource->set_real_arguments(real_arguments());
   info_[phase_] = executor_info;
   DoOptimize(resource);
   // Save the compiled graph to MsPipeLine.
@@ -202,6 +203,7 @@ bool JitExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &arg
   auto args_abs = resource->args_abs();
   ConvertSymbolicShape(args, &args_abs);
   resource->set_args_abs(args_abs);
+  resource->set_real_arguments(real_arguments());
   info_[phase] = executor_info;
   DoOptimize(resource, false);
   // Save the compiled graph to MsPipeLine.
