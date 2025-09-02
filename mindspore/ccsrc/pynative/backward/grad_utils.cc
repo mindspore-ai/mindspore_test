@@ -63,7 +63,7 @@ namespace mindspore {
 namespace pynative {
 constexpr char kGrad[] = "grad";
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
-using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
+using VmEvalPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
 const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         kMakeListOpName,
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
@@ -825,7 +825,7 @@ CallBackFn AutoGradUtil::CreateGraphCallBack(const FuncGraphPtr &call_graph, con
     if (common::AnfAlgo::IsGraphOutputValueNodeOrParameter(resource->func_graph()->output(), arg_list, &outputs)) {
       return outputs;
     }
-    BaseRefPtr run = resource->GetResult(pipeline::kOutput).cast<BaseRefPtr>();
+    VmEvalPtr run = resource->GetResult(pipeline::kOutput).cast<VmEvalPtr>();
     return utils::cast<VectorRef>((*run)(arg_list));
   };
   return fn;
