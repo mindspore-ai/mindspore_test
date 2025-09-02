@@ -621,7 +621,7 @@ bool CollectiveManager::InitDeviceCommLib() {
   MS_LOG(INFO) << "Start initializing communication library on device side...";
   RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, device_id),
                            "Failed to initialize communication library on device side.");
-  if (cluster::ClusterContext::instance()->enable_cross_cluster()) {
+  if (DistributedMeta::GetInstance()->enable_cross_cluster()) {
     MS_LOG(WARNING) << "Set helper for CCOOL collective communication.";
     device_comm_lib_instance_->SetHelperCommLib(host_comm_lib_instance_);
   }
@@ -714,9 +714,10 @@ std::string VectorToString(const std::vector<int> &vec) {
 }
 
 void ParseEnvCpuAffinity(const uint32_t &global_rank_id, const uint32_t &local_rank_id) {
-  const auto &cpu_affinity_list = runtime::GetRuntimeConfigValue(runtime::kRuntimeCpuAffinityList);
-  const auto &cpu_affinity_module = runtime::GetRuntimeConfigValue(runtime::kRuntimeCpuAffinityMoudule);
-  const auto &actor_thread_fix_bind = runtime::GetRuntimeConfigValue(runtime::kRuntimeActorThreadFixBind);
+  const auto &cpu_affinity_list = common::GetConfigValue(runtime::kRuntimeConf, runtime::kRuntimeCpuAffinityList);
+  const auto &cpu_affinity_module = common::GetConfigValue(runtime::kRuntimeConf, runtime::kRuntimeCpuAffinityMoudule);
+  const auto &actor_thread_fix_bind =
+    common::GetConfigValue(runtime::kRuntimeConf, runtime::kRuntimeActorThreadFixBind);
   std::vector<int> rank_core_reserved;
   if (cpu_affinity_list.empty()) {
     return;
@@ -962,7 +963,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 
   // Step 1: Generate device information of the root node (required for NPU backend without rank table).
   static bool use_ranktable = !common::GetEnv("RANK_TABLE_FILE").empty();
-  bool use_cross_cluster = cluster::ClusterContext::instance()->enable_cross_cluster();
+  bool use_cross_cluster = DistributedMeta::GetInstance()->enable_cross_cluster();
   bool ret = false;
   void *root_info;
   if (!is_mccl && (!use_ranktable || use_cross_cluster)) {
@@ -1031,7 +1032,7 @@ bool CollectiveManager::IsAsyncInitGlobalComm() {
   // 5.This NOT using mpirun. OpenMPI has hanging issues when invoking its interfaces in multiple threads.
   // 6.This is Ascend platform. For early version, we only support to create global comm group for Ascend by default.
   // Otherwise user should control whether using async manner.
-  const auto &is_async_str = runtime::GetRuntimeConfigValue(runtime::kRuntimeAsyncInitComm);
+  const auto &is_async_str = common::GetConfigValue(runtime::kRuntimeConf, runtime::kRuntimeAsyncInitComm);
   bool async_conf = (is_async_str != "false" && is_async_str != "False");
   bool is_graph = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
   bool use_rank_table = !common::GetEnv("RANK_TABLE_FILE").empty();
