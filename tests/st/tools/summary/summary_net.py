@@ -19,7 +19,7 @@ from collections import Counter
 import tempfile
 import shutil
 import sys
-sys.path.append('../../../../')
+sys.path.append('../../../../../')
 from mindspore import nn, Tensor, context
 from mindspore.common.initializer import Normal
 from mindspore.train import Loss
@@ -29,7 +29,7 @@ from mindspore.train import Model
 from mindspore import SummaryCollector
 from mindspore.communication import init, get_rank
 import mindspore as ms
-from tests.st.summary.dataset import create_mnist_dataset
+from tests.st.tools.summary.dataset import create_mnist_dataset
 from tests.summary_utils import SummaryReader
 
 
@@ -134,7 +134,7 @@ def list_summary_tags(summary_dir):
 
 def test_summary_net():
     """
-    Feature: Test SummaryCollector in distribute trainning.
+    Feature: Test SummaryCollector in distribute training.
     Description: Run Summary script, init() is not in main function.
     Expectation: No error occur.
     """
@@ -150,6 +150,7 @@ def test_summary_net():
     # num samples is 10, batch size is 2, so step is 5, collect freq is 2,
     # SummaryCollector will collect the first step and 2th, 4th step
     tag_count = 3
+    # pylint: disable=E1121
     for count in Counter(tag_list).values():
         assert count == tag_count
 

@@ -30,7 +30,7 @@ from mindspore.train import Loss, Model
 from mindspore import SummaryCollector, SummaryLandscape, SummaryRecord, Tensor, context, nn
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
-from tests.st.summary.dataset import create_mnist_dataset
+from tests.st.tools.summary.dataset import create_mnist_dataset
 from tests.summary_utils import SummaryReader
 
 

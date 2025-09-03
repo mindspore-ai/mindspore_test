@@ -34,7 +34,7 @@ def cleanup():
 
 class CheckProfilerFiles:
     def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework=None, with_stack=False):
-        """Arges init."""
+        """Args init."""
         self.device_id = device_id
         self.rank_id = rank_id
         self.profiler_path = profiler_path

@@ -15,7 +15,6 @@
 import os
 import time
 import tempfile
-import pytest
 import scipy
 import numpy as np
 import mindspore.nn as nn

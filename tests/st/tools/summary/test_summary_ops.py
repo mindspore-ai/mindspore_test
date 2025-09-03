@@ -25,7 +25,7 @@ from mindspore.ops import operations as P
 from mindspore.train import Loss, Model
 from mindspore.train.summary.summary_record import _get_summary_tensor_data, _record_summary_tensor_data
 from tests.mark_utils import arg_mark
-from tests.st.summary.dataset import create_mnist_dataset
+from tests.st.tools.summary.dataset import create_mnist_dataset
 
 
 class LeNet5(nn.Cell):
