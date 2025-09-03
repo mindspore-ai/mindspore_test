@@ -1281,6 +1281,26 @@ extern PyObject *TensorPython_setstate(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+static PyObject *TensorPython_FromDLPack(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyObject *tensor_obj = nullptr;
+  if (!PyArg_ParseTuple(args, "O", &tensor_obj)) {
+    return nullptr;
+  }
+  py::object dlpack_capsule = py::reinterpret_borrow<py::object>(tensor_obj);
+  TensorPtr tensor = TensorPybind::FromDLPack(dlpack_capsule);
+  return tensor::PackTensor(tensor);
+  HANDLE_MS_EXCEPTION_END
+}
+
+static PyObject *TensorPython_ToDLPack(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  py::object tensor_py = py::reinterpret_borrow<py::object>(self);
+  py::object result = TensorPybind::ToDLPack(tensor_py);
+  return result.release().ptr();
+  HANDLE_MS_EXCEPTION_END
+}
+
 static PyMethodDef Tensor_methods[] = {
   {"set_param_info", (PyCFunction)TensorPython_set_paramInfo_, METH_STATIC | METH_VARARGS, "set param info"},
   {"asnumpy", (PyCFunction)TensorPython_asnumpy, METH_VARARGS, R"mydelimiter(
@@ -1593,6 +1613,8 @@ static PyMethodDef Tensor_methods[] = {
   {"_retain_grad", (PyCFunction)TensorPython_RetainGrad, METH_NOARGS, "Set the tensor needs to retain the gradient."},
   {"_shared_host_memory_with_device_", (PyCFunction)TensorPython_SetSharedMemory, METH_NOARGS,
    "shared host memory with device."},
+  {"from_dlpack", (PyCFunction)TensorPython_FromDLPack, METH_STATIC | METH_VARARGS, "from_dlpack."},
+  {"to_dlpack", (PyCFunction)TensorPython_ToDLPack, METH_VARARGS, "to_dlpack."},
   {NULL, NULL, 0, NULL}};
 
 extern void TensorPy_pydealloc(PyObject *obj) {
