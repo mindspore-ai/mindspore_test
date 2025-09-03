@@ -560,8 +560,6 @@ void GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_
     output_formats->assign(output_num, kOpFormat_DEFAULT);
     input_reshape_types->assign(input_num, "");
     output_reshape_types->assign(output_num, "");
-
-    kernel::ProcessCustomKernelFormatMapping(kernel, input_formats, output_formats);
   } else {
     device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, input_formats, output_formats, input_reshape_types,
                                                        output_reshape_types, kernel_type);
