@@ -38,6 +38,7 @@ using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
 #include "backend/common/device_address_utils.h"
+#include "backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "pynative/backward/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
@@ -208,7 +209,7 @@ void UpdateOutputStubNodeValue(const FrontendOpRunInfoPtr &op_run_info) {
 }
 
 BackendOpRunInfoPtr CreateBackendOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
-  auto backend_op_run_info = std::make_shared<BackendOpRunInfo>(
+  auto backend_op_run_info = std::make_shared<session::BackendOpRunInfo>(
     op_run_info->base_op_run_info, std::make_shared<Primitive>(*op_run_info->op_grad_info->op_prim), true, false);
   // Erase RandomOp cache avoid memory leak.
   if (AnfAlgo::NeedEraseCache(backend_op_run_info->op_prim)) {

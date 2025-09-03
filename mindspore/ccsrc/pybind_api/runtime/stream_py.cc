@@ -23,6 +23,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "pybind_api/runtime/utils_py.h"
 #include "utils/stream_guard.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace hal {

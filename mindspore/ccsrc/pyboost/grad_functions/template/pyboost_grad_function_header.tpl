@@ -89,7 +89,7 @@ session::BackendOpRunInfoPtr GetBackendOpRunInfo(OpRunnerInfo *op_runner_info) {
   // Do infer and refresh output abstract
   op_runner_info->output_abs = kernel::pyboost::PyBoostUtils::InferByOpDef(op_runner_info->prim, op_runner_info->inputs_abs);
   base_op_run_info.abstract = op_runner_info->output_abs ;
-  return std::make_shared<BackendOpRunInfo>(base_op_run_info, op_runner_info->prim, false, false);
+  return std::make_shared<session::BackendOpRunInfo>(base_op_run_info, op_runner_info->prim, false, false);
 }
 
 DoGradFunc do_grad_func{nullptr};

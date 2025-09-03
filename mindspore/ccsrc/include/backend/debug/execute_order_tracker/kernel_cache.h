@@ -28,7 +28,7 @@
 
 namespace mindspore {
 namespace runtime {
-struct BACKEND_EXPORT CommPyboostKernel {
+struct BACKEND_COMMON_EXPORT CommPyboostKernel {
   std::string primitive;
   std::string group;
   std::string input_shape;
@@ -41,7 +41,7 @@ struct BACKEND_EXPORT CommPyboostKernel {
 };
 using CommPyboostKernelPtr = std::shared_ptr<CommPyboostKernel>;
 
-class BACKEND_EXPORT KernelCache {
+class BACKEND_COMMON_EXPORT KernelCache {
  public:
   static KernelCache &GetInstance() {
     static KernelCache instance;

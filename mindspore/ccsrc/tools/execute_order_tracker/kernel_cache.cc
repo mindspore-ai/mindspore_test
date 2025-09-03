@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// kernel_cache.cpp
+#include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include <utility>
-#include "runtime/core/graph_executor/pre_launch/kernel_cache.h"
 
 namespace mindspore {
 namespace runtime {

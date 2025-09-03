@@ -28,6 +28,7 @@ endif()
 
 list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/kernel_cache.cc"
     )
 
 list(APPEND _DEBUG_SRC_LIST
