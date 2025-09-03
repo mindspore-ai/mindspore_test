@@ -588,3 +588,29 @@ def test_backward_final_callback_recompute():
     grad_fn = mindspore.grad(net, grad_position=(0,), weights=net.trainable_params())
     grad_fn(x)
     assert record == [2, 0, 1]
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_operation_no_input():
+    """
+    Features: ops.GradOperation.
+    Description: Test ops.GradOperation without input in graph mode.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self, w, b):
+            super(Net, self).__init__()
+            self.w = Parameter(w, name='w')
+            self.b = Parameter(b, name='b')
+
+        def construct(self):
+            return self.w + self.b
+
+    w = Tensor([6], mindspore.int32)
+    b = Tensor([2], mindspore.int32)
+    grad_net = C.GradOperation(get_all=True, get_by_list=False)
+    grads = grad_net(Net(w, b))()
+    assert (isinstance(grads, tuple) and not grads)

@@ -896,7 +896,11 @@ void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &input
       const auto &tensor = value->cast<tensor::TensorPtr>();
       auto auto_grad_meta_data = tensor->auto_grad_meta_data();
       // Get scalar tensor
-      if (auto_grad_meta_data == nullptr || !auto_grad_meta_data->requires_grad()) {
+      if (auto_grad_meta_data == nullptr ||
+          (auto_grad_meta_data->input_type() == InputType::kParameter && !AutoGradUtil::IsParamRequiresGrad(tensor))) {
+        continue;
+      }
+      if (!tensor->is_parameter() && !auto_grad_meta_data->requires_grad()) {
         continue;
       }
       auto fn = SafeGetGradNodeImpl(tensor);
@@ -1887,7 +1891,9 @@ ValuePtr AutoDiff::RunGradFunc(const ValuePtrList &inputs, const tensor::TensorP
   ComputeNodeInDegree();
   PruningGradGraph(inputs, weights_node, grad_attr, grad_position);
   kernel::pyboost::RequireGradGuard requires_grad(high_order_);
-  BackPropagate();
+  if (gradient_contexts_.find(graph_root_.get()) != gradient_contexts_.end()) {
+    BackPropagate();
+  }
   CommonUtils::DumpGraphIR("func_grad.ir", std::make_shared<FuncGraph>());
   if (!is_run_recompute_) {
     python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
