@@ -15,14 +15,13 @@
 """ test graph fallback control flow if in while scenario"""
 import numpy as np
 from mindspore import Tensor, jit, context
-from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_1():
     """
     Feature: JIT Fallback
@@ -38,16 +37,13 @@ def test_if_in_while_1():
                 y += Tensor(1)
             x += Tensor(1)
         return x + y
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_if_in_while()
-        assert res == 7
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    res = control_flow_if_in_while()
+    assert res == 7
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_2():
     """
     Feature: JIT Fallback
@@ -62,15 +58,12 @@ def test_if_in_while_2():
                 break
             x += Tensor(1)
         return x
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_if_in_while()
-        assert res == 3
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+    res = control_flow_if_in_while()
+    assert res == 3
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_3():
     """
     Feature: JIT Fallback
@@ -89,15 +82,11 @@ def test_if_in_while_3():
             x += Tensor(1)
         return x + y
 
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_if_in_while()
-        assert res == 6
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+    res = control_flow_if_in_while()
+    assert res == 6
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_if_in_while_4():
     """
     Feature: JIT Fallback
@@ -120,12 +109,9 @@ def test_if_in_while_4():
             else:
                 x += Tensor(1)
         return x + y
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_if_in_while()
-        assert res == 5
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    res = control_flow_if_in_while()
+    assert res == 5
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')

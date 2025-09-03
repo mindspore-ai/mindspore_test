@@ -17,15 +17,7 @@ import pytest
 import mindspore.nn as nn
 from mindspore import context, Tensor, jit, ParameterTuple
 from mindspore import ops
-from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
-
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_teardown():
-    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-    yield
-    compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 
 class GradOfFirstInput(nn.Cell):

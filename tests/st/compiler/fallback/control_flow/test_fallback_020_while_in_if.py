@@ -15,7 +15,6 @@
 """ test graph fallback control flow."""
 import mindspore as ms
 from mindspore import Tensor, jit, context, nn, Parameter
-from mindspore._extends.parse import compile_config
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -91,8 +90,8 @@ def test_while_in_if_3():
     assert res == 7
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_while_two_cond_in_if_1():
     """
     Feature: JIT Fallback
@@ -111,12 +110,8 @@ def test_while_two_cond_in_if_1():
         x += Tensor(-1)
         return x + y
 
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_while()
-        assert res == 21
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+    res = control_flow_while()
+    assert res == 21
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',

@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 import mindspore.context as context
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
-from mindspore._extends.parse import compile_config
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
@@ -64,12 +63,9 @@ def test_while_by_cell_list_in_while_ge():
     Description: run the while by case in while with ge backend
     Expectation: success
     """
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        out = while_by_cell_list_in_while()
-        assert out == Tensor(352, mstype.int32)
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    out = while_by_cell_list_in_while()
+    assert out == Tensor(352, mstype.int32)
 
 if __name__ == "__main__":
     test_while_by_cell_list_in_while_ge()

@@ -64,11 +64,16 @@ def test_add_memory():
     Description: Test the memory usage of assignment statements.
     Expectation: Run success.
     """
-    shape = (1000, 1000)
-    x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    add_net = AddNet()
-    add_net(x, y)
+
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+        shape = (1000, 1000)
+        x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+        y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+        add_net = AddNet()
+        add_net(x, y)
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
 
 
 def test_inplace_add_memory():
@@ -77,15 +82,12 @@ def test_inplace_add_memory():
     Description: Test the memory usage of assignment statements.
     Expectation: Run success.
     """
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        shape = (1000, 1000)
-        x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        inplace_add_net = AddNet()
-        inplace_add_net(x, y)
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    shape = (1000, 1000)
+    x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+    y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+    inplace_add_net = AddNet()
+    inplace_add_net(x, y)
 
 
 class MulNet(nn.Cell):
@@ -100,11 +102,16 @@ def test_mul_memory():
     Description: Test the memory usage of assignment statements.
     Expectation: Run success.
     """
-    shape = (1000, 1000)
-    x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-    mul_net = MulNet()
-    mul_net(x, y)
+
+    try:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+        shape = (1000, 1000)
+        x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+        y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+        mul_net = MulNet()
+        mul_net(x, y)
+    finally:
+        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
 
 
 def test_inplace_mul_memory():
@@ -113,15 +120,12 @@ def test_inplace_mul_memory():
     Description: Test the memory usage of assignment statements.
     Expectation: Run success.
     """
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        shape = (1000, 1000)
-        x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
-        inplace_mul_net = MulNet()
-        inplace_mul_net(x, y)
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    shape = (1000, 1000)
+    x = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+    y = ms.Tensor(np.random.randn(*shape).astype(np.float32))
+    inplace_mul_net = MulNet()
+    inplace_mul_net(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -15,7 +15,6 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
@@ -41,12 +40,9 @@ def test_while_after_while_tensor():
             z = z + y
         return z
 
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        res = control_flow_while_after_while()
-        assert res == -3
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    res = control_flow_while_after_while()
+    assert res == -3
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
