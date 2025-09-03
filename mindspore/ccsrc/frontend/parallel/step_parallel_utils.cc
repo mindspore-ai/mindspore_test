@@ -1135,7 +1135,7 @@ AnfNodePtr GetChildCastNode(const AnfNodePtr &node_ptr, const NodeUsersMap &node
     visited.pop();
     cnode = queue_node->cast<CNodePtr>();
     // MAKE_TUPLE will not appear after the load in the forward graph
-    if (IsSomePrimitive(cnode, MAKE_TUPLE)) {
+    if (IsOneOfPrimitiveCNode(cnode, {prim::kPrimMakeTuple, prim::kPrimUpdateState})) {
       continue;
     } else if (IsInAllGatherNodeList(cnode) || IsSomePrimitiveList(cnode, {LOAD, RESHAPE})) {
       auto node_set = node_users_map.at(queue_node);
