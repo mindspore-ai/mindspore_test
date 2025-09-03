@@ -864,6 +864,31 @@ AnfNodePtr UpdatestatePureNodeEliminater::operator()(const OptimizerPtr &, const
   return update_state_node->input(kInputIndex);
 }
 
+// Convert:
+// %1  = SideEffectNode(xx, xx, u1)
+// %2 = UpdateState(u1, %1)
+// %3 = UpdateState(%2, %1)  --- need eliminate
+// %4 = xxx(%3)
+// To:
+// %1  = SideEffectNode(xx, xx, u1)
+// %2 = UpdateState(u1, %1)
+// %4 = xxx(%2)
+AnfNodePtr EliminateNestedUpdateState(const CNodePtr &update_state) {
+  if (!IsPrimitiveCNode(update_state, prim::kPrimUpdateState)) {
+    return nullptr;
+  }
+  const auto &inner_u = update_state->input(1);
+  if (!IsPrimitiveCNode(inner_u, prim::kPrimUpdateState)) {
+    return nullptr;
+  }
+  const auto &attach = update_state->input(kAttachIndex);
+  const auto &nested_attach = inner_u->cast<CNodePtr>()->input(kAttachIndex);
+  if (attach == nested_attach) {
+    return inner_u;
+  }
+  return nullptr;
+}
+
 // Eliminate redundant UpdateState/Depend pair nodes caused by inline.
 // Convert:
 //    x1 = Depend(x, u0)
@@ -901,6 +926,11 @@ bool UpdatestateDependEliminater::operator()(const FuncGraphPtr &func_graph, con
     auto new_node = EliminateUpdateStateWithDepend(node->cast<CNodePtr>());
     if (new_node != nullptr) {
       (void)manager->Replace(node, new_node);
+      // Check the nested UpdateState node.
+      auto inner_updatestate = EliminateNestedUpdateState(new_node->cast<CNodePtr>());
+      if (inner_updatestate != nullptr) {
+        (void)manager->Replace(new_node, inner_updatestate);
+      }
       change = true;
     }
   }
