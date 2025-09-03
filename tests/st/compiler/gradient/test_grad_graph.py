@@ -1423,3 +1423,44 @@ def test_grad_complex_inputs_complex_outputs():
     output = GradNetWrtX(ImagNet())(x)
     expect = np.asarray(complex(1j), dtype=np.complex64)
     assert np.allclose(output.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_with_sense():
+    """
+    Features: grad_with_sense
+    Description: Test grad_with_sense
+    Expectation: The gradient result is correct.
+    """
+    class InputGrad(nn.Cell):
+        def __init__(self, network):
+            super(InputGrad, self).__init__()
+            self.grad = ops.grad(network, (0, 1), sens_param=True)
+
+        @jit
+        def construct(self, x1, x2, sens):
+            return self.grad(x1, x2, sens)
+
+    class InputGradOperation(nn.Cell):
+        def __init__(self, network):
+            super(InputGradOperation, self).__init__()
+            self.network = network
+            self.grad = C.GradOperation(get_all=True, sens_param=True)
+
+        @jit
+        def construct(self, x1, x2, sens):
+            return self.grad(self.network)(x1, x2, sens)
+
+    class AddNet(nn.Cell):
+        def construct(self, x, y):
+            return x + y
+
+    net_grad = InputGrad(AddNet())
+    net_gradoperation = InputGradOperation(AddNet())
+    x = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    y = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    sens = Tensor(np.random.normal(0, 1, [3, 4, 5]).astype(np.float32))
+    res_grad = net_grad(x, y, sens)
+    res_gradoperation = net_gradoperation(x, y, sens)
+    for i in range(len(res_grad)):
+        assert np.allclose(res_grad[i].asnumpy(), res_gradoperation[i].asnumpy())
