@@ -55,7 +55,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 #endif
-#include "minddata/utils.h"
+#include "minddata/dataset/util/thread_bind_core_utils.h"
 
 namespace mindspore {
 namespace dataset {

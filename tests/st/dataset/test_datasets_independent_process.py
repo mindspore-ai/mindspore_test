@@ -52,9 +52,12 @@ def wait_independent_dataset_process_run():
         process_tree = current_process.children(recursive=True)
         # get the process name
         for process in process_tree:
-            if "independent_dat" in process.name():
-                time.sleep(5)
-                return
+            try:
+                if "independent_dat" in process.name():
+                    time.sleep(5)
+                    return
+            except psutil.NoSuchProcess:
+                continue
 
 
 def get_independent_dataset_process_pid():
