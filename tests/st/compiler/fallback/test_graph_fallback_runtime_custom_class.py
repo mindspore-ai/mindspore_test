@@ -229,8 +229,8 @@ def test_resolve_cust_class():
     assert output == 200
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_resolve_cust_ms_function_call_class():
     """
     Feature: Syntax resolve.

@@ -18,7 +18,6 @@ from mindspore import Tensor, nn
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
-from mindspore._extends.parse import compile_config
 
 context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
@@ -207,12 +206,9 @@ def test_if_after_if_04():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    try:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '1'
-        x = Tensor(2, mstype.int32)
-        y = Tensor(5, mstype.int32)
-        expect1 = Tensor(23, mstype.int32)
-        expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
-        control_flow_if_after_if(IfAfterIfNet4, x, y, expect1, expect2)
-    finally:
-        compile_config.JIT_ENABLE_AUGASSIGN_INPLACE = '0'
+
+    x = Tensor(2, mstype.int32)
+    y = Tensor(5, mstype.int32)
+    expect1 = Tensor(23, mstype.int32)
+    expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
+    control_flow_if_after_if(IfAfterIfNet4, x, y, expect1, expect2)
