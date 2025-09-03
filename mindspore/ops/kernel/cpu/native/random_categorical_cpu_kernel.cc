@@ -130,6 +130,7 @@ template <typename T1, typename T2>
 bool RandomCategoricalCpuKernel::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &,
                                               const std::vector<kernel::KernelTensor *> &outputs) {
+  constexpr size_t kSizeThree = 3;
   if (inputs.size() != kSizeThree) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of inputs must be 3, but got " << inputs.size()
                       << "input(s).";
