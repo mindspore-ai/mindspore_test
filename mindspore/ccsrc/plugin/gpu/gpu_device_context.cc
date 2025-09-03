@@ -52,10 +52,6 @@
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#include "tools/rdr/mem_address_recorder.h"
-#endif
 #include "include/common/utils/comm_manager.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"

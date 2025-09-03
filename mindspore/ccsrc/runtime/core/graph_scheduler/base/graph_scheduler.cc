@@ -61,9 +61,6 @@
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#endif
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -744,11 +741,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag()) {
     recorder_actor_need = true;
   }
-#ifdef ENABLE_DUMP_IR
-  if (mindspore::RecorderManager::Instance().RdrEnable()) {
-    recorder_actor_need = true;
-  }
-#endif
   if (recorder_actor_need) {
     auto recorder_actor = std::make_shared<RecorderActor>();
     MS_EXCEPTION_IF_NULL(recorder_actor);
@@ -1157,9 +1149,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   thread_pool->SetSpinCountMinValue();
   if (!result_future.IsOK()) {
     actor_set->is_execution_failed_ = true;
-#ifdef ENABLE_DUMP_IR
-    mindspore::RDR::TriggerAll();
-#endif
     // When temporary variable 'op_context' has beed set failed status, the main thread need wait other threads until
     // they finish respective task, otherwise segmentation fault will happen when these task access 'op_context',
     // because it has been destroyed.

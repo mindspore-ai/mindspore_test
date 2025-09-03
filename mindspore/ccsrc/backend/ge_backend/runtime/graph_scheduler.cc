@@ -42,9 +42,6 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#ifdef ENABLE_DUMP_IR
-#include "include/common/debug/rdr/recorder_manager.h"
-#endif
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #endif
@@ -327,11 +324,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag()) {
     recorder_actor_need = true;
   }
-#ifdef ENABLE_DUMP_IR
-  if (mindspore::RecorderManager::Instance().RdrEnable()) {
-    recorder_actor_need = true;
-  }
-#endif
   if (recorder_actor_need) {
     auto recorder_actor = std::make_shared<RecorderActor>();
     MS_EXCEPTION_IF_NULL(recorder_actor);

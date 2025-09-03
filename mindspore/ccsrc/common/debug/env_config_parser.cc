@@ -24,10 +24,6 @@
 
 namespace {
 #ifdef ENABLE_DUMP_IR
-constexpr auto ENV_RDR_ENABLE = "MS_RDR_ENABLE";
-constexpr auto ENV_RDR_MODE = "MS_RDR_MODE";
-constexpr auto ENV_RDR_PATH = "MS_RDR_PATH";
-constexpr auto KEY_RDR_SETTINGS = "rdr";
 constexpr auto KEY_ENABLE = "enable";
 constexpr auto KEY_MODE = "mode";
 constexpr auto KEY_PATH = "path";
@@ -42,54 +38,6 @@ EnvConfigParser &EnvConfigParser::GetInstance() {
   instance.Parse();
   return instance;
 }
-
-#ifdef ENABLE_DUMP_IR
-std::optional<bool> GetRdrEnableFromEnv() {
-  // get environment variable to configure RDR
-  std::string env_enable_str = common::GetEnv(ENV_RDR_ENABLE);
-  if (!env_enable_str.empty()) {
-    (void)std::transform(env_enable_str.begin(), env_enable_str.end(), env_enable_str.begin(), ::tolower);
-    if (env_enable_str != "0" && env_enable_str != "1") {
-      MS_LOG(WARNING) << "The environment variable '" << ENV_RDR_ENABLE << "' should be 0 or 1.";
-    }
-    if (env_enable_str == "1") {
-      return true;
-    }
-    return false;
-  }
-  return std::nullopt;
-}
-
-std::optional<int> GetRdrModeFromEnv() {
-  // get environment variable to configure RDR
-  std::string env_mode_str = common::GetEnv(ENV_RDR_MODE);
-  if (!env_mode_str.empty()) {
-    (void)std::transform(env_mode_str.begin(), env_mode_str.end(), env_mode_str.begin(), ::tolower);
-    if (env_mode_str != "1" && env_mode_str != "2") {
-      MS_LOG(WARNING) << "The environment variable '" << ENV_RDR_MODE << "' should be 1 or 2.";
-    }
-    if (env_mode_str == "2") {
-      return Normal;
-    }
-    return Exceptional;
-  }
-  return std::nullopt;
-}
-
-std::optional<std::string> GetRdrPathFromEnv() {
-  // get environment variable to configure RDR
-  std::string path = common::GetEnv(ENV_RDR_PATH);
-  if (!path.empty()) {
-    std::string err_msg = "RDR path parse from environment variable failed. Please check the settings about '" +
-                          std::string(ENV_RDR_PATH) + "' in environment variables.";
-    if (!Common::IsPathValid(path, MAX_DIRECTORY_LENGTH, err_msg)) {
-      return std::string("");
-    }
-    return path;
-  }
-  return std::nullopt;
-}
-#endif
 
 bool EnvConfigParser::CheckJsonStringType(const nlohmann::json &content, const std::string &setting_key,
                                           const std::string &key) const {
@@ -118,32 +66,7 @@ std::string EnvConfigParser::GetIfstreamString(const std::ifstream &ifstream) co
   return buffer.str();
 }
 
-void EnvConfigParser::ParseFromEnv() {
-#ifdef ENABLE_DUMP_IR
-  // Get RDR seetings from environment variables
-  auto rdr_enable_env = GetRdrEnableFromEnv();
-  if (rdr_enable_env.has_value()) {
-    has_rdr_setting_ = true;
-    rdr_enabled_ = rdr_enable_env.value();
-  }
-  auto rdr_mode_env = GetRdrModeFromEnv();
-  if (rdr_mode_env.has_value()) {
-    has_rdr_setting_ = true;
-    rdr_mode_ = rdr_mode_env.value();
-  }
-  auto path_env = GetRdrPathFromEnv();
-  if (path_env.has_value()) {
-    has_rdr_setting_ = true;
-    std::string path = path_env.value();
-    if (!path.empty()) {
-      if (path.back() != '/') {
-        path += '/';
-      }
-      rdr_path_ = path;
-    }
-  }
-#endif
-}
+void EnvConfigParser::ParseFromEnv() {}
 
 void EnvConfigParser::ParseFromFile() {
   auto context = MsContext::GetInstance();
@@ -177,9 +100,6 @@ void EnvConfigParser::ParseFromFile() {
   std::string cfg = ss.str();
   MS_LOG(INFO) << "Env config json:" << cfg;
 
-#ifdef ENABLE_DUMP_IR
-  ParseRdrSetting(j);
-#endif
   ParseMemReuseSetting(j);
 
   ConfigToString();
@@ -217,85 +137,8 @@ void EnvConfigParser::ParseSysMemReuse(const nlohmann::json &content) {
   sys_memreuse_ = content;
 }
 
-#ifdef ENABLE_DUMP_IR
-void EnvConfigParser::ParseRdrSetting(const nlohmann::json &content) {
-  auto rdr_setting = content.find(KEY_RDR_SETTINGS);
-  if (rdr_setting == content.end()) {
-    MS_LOG(WARNING) << "The '" << KEY_RDR_SETTINGS << "' not exists. Please check the config file '" << config_file_
-                    << "' set by 'env_config_path' in context.";
-    return;
-  }
-
-  has_rdr_setting_ = true;
-
-  auto rdr_enable = CheckJsonKeyExist(*rdr_setting, KEY_RDR_SETTINGS, KEY_ENABLE);
-  if (rdr_enable.has_value()) {
-    ParseRdrEnable(**rdr_enable);
-  }
-
-  auto rdr_mode = CheckJsonKeyExist(*rdr_setting, KEY_RDR_SETTINGS, KEY_MODE);
-  if (rdr_mode.has_value()) {
-    ParseRdrMode(**rdr_mode);
-  }
-
-  auto rdr_path = CheckJsonKeyExist(*rdr_setting, KEY_RDR_SETTINGS, KEY_PATH);
-  if (rdr_path.has_value()) {
-    ParseRdrPath(**rdr_path);
-  }
-}
-
-void EnvConfigParser::ParseRdrEnable(const nlohmann::json &content) {
-  if (!content.is_boolean()) {
-    MS_LOG(WARNING) << "Json parse failed. 'enable' in " << KEY_RDR_SETTINGS << " should be boolean."
-                    << " Please check the config file '" << config_file_ << "' set by 'env_config_path' in context.";
-    return;
-  }
-  rdr_enabled_ = content;
-}
-
-void EnvConfigParser::ParseRdrMode(const nlohmann::json &content) {
-  if (content != Exceptional && content != Normal) {
-    MS_LOG(WARNING) << "Json parse failed. 'mode' in " << KEY_RDR_SETTINGS << " should be 1 or 2."
-                    << " Please check the config file '" << config_file_ << "' set by 'env_config_path' in context.";
-    return;
-  }
-  rdr_mode_ = content;
-}
-
-void EnvConfigParser::ParseRdrPath(const nlohmann::json &content) {
-  std::string err_msg = "RDR path parse failed. The RDR path will be a default value: '" + rdr_path_ +
-                        "'. Please check the settings about '" + KEY_RDR_SETTINGS + "' in config file '" +
-                        config_file_ + "' set by 'env_config_path' in context.";
-
-  if (!CheckJsonStringType(content, KEY_RDR_SETTINGS, KEY_PATH)) {
-    MS_LOG(WARNING) << err_msg;
-    return;
-  }
-
-  std::string path = content;
-  if (!Common::IsPathValid(path, MAX_DIRECTORY_LENGTH, err_msg)) {
-    return;
-  }
-
-  if (path.back() != '/') {
-    path += '/';
-  }
-  rdr_path_ = path;
-}
-#endif
-
 void EnvConfigParser::ConfigToString() {
   std::string cur_config;
-#ifdef ENABLE_DUMP_IR
-  (void)cur_config.append("After parsed, ");
-  (void)cur_config.append("rdr_enable: ");
-  std::string rdr_enable_flag = rdr_enabled_ ? "1" : "0";
-  (void)cur_config.append(rdr_enable_flag);
-  (void)cur_config.append(", rdr mode: ");
-  (void)cur_config.append(std::to_string(rdr_mode_));
-  (void)cur_config.append(", rdr path: ");
-  (void)cur_config.append(rdr_path_);
-#endif
   MS_LOG(INFO) << cur_config;
 }
 }  // namespace mindspore

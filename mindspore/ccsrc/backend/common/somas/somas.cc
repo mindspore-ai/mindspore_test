@@ -35,9 +35,6 @@
 #include "include/common/debug/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/common/utils/compile_cache_context.h"
-#ifdef ENABLE_DUMP_IR
-#include "tools/rdr/string_recorder.h"
-#endif
 #include "include/common/thread_pool.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
@@ -543,11 +540,6 @@ bool Somas::UpdateTensorsOffset(const std::vector<nlohmann::json> &tensors_json)
 
 void Somas::InitSomasModel(const session::KernelGraph &graph) {
   MS_EXCEPTION_IF_CHECK_FAIL(InitBasicInfoFromGraph(graph), "Init SOMAS basic info from graph failed.");
-#if defined(ENABLE_DUMP_IR)
-  SubModuleId module = SubModuleId::SM_OPTIMIZER;
-  std::string name = device_name_ + "_somas_initial_info." + std::to_string(graph.graph_id());
-  (void)mindspore::RDR::RecordString(module, name, SomasInfo());
-#endif
   DumpSomasModelInfo("somas_initial_info", graph.graph_id());
 
   MS_EXCEPTION_IF_CHECK_FAIL(InitDevSpecControlTensors(graph), "Init device special control tensors failed.");
@@ -569,13 +561,6 @@ void Somas::InitSomasModel(const session::KernelGraph &graph) {
   MS_LOG(INFO) << "Created " << streams_map_.size() << " streams (" << streams_groups_.size() << " groups), "
                << nodes_list_.size() << " nodes, " << tensors_list_.size() << " tensors, " << union_tensors_list_.size()
                << " union tensors lists, and " << contiguous_tensors_list_.size() << " contiguous tensors lists";
-
-#if defined(ENABLE_DUMP_IR)
-  name = device_name_ + "_somas_pre_processed_info." + std::to_string(graph.graph_id());
-  (void)mindspore::RDR::RecordString(module, name, SomasInfo());
-  name = device_name_ + "_somas_offline_log." + std::to_string(graph.graph_id());
-  (void)mindspore::RDR::RecordString(module, name, Offline());
-#endif
 
   DumpSomasModelInfo("somas_pre_processed_info", graph.graph_id());
   if (save_debug_info_) {
