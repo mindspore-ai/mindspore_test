@@ -559,8 +559,8 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
 py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                                  const py::object &grad_position, const py::object &has_aux, const py::args &args) {
   // Wait forward task finish.
-  runtime::Pipeline::Get().WaitAll();
-
+  runtime::Pipeline::Get().WaitFrontend();
+  runtime::Pipeline::Get().WaitBpropStage();
   GetTopCellWithInputArgsRespectTo(grad, obj, args);
   MS_EXCEPTION_IF_NULL(top_cell_);
   MS_LOG(DEBUG) << "Run top cell " << top_cell_;

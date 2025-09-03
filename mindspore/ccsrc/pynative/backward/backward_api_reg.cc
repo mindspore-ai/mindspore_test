@@ -37,7 +37,8 @@ std::vector<ValuePtr> ConvertPyTupleToTensorList(const py::tuple &tuple_args) {
 
 py::object RunBackward(const py::object &tensors, const py::object &grad_tensors, bool keep_graph, bool high_order,
                        const py::object &inputs, bool allow_unreachable, bool accumulate_grad) {
-  runtime::Pipeline::Get().WaitAll();
+  runtime::Pipeline::Get().WaitFrontend();
+  runtime::Pipeline::Get().WaitBpropStage();
   if (!py::isinstance<py::tuple>(tensors)) {
     MS_LOG(EXCEPTION) << "Output tensors should be tuple! but got " << py::str(tensors);
   }

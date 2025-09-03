@@ -490,9 +490,8 @@ NodePtr InplacePutGrad(Emitter *ib, const NodePtr &index, const NodePtr &source,
   if (accumulate) {
     return dout;
   }
-  auto clone_grad = ib->Emit("Clone", {dout});
-  auto grad =
-    ib->Emit("InplacePut", {clone_grad, index, ib->Emit("ZerosLikeExt", {source, type}), ib->Value<bool>(false)});
+  auto clone_grad = ib->Clone(dout);
+  auto grad = ib->InplacePut(clone_grad, index, ib->ZerosLikeExt(source, type), ib->Value<bool>(false));
   return grad;
 }
 
@@ -572,7 +571,7 @@ NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, co
     }
 
     grad = ib->Cast(grad, ib->GetDtype(dout));
-    grad = dof ? ib->Mul(grad, dof) : ib->Emit("Muls", {grad, ib->Value<float>(dof_imm)});
+    grad = dof ? ib->Mul(grad, dof) : ib->Muls(grad, ib->Value<float>(dof_imm));
     return ib->Mul(grad, ib->Sub(x, mean));
   }
 }
@@ -618,11 +617,11 @@ NodePtr Scatter_(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, con
       return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
     auto scatter_impl = [&input, &dim, &index, &src](Emitter *e) -> NodePtrList {
-      return {e->Emit("InplaceScatterSrc", {input, dim, index, src})};
+      return {e->InplaceScatterSrc(input, dim, index, src)};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return ib->Emit("InplaceScatterSrc", {input, dim, index, src});
+  return ib->InplaceScatterSrc(input, dim, index, src);
 }
 
 NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
@@ -630,7 +629,7 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
   auto dim_val = dim->BuildValue();
   if (!IsValueKnown(dim_val)) {
     NodePtr dx_zeros = ib->Zeros(input);
-    (void)ib->Emit("InplaceScatterSrc", {dx_zeros, dim, index, src});
+    (void)ib->InplaceScatterSrc(dx_zeros, dim, index, src);
     return dx_zeros;
   }
   auto input_shape = ib->GetShape(input);
@@ -643,11 +642,11 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
       return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
     auto scatter_impl = [&input, &dim, &index, &src](Emitter *e) -> NodePtrList {
-      return {e->Emit("InplaceScatterSrc", {input, dim, index, src})};
+      return {e->InplaceScatterSrc(input, dim, index, src)};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return ib->Emit("InplaceScatterSrc", {input, dim, index, src});
+  return ib->InplaceScatterSrc(input, dim, index, src);
 }
 
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
@@ -661,20 +660,16 @@ NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &ax
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;
     auto keep_dims_bool = GetValue<bool>(keep_dims_value);
-    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
-    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
+    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->ExpandDims(indices, axis);
+    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->ExpandDims(dout_value, axis);
   } else {
     auto rank = ib->Emit("Rank", {x});
     auto rank_is_zero = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto cond = ib->LogicalOr(ib->ScalarToTensor(keep_dims, kBool), ib->ScalarToTensor(rank_is_zero, kBool));
-    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList {
-      return {e->Emit("ExpandDims", {indices, axis})};
-    };
+    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDims(indices, axis)}; };
     auto indices_ori = [&indices](Emitter *e) -> NodePtrList { return {indices}; };
     indices = ib->Conditional(cond, indices_ori, indices_expand);
-    auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList {
-      return {e->Emit("ExpandDims", {dout_value, axis})};
-    };
+    auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDims(dout_value, axis)}; };
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
   }
@@ -698,20 +693,16 @@ inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const Node
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;
     auto keep_dims_bool = GetValue<bool>(keep_dims_value);
-    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->Emit("ExpandDims", {indices, axis});
-    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->Emit("ExpandDims", {dout_value, axis});
+    indices = (keep_dims_bool || is_zero_dim) ? indices : ib->ExpandDims(indices, axis);
+    dout_value = (keep_dims_bool || is_zero_dim) ? dout_value : ib->ExpandDims(dout_value, axis);
   } else {
     auto rank = ib->Emit("Rank", {x});
     auto rank_is_zero = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto cond = ib->LogicalOr(ib->ScalarToTensor(keep_dims, kBool), ib->ScalarToTensor(rank_is_zero, kBool));
-    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList {
-      return {e->Emit("ExpandDims", {indices, axis})};
-    };
+    auto indices_expand = [&indices, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDims(indices, axis)}; };
     auto indices_ori = [&indices](Emitter *e) -> NodePtrList { return {indices}; };
     indices = ib->Conditional(cond, indices_ori, indices_expand);
-    auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList {
-      return {e->Emit("ExpandDims", {dout_value, axis})};
-    };
+    auto dout_expand = [&dout_value, &axis](Emitter *e) -> NodePtrList { return {e->ExpandDims(dout_value, axis)}; };
     auto dout_ori = [&dout_value](Emitter *e) -> NodePtrList { return {dout_value}; };
     dout_value = ib->Conditional(cond, dout_ori, dout_expand);
   }
@@ -764,7 +755,7 @@ NodePtr LGamma(BpropBuilder *ib, const NodePtr &x) {
   auto lanczos_tensor = ib->Tensor(lanczos_gamma_plus_one_half, input_dtype);
   auto log_lanczos_tensor = ib->Tensor(log_lanczos_gamma_plus_one_half, input_dtype);
   auto t = ib->Add(z, lanczos_tensor);
-  auto log_t = ib->Add((ib->Emit("Log1p", {ib->RealDiv(z, lanczos_tensor)})), log_lanczos_tensor);
+  auto log_t = ib->Add((ib->Log1p(ib->RealDiv(z, lanczos_tensor))), log_lanczos_tensor);
   auto log_y = ib->Add(
     (ib->Add((ib->Log(reflex_x)), (ib->Mul((ib->Sub((ib->Add(z, one_half)), (ib->RealDiv(t, log_t)))), log_t)))),
     log_sqrt_two_pi);
@@ -914,7 +905,7 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
   if (p_value == 2.0) {
     auto scale_v = ib->Div(input, out);
     auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
+    scale_v = ib->InplaceMaskedFillTensor(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     return ib->Mul(dout, scale_v);
   }
   if (std::isinf(p_value)) {
@@ -934,7 +925,7 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
     auto max_cnt = ib->SumExt(ib->NotEqual(equal_max, tensor_zero), dim, ib->Value(true), ib->EmitValue(kNone));
     auto scale_v = ib->Div(dout, max_cnt);
     auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
+    scale_v = ib->InplaceMaskedFillTensor(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     auto grad_input = ib->Mul(input_scaled, scale_v);
     if (input_typeid == kNumberTypeBFloat16) {
       grad_input = ib->Cast(grad_input, kBFloat16);
@@ -946,8 +937,7 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
     auto input_sgn = ib->Sign(input);
     auto input_pow = ib->PowTensorScalar(input_abs, ib->Value(p_value - 1));
     auto equal_zero = ib->Equal(input, ib->Tensor(0, ib->GetDtype(input)));
-    auto input_fill =
-      ib->Emit("InplaceMaskedFillTensor", {input_pow, equal_zero, ib->Tensor(0.0, ib->GetDtype(input_pow))});
+    auto input_fill = ib->InplaceMaskedFillTensor(input_pow, equal_zero, ib->Tensor(0.0, ib->GetDtype(input_pow)));
     auto input_scaled = ib->Mul(input_sgn, input_fill);
     auto out_pow = ib->PowTensorScalar(out, ib->Value(1 - p_value));
     return ib->Mul(ib->Mul(input_scaled, dout), out_pow);
@@ -958,14 +948,14 @@ NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePt
     auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 1)), input_sgn);
     auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
     auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-    scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
+    scale_v = ib->InplaceMaskedFillTensor(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     return ib->Mul(input_scaled, scale_v);
   }
   auto input_abs = ib->Abs(input);
   auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 2)), input);
   auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
   auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
-  scale_v = ib->Emit("InplaceMaskedFillTensor", {scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v))});
+  scale_v = ib->InplaceMaskedFillTensor(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
   return ib->Mul(input_scaled, scale_v);
 }
 }  // namespace mindspore::expander::bprop

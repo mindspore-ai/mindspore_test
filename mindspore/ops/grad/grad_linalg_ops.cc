@@ -63,7 +63,7 @@ NodePtr SafeReciprocal(BpropBuilder *ib, const NodePtr &x) {
  */
 constexpr int64_t matrix_max_length = 200000000;
 NodePtr Syminvadj(BpropBuilder *ib, const NodePtr &x) {
-  auto ret = ib->Add(x, ib->Emit("TransposeExtView", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
+  auto ret = ib->Add(x, ib->TransposeExtView(x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)));
 
   // Extract the diagonal and multiply the value on the diagonal by 0.5.
   auto diag_half = ib->Emit(
@@ -76,11 +76,11 @@ NodePtr Syminvadj(BpropBuilder *ib, const NodePtr &x) {
 }
 
 NodePtr Syminvadj_dyn(Emitter *e, const NodePtr &x) {
-  auto ret = e->Add(x, e->Emit("TransposeExtView", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}));
+  auto ret = e->Add(x, e->TransposeExtView(x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)));
   auto diag_half =
-    e->Emit("Muls", {e->Emit("Diagonal", {ret, e->EmitValue(MakeValue<int64_t>(0)),
-                                          e->EmitValue(MakeValue<int64_t>(-2)), e->EmitValue(MakeValue<int64_t>(-1))}),
-                     e->Value<float>(0.5)});
+    e->Muls(e->Emit("Diagonal", {ret, e->EmitValue(MakeValue<int64_t>(0)), e->EmitValue(MakeValue<int64_t>(-2)),
+                                 e->EmitValue(MakeValue<int64_t>(-1))}),
+            e->Value<float>(0.5));
   ret = e->Emit("MatrixSetDiagV3", {ret, diag_half, e->Tensor(0, kInt32)},
                 {{"align", MakeValue("RIGHT_LEFT")}, {"max_length", MakeValue(matrix_max_length)}});
 
@@ -89,14 +89,14 @@ NodePtr Syminvadj_dyn(Emitter *e, const NodePtr &x) {
 
 /* return tril(x - x^T) */
 NodePtr TrilImInvAdjSkew(BpropBuilder *ib, const NodePtr &x) {
-  auto tmp = ib->Sub(x, ib->Emit("TransposeExtView", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
-  auto out = ib->Emit("TrilExt", {tmp, ib->EmitValue(MakeValue<int64_t>(0))});
+  auto tmp = ib->Sub(x, ib->TransposeExtView(x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)));
+  auto out = ib->TrilExt(tmp, ib->EmitValue(MakeValue<int64_t>(0)));
   return out;
 }
 
 NodePtr TrilImInvAdjSkew_dyn(Emitter *e, const NodePtr &x) {
-  auto tmp = e->Sub(x, e->Emit("TransposeExtView", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}));
-  auto out = e->Emit("TrilExt", {tmp, e->EmitValue(MakeValue<int64_t>(0))});
+  auto tmp = e->Sub(x, e->TransposeExtView(x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)));
+  auto out = e->TrilExt(tmp, e->EmitValue(MakeValue<int64_t>(0)));
   return out;
 }
 
@@ -226,7 +226,7 @@ NodePtr ControlFlowMatrixTranspose(Emitter *e, const NodePtr &x) {
       e->Emit("StridedSlice", {perm, e->Value<ShapeVector>(ShapeVector{-2}), e->Value<ShapeVector>(ShapeVector{-1}),
                                e->Value<ShapeVector>(ShapeVector{1}), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL),
                                e->Value<int64_t>(0LL), e->Value<int64_t>(0LL), e->Value<int64_t>(0LL)});
-    perm = e->Emit("Concat", {e->MakeTuple({part_1, part_2, part_3}), e->Value<int64_t>(-1LL)});
+    perm = e->Concat(e->MakeTuple({part_1, part_2, part_3}), e->Value<int64_t>(-1LL));
     return e->Transpose(x, e->TensorToTuple(perm));
   }
   auto dim = shape.size();
@@ -382,11 +382,11 @@ NodePtr SvdBpropStatic(BpropBuilder *ib, const NodePtr &a, const ShapeVector &a_
 }
 
 REG_BPROP_BUILDER("Svd").SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(i0);
-  auto full_matrices = ib->GetInput(i1);
-  auto compute_uv = ib->GetInput(i2);
-  auto out = ib->GetInput(i3);
-  auto dout = ib->GetInput(i4);
+  const auto &a = ib->GetInput(i0);
+  const auto &full_matrices = ib->GetInput(i1);
+  const auto &compute_uv = ib->GetInput(i2);
+  const auto &out = ib->GetInput(i3);
+  const auto &dout = ib->GetInput(i4);
   auto full_matrices_opt = GetScalarValue<bool>(full_matrices->BuildValue());
   auto compute_uv_opt = GetScalarValue<bool>(compute_uv->BuildValue());
   if (!full_matrices_opt.has_value() || !compute_uv_opt.has_value()) {
@@ -413,10 +413,10 @@ REG_BPROP_BUILDER("Svd").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("LstsqV2").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(i0);
-  auto b = ib->GetInput(i1);
-  auto driver = ib->GetInput(i2);
-  auto grad_outs = ib->GetInput(i4);
+  const auto &a = ib->GetInput(i0);
+  const auto &b = ib->GetInput(i1);
+  const auto &driver = ib->GetInput(i2);
+  const auto &grad_outs = ib->GetInput(i4);
   auto grad_solution = ib->TupleGetItem(grad_outs, 0);
   auto grads = ib->Emit("LstsqV2Grad", {grad_solution, a, b});
   auto grad_a = ib->TupleGetItem(grads, 0);
@@ -459,7 +459,7 @@ DEF_PURE_SHAPE_CALC(dynamic_cal_m_n)
 
 REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
   // A.shape = (*, M, N)
-  auto a_mat = ib->GetInput(i0);
+  const auto &a_mat = ib->GetInput(i0);
   auto dtype = ib->GetDtype(a_mat);
   auto dtype_id = ib->GetDtypeId(a_mat);
   if (dtype_id == kNumberTypeComplex64 || dtype_id == kNumberTypeComplex128) {
@@ -471,7 +471,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     MS_LOG_EXCEPTION << "For gradient of 'LinalgQr' ops, the dimension of input must greater than or equal to 2.";
   }
 
-  auto mode_node = ib->GetInput(i1);
+  const auto &mode_node = ib->GetInput(i1);
   auto mode = GetScalarValue<int64_t>(mode_node->BuildValue());
   if (!mode.has_value()) {
     MS_EXCEPTION(ValueError) << "For gradient of 'LinalgQr', 'mode' should not be empty.";
@@ -482,8 +482,8 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     MS_LOG_EXCEPTION << "In LinalgQr backward, 'r' mode is unsupported. Please use 'reduced' or 'complete'.";
   }
 
-  auto out = ib->GetInput(i2);
-  auto dout = ib->GetInput(i3);
+  const auto &out = ib->GetInput(i2);
+  const auto &dout = ib->GetInput(i3);
   auto q_mat = ib->TupleGetItem(out, 0);
   auto r_mat = ib->TupleGetItem(out, 1);
   auto dq = ib->TupleGetItem(dout, 0);
@@ -500,8 +500,8 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
   // are transposed. Other dimensions are processed in batches.
   // Init dx based on dq and dr.
   NodePtr dx = nullptr;
-  auto q_mat_T = ib->Emit("TransposeExtView", {q_mat, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
-  auto r_mat_T = ib->Emit("TransposeExtView", {r_mat, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
+  auto q_mat_T = ib->TransposeExtView(q_mat, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2));
+  auto r_mat_T = ib->TransposeExtView(r_mat, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2));
   dx = ib->MatMulExt(dr, r_mat_T) - ib->MatMulExt(q_mat_T, dq);
 
   if (!IsDynamic(a_shape)) {
@@ -509,7 +509,7 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     auto n_ = a_shape[a_shape.size() - 1];
 
     if (m_ >= n_) {
-      auto dx_triu = ib->Emit("Triu", {dx, ib->EmitValue(MakeValue<int64_t>(0))});
+      auto dx_triu = ib->Triu(dx, ib->EmitValue(MakeValue<int64_t>(0)));
       dx = ib->MatMulExt(q_mat, Syminvadj(ib, dx_triu));
       if (dq != nullptr) {
         dx = ib->Add(dx, dq);
@@ -517,24 +517,24 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
       // 'r_mat' is a upper triangular matrix, so 'r_mat_T' is the lower triangular.
       // 'TriangularSolve' is equivalent to solving `A*X=B`. In torch, calculate x * r^T = dx
       // So, here we should do convert: [x * r^T = dx] => [(r^T)^T * x^T = dx^T] => [r * x^T = dx^T]
-      auto dx_T = ib->TupleGetItem(
-        ib->Emit("TriangularSolve", {ib->Emit("TransposeExtView", {dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}),
-                                     r_mat, ib->Value(true), ib->Value(false), ib->Value(false)}),
-        0);
-      dx = ib->Emit("TransposeExtView", {dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
+      auto dx_T =
+        ib->TupleGetItem(ib->TriangularSolve(ib->TransposeExtView(dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)),
+                                             r_mat, ib->Value(true), ib->Value(false), ib->Value(false)),
+                         0);
+      dx = ib->TransposeExtView(dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2));
     } else {
       dx = ib->MatMulExt(q_mat, TrilImInvAdjSkew(ib, ib->Neg(dx)));
 
       // Extract the `m_` columns of the r matrix.
-      auto r_narrow = ib->Emit("Narrow", {r_mat, ib->EmitValue(MakeValue<int64_t>(-1)),
-                                          ib->EmitValue(MakeValue<int64_t>(0)), ib->EmitValue(MakeValue<int64_t>(m_))});
+      auto r_narrow = ib->Narrow(r_mat, ib->EmitValue(MakeValue<int64_t>(-1)), ib->EmitValue(MakeValue<int64_t>(0)),
+                                 ib->EmitValue(MakeValue<int64_t>(m_)));
 
       // [x * r_narrow^T = dx] => [r_narrow * x^T = dx^T]
-      auto dx_T = ib->TupleGetItem(
-        ib->Emit("TriangularSolve", {ib->Emit("TransposeExtView", {dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}),
-                                     r_narrow, ib->Value(true), ib->Value(false), ib->Value(false)}),
-        0);
-      dx = ib->Emit("TransposeExtView", {dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)});
+      auto dx_T =
+        ib->TupleGetItem(ib->TriangularSolve(ib->TransposeExtView(dx, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)),
+                                             r_narrow, ib->Value(true), ib->Value(false), ib->Value(false)),
+                         0);
+      dx = ib->TransposeExtView(dx_T, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2));
 
       // Step1. Modify the tensor shape of r_mat so that the size of the last dimension becomes `n - m`.
       // Step2. Concatenate dx along the last dimension and an all-zero tensor of the shape r_shape.
@@ -555,17 +555,17 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
 
     auto true_case = [&](Emitter *e) -> NodePtrList {
       NodePtr ret = nullptr;
-      auto dx_triu = e->Emit("Triu", {dx, e->EmitValue(MakeValue<int64_t>(0))});
+      auto dx_triu = e->Triu(dx, e->EmitValue(MakeValue<int64_t>(0)));
       ret = e->MatMulExt(q_mat, Syminvadj_dyn(e, dx_triu));
       if (dq != nullptr) {
         ret = e->Add(ret, dq);
       }
 
-      auto dx_T = e->TupleGetItem(
-        e->Emit("TriangularSolve", {e->Emit("TransposeExtView", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}),
-                                    r_mat, e->Value(true), e->Value(false), e->Value(false)}),
-        0);
-      ret = e->Emit("TransposeExtView", {dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2)});
+      auto dx_T =
+        e->TupleGetItem(e->TriangularSolve(e->TransposeExtView(ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)),
+                                           r_mat, e->Value(true), e->Value(false), e->Value(false)),
+                        0);
+      ret = e->TransposeExtView(dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2));
 
       return {ret};
     };
@@ -573,13 +573,12 @@ REG_BPROP_BUILDER("LinalgQr").SetBody(BODYFUNC(ib) {
     auto false_case = [&](Emitter *e) -> NodePtrList {
       NodePtr ret = nullptr;
       ret = e->MatMulExt(q_mat, TrilImInvAdjSkew_dyn(e, e->Mul(e->Tensor(-1, dtype), dx)));
-      auto r_narrow =
-        e->Emit("Narrow", {r_mat, e->EmitValue(MakeValue<int64_t>(-1)), e->EmitValue(MakeValue<int64_t>(0)), m_});
-      auto dx_T = e->TupleGetItem(
-        e->Emit("TriangularSolve", {e->Emit("TransposeExtView", {ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}),
-                                    r_narrow, e->Value(true), e->Value(false), e->Value(false)}),
-        0);
-      ret = e->Emit("TransposeExtView", {dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2)});
+      auto r_narrow = e->Narrow(r_mat, e->EmitValue(MakeValue<int64_t>(-1)), e->EmitValue(MakeValue<int64_t>(0)), m_);
+      auto dx_T =
+        e->TupleGetItem(e->TriangularSolve(e->TransposeExtView(ret, e->Value<int64_t>(-1), e->Value<int64_t>(-2)),
+                                           r_narrow, e->Value(true), e->Value(false), e->Value(false)),
+                        0);
+      ret = e->TransposeExtView(dx_T, e->Value<int64_t>(-1), e->Value<int64_t>(-2));
       auto r_reshape = e->ShapeCalc(dynamic_resize_r_shape, {r_mat, m_, n_}, {1, 2})[0];
       auto zero_tensor = e->Zeros(r_reshape, e->Value(static_cast<int64_t>(dtype_id)));
       ret = e->Concat({ret, zero_tensor}, -1);
