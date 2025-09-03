@@ -19,6 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, jit
 from mindspore import Parameter
 from mindspore.common import dtype as mstype
+from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
 
@@ -180,3 +181,24 @@ def test_fallback_assign_validation():
     test_assign_validation(inplace_floor_divides)
     test_assign_validation(inplace_remainder_tensor_tensor)
     test_assign_validation(inplace_remainder_tensor_scalar)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_validation():
+    """
+    Feature: Support augassign inplace grad with different input types
+    Description: Fix the problem that the input types of AddN are not the same
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            y -= x
+            x *= y
+            return x, y
+
+    x = Tensor(1)
+    y = -2.5
+    net = Net()
+    net.construct = jit(net.construct, backend='GE')
+    grad(net)(x, y)
