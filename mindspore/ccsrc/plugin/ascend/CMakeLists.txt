@@ -17,21 +17,9 @@ file(GLOB_RECURSE ASCEND_910B_OBJ_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/stress_detect/*.cc")
 
-set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/ascend")
-
-file(GLOB_RECURSE HAL_SRC_910B "${ASCEND_PLUGIN_PATH}/hal/*.cc")
-
-file(GLOB_RECURSE KENREL_SRC_910B
-        "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
-        )
-
-set_property(SOURCE ${KENREL_SRC_910B}
-        PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
-
 list(APPEND ASCEND_910B_OBJ_SRC ${HAL_SRC_910B})
 set_property(SOURCE ${ASCEND_910B_OBJ_SRC}
         PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
-list(APPEND ASCEND_910B_OBJ_SRC ${KENREL_SRC_910B})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 
