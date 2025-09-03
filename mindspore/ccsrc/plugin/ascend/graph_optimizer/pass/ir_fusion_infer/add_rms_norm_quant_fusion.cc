@@ -42,10 +42,11 @@ bool UnSupportedType(const AnfNodePtr &node, const AnfNodePtr &rms_norm_node) {
   auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
   auto scale_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
   auto offset_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 2);
+  auto is_offset_dtype_ok = (offset_dtype == kNumberTypeInt8) || (offset_dtype == scale_dtype);
   bool is_unsupported_type = (rms_x_dtype != kNumberTypeFloat16 && rms_x_dtype != kNumberTypeBFloat16) ||
                              (rms_gamma_dtype != kNumberTypeFloat16 && rms_gamma_dtype != kNumberTypeBFloat16) ||
                              (scale_dtype != kNumberTypeFloat16 && scale_dtype != kNumberTypeBFloat16) ||
-                             offset_dtype != kNumberTypeInt8;
+                             !is_offset_dtype_ok;
   return is_unsupported_type;
 }
 }  // namespace
@@ -96,15 +97,6 @@ inline bool CheckSupport(size_t rms_norm_out0_users_size, const AnfNodePtr &node
 
 const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                 const EquivPtr &equiv) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const std::string fusion_op_name = "AddRmsNormQuantV2";
-  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  bool enable_add_rmsnorm =
-    (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
-  if (!enable_add_rmsnorm) {
-    return nullptr;
-  }
   auto tuple_get_item_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), 0);
   auto rms_norm_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(tuple_get_item_node), 0);
   auto tensor_add = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_node), 0);
@@ -125,13 +117,22 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto offset = utils::cast<AnfNodePtr>((*equiv)[offset_]);
   auto eps = utils::cast<AnfNodePtr>((*equiv)[eps_]);
   auto scale_fp32 = ConvertWeightsToNewType(scale);
-  auto offset_int32 = ConvertWeightsToNewType(offset);
+
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   kernel_graph->AddValueNodeToGraph(scale_fp32);
-  kernel_graph->AddValueNodeToGraph(offset_int32);
-
   auto prim = std::make_shared<Primitive>("AddRmsNormQuantV2");
-  std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset_int32, eps};
+
+  std::vector<AnfNodePtr> inputs;
+  static const auto kOffSetIndex = 2;
+  auto offset_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kOffSetIndex);
+  if (offset_dtype == kNumberTypeInt8) {
+    auto offset_int32 = ConvertWeightsToNewType(offset);
+    kernel_graph->AddValueNodeToGraph(offset_int32);
+    inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset_int32, eps};
+  } else {
+    inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset, eps};
+  }
+
   auto add_rms_norm_quant = graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(add_rms_norm_quant);
 
