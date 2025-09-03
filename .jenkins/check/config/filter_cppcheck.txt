@@ -69,7 +69,7 @@
 "mindspore/mindspore/ops/kernel/cpu/native/arithmetic_cpu_kernel.cc"                         "internalAstError"
 "mindspore/mindspore/ops/kernel/cpu/native/xlogy_cpu_kernel.cc"                              "unreadVariable"
 "mindspore/mindspore/ops/kernel/cpu/native/arithmetic_cpu_kernel.cc"                         "unreadVariable"
-"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/hccl/mux_send_ascend_kernel.cc"                "knownConditionTrueFalse"
+"mindspore/mindspore/ops/kernel/ascend/hccl/mux_send_ascend_kernel.cc"                "knownConditionTrueFalse"
 "mindspore/ccsrc/plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.cc" "noConstructor"
 "mindspore/mindspore/ops/kernel/cpu/native/xdivy_cpu_kernel.cc"                              "unreadVariable"
 "mindspore/mindspore/ops/kernel/cpu/native/cast_cpu_kernel.cc"                               "multiCondition"

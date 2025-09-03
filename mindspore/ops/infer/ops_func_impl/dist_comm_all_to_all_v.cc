@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/dist_comm_all_to_all_v.h"
 
 #include <memory>
+#include <vector>
 #include <string>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

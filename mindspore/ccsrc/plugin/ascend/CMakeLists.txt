@@ -22,14 +22,8 @@ set(ASCEND_PLUGIN_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/ascend")
 file(GLOB_RECURSE HAL_SRC_910B "${ASCEND_PLUGIN_PATH}/hal/*.cc")
 
 file(GLOB_RECURSE KENREL_SRC_910B
-        "${ASCEND_PLUGIN_PATH}/kernel/hccl/*.cc"
         "${ASCEND_PLUGIN_PATH}/kernel/simu/*.cc"
         )
-
-if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    # only support in internal kernel
-    list(REMOVE_ITEM KENREL_SRC_910B "${ASCEND_PLUGIN_PATH}/kernel/hccl/hcom_matmul_all_reduce.cc")
-endif()
 
 set_property(SOURCE ${KENREL_SRC_910B}
         PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
