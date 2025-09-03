@@ -539,3 +539,31 @@ def test_getitem_tensor_in_list_index():
         net(ms_x, index)
     assert "Current Tensor indexing does not support mutable list/tuple or list containing tensors. " \
            "Please use an immutable expression instead." in str(err.value)
+
+
+class NetParamIndexWithAssign(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.param = ms.Parameter(Tensor(np.arange(3 * 3 * 2).reshape((3, 3, 2))), name="param")
+
+    def construct(self, x):
+        self.param = self.param[[0, 1, 2]]
+        y = self.param + x
+        return y
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_param_getitem_with_assign_value():
+    """
+    Feature: tensor getitem
+    Description: Verify the result of parameter getitem with assign value
+    Expectation: success
+    """
+    np_x = np.arange(3 * 3 * 2).reshape((3, 3, 2))
+    ms_x = Tensor(np_x)
+    net = NetParamIndexWithAssign()
+    pynative_res = net(ms_x)
+    np_expected = np_x[[0, 1, 2]] + np_x
+    assert np.allclose(np_expected, pynative_res.asnumpy()), f"ms_x: {ms_x}" \
+                                                             f"expected: {np_expected} {np_expected.shape}, " \
+                                                             f"pynative_res: {pynative_res} {pynative_res.shape}"
