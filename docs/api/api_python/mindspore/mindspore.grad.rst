@@ -1,7 +1,7 @@
 mindspore.grad
 ==================
 
-.. py:function:: mindspore.grad(fn, grad_position=0, weights=None, has_aux=False, return_ids=False)
+.. py:function:: mindspore.grad(fn, grad_position=0, weights=None, has_aux=False, return_ids=False, sens_param=False)
 
     生成求导函数，用于计算给定函数的梯度。
 
@@ -22,6 +22,7 @@ mindspore.grad
         - **weights** (Union[ParameterTuple, Parameter, list[Parameter]]) - 训练网络中需要返回梯度的网络变量。一般可通过 `weights = net.trainable_params()` 获取。默认值： ``None`` 。
         - **has_aux** (bool) - 是否返回辅助参数的标志。若为 ``True`` ， `fn` 输出数量必须超过一个，其中只有 `fn` 第一个输出参与求导，其他输出值将直接返回。默认值： ``False`` 。
         - **return_ids** (bool) - 是否返回由梯度和指定求导输入位置的索引或网络变量组成的tuple。若为 ``True`` ，其输出中所有的梯度值将被替换为：由该梯度和其输入的位置索引，或者用于计算该梯度的网络变量组成的tuple。默认值： ``False`` 。
+        - **sens_param** (bool) - 是否在输入中配置灵敏度（关于输出的梯度）。如果 `sens_param` 等于 ``False`` ，自动添加一个 `ones_like(output)` 灵敏度。如果 `sens_param` 等于 ``True`` ，灵敏度（输出的梯度）必须通过位置参数或键值对参数来传递，如果是通过键值对参数传递value，那么key必须为sens。默认值： ``False`` 。
 
     返回：
         Function，用于计算给定函数的梯度的求导函数。例如 `out1, out2 = fn(*args)` ，若 `has_aux` 为 ``True`` ，梯度函数将返回 `(gradient, out2)` 形式的结果，其中 `out2` 不参与求导；若为 ``False`` ，将直接返回 `gradient` 。
