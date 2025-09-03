@@ -106,8 +106,8 @@ class ControlNodeScheduler {
   void LinkControlArrowForKernelActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkOutputControlArrowForActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowByKernelGraphGroup(const GraphCompilerInfo &graph_compiler_info) const;
-  void LinkControlArrowByAutoMonad(ControlActor *to_actor, const AnfNodePtr &from_node,
-                                   const ControlNodeParserPtr &parser) const;
+  void LinkControlArrowByAutoMonad(ControlActor *to_actor, const ControlNodeParserPtr &parser,
+                                   const std::set<AnfNodePtr> &depend_nodes) const;
 
   // Add time summary info for counting the execution time between two actors.
   void SetTimeSummaryForControlActor(const GraphCompilerInfo &graph_compiler_info) const;
