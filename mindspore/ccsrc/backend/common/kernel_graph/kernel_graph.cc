@@ -378,16 +378,16 @@ void KernelGraph::SetKernelInfoForNode(const AnfNodePtr &node) const {
     bool is_weight = common::AnfAlgo::IsParameterWeight(parameter);
     kernel_info->set_feature_map_flag(!is_weight);
     types.push_back(is_weight ? kTypeUnknown : common::AnfAlgo::GetOutputInferDataType(parameter, 0));
-    if (parameter->param_info() != nullptr) {
-      if (is_weight && !parameter->param_info()->storage_format().empty()) {
-        std::string store_fmt = parameter->param_info()->storage_format();
-        MS_LOG(DEBUG) << "Update desc format from set format"
-                      << ", storage format: " << store_fmt << ", pre param: " << node->DebugString()
-                      << ", full name: " << node->ToString();
-        formats[0] = store_fmt;
-      } else if (!parameter->format().empty()) {
-        formats[0] = parameter->format();
-      }
+    if (is_weight && parameter->param_info() != nullptr && !parameter->param_info()->storage_format().empty()) {
+      std::string store_fmt = parameter->param_info()->storage_format();
+      MS_LOG(DEBUG) << "Update desc format from set format"
+                    << ", storage format: " << store_fmt << ", pre param: " << node->DebugString()
+                    << ", full name: " << node->ToString();
+      formats[0] = store_fmt;
+    } else if (!parameter->format().empty()) {
+      MS_LOG(DEBUG) << "Update desc format from param format: " << parameter->format()
+                    << ", param: " << node->DebugString();
+      formats[0] = parameter->format();
     }
   }
   // set parameter initaial device data type
@@ -426,7 +426,8 @@ CNodePtr KernelGraph::NewCNode(const CNodePtr &cnode) {
 
 ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
   auto abstract = parameter == nullptr ? std::make_shared<abstract::AbstractNone>() : parameter->abstract();
-  auto new_parameter = NewParameter(abstract);
+  auto format = parameter == nullptr ? "" : parameter->format();
+  auto new_parameter = NewParameter(abstract, format);
   MS_EXCEPTION_IF_NULL(new_parameter);
   // if don't use default parameter = nullptr,it remarks create a new parameter from a old parameter
   if (parameter != nullptr) {
@@ -434,7 +435,6 @@ ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
     if (common::AnfAlgo::IsParameterWeight(parameter)) {
       new_parameter->set_default_param(parameter->default_param_raw());
     }
-    new_parameter->set_format(parameter->format());
   } else {
     // The created parameter name is empty, so set name to ensure that the parameter name is unique.
     new_parameter->set_name(new_parameter->UniqueName());
@@ -445,10 +445,11 @@ ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
   return new_parameter;
 }
 
-ParameterPtr KernelGraph::NewParameter(const abstract::AbstractBasePtr &abstract) {
+ParameterPtr KernelGraph::NewParameter(const abstract::AbstractBasePtr &abstract, const std::string &format) {
   ParameterPtr new_parameter = add_parameter();
   MS_EXCEPTION_IF_NULL(new_parameter);
   new_parameter->set_abstract(abstract);
+  new_parameter->set_format(format);
   // The created parameter name is empty, so set name to ensure that the parameter name is unique.
   new_parameter->set_name(new_parameter->UniqueName());
   // create kernel_info form new parameter
@@ -537,10 +538,11 @@ AnfNodePtr KernelGraph::TransValueNodeTuple(const AbstractBasePtr &abstract, con
   return make_tuple;
 }
 
-AnfNodePtr KernelGraph::TransParameterTuple(const AbstractBasePtr &abstract) {
+AnfNodePtr KernelGraph::TransParameterTuple(const AbstractBasePtr &abstract, const ParameterPtr &orig_param) {
   MS_EXCEPTION_IF_NULL(abstract);
   if (!abstract->isa<abstract::AbstractSequence>()) {
-    return NewParameter(abstract);
+    auto elem_param = NewParameter(abstract, orig_param->format());
+    return elem_param;
   }
   auto tuple_abstract = abstract->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(tuple_abstract);
@@ -552,11 +554,12 @@ AnfNodePtr KernelGraph::TransParameterTuple(const AbstractBasePtr &abstract) {
       const auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
       MS_EXCEPTION_IF_NULL(seq_abs);
       if (seq_abs->dynamic_len()) {
-        make_tuple_inputs.push_back(NewParameter(abs));
+        auto new_param = NewParameter(abs, orig_param->format());
+        make_tuple_inputs.push_back(new_param);
         continue;
       }
     }
-    make_tuple_inputs.push_back(TransParameterTuple(abs));
+    make_tuple_inputs.push_back(TransParameterTuple(abs, orig_param));
   }
   auto make_tuple = NewCNode(std::move(make_tuple_inputs));
   make_tuple->set_abstract(tuple_abstract);
@@ -610,7 +613,7 @@ AnfNodePtr KernelGraph::TransTupleToMakeTuple(const AnfNodePtr &node) {
     if (common::AnfAlgo::IsDynamicSequence(node)) {
       return NewParameter(node->cast<ParameterPtr>());
     }
-    return TransParameterTuple(node->abstract());
+    return TransParameterTuple(node->abstract(), node->cast<ParameterPtr>());
   } else if (node->isa<ValueNode>()) {
     auto value_node = node->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(value_node);

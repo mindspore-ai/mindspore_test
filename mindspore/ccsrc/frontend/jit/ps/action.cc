@@ -141,7 +141,26 @@ bool ContainsAbstractFunction(const abstract::AbstractBasePtr &abs) {
   return false;
 }
 
-void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<ValuePtr> &arguments) {
+void SetParamFormatFromTensor(const ParameterPtr &param_node, const ValuePtr &param_value) {
+  MS_EXCEPTION_IF_NULL(param_value);
+  if (param_value->isa<tensor::Tensor>()) {
+    auto param_tensor = param_value->cast<tensor::TensorPtr>();
+    if (param_tensor->device_address()) {
+      auto param_deviceaddress = std::dynamic_pointer_cast<device::DeviceAddress>(param_tensor->device_address());
+      MS_EXCEPTION_IF_NULL(param_deviceaddress);
+      param_node->set_format(param_deviceaddress->format());
+    }
+  } else if (param_value->isa<ValueSequence>()) {
+    // For kv-cache scene, suppose all tensors in kv-cache is same format.
+    auto param_tuple = param_value->cast<ValueSequencePtr>();
+    if (param_tuple->size() != 0) {
+      SetParamFormatFromTensor(param_node, (*param_tuple)[0]);
+    }
+  }
+}
+
+void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<ValuePtr> &arguments,
+                              const std::vector<ValuePtr> &real_arguments) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> new_paras;
   for (size_t i = 0; i < func_graph->parameters().size(); ++i) {
@@ -153,12 +172,7 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
       new_paras.push_back(param_node);
       auto default_param = param_node->default_param();
       MS_EXCEPTION_IF_NULL(default_param);
-      auto param_tensor = default_param->cast<tensor::TensorPtr>();
-      if (param_tensor && param_tensor->device_address()) {
-        auto param_deviceaddress = std::dynamic_pointer_cast<device::DeviceAddress>(param_tensor->device_address());
-        MS_EXCEPTION_IF_NULL(param_deviceaddress);
-        param_node->set_format(param_deviceaddress->format());
-      }
+      SetParamFormatFromTensor(param_node, default_param);
       continue;
     }
 
@@ -168,13 +182,10 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
       if (param_value != nullptr && param_value->is_parameter()) {
         param_node->set_default_param(arguments[i]);
       }
-      auto argument_tensor = arguments[i]->cast<tensor::TensorPtr>();
-      if (argument_tensor && argument_tensor->device_address()) {
-        auto argument_deviceaddress =
-          std::dynamic_pointer_cast<device::DeviceAddress>(argument_tensor->device_address());
-        MS_EXCEPTION_IF_NULL(argument_deviceaddress);
-        param_node->set_format(argument_deviceaddress->format());
-      }
+    }
+    // Set param's format from real arguments, since cannot get format from arguments in dynamic-shape scene.
+    if (i < real_arguments.size()) {
+      SetParamFormatFromTensor(param_node, real_arguments[i]);
     }
 
     AbstractBasePtr param_abs = param_node->abstract();
@@ -1349,7 +1360,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
     }
   }
 
-  UpdateFuncGraphParameter(new_fg, resource->arguments());
+  UpdateFuncGraphParameter(new_fg, resource->arguments(), resource->real_arguments());
   CheckDuplicatedParameterName(new_fg->parameters());
   SetMindIRLoadFlag(resource);
   SetViewInplaceGradFlag(resource);
