@@ -256,7 +256,7 @@ def test_if_after_for_in_if_break():
     assert graph_backward_res == (Tensor(1, mstype.int32),)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_if_after_for_in_for_break():
     """
     Feature: Control flow
@@ -293,8 +293,9 @@ def test_if_after_for_in_for_break():
     graph_forward_res = forward_net(x)
 
     if_after_for_in_for_net = IfAfterForInForNet()
+    x1 = Tensor(2, mstype.int32)
     net = Grad(if_after_for_in_for_net)
-    graph_backward_res = net(x)
+    graph_backward_res = net(x1)
 
     assert graph_forward_res == Tensor(106, mstype.int32)
     assert graph_backward_res == (Tensor(16, mstype.int32),)
