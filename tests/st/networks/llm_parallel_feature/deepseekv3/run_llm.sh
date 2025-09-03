@@ -55,3 +55,5 @@ msrun --worker_num=$RANK_SIZE --local_worker_num=$RANK_SIZE --master_port=$MASTE
   ${MF_PATH}/run_mindformer.py \
   --config $CONFIG_FILE \
   --register_path ${MF_PATH}/research/deepseek3/
+
+unset MS_DEV_GRAPH_KERNEL_FLAGS

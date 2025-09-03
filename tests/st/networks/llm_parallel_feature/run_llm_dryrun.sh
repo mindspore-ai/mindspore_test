@@ -25,6 +25,7 @@ CELL_REUSE=${6:-None}
 # convert rank list to array
 IFS=',' read -r -a array <<< "$RANK_LIST"
 
+unset MS_DEV_GRAPH_KERNEL_FLAGS
 export MS_SIMULATION_LEVEL=1
 export RANK_SIZE="$RANK_SIZE"
 export PYTHONPATH=${BASE_PATH}/../mindformers:${BASE_PATH}/../mindformers/research/deepseek3/:${PYTHONPATH}
