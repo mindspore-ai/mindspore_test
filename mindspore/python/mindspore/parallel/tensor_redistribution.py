@@ -210,8 +210,8 @@ class TensorRedistribution:
 
     def _allreduce_along_dev_dim(self, x, op, layout, dev_dim):
         group = layout.get_comm_group_by_axis(dev_dim, self.rank_id)
-        if op == 'mean':
-            dev_num = layout.device_metrix[layout.alias_name.index(dev_dim)]
+        if op == 'avg':
+            dev_num = layout.device_matrix[layout.alias_name.index(dev_dim)]
             x, _ = comm.comm_func.all_reduce(x, 'sum', group)
             x = x / dev_num
         else:
@@ -227,7 +227,7 @@ class TensorRedistribution:
             x = ms.mint.concat(ms.mint.split(x, x.shape[axis] // dev_num, dim=axis), dim=0)
         output_shape = (x.shape[0] // dev_num,) + x.shape[1:]
         output_tensor = ms.mint.empty(output_shape, dtype=x.dtype)
-        if op == 'mean':
+        if op == 'avg':
             _ = ms.mint.distributed.reduce_scatter_tensor(output_tensor, x, 'sum', group)
             output_tensor = output_tensor / dev_num
         else:

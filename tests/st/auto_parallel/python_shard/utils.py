@@ -69,7 +69,13 @@ def global_to_local(global_tensor, layout):
 
 
 def local_to_global(local_tensor):
-    """Transfer local tensor to global tensor"""
+    """Transfer local tensor to global tensor, preserving layout structure."""
     layout = local_tensor.layout
-    to_layout = layout(*(("None",) * len(local_tensor.shape)))
+    def update_layout(dim):
+        if isinstance(dim, tuple):
+            return tuple("None" for _ in dim)
+        return "None"
+    tensor_map = layout.tensor_map
+    none_structure = tuple(update_layout(dim) for dim in tensor_map)
+    to_layout = layout(*none_structure)
     return local_tensor.redistribute(to_layout)
