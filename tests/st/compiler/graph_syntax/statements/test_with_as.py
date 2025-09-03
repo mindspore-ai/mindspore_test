@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """ test graph with as statement. """
-import pytest
 import mindspore.nn as nn
 from mindspore import Tensor, context, jit_class, Parameter
 from tests.mark_utils import arg_mark
@@ -306,8 +305,8 @@ def test_with_continue():
     assert out == 38
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_with_twice():
     """
     Feature: Support with as statement.
