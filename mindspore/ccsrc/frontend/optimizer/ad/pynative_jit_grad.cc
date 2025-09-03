@@ -990,7 +990,18 @@ FuncGraphPtr FilterGraphOutput(const bool is_filtered, const std::pair<VectorRef
       return func_graph;
     }
     MS_LOG(INFO) << "Cache find graph failed, filter grad graph again.";
-    new_graph = BasicClone(GetOriginGradGraph(cache_key));
+    const auto &cloned_graph = BasicClone(GetOriginGradGraph(cache_key));
+    auto resource = std::make_shared<pipeline::Resource>();
+    resource->set_func_graph(cloned_graph);
+    auto manager = resource->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    manager->AddFuncGraph(cloned_graph);
+    abstract::AbstractBasePtrList args_abs;
+    const auto &parameters = cloned_graph->parameters();
+    (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
+                         [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
+    new_graph = pipeline::Renormalize(resource, cloned_graph, args_abs);
+    MS_EXCEPTION_IF_NULL(new_graph);
   }
   MS_LOG(INFO) << "Start to filter grad jit graph output.";
   (void)FilterGradOutput(need_grad, new_graph, next_edges);

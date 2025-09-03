@@ -20,6 +20,7 @@ import numpy as np
 from mindspore import Tensor, Parameter, ParameterTuple, jit, ops, context
 from mindspore._extends.parse import compile_config
 import mindspore.nn as nn
+from mindspore.ops.auto_generate import TransposeView
 from tests.mark_utils import arg_mark
 
 
@@ -412,3 +413,39 @@ def test_jit_grad_with_weights():
         compile_config.GRAD_JIT_FILTER = ""
         if os.path.exists(save_graphs_path):
             shutil.rmtree(save_graphs_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_filter_grad_jit_with_view_inplace():
+    """
+    Feature: Test filter grad jit graph.
+    Description: Test filter grad jit graph in psjit.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.transposeview = TransposeView()
+
+        def construct(self, x, y):
+            x = ops.abs(x)
+            y = ops.abs(y)
+            view_obj2 = self.transposeview(y, (1, 0))
+            if (x < x * 2).all():
+                y.mul_(2)
+            else:
+                y.mul_(3)
+            return view_obj2
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x_np = np.ones([2, 4]).astype(np.float32)
+    input_x = Tensor(x_np)
+    y_np = 2 * np.ones([2, 4]).astype(np.float32)
+    input_y = Tensor(y_np)
+    net = Net()
+    out_back_expect = ops.grad(net)(input_x, input_y)  # pylint: disable=not-callable
+    out_back_expect_1 = ops.grad(net, 1)(input_x, input_y)  # pylint: disable=not-callable
+    net.construct = jit(net.construct, jit_level="O1", backend="ms_backend")
+    out_back_jit = ops.grad(net)(input_x, input_y)  # pylint: disable=not-callable
+    out_back_jit_1 = ops.grad(net, 1)(input_x, input_y)  # pylint: disable=not-callable
+    assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
+    assert np.allclose(out_back_expect_1.asnumpy(), out_back_jit_1.asnumpy())
