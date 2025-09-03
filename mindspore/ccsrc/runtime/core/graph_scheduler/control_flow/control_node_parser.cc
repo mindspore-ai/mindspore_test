@@ -1872,10 +1872,11 @@ void ControlNodeParser::ParseDeviceContextForFuncGraph(const std::vector<KernelG
 
   // If there is no kernel in funcgraph, the parameter uses the default device context type.
   MS_EXCEPTION_IF_NULL(root_func_graph_);
-  MS_EXCEPTION_IF_NULL(root_func_graph_->manager());
-  FuncGraphSet sub_graphs = root_func_graph_->manager()->func_graphs();
+  auto sub_graphs = root_func_graph_->func_graphs_used_total();
+  sub_graphs.insert(root_func_graph_);
   for (auto sub_graph : sub_graphs) {
     MS_EXCEPTION_IF_NULL(sub_graph);
+    MS_LOG(DEBUG) << "Sub graph:" << sub_graph->ToString() << " for root graph:" << root_func_graph_->ToString();
     if (func_graph_to_device_contexts_.find(sub_graph) == func_graph_to_device_contexts_.end()) {
       size_t output_num = 0;
       for (const auto &parameter : sub_graph->parameters()) {
