@@ -84,8 +84,7 @@ void AsdSipFFTOpRunner::Init(const FFTParam &param) {
   asd_fft_handle_ = FFTCache::GetInstance().Get(param);
 }
 
-void AsdSipFFTOpRunner::_MallocDeviceAddress() {
-  PyboostRunner::_MallocDeviceAddress();
+void AsdSipFFTOpRunner::ProcessWithWorkspace() {
   AsdFftSetWorkSpace(asd_fft_handle_, _workspace_ptr_);
   AsdFftSetStream(asd_fft_handle_, stream());
   if (_inputs_[0].is_defined() && !_inputs_[0].is_contiguous()) {

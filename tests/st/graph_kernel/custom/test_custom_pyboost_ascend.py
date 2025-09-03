@@ -120,14 +120,24 @@ def test_pyboost_asdsip_fft():
     """
     ms.set_device("Ascend")
     my_ops = CustomOpBuilder("asdsip_fftc2c", "jit_test_files/asdsip_fftc2c.cpp", enable_asdsip=True).load()
+    # 1d
     input_np = np.random.rand(2, 16)
     real_np = input_np.astype(np.float32)
     imag_np = input_np.astype(np.float32)
     complex_np = real_np + 1j * imag_np
-
     input_tensor = ms.Tensor(complex_np, dtype=ms.dtype.complex64)
-    output_tensor = my_ops.fft(input_tensor, 16, 2)
+    output_tensor = my_ops.fft_1d(input_tensor, 16, 2)
     output_np = np.fft.fft(complex_np)
+    assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
+
+    # 2d
+    input_np = np.random.rand(2, 16, 2)
+    real_np = input_np.astype(np.float32)
+    imag_np = input_np.astype(np.float32)
+    complex_np = real_np + 1j * imag_np
+    input_tensor = ms.Tensor(complex_np, dtype=ms.dtype.complex64)
+    output_tensor = my_ops.fft_2d(input_tensor, 16, 2, 2)
+    output_np = np.fft.fft2(complex_np, s=complex_np.shape[-2:], axes=range(-2, 0))
     assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
 
 
@@ -279,6 +289,6 @@ def test_pyboost_asdsip_fft_wrong():
         complex_np = real_np + 1j * imag_np
 
         input_tensor = ms.Tensor(complex_np, dtype=ms.dtype.complex64)
-        output_tensor = my_ops.wrong_fft(input_tensor, 16, 2)
+        output_tensor = my_ops.wrong_fft_1d(input_tensor, 16, 2)
         output_np = np.fft.fft(complex_np)
         assert np.allclose(output_tensor.asnumpy(), output_np, 1e-3, 1e-3)
