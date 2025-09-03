@@ -2798,6 +2798,7 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
     kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
                               pynative_executor->grad_executor()->custom_bprop_cell_count(),
                               pynative_executor->forward_executor()->device_target()));
+  self->set_need_pipeline_sync(true);
   if (py::isinstance<py::bool_>(py_index)) {
     TensorPtr self_viewed = DoExpandDims(self, 0);
     TensorPtr index_for_bool = py::cast<py::bool_>(py_index) == py::bool_(true) ? tensor_1d : empty_tensor_1d;
