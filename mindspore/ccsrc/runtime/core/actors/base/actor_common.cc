@@ -511,7 +511,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
     }
     MS_LOG(DEBUG) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                   << " by stream id:" << stream_id;
-    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, stream_id)) {
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, static_cast<uint32_t>(stream_id))) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
     }
@@ -526,7 +526,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   auto ret = AsyncCopy(dst_device_tensor, src_device_tensor, stream_id, false);
   static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
   if (sync_copy_input) {
-    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, stream_id, false)) {
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, static_cast<uint32_t>(stream_id), false)) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
     }
