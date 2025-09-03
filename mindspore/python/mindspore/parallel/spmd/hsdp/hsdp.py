@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """hybrid shard data parallel interface"""
+from mindspore.nn.cell import Cell
 from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler, OptimizerLevel
 
 origin_class_to_extend_class = {}
@@ -30,9 +31,14 @@ class HSDPCell:
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
     """
-    def hsdp_init(self, cell, shard_size, threshold, optimizer_level, accumulate_grad_step):
+    def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale):
         """init hsdp scheduler."""
-        self.hsdp_scheduler = HSDPScheduler(cell, shard_size, threshold, optimizer_level, accumulate_grad_step)
+        self.hsdp_scheduler = HSDPScheduler(cell,
+                                            shard_size,
+                                            threshold,
+                                            optimizer_level,
+                                            enable_grad_accumulation,
+                                            grad_scale)
 
     def set_requires_grad_sync(self, requires_grad_sync):
         r"""
@@ -65,16 +71,16 @@ def _extend_cell_with_hsdp_interface(cell):
         origin_class_to_extend_class[origin_class] = extend_class
     cell.__class__ = extend_class
 
-def hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_grad_step=1):
+def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0):
     r"""
         apply hybrid sharded data parallel.
 
         Args:
             cell(Cell): The cell to apply hsdp.
             shard_size (int, optional): Set the optimizer weight shard group size if you want to specific the
-                maximum group size across devices when the parallel optimizer is
-                enabled. The numerical range can be (0, device_num]. Default value is 1,
-                which means the optimizer weight is not sharded.
+                maximum group size across devices. The numerical range can be (0, device_num] or -1. Default value
+                is -1, which means the optimizer weight shard group size will be
+                the data parallel group of each parameter.
             threshold (int, optional): Set the threshold of parallel optimizer. When parallel optimizer is
                 enabled, parameters with size smaller than this threshold will not be
                 sharded across the devices. Parameter size = shape[0] \* ... \*
@@ -93,14 +99,19 @@ def hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_
                   Splitting is performed on weights, optimizer state,
                   gradients, additionally, before the backward pass, the weights are further applied with
                   allgather communication to release the memory used by the forward pass allgather.
-            accumulate_grad_step (int, optional): Set the accumulate grad step.
+            enable_grad_accumulation (bool, optional): enable gradient accumulation.
+            grad_scale (float, optional): gradient will scale with grad_scale.
 
         Raises:
-            ValueError: If the `shard_size` is not a positive integer.
+            ValueError: If the `cell` is not a cell.
+            ValueError: If the `shard_size` is not a positive integer or -1.
             ValueError: If `threshold` is not a positive integer or 0.
             ValueError: If `optimizer_level` is not one of the [ ``level1``, ``level2``, ``level3`` ].
-            ValueError: If `accumulate_grad_step` is not a positive integer or 0.
+            ValueError: If `enable_grad_accumulation` is not bool.
+            ValueError: If `grad_scale` is not float.
         """
+    if not isinstance(cell, Cell):
+        raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
     if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
         raise ValueError("shard_size must be a positive integer, but got {}.".format(shard_size))
     if not isinstance(threshold, int) or threshold < 0:
@@ -109,9 +120,10 @@ def hsdp(cell, shard_size=1, threshold=64, optimizer_level="level1", accumulate_
         raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
                          .format(optimizer_level))
     optimizer_level = optimizer_level_map.get(optimizer_level)
-    if not isinstance(accumulate_grad_step, int) or accumulate_grad_step < 0:
-        raise ValueError("accumulate_grad_step must be a positive integer or 0, but got {}."
-                         .format(accumulate_grad_step))
+    if not isinstance(enable_grad_accumulation, bool):
+        raise ValueError("enable_grad_accumulation must be bool but got {}.".format(enable_grad_accumulation))
+    if not isinstance(grad_scale, float):
+        raise ValueError("grad_scale must be float but got {}.".format(grad_scale))
     _extend_cell_with_hsdp_interface(cell)
-    cell.hsdp_init(cell, shard_size, threshold * 1024, optimizer_level, accumulate_grad_step)
+    cell.hsdp_init(cell, shard_size, threshold * 1024, optimizer_level, enable_grad_accumulation, grad_scale)
     return cell

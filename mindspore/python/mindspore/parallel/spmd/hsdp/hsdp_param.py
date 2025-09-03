@@ -14,10 +14,13 @@
 # ============================================================================
 """HSDP parameter"""
 import functools
-from mindspore import ops, Parameter, Tensor
-from mindspore.communication import get_rank, get_group_size
+import mindspore.ops as ops
+from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
+from mindspore.communication import get_rank, create_group, get_group_size
 from mindspore.common.initializer import initializer
 from mindspore.common.dtype import type_size_in_bytes
+import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel
 
 
@@ -25,7 +28,7 @@ class HSDPParam:
     """
     HSDP parameter.
     """
-    def __init__(self, cell, param_name, param, comm, config):
+    def __init__(self, cell, param_name, param, config):
         self.cell = cell
         self.param_name = param_name
         self.param = param
@@ -36,20 +39,43 @@ class HSDPParam:
         self.acc_grad = None
         self.sharded = False
         self.fully_sharded = True
-        self.comm = comm
         self._init_rank_info()
-        if self.shard_size > self.rank_size:
-            self.shard_size = self.rank_size
+        self._init_param_shard_size()
         self._init_param()
         self.dp_size = self.rank_size // self.shard_size
-        self.dp_mean_factor = 1.0 / self.dp_size
-        self.op_mean_factor = 1.0 / self.shard_size
         self.sharded_group_name = self._create_sharded_dp_group()
         self.unsharded_group_name = self._create_unsharded_dp_group()
+
+    def _init_param_shard_size(self):
+        """init parameter dp shard size"""
+        param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
+        if param_size < self.config.threshold:
+            self.shard_size = 1
+            return
+        if self.shard_size == -1 or self.param.local_shape[0] < self.shard_size:
+            self.shard_size = self.param.local_shape[0]
+
+        def _gcd(m, n):
+            if m < n:
+                m, n = n, m
+            if n == 0:
+                raise ValueError(f"Invalid gcd input 0.")
+            r = m % n
+            if r == 0:
+                return n
+            return _gcd(n, r)
+
+        rank_gcd = _gcd(self.param.local_shape[0], self.rank_size)
+        if self.shard_size > rank_gcd:
+            self.shard_size = rank_gcd
+        if rank_gcd % self.shard_size != 0:
+            self.shard_size = 1
 
     def _init_rank_info(self):
         """init parameter rank info"""
         self.rank_id = get_rank()
+        self.hsdp_rank = self.rank_id
+        self.tp_rank = 0
         if self.param.layout is None:
             self.sharded_axis_set = None
             self.rank_size = get_group_size()
@@ -69,15 +95,19 @@ class HSDPParam:
         self.unsharded_reverse_axis_list = []
         self.global_rank_stride_list = []
         self.hsdp_rank_stride_list = []
+        self.tp_rank_stride_list = []
         device_dims = len(self.param.layout.device_matrix)
         stride = 1
         hsdp_stride = 1
+        tp_stride = 1
         for axis in range(device_dims):
             r_axis = device_dims - 1 - axis
             self.global_rank_stride_list.append(stride)
             self.hsdp_rank_stride_list.append(hsdp_stride)
+            self.tp_rank_stride_list.append(tp_stride)
             stride = stride * self.param.layout.device_matrix[r_axis]
             if axis in self.sharded_axis_set:
+                tp_stride = tp_stride * self.param.layout.device_matrix[r_axis]
                 continue
 
             hsdp_stride = hsdp_stride * self.param.layout.device_matrix[r_axis]
@@ -85,6 +115,7 @@ class HSDPParam:
             self.rank_size = self.rank_size * self.param.layout.device_matrix[r_axis]
         self.global_rank_stride_list.reverse()
         self.hsdp_rank_stride_list.reverse()
+        self.tp_rank_stride_list.reverse()
 
         rank_indices = []
         index = self.rank_id
@@ -96,6 +127,12 @@ class HSDPParam:
         for axis in self.unsharded_reverse_axis_list:
             hsdp_rank = hsdp_rank + rank_indices[axis] * self.hsdp_rank_stride_list[axis]
         self.hsdp_rank = hsdp_rank
+        tp_rank = 0
+        for axis in range(device_dims):
+            if axis in self.sharded_axis_set:
+                r_axis = device_dims - 1 - axis
+                tp_rank = tp_rank + rank_indices[r_axis] * self.tp_rank_stride_list[r_axis]
+        self.tp_rank = tp_rank
 
     def _hsdp_rank_to_global_rank(self, hsdp_rank_list):
         """transform from hsdp rank to global rank"""
@@ -152,7 +189,7 @@ class HSDPParam:
         rank_list = self._get_op_rank_list()
         rank_list_str = "_".join([str(i) for i in rank_list])
         group_name = "hsdp_sharded_dp_group_" + rank_list_str
-        self.comm.create_group(group_name, rank_list)
+        create_group(group_name, rank_list)
         return group_name
 
     def _create_unsharded_dp_group(self):
@@ -163,13 +200,13 @@ class HSDPParam:
         rank_list = self._get_dp_rank_list()
         rank_list_str = "_".join([str(i) for i in rank_list])
         group_name = "hsdp_unshared_dp_group_" + rank_list_str
-        self.comm.create_group(group_name, rank_list)
+        create_group(group_name, rank_list)
         return group_name
 
     def _init_sharded_param(self):
         """add and init sharded param"""
         if not self.param.has_init:
-            slice_index = self.rank_id % self.shard_size
+            slice_index = self.hsdp_rank % self.shard_size
             if self.param.layout is None:
                 param_slice = ops.split(self.param, self.param.local_shape[0] // self.shard_size)[slice_index]
             else:
@@ -181,10 +218,14 @@ class HSDPParam:
                                            name="sharded_"+self.param.name,
                                            requires_grad=False)
         else:
+            dp_slice_index = self.hsdp_rank % self.shard_size
+            data_slice_index = self.tp_rank * self.shard_size + dp_slice_index
             init_shape = [i for i in self.param.init_mode.local_shape]
             init_shape[0] = init_shape[0] // self.shard_size
-            self.param.init_mode.shape = init_shape
-            self.param.init_data()
+            init_data = self.param.init_mode.init_data(slice_index=data_slice_index, shape=init_shape)
+            self.param.init_mode = None
+            self.param.init = None
+            self.param.set_data(init_data)
             self.sharded_param = Parameter(Tensor(self.param.numpy(), self.param.dtype),
                                            name="sharded_"+self.param.name,
                                            requires_grad=False)
@@ -205,11 +246,7 @@ class HSDPParam:
         """init hsdp parameter"""
         self.param.acc_grad = None
         param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
-        if (self.shard_size == 1 or
-                param_size < self.config.threshold or
-                self.param.local_shape[0] < self.shard_size or
-                self.param.local_shape[0] % self.shard_size != 0):
-            self.shard_size = 1
+        if (self.shard_size == 1 or param_size < self.config.threshold):
             self.sharded = False
             self.fully_sharded = False
             self.param.init_data()
@@ -244,7 +281,7 @@ class HSDPParam:
 
     def to_unsharded(self):
         """change parameter to unsharded state"""
-        unshared_param_data = self.comm.all_gather(self.sharded_group_name, self.param)
+        unshared_param_data, _ = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name)
         self.sharded_param.set_data(self.param)
         self.param.set_data(unshared_param_data)
 

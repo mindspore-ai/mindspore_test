@@ -13,15 +13,16 @@
 # limitations under the License.
 # ============================================================================
 """HSDP cell state"""
+import mindspore.ops as ops
+from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
-from mindspore import Parameter, Tensor, ops
 
 
 class HSDPState:
     """HSDP state for cell"""
-    def __init__(self, cell, comm, config):
+    def __init__(self, cell, config):
         self.cell = cell
-        self.comm = comm
         self.config = config
         self.hsdp_params = []
         self.sharded_hsdp_params = []
@@ -38,7 +39,7 @@ class HSDPState:
                     continue
                 if hasattr(param, "has_hsdp_param"):
                     continue
-                hsdp_param = HSDPParam(sub_cell, param_name, param, self.comm, self.config)
+                hsdp_param = HSDPParam(sub_cell, param_name, param, self.config)
                 param.has_hsdp_param = True
                 self.hsdp_params.append(hsdp_param)
                 if hsdp_param.sharded:

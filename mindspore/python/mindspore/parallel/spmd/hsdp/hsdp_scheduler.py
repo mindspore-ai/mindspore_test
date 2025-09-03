@@ -13,32 +13,30 @@
 # limitations under the License.
 # ============================================================================
 """HSDP scheduler"""
-from mindspore import Parameter, Tensor, ops
+import mindspore.ops as ops
+from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel, HSDPConfig
 from mindspore.parallel.spmd.hsdp.hsdp_state import HSDPState
-from mindspore.parallel.spmd.hsdp.hsdp_comm import HSDPComm
+import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
 
 
 class HSDPScheduler:
     """HSDPScheduler is used to imply optimizer level."""
 
-    def __init__(self, cell, shard_size, threshold, shard_level, accumulate_grad_step):
+    def __init__(self, cell, shard_size, threshold, shard_level, enable_grad_accumulation, grad_scale):
         """init hsdp scheduler."""
         self.cell = cell
         self.shard_level = shard_level
         self.no_param_sharded = (shard_size == 1)
         self.use_cell_hook = True
-        if accumulate_grad_step > 1:
-            self.requires_acc_grad = True
-            self.acc_grad_factor = 1.0 / accumulate_grad_step
-        else:
-            self.requires_acc_grad = False
-            self.acc_grad_factor = 1.0
+        self.requires_acc_grad = enable_grad_accumulation
+        self.grad_scale = grad_scale
+
         self.config = HSDPConfig(shard_size, threshold, self.requires_acc_grad, shard_level, self.use_cell_hook)
 
         self.requires_grad_sync = Parameter(Tensor(False), name="hsdp_requires_grad_sync", requires_grad=False)
-        self.comm = HSDPComm()
-        self.hsdp_state = HSDPState(cell, self.comm, self.config)
+        self.hsdp_state = HSDPState(cell, self.config)
 
         if self.use_cell_hook:
             self._register_cell_hooks()
@@ -59,13 +57,14 @@ class HSDPScheduler:
         """get param forward hook."""
 
         def stateless_param_forward_hook(origin_param):
-            return self.comm.all_gather(param.unsharded_group_name, origin_param)
+            output, _ = comm.all_gather_into_tensor(origin_param, group=param.sharded_group_name)
+            return output
 
         def stateful_param_forward_hook(origin_param):
             if param.unsharded_param_available:
                 return param.unsharded_param
 
-            unshared_data = self.comm.all_gather(param.unsharded_group_name, origin_param)
+            unshared_data, _ = comm.all_gather_into_tensor(origin_param, group=param.sharded_group_name)
             ops.assign(param.unsharded_param, unshared_data)
             ops.assign(param.unsharded_param_available, Tensor(True))
             return param.unsharded_param
@@ -124,10 +123,10 @@ class HSDPScheduler:
     def _get_hsdp_param_single_node_hook(self, param):
         """get hook for unsharded param with single node."""
         def grad_dummy_hook(grad):
-            return grad
+            return grad * self.grad_scale
 
         def grad_acc_hook(grad):
-            grad = grad * self.acc_grad_factor
+            grad = grad * self.grad_scale
             ops.assign_add(param.acc_grad, grad)
             return param.acc_grad
 
@@ -138,14 +137,15 @@ class HSDPScheduler:
     def _get_hsdp_param_unsharded_hook(self, param):
         """get hook for unsharded param."""
         def grad_all_reduce_hook(grad):
-            return self.comm.all_reduce(param.unsharded_group_name, grad) * param.dp_mean_factor
+            output, _ = comm.all_reduce(grad, group=param.unsharded_group_name)
+            return output * self.grad_scale
 
         def grad_acc_all_reduce_hook(grad):
-            grad = grad * self.acc_grad_factor
             ops.assign_add(param.acc_grad, grad)
             if self.requires_grad_sync:
-                return self.comm.all_reduce(param.unsharded_group_name, param.acc_grad) * param.dp_mean_factor
-            return param.acc_grad
+                output, _ = comm.all_reduce(param.acc_grad, group=param.unsharded_group_name)
+                return output * self.grad_scale
+            return param.acc_grad * self.grad_scale
 
         if not self.requires_acc_grad:
             return grad_all_reduce_hook
@@ -154,20 +154,20 @@ class HSDPScheduler:
     def _get_hsdp_param_fully_sharded_hook(self, param):
         """get hook for fully sharded param."""
         def grad_reduce_scatter_hook(grad):
-            return self.comm.reduce_scatter(param.sharded_group_name, grad) * param.op_mean_factor
+            output, _ = comm.reduce_scatter_tensor(grad, group=param.sharded_group_name)
+            return output * self.grad_scale
 
         def grad_acc_reduce_scatter_hook(grad):
-            grad = grad * self.acc_grad_factor
             ops.assign_add(param.acc_grad, grad)
             if self.requires_grad_sync:
-                return self.comm.reduce_scatter(param.sharded_group_name, param.acc_grad) * param.op_mean_factor
-            return param.acc_grad
+                output, _ = comm.reduce_scatter_tensor(param.acc_grad, group=param.sharded_group_name)
+                return output * self.grad_scale
+            return param.acc_grad * self.grad_scale
 
         def grad_reduce_scatter_acc_hook(grad):
-            grad = grad * self.acc_grad_factor
-            sliced_grad = self.comm.reduce_scatter(param.sharded_group_name, grad) * param.op_mean_factor
-            ops.assign_add(param.acc_grad, sliced_grad)
-            return param.acc_grad
+            output, _ = comm.reduce_scatter_tensor(grad, group=param.sharded_group_name)
+            ops.assign_add(param.acc_grad, output)
+            return param.acc_grad * self.grad_scale
 
         if not self.requires_acc_grad:
             return grad_reduce_scatter_hook
@@ -178,24 +178,25 @@ class HSDPScheduler:
     def _get_hsdp_param_partial_sharded_hook(self, param):
         """get hook for partial sharded param."""
         def grad_reduce_scatter_hook(grad):
-            sliced_grad = self.comm.reduce_scatter(param.sharded_group_name, grad) * param.op_mean_factor
-            return self.comm.all_reduce(param.unsharded_group_name, sliced_grad) * param.dp_mean_factor
+            output, _ = comm.reduce_scatter_tensor(grad, group=param.sharded_group_name)
+            sliced_grad, _ = comm.all_reduce(output, group=param.unsharded_group_name)
+            return sliced_grad * self.grad_scale
 
         def grad_acc_reduce_scatter_hook(grad):
-            grad = grad * self.acc_grad_factor
             ops.assign_add(param.acc_grad, grad)
             if self.requires_grad_sync:
-                sliced_grad = self.comm.reduce_scatter(param.sharded_group_name, param.acc_grad) * param.op_mean_factor
-                return self.comm.all_reduce(param.unsharded_group_name, sliced_grad) * param.dp_mean_factor
-            return param.acc_grad
+                output, _ = comm.reduce_scatter_tensor(param.acc_grad, group=param.sharded_group_name)
+                sliced_grad, _ = comm.all_reduce(output, group=param.unsharded_group_name)
+                return sliced_grad * self.grad_scale
+            return param.acc_grad * self.grad_scale
 
         def grad_reduce_scatter_acc_hook(grad):
-            grad = grad * self.acc_grad_factor
-            sliced_grad = self.comm.reduce_scatter(param.sharded_group_name, grad) * param.op_mean_factor
-            ops.assign_add(param.acc_grad, sliced_grad)
+            output, _ = comm.reduce_scatter_tensor(grad, group=param.sharded_group_name)
+            ops.assign_add(param.acc_grad, output)
             if self.requires_grad_sync:
-                return self.comm.all_reduce(param.unsharded_group_name, param.acc_grad) * param.dp_mean_factor
-            return param.acc_grad
+                output, _ = comm.all_reduce(param.acc_grad, group=param.unsharded_group_name)
+                return output * self.grad_scale
+            return param.acc_grad * self.grad_scale
 
         if not self.requires_acc_grad:
             return grad_reduce_scatter_hook

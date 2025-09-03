@@ -19,7 +19,6 @@ from mindspore.parallel import Layout
 from mindspore.nn.utils import no_init_parameters
 from mindspore.communication.management import init
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
-from mindspore.parallel.spmd.hsdp.hsdp_comm import HSDPComm
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel, HSDPConfig
 os.environ["MS_SIMULATION_LEVEL"] = "0"
 os.environ["RANK_SIZE"] = "32"
@@ -32,9 +31,8 @@ def hsdp_param_to_unsharded(net):
     requires_acc_grad = True
     shard_level = OptimizerLevel.SHARD_OPT
     use_cell_hook = True
-    comm = HSDPComm()
     hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook)
-    hsdp_param = HSDPParam(net, net.weight.name, net.weight, comm, hsdp_config)
+    hsdp_param = HSDPParam(net, net.weight.name, net.weight, hsdp_config)
     hsdp_param.to_sharded()
     hsdp_param.to_unsharded()
     hsdp_param.zero_acc_grad()
