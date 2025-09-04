@@ -51,6 +51,8 @@ from ..ops.function.comm_func import (
     scatter_object_list,
     is_available,
     is_initialized,
+    set_comm_ops_inplace,
+    all_to_all_v_c,
 )
 
 __all__ = [
@@ -90,4 +92,6 @@ __all__ = [
     "scatter_object_list",
     "is_available",
     "is_initialized",
+    "set_comm_ops_inplace",
+    'all_to_all_v_c',
 ]
