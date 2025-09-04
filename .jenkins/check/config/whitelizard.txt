@@ -56,7 +56,7 @@ mindspore/mindspore/ccsrc/runtime/core/actors/base/output_actor.cc:mindspore::ru
 mindspore/mindspore/ccsrc/frontend/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
 mindspore/mindspore/ccsrc/frontend/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
 mindspore/mindspore/ccsrc/utils/anfalgo.cc:mindspore::common::AnfAlgo::GetTensorValueString
-mindspore/mindspore/ops/kernel/gpu/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
+mindspore/mindspore/ops/kernel/gpu/cuda/math/unary_op_gpu_kernel.h:mindspore::kernel::UnaryOpGpuKernel::Launch
 mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/transform_util.cc:mindspore::device::ascend::TransformUtil::ConvertGeDataType
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/drop_out_gen_mask_kernels.cc:aicpu::ARMDropOutGenMaskKernel
 mindspore/model_zoo/official/recommend/wide_and_deep/src/wide_and_deep.py:__init__
@@ -201,7 +201,7 @@ mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetPyTypeF
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId
 mindspore/mindspore/ops/infer/sparse_to_dense_v2.cc:mindspore::ops::SparseToDenseV2InferShape
 mindspore/mindspore/ops/infer/ops_func_impl/div.cc:mindspore::ops::DivFrontendFuncImpl::InferValue
-mindspore/mindspore/ops/kernel/gpu/math/cumprod_gpu_kernel.cc:mindspore::kernel::CumProdGpuKernelMod::GetFuncList
+mindspore/mindspore/ops/kernel/gpu/cuda/math/cumprod_gpu_kernel.cc:mindspore::kernel::CumProdGpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/native/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel.cc:mindspore::kernel::PoolingCpuKernelMod::InitPoolingFields
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore::kernel::PoolingCpuKernelNnaclMod::Resize

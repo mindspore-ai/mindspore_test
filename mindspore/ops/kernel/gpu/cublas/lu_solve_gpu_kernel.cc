@@ -19,7 +19,7 @@
 #include "mindspore/ops/infer/lu_solve_.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_transpose_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/broadcast_to_impl.cuh"
-#include "kernel/gpu/math/broadcast_public.h"
+#include "kernel/gpu/cuda/math/broadcast_public.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {

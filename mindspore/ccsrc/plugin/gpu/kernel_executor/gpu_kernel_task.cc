@@ -15,8 +15,8 @@
  */
 
 #include "plugin/gpu/kernel_executor/gpu_kernel_task.h"
-#include "kernel/gpu/arrays/contiguous_gpu_kernel.h"
-#include "kernel/gpu/arrays/copy_with_slice_gpu_kernel.h"
+#include "kernel/gpu/cuda/arrays/contiguous_gpu_kernel.h"
+#include "kernel/gpu/cuda/arrays/copy_with_slice_gpu_kernel.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "runtime/hardware_abstract/utils.h"
 

@@ -26,7 +26,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/l2normalize_impl.cuh"
-#include "kernel/gpu/math/broadcast_public.h"
+#include "kernel/gpu/cuda/math/broadcast_public.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "mindspore/ops/infer/l2_normalize.h"
 

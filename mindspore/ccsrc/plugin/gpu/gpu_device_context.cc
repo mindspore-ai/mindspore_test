@@ -71,7 +71,7 @@
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/common/backend_common_callback.h"
-#include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
+#include "mindspore/ops/kernel/gpu/cuda/arrays/contiguous_gpu_kernel.h"
 #include "mindspore/core/include/ir/tensor_new.h"
 
 namespace mindspore {

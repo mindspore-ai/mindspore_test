@@ -24,7 +24,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/l2normalize_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/clip_by_norm_impl.cuh"
-#include "kernel/gpu/math/broadcast_public.h"
+#include "kernel/gpu/cuda/math/broadcast_public.h"
 
 namespace mindspore {
 namespace kernel {
