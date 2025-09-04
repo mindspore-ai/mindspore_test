@@ -92,6 +92,7 @@ def test_new_profiler_offline_analyse_with_single_device():
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     with tempfile.TemporaryDirectory() as tmpdir:
+        # pylint: disable=W0212
         experimental_config = mindspore.profiler._ExperimentalConfig(export_type=[ExportType.Text, ExportType.Db])
         profile = mindspore.profiler.profile(experimental_config=experimental_config,
                                              on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
@@ -117,6 +118,7 @@ def test_new_profiler_offline_analyse_with_multi_devices():
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     with tempfile.TemporaryDirectory() as tmpdir:
+        # pylint: disable=W0212
         experimental_config = mindspore.profiler._ExperimentalConfig(export_type=[ExportType.Text, ExportType.Db])
         profile = mindspore.profiler.profile(experimental_config=experimental_config,
                                              on_trace_ready=mindspore.profiler.tensorboard_trace_handler(

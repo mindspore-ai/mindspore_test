@@ -21,7 +21,7 @@ from tests.mark_utils import arg_mark
           essential_mark="essential")
 def test_summarycollector():
     """
-    Feature: Test SummaryCollector in distribute trainning.
+    Feature: Test SummaryCollector in distribute training.
     Description: Run Summary script on 8 cards ascend computor, init() is not in main function.
     Expectation: No error occur.
     """

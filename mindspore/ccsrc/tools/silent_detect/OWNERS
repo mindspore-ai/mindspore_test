@@ -6,6 +6,7 @@ approvers:
 
 reviewers:
 - jizewei
+- xu-zikang666
 
 options:
     no_parent_owners: true

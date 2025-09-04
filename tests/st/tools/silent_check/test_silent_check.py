@@ -15,7 +15,7 @@
 """
 Test module for testing silent check.
 How to run this:
-pytest tests/st/silent_check/test_silent_check.py
+pytest tests/st/tools/silent_check/test_silent_check.py
 """
 import os
 import subprocess
