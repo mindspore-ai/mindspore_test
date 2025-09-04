@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -384,4 +384,34 @@ def test_mp_cluster():
     Expectation: All workers are successfully spawned and running communication op.
     """
     return_code = os.system("python test_mp_cluster.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend310p"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_mccl_310p_float32():
+    """
+    Feature: mccl and hccl hybrid in 310P with float32.
+    Description: Launch msrun to run mccl and hccl communication operators with float32.
+    Expectation: Data is correctly transported.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10969 --join=True "
+        "test_mccl_and_hccl.py --dtype float32"
+    )
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend310p"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_mccl_310p_float16():
+    """
+    Feature: mccl and hccl hybrid in 310P with float16.
+    Description: Launch msrun to run mccl and hccl communication operators with float16.
+    Expectation: Data is correctly transported.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10969 --join=True "
+        "test_mccl_and_hccl.py --dtype float16"
+    )
     assert return_code == 0
