@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/ormqr_gpu_kernel.h"
+#include "kernel/gpu/cublas/ormqr_gpu_kernel.h"
 #include <complex>
 #include <map>
 #include <utility>

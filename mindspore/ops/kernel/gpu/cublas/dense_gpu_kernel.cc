@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/nn/dense_gpu_kernel.h"
+#include "kernel/gpu/cublas/dense_gpu_kernel.h"
 #include <map>
 #include <algorithm>
 #include <utility>
 #include <memory>
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "kernel/gpu/math/matmul/matmul_wrapper.h"
+#include "kernel/gpu/cublas/matmul/matmul_wrapper.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_v2_impl.cuh"
 

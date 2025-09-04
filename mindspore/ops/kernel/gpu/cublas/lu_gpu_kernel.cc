@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/lu_gpu_kernel.h"
+#include "kernel/gpu/cublas/lu_gpu_kernel.h"
 #include <iostream>
 #include <functional>
 #include <utility>

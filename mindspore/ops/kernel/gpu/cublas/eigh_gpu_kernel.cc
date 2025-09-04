@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/eigh_gpu_kernel.h"
+#include "kernel/gpu/cublas/eigh_gpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

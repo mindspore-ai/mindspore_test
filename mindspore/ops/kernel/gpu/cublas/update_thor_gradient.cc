@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/einsum_gpu_kernel.h"
-
+#include "kernel/gpu/cublas/update_thor_gradient.h"
 namespace mindspore {
 namespace kernel {
-MS_REG_GPU_KERNEL_ONE(
-  Einsum, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
-  EinsumGpuKernelMod, double)
-MS_REG_GPU_KERNEL_ONE(
-  Einsum, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
-  EinsumGpuKernelMod, half)
-MS_REG_GPU_KERNEL_ONE(
-  Einsum, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-  EinsumGpuKernelMod, float)
+MS_REG_GPU_KERNEL_ONE(UpdateThorGradient,
+                      KernelAttr()
+                        .AddInputAttr(kNumberTypeFloat32)
+                        .AddInputAttr(kNumberTypeFloat32)
+                        .AddInputAttr(kNumberTypeFloat32)
+                        .AddOutputAttr(kNumberTypeFloat32),
+                      UpdateThorGradientGpuKernelMod, float)
 }  // namespace kernel
 }  // namespace mindspore

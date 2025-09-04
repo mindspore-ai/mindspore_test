@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ccsrc/plugin/gpu/res_manager/device_context_conf/op_precision_conf.h"
-#include "kernel/gpu/math/matmul/matmul_wrapper.h"
+#include "kernel/gpu/cublas/matmul/matmul_wrapper.h"
 
 namespace mindspore {
 namespace kernel {

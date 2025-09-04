@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/einsum_grad_gpu_kernel.h"
+#include "kernel/gpu/cublas/einsum_grad_gpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

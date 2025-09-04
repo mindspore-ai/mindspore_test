@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/matrix_determinant_gpu_kernel.h"
+#include "kernel/gpu/cublas/matrix_determinant_gpu_kernel.h"
 #include <functional>
 #include <utility>
 #include <string>

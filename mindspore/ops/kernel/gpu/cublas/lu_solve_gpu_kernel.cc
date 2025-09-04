@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/lu_solve_gpu_kernel.h"
+#include "kernel/gpu/cublas/lu_solve_gpu_kernel.h"
 #include <vector>
 #include "mindspore/ops/infer/lu_solve_.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_transpose_impl.cuh"

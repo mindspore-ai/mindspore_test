@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/matrix_triangular_solve_gpu_kernel.h"
+#include "kernel/gpu/cublas/matrix_triangular_solve_gpu_kernel.h"
 #include <utility>
 #include <memory>
 #include <algorithm>

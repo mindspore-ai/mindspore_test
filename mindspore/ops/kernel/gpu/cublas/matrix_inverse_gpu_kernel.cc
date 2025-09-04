@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/matrix_inverse_gpu_kernel.h"
+#include "kernel/gpu/cublas/matrix_inverse_gpu_kernel.h"
 #include <map>
 #include <utility>
 #include <algorithm>

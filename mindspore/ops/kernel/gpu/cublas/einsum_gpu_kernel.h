@@ -26,7 +26,7 @@
 #include <map>
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "kernel/gpu/math/einsum_helper.h"
+#include "kernel/gpu/cublas/einsum_helper.h"
 namespace mindspore {
 namespace kernel {
 constexpr int IDX_NAME = 0;

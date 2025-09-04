@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/matmul_gpu_kernel.h"
+#include "kernel/gpu/cublas/matmul_gpu_kernel.h"
 #include <map>
 #include <algorithm>
 #include <utility>
@@ -22,7 +22,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "utils/ms_context.h"
-#include "kernel/gpu/math/matmul/matmul_wrapper.h"
+#include "kernel/gpu/cublas/matmul/matmul_wrapper.h"
 
 namespace mindspore {
 namespace kernel {

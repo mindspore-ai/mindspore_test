@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/fft_with_size_gpu_kernel.h"
+#include "kernel/gpu/cublas/fft_with_size_gpu_kernel.h"
 #include <cmath>
 #include <utility>
 #include <algorithm>

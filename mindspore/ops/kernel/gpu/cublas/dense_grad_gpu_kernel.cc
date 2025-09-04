@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/nn/dense_grad_gpu_kernel.h"
+#include "kernel/gpu/cublas/dense_grad_gpu_kernel.h"
 #include <map>
 #include <algorithm>
 #include <utility>

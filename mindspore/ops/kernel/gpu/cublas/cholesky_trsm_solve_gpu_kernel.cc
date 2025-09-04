@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/cholesky_solve_gpu_kernel.h"
-#include "mindspore/ops/infer/cholesky_solve.h"
-
+#include "kernel/gpu/cublas/cholesky_trsm_solve_gpu_kernel.h"
 namespace mindspore {
 namespace kernel {
-using CSGKM = CholeskySolveGpuKernelMod;
-std::vector<std::pair<KernelAttr, CSGKM::CholeskySolveFunc>> CSGKM::func_list_ = {
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-   &CholeskySolveGpuKernelMod::LaunchKernel<float>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
-   &CholeskySolveGpuKernelMod::LaunchKernel<double>},
-};
-MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, CholeskySolve, CholeskySolveGpuKernelMod);
+MS_REG_GPU_KERNEL_ONE(CholeskyTrsm, KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+                      CholeskyTrsmGpuKernelMod, float)
 }  // namespace kernel
 }  // namespace mindspore

@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/update_thor_gradient.h"
+#include "kernel/gpu/cublas/cholesky_solve_gpu_kernel.h"
+#include "mindspore/ops/infer/cholesky_solve.h"
+
 namespace mindspore {
 namespace kernel {
-MS_REG_GPU_KERNEL_ONE(UpdateThorGradient,
-                      KernelAttr()
-                        .AddInputAttr(kNumberTypeFloat32)
-                        .AddInputAttr(kNumberTypeFloat32)
-                        .AddInputAttr(kNumberTypeFloat32)
-                        .AddOutputAttr(kNumberTypeFloat32),
-                      UpdateThorGradientGpuKernelMod, float)
+using CSGKM = CholeskySolveGpuKernelMod;
+std::vector<std::pair<KernelAttr, CSGKM::CholeskySolveFunc>> CSGKM::func_list_ = {
+  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+   &CholeskySolveGpuKernelMod::LaunchKernel<float>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+   &CholeskySolveGpuKernelMod::LaunchKernel<double>},
+};
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, CholeskySolve, CholeskySolveGpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

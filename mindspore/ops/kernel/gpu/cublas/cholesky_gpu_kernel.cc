@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/math/cholesky_gpu_kernel.h"
+#include "kernel/gpu/cublas/cholesky_gpu_kernel.h"
 namespace mindspore {
 namespace kernel {
 MS_REG_GPU_KERNEL_ONE(Cholesky,
