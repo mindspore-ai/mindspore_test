@@ -3025,6 +3025,35 @@ AnfNodePtr ConvertToPyExecuteList(const AnfNodePtr &node) {
   return ConvertToPyExecuteListInner(cnode->input(pyexecute_value_index), fg);
 }
 
+AnfNodePtr ConvertInterpretedObjectToPyExecute(const AnfNodePtr &node, const AnfNodePtr &input) {
+  const auto &cur_func = node->func_graph();
+  MS_EXCEPTION_IF_NULL(cur_func);
+  const auto &tuple_value = input->cast<ValueNodePtr>()->value();
+  MS_EXCEPTION_IF_NULL(tuple_value);
+  std::vector<ValuePtr> inputs_seq = tuple_value->cast<ValueTuplePtr>()->value();
+  std::vector<AnfNodePtr> new_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  bool exist_interpreted_obj = false;
+  for (const auto &ele : inputs_seq) {
+    if (ele->isa<parse::InterpretedObject>()) {
+      // Convert InterpretedObject value node to PyExecute CNode.
+      const auto &interpreted_value = dyn_cast<parse::InterpretedObject>(ele);
+      MS_EXCEPTION_IF_NULL(interpreted_value);
+      const std::string &key = interpreted_value->name();
+      const auto &execute_node =
+        fallback::ConvertPyObjectToPyExecute(cur_func, key, interpreted_value->obj(), NewValueNode(ele), true);
+      MS_LOG(DEBUG) << "Convert execute_node is: " << execute_node->DebugString();
+      new_inputs.push_back(execute_node);
+      exist_interpreted_obj = true;
+    } else {
+      new_inputs.push_back(NewValueNode(ele));
+    }
+  }
+  if (!exist_interpreted_obj) {
+    return input;
+  }
+  return cur_func->NewCNode(new_inputs);
+}
+
 bool ConvertPyExecuteAfterRewriter(const FuncGraphPtr &graph, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(graph);
   AnfNodePtr return_node = graph->get_return();
@@ -3048,6 +3077,22 @@ bool ConvertPyExecuteAfterRewriter(const FuncGraphPtr &graph, const FuncGraphMan
       tr.Commit();
       change = true;
       continue;
+    }
+    // Recheck the inputs of PyExecute which is InterpretedObject.
+    if (IsPrimitiveCNode(node, prim::kPrimPyExecute)) {
+      auto inputs = node->cast<CNodePtr>()->inputs();
+      for (size_t index = 1; index < inputs.size(); ++index) {
+        const auto &input = inputs[index];
+        if (IsValueNode<ValueTuple>(input)) {
+          const auto &new_input = ConvertInterpretedObjectToPyExecute(node, input);
+          if (new_input != input) {
+            tr.SetEdge(node, index, new_input);
+            tr.Commit();
+            change = true;
+            continue;
+          }
+        }
+      }
     }
   }
   return change;
