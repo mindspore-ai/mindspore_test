@@ -84,12 +84,12 @@ if(ENABLE_MINDDATA)
         COMPONENT mindspore
     )
 
-    install(FILES ${opencv_LIBPATH}/libopencv_core.4.5.2.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_core.4.5.dylib COMPONENT mindspore)
-    install(FILES ${opencv_LIBPATH}/libopencv_imgcodecs.4.5.2.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.4.5.dylib COMPONENT mindspore)
-    install(FILES ${opencv_LIBPATH}/libopencv_imgproc.4.5.2.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.4.5.dylib COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_core.4.11.0.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_core.411.dylib COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_imgcodecs.4.11.0.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.411.dylib COMPONENT mindspore)
+    install(FILES ${opencv_LIBPATH}/libopencv_imgproc.4.11.0.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.411.dylib COMPONENT mindspore)
     install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.10.0.0.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.10.dylib COMPONENT mindspore)
 
