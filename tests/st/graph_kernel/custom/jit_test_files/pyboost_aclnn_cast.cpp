@@ -17,8 +17,6 @@
 #include "ms_extension/all.h"
 
 namespace custom {
-using namespace mindspore;
-using namespace mindspore::device::ascend;
 
 ms::Tensor npu_cast(const ms::Tensor &x, int64_t dst_type_id) {
   auto type_id = static_cast<ms::TypeId>(dst_type_id);

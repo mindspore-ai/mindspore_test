@@ -40,9 +40,6 @@ static std::tuple<ms::Tensor, ms::Tensor, ms::Tensor> GenBatchNormResultTensors(
   return {std::move(y), std::move(saved_mean), std::move(saved_var)};
 }
 
-using namespace mindspore;
-using namespace mindspore::device::ascend;
-
 std::vector<ms::Tensor> npu_batch_norm(const ms::Tensor &x, const ms::Tensor &scale, const ms::Tensor &bias,
                                        const ms::Tensor &mean, const ms::Tensor &var, bool training, double momentum,
                                        double eps) {

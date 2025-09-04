@@ -51,9 +51,6 @@ ms::Tensor GenAvgPool2dResultTensor(const ms::Tensor &x, const std::vector<int64
   return ms::Tensor(x.data_type(), out_shape);
 }
 
-using namespace mindspore;
-using namespace mindspore::device::ascend;
-
 ms::Tensor npu_avgpool2d(const ms::Tensor &x, const std::vector<int64_t> &kernel_size,
                          const std::vector<int64_t> &stride, const std::vector<int64_t> &padding, bool ceil_mode,
                          bool count_include_pad, int64_t divisor_override, bool cube_math_type) {

@@ -429,7 +429,7 @@ class MS_CORE_API LogWriter {
     static_cast<int>(level) <= static_cast<int>(mindspore::this_thread_max_log_level)
 
 #define IS_OUTPUT_ON(level) (MATCH_LEVEL(level))
-#define IS_VLOG_ON(level) (((level) >= g_ms_vlog_level_from) && ((level) <= g_ms_vlog_level_to))
+#define IS_VLOG_ON(level) (((level) >= mindspore::g_ms_vlog_level_from) && ((level) <= mindspore::g_ms_vlog_level_to))
 
 #define __MS_LOG_DEBUG(node) \
   MSLOG_IF(mindspore::kDebug, IS_OUTPUT_ON(mindspore::kDebug), mindspore::NoExceptionType, node)
