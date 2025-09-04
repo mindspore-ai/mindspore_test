@@ -11,5 +11,5 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 set_property(SOURCE ${_PREACTIVATE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
-  SUBMODULE_ID=mindspore::SubModuleId::SM_PRE_ACT)
+  SUBMODULE_ID=mindspore::SubModuleId::SM_SESSION)
 add_library(_mindspore_backend_common_obj OBJECT ${_PREACTIVATE_SRC_LIST})

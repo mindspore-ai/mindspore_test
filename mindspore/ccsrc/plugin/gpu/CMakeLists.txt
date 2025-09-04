@@ -49,6 +49,7 @@ endif()
 
 ### cxx api need file ###
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
+set_property(SOURCE ${GPU_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(mindspore_gpu SHARED ${GPU_SUB_OBJECTS_SRC})
 set_target_properties(mindspore_gpu PROPERTIES SOVERSION ${CUDA_VERSION})
 if(MSVC)

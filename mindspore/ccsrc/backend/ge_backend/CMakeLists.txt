@@ -10,7 +10,7 @@ if(ENABLE_D OR ENABLE_ACL)
 
 
     set_property(SOURCE ${_GE_BACKEND_SRC_LIST}
-          PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_RUNTIME_FRAMEWORK)
+          PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_GE_ADPT)
     add_library(mindspore_ge_backend SHARED ${_GE_BACKEND_SRC_LIST})
 
     target_link_libraries(mindspore_ge_backend PRIVATE mindspore_core mindspore_ops mindspore_ascend_res_manager
