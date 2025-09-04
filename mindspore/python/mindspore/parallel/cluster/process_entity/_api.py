@@ -388,8 +388,7 @@ class _ProcessManager:
                 logger.error(f"Scheduler process {self.msn_process.pid} exit with exception.")
 
         if has_exception:
-            logger.info("Analyzing exception log...")
-            self._analyze_log()
+            self._analyze_sched_log()
             raise RuntimeError("Distributed job exited with exception. Please check logs in "
                                f"directory: {self.log_dir}.")
 
@@ -589,26 +588,13 @@ class _ProcessManager:
             log_name = os.path.join(self.log_dir, formatted_log_name + "_" + str(index) + ".log")
         return node_id, log_name
 
-    def _analyze_log(self):
+    def _analyze_sched_log(self):
         """
-        Analyze exception logs.
+        Analyze scheduler log.
         """
         scheduler_log_path = os.path.join(self.log_dir, "scheduler.log")
-        time_out_node_ids = []
         if os.path.exists(scheduler_log_path):
-            with open(scheduler_log_path, "r") as log:
-                scheduler_log = log.read()
-                # Filter out abnormal logs.
-                time_out_node_log = re.findall(r"node: .* is timed out", scheduler_log)
-
-                # Filter out node ids of the processes which exit abnormally.
-                def node_id_splitter(node_id):
-                    return re.split(" is timed out", re.split("node: ", node_id)[1])[0]
-                for node_id in time_out_node_log:
-                    time_out_node_ids.append(node_id_splitter(node_id))
-            logger.error(f"Time out nodes are {time_out_node_ids}")
-
-        os.system(f"grep -rn -E 'ERROR|CRITICAL|Traceback|Error' -C 5 {self.log_dir}")
+            os.system(f"cat {scheduler_log_path} | grep -E 'ERROR|CRITICAL|Traceback|Error' -C 5")
 
     def format_worker_log_name(self):
         """
