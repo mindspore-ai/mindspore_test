@@ -19,8 +19,21 @@
 #include "ir/tensor_data.h"
 
 namespace mindspore {
+namespace {
 constexpr int kMaxDeviceNum = 6;
 DeviceAddressMakerFunc g_device_address_maker[kMaxDeviceNum];
+
+DeviceAddressPtr MakeCPUDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
+                                      DeviceAddressDeleter &&deleter) {
+  auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
+  auto device_address =
+    std::make_shared<DeviceAddress>(data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
+  if (deleter != nullptr) {
+    device_address->SetDevicePointerDeleter(std::move(deleter));
+  }
+  return device_address;
+}
+}  // namespace
 DeviceAddressPtr DeviceAddressMaker::make_device_address() {
   auto device_sync = maker_(data_type_, shape_, data_ptr_, std::move(deleter_));
   return device_sync;
@@ -107,4 +120,9 @@ template DeviceAddressPtr MakeDeviceAddress<int64_t>(TypeId, const ShapeVector &
 template DeviceAddressPtr MakeDeviceAddress<int32_t>(TypeId, const ShapeVector &, const std::vector<int32_t> &);
 template DeviceAddressPtr MakeDeviceAddress<double>(TypeId, const ShapeVector &, const std::vector<double> &);
 template DeviceAddressPtr MakeDeviceAddress<float>(TypeId, const ShapeVector &, const std::vector<float> &);
+
+REGISTER_DEVICE_ADDRESS_MAKER(device::DeviceType::kCPU, [](TypeId data_type, const ShapeVector &shape, void *data_ptr,
+                                                           DeviceAddressDeleter &&deleter) {
+  return MakeCPUDeviceAddress(data_type, shape, data_ptr, std::move(deleter));
+});
 }  // namespace mindspore
