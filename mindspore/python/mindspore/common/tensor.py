@@ -3813,6 +3813,40 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('triangular_solve')(self, A, upper, transpose, unitriangular)
 
+    def as_strided(self, size, stride, storage_offset=None):
+        r"""
+        Returns the view of `self` with specified `size`, `stride` and `storage_offset`.
+
+        .. warning::
+            This is an experimental API that is subject ot change or deletion.
+
+        Args:
+            size (Union[tuple[int], list[int]]): The shape of the output tensor.
+            stride (Union[tuple[int], list[int]]): The stride of the output tensor.
+            storage_offset (int, optional): The offset in the underlying storage of the output tensor. If ``None``,
+                the `storage_offset` of the output tensor will match the input tensor. Default: ``None``.
+
+        Returns:
+            Tensor, the shape is determined by `size`, and the dtype is the same as `self.dtype`.
+
+        Raises:
+            TypeError: If `self` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]), mindspore.float32)
+            >>> output = x.as_strided((2, 2), (1, 2), 2)
+            >>> print(output)
+            [[3. 5.]
+            [4. 6.]]
+        """
+        return tensor_operator_registry.get("as_strided")(self, size, stride, storage_offset)
+
 
 def _vm_compare(*args):
     """Implement `vm_compare` for tensor."""
