@@ -65,8 +65,6 @@ class CompareAndBitpackGpuKernelMod : public NativeGpuKernelMod {
   size_t y_count_{};
   void *cuda_stream_{nullptr};
 
-  cudnnHandle_t cudnn_handle_{};
-  curandGenerator_t curand_generator_{nullptr};
   CompareAndBitpackFunc kernel_func_{};
   static std::vector<std::pair<KernelAttr, CompareAndBitpackFunc>> func_list_;
 };

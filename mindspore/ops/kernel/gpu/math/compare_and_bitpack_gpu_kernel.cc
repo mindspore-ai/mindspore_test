@@ -44,7 +44,6 @@ bool CompareAndBitpackGpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   kernel_func_ = func_list_[index].second;
   x_unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
   threshold_unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex1).dtype);
-  cudnn_handle_ = device::gpu::GPUDeviceManager::GetInstance().GetCudnnHandle();
   return true;
 }
 

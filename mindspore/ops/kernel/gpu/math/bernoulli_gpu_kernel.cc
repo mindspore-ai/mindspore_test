@@ -57,7 +57,6 @@ bool BernoulliGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     }
     states_init_ = true;
   }
-  cudnn_handle_ = device::gpu::GPUDeviceManager::GetInstance().GetCudnnHandle();
   return true;
 }
 

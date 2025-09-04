@@ -71,8 +71,6 @@ class ConjugateTransposeGpuKernelMod : public NativeGpuKernelMod {
   size_t y_count_{};
 
   void *cuda_stream_{nullptr};
-  cudnnHandle_t cudnn_handle_{};
-  curandGenerator_t curand_generator_{nullptr};
   size_t input_stride[7];
   size_t output_stride[7];
   std::vector<size_t> x_one_shape_;

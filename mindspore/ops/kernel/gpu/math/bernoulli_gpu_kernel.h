@@ -68,8 +68,6 @@ class BernoulliGpuKernelMod : public NativeGpuKernelMod {
   size_t p_count_{};
 
   void *cuda_stream_{nullptr};
-  cudnnHandle_t cudnn_handle_{};
-  curandGenerator_t curand_generator_{nullptr};
   std::vector<size_t> x_shape_;
   std::vector<size_t> p_shape_;
   BernoulliFunc kernel_func_{};
