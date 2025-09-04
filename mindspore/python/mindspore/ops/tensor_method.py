@@ -1963,3 +1963,7 @@ def tensor_broadcast_to(x, shape):
 
 def tensor_squeeze(input, axis=None):
     return F.squeeze(input, axis)
+
+
+def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    raise NotImplementedError('conv2d only supports Ascend.')

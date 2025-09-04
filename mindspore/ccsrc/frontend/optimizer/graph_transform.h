@@ -58,7 +58,7 @@ class GraphSequenceParamTransform {
     inputs.push_back(NewValueNode(prim_sequence));
     auto &elements = seq_abs->elements();
     for (auto &item : elements) {
-      if (item->isa<abstract::AbstractSequence>()) {
+      if (item->isa<abstract::AbstractSequence>() && !item->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
         inputs.push_back(GenerateSequenceParams(item->cast<abstract::AbstractSequencePtr>(), fg, params));
       } else {
         auto p = std::make_shared<Parameter>(fg);
