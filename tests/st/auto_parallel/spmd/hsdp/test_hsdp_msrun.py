@@ -48,7 +48,10 @@ def _run_hsdp_case_by_name(case_name: str):
     baseline_worker0_path: str = f"{baseline_dir}/worker_0.log"
     case_worker0_path: str = f"{log}/worker_0.log"
     err_comp = ErrorComparator(baseline_worker0_path, case_worker0_path)
-    assert err_comp.get_relative_absolute_error() < LOSS_REL_ABSOLUTE_TOL
+    errors_list = err_comp.get_rel_abs_error_of_steps()
+    assert not any(x > LOSS_REL_ABSOLUTE_TOL for x in errors_list), \
+        f"HSDP testcase of {case_name} compare with standalone, \
+        Relative absolute error list is {errors_list}, but tolerance is {LOSS_REL_ABSOLUTE_TOL}"
     assert err_comp.get_first_step_rel_abs_error() < FIRST_STEP_LOSS_REL_ABSOLUTE_TOL
 
 

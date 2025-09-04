@@ -66,6 +66,14 @@ class ErrorComparator:
         rel_abs_err = abs(baseline_first_step_metric[0] - case_first_step_metric[0]) / baseline_first_step_metric[0]
         return rel_abs_err
 
+    def get_rel_abs_error_of_steps(self) -> List[float]:
+        baseline_loss_list = self._extract_loss_from_metrics(self.baseline_metrics)
+        hsdp_case_loss_list = self._extract_loss_from_metrics(self.hsdp_case_metrics)
+        errors: List[float] = []
+        for baseline_loss, hsdp_case_loss in zip(baseline_loss_list, hsdp_case_loss_list):
+            errors.append(abs(hsdp_case_loss - baseline_loss) / baseline_loss)
+        return errors
+
     def _extract_loss_from_metrics(self, metrics_list: List[Tuple]):
         if metrics_list is None:
             return []

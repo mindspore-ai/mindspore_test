@@ -133,7 +133,7 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
         if i >= max_step:
             break
 
-
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_standalone_run():
     '''
     Feature: Run the network with standalone mode
