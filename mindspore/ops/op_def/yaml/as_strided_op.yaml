@@ -11,7 +11,7 @@ as_strided:
             type_cast: list[int]
         storage_offset:
             dtype: int
-            default: 0
+            default: None
     returns:
         output:
             dtype: tensor

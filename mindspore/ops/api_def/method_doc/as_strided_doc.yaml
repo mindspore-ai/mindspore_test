@@ -8,8 +8,8 @@ as_strided:
         This is an experimental API that is subject ot change or deletion.
 
     Args:
-        size (tuple[int]): The shape of the output tensor.
-        stride (tuple[int]): The stride of the output tensor.
+        size (Union[tuple[int], list[int]]): The shape of the output tensor.
+        stride (Union[tuple[int], list[int]]): The stride of the output tensor.
         storage_offset (int, optional): The offset in the underlying storage of the output tensor. If ``None``,
             the `storage_offset` of the output tensor will match the input tensor. Default: ``None``.
 

@@ -17,6 +17,8 @@
 #include "view/as_strided_strides_calc.h"
 #include <vector>
 #include <memory>
+#include <map>
+#include <functional>
 
 namespace mindspore::ops {
 constexpr size_t kAsStridedInputsNum = 4;
@@ -57,13 +59,20 @@ int64_t ComputeStorageNbytes(const std::vector<int64_t> &shape, const std::vecto
 TensorStorageInfoPtrList AsStridedBasicTypeCalc(const PrimitivePtr &prim,
                                                 const mindspore::tensor::TensorPtr &input_tensor,
                                                 const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
-                                                const int64_t &storage_offset) {
+                                                const std::optional<int64_t> &storage_offset_opt) {
+  if (size.size() != stride.size()) {
+    MS_EXCEPTION(RuntimeError) << "mismatch in length of strides and shape";
+  }
   if (std::any_of(size.begin(), size.end(), [](const int64_t &shape_i) { return shape_i < 0; })) {
     MS_EXCEPTION(RuntimeError) << "For primitive[" << prim->name()
                                << "], the component of shape can't be less than 0, but got " << size;
   }
   if (std::any_of(stride.begin(), stride.end(), [](const int &stride_i) { return stride_i < 0; })) {
     MS_EXCEPTION(RuntimeError) << "As_strided: Negative strides are not supported at the moment, but got " << stride;
+  }
+  int64_t storage_offset = 0;
+  if (storage_offset_opt.has_value()) {
+    storage_offset = storage_offset_opt.value();
   }
   if (storage_offset < 0) {
     MS_EXCEPTION(RuntimeError) << "As_strided: Invalid storage offset " << storage_offset;
