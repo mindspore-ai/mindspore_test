@@ -16,10 +16,6 @@
 
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_MATH_SVD_GPU_KERNEL_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_MATH_SVD_GPU_KERNEL_H_
-#include <cublas_v2.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <cuda_runtime.h>
 #include <vector>
 #include <string>
 #include <memory>

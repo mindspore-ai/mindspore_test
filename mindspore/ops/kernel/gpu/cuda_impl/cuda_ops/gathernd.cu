@@ -15,6 +15,7 @@
  */
 
 #include "include/cuda_fp16.h"
+#include <cuComplex.h>
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/gathernd.cuh"
 template <typename T, typename S>

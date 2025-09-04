@@ -17,10 +17,6 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_ARRAYS_MATRIX_BAND_PART_GPU_KERNEL_H
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GPU_ARRAYS_MATRIX_BAND_PART_GPU_KERNEL_H
 
-#include <cublas_v2.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <cuda_runtime.h>
 #include <vector>
 #include <algorithm>
 #include <utility>

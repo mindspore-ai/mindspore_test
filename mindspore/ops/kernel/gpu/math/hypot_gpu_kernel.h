@@ -16,10 +16,6 @@
 
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_MATH_HYPOT_GPU_KERNEL_H
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_MATH_HYPOT_GPU_KERNEL_H
-#include <cublas_v2.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <cuda_runtime.h>
 #include <vector>
 #include <string>
 #include <memory>
