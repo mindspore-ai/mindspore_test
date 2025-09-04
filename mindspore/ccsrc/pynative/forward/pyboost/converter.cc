@@ -1445,7 +1445,8 @@ bool ListTypeCheck(PyObject *obj, const ops::OP_DTYPE &type, int &idx, bool full
     case OP_DTYPE::DT_TUPLE_NUMBER:
       return IsPyScalarTuple(obj, idx, fullcheck);
     default:
-      MS_LOG(EXCEPTION) << "Unknown param type:" << type;
+      MS_LOG(EXCEPTION) << "Performing a list type check and encountered an unexpected type, which is "
+                        << ops::EnumToString(type);
   }
   return false;
 }
@@ -1664,11 +1665,13 @@ ValuePtr ParserArgs::ConvertByParseDtype(size_t index) {
   } else {
     // borrow reference
     PyObject *item = arg_list_[index];
-    src_types_[index] = mindspore::ops::DT_BEGIN;
     auto value = convert_func(item);
-    return (value != nullptr) ? value : nullptr;
+    if (value != nullptr) {
+      src_types_[index] = mindspore::ops::DT_BEGIN;
+      return value;
+    }
+    return nullptr;
   }
-  return nullptr;
 }
 
 std::vector<int64_t> ParserArgs::ToBasicIntVector(size_t index) {
@@ -1680,9 +1683,9 @@ std::vector<int64_t> ParserArgs::ToBasicIntVector(size_t index) {
     MS_EXCEPTION(NotImplementedError) << "Can't find convert function for src_dtype[" << src << "] and dst_type[" << dst
                                       << "].";
   }
-  src_types_[index] = mindspore::ops::DT_BEGIN;
   auto value = convert_func(arg_list_[index]);
   if (value.has_value()) {
+    src_types_[index] = mindspore::ops::DT_BEGIN;
     return value.value();
   }
   PrintConvertError(index);
@@ -1697,9 +1700,9 @@ int64_t ParserArgs::ToBasicInt(size_t index) {
     MS_EXCEPTION(NotImplementedError) << "Can't find convert function for src_dtype[" << src << "] and dst_type" << dst
                                       << "].";
   }
-  src_types_[index] = mindspore::ops::DT_BEGIN;
   auto value = convert_func(arg_list_[index]);
   if (value.has_value()) {
+    src_types_[index] = mindspore::ops::DT_BEGIN;
     return value.value();
   }
   PrintConvertError(index);
@@ -1756,7 +1759,8 @@ void ParserArgs::PrintConvertError(size_t index) {
   } else {
     int error_pos = 0;
     PyObject *element;
-    ListTypeCheck(obj, src_types_[index], error_pos, true);
+    const auto expect_type = src_types_[index] == ops::OP_DTYPE::DT_BEGIN ? dst_types_[index] : src_types_[index];
+    ListTypeCheck(obj, expect_type, error_pos, true);
     if (PyTuple_Check(obj)) {
       element = PyTuple_GetItem(obj, error_pos);
     } else {
