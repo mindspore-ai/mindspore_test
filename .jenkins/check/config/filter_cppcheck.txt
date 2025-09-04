@@ -101,6 +101,7 @@
 "mindspore/mindspore/ops/view/reshape_strides_calc.cc"                                  "zerodivcond"
 "mindspore/mindspore/ops/view/split_tensor_strides_calc.cc"                                  "zerodivcond"
 "mindspore/mindspore/ops/view/chunk_strides_calc.cc"                                  "zerodivcond"
+"mindspore/mindspore/ccsrc/pyboost/pyboost_utils.cc"                                  "useStlAlgorithm"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"

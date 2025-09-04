@@ -40,12 +40,13 @@ TensorStorageInfoPtrList SplitWithSizeStridesCalc(const std::vector<int64_t> &cu
   auto [ori_shape, ori_strides, current_offset] = GetOriShapeStridesAndOffset(cur_shape, cur_strides, cur_storage_info);
 
   auto rank = SizeToLong(cur_shape.size());
-  if (rank <= 0) {
-    MS_EXCEPTION(ValueError) << "For SplitWithSize, rank should > 0, but got " << rank;
-  }
+  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCommMsg("For SplitWithSize, rank should > 0, but got", rank));
   const auto ndim = cur_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
   int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
+  MS_CHECK_VALUE(split_size.size() > 0,
+                 CheckAndConvertUtils::FormatCommMsg("For SplitWithSize, the size of split_size should > 0, but got",
+                                                     split_size.size()));
   SplitSizeInputsCheck(sum_split_size, wrap_dim, cur_shape);
 
   std::vector<TensorStorageInfoPtr> storage_info_list;

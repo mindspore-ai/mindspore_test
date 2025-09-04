@@ -187,7 +187,6 @@ class FunctionsGenerator(BaseGenerator):
         call_args_tensors = op_parser.get_call_args_tensor()
         storage_calc_str = op_proto.op_class.name
         return_values, _ = op_parser.generate_pyboost_outputs()
-        storage_info_idx = "[0]" if return_values.endswith("]") else ""
         return_type_str = _get_return_type_str(op_proto)
         function_body = function_body_template.replace(op_name=op_proto.op_name,
                                                        class_name=op_proto.op_class.name,
@@ -198,7 +197,6 @@ class FunctionsGenerator(BaseGenerator):
                                                        call_args=call_args,
                                                        call_tensors=call_args_tensors,
                                                        input=call_args[0],
-                                                       storage_info_idx=storage_info_idx,
                                                        return_values=return_values,
                                                        return_type=return_type_str)
         return function_body, pyboost_func_include_header

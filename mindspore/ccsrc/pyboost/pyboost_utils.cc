@@ -240,17 +240,8 @@ DeviceAddressPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceAddressPtr 
   return new_device_address;
 }
 
-void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
-                                      const TensorStorageInfoPtrList &storage_info_list,
-                                      std::vector<tensor::TensorPtr> *outputs) {
-  for (auto &storage_info : storage_info_list) {
-    CreateOutputTensor(device_context, input, storage_info, outputs);
-  }
-}
-
-void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
-                                      const TensorStorageInfoPtr &storage_info,
-                                      std::vector<tensor::TensorPtr> *outputs) {
+tensor::TensorPtr PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                                   const TensorStorageInfoPtr &storage_info, const TypeId output_type) {
   MS_EXCEPTION_IF_NULL(input);
   MS_EXCEPTION_IF_NULL(storage_info);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -258,7 +249,7 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                      runtime::ProfilerEvent::kPyBoostCreateOutputTensor,
                                      runtime::ProfilerRecorder::kNoName, false);
-  auto output_tensor = tensor::from_spec(input->data_type(), storage_info->shape, device::DeviceType::kNone);
+  auto output_tensor = tensor::from_spec(output_type, storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
     return ContiguousByDeviceAddress(device_address);
@@ -275,8 +266,56 @@ void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const
   output_device_address->set_tensor_storage_info(storage_info);
   output_device_address->set_device_pointer(input_device_address->device_pointer());
   output_tensor->set_device_address(output_device_address);
-  (void)outputs->emplace_back(output_tensor);
   MS_LOG(DEBUG) << "Create output tensor " << output_tensor->ToString() << " with " << storage_info->ToString();
+
+  return output_tensor;
+}
+
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                      const TensorStorageInfoPtr &storage_info,
+                                      std::vector<tensor::TensorPtr> *outputs) {
+  MS_EXCEPTION_IF_NULL(input);
+  outputs->push_back(CreateOutputTensor(device_context, input, storage_info, input->data_type()));
+}
+
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                      const TensorStorageInfoPtrList &storage_info_list,
+                                      std::vector<tensor::TensorPtr> *outputs) {
+  MS_ASSERT(storage_info_list.size() > 0);
+  MS_EXCEPTION_IF_NULL(input);
+  const auto input_type = input->data_type();
+  for (const auto &storage_info : storage_info_list) {
+    outputs->push_back(CreateOutputTensor(device_context, input, storage_info, input_type));
+  }
+}
+
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                      const std::pair<TensorStorageInfoPtr, TypeId> &view_info,
+                                      std::vector<tensor::TensorPtr> *outputs) {
+  outputs->push_back(CreateOutputTensor(device_context, input, view_info.first, view_info.second));
+}
+
+void PyBoostUtils::CreateOutputTensor(const DeviceContext *device_context, const tensor::TensorPtr &input,
+                                      const std::pair<std::vector<TensorStorageInfoPtr>, TypeId> &view_info,
+                                      std::vector<tensor::TensorPtr> *outputs) {
+  const auto &storage_info_list = view_info.first;
+  MS_ASSERT(storage_info_list.size() > 0);
+  for (const auto &storage_info : storage_info_list) {
+    outputs->push_back(CreateOutputTensor(device_context, input, storage_info, view_info.second));
+  }
+}
+
+void PyBoostUtils::CreateOutputTensor(
+  const DeviceContext *device_context, const tensor::TensorPtr &input,
+  const std::pair<std::vector<TensorStorageInfoPtr>, std::vector<TypeId>> &view_info,
+  std::vector<tensor::TensorPtr> *outputs) {
+  const auto &storage_info_list = view_info.first;
+  const auto &type_id_list = view_info.second;
+  MS_ASSERT(storage_info_list.size() > 0);
+  MS_ASSERT(storage_info_list.size() == type_id_list.size());
+  for (size_t i = 0; i < storage_info_list.size(); ++i) {
+    outputs->push_back(CreateOutputTensor(device_context, input, storage_info_list[i], type_id_list[i]));
+  }
 }
 
 void PyBoostUtils::MallocForInput(const DeviceContext *device_context, const tensor::TensorPtr &tensor, bool is_view) {
