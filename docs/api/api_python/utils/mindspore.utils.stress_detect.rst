@@ -1,5 +1,3 @@
-mindspore.utils.stress_detect
-==============================
 
 .. py:function:: mindspore.utils.stress_detect(detect_type="aic")
 
