@@ -10,7 +10,7 @@
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        **dlpack** (PyCapsule) - 要转换的DLPack对象，它是一个包含指向 `DLManagedTensor` 的指针的capsule。
+        - **dlpack** (PyCapsule) - 要转换的DLPack对象，它是一个包含指向 `DLManagedTensor` 的指针的capsule。
 
     返回：
         Tensor, 与DLPack对象共享内存的MindSpore Tensor。
@@ -27,7 +27,7 @@
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        **tensor** (Tensor) - 要转换的MindSpore Tensor。
+        - **tensor** (Tensor) - 要转换的MindSpore Tensor。
 
     返回：
         PyCapsule, 一个可以被其他库使用的DLPack对象。
