@@ -1112,7 +1112,7 @@ std::pair<std::shared_ptr<AnfNode>, int> BFSParallelCareNode(const AnfNodePtr &n
 // weight1->add
 // we will not insert the cast(FP32->FP16), as it will cause the input of the operator add to be changed to fp16.
 AnfNodePtr GetChildCastNode(const AnfNodePtr &node_ptr, const NodeUsersMap &node_users_map) {
-  std::queue<AnfNodePtr> visited;
+  std::queue<std::pair<AnfNodePtr, int>> visited;
   AnfNodePtr queue_node = nullptr;
   CNodePtr cnode = nullptr;
   AnfNodePtr node = nullptr;
@@ -1127,21 +1127,28 @@ AnfNodePtr GetChildCastNode(const AnfNodePtr &node_ptr, const NodeUsersMap &node
       continue;
     }
     if (node_user.first) {
-      visited.push(node_user.first);
+      visited.push(node_user);
     }
   }
   while (!visited.empty()) {
-    queue_node = visited.front();
+    const auto &queue_pair = visited.front();
+    queue_node = queue_pair.first;
     visited.pop();
     cnode = queue_node->cast<CNodePtr>();
     // MAKE_TUPLE will not appear after the load in the forward graph
-    if (IsOneOfPrimitiveCNode(cnode, {prim::kPrimMakeTuple, prim::kPrimUpdateState})) {
+    if (cnode == nullptr || IsOneOfPrimitiveCNode(cnode, {prim::kPrimMakeTuple, prim::kPrimUpdateState})) {
       continue;
     } else if (IsInAllGatherNodeList(cnode) || IsSomePrimitiveList(cnode, {LOAD, RESHAPE})) {
       auto node_set = node_users_map.at(queue_node);
       for (auto &node_user : node_set) {
-        visited.push(node_user.first);
+        visited.push(node_user);
       }
+    } else if (IsValueNode<FuncGraph>(cnode->input(kIndex0))) {
+      const auto &sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(kIndex0));
+      MS_EXCEPTION_IF_NULL(sub_graph);
+      const auto &parameters = sub_graph->parameters();
+      const auto &parameter_sub = parameters[IntToSize(queue_pair.second - 1)];
+      node = GetChildCastNode(parameter_sub, node_users_map);
     } else if (!IsSomePrimitive(cnode, CAST)) {
       MS_LOG(INFO) << "The weight's users including the non cast node So "
                    << "will not insert cast for this parameter " << node_ptr->DebugString();
