@@ -89,14 +89,15 @@ FRONTEND_EXPORT VectorRef FilterGraphInputOutput(bool is_filtered, const std::pa
                                                  const FuncGraphPtr &func_graph, const std::string &cache_key,
                                                  std::vector<pynative::autograd::Edge> *next_edges);
 FRONTEND_EXPORT bool FilterGradOutput(const std::vector<bool> &need_grad, const FuncGraphPtr &func_graph,
-                                      std::vector<pynative::autograd::Edge> *next_edges);
+                                      const VectorRef &args, std::vector<pynative::autograd::Edge> *next_edges);
 FRONTEND_EXPORT void FilterGradInput(const std::vector<bool> &need_filter, const FuncGraphPtr &func_graph,
                                      size_t add_args_size, size_t skip_filter_size);
 FRONTEND_EXPORT VectorRef RefreshAddedArgs(const VectorRef &added_args, const std::vector<bool> &need_filter,
                                            size_t add_args_size);
 FRONTEND_EXPORT void FilterForwardOutput(const std::vector<bool> &need_filter, const std::string &cache_key,
                                          size_t add_args_size);
-FRONTEND_EXPORT void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_edges, const FuncGraphPtr &func_graph);
+FRONTEND_EXPORT void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_edges, const FuncGraphPtr &func_graph,
+                                    const VectorRef &args);
 FRONTEND_EXPORT std::pair<std::vector<bool>, int> CollectFilterMsg(const VectorRef &added_args,
                                                                    const FuncGraphPtr &func_graph);
 }  // namespace ad

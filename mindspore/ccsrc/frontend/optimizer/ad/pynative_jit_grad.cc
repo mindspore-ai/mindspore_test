@@ -822,7 +822,20 @@ std::vector<bool> GetNeedGradIndexes(const VectorRef &args) {
   return need_grad_indexes;
 }
 
-bool FilterGradOutput(const std::vector<bool> &need_grad, const FuncGraphPtr &func_graph,
+size_t GetArgLength(const BaseRef &arg) {
+  if (utils::isa<ValueSequence>(arg)) {
+    const auto &arg_sequence = utils::cast<ValueSequencePtr>(arg);
+    auto real_arg = pynative::CommonUtils::FlattenOnlyTensor(arg_sequence);
+    return real_arg.size();
+  } else if (utils::isa<ValueDictionary>(arg)) {
+    const auto &arg_sequence = utils::cast<ValueDictionaryPtr>(arg);
+    auto real_arg = pynative::CommonUtils::FlattenOnlyTensor(arg_sequence);
+    return real_arg.size();
+  }
+  return 1;
+}
+
+bool FilterGradOutput(const std::vector<bool> &need_grad, const FuncGraphPtr &func_graph, const VectorRef &args,
                       std::vector<pynative::autograd::Edge> *next_edges) {
   MS_LOG(INFO) << "Start filter grad function graph output";
   MS_EXCEPTION_IF_NULL(func_graph->output());
@@ -839,6 +852,10 @@ bool FilterGradOutput(const std::vector<bool> &need_grad, const FuncGraphPtr &fu
   bool need_filter = false;
   std::vector<pynative::autograd::Edge> new_edge;
   for (size_t i = 0; i < need_grad.size(); ++i) {
+    size_t arg_size = GetArgLength(args[i]);
+    if (i + arg_size - 1 >= next_edges->size()) {
+      MS_LOG(EXCEPTION) << "Number of args excced the number of edges";
+    }
     auto cur_node = graph_output_element[i + 1];
     MS_EXCEPTION_IF_NULL(cur_node);
     auto cur_abstract = cur_node->abstract();
@@ -846,9 +863,13 @@ bool FilterGradOutput(const std::vector<bool> &need_grad, const FuncGraphPtr &fu
     if (need_grad[i]) {
       (void)new_graph_output_element.emplace_back(cur_node);
       (void)new_graph_output_abstract_element.emplace_back(cur_abstract);
-      (void)new_edge.emplace_back((*next_edges)[i]);
+      for (size_t j = 0; j < arg_size; ++j) {
+        (void)new_edge.emplace_back((*next_edges)[i + j]);
+      }
+      i += arg_size - 1;
       continue;
     }
+    i += arg_size - 1;
     need_filter = true;
   }
   constexpr auto need_grad_key = "need_grad";
@@ -952,16 +973,25 @@ std::pair<std::vector<bool>, int> CollectFilterMsg(const VectorRef &added_args, 
   return std::make_pair(need_filter, skip_filter_size);
 }
 
-void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_edges, const FuncGraphPtr &func_graph) {
+void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_edges, const FuncGraphPtr &func_graph,
+                    const VectorRef &args) {
   constexpr auto need_grad_key = "need_grad";
   const auto &need_grad_value = func_graph->attrs()[need_grad_key];
   const auto &need_grad = GetValue<std::vector<bool>>(need_grad_value);
   std::vector<pynative::autograd::Edge> new_edge;
-  MS_EXCEPTION_IF_CHECK_FAIL(need_grad.size() == next_edges->size(), "size not match");
   for (size_t i = 0; i < need_grad.size(); ++i) {
-    if (need_grad[i]) {
-      (void)new_edge.emplace_back(std::move((*next_edges)[i]));
+    size_t arg_size = GetArgLength(args[i]);
+    if (i + arg_size - 1 >= next_edges->size()) {
+      MS_LOG(EXCEPTION) << "Number of args excced the number of edges";
     }
+    if (need_grad[i]) {
+      for (size_t j = 0; j < arg_size; ++j) {
+        (void)new_edge.emplace_back((*next_edges)[i + j]);
+      }
+      i += arg_size - 1;
+      continue;
+    }
+    i += arg_size - 1;
   }
   next_edges->clear();
   next_edges->insert(next_edges->begin(), new_edge.begin(), new_edge.end());
@@ -986,7 +1016,7 @@ FuncGraphPtr FilterGraphOutput(const bool is_filtered, const std::pair<VectorRef
                      << cache_filtered_graph->output()->DebugString();
         return cache_filtered_graph;
       }
-      UpdateNextEdge(next_edges, func_graph);
+      UpdateNextEdge(next_edges, func_graph, args);
       return func_graph;
     }
     MS_LOG(INFO) << "Cache find graph failed, filter grad graph again.";
@@ -1004,7 +1034,7 @@ FuncGraphPtr FilterGraphOutput(const bool is_filtered, const std::pair<VectorRef
     MS_EXCEPTION_IF_NULL(new_graph);
   }
   MS_LOG(INFO) << "Start to filter grad jit graph output.";
-  (void)FilterGradOutput(need_grad, new_graph, next_edges);
+  (void)FilterGradOutput(need_grad, new_graph, args, next_edges);
   auto cur_size = StoreFilteredGradGraph(cache_key, need_grad_hash, new_graph);
 
   auto forward_input_size = new_graph->parameters().size() - added_args.size() - 1;
@@ -1026,12 +1056,12 @@ VectorRef FilterGraphInputOutput(bool is_filtered, const std::pair<VectorRef, Ve
   const auto &added_args = arg_pair.second;
   if (is_filtered) {
     MS_LOG(INFO) << "Grad graph is filtered.";
-    UpdateNextEdge(next_edges, func_graph);
+    UpdateNextEdge(next_edges, func_graph, args);
     return added_args;
   }
   MS_LOG(INFO) << "Start to filter grad jit graph.";
   const auto &need_grad = GetNeedGradIndexes(args);
-  auto filtered = FilterGradOutput(need_grad, func_graph, next_edges);
+  auto filtered = FilterGradOutput(need_grad, func_graph, args, next_edges);
   if (!filtered) {
     MS_LOG(INFO) << "No need to filter grad jit graph.";
     return added_args;
