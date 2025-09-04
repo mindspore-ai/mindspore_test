@@ -74,6 +74,15 @@ MS_CORE_API TypeId TypeIdOf(const TypePtr &data_type, TypeId defaultTypeId);
 /// \return [TensorPtr]
 MS_CORE_API TensorPtr from_spec(TypeId data_type, const ShapeVector &shape, device::DeviceType device_type);
 
+/// \brief Create a tensor with data type and shape more efficient for CPU.
+///        Allocate memory without initializing it.
+///
+/// \param[in] data_type [TypeId] Data type of the tensor.
+/// \param[in] shape The shape represented by ShapeVector of the tensor.
+/// \param[in] device_type The device type of the Tensor.
+/// \return [TensorPtr]
+MS_CORE_API TensorPtr from_spec_fast(TypeId data_type, const ShapeVector &shape, device::DeviceType device_type);
+
 /// \brief Create a tensor from a scalar.
 ///
 /// \param[in] input [T] Scalar to create Tensor.

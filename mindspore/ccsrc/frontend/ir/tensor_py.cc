@@ -39,6 +39,7 @@
 #include "runtime/pynative/op_runner.h"
 #include "utils/ms_utils_secure.h"
 #include "utils/misc.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace tensor {
@@ -46,6 +47,24 @@ namespace {
 struct TensorToNumpyRegister {
   TensorToNumpyRegister() { python_adapter::PyAdapterCallback::SetTensorToNumpyHandler(tensor::TensorPybind::AsNumpy); }
 } callback_register;
+
+TensorPtr MakeCpuTensor(const TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  const auto &device_address = tensor->device_address();
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {device_address->GetDeviceType(), device_address->device_id()});
+  MS_EXCEPTION_IF_NULL(device_context);
+  if (!device_context->device_res_manager_->SyncAllStreams()) {
+    MS_LOG(EXCEPTION) << "SyncStream failed in Offload.";
+  }
+  auto cpu_tensor = tensor::from_spec_fast(tensor->data_type(), tensor->shape_c(), device::DeviceType::kCPU);
+
+  if (!SyncCopy(cpu_tensor->device_address(), device_address, CurrentStream::id())) {
+    MS_LOG(EXCEPTION) << "Offload failed. Copy data from device to host failed. Src:" << device_address->ToString()
+                      << " Dst:" << cpu_tensor->device_address()->ToString();
+  }
+  return cpu_tensor;
+}
 }  // namespace
 constexpr ssize_t kPyBufItemSize1 = 1;
 constexpr ssize_t kPyBufItemSize2 = 2;
@@ -772,40 +791,33 @@ py::object TensorPybind::ToDLPack(const py::object &src) {
 
 void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
   py::gil_scoped_release gil_release;
-  if (release) {
-    const auto &device_sync = tensor->device_address();
-    if (device_sync == nullptr) {
-      MS_LOG(WARNING) << "Tensor without DeviceSync can not be offloaded.";
-      return;
-    }
-    const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-    if (device_address == nullptr) {
-      MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
-      return;
-    }
-    if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
-      MS_LOG(WARNING) << "Tensor with CPUDeviceAddress can not be offloaded.";
-      return;
-    }
-    if (device_address->GetPtr() == nullptr) {
-      MS_LOG(WARNING) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
-                      << " the framework.";
-      return;
-    }
-    MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
-                 << ", the tensor's size is : " << device_address->GetSize();
 
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_address->GetDeviceType(), device_address->device_id()});
-    MS_EXCEPTION_IF_NULL(device_context);
-    device_context->device_res_manager_->SyncAllStreams();
-    auto cpu_tensor = tensor->cpu();
-    tensor->set_device_address(cpu_tensor->device_address());
+  const auto &device_sync = tensor->device_address();
+  if (device_sync == nullptr) {
+    MS_LOG(WARNING) << "Tensor without DeviceSync can not be offloaded.";
+    return;
+  }
+  const auto &device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+  if (device_address == nullptr) {
+    MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
+    return;
+  }
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_LOG(WARNING) << "Tensor with CPUDeviceAddress can not be offloaded.";
+    return;
+  }
+  if (device_address->GetPtr() == nullptr) {
+    MS_LOG(WARNING) << "For Offload, this tensor's device_ptr is nullptr, it may have been offloaded or released by"
+                    << " the framework.";
+    return;
+  }
+  MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
+               << ", the tensor's size is : " << device_address->GetSize();
+
+  auto cpu_tensor = MakeCpuTensor(tensor);
+  tensor->set_device_address(cpu_tensor->device_address());
+  if (release) {
     device_address->ClearDeviceMemory();
-  } else {
-    auto cpu_tensor = tensor->cpu();
-    // Release device address of graph output tensor.
-    tensor->set_device_address(cpu_tensor->device_address());
   }
 }
 
