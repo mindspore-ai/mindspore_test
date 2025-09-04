@@ -1,7 +1,7 @@
 mindspore.profiler.tensorboard_trace_handler
 ==============================================
 
-.. py:function:: mindspore.profiler.tensorboard_trace_handler(dir_name: str = None, worker_name: str = None, analyse_flag: bool = True, async_mode: bool = False)
+.. py:function:: mindspore.profiler.tensorboard_trace_handler(dir_name=None, worker_name=None, analyse_flag=True, async_mode=False)
 
     对动态图模式的每一个step，调用该方法进行在线解析。
 
