@@ -44,7 +44,7 @@ mindspore.CSRTensor
         返回：
             CSRTensor。
 
-    .. py:method:: add(b: CSRTensor, alpha: Tensor, beta: Tensor)
+    .. py:method:: add(b, alpha, beta)
 
         两个CSRTensor求和：C = alpha * a + beta * b。
 
@@ -56,7 +56,7 @@ mindspore.CSRTensor
         返回：
             CSRTensor，求和。
 
-    .. py:method:: astype(dtype: mstype)
+    .. py:method:: astype(dtype)
 
         返回指定数据类型的CSRTensor。
 
@@ -86,7 +86,7 @@ mindspore.CSRTensor
 
         返回每个非零元素所占字节数。
 
-    .. py:method:: mm(matrix: Union[Tensor, CSRTensor])
+    .. py:method:: mm(matrix)
 
         返回CSRTensor右乘稀疏矩阵或稠密矩阵的矩阵乘法运算结果。
 
@@ -102,7 +102,7 @@ mindspore.CSRTensor
         返回：
             Tensor 或者 CSRTensor。
 
-    .. py:method:: mv(dense_vector: Tensor)
+    .. py:method:: mv(dense_vector)
 
         返回CSRTensor右乘稠密矩阵的矩阵乘法运算结果。
         shape为 `[M, N]` 的CSRTensor，需要适配shape为 `[N, 1]` 的稠密向量，得到结果为 `[M, 1]` 的稠密向量。
@@ -131,7 +131,7 @@ mindspore.CSRTensor
 
         返回稀疏矩阵非零元素值数量。
 
-    .. py:method:: sum(axis: int)
+    .. py:method:: sum(axis)
 
         对CSRTensor的某个轴求和。
 
