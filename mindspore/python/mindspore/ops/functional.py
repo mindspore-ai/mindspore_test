@@ -34,7 +34,7 @@ from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
 from mindspore.ops import auto_generate
-from mindspore.ops.auto_generate import cast
+from mindspore.ops.auto_generate import cast, as_strided
 from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
@@ -473,6 +473,7 @@ setattr(tensor_operator_registry, 'swapdims', swapdims)
 setattr(tensor_operator_registry, 'repeat_elements', repeat_elements)
 setattr(tensor_operator_registry, 'top_k', top_k)
 setattr(tensor_operator_registry, 'normal_', normal_)
+setattr(tensor_operator_registry, 'as_strided', as_strided)
 
 __all__ = [name for name in dir() if name[0] != "_"]
 __all__.remove('Primitive')
