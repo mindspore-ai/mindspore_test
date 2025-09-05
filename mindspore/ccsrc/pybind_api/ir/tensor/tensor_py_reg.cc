@@ -34,8 +34,8 @@
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/op_executor.h"
 #include "frontend/jit/trace/trace_recorder.h"
-#include "pybind_api/storage_py.h"
-#include "pybind_api/backward_node_py.h"
+#include "pybind_api/ir/tensor/storage/storage_py.h"
+#include "pybind_api/pynative/backward_node_py.h"
 
 namespace mindspore {
 namespace tensor {

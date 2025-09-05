@@ -98,8 +98,11 @@ FRONTEND_EXPORT void RegPyTensor(py::module *m);
 }  // namespace tensor
 
 namespace profiler {
-void RegProfilerManager(const py::module *m);
 void RegProfiler(const py::module *m);
+void RegProfilerManager(const py::module *m);
+void RegHostProfile(py::module *m);
+void RegFrameworkProfiler(py::module *m);
+void RegFrameworkPythonProfileRecorder(py::module *m);
 }  // namespace profiler
 
 namespace datadump {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pybind_api/storage_base.h"
+#include "pybind_api/ir/tensor/storage/storage_base.h"
 #include <utility>
 #include <string>
 #include "runtime/hardware_abstract/utils.h"
