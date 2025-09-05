@@ -2563,6 +2563,37 @@ void ParamFirstUsedKernelActorsToMap(
   }
 }
 
+namespace {
+void UpdateDeviceTensorStoreForKernelRunner(const KernelRunnerPtr &kernel_actor,
+                                            const DeviceContext *graph_device_context, const AnfNodePtr &key,
+                                            size_t index) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  MS_EXCEPTION_IF_NULL(graph_device_context);
+  MS_EXCEPTION_IF_NULL(key);
+  if (kernel_actor->device_contexts().empty() || kernel_actor->device_contexts()[0] == nullptr) {
+    return;
+  }
+  const auto &kernel_device_context = kernel_actor->device_contexts()[0];
+  if (kernel_device_context->GetDeviceType() == graph_device_context->GetDeviceType()) {
+    return;
+  }
+  if (DeviceTensorStore::GetInstance().Fetch(key.get(), kernel_device_context->GetDeviceType()) != nullptr) {
+    return;
+  }
+  auto kernel_tensors = DeviceTensorStore::GetInstance().Fetch(key.get());
+  if (kernel_tensors.empty()) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
+  auto kernel_tensor = SchedulerHelper::CloneKernelTensorWithDeviceInfo(kernel_tensors[0], kernel_device_context);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  SchedulerHelper::AddDeviceTensorStore(key, kernel_tensor);
+  MS_LOG(DEBUG) << "Add device tensor copy store for kernel actor:" << kernel_actor->GetAID()
+                << " input index:" << index << " key:" << key->DebugString() << " node addr:" << key
+                << " kernel tensor:" << kernel_tensor->ToString();
+}
+}  // namespace
+
 void SuperKernelActor::AnalyseNodesDependence(
   const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
   const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
@@ -2616,6 +2647,8 @@ void SuperKernelActor::AnalyseNodesDependence(
         if (device_tensor_store_key_iter != device_tensor_store_keys_map.end()) {
           auto &kernel_actor = kernel_actors_[i];
           MS_EXCEPTION_IF_NULL(kernel_actor);
+          UpdateDeviceTensorStoreForKernelRunner(kernel_actor, device_contexts_[0],
+                                                 device_tensor_store_key_iter->second, j);
           (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key_iter->second);
         }
 
