@@ -68,6 +68,7 @@ class _MicroBatch(nn.Cell):
         - **args_after_split** (list) - Input args after split into micro_batches.
         - **kwargs_after_split** (list) - Input kwargs after split into micro_batches.
     """
+
     def __init__(self, micro_batch_num, args_batch_dim=None, kwargs_batch_dim=None):
         super().__init__()
         self.micro_batch_num = micro_batch_num
@@ -112,7 +113,9 @@ class _MicroBatch(nn.Cell):
         strided_slice_end = list(input.shape)
         strided_slice_begin[cur_arg_batch_dim] = micro_batch_begin
         strided_slice_end[cur_arg_batch_dim] = micro_batch_end
+        input_layout = input.layout
         micro_input = ops.strided_slice(input, strided_slice_begin, strided_slice_end, strided_slice_strides)
+        micro_input = micro_input.local_to_global(input_layout)
         return micro_input
 
 
@@ -120,18 +123,20 @@ class _RecvInfo:
     """
     Used for construct forward Receive operation and backward Send operation.
     """
-    def __init__(self, dtype, shape, src_stage, dyn_shape, dyn_rank):
+
+    def __init__(self, dtype, shape, layout, src_stage, dyn_shape, dyn_rank):
         self._src_stage = src_stage
         self.buffer = None
         self._shape = shape
         self._dtype = dtype
+        self._layout = layout
         self._dyn_shape = dyn_shape
         self._dyn_rank = dyn_rank
         self.src_stage = src_stage
 
     @classmethod
     def from_instance(cls, recv_info):
-        return cls(recv_info.dtype, recv_info.shape, recv_info.src_stage,
+        return cls(recv_info.dtype, recv_info.shape, recv_info.layout, recv_info.src_stage,
                    recv_info.dyn_shape, recv_info.dyn_rank)
 
     @property
@@ -149,3 +154,7 @@ class _RecvInfo:
     @property
     def dyn_rank(self):
         return self._dyn_rank
+
+    @property
+    def layout(self):
+        return self._layout

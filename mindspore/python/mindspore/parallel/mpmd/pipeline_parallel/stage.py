@@ -17,6 +17,7 @@ from abc import ABC
 import mindspore as ms
 from mindspore import ops, Tensor, nn, mint
 from mindspore.mint.distributed import isend, irecv, get_global_rank
+from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
 from ._utils import _RecvInfo
 
 
@@ -28,18 +29,20 @@ class P2PInfo:
     Args:
         dtype (dtype): The dtype of p2p input tensor.
         shape (list): The shape of p2p input tensor. In dynamic shape scenarios, the dynamic dim shuold be set to -1.
+        layout (Layout): The Layout of received tensor. Default ``None``.
         src_stage(int): The source stage of receive op. Default ``None``.
         dst_stage(int): The destination stage of send op. Default ``None``.
         dyn_shape(bool): Specify whether the P2P operator has a dynamic shape. Default ``False``.
         dyn_rank(bool): Specify whether the P2P operator has a dynamic rank. Default ``False``.
     """
-    def __init__(self, dtype, shape, src_stage=None, dst_stage=None, dyn_shape=False, dyn_rank=False):
+    def __init__(self, shape, dtype, layout=None, src_stage=None, dst_stage=None, dyn_shape=False, dyn_rank=False):
         self._shape = shape
         self._dtype = dtype
         self._src_stage = src_stage
         self._dst_stage = dst_stage
         self._dyn_shape = dyn_shape
         self._dyn_rank = dyn_rank
+        self._layout = layout
         if self._dyn_rank and not self._dyn_shape:
             self._dyn_shape = True
 
@@ -50,6 +53,10 @@ class P2PInfo:
     @property
     def dtype(self):
         return self._dtype
+
+    @property
+    def layout(self):
+        return self._layout
 
     @property
     def src_stage(self):
@@ -89,6 +96,8 @@ class PipelineStage(ABC):
     def __init__(self, submodule: nn.Cell, stage_index: int, stage_num: int, group: str,
                  has_backward=True, recv_info=None, send_info=None):
         super().__init__()
+        if not isinstance(submodule, HSDPCell):
+            raise TypeError(f"Argument submodule must be of type HSDPCell.")
         self.submodule = submodule
         self.stage_index = stage_index
         self.stage_num = stage_num
@@ -98,12 +107,15 @@ class PipelineStage(ABC):
         self._send_info = self._check_p2p_info(send_info)
         self._recv_num = len(recv_info)
         self._backward_func = None
-        self._construct_backward_func()
+        if self._has_backward:
+            self.submodule.set_grad(True)
+            self._construct_backward_func()
         self.fwd_inputs_cache = {}
         self.fwd_outputs_cache = {}
         self.args_recv_info = {}
         self.grad_recv_info = {}
         self.bwd_cache = {}
+        self._microbatches_num = 0
 
     def clear_cache(self):
         self.fwd_inputs_cache.clear()
@@ -111,8 +123,10 @@ class PipelineStage(ABC):
         self.bwd_cache.clear()
 
     def init_states(self, microbatches_num):
+        self._microbatches_num = microbatches_num
         self._prepare_forward_infra(microbatches_num)
-        self._prepare_backward_infra(microbatches_num)
+        if self._has_backward:
+            self._prepare_backward_infra(microbatches_num)
 
     def clear_states(self):
         self.args_recv_info.clear()
@@ -137,8 +151,6 @@ class PipelineStage(ABC):
         raise TypeError(f"Argument send_info and recv_info must be of type None, P2PInfo, \
                           list/tuple of P2PInfo, but got {p2p_info}.")
 
-    # TODO: To adapt to dynamic shape, the shape in recv_info is set to -1. The shape iis transmitted
-    #       through an additional pair of send and recv operations.
     def _make_tensor(self, recv_info, global_rank):
         """create recv buffer."""
         shape_dim = None
@@ -177,6 +189,7 @@ class PipelineStage(ABC):
 
     def _init_recv_buffer(self, recv_info, global_rank):
         recv_info.buffer = self._make_tensor(recv_info, global_rank)
+        recv_info.buffer.local_to_global(recv_info.layout)
 
     def _clear_recv_buffer(self, micro_index):
         if micro_index not in self.args_recv_info.keys():
@@ -233,11 +246,15 @@ class PipelineStage(ABC):
 
     def backward_one_chunk(self, micro_index):
         """Execution a backward function"""
+        if not self._has_backward:
+            return None
         fwd_args, fwd_kwargs = self.fwd_inputs_cache.pop(micro_index)
         recv_args = []
+        if micro_index == self._microbatches_num - 1:
+            self.submodule.set_requires_grad_sync(True)
         if micro_index in self.grad_recv_info.keys():
             recv_args = [recv_info.buffer for recv_info in self.grad_recv_info[micro_index]]
-        grad_out = None
+
         if self.is_first_stage:
             grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=recv_args)
         elif self.is_last_stage:
@@ -247,7 +264,10 @@ class PipelineStage(ABC):
         self._clear_recv_buffer(micro_index)
         if not self.is_first_stage:
             self.bwd_cache[micro_index] = grad_out[0][-self._recv_num :]
-        return grad_out
+        # return grads for parameters
+        if self.is_first_stage:
+            return grad_out
+        return grad_out[1]
 
     def exec_fwd_recv_ops(self, micro_index):
         """Execute the forward recv operation"""

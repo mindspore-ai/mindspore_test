@@ -141,6 +141,7 @@ class PipelineScheduleSingle(PipelineScheduleBase):
 
     def run_microbatches(self, args_mb, kwargs_mb):
         out_list = []
+        grad_out = None
         for cur_step in self.exec_order[self.stage.stage_index]:
             micro_index = cur_step.micro_index
             if cur_step.type == MetaStepType.FWD_RECV:
@@ -153,10 +154,13 @@ class PipelineScheduleSingle(PipelineScheduleBase):
             if cur_step.type == MetaStepType.BWD_RECV:
                 self.stage.exec_bwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.BWD:
-                self.stage.backward_one_chunk(micro_index)
+                if micro_index == self.micro_batch_num - 1:
+                    grad_out = self.stage.backward_one_chunk(micro_index)
+                else:
+                    _ = self.stage.backward_one_chunk(micro_index)
             if cur_step.type == MetaStepType.BWD_SEND:
                 self.stage.exec_bwd_send_ops(micro_index)
-        return out_list
+        return out_list, grad_out
 
     def run(self, *args, **kwargs):
         split_args, split_kwargs = self.split_microbatches(args, kwargs)
