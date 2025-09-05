@@ -45,7 +45,7 @@ class HSDPScheduler:
 
     def set_requires_grad_sync(self, requires_grad_sync):
         """set requires grad sync flag to control gradient sync."""
-        ops.assign(self.requires_grad_sync, Tensor(requires_grad_sync))
+        self.requires_grad_sync = requires_grad_sync
 
     def zero_grads(self):
         """set requires grad sync flag to control gradient sync."""
@@ -90,9 +90,9 @@ class HSDPScheduler:
             return
 
         self.cell.register_forward_pre_hook(self._hsdp_forward_pre_hook)
+        self.cell.register_backward_pre_hook(self._hsdp_backward_pre_hook)
         if self.shard_level == OptimizerLevel.SHARD_OPT_GRAD_PARAM:
             self.cell.register_forward_hook(self._hsdp_forward_hook)
-            self.cell.register_backward_pre_hook(self._hsdp_backward_pre_hook)
             self.cell.register_backward_hook(self._hsdp_backward_hook)
         elif self.requires_acc_grad:
             self.cell.register_backward_hook(self._hsdp_acc_backward_hook)

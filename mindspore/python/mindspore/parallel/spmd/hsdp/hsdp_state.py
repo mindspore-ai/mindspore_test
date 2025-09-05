@@ -13,9 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """HSDP cell state"""
-import mindspore.ops as ops
-from mindspore.common.parameter import Parameter
-from mindspore.common.tensor import Tensor
 from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
 
 
@@ -27,7 +24,7 @@ class HSDPState:
         self.hsdp_params = []
         self.sharded_hsdp_params = []
         self._init_hsdp_params()
-        self.is_shard = Parameter(Tensor(True), name="hsdp_requires_grad_sync", requires_grad=False)
+        self.is_shard = True
 
     def _init_hsdp_params(self):
         """init hsdp parameters for cell"""
@@ -51,7 +48,7 @@ class HSDPState:
             return
         for param in self.sharded_hsdp_params:
             param.to_sharded()
-        ops.assign(self.is_shard, Tensor(True))
+        self.is_shard = True
 
     def unshard(self):
         """change parameters to unsharded state"""
@@ -59,4 +56,4 @@ class HSDPState:
             return
         for param in self.sharded_hsdp_params:
             param.to_unsharded()
-        ops.assign(self.is_shard, Tensor(False))
+        self.is_shard = False

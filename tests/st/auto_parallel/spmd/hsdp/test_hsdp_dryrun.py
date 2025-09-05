@@ -20,12 +20,23 @@ from mindspore import nn, Tensor
 from mindspore.parallel import Layout
 from mindspore.communication.management import init
 from mindspore.parallel.spmd.hsdp.hsdp import hsdp
-os.environ["MS_SIMULATION_LEVEL"] = "0"
+os.environ["MS_SIMULATION_LEVEL"] = "1"
 os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "0"
 init()
 
 loss_fn = nn.MSELoss()
+
+class Net(nn.Cell):
+    def __init__(self, in_channels, out_channels, hidden_size):
+        super(Net, self).__init__()
+        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="ones", has_bias=False)
+        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="ones", has_bias=False)
+
+    def construct(self, x):
+        x = self.dense1(x)
+        x = self.dense2(x)
+        return x
 
 def get_forward_fn(net):
     def forward_fn(data, label):
@@ -34,34 +45,104 @@ def get_forward_fn(net):
         return loss, logits
     return forward_fn
 
-def run_hsdp_with_layout(w_layout, data_layout, label_layout):
-    """
-    hsdp with layout
-    """
-    in_channels = 256
-    out_channels = 64
-    net = nn.Dense(in_channels, out_channels, weight_init="ones")
-
-    batch_size = 4
-    local_data = Tensor(np.random.randn(batch_size, in_channels).astype(np.float32))
-    local_label = Tensor(np.random.randn(batch_size, out_channels).astype(np.float32))
-
-    global_data = local_data.local_to_global(data_layout)
-    global_label = local_label.local_to_global(label_layout)
-    net.weight = net.weight.local_to_global(w_layout)
-
+def run_hsdp(net, data, label, optimizer_level="level1", enable_grad_accumulation=False):
     shard_size = 4
     threshold = 0
-    optimizer_level = "level1"
-    hsdp(net, shard_size, threshold, optimizer_level)
+    hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation)
 
-    optimizer = nn.Adam(net.trainable_params(), 1e-2)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
 
     train_steps = 2
-    for _ in range(train_steps):
-        _, grads = grad_fn(global_data, global_label)
-        optimizer(grads)
+    for i in range(train_steps):
+        if i == train_steps - 1:
+            net.set_requires_grad_sync(True)
+        else:
+            net.set_requires_grad_sync(False)
+        _, grads = grad_fn(data, label)
+        print(grads)
+
+def construct_net_and_data():
+    in_channels = 256
+    out_channels = 64
+    hidden_size = 128
+    batch_size = 4
+    net = Net(in_channels, out_channels, hidden_size)
+    data = Tensor(np.random.randn(batch_size, in_channels).astype(np.float32))
+    label = Tensor(np.random.randn(batch_size, out_channels).astype(np.float32))
+    return net, data, label
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level1():
+    """
+    Feature: hsdp
+    Description: test hsdp level1
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level1")
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level2():
+    """
+    Feature: hsdp
+    Description: test hsdp level2
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level2")
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level3():
+    """
+    Feature: hsdp
+    Description: test hsdp level3
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level3")
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level1_acc_grad():
+    """
+    Feature: hsdp
+    Description: test hsdp level1 acc grad
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level1", True)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level2_acc_grad():
+    """
+    Feature: hsdp
+    Description: test hsdp level2 acc grad
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level2", True)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_level3_acc_grad():
+    """
+    Feature: hsdp
+    Description: test hsdp level3 acc grad
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    run_hsdp(net, data, label, "level3", True)
+
+def run_hsdp_with_layout(w1_layout, w2_layout, data_layout, label_layout):
+    """
+    hsdp with layout
+    """
+    net, data, label = construct_net_and_data()
+
+    global_data = data.local_to_global(data_layout)
+    global_label = label.local_to_global(label_layout)
+    net.dense1.weight = net.dense1.weight.local_to_global(w1_layout)
+    net.dense2.weight = net.dense2.weight.local_to_global(w2_layout)
+
+    run_hsdp(net, global_data, global_label)
 
 def get_device_layout():
     device_matrix = (4, 8)
@@ -70,8 +151,8 @@ def get_device_layout():
     layout = Layout(device_matrix, alias_name, rank_list)
     return layout
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
-def hsdp_with_dp_layout():
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_with_dp_layout():
     """
     Feature: hsdp
     Description: test hsdp with data parallel layout
@@ -81,17 +162,18 @@ def hsdp_with_dp_layout():
     w_layout = layout("None", "None")
     data_layout = layout("dp", "None")
     label_layout = layout("dp", "None")
-    run_hsdp_with_layout(w_layout, data_layout, label_layout)
+    run_hsdp_with_layout(w_layout, w_layout, data_layout, label_layout)
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
-def hsdp_with_mp_layout():
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_with_mp_layout():
     """
     Feature: hsdp
     Description: test hsdp with model parallel layout
     Expectation: run success
     """
     layout = get_device_layout()
-    w_layout = layout("mp", "None")
+    w1_layout = layout("mp", "None")
+    w2_layout = layout("None", "mp")
     data_layout = layout("dp", "None")
     label_layout = layout("dp", "None")
-    run_hsdp_with_layout(w_layout, data_layout, label_layout)
+    run_hsdp_with_layout(w1_layout, w2_layout, data_layout, label_layout)
