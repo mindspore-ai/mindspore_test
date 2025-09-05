@@ -31,7 +31,7 @@ namespace ge_backend {
 using KernelTensor = kernel::KernelTensor;
 using KernelTensorPtr = kernel::KernelTensorPtr;
 // Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
-class BACKEND_EXPORT DeviceAddressUtils {
+class DeviceAddressUtils {
  public:
   static void CreateParameterDeviceAddress(const KernelGraphPtr &graph);
   static std::vector<KernelTensorPtr> CreateKernelTensorForTensorValue(const ValuePtr &node_value, size_t output_idx,
