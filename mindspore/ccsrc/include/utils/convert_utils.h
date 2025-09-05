@@ -16,8 +16,10 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_H_
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_H_
 
+#include <iterator>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <stack>
 #include <string>
@@ -25,6 +27,7 @@
 #include <map>
 #include <set>
 #include <optional>
+#include <algorithm>
 
 #include "utils/hash_map.h"
 #include "base/base.h"
@@ -113,9 +116,6 @@ COMMON_EXPORT std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_s
 
 COMMON_EXPORT abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleInfo &value_simple_info);
 
-COMMON_EXPORT ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val);
-COMMON_EXPORT Int64ImmPtr PackBasicTypeToValue(const int64_t &val);
-
 template <typename T>
 ValuePtr OptionalToValue(const std::optional<T> &val) {
   if (!val.has_value()) {
@@ -125,18 +125,41 @@ ValuePtr OptionalToValue(const std::optional<T> &val) {
 }
 
 template <typename T>
-auto PackToValue(const std::optional<T> &val) {
-  if (!val.has_value()) {
-    return kNone;
-  }
-  return PackToValue(val.value());
+using imm_element_t = typename ImmTraits<T>::type::element_type;
+
+template <typename T, typename = void>
+struct has_imm_element : std::false_type {};
+
+template <typename T>
+struct has_imm_element<T, std::void_t<imm_element_t<T>>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool has_imm_element_v = has_imm_element<T>::value;
+
+template <typename T>
+std::enable_if_t<has_imm_element_v<T>, std::shared_ptr<imm_element_t<T>>> PackToValue(const T &val) {
+  return std::make_shared<imm_element_t<T>>(val);
 }
 
 template <typename T>
-auto PackToValue(const T &val) {
-  return PackBasicTypeToValue(val);
+ValueTuplePtr PackToValue(const std::vector<T> &vals) {
+  std::vector<ValuePtr> values;
+  values.reserve(vals.size());
+  (void)std::transform(vals.begin(), vals.end(), std::back_inserter(values),
+                       [](const T &val) { return PackToValue(val); });
+  return std::make_shared<ValueTuple>(values);
 }
 
+template <typename T>
+using PackedType = decltype(PackToValue(std::declval<const T &>()));
+
+template <typename T>
+std::optional<PackedType<T>> PackToValue(const std::optional<T> &val) {
+  if (!val) {
+    return std::nullopt;
+  }
+  return PackToValue(*val);
+}
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_H_

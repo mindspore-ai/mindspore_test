@@ -55,7 +55,7 @@ ValuePtrList TransposeExtViewBackwardNode::CallBackward(const ValuePtrList &grad
 
 ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
   SetDeviceTarget();
-  auto size = PackBasicTypeToValue(self_shape_);
+  auto size = PackToValue(self_shape_);
   auto grad = grads.at(0)->cast<TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad);
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
@@ -67,7 +67,7 @@ ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) 
 
 ValuePtrList SliceExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
   SetDeviceTarget();
-  auto size = PackBasicTypeToValue(self_shape_);
+  auto size = PackToValue(self_shape_);
   auto grad = grads.at(0)->cast<TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad);
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
@@ -94,7 +94,7 @@ inline static ValuePtrList SplitWithSizeBackward(const ValuePtrList &grads, cons
       const auto &length = split_sizes[i];
       auto grad_size = self_shape;
       grad_size[real_dim] = length;
-      real_grads[i] = kernel::pyboost::zeros(PackBasicTypeToValue(grad_size), grad_dtype);
+      real_grads[i] = kernel::pyboost::zeros(PackToValue(grad_size), grad_dtype);
     }
   }
 

@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H
 #define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_CONVERTER_H
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include <utility>
@@ -169,7 +170,9 @@ struct PYNATIVE_EXPORT ParserArgs {
   void PrintConvertError(size_t index);
   // convert to basic type
   std::vector<int64_t> ToBasicIntVector(size_t index);
+  std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(size_t index);
   int64_t ToBasicInt(size_t index);
+  std::optional<int64_t> ToBasicIntOptional(size_t index);
 
   template <typename T>
   std::shared_ptr<T> Convert(size_t index) {
