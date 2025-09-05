@@ -63,7 +63,7 @@ class IndexSelectDistributedOp(DistributedOp):
 
         if axis < -len(p_tensor_map) or axis >= len(p_tensor_map):
             raise ValueError(
-                "Operation {self.op_name}: dim value is out of valid range"
+                f"Operation {self.op_name}: dim value is out of valid range"
             )
 
         output_tensor_map = (
@@ -80,11 +80,11 @@ class IndexSelectDistributedOp(DistributedOp):
 
 
 class GatherDistributedOp(DistributedOp):
-    """Distributed implementation for Index Select operator."""
+    """Distributed implementation for Gather operator."""
 
     def infer_layout(self, layouts, extra_args):
         """
-        Infer output layouts for Index Select operations.
+        Infer output layouts for Gather operations.
 
         Args:
             layouts: Layouts of input tensors
@@ -122,7 +122,7 @@ class GatherDistributedOp(DistributedOp):
 
         if axis < -len(p_tensor_map) or axis >= len(p_tensor_map):
             raise ValueError(
-                "Operation {self.op_name}: dim value is out of valid range"
+                f"Operation {self.op_name}: dim value is out of valid range"
             )
 
         output_tensor_map = i_tensor_map

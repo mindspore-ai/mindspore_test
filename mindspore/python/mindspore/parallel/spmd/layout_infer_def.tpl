@@ -78,22 +78,35 @@ py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list
         py::list extra_args;
         bool contain_parallel_args = false;
 
+        // Parse tuple tensor args
+        py::list expanded_args;
+        for (auto arg : py_args) {
+            if (py::isinstance<py::tuple>(arg)) {
+                py::tuple tuple_arg = py::cast<py::tuple>(arg);
+                for (size_t j = 0; j < tuple_arg.size(); ++j) {
+                    expanded_args.append(tuple_arg[j]);
+                }
+            } else {
+                expanded_args.append(arg);
+            }
+        }
+
         // Collect layout and no layout args
-        for (size_t i = 0; i < py_args.size(); ++i) {
-            if (py_args[i].is_none()) {
+        for (size_t i = 0; i < expanded_args.size(); ++i) {
+            if (expanded_args[i].is_none()) {
                 input_layouts.append(py::none());
                 continue;
             }
-            if (!py::hasattr(py_args[i], "_layout")) {
-                py::object arg_str = py::str(py_args[i]);
+            if (!py::hasattr(expanded_args[i], "_layout")) {
+                py::object arg_str = py::str(expanded_args[i]);
                 std::string id_str = py::cast<std::string>(arg_str);
                 cache_key.layout_ids.push_back(id_str);
-                extra_args.append(py_args[i]);
+                extra_args.append(expanded_args[i]);
                 input_layouts.append(py::none());
                 continue;
             }
             contain_parallel_args = true;
-            py::object layout = py_args[i].attr("_layout");
+            py::object layout = expanded_args[i].attr("_layout");
             py::object layout_id = layout.attr("compact_str");
             std::string id_str = py::cast<std::string>(py::str(layout_id));
             cache_key.layout_ids.push_back(id_str);
