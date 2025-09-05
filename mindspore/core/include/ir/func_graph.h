@@ -36,7 +36,6 @@
 #include "base/base_ref.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
-#include "ir/primitive.h"
 #include "ir/dtype/amp.h"
 #include "abstract/abstract_value.h"
 #include "symbolic_shape/symbol_engine.h"

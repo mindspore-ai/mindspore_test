@@ -26,7 +26,6 @@
 #include <initializer_list>
 
 #include "utils/hash_map.h"
-#include "utils/misc.h"
 #include "ir/signature.h"
 #include "abstract/abstract_value.h"
 #include "base/base_ref.h"
