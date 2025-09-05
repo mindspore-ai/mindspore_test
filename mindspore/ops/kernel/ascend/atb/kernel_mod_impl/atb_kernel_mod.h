@@ -22,7 +22,7 @@
 #include <vector>
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "kernel/ascend/atb/atb_adapter.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_adapter.h"
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
 

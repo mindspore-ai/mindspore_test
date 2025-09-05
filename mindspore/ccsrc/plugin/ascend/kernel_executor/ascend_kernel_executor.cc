@@ -66,7 +66,7 @@
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
-#include "kernel/ascend/atb/atb_kernel_build.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h"

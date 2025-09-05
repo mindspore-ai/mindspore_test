@@ -21,7 +21,7 @@
 #include <memory>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/tensor.h"
-#include "kernel/ascend/aclnn/pyboost_impl/atb_runner_base.h"
+#include "kernel/ascend/atb/pyboost_impl/atb_runner_base.h"
 
 namespace mindspore::kernel::pyboost {
 template <typename ParamType>

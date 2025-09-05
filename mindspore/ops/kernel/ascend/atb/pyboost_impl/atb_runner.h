@@ -23,8 +23,8 @@
 #include <memory>
 #include "atb/operation.h"
 #include "runtime/pynative/op_executor.h"
-#include "kernel/ascend/atb/atb_adapter.h"
-#include "kernel/ascend/aclnn/pyboost_impl/atb_runner_base.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_adapter.h"
+#include "kernel/ascend/atb/pyboost_impl/atb_runner_base.h"
 
 namespace mindspore::kernel::pyboost {
 class ATBOpCache {

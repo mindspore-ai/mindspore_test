@@ -46,7 +46,7 @@ foreach(_comp ${ASCEND_KERNEL_COMP})
     endif()
 endforeach()
 
-list(APPEND ASCEND_KERNEL_SRC "atb/atb_kernel_build.cc")
+list(APPEND ASCEND_KERNEL_SRC "atb/kernel_mod_impl/atb_kernel_build.cc")
 list(APPEND ASCEND_KERNEL_SRC "internal/internal_kernel_build.cc")
 list(APPEND ASCEND_KERNEL_SRC "internal/internal_ascend_adapter.cc")
 
