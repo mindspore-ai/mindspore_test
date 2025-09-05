@@ -19,7 +19,10 @@ import mindspore as ms
 import mindspore.communication.management as D
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
+from mindspore.parallel.spmd.hsdp.hsdp import hsdp
 
+learning_rate = 0.01
+epochs = 2
 
 class SimpleModel(nn.Cell):
     def __init__(self, input_size, output_size):
@@ -47,20 +50,7 @@ def create_tensor(data):
     return Tensor(data, dtype=ms.float32)
 
 
-def print_layout_info(tensor, name):
-    """print_layout_info"""
-    if hasattr(tensor, 'layout') and tensor.layout is not None:
-        layout_dict = tensor.layout.to_dict()
-        print(f"{name} Layout:")
-        print(f"  device_matrix: {layout_dict['device_matrix']}")
-        print(f"  tensor_map: {layout_dict['tensor_map']}")
-        print(f"  alias_name: {layout_dict['alias_name']}")
-        print(f"  rank_list: {layout_dict['rank_list'][:8]}...")  # 只显示前8个rank
-    else:
-        print(f"{name} has no layout information")
-
-
-def run_standalone(x, input_size, output_size, learning_rate=0.01, epochs=2):
+def run_standalone(x, input_size, output_size):
     model = SimpleModel(input_size, output_size)
 
     def forward_fn(data):
@@ -86,9 +76,13 @@ def run_standalone(x, input_size, output_size, learning_rate=0.01, epochs=2):
     return ret_loss, ret_grads
 
 
-def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, learning_rate=0.01,
-                 epochs=2):
+def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy, hsdp_shard_size):
     model = SimpleModel(local_input_size, local_output_size)
+
+    model.weight = model.weight.local_to_global(w_layout)
+    model.shard(in_strategy=(x_layout,))
+    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+    model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)
 
     def forward_fn(data):
         logits = model(data)
@@ -98,8 +92,6 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
     grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
 
     x = create_dtensor(local_x, x_layout)
-    model.weight = model.weight.local_to_global(w_layout)
-    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
 
     ret_loss = None
     ret_grads = None
@@ -115,12 +107,7 @@ def run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layou
     return ret_loss, ret_grads
 
 
-def test_loss_repeat_mean():
-    '''
-    Feature: loss repeat mean.
-    Description: Test loss repeat mean.
-    Expectation: Run success.
-    '''
+def base_case(dp, mp, hsdp_shard_size):
     D.init()
 
     # standalone
@@ -130,11 +117,9 @@ def test_loss_repeat_mean():
     batch_size = 4
 
     x = np.ones([batch_size, input_size]).astype(np.float32)
-    standalone_loss, _ = run_standalone(x, input_size, output_size)
+    standalone_loss, standalone_grads = run_standalone(x, input_size, output_size)
 
     # parallel
-    dp = 1
-    mp = 8
     local_batch_size = batch_size // dp
     local_input_size = input_size // mp
     local_output_size = output_size
@@ -142,8 +127,55 @@ def test_loss_repeat_mean():
     layout = Layout((dp, mp), ("dp", "mp"))
     x_layout = layout("dp", "mp")
     w_layout = layout("mp", "None")
-    relu_strategy = ((layout("None", "None"),), (layout("None", "None"),))
-    parallel_loss, _ = run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout, relu_strategy)
+    relu_strategy = ((layout("dp", "None"),), (layout("dp", "None"),))
+    parallel_loss, parallel_grads = run_parallel(local_x, local_input_size, local_output_size, x_layout, w_layout,
+                                                 relu_strategy, hsdp_shard_size)
 
-    # compare
+    # compare loss
     assert np.allclose(standalone_loss.asnumpy(), parallel_loss.asnumpy(), 0.001, 0.001)
+
+    # compare grad
+    if hsdp_shard_size < 0:
+        hsdp_shard_size = dp
+
+    standalone_grad = standalone_grads[0].asnumpy()
+    # note: this way of obtaining grad slice is a simplified way, not a strict way
+    standalone_grad_slice = standalone_grad[:local_input_size // hsdp_shard_size, :local_output_size]
+    parallel_grad = parallel_grads[0].asnumpy()
+    assert np.allclose(standalone_grad_slice, parallel_grad, 0.001, 0.001)
+
+
+def test_loss_repeat_mean_0():
+    '''
+    Feature: loss repeat mean + partial + hsdp fully shard.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    base_case(dp=4, mp=2, hsdp_shard_size=4)
+
+
+def test_loss_repeat_mean_1():
+    '''
+    Feature: loss repeat mean + partial + hsdp no fully shard.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    base_case(dp=4, mp=2, hsdp_shard_size=2)
+
+
+def test_loss_repeat_mean_2():
+    '''
+    Feature: loss repeat mean + partial + hsdp no shard.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    base_case(dp=4, mp=2, hsdp_shard_size=1)
+
+
+def test_loss_repeat_mean_3():
+    '''
+    Feature: loss repeat mean + partial + hsdp shard size is -1.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    base_case(dp=4, mp=2, hsdp_shard_size=-1)

@@ -27,12 +27,48 @@ def run_case(case_name, master_port):
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
-def test_loss_repeat_mean():
+def test_loss_repeat_mean_0():
     '''
-    Feature: loss repeat mean.
+    Feature: loss repeat mean + partial + hsdp fully shard.
     Description: Test loss repeat mean.
     Expectation: Run success.
     '''
-    case_name = "test_loss_repeat_mean"
+    case_name = "test_loss_repeat_mean_0"
     master_port = 11296
+    run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_loss_repeat_mean_1():
+    '''
+    Feature: loss repeat mean + partial + hsdp no fully shard.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    case_name = "test_loss_repeat_mean_1"
+    master_port = 11297
+    run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_loss_repeat_mean_2():
+    '''
+    Feature: loss repeat mean + partial + hsdp no shard.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    case_name = "test_loss_repeat_mean_2"
+    master_port = 11298
+    run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_loss_repeat_mean_3():
+    '''
+    Feature: loss repeat mean + partial + hsdp shard size is -1.
+    Description: Test loss repeat mean.
+    Expectation: Run success.
+    '''
+    case_name = "test_loss_repeat_mean_3"
+    master_port = 11299
     run_case(case_name, master_port)
