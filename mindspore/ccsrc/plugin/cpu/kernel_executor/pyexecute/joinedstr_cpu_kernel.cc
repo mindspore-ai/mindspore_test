@@ -28,6 +28,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "include/common/fallback.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

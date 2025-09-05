@@ -29,6 +29,7 @@
 #include "infer/reduce.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

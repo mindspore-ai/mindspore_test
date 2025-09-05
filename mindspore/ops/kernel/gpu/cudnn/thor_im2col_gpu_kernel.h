@@ -24,6 +24,7 @@
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/pad_impl.cuh"
 #include "kernel/gpu/kernel_constants.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

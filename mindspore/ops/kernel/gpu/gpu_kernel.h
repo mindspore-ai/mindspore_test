@@ -37,8 +37,6 @@
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
 #include "kernel/gpu/gpu_common.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
@@ -46,8 +44,6 @@
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
-
-using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
 // The max_limit of tensor shape size: 2 Giga-elements(2^31, the largest number in 32 bits).
 #define SHAPE_SIZE_LIMIT 2147483648

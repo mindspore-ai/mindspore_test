@@ -23,6 +23,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/reduce_impl.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

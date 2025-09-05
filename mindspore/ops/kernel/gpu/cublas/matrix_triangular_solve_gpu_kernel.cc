@@ -183,6 +183,7 @@ int MatrixTriangularSolveGpuKernelMod::Resize(const std::vector<KernelTensor *> 
   }
 
   // check whether we need to broadcast batch indices
+  constexpr size_t kSizeTwo = 2;
   if (a_shape.size() == kSizeTwo && b_shape.size() == kSizeTwo) {
     is_bcast_required_ = false;
   } else if (a_shape.size() > kSizeTwo && b_shape.size() == kSizeTwo) {
