@@ -1,7 +1,7 @@
 mindspore.ops.csr_to_coo
 ========================
 
-.. py:function:: mindspore.ops.csr_to_coo(tensor: CSRTensor)
+.. py:function:: mindspore.ops.csr_to_coo(tensor)
 
     将一个CSRTensor转化成一个COOTensor。
 

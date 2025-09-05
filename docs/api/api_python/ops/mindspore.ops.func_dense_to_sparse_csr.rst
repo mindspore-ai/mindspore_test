@@ -1,7 +1,7 @@
 mindspore.ops.dense_to_sparse_csr
 =================================
 
-.. py:function:: mindspore.ops.dense_to_sparse_csr(tensor: Tensor)
+.. py:function:: mindspore.ops.dense_to_sparse_csr(tensor)
 
     将常规Tensor转为稀疏化的CSRTensor。
 
