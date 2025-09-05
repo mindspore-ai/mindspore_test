@@ -22,13 +22,14 @@ from mindspore import log
 DEPRECATE_SET = set()
 
 
-def deprecated(version, substitute, use_substitute_name=False):
+def deprecated(version, substitute, use_substitute_name=False, module_prefix=""):
     """deprecated warning
 
     Args:
         version (str): version that the operator or function is deprecated.
         substitute (str): the substitute name for deprecated operator or function.
         use_substitute_name (bool): flag for whether to use substitute name for deprecated operator or function
+        module_prefix (str): the module prefix of the deprecated api, such as 'mindspore.'.
     """
 
     def decorate(func):
@@ -37,7 +38,7 @@ def deprecated(version, substitute, use_substitute_name=False):
             cls = getattr(args[0], "__class__", None) if args else None
             name = cls.__name__ if cls else func.__name__
             if name + version not in DEPRECATE_SET:
-                log.warning(f"'{name}' is deprecated from version {version} and "
+                log.warning(f"'{module_prefix}{name}' is deprecated from version {version} and "
                             f"will be removed in a future version, use '{substitute}' instead.")
                 DEPRECATE_SET.add(name + version)
             if cls and use_substitute_name:

@@ -270,6 +270,7 @@ install(
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/multiprocessing
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/hal
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/utils
+  ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/tools
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/runtime
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
   ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/onnx
