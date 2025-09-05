@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/simu/simu_receive.h"
+#include "kernel/ascend/simu/kernel_mod_impl/simu_receive.h"
 #include <vector>
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
