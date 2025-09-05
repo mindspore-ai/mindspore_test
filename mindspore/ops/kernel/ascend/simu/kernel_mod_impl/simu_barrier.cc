@@ -14,25 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
-
-#include <vector>
-#include "kernel/ascend/simu/simu_kernel.h"
+#include "kernel/ascend/simu/kernel_mod_impl/simu_barrier.h"
 
 namespace mindspore {
 namespace kernel {
-class SimuBarrierKernel : public SimuKernel {
- public:
-  SimuBarrierKernel() = default;
-  ~SimuBarrierKernel() override = default;
-
-  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-};
-
-MS_SIMU_REG_KERNEL(Barrier, SimuBarrierKernel);
+bool SimuBarrierKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  return true;
+}
 }  // namespace kernel
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_

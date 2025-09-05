@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/simu/simu_memcpy.h"
+#include "kernel/ascend/simu/kernel_mod_impl/simu_memcpy.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 

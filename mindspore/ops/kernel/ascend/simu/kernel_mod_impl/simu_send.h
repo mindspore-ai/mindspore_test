@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_RECEIVE_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_RECEIVE_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_SEND_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_SEND_H_
 
 #include <memory>
 #include <vector>
-#include "kernel/ascend/simu/simu_kernel.h"
+#include "kernel/ascend/simu/kernel_mod_impl/simu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
-class SimuReceiveKernel : public SimuKernel {
+class SimuSendKernel : public SimuKernel {
  public:
-  SimuReceiveKernel() = default;
-  ~SimuReceiveKernel() override = default;
+  SimuSendKernel() = default;
+  ~SimuSendKernel() override = default;
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-
- private:
-  std::vector<float> init_value_;
-  std::vector<float> host_data_;
 };
 
-MS_SIMU_REG_KERNEL(Receive, SimuReceiveKernel);
+MS_SIMU_REG_KERNEL(Send, SimuSendKernel);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_RECEIVE_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_SEND_H_

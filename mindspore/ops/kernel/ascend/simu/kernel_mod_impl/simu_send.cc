@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/simu/simu_barrier.h"
+#include "kernel/ascend/simu/kernel_mod_impl/simu_send.h"
 
 namespace mindspore {
 namespace kernel {
-bool SimuBarrierKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
-                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool SimuSendKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  if (inputs.empty()) {
+    MS_LOG(ERROR) << "Invalid simu send input size (" << inputs.size() << ").";
+    return false;
+  }
+
   return true;
 }
 }  // namespace kernel

@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/simu/simu_send.h"
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
+
+#include <vector>
+#include "kernel/ascend/simu/kernel_mod_impl/simu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
-bool SimuSendKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
-                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  if (inputs.empty()) {
-    MS_LOG(ERROR) << "Invalid simu send input size (" << inputs.size() << ").";
-    return false;
-  }
+class SimuBarrierKernel : public SimuKernel {
+ public:
+  SimuBarrierKernel() = default;
+  ~SimuBarrierKernel() override = default;
 
-  return true;
-}
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+};
+
+MS_SIMU_REG_KERNEL(Barrier, SimuBarrierKernel);
 }  // namespace kernel
 }  // namespace mindspore
+
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_SIMU_SIMU_BARRIER_H_
