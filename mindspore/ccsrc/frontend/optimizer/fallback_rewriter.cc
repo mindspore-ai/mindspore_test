@@ -3027,8 +3027,10 @@ AnfNodePtr ConvertToPyExecuteList(const AnfNodePtr &node) {
 AnfNodePtr ConvertInterpretedObjectToPyExecute(const AnfNodePtr &node, const AnfNodePtr &input) {
   const auto &cur_func = node->func_graph();
   MS_EXCEPTION_IF_NULL(cur_func);
+  MS_EXCEPTION_IF_NULL(input->cast<ValueNodePtr>());
   const auto &tuple_value = input->cast<ValueNodePtr>()->value();
   MS_EXCEPTION_IF_NULL(tuple_value);
+  MS_EXCEPTION_IF_NULL(tuple_value->cast<ValueTuplePtr>());
   std::vector<ValuePtr> inputs_seq = tuple_value->cast<ValueTuplePtr>()->value();
   std::vector<AnfNodePtr> new_inputs{NewValueNode(prim::kPrimMakeTuple)};
   bool exist_interpreted_obj = false;
@@ -3082,14 +3084,13 @@ bool ConvertPyExecuteAfterRewriter(const FuncGraphPtr &graph, const FuncGraphMan
       auto inputs = node->cast<CNodePtr>()->inputs();
       for (size_t index = 1; index < inputs.size(); ++index) {
         const auto &input = inputs[index];
-        if (IsValueNode<ValueTuple>(input)) {
-          const auto &new_input = ConvertInterpretedObjectToPyExecute(node, input);
-          if (new_input != input) {
-            tr.SetEdge(node, index, new_input);
-            tr.Commit();
-            change = true;
-            continue;
-          }
+        if (!IsValueNode<ValueTuple>(input)) {
+          continue;
+        }
+        const auto &new_input = ConvertInterpretedObjectToPyExecute(node, input);
+        if (new_input != input) {
+          manager->SetEdge(node, index, new_input);
+          change = true;
         }
       }
     }

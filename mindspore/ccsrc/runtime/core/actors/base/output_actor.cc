@@ -674,17 +674,17 @@ void OutputActor::HandleOutput() {
     auto device_context = device_contexts_[i];
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+    if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
+      const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
+      MS_EXCEPTION_IF_NULL(src_address);
+      tensor_device_address->set_device_pointer(src_address->device_pointer());
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Output actor share the same pointer:" << src_address->device_pointer()
+        << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString();
+      continue;
+    }
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
     if (IsOutputAddressPersisted(kernel_tensor, output_nodes_[i])) {
-      if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
-        const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
-        MS_EXCEPTION_IF_NULL(src_address);
-        tensor_device_address->set_device_pointer(src_address->device_pointer());
-        MS_LOG(DEBUG) << "Output actor share the same pointer:" << src_address->device_pointer()
-                      << " between device address:" << tensor_device_address->ToString()
-                      << " and:" << src_address->ToString();
-        continue;
-      }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
                                                      tensor_device_address->GetSize(), tensor_device_address.get());
       if (!device_context->device_res_manager_->AllocateMemory(tensor_device_address.get(), kDefaultStreamIndex)) {
@@ -698,16 +698,6 @@ void OutputActor::HandleOutput() {
         << "Copy graph output from device address:" << device_tensor->ToString()
         << " to:" << tensor_device_address->ToString();
     } else {
-      if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
-        const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
-        MS_EXCEPTION_IF_NULL(src_address);
-        tensor_device_address->set_device_pointer(src_address->device_pointer());
-        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Output actor share the same pointer:" << src_address->device_pointer()
-          << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString();
-        continue;
-      }
-
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor
         << " device type:" << device_tensor->GetDeviceType() << " to :" << tensor_device_address
