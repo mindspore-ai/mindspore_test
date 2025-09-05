@@ -15,6 +15,7 @@
 """pipeline parallel utils"""
 from mindspore import nn
 import mindspore.ops as ops
+from mindspore.parallel import custom_shard
 
 
 class BatchDimSpec:
@@ -86,7 +87,7 @@ class _MicroBatch(nn.Cell):
                 cur_arg_batch_dim = 0
                 if self.args_batch_dim and self.args_batch_dim[arg_idx] is not None:
                     cur_arg_batch_dim = self.args_batch_dim[arg_idx]
-                micro_arg = self.split_inputs(cur_arg, cur_arg_batch_dim, micro_idx)
+                micro_arg = self.split_inputs_with_custom_shard(cur_arg, cur_arg_batch_dim, micro_idx)
                 micro_args.append(micro_arg)
             args_after_split.append(micro_args)
 
@@ -98,6 +99,11 @@ class _MicroBatch(nn.Cell):
                 micro_kwargs[key] = micro_kwarg
             kwargs_after_split.append(micro_kwargs)
         return args_after_split, kwargs_after_split
+
+    def split_inputs_with_custom_shard(self, input, cur_arg_batch_dim, cur_kwarg_batch_dim):
+        input_layout = input.layout
+        func_wrap = custom_shard(self.split_inputs, out_layouts=(input_layout,), in_layouts=(input_layout, None, None))
+        return func_wrap(input, cur_arg_batch_dim, cur_kwarg_batch_dim)
 
     def split_inputs(self, input, cur_arg_batch_dim, micro_idx):
         """

@@ -14,6 +14,7 @@
 # ============================================================================
 """shard"""
 
+import queue
 from typing import Callable, Tuple, Optional
 import mindspore as ms
 
@@ -48,6 +49,7 @@ def custom_shard(
         local_args = []
         contain_distributed_arg = False
 
+        args_layout = queue.Queue(len(args))
         for i, arg in enumerate(args):
             if isinstance(arg, ms.Tensor):
                 if in_layouts is None:
@@ -63,7 +65,7 @@ def custom_shard(
                 if redistribute_inputs:
                     arg = arg.redistribute(required_in_layout)
 
-
+                args_layout.put(arg.layout)
                 local_tensor = arg.to_local()
                 local_args.append(local_tensor)
                 contain_distributed_arg = True
@@ -77,6 +79,9 @@ def custom_shard(
                 local_args.append(arg)
 
         out = func(*local_args, **kwargs)
+        for arg in args:
+            if isinstance(arg, ms.Tensor):
+                arg.local_to_global(args_layout.get())
 
         if not contain_distributed_arg:
             return out
