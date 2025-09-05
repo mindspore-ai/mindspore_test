@@ -1,7 +1,7 @@
 mindspore.profiler.profiler.analyse
 ===================================
 
-.. py:function:: mindspore.profiler.profiler.analyse(profiler_path: str, max_process_number: int = os.cpu_count() // 2, pretty=False, step_list=None, data_simplification=True)
+.. py:function:: mindspore.profiler.profiler.analyse(profiler_path, max_process_number=os.cpu_count() // 2, pretty=False, step_list=None, data_simplification=True)
 
     离线分析训练的性能数据，性能数据采集结束后调用。
 

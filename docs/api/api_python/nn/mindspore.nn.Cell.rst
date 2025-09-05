@@ -49,7 +49,7 @@
         在图模式下使用，用于标识是否使用自定义的反向传播函数。
 
 
-    .. py:method:: buffers(recurse: bool = True)
+    .. py:method:: buffers(recurse=True)
 
         返回Cell缓冲区的迭代器，只包含缓冲区本身。
 
@@ -139,7 +139,7 @@
 
         为网络中的每个Cell对象生成NameSpace。
 
-    .. py:method:: get_buffer(target: str)
+    .. py:method:: get_buffer(target)
 
         返回给定 `target` 的缓冲区，如果不存在则抛出错误。
 
@@ -202,7 +202,7 @@
         返回：
             String类型，网络的作用域。
 
-    .. py:method:: get_sub_cell(target: str)
+    .. py:method:: get_sub_cell(target)
 
         返回给定 `target` 的子Cell，如果不存在则抛出错误。
 
@@ -274,7 +274,7 @@
             - **KeyError** - 如果参数名称为空或包含"."。
             - **TypeError** - 如果参数的类型不是Parameter。
 
-    .. py:method:: load_state_dict(state_dict: Mapping[str, Any], strict: bool=True)
+    .. py:method:: load_state_dict(state_dict, strict=True)
 
         将 :attr:`state_dict` 中的参数和缓冲区复制到当前Cell及其子Cell中。
 
@@ -303,7 +303,7 @@
         返回：
             Dict[String, Cell]，Cell中的所有子Cell及其名称。
 
-    .. py:method:: named_buffers(prefix: str = "", recurse: bool = True, remove_duplicate: bool = True)
+    .. py:method:: named_buffers(prefix="", recurse=True, remove_duplicate=True)
 
         返回Cell中缓冲区的迭代器，包含缓冲区的名称以及缓冲区本身。
 
@@ -437,7 +437,7 @@
         异常：
             - **TypeError** - 如果 `hook_fn` 不是Python函数。
 
-    .. py:method:: register_buffer(name: str, tensor: Optional[Tensor], persistent: bool = True)
+    .. py:method:: register_buffer(name, tensor, persistent=True)
 
         在Cell添加一个缓冲区 `buffer` 。
 
@@ -649,7 +649,7 @@
 
         .. note:: 仅在图模式，使用auto_parallel_context = ParallelMode.AUTO_PARALLEL生效。
 
-    .. py:method:: set_extra_state(state: Any)
+    .. py:method:: set_extra_state(state)
 
         设置加载的 `state_dict` 中包含的额外状态。
 

@@ -1,7 +1,7 @@
 mindspore.runtime.MemPool
 ==========================
 
-.. py:class:: mindspore.runtime.MemPool(allocator: PluggableAllocator)
+.. py:class:: mindspore.runtime.MemPool(allocator)
 
     MemPool封装了一个 :class:`mindspore.runtime.PluggableAllocator` ，并将其传递给 :func:`mindspore.runtime.use_mem_pool` 使用。
 
