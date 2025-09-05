@@ -17,7 +17,6 @@ file(GLOB_RECURSE ASCEND_910B_OBJ_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/stress_detect/*.cc")
 
-list(APPEND ASCEND_910B_OBJ_SRC ${HAL_SRC_910B})
 set_property(SOURCE ${ASCEND_910B_OBJ_SRC}
         PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
