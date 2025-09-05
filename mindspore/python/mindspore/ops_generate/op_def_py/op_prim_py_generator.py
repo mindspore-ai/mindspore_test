@@ -135,31 +135,6 @@ class OpPrimPyGenerator(BaseOpPrimPyGenerator):
         init_code_str += f"\n"
         return init_code_str
 
-    def _generate_call_code(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
-        """
-        Generates the __call__ method code for the operator primitive class.
-
-        Args:
-            args_handlers (dict): Dictionary of argument handlers.
-            init_args (list): List of initialization argument names.
-            inputs_args (list): List of input argument names.
-            inputs_default (dict): Dictionary of default input values.
-            op_proto (OpProto): The operator prototype.
-
-        Returns:
-            str: A string containing the __call__ method code.
-        """
-        call_code_str = ""
-        call_args = []
-        for name in inputs_args:
-            call_args.append(f"{name}={inputs_default[name]}" if name in inputs_default else name)
-        call_method_args_str = ", ".join(call_args)
-        call_method_body_str = self._get_call_method_body_str(args_handlers, init_args, inputs_args, inputs_default,
-                                                              op_proto)
-        call_code_str += f"""    def __call__(self, {call_method_args_str}):"""
-        call_code_str += f"""{call_method_body_str}"""
-        return call_code_str
-
     def _get_call_method_body_str(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
         """
         Generates the body of the __call__ method.
