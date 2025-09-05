@@ -449,3 +449,28 @@ def test_filter_grad_jit_with_view_inplace():
     out_back_jit_1 = ops.grad(net, 1)(input_x, input_y)  # pylint: disable=not-callable
     assert np.allclose(out_back_expect.asnumpy(), out_back_jit.asnumpy())
     assert np.allclose(out_back_expect_1.asnumpy(), out_back_jit_1.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_filter_grad_jit_with_list_getitem():
+    """
+    Feature: Test filter grad jit graph with list getitem.
+    Description: Test filter grad jit graph with list getitem.
+    Expectation: No exception.
+    """
+    @jit
+    def inner(x, y):
+        x = ops.ReduceSum()(x[0])
+        return 2 * x + y
+
+    def foo(x, y):
+        x = ops.Add()(x, y)
+        ipt = [x, x]
+        return inner(ipt, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    input_np = np.ones((2, 2)).astype(np.float32)
+    input_x = Tensor(input_np)
+    input_y = Tensor(input_np)
+    ret = ops.GradOperation()(foo)(input_x, input_y)  # pylint: disable=not-callable
+    assert np.allclose(ret.asnumpy(), 8 * input_np)
