@@ -1,7 +1,7 @@
 ﻿mindspore.ops.csr_relu6
 ========================
 
-.. py:function:: mindspore.ops.csr_relu6(x: CSRTensor)
+.. py:function:: mindspore.ops.csr_relu6(x)
 
     逐元素计算CSRTensor的ReLU值，其上限为6。
 
