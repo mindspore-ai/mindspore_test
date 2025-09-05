@@ -126,7 +126,7 @@ AnfNodePtr GetInplaceNextUpdateState(const CNodePtr &cnode, const FuncGraphManag
 
 CNodePtrList InsertAssignForInplaceFallback(const CNodePtr &cnode, const SelectKernelFunc &select_kernel_func) {
   // %0: PrimFunc_Inplace(x, y, inplace_umonad)
-  // %1: UpdateState(inplace_umonad, %1)
+  // %1: UpdateState(inplace_umonad, %0)
   // convert to:
   // %0: PrimFunc_Inplace(x, y, inplace_umonad)
   // %1: UpdateState(inplace_umonad, %0)
@@ -154,6 +154,7 @@ CNodePtrList InsertAssignForInplaceFallback(const CNodePtr &cnode, const SelectK
   CNodePtrList inplace_next_updatestate_users;
   CNodePtr new_umonad = nullptr;
   auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   const auto &inplace_indexes = prim->rw_write_input_indexes();
   for (size_t index = 0; index < inplace_indexes.size(); ++index) {
     auto inplace_node = cnode->input(inplace_indexes[index] + 1);
