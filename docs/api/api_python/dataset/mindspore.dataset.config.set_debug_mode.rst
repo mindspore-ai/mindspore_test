@@ -1,7 +1,7 @@
 mindspore.dataset.config.set_debug_mode
 ========================================
 
-.. py:function:: mindspore.dataset.config.set_debug_mode(debug_mode_flag: bool, debug_hook_list: list = None)
+.. py:function:: mindspore.dataset.config.set_debug_mode(debug_mode_flag, debug_hook_list=None)
 
     设置是否启动数据集管道的调试模式。当启用该模式时，数据集管道会使用单线程工作，所有数据集操作均以同步方式执行。
 

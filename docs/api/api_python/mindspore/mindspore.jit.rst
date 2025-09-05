@@ -1,7 +1,7 @@
 mindspore.jit
 =============
 
-.. py:function:: mindspore.jit(function: Optional[Callable] = None, *, capture_mode: str = "ast", jit_level: str = "O0", dynamic: int = 0, fullgraph: bool = False, backend: str = "", **options)
+.. py:function:: mindspore.jit(function= None, *, capture_mode="ast", jit_level="O0", dynamic=0, fullgraph=False, backend="", **options)
 
     将Python函数编译为一张可调用的MindSpore图。
 
