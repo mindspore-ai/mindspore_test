@@ -1,7 +1,7 @@
 mindspore.mint.meshgrid
 =======================
 
-.. py:function:: mindspore.mint.meshgrid(*tensors, indexing='ij')
+.. py:function:: mindspore.mint.meshgrid(*tensors, indexing=None)
 
     从给定的Tensor生成网格矩阵。
 
