@@ -58,12 +58,13 @@ foreach(_comp ${SUB_COMP})
     endif()
 endforeach()
 
+add_subdirectory(cluster)
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
                       mindspore::securec mindspore_pyboost mindspore_common mindspore_ops
                       mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
-                      mindspore_backend_common mindspore_hardware_abstract mindspore_runtime_utils)
+                      mindspore_backend_common mindspore_hardware_abstract mindspore_runtime_utils mindspore_cluster)
 if(NOT WIN32)
     target_link_libraries(mindspore_frontend PRIVATE dl)
 endif()
@@ -124,10 +125,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 
-
 set(BACKEND_COMMON_SUB_COMP
         tools
-        cluster
         kernel
         backend/common
         )
@@ -150,7 +149,7 @@ set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIO
 add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
         proto_input mindspore_memory_pool mindspore_hardware_abstract mindspore_profiler
-        mindspore_runtime_pipeline mindspore_dump mindspore_runtime_utils)
+        mindspore_runtime_pipeline mindspore_dump mindspore_runtime_utils mindspore_cluster)
 
 
 set(MS_BACKEND_SUB_COMP
@@ -181,7 +180,7 @@ target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_backend_manager proto_input mindspore_hardware_abstract
         mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool
-        mindspore_runtime_utils)
+        mindspore_runtime_utils mindspore_cluster)
 
 target_link_libraries(mindspore_backend_common PRIVATE mindspore::securec)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)
@@ -209,11 +208,9 @@ if(ENABLE_DEBUGGER)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl mindspore::event_core mindspore::pybind11_module)
+    target_link_libraries(mindspore_backend_common PRIVATE mindspore::pybind11_module)
 elseif(ENABLE_CPU AND NOT WIN32)
-    target_link_libraries(mindspore_backend_common PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core mindspore::pybind11_module)
+    target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::pybind11_module)
 endif()
 
 
@@ -242,14 +239,14 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
                 -Wl,--no-whole-archive mindspore_core mindspore_frontend mindspore_hardware_abstract mindspore_ops
                 mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
                 mindspore_backend_manager mindspore_profiler mindspore_runtime_pipeline
-                mindspore_dump mindspore_backend_common mindspore_runtime_utils)
+                mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_cluster)
         target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_cpu -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops mindspore_common
                 mindspore_ms_backend mindspore_frontend mindspore_ops_grad mindspore_ops_fallback mindspore_pyboost
                 mindspore_pynative mindspore_backend_manager mindspore_hardware_abstract mindspore_ops_cpu
                 mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
-                mindspore_runtime_utils)
+                mindspore_runtime_utils mindspore_cluster)
         target_link_options(_c_expression PRIVATE
                 "/WHOLEARCHIVE:mindspore_ops_grad.lib"
                 "/WHOLEARCHIVE:mindspore_ops_fallback.lib"
@@ -260,7 +257,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         -Wl,-all_load mindspore_ops_grad mindspore_ops_fallback proto_input
         -Wl,-noall_load mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost
         mindspore_hardware_abstract mindspore_frontend mindspore_pynative mindspore_profiler mindspore_runtime_pipeline
-        mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_backend_manager)
+        mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_backend_manager mindspore_cluster)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     target_link_libraries(_c_expression PRIVATE

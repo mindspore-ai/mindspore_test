@@ -37,7 +37,7 @@
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/communication_group.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/backend/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace distributed {
@@ -68,7 +68,7 @@ const uint32_t kInitCommInterval = 300;
 // The collective communication API.
 // MindSpore uses OpenMPI on CPU, NCCL on GPU, HCCL on Ascend, to achieve distributed training.
 // Besides, MindSpore also has its own communication library which is implemented on the CPU side.
-class BACKEND_COMMON_EXPORT CollectiveManager {
+class RUNTIME_HARDWARE_EXPORT CollectiveManager {
  public:
   ~CollectiveManager();
   DISABLE_COPY_AND_ASSIGN(CollectiveManager);
@@ -291,19 +291,19 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.
-#define BY_PASS_SCHED_RANK_ID                                                      \
-  do {                                                                             \
-    if (cluster::ClusterContext::instance()->node_role() == kEnvRoleOfScheduler) { \
-      return static_cast<uint32_t>(0);                                             \
-    }                                                                              \
+#define BY_PASS_SCHED_RANK_ID                              \
+  do {                                                     \
+    if (common::GetEnv(kEnvRole) == kEnvRoleOfScheduler) { \
+      return static_cast<uint32_t>(0);                     \
+    }                                                      \
   } while (0)
 
 // For scheduler node, CollectiveManager is not initialized. Return 1 as rank size.
-#define BY_PASS_SCHED_RANK_SIZE                                                    \
-  do {                                                                             \
-    if (cluster::ClusterContext::instance()->node_role() == kEnvRoleOfScheduler) { \
-      return static_cast<uint32_t>(1);                                             \
-    }                                                                              \
+#define BY_PASS_SCHED_RANK_SIZE                            \
+  do {                                                     \
+    if (common::GetEnv(kEnvRole) == kEnvRoleOfScheduler) { \
+      return static_cast<uint32_t>(1);                     \
+    }                                                      \
   } while (0)
 }  // namespace collective
 }  // namespace distributed

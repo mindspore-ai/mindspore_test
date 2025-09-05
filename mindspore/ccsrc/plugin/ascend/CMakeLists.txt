@@ -31,9 +31,7 @@ target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspor
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
-target_link_libraries(mindspore_ascend PRIVATE mindspore::securec d_collective)
-target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)
-target_link_libraries(mindspore_ascend PRIVATE mindspore::ssl mindspore::crypto)
+target_link_libraries(mindspore_ascend PRIVATE mindspore::securec)
 set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH})
 
@@ -47,10 +45,6 @@ endif()
 find_library(GE_RUNNER ge_runner ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 target_link_libraries(mindspore_ascend PRIVATE ${GE_RUNNER} ${GRAPH})
-if(ENABLE_CPU)
-    target_link_libraries(mindspore_ascend PRIVATE mindspore::event mindspore::event_pthreads
-        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core)
-endif()
 
 MESSAGE("USE DAV LIB PATH: ${ASCEND_PATH}")
 find_library(ERROR_MANAGER error_manager ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
