@@ -223,10 +223,11 @@ void SetContextSocVersion(MsContext *ctx) {
     {"Ascend910A", "ascend910"},        {"Ascend910B", "ascend910"},        {"Ascend910PremiumA", "ascend910"},
     {"Ascend910ProA", "ascend910"},     {"Ascend910ProB", "ascend910"},     {"Ascend910B1", "ascend910b"},
     {"Ascend910B2", "ascend910b"},      {"Ascend910B2C", "ascend910b"},     {"Ascend910B3", "ascend910b"},
-    {"Ascend910B4", "ascend910b"},      {"Ascend910_9391", "ascend910_93"}, {"Ascend910_9392", "ascend910_93"},
-    {"Ascend910_9381", "ascend910_93"}, {"Ascend910_9382", "ascend910_93"}, {"Ascend910_9372", "ascend910_93"},
-    {"Ascend910_9361", "ascend910_93"}, {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},
-    {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"},      {"Ascend310", "ascend310"}};
+    {"Ascend910B4", "ascend910b"},      {"Ascend910B4-1", "ascend910b"},    {"Ascend910_9391", "ascend910_93"},
+    {"Ascend910_9392", "ascend910_93"}, {"Ascend910_9381", "ascend910_93"}, {"Ascend910_9382", "ascend910_93"},
+    {"Ascend910_9372", "ascend910_93"}, {"Ascend910_9361", "ascend910_93"}, {"Ascend910_9362", "ascend910_93"},
+    {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},      {"Ascend310B4", "ascend310b"},
+    {"Ascend310B1", "ascend310b"},      {"Ascend310", "ascend310"}};
   const char *soc_name_c = "";
   if (!UseSimulationApi()) {
     soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
