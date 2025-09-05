@@ -326,6 +326,9 @@ mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/cast.
 mindspore/mindspore/ccsrc/frontend/parallel/step_parallel.cc:mindspore::parallel::StepParallel
 mindspore/mindspore/python/mindspore/parallel/cluster/run.py:get_args
 mindspore/mindspore/python/mindspore/train/dataset_helper.py:connect_network_with_dataset
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_safetensors_single
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_parallel_safetensor
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:unified_safetensors
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape
