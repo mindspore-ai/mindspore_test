@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/atb/atb_kernel_build.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_build.h"
 #include <map>
 #include <string>
 #include <utility>

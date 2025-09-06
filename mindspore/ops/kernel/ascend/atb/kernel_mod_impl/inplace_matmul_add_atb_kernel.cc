@@ -14,27 +14,34 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/atb/add_atb_kernel.h"
+#include "kernel/ascend/atb/kernel_mod_impl/inplace_matmul_add_atb_kernel.h"
 #include <vector>
 
 namespace mindspore::kernel {
-void AddATBKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                       const std::vector<KernelTensor *> &outputs) {
-  atb::infer::ElewiseParam param;
-  param.elewiseType = atb::infer::ElewiseParam::ELEWISE_ADD;
+void InplaceMatmulAddATBKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                                    const std::vector<KernelTensor *> &outputs) {
+  atb::infer::LinearParam param;
+  param.transposeA = true;
+  param.transposeB = false;
+  param.hasBias = false;
+  param.enAccum = true;
   uint64_t hash_id = device::ascend::AtbHash(param, op_name_);
   if (hash_id != hash_id_) {
     atb::CreateOperation(param, &op_);
     hash_id_ = hash_id;
   }
-  param_setter_.SetIndex({0, 1}, {0}).Input(inputs[0]).Input(inputs[1]).Output(outputs[0]);
+
+  param_setter_.SetIndex({0, 1, 2}, {0}).Input(inputs[0]).Input(inputs[1]).Input(inputs[2]).Output(outputs[0]);
   UpdateWorkspace(device::ascend::GetWorkSpaceSize(op_, param_setter_.variant_pack, param_setter_.stream));
 }
 
-bool AddATBKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool InplaceMatmulAddATBKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
+                                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   param_setter_.Update(inputs, outputs);
   device::ascend::Launch(op_, param_setter_.variant_pack, workspace[0]->device_ptr(), workspace_size_list_, stream_ptr);
   return true;
 }
+
+MS_ATB_KERNEL_FACTORY_REG(InplaceMatmulAdd, InplaceMatmulAddATBKernelMod);
 }  // namespace mindspore::kernel

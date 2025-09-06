@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/atb/inplace_grouped_matmul_add_atb_kernel.h"
+#include "kernel/ascend/atb/kernel_mod_impl/inplace_grouped_matmul_add_atb_kernel.h"
 
 #include <functional>
 #include <numeric>

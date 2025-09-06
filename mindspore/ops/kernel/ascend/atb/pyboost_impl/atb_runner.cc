@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/aclnn/pyboost_impl/atb_runner.h"
+#include "kernel/ascend/atb/pyboost_impl/atb_runner.h"
 #include "atb/atb_infer.h"
 #include "tools/profiler/profiler.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"

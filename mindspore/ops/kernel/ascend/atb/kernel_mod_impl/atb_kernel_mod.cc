@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/atb/atb_kernel_mod.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_mod.h"
 #include <algorithm>
 #include <vector>
 #include <functional>

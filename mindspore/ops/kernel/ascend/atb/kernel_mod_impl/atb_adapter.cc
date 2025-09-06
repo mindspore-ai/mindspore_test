@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/atb/atb_adapter.h"
+#include "kernel/ascend/atb/kernel_mod_impl/atb_adapter.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
