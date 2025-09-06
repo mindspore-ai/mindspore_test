@@ -37,6 +37,21 @@ class TransBMMTransNet(nn.Cell):
         out = self.trans(bmm, perm2)
         return out
 
+class MintTransBMMTransNet(nn.Cell):
+    '''MintTransBMMTransNet using mint.transpose and mint.matmul'''
+    def __init__(self, transpose_b=False):
+        super(MintTransBMMTransNet, self).__init__()
+        self.transpose_b = transpose_b
+
+    def construct(self, x1, x2, dim0, dim1):
+        transpose_in = ms.mint.transpose(x1, dim0, dim1)
+        if self.transpose_b:
+            # For mint.matmul, transpose_b can be achieved by swapping last two dims of weight
+            x2 = ms.mint.transpose(x2, -1, -2)
+        bmm = ms.mint.matmul(transpose_in, x2)
+        out = ms.mint.transpose(bmm, dim0, dim1)
+        return out
+
 def trans_bmm_trans_net(b0, b1, m, k, n, mstype=ms.float16, is_dyn=False):
     os.environ['MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST'] = "TransposeBatchMatmulTranspose"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
@@ -126,3 +141,49 @@ def test_transpose_batch_matmul_transpose_with_b1(b1, mstype):
     """
     trans_bmm_trans_net(0, b1, 64, 128, 256, mstype)
     trans_bmm_trans_net(0, b1, 70, 70, 70, mstype)
+
+def mint_trans_bmm_trans_net(b0, b1, m, k, n, transpose_b=False):
+    os.environ['MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST'] = "TransposeBatchMatmulTranspose"
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
+
+    net = MintTransBMMTransNet(transpose_b)
+
+    # Choose dims and shapes to match supported patterns: (1,0,2) for 3D and (0,2,1,3) for 4D
+    if b0 == 0 and b1 != 0:
+        # 3D: (m, b1, k) x (b1, k, n)
+        dim0, dim1 = 0, 1
+        a = np.random.uniform(-1, 1, [m, b1, k]).astype(np.float16)
+        if transpose_b:
+            w = np.random.uniform(-1, 1, [b1, n, k]).astype(np.float16)
+            expect = np.matmul(a.transpose(1, 0, 2), w.transpose(0, 2, 1)).transpose(1, 0, 2)
+        else:
+            w = np.random.uniform(-1, 1, [b1, k, n]).astype(np.float16)
+            expect = np.matmul(a.transpose(1, 0, 2), w).transpose(1, 0, 2)
+    else:
+        # 4D: (b0, m, b1, k) x (b1, k, n)
+        dim0, dim1 = 1, 2
+        a = np.random.uniform(-1, 1, [b0, m, b1, k]).astype(np.float16)
+        if transpose_b:
+            w = np.random.uniform(-1, 1, [b1, n, k]).astype(np.float16)
+            expect = np.matmul(a.transpose(0, 2, 1, 3), w.transpose(0, 2, 1)).transpose(0, 2, 1, 3)
+        else:
+            w = np.random.uniform(-1, 1, [b1, k, n]).astype(np.float16)
+            expect = np.matmul(a.transpose(0, 2, 1, 3), w).transpose(0, 2, 1, 3)
+
+    tensor_a = ms.Tensor(a, ms.float16)
+    tensor_w = ms.Tensor(w, ms.float16)
+    output = net(tensor_a, tensor_w, dim0, dim1)
+    res = custom_compare(output.astype(ms.float32).asnumpy(), expect.astype(np.float32), ms.float16)
+    assert res, "TransposeBatchMatmulTranspose (mint) compare fail."
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_transpose_batch_matmul_transpose_mint():
+    """
+    Feature: test mint transpose + matmul fusion into TransposeBatchMatmulTranspose
+    Description: use mint.transpose and mint.matmul to form the fusion pattern.
+    Expectation: the result is correct
+    """
+    mint_trans_bmm_trans_net(0, 16, 32, 128, 512)
+    mint_trans_bmm_trans_net(2, 16, 32, 128, 512)
+    mint_trans_bmm_trans_net(2, 32, 32, 512, 128, True)
