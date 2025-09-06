@@ -15,6 +15,7 @@
 """dlpack for tensor."""
 from mindspore._c_expression import TensorPy as TensorPy_
 
+
 def from_dlpack(dlpack):
     r"""
     Converts a DLPack object to a MindSpore Tensor.

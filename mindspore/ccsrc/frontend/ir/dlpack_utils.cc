@@ -37,6 +37,7 @@ constexpr int kBits16 = 16;
 constexpr int kBits32 = 32;
 constexpr int kBits64 = 64;
 constexpr int kLanes1 = 1;
+constexpr int kSizes2 = 2;
 
 bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides) {
   if (shape.size() == 0) {
@@ -301,7 +302,7 @@ DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
   dlm_tensor->strides = src->stride();
   // normalized strides
   for (size_t i = 0; i < dlm_tensor->shape.size(); i++) {
-    if (dlm_tensor->shape[i] < 2) {
+    if (dlm_tensor->shape[i] < kSizes2) {
       dlm_tensor->strides[i] = 1;
     }
   }
