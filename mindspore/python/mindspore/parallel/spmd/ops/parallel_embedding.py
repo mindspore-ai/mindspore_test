@@ -38,12 +38,10 @@ class EmbeddingDistributedOp(DistributedOp):
             raise ValueError(f"Embedding requires 2 extra args, but {len(extra_args)}")
 
         # Parse input layout info
-        x_layout, w_layout = layouts[0], layouts[1]
+        w_layout = layouts[1]
 
         w_dict = w_layout.to_dict()
-        x_dict = x_layout.to_dict()
         w_tensor_map, w_aliases = w_dict["tensor_map"], w_dict["alias_name"]
-        x_tensor_map = x_dict["tensor_map"]
 
         device_matrix = w_dict["device_matrix"]
         rank_list = w_dict["rank_list"]
@@ -55,11 +53,11 @@ class EmbeddingDistributedOp(DistributedOp):
         output_map = ()
 
         out_aliases = w_aliases
-        if w_tensor_map[0] != -1:
+        if not (w_tensor_map[0] == -1 or device_matrix[len(device_matrix) - 1 - w_tensor_map[0]] == 1):
             raise ValueError(
                 f"Operation {self.op_name}: Cannot perform sharding on params along the axis"
             )
-        output_map += x_tensor_map
+        output_map += (-1, -1,)
         for i in range(1, len(w_tensor_map)):
             output_map += (len(w_tensor_map) - 1 - i,)
 

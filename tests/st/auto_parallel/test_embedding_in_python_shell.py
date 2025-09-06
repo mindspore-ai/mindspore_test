@@ -23,6 +23,6 @@ def test_shard_in_python_pynative():
     '''
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10677 --join=True " \
-        "pytest -s test_embedding_in_python.py"
+        "pytest -s test_parallel_embedding.py"
     )
     assert return_code == 0

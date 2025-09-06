@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Distributed implementation for Index Select operator.
+Distributed implementation for Gather operator.
 """
 
 from mindspore.parallel import Layout

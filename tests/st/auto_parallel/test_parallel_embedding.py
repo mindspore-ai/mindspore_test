@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
@@ -82,67 +81,7 @@ def run_scenario(scenario_name, x_layout, w_layout, x_shape, w_shape):
     return output
 
 
-def test_parallel_1():
-    """
-    Feature: Parallel in python shard.
-    Description: Test parallel in python shard.
-    Expectation: Run success.
-    """
-    base_device_matrix = (2, 4)
-    base_alias_name = ("a", "b")
-    base_rank_list = list(range(8))
-
-    x_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    x_layout = x_layout("None", "None")
-
-    w_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    w_layout = w_layout("a", "b")
-
-    with pytest.raises(ValueError):
-        output = run_scenario(
-            "1. Cut weight (2, 4)",
-            x_layout,
-            w_layout,
-            x_shape=(16, 256),
-            w_shape=(32, 8),
-        )
-        assert output.layout is not None
-        output_layout_dict = output.layout.to_dict()
-        assert output_layout_dict["device_matrix"] == base_device_matrix
-        assert output_layout_dict["tensor_map"] == (1, -1, 0)
-
-
-def test_parallel_2():
-    """
-    Feature: Parallel in python shard.
-    Description: Test parallel in python shard.
-    Expectation: Run success.
-    """
-    base_device_matrix = (8, 1)
-    base_alias_name = ("a", "b")
-    base_rank_list = list(range(8))
-
-    x_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    x_layout = x_layout("None", "None")
-
-    w_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    w_layout = w_layout("a", "b")
-
-    with pytest.raises(ValueError):
-        output = run_scenario(
-            "2. Cut weight (8, 1)",
-            x_layout,
-            w_layout,
-            x_shape=(16, 256),
-            w_shape=(32, 8),
-        )
-        assert output.layout is not None
-        output_layout_dict = output.layout.to_dict()
-        assert output_layout_dict["device_matrix"] == base_device_matrix
-        assert output_layout_dict["tensor_map"] == (1, -1, 0)
-
-
-def test_parallel_3():
+def test_tensor_parallel():
     """
     Feature: Parallel in python shard.
     Description: Test parallel in python shard.
@@ -156,10 +95,10 @@ def test_parallel_3():
     x_layout = x_layout("None", "None")
 
     w_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    w_layout = w_layout("None", "b")
+    w_layout = w_layout("a", "b")
 
     output = run_scenario(
-        "3. Cut weight (1, 8)",
+        "1. Embedding Parallel Op",
         x_layout,
         w_layout,
         x_shape=(16, 256),

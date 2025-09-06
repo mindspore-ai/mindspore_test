@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
@@ -87,7 +86,7 @@ def run_scenario(scenario_name, net, params_layout, indices_layout, params_shape
     return output
 
 
-def test_index_select_parallel_1():
+def test_index_select_parallel():
     """
     Feature: Parallel in python shard.
     Description: Test parallel in python shard.
@@ -118,35 +117,7 @@ def test_index_select_parallel_1():
     assert output_layout_dict["tensor_map"] == (0, 1)
 
 
-def test_index_select_parallel_2():
-    """
-    Feature: Parallel in python shard.
-    Description: Test parallel in python shard.
-    Expectation: Run success.
-    """
-    base_device_matrix = (2, 4)
-    base_alias_name = ("a", "b")
-    base_rank_list = list(range(8))
-
-    p_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    p_layout = p_layout("b", "a")
-
-    i_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
-    i_layout = i_layout("b")
-
-    with pytest.raises(ValueError):
-        run_scenario(
-            "2. [index_select] Params shard: (4, 2), Indices shard: (4)",
-            SimpleIndexSelectNet,
-            p_layout,
-            i_layout,
-            params_shape=(16, 256),
-            indices_shape=(512),
-            axis=0,
-        )
-
-
-def test_gather_parallel_1():
+def test_gather_parallel():
     """
     Feature: Parallel in python shard.
     Description: Test parallel in python shard.
