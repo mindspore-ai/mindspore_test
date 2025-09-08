@@ -18,7 +18,7 @@
 #define MS_CUSTOM_OPS_MODULE_H_
 
 #include "ms_extension/api.h"
-#include "kernel/ascend/custom/custom_kernel_factory.h"
+#include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 #include <functional>
 #include <pybind11/pybind11.h>
 #include <string>

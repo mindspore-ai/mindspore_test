@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "kernel/cpu/custom/custom_kernel_input_info.h"
+#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/utils/visible.h"
 

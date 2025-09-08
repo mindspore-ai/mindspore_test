@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_CUSTOM_CUSTOM_KERNEL_INTERNAL_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_CUSTOM_CUSTOM_KERNEL_INTERNAL_H_
 
-#include "kernel/ascend/custom/custom_kernel_factory.h"
+#include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 #include <vector>
 
 namespace mindspore {

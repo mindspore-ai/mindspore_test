@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-#include "kernel/cpu/custom/custom_kernel_input_info.h"
+#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info.h"
 #include "kernel/cpu/utils/visible.h"
 
 namespace mindspore::kernel {

@@ -45,7 +45,7 @@
 #include "kernel/ascend/hccl/hccl_kernel_build.h"
 #include "kernel/ascend/simu/kernel_mod_impl/simu_kernel_build.h"
 #include "kernel/ascend/internal/internal_kernel_build.h"
-#include "kernel/ascend/custom/custom_kernel_build.h"
+#include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "kernel/ascend/kernel_packet/kernel_packet_ascend_kernel_mod.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
