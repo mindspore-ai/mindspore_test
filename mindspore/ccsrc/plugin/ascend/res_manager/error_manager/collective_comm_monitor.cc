@@ -32,6 +32,7 @@ namespace {
 // check exception in every 2s
 constexpr int64_t kQueryFrequency = 2000;
 constexpr int64_t kMilSec = 1000;
+constexpr int64_t kSleepTime = 100;
 constexpr int64_t kInterval = 30;
 constexpr int kIndent = 2;
 
@@ -141,9 +142,18 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
   if (it != handles_.end() && it->second != nullptr) {
     MS_LOG(INFO) << "Destroy hcom monitor thread by group name: " << name;
     it->second->Terminate();
+    int64_t count = 0;
+    const auto start_time = std::chrono::steady_clock::now();
+    const auto timeout = std::chrono::seconds(kInterval);
     while (!it->second->exit()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(kMilSec));
-      MS_LOG(DEBUG) << "Wait exit, group name:" << name;
+      if (std::chrono::steady_clock::now() - start_time > timeout) {
+        MS_LOG(ERROR) << "Group:" << name << " failed to exit within 30s, stop wait.";
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(kSleepTime));
+      if (++count % kInterval == 0) {
+        MS_LOG(DEBUG) << "Wait exit, group name:" << name;
+      }
     }
     handles_.erase(it);
     MS_LOG(INFO) << "Destroy hcom monitor thread by group name: " << name << " success";
