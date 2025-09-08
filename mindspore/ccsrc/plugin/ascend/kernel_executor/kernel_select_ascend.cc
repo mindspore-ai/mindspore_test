@@ -365,9 +365,8 @@ bool IsSupportLcoc(const std::string &group_name, const std::string &op_name) {
   if (!disable_lccl_op_env.empty()) {
     std::set<std::string> disable_lccl_op_list;
     common::SplitString(disable_lccl_op_env, ',', &disable_lccl_op_list);
-    bool disable_internal_op =
-      (std::find(disable_lccl_op_list.begin(), disable_lccl_op_list.end(), op_name) != disable_lccl_op_list.end());
-    if (disable_internal_op) {
+    bool disable_lccl_op = disable_lccl_op_list.find(op_name) != disable_lccl_op_list.end();
+    if (disable_lccl_op) {
       return false;
     }
   }
