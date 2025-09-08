@@ -83,7 +83,7 @@ void StreamPy::Synchronize() {
 std::string StreamPy::ToStringRepr() const {
   std::ostringstream buf;
   MS_EXCEPTION_IF_NULL(device_ctx_);
-  buf << "Stream(device_type=" << device_ctx_->device_context_key().device_type_
+  buf << "Stream(device_name=" << device::GetDeviceNameByType(device_ctx_->device_context_key().device_type_)
       << ", device_id:" << std::to_string(device_ctx_->device_context_key().device_id_)
       << ", stream id:" << std::to_string(stream_id_) << ")";
   return buf.str();
