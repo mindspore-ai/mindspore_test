@@ -27,7 +27,7 @@
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "backend/common/backend_common_callback.h"
+#include "include/common/callback.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
@@ -43,6 +43,9 @@ using kernel::OpIOInfo;
 namespace {
 constexpr int kCurrentInfoVersion = 2;
 constexpr auto kAttrParallelDimInfoSize = 2;
+constexpr auto kGetGPUCapabilityMajorName = "GetGPUCapabilityMajor";
+constexpr auto kGetGPUCapabilityMinorName = "GetGPUCapabilityMinor";
+constexpr auto kGetGPUMultiProcessorCountName = "GetGPUMultiProcessorCount";
 
 std::vector<int64_t> GetDynInputSizes(const AnfNodePtr &anf_node) {
   std::vector<int64_t> dyn_input_sizes;
@@ -1381,11 +1384,11 @@ void GetCpuInfo(nlohmann::json *target_info) {
 
 bool GetGpuInfo(nlohmann::json *target_info) {
   static const auto get_gpu_capability_major_func =
-    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUCapabilityMajor");
+    callback::CommonCallback::GetInstance().GetCallback<int>(kGetGPUCapabilityMajorName);
   static const auto get_gpu_capability_minor_func =
-    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUCapabilityMinor");
+    callback::CommonCallback::GetInstance().GetCallback<int>(kGetGPUCapabilityMinorName);
   static const auto get_gpu_multi_processor_count_func =
-    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUMultiProcessorCount");
+    callback::CommonCallback::GetInstance().GetCallback<int>(kGetGPUMultiProcessorCountName);
   MS_EXCEPTION_IF_NULL(get_gpu_capability_major_func);
   MS_EXCEPTION_IF_NULL(get_gpu_capability_minor_func);
   MS_EXCEPTION_IF_NULL(get_gpu_multi_processor_count_func);

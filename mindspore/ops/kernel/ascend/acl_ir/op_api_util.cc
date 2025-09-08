@@ -32,7 +32,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_precision_conf.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_tuning_conf.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
@@ -43,6 +43,7 @@ typedef aclError (*AclrtCtxSetSysParamOpt)(aclSysParamOpt, int64_t);
 static const char k910BKey[] = "ascend910b";
 static const char k310BKey[] = "ascend310b";
 static const char k910_93Key[] = "ascend910_93";
+constexpr auto kGetCommName = "GetCommName";
 
 static const std::unordered_map<std::string, aclCubeMathType> kCubeMathType = {
   {"force_fp16", FORCE_FP16},
@@ -188,7 +189,7 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
 
 std::string OpApiUtil::GetCommName(const std::string &group) {
   static const auto get_comm_name =
-    kernel::KernelCallback::GetInstance().GetCallback<std::string, const std::string &>("GetCommName");
+    callback::CommonCallback::GetInstance().GetCallback<std::string, const std::string &>(kGetCommName);
   if (get_comm_name == nullptr) {
     MS_LOG(EXCEPTION) << "Failed to get GetCommNameCallback";
   }

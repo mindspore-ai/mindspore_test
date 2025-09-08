@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include "include/common/utils/stream_util.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -79,7 +79,7 @@ void SilentCheckSetPipelineStage(uint32_t pp_stage, const string &group_name, co
   }
 }
 
-REGISTER_KERNEL_CALLBACK(SilentCheckSetPipelineStage);
+REGISTER_COMMON_CALLBACK(SilentCheckSetPipelineStage);
 
 }  // namespace silentcheck
 }  // namespace mindspore
