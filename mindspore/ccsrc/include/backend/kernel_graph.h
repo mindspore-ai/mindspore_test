@@ -173,7 +173,7 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   void CreateKernelInfoFromNewParameter(const CNodePtr &cnode) const;
   CNodePtr NewCNode(const CNodePtr &cnode);
   ParameterPtr NewParameter(const ParameterPtr &parameter = nullptr);
-  ParameterPtr NewParameter(const abstract::AbstractBasePtr &abstract);
+  ParameterPtr NewParameter(const abstract::AbstractBasePtr &abstract, const std::string &format = "");
   ValueNodePtr NewValueNode(const ValueNodePtr &value_node = nullptr) const;
   ValueNodePtr NewValueNode(const AbstractBasePtr &abstract, const ValuePtr &value);
   ValueNodePtr NewValueNode(const tensor::TensorPtr &input_tensor);
@@ -584,7 +584,7 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   AnfNodePtr MakeValueNode(const AnfNodePtr &node) const;
 
   AnfNodePtr TransValueNodeTuple(const AbstractBasePtr &abstract, const ValuePtr &value);
-  AnfNodePtr TransParameterTuple(const AbstractBasePtr &abstract);
+  AnfNodePtr TransParameterTuple(const AbstractBasePtr &abstract, const ParameterPtr &orig_param);
   AnfNodePtr TransCNodeTuple(const CNodePtr &node);
   AnfNodePtr CreatTupleGetItemNode(const AnfNodePtr &node, size_t output_idx);
   std::vector<CNodePtr> SortStartLabelAndEndGoto();

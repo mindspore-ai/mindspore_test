@@ -297,6 +297,7 @@ PYBIND11_MODULE(_c_expression, m) {
          py::arg("compile_cache_dep_files") = py::list(), "Set the compilation cache dependent files.")
     .def("set_weights_values", &GraphExecutorPy::set_weights_values, py::arg("weights") = py::dict(),
          "Set values of weights.")
+    .def("set_real_args", &GraphExecutorPy::SetRealArguments, py::arg("args"), py::arg("kwargs"), "Set run arguments.")
     .def("get_optimize_graph_proto", &GraphExecutorPy::GetOptimizeGraphProto, py::arg("phase") = py::str(""),
          "Get the optimize graph proto string.")
     .def("set_jit_config", &GraphExecutorPy::SetJitConfig, py::arg("jit_config") = py::dict(), "Set the jit config.")
@@ -338,6 +339,7 @@ PYBIND11_MODULE(_c_expression, m) {
          py::arg("compile_cache_dep_files") = py::list(), "Set the compilation cache dependent files.")
     .def("set_weights_values", &JitExecutorPy::set_weights_values, py::arg("weights") = py::dict(),
          "Set values of weights.")
+    .def("set_real_args", &JitExecutorPy::SetRealArguments, py::arg("args"), py::arg("kwargs"), "Set run args.")
     .def("check_argument_consistency", &JitExecutorPy::CheckArgumentsConsistency, "Check equal of arguments.")
     .def("get_func_graph_proto", &JitExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),

@@ -152,6 +152,9 @@ class Resource : public ResourceBase {
   const ValuePtrList &arguments() const { return arguments_; }
   void set_arguments(const ValuePtrList &arguments) { arguments_ = arguments; }
 
+  const ValuePtrList &real_arguments() const { return real_arguments_; }
+  void set_real_arguments(const ValuePtrList &args_list) { real_arguments_ = args_list; }
+
   void set_vm_loop(const bool &flag, const int64_t size) {
     vm_loop_flag_ = flag;
     loop_size_ = size;
@@ -193,6 +196,7 @@ class Resource : public ResourceBase {
   // The arguments may contain a Parameter, we need connect it to the Parameter default value of func graph.
   // We keep all arguments inputs here for subsequent procedure.
   std::vector<ValuePtr> arguments_;
+  ValuePtrList real_arguments_;
   abstract::AbstractBasePtrList args_abs_;
   // The source obj to compile, usually a `Cell` or `jit` decorated function.
   py::object source_input_;

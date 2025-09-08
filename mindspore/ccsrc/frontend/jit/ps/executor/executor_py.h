@@ -76,6 +76,8 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   const std::string &obj_desc() const { return obj_desc_; }
   int32_t max_call_depth() const { return max_call_depth_; }
   void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
+  ValuePtrList real_arguments() { return real_arguments_; }
+  void SetRealArguments(const py::tuple &args, const py::dict &kwargs);
 
  protected:
   virtual bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
@@ -99,6 +101,7 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   std::string source_;
   std::string obj_desc_;
   bool enable_tuple_broaden_{false};
+  ValuePtrList real_arguments_;
   std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
 
  private:

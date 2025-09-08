@@ -330,6 +330,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   AddManagerForFuncGraphArgs(resource, arguments);
   resource->set_arguments(arguments);
   resource->set_args_abs(args_abs);
+  resource->set_real_arguments(real_arguments());
   executor_info->arg_list_size = args.size() + kwargs.size();
   executor_info->resource = resource;
   info_[phase] = executor_info;
@@ -406,6 +407,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   AddManagerForFuncGraphArgs(resource, arguments);
   resource->set_arguments(arguments);
   resource->set_args_abs(args_abs);
+  resource->set_real_arguments(real_arguments());
   executor_info->arg_list_size = args.size() + kwargs.size();
   executor_info->resource = resource;
   info_[phase_] = executor_info;
