@@ -85,7 +85,7 @@ class GeMessageManager {
   HashMap<std::string, GraphSummary> summarys;
 };
 
-class BACKEND_EXPORT GeGraphExecutor {
+class GeGraphExecutor {
  public:
   ~GeGraphExecutor() = default;
   void Initialize();

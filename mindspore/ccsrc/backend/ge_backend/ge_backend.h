@@ -24,7 +24,6 @@
 #include <unordered_set>
 #include "backend/backend_manager/backend_manager.h"
 #include "backend/backend_manager/backend_jit_config.h"
-#include "include/backend/visible.h"
 #include "ir/tensor.h"
 #include "backend/common/kernel_graph/kernel_graph_mgr.h"
 #include "abstract/abstract_value.h"
@@ -37,7 +36,7 @@ namespace backend {
 namespace ge_backend {
 enum CompileType { NotSupport = 0, SubGraph = 1, WholeGraph = 2 };
 // The base class of all supported backend.
-class BACKEND_EXPORT GEBackend : public BackendBase {
+class GEBackend : public BackendBase {
  public:
   GEBackend();
   ~GEBackend() = default;

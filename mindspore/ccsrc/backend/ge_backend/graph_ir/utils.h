@@ -62,9 +62,9 @@ BACKEND_EXPORT void SetGraphRunner(const GraphRunnerPtr &runner);
 BACKEND_EXPORT void ClearGraph();
 BACKEND_EXPORT Status AddGraph(const std::string &name, const DfGraphPtr &graph,
                                const DfGraphConfig &graph_config = DfGraphConfig({}, false, false, false));
-BACKEND_EXPORT void SetAnfGraph(const std::string &name, const AnfGraphPtr &anf_graph_ptr);
+void SetAnfGraph(const std::string &name, const AnfGraphPtr &anf_graph_ptr);
 BACKEND_EXPORT DfGraphWrapperPtr GetGraphByName(const std::string &name);
-BACKEND_EXPORT void AddOptimizeGraph(const std::string &name);
+void AddOptimizeGraph(const std::string &name);
 
 FuncGraphPtr GetAnfGraph(uint32_t graph_id);
 
@@ -84,7 +84,7 @@ BACKEND_EXPORT void GenFakeGraph(const std::string &name, const DfGraphConvertor
 
 BACKEND_EXPORT DfGraphPtr GetComputeGraph(const DfGraphConvertorPtr &converter);
 BACKEND_EXPORT DfGraphPtr GetInitGraph(const DfGraphConvertorPtr &converter);
-BACKEND_EXPORT DfGraphPtr GetSaveCheckpointGraph(const DfGraphConvertorPtr &converter);
+DfGraphPtr GetSaveCheckpointGraph(const DfGraphConvertorPtr &converter);
 BACKEND_EXPORT DfGraphPtr GetBroadcastGraph(const DfGraphConvertorPtr &converter);
 
 // new session

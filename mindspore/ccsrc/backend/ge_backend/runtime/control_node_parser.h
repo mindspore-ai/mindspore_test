@@ -123,7 +123,7 @@ void FetchRealDependNodeByAutoMonad(const AnfNodePtr &node, std::set<AnfNodePtr>
 std::vector<AnfNodePtr> FetchAllMonadNodeByNode(const AnfNodePtr &node);
 void CreateBuildInfoForFrontNode(const KernelWithIndex &front_node_with_index, const AnfNodePtr &backend_node);
 // ControlNodeParser is used to parse control nodes, and get the edges between nodes.
-class BACKEND_EXPORT ControlNodeParser {
+class ControlNodeParser {
  public:
   ControlNodeParser() : is_inited_(false), root_func_graph_(nullptr) {}
 

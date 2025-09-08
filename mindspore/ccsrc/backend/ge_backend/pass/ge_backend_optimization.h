@@ -20,19 +20,17 @@
 #include <set>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/pass_manager.h"
-#include "include/backend/visible.h"
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
 namespace opt {
-// to delete BACKEND_EXPORT
-void BACKEND_EXPORT GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph);
-void BACKEND_EXPORT UnifyMindIRPass(const FuncGraphPtr &graph);
+void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph);
+void UnifyMindIRPass(const FuncGraphPtr &graph);
 void GEBackendOptimization(const KernelGraphPtr &kernel_graph);
 void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph);
-void BACKEND_EXPORT OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
-void BACKEND_EXPORT GEUnifyMindIR(const KernelGraphPtr &kernel_graph);
-BACKEND_EXPORT void OptimizationWithoutBackend(const KernelGraphPtr &kernel_graph);
+void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
+void GEUnifyMindIR(const KernelGraphPtr &kernel_graph);
+void OptimizationWithoutBackend(const KernelGraphPtr &kernel_graph);
 void EliminateIllegalDataTypePass(const KernelGraphPtr &kernel_graph);
 void BackendCommonOptimization(const KernelGraphPtr &kernel_graph);
 void CommonUnifyMindIR(const KernelGraphPtr &kernel_graph);
