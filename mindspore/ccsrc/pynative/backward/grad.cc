@@ -44,7 +44,7 @@
 #include "pynative/backward/op_grad/func_grad.h"
 #include "pynative/backward/grad_utils.h"
 #include "pynative/utils/pynative_utils.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"

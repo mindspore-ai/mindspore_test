@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_LAZY_FUSION_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_LAZY_FUSION_H_
 
 #include <map>
 #include <string>
 #include <utility>
 #include <functional>
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 using LazyFusionInitFunc = std::function<void()>;
 
-class BACKEND_EXPORT LazyFusionFactory {
+class PYNATIVE_UTILS_EXPORT LazyFusionFactory {
  public:
   LazyFusionFactory() = default;
   ~LazyFusionFactory() = default;
@@ -38,9 +38,9 @@ class BACKEND_EXPORT LazyFusionFactory {
   std::map<std::string, LazyFusionInitFunc> funcs_;
 };
 
-extern BACKEND_EXPORT LazyFusionFactory g_lazy_fusion;
+extern PYNATIVE_UTILS_EXPORT LazyFusionFactory g_lazy_fusion;
 
-class BACKEND_EXPORT LazyFusionRegister {
+class PYNATIVE_UTILS_EXPORT LazyFusionRegister {
  public:
   LazyFusionRegister(const std::string &device_name, LazyFusionInitFunc &&func) {
     g_lazy_fusion.Register(device_name, std::move(func));
@@ -53,4 +53,4 @@ class BACKEND_EXPORT LazyFusionRegister {
 
 static inline void LazyFusionInit() { g_lazy_fusion.Init(); }
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_LAZY_FUSION_H_

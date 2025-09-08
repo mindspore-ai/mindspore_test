@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "backend/ms_backend/op_backend.h"
+#include "pynative/utils/runtime/op_backend/op_backend.h"
 
 #include <string>
 #include <vector>
 #include <algorithm>
 #include "op_def/structure_op_name.h"
-#include "runtime/pynative/op_executor.h"
-#include "runtime/pynative/op_runner.h"
+#include "pynative/utils/runtime/op_executor.h"
+#include "pynative/utils/runtime/op_runner.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"

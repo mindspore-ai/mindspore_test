@@ -32,7 +32,7 @@
 #include "include/common/utils/exception.h"
 #include "include/common/utils/pyobj_manager.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "pybind_api/pynative/backward_node_py.h"

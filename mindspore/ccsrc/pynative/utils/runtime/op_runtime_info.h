@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_OP_RUNTIME_INFO_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_OP_RUNTIME_INFO_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_RUNTIME_INFO_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_RUNTIME_INFO_H_
 
 #include <memory>
 #include <utility>
@@ -83,7 +83,7 @@ class AclRuntimeInfo {
 };
 using AclRuntimeInfoPtr = std::shared_ptr<AclRuntimeInfo>;
 
-class BACKEND_EXPORT OpRuntimeInfo {
+class PYNATIVE_UTILS_EXPORT OpRuntimeInfo {
  public:
   OpRuntimeInfo(std::vector<std::string> output_format, std::vector<TypeId> output_type,
                 std::vector<size_t> output_tensor_size, std::vector<ShapeVector> output_infer_shape,
@@ -134,4 +134,4 @@ class BACKEND_EXPORT OpRuntimeInfo {
 };
 using OpRuntimeInfoPtr = std::shared_ptr<OpRuntimeInfo>;
 }  // namespace mindspore::runtime
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_OP_RUNTIME_INFO_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_RUNTIME_INFO_H_

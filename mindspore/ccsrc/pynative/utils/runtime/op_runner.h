@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_RUN_OP_HELPER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_RUN_OP_HELPER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_RUN_OP_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_RUN_OP_H_
 
 #include <vector>
 #include <string>
 #include "include/common/pynative/op_runner_info.h"
 #include "include/backend/kernel_graph.h"
-#include "runtime/pynative/op_compiler.h"
+#include "pynative/utils/runtime/op_compiler.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "tools/profiler/profiler.h"
 
 namespace mindspore::runtime {
-class OpRunner {
+class PYNATIVE_UTILS_EXPORT OpRunner {
  public:
   // Update Tensor or input node DeviceAddress before PyNative async running.
   static void UpdateDeviceAddress(const KernelGraphPtr &graph,
@@ -41,11 +40,11 @@ class OpRunner {
   static void LaunchKernelTask(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
                                const device::DeviceAddressPtrList &input_addr_list,
                                const device::DeviceAddressPtrList &output_addr_list, size_t stream_id);
-  BACKEND_EXPORT static DeviceContext *GetDeviceContext(device::DeviceType device_type);
-  BACKEND_EXPORT static void ChildAfterFork();
+  static DeviceContext *GetDeviceContext(device::DeviceType device_type);
+  static void ChildAfterFork();
 };
 
-class DynamicOpRunner {
+class PYNATIVE_UTILS_EXPORT DynamicOpRunner {
  public:
   static void UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info,
                                        const std::vector<tensor::TensorPtr> &input_tensors, bool is_sync,
@@ -57,4 +56,4 @@ class DynamicOpRunner {
                                const std::vector<tensor::TensorPtr> &input_tensors);
 };
 }  // namespace mindspore::runtime
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_RUN_OP_RUN_OP_HELPER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_RUN_OP_H_

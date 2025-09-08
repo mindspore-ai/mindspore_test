@@ -24,7 +24,7 @@
 #include "utils/stream_guard.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "runtime/pynative/op_runner.h"
+#include "pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "ir/device_type.h"
 

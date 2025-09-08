@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "runtime/pynative/op_runner.h"
+#include "pynative/utils/runtime/op_runner.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 
 namespace mindspore{

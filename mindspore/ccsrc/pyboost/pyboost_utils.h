@@ -24,7 +24,7 @@
 #include <set>
 #include <tuple>
 #include "include/common/utils/convert_utils.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "backend/common/device_address_utils.h"
 #include "include/common/utils/primitive_utils.h"

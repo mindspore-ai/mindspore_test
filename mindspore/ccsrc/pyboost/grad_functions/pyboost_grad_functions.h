@@ -22,9 +22,9 @@
 #include <vector>
 #include <unordered_map>
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "runtime/pynative/op_runner.h"
+#include "pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/func_object.h"
-#include "backend/ms_backend/op_backend.h"
+#include "pynative/utils/runtime/op_backend/op_backend.h"
 
 namespace mindspore::runtime {
 using Func = std::function<void(OpRunnerInfo *, VectorRef *)>;

@@ -24,7 +24,7 @@
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "backend/common/device_address_utils.h"
-#include "runtime/pynative/op_runner.h"
+#include "mindspore/ccsrc/pynative/utils/runtime/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"

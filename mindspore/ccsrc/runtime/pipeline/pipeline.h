@@ -53,6 +53,8 @@ class RUNTIME_PIPELINE_EXPORT Pipeline {
 
   static void DisableMultiThreadAfterFork();
 
+  void WorkerJoin();
+
  private:
   Pipeline();
   ~Pipeline() = default;

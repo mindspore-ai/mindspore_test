@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_EXECUTOR_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_EXECUTOR_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_EXECUTOR_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_EXECUTOR_H_
 
 #include <vector>
 #include <memory>
@@ -28,15 +28,15 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "include/backend/visible.h"
-#include "runtime/pynative/task/device_task.h"
+#include "include/common/visible.h"
+#include "pynative/utils/runtime/task/device_task.h"
 #include "runtime/pipeline/async_rqueue.h"
 
 namespace mindspore {
 using Tensor = tensor::Tensor;
 using TensorPtr = tensor::TensorPtr;
 namespace runtime {
-class BACKEND_EXPORT OpExecutor {
+class PYNATIVE_UTILS_EXPORT OpExecutor {
  public:
   static OpExecutor &GetInstance();
 
@@ -78,4 +78,4 @@ class BACKEND_EXPORT OpExecutor {
 };
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_EXECUTOR_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_EXECUTOR_H_

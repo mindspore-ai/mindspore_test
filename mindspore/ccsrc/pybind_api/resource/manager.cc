@@ -49,7 +49,7 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "tools/profiler/profiler.h"

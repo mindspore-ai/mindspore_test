@@ -28,7 +28,7 @@
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "runtime/pynative/lazy_fusion.h"
+#include "pynative/utils/runtime/lazy_fusion.h"
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_dump.h"
 
 namespace mindspore {

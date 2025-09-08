@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_COMPILER_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_COMPILER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_COMPILER_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_COMPILER_H_
 
 #include <utility>
 #include <vector>
@@ -27,7 +27,7 @@
 #include "include/backend/kernel_graph.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#include "runtime/pynative/ir_converter.h"
+#include "pynative/utils/runtime/ir_converter.h"
 
 namespace mindspore {
 using device::DeviceContext;
@@ -73,7 +73,7 @@ using OpCompilerInfoPtr = std::shared_ptr<OpCompilerInfo>;
 // When the graph structure changes, the front-end will send multiple graphs,
 // the operators of each graph will be compiled separately, which will result in very poor performance.
 // Therefore, the OpCompiler class is required to save all operator caches and make them independent of Graph.
-class BACKEND_EXPORT OpCompiler {
+class PYNATIVE_UTILS_EXPORT OpCompiler {
  public:
   static OpCompiler &GetInstance();
 
@@ -115,4 +115,4 @@ class BACKEND_EXPORT OpCompiler {
 }  // namespace pynative
 using OpCompilerInfoPtr = pynative::OpCompilerInfoPtr;
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_OP_COMPILER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_OP_COMPILER_H_
