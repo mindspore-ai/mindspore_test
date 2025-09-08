@@ -1,7 +1,7 @@
 mindspore.parallel.distributed.DistributedDataParallel
 ============================================================================
 
-.. py:class:: mindspore.parallel.distributed.DistributedDataParallel(module, init_sync=True, process_group=None, bucket_cap_mb: Optional[int] = None, find_unused_parameters=False, average_in_collective: bool = False, static_graph=False, reducer_mode="CppReducer")
+.. py:class:: mindspore.parallel.distributed.DistributedDataParallel(module, init_sync=True, process_group=None, bucket_cap_mb=None, find_unused_parameters=False, average_in_collective=False, static_graph=False, reducer_mode="CppReducer")
 
     分布式数据并行封装类。该类为梯度分配连续显存，各参数的梯度将被分入多个桶，该桶是在数据并行域执行 all-reduce 通信以实现通信掩盖的基本单元。
 
