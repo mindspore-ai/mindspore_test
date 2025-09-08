@@ -230,9 +230,11 @@ class ApiCachePool {
 // check and throw only when enable uce.
 #define CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api)                                                             \
   do {                                                                                                           \
+    auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;                                   \
+    auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;                                \
     if ((mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::IsEnableHCCE()) &&                   \
         aclrt_get_last_error != nullptr) {                                                                       \
-      auto error_code = aclrt_get_last_error(thread_level);                                                      \
+      auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);                                               \
       auto error_type = GetErrorType(error_code);                                                                \
       mindspore::UCEException::GetInstance().ProcessApiUceError(                                                 \
         mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, (aclnn_api)}, error_code, acl_get_recent_err_msg, \

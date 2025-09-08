@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <set>
 #include <mutex>
 #include <string>
@@ -26,7 +27,7 @@
 #include "utils/log_adapter.h"
 #include "mindapi/base/macros.h"
 
-typedef const char *(*FuncGetRecentErrMsg)();
+using FuncGetRecentErrMsg = std::function<const char *()>;
 
 namespace mindspore {
 class ExceptionListener {
@@ -195,10 +196,10 @@ class MS_CORE_API UCEException {
   void set_uce_occur_time(uint64_t time) { uce_occur_time_ = time; }
   uint64_t get_uce_occur_time() { return uce_occur_time_; }
 
-  void ProcessApiUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
+  void ProcessApiUceError(const FuncInfo &fn_info, int error_code, const FuncGetRecentErrMsg &fn_get_recent_err_msg,
                           UCEError error_type, bool throw_exception = false);
 
-  void ProcessUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
+  void ProcessUceError(const FuncInfo &fn_info, int error_code, const FuncGetRecentErrMsg &fn_get_recent_err_msg,
                        UCEError error_type);
 
   void SetGraphPipelineCompiled(bool value) { is_graph_pipeline_compiled_ = value; }

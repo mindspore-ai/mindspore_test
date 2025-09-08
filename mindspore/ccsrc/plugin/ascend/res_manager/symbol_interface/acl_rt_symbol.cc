@@ -17,8 +17,6 @@
 #include <string>
 #include "symbol_utils.h"
 
-int (*aclrt_get_last_error)(int) = nullptr;
-const char *(*acl_get_recent_err_msg)() = nullptr;
 namespace mindspore::device::ascend {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
 aclrtCreateEventFunObj aclrtCreateEvent_ = nullptr;

@@ -19,12 +19,33 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <vector>
 #include "include/backend/visible.h"
+#include "include/backend/kernel_graph.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 
 namespace mindspore {
 namespace tools {
+class BACKEND_COMMON_EXPORT ErrorHandler {
+ public:
+  static ErrorHandler &GetInstance();
+
+  ErrorHandler() = default;
+  virtual ~ErrorHandler() = default;
+  // disable copy constructor and the assignment operator
+  ErrorHandler(const ErrorHandler &) = delete;
+  ErrorHandler &operator=(const ErrorHandler &) = delete;
+
+  void SaveConstants(const std::vector<KernelGraphPtr> &graphs);
+  const ValuePtr &GetConstant(const AnfNodePtr &node);
+  void Clear();
+
+ private:
+  // save constant values for uce scenario, for constant tensor device memory may be corrupted
+  std::map<AnfNodePtr, ValuePtr> const_values_;
+};
+
 // Parameter snapshot manager
 class BACKEND_COMMON_EXPORT SnapshotMgr {
  public:

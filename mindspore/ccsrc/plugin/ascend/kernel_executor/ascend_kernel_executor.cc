@@ -1452,8 +1452,10 @@ bool AscendKernelExecutor::LaunchKernelHP(const CNodePtr &kernel, const std::vec
 }
 
 void AscendKernelExecutor::SetUceError() const {
+  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
+  auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;
   if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
-    auto error_code = aclrt_get_last_error(thread_level);
+    auto error_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
     auto error_type = GetErrorType(error_code);
     UCEException::GetInstance().ProcessUceError(
       mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, "Launch kernel failed"}, error_code,
@@ -1469,8 +1471,9 @@ void AscendKernelExecutor::SetUceError() const {
 }
 
 void AscendKernelExecutor::SetArfError() const {
-  if (UCEException::GetInstance().enable_arf()) {
-    auto rts_code = aclrt_get_last_error(thread_level);
+  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
+  if (UCEException::GetInstance().enable_arf() && aclrt_get_last_error != nullptr) {
+    auto rts_code = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
     MS_LOG(ERROR) << "Launch kernel failed, get last error is " << rts_code;
     if (rts_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
       UCEException::GetInstance().set_force_stop_flag(true);

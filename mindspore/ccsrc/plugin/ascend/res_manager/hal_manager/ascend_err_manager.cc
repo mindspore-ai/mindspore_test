@@ -139,8 +139,10 @@ void ErrorManagerAdapter::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
   auto error_code = CALL_ASCEND_API(aclrtGetErrorCodeFromExceptionInfo, task_fail_info);
   auto device_id = CALL_ASCEND_API(aclrtGetDeviceIdFromExceptionInfo, task_fail_info);
   auto tid = CALL_ASCEND_API(aclrtGetThreadIdFromExceptionInfo, task_fail_info);
+  auto aclrt_get_last_error = mindspore::device::ascend::aclrtGetLastError_;
+  auto acl_get_recent_err_msg = mindspore::device::ascend::aclGetRecentErrMsg_;
   if ((UCEException::IsEnableUCE() || UCEException::IsEnableHCCE()) && aclrt_get_last_error != nullptr) {
-    auto last_error = aclrt_get_last_error(thread_level);
+    auto last_error = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
     auto error_type = GetErrorType(last_error);
     UCEException::GetInstance().ProcessUceError(
       mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, "Run task failed"}, last_error, acl_get_recent_err_msg,
@@ -148,7 +150,7 @@ void ErrorManagerAdapter::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
   }
   if (UCEException::GetInstance().enable_arf()) {
     if (aclrt_get_last_error != nullptr) {
-      auto rt_error = aclrt_get_last_error(thread_level);
+      auto rt_error = aclrt_get_last_error(ACL_RT_THREAD_LEVEL);
       MS_LOG(ERROR) << "Run task failed, error rt code [" << rt_error << "].";
       if (rt_error == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
         UCEException::GetInstance().set_force_stop_flag(true);

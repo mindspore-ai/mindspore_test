@@ -17,6 +17,8 @@
 #include "tools/error_handler/error_handler.h"
 #include <string>
 #include <utility>
+#include <vector>
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace tools {
@@ -24,6 +26,40 @@ namespace {
 SNAPSHOT_MANAGER_REG(kCPUDevice, SnapshotMgr);
 SNAPSHOT_MANAGER_REG(kGPUDevice, SnapshotMgr);
 }  // namespace
+
+ErrorHandler &ErrorHandler::GetInstance() {
+  static ErrorHandler instance;
+  return instance;
+}
+
+void ErrorHandler::SaveConstants(const std::vector<KernelGraphPtr> &graphs) {
+  if (!UCEException::IsEnableUCE()) {
+    MS_LOG(INFO) << "Not enable UCE, skip saving constants.";
+  }
+  MS_LOG(INFO) << "Save constants of graphs for UCE recovery";
+  for (auto &graph : graphs) {
+    MS_EXCEPTION_IF_NULL(graph);
+    for (const auto &value_node : graph->graph_value_nodes()) {
+      auto node_value = value_node->value();
+      if (node_value->isa<tensor::Tensor>()) {
+        auto tensor = node_value->cast<tensor::TensorPtr>();
+        const_values_[value_node] = std::make_shared<tensor::Tensor>(*tensor);
+      } else {
+        const_values_[value_node] = value_node->value();
+      }
+    }
+  }
+}
+
+const ValuePtr &ErrorHandler::GetConstant(const AnfNodePtr &node) {
+  auto iter = const_values_.find(node);
+  if (iter == const_values_.end()) {
+    MS_LOG(EXCEPTION) << "Can not find tensor for node " << node->fullname_with_scope();
+  }
+  return iter->second;
+}
+
+void ErrorHandler::Clear() { const_values_.clear(); }
 
 SnapshotMgrPtr SnapshotMgr::GetInstance(const std::string &device) {
   auto iter = GetInstanceMap().find(device);

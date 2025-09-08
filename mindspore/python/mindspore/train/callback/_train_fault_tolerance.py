@@ -32,7 +32,6 @@ from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import _reg_snapshot_params, _reset_snapshot_state, _clear_snapshot_saving_flag
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
-from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
@@ -343,7 +342,7 @@ class TrainFaultTolerance(Callback):
         self.is_uce_rank = False
 
         self.assign = mindspore.ops.Assign()
-        self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
+        self.g_one = Tensor([1], dtype=mstype.int32)
         self.s1 = mindspore.hal.Stream()
         _tft_sem_enable()
         self._tft_register()
@@ -404,7 +403,7 @@ class TrainFaultTolerance(Callback):
         for key, param in self.cb_params.train_network.parameters_and_names():
             if "tft_g_one_flag" in key:
                 with mindspore.hal.StreamCtx(self.s1):
-                    tft_g_one_flag = Tensor(Tensor_.move_to(param, "CPU", False))
+                    tft_g_one_flag = param.asnumpy()
                 self.s1.synchronize()
                 return int(tft_g_one_flag) == 1
         return False

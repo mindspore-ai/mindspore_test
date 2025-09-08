@@ -38,8 +38,8 @@ UCEException &UCEException::GetInstance() {
   return instance;
 }
 
-void UCEException::ProcessUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
-                                   UCEError error_type) {
+void UCEException::ProcessUceError(const FuncInfo &fn_info, int error_code,
+                                   const FuncGetRecentErrMsg &fn_get_recent_err_msg, UCEError error_type) {
   MS_LOG(ERROR) << fn_info.api_msg << " in <" << fn_info.caller_func << "> at " << fn_info.caller_file << ":"
                 << fn_info.caller_line << " failed, error code [" << error_code << "].";
   if (error_type == UCEError::kHbmMultBitEccError && fn_get_recent_err_msg != nullptr) {
@@ -57,7 +57,7 @@ void UCEException::ProcessUceError(const FuncInfo &fn_info, int error_code, Func
 }
 
 void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
-                                      FuncGetRecentErrMsg fn_get_recent_err_msg, UCEError error_type,
+                                      const FuncGetRecentErrMsg &fn_get_recent_err_msg, UCEError error_type,
                                       bool throw_exception) {
   const std::string &api_func = fn_info.api_msg;
   if (api_func == "aclrtProcessReport" || api_func == "acltdtReceiveTensor" || api_func == "aclDestroyDataBuffer") {
