@@ -35,9 +35,9 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
-#include "tools/silent_detect/silent_check/silent_check.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
@@ -353,12 +353,15 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
   // save pipeline parallel local rank for silent check
-  auto checker = silentcheck::SilentCheckerBase::GetInstance();
-  if (checker != nullptr && group_name.find(kPipelineGroupNamePrefix) == 0) {
-    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Pipeline parallel group_name: " << group_name
-                                    << ", group_ranks: " << group_ranks << ", local_group_rank: " << local_group_rank
-                                    << ", local_group_size: " << local_group_size;
-    checker->SetPipelineStage(local_group_rank);
+  if (group_name.find(kPipelineGroupNamePrefix) == 0) {
+    constexpr char kSilentCheckSetPipelineStage[] = "SilentCheckSetPipelineStage";
+    static const auto silent_check_set_pipeline_stage =
+      kernel::KernelCallback::GetInstance()
+        .GetCallback<void, uint32_t, const string &, const std::vector<uint32_t> &, uint32_t>(
+          kSilentCheckSetPipelineStage);
+    if (silent_check_set_pipeline_stage) {
+      silent_check_set_pipeline_stage(local_group_rank, group_name, group_ranks, local_group_size);
+    }
   }
 
   if (config.async) {
