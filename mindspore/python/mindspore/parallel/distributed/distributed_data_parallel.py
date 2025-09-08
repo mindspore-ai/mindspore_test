@@ -58,7 +58,8 @@ class DistributedDataParallel(nn.Cell):
     communication among data parallel group to overlap communication latency.
 
     .. warning::
-        The method is currently only supported in PyNative mode.
+        - The method is currently only supported in PyNative mode.
+        - This is an experimental interface, may be changed or canceled in the future.
 
     Args:
         module (nn.Cell): the module to be wrapped with DDP.
@@ -83,7 +84,6 @@ class DistributedDataParallel(nn.Cell):
 
     Examples:
         .. note::
-            - Current API does not support GPU/CPU version of MindSpore
             - When enabling recomputation or gradient freezing, the model should be wrapped by
               `DistributedDataParallel` at the outermost layer.
             - Before running the following examples, you need to configure the communication environment variables.
@@ -323,7 +323,7 @@ class DistributedDataParallel(nn.Cell):
 
     @contextmanager
     def no_sync(self):
-        """context manager helper function."""
+        """Context manager helper function. When enabled, no grad allreduce synchronization will be executed."""
         self._enable_sync(False)
         try:
             yield
