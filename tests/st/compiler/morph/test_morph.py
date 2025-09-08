@@ -51,6 +51,10 @@ def fn(a, b, c, d):
 def bprop(a, b, c, d, out, dout):
     return (dout * b * c * d * NUMBER_5 * NUMBER_2, dout, dout, dout)
 
+def bprop_call_fn(a, b, c, d, out, dout):
+    fn_out = fn(a, b, c, d)
+    return (dout * b * c * d * NUMBER_5 * NUMBER_2, dout, dout * fn_out, dout * fn_out)
+
 class TestNet0(nn.Cell):
     def __init__(self, bprop_fn=None):
         super(TestNet0, self).__init__()
@@ -136,6 +140,7 @@ class TestNet4(nn.Cell):
     (TestNet1(), False, 1),
     (TestNet2(), False, 3),
     (TestNet3(bprop_fn=bprop), True, 3),
+    (TestNet3(bprop_fn=bprop_call_fn), True, 3),
     (TestNet4(), True, 1)])
 def test_morph_graph_mode(net, with_bprop_fn, morph_call_time):
     """
