@@ -157,20 +157,20 @@ FuncGraphPtr CreateMorphGraph(const PrimitivePtr &prim) {
     MS_LOG(EXCEPTION) << "Primitive " << prim->name() << " does not have __morph_fn__ attribute.";
   }
 
-  ValuePtr morph_fn = nullptr;
-  bool succ = parse::ConvertData(fn, &morph_fn);
-  if (!succ || morph_fn == nullptr || !morph_fn->isa<FuncGraph>()) {
-    MS_LOG(EXCEPTION) << "Failed to convert morph fn to funcgraph.";
+  // Since we will add monad parameters to `morph_fn` later, we set the `forbid_reuse` parameter of the
+  // `ConvertToFuncGraph` function to True here.
+  ValuePtr morph_fn = parse::ConvertToFuncGraph(fn, {}, parse::PYTHON_MOD_GET_PARSE_METHOD, true);
+  if (morph_fn == nullptr || !morph_fn->isa<FuncGraph>()) {
+    MS_LOG(EXCEPTION) << "Failed to convert morph (" << py::str(fn) << ") fn to funcgraph.";
   }
 
   auto morph_fg = morph_fn->cast<FuncGraphPtr>();
 
   auto bprop_fn = py::getattr(py_obj, "__morph_bprop_fn__", py::none());
   if (!bprop_fn.is_none()) {
-    ValuePtr morph_bprop_fn = nullptr;
-    succ = parse::ConvertData(bprop_fn, &morph_bprop_fn);
-    if (!succ || morph_bprop_fn == nullptr || !morph_bprop_fn->isa<FuncGraph>()) {
-      MS_LOG(EXCEPTION) << "Failed to convert morph bprop fn to funcgraph.";
+    ValuePtr morph_bprop_fn = parse::ConvertToFuncGraph(bprop_fn);
+    if (morph_bprop_fn == nullptr || !morph_bprop_fn->isa<FuncGraph>()) {
+      MS_LOG(EXCEPTION) << "Failed to convert morph bprop fn(" << py::str(bprop_fn) << ") to funcgraph.";
     }
     auto morph_bprop_fg = morph_bprop_fn->cast<FuncGraphPtr>();
     (void)morph_fg->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(morph_bprop_fg));
