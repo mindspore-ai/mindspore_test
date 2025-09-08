@@ -225,5 +225,22 @@ REG_BPROP_BUILDER("InnerCommIsend").FreeUselessValues_IO({i0}, {}).SetBody(BODYF
 
   return {dx, ib->OutZeros(rank), ib->OutZeros(group), ib->OutZeros(tag)};
 });
+
+REG_BPROP_BUILDER("InnerCommAllToAllV").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  auto group = ib->GetInput(i1);
+  auto send_numel_list = ib->GetInput(i2);
+  auto recv_numel_list = ib->GetInput(i3);
+  auto rank_size = ib->GetInput(i4);
+  auto split_sizes_empty = ib->GetInput(i5);
+  auto dout = ib->GetInput(i7);
+  auto dx =
+    ib->Emit("InnerCommAllToAllV", {dout, group, recv_numel_list, send_numel_list, rank_size, split_sizes_empty});
+  return {dx,
+          ib->OutZeros(group),
+          ib->OutZeros(send_numel_list),
+          ib->OutZeros(recv_numel_list),
+          ib->OutZeros(rank_size),
+          ib->OutZeros(split_sizes_empty)};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
