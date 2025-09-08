@@ -17,6 +17,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include "utils/stream_guard.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "ir/device_type.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
@@ -47,11 +48,11 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     (void)host_context->device_res_manager_->SyncAllStreams();
     MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
-    ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
+    ret = SyncCopy(dst_tensor->device_address(), src_device_ptr, CurrentStream::id());
   } else {
     status = "AsyncDeviceToHost";
     MS_EXCEPTION_IF_NULL(dst_tensor->device_address());
-    ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, src_device_ptr->stream_id());
+    ret = AsyncCopy(dst_tensor->device_address(), src_device_ptr, CurrentStream::id());
   }
   if (!ret) {
     MS_LOG(EXCEPTION) << status << " failed.";
@@ -72,10 +73,10 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     MS_EXCEPTION_IF_NULL(host_context);
     MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
     (void)host_context->device_res_manager_->SyncAllStreams();
-    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
+    ret = AsyncCopy(dst_device_ptr, src_data, CurrentStream::id());
     status = "SyncHostToDevice";
   } else {
-    ret = AsyncCopy(dst_device_ptr, src_data, dst_device_ptr->stream_id());
+    ret = AsyncCopy(dst_device_ptr, src_data, CurrentStream::id());
     status = "AsyncHostToDevice";
   }
   if (!ret) {
@@ -111,7 +112,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({GetDeviceTypeByName(to), device_id});
   MS_EXCEPTION_IF_NULL(target_context);
   target_context->Initialize();
-  auto stream_id = target_context->device_res_manager_->GetCurrentStreamId();
+  auto stream_id = CurrentStream::id();
   if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
     stream_id = kDefaultStreamIndex;
   }
