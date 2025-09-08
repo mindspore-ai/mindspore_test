@@ -25,28 +25,6 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_COMMON_EXPORT DropoutAndDropoutGradUnifyMindIR : public PatternProcessPass {
- public:
-  explicit DropoutAndDropoutGradUnifyMindIR(bool multigraph = true)
-      : PatternProcessPass("dropout_and_dropoutgrad_unify_mindir", multigraph) {
-    grad_input_ = std::make_shared<Var>();
-  }
-  ~DropoutAndDropoutGradUnifyMindIR() override = default;
-  const BaseRef DefinePattern() const override;
-  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
-
- private:
-  VarPtr grad_input_;
-};
-
-class BACKEND_COMMON_EXPORT DropoutUnifyMindIR0 : public PatternProcessPass {
- public:
-  explicit DropoutUnifyMindIR0(bool multigraph = true) : PatternProcessPass("dropout_unify_mindir0", multigraph) {}
-  ~DropoutUnifyMindIR0() override = default;
-  const BaseRef DefinePattern() const override;
-  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
-};
-
 class BACKEND_COMMON_EXPORT DropoutUnifyMindIR1 : public PatternProcessPass {
  public:
   explicit DropoutUnifyMindIR1(const std::string &name = "dropout_unify_mindir1", bool multigraph = true)

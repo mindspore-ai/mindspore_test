@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include "ir/tensor_new.h"
-#include "backend/common/kernel_graph/session_basic.h"
 #include "tools/data_dump/device_statistic/kernel_launcher.h"
 #include "tools/data_dump/tensor_info_collect.h"
 #include "tools/data_dump/tensor_statistic.h"
@@ -55,12 +54,13 @@ using mindspore::kernel::KernelLaunchAddr;
 using AddressPtrList = std::vector<mindspore::kernel::AddressPtr>;
 using KernelGraph = mindspore::session::KernelGraph;
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
+using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 
 namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
 
-inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr, const TypeId, const ShapeVector &);
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(KernelTensorPtr, const TypeId, const ShapeVector &);
 inline string TensorToString(mindspore::tensor::TensorPtr tensor);
 
 namespace {
@@ -681,7 +681,7 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   return tensor_info_comm;
 }
 
-inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr kernel_tensor, const TypeId host_type,
+inline mindspore::tensor::TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor, const TypeId host_type,
                                                         const ShapeVector &host_shape) {
   if (!kernel_tensor) {
     return nullptr;

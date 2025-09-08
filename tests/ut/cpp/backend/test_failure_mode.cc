@@ -52,26 +52,6 @@ TEST_F(TestFailureMode, test_lamb_fission_ge_with_wrong_input_number) {
   }
 }
 
-/// Feature: Failure mode which test backend pass problem
-/// Description: Test DropoutUnifyMindIR0
-/// Expectation: After pass, got wrong pattern, expect DropoutGenMask and DropoutDoMask, but got nochanged
-TEST_F(TestFailureMode, test_dropout_unify_mindir_0) {
-  test::ConstructGraph c;
-  auto input = c.NewTensorInput("input", kFloat32, {2, 16384});
-  auto index = c.NewValueNode(MakeValue((int64_t)0));
-  auto dropout = c.NewCNode("Dropout", {input}, {{"keep_prob", MakeValue(true)}});
-  auto getitem = c.NewCNodeWithoutInfer("TupleGetItem", {dropout, index}, {});
-  c.SetOutput(getitem);
-  test::RunPass(c.GetGraph(), {std::make_shared<opt::DropoutUnifyMindIR0>()});
-  opt::CheckPattern checker;
-  checker.src_pattern_.AddVar("shape")
-    .AddVar("prob")
-    .AddVar("input")
-    .AddCNode("genmask", {std::make_shared<Primitive>("DropoutGenMask"), "shape", "prob"})
-    .AddCNode("domask", {std::make_shared<Primitive>("DropoutDoMask"), "input", "genmask", "prob"});
-  EXPECT_FALSE(checker.build_pattern_map(c.GetGraph()->output()));
-}
-
 /// Feature: Failure mode which test convert ge adapter
 /// Description: Test convert ge adapter with no-exist op
 /// Expectation: Got null operator

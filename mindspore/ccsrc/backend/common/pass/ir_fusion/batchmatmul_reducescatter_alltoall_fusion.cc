@@ -21,7 +21,6 @@
 #include <functional>
 #include <vector>
 #include "base/base.h"
-#include "backend/common/pass/common/gllo_utils.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/log_adapter.h"

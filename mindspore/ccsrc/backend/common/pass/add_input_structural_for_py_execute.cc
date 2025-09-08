@@ -20,7 +20,6 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "backend/common/pass/const_input_to_attr.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
