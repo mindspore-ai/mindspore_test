@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 import pytest
 import mindspore as ms
-from mindspore.utils import stress_detect
+from mindspore.tools import stress_detect
 import time
 
 def test_stress_detect():
