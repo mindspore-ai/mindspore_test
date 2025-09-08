@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
-#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
+#ifndef MINDSPORE_OPS_KERNEL_ASCEND_SILENT_DETECT_ASCEND_SILENT_CHECK_H_
+#define MINDSPORE_OPS_KERNEL_ASCEND_SILENT_DETECT_ASCEND_SILENT_CHECK_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -30,7 +30,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "kernel/ascend/visible.h"
 
 namespace mindspore {
@@ -238,4 +238,4 @@ class OPS_ASCEND_API SilentChecker {
 }  // namespace ascend
 }  // namespace silentcheck
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
+#endif  // MINDSPORE_OPS_KERNEL_ASCEND_SILENT_DETECT_ASCEND_SILENT_CHECK_H_

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "kernel/ascend/silent_detect/ascend_silent_check.h"
 #include <sys/param.h>
 #include <algorithm>
 #include <cassert>
@@ -27,7 +27,7 @@
 #include <optional>
 #include <vector>
 #include <string>
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"

@@ -64,7 +64,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#include "tools/checksum/checksum_mgr.h"
+#include "tools/silent_detect/checksum/checksum_mgr.h"
 #include "tools/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/collective/collective_manager.h"

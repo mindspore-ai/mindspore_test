@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include <map>
 #include <memory>
 #include <string>
@@ -55,7 +55,7 @@ void SilentCheckerBase::ClearAll() {
   for (auto &elem : GetInstanceMap()) {
     elem.second->Clear();
   }
-  // Note do not clear `GetInstanceMap()`, keep trainning after uce fault can still use silent check
+  // Note do not clear `GetInstanceMap()`, keep training after uce fault can still use silent check
 }
 
 bool SilentCheckerBase::NeedInsertCheckForLastGrad() {

@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"

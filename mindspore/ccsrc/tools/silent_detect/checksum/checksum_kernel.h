@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_CHECKSUM_CHECKSUM_KERNEL_H_
-#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_CHECKSUM_CHECKSUM_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_CHECKSUM_CHECKSUM_KERNEL_H_
+#define MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_CHECKSUM_CHECKSUM_KERNEL_H_
 
 #include <set>
 #include <vector>
@@ -60,4 +60,4 @@ class BACKEND_COMMON_EXPORT CheckSumKernel {
 }  // namespace checksum
 }  // namespace mindspore
 
-#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_CHECKSUM_CHECKSUM_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_CHECKSUM_CHECKSUM_KERNEL_H_

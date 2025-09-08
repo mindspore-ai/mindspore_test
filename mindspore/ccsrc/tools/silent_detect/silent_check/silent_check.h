@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_MINDSPORE_CCSRC_AVAILABILITY_SILENT_CHECK_SILENT_CHECK_H_
-#define MINDSPORE_MINDSPORE_CCSRC_AVAILABILITY_SILENT_CHECK_SILENT_CHECK_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_CHECK_H_
+#define MINDSPORE_MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_CHECK_H_
 
 #include <map>
 #include <memory>
 #include <string>
-#include "include/common/visible.h"
+#include "include/backend/visible.h"
 #include "ir/tensor.h"
 #include "mindspore/core/include/ir/tensor.h"
 
@@ -29,7 +29,7 @@ const char kAttrSilentCheckOpType[] = "silent_check_type";
 enum SilentCheckOpType : int { kSilentCheckGradLastOp = 0, kSilentCheckGradCommOp = 1 };
 using tensor::TensorPtr;
 
-class COMMON_EXPORT SilentCheckerBase {
+class BACKEND_COMMON_EXPORT SilentCheckerBase {
  public:
   static std::shared_ptr<SilentCheckerBase> GetInstance();
 
@@ -69,4 +69,4 @@ class COMMON_EXPORT SilentCheckerBase {
   static bool g_SilentChecker_##NAME##_reg_result = \
     mindspore::silentcheck::SilentCheckerBase::Register(NAME, std::make_shared<CLAZZ>())
 
-#endif  // MINDSPORE_MINDSPORE_CCSRC_AVAILABILITY_SILENT_CHECK_SILENT_CHECK_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_SILENT_CHECK_H_

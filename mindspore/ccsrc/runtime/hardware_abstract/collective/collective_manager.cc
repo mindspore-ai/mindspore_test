@@ -37,7 +37,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {

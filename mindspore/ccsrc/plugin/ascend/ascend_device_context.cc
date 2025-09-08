@@ -47,7 +47,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_compiler_symbol.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_pluggable_mem_allocator.h"
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
-#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "kernel/ascend/silent_detect/ascend_silent_check.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tdt_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

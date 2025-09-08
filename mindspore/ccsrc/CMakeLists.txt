@@ -96,7 +96,6 @@ endif()
 
 
 set(COMMON_SUB_COMP
-        availability
         utils
         common
         common/debug

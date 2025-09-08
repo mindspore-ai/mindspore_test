@@ -15,7 +15,7 @@
  */
 
 #include "pynative/utils/pynative_execute.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/backward/hook/function_py.h"
 #include "pynative/utils/predict_out_type_map.h"

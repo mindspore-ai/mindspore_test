@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tools/checksum/checksum_mgr.h"
+#include "tools/silent_detect/checksum/checksum_mgr.h"
 #include <string>
 #include "tools/silent_detect/silent_detect_config_parser.h"
 #include "utils/log_adapter.h"

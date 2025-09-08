@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "tools/checksum/checksum_kernel.h"
+#include "tools/silent_detect/checksum/checksum_kernel.h"
 #include <algorithm>
 #include <functional>
 #include <memory>

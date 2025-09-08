@@ -9,7 +9,7 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
 endif()
 
 set(ASCEND_KERNEL_COMP
-        availability
+        silent_detect
         acl
         acl_ir
         aclnn
