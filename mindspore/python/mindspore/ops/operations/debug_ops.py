@@ -574,10 +574,10 @@ class Morph(PrimitiveWithInfer):
         >>> weight0_grad = bwd_out[1][0].asnumpy()
         >>> weight1_grad = bwd_out[1][1].asnumpy()
         >>> print("x_grad", x_grad)
-        >>> print("weight0_grad", weight0_grad)
-        >>> print("weight1_grad", weight1_grad)
         x_grad [ 400. 1000. 1800.]
+        >>> print("weight0_grad", weight0_grad)
         weight0_grad [2800. 4000. 5400.]
+        >>> print("weight1_grad", weight1_grad)
         weight1_grad [ 700. 1600. 2700.]
     """
     @prim_attr_register
