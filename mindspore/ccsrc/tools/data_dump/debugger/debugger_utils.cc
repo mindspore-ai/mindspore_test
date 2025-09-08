@@ -582,7 +582,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
         auto tensor_data = PrepareStatTensorData(out_tensor, tensor_info);
 
         bool is_input = (tensor_info.io == kInput);
-        TensorStatDump stat_dump(tensor_info_comm.op_type, tensor_info_comm.op_name, tensor_info_comm.task_id,
+        TensorStatDump stat_dump(tensor_info_comm.op_type, tensor_info_comm.stat_op_name, tensor_info_comm.task_id,
                                  stream_id, timestamp, is_input, tensor_info.io_index, 0);
         stat_dump.DumpTensorStatsToFile(tensor_info_comm.dump_path, tensor_data);
       }
@@ -671,12 +671,13 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   std::string dump_path = GenerateDumpPath(root_graph_id, rank_id);
   std::string op_type = common::AnfAlgo::GetCNodeName(cnode);
   std::string op_name = GetKernelNodeName(cnode);
+  std::string stat_op_name = op_name;
   GetFileKernelName(NOT_NULL(&op_name));
 
   uint32_t task_id = 0;
   auto stream_id = AnfAlgo::GetStreamId(cnode);
 
-  TensorInfoCommForDump tensor_info_comm(dump_path, op_type, op_name, task_id, stream_id);
+  TensorInfoCommForDump tensor_info_comm(dump_path, op_type, op_name, stat_op_name, task_id, stream_id);
   return tensor_info_comm;
 }
 
@@ -713,19 +714,9 @@ inline string TensorToString(mindspore::tensor::TensorPtr tensor) {
   return tensor->DataToString(false);
 }
 
-inline string ShapeToString(const ShapeVector &shape) {
-  std::ostringstream sstr;
-  sstr << "\"(";
-  for (size_t i = 0; i < shape.size(); i++) {
-    sstr << (i > 0 ? "," : "") << shape[i];
-  }
-  sstr << ")\"";
-  return string{sstr.str()};
-}
-
 inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
                        const TensorInfoCommForDump &tensor_info_comm) {
-  string node_name = tensor_info_comm.op_name;
+  string node_name = tensor_info_comm.stat_op_name;
   string node_type = tensor_info_comm.op_type;
 
   const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
