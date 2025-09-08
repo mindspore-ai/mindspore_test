@@ -56,7 +56,7 @@ from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple, _is_p
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
-from mindspore.parallel.shard import Shard
+from mindspore.parallel.shard import Shard, Layout
 from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._register_for_recompute import recompute_registry
@@ -1310,8 +1310,27 @@ class Cell(Cell_):
                 logger.warning(msg)
             self._in_strategy = shard_fn.in_strategy
             self._out_strategy = shard_fn.out_strategy
+        else:
+            if parameter_plan is not None:
+                for param_name, layout in parameter_plan.items():
+                    param = self._search_parameter_by_name(param_name)
+                    if param is None:
+                        logger.warning(
+                            f"{param_name} is not exist, ignored its setting.")
+                        continue
+                    if not isinstance(layout, Layout):
+                        raise ValueError(f"In python shard, the type of setting in parameter_plan must be Layout, "
+                                         f"but got type {type(layout)}")
+                    if param.layout is not None:
+                        raise ValueError(f"Parameter {param.name} has been configured layout, "
+                                         f"cannot be set repeatedly.")
+                    Shard._set_layout_into_parameter(param, layout)
+
         self.in_layout = in_strategy
         self.out_layout = out_strategy
+
+    def _search_parameter_by_name(self, param_name):
+        return self.parameters_dict().get(param_name.replace("self.", ""), None)
 
     def _init_check(self):
         for param in self.get_parameters(expand=False):

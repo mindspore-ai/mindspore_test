@@ -50,6 +50,74 @@ def _tensor_strategy(dev_mat, tensor_map):
     return tensor_strategy
 
 
+def _infer_slice_area_by_rank(dev_matrix, tensor_map, rank_id: int, full_shape: tuple): # -> tuple[tuple[int]]:
+    """Return the range of each axis from full tensor for slice in current rank."""
+    _get_dev_num_alone_dim = lambda matrix, dim: dev_matrix[-dim - 1] if dim != -1 else 1
+
+    def _rank_id_to_dev_id_list(dev_matrix, rank_id):
+        """Infer dev id list by rank_id and dev_matrix"""
+        dims = len(dev_matrix)
+        dev_id_list = [0] * dims
+        for i in range(dims - 1, -1, -1):
+            dev_id_list[i] = rank_id % dev_matrix[i]
+            rank_id = rank_id // dev_matrix[i]
+        return dev_id_list
+
+    dev_id_list = _rank_id_to_dev_id_list(dev_matrix, rank_id)
+
+    dims = len(full_shape)
+    area = []
+    for axis in range(dims):
+        mapping = tensor_map[axis]
+        if isinstance(mapping, int):
+            mapping = (mapping,)
+        split_num = 1
+        for dim in mapping:
+            split_num *= _get_dev_num_alone_dim(dev_matrix, dim)
+
+        slice_id = 0
+        coef = 1
+        for dim in reversed(mapping):
+            if dim == -1:
+                continue
+            slice_id += dev_id_list[-dim - 1] * coef
+            coef *= _get_dev_num_alone_dim(dev_matrix, dim)
+        slice_size = full_shape[axis] // split_num
+        start = slice_id * slice_size
+        end = start + slice_size
+        area.append((start, end))
+    return area
+
+
+def _get_slice_tensor_by_layout(global_tensor, layout):
+    """Transfer global tensor to local tensor by layout"""
+    inner_rank_id = layout.rank_list.index(layout.mesh.rank)
+    slice_area = _infer_slice_area_by_rank(layout.device_matrix, layout.tensor_map, inner_rank_id, global_tensor.shape)
+
+    def get_slice_data(full_data, offset):
+        area = ()
+        for begin, end in offset:
+            area += (slice(begin, end),)
+        return full_data[area]
+
+    local_tensor = get_slice_data(global_tensor, slice_area)
+    local_tensor.local_to_global(layout)
+    return local_tensor
+
+
+def _infer_slice_shape_by_layout(global_shape, layout):
+    """Infer slice shape from global_shape and layout"""
+    slice_shape = list(global_shape)
+    alias_tensor_map = layout.alias_tensor_map
+    for i in range(len(global_shape)):
+        axis_name = alias_tensor_map[i]
+        if isinstance(axis_name, str):
+            axis_name = (axis_name,)
+        for sub_axis_name in axis_name:
+            if sub_axis_name != "None":
+                slice_shape[i] = slice_shape[i] // layout.mesh.get_device_num_along_axis(sub_axis_name)
+    return slice_shape
+
 class _DistributedTensorInfo:
     """
     Describe the distributed information of a tensor.
@@ -818,6 +886,7 @@ class Shard(Shard_):
                     f"{param_name} is not exist, ignored its setting.")
                 continue
 
+            # Old process
             has_set = None
             if param.param_info.param_strategy:
                 has_set = "strategy"
@@ -839,6 +908,22 @@ class Shard(Shard_):
                     param.param_info.tensor_map = param_layout["tensor_map"]
                     param.param_info.interleaved_parallel = param_layout["interleaved_parallel"]
                     param.param_info.alias_name = param_layout["alias_name"]
+
+    @staticmethod
+    def _set_layout_into_parameter(param, layout):
+        """Set layout in to parameter"""
+        if param.layout is not None:
+            raise ValueError(f"Parameter {param.name} has been configured layout, cannot be set repeatedly.")
+
+        slice_shape = _infer_slice_shape_by_layout(param.shape, layout)
+        if not param.has_init:
+            # has been init, get slice data
+            param.set_data(_get_slice_tensor_by_layout(param, layout).value(), slice_shape=True)
+        else:
+            # has not been init, need to modify init shape
+            param.init_mode.shape = slice_shape
+        param.shape = slice_shape
+        param.local_to_global(layout)
 
     def _is_attrs_has_been_set(self, fn, in_strategy, out_strategy, device, level):
         return self.shard_fn is not None and self.fn == fn and self.in_strategy == in_strategy and \

@@ -118,6 +118,7 @@ mindspore/mindspore/python/mindspore/train/serialization.py:_load_into_param_dic
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_safetensors_single
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_parallel_safetensor
 mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:unified_safetensors
+mindspore/mindspore/python/mindspore/nn/cell.py:_load_from_state_dict
 mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetDataType
 mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_index_py.cc:mindspore::tensor::TensorIndex::GetItemByTupleWithView
 mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc:mindspore::np_dtypes::RegisterNpTypeUFuncs

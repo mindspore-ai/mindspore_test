@@ -101,3 +101,15 @@ def test_cell_shard_linear_sequence_parallel():
     case_name = "test_linear_sequence_parallel"
     master_port = 11296
     run_case(case_name, master_port)
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
+def test_cell_shard_with_parameter_plan():
+    '''
+    Feature: run shard in python.
+    Description: Test linear cell shard in python.
+    Expectation: Run success.
+    '''
+    case_name = "test_cell_shard_with_parameter_plan"
+    master_port = 11297
+    run_case(case_name, master_port)

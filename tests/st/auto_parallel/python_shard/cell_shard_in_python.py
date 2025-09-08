@@ -13,12 +13,15 @@
 # limitations under the License.
 # ============================================================================
 
+import pytest
 import time
 import numpy as np
 import mindspore as ms
 import mindspore.communication.management as D
-from mindspore import nn, Tensor
+import mindspore.common.dtype as mstype
+from mindspore import nn, Tensor, Parameter
 from mindspore.parallel import Layout
+from mindspore.common.initializer import initializer
 import mindspore.ops as ops
 from tests.st.auto_parallel.python_shard.utils import global_to_local, local_to_global
 
@@ -377,6 +380,54 @@ def test_linear_sequence_parallel():
     w_local = global_to_local(w, w_layout)
     parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
     parallel_output = parallel_net(x_local, w_local)
+
+    # Validate
+    parallel_output = local_to_global(parallel_output)
+    assert np.allclose(standalone_output.asnumpy(), parallel_output.asnumpy(), 1e-3, 1e-3)
+
+
+@pytest.mark.parametrize('lazy_init', [True, False])
+def test_cell_shard_with_parameter_plan(lazy_init):
+    '''
+    Feature: Cell shard with parameter_plan.
+    Description: Test cell shard with parameter_plan in python shard.
+    Expectation: Run success.
+    '''
+    class Net(nn.Cell):
+        """Net composed of several ReLUs"""
+        def __init__(self):
+            super().__init__()
+            self.matmul_net = MatMulNet()
+            self.relu_net = ReLUNet()
+            self.weight = Parameter(initializer('ones', shape=(k, n), dtype=mstype.float32), name="weight")
+
+        def construct(self, x):
+            out = self.matmul_net(x, self.weight)
+            out = self.relu_net(out)
+            return out
+
+    D.init()
+    np.random.seed(1)
+    m, k, n = 256, 128, 64
+    x = Tensor(np.random.randn(m, k).astype(np.float32))
+
+    # Standalone
+    standalone_net = Net()
+    standalone_output = standalone_net(x)
+
+    # Parallel
+    layout = Layout(base_device_matrix, base_alias_name)
+    if lazy_init:
+        with nn.utils.no_init_parameters():
+            parallel_net = Net()
+    else:
+        parallel_net = Net()
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    x_local = global_to_local(x, x_layout)
+    parallel_net.shard(in_strategy=(layout("dp", "mp"),), parameter_plan={"weight": w_layout})
+    parallel_net.relu_net.shard(in_strategy=(layout("dp", "mp"),))
+    parallel_output = parallel_net(x_local)
 
     # Validate
     parallel_output = local_to_global(parallel_output)
