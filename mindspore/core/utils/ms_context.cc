@@ -702,7 +702,9 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
     "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd,"
     "AddRmsNormDynamicQuant,MatMulElemwise,RmsNormQuant,MatMulSigmoidCastAdd,TransposeBatchMatmulTranspose,"
     "FusedAddTopKDiv,SwiGLUDynamicQuant,SwiGLUReshapeDynamicQuant,QbmmAllReduceConvertBias";
-  const std::string k310pDefaultEnabledOpList = "QuantBatchMatmul,QuantLinearSparse,InferenceGatedFFN";
+  const std::string k310pDefaultEnabledOpList =
+    "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd,InferenceGatedFFN,MatMulElemwise,"
+    "QbmmAllReduceConvertBias,TransposeBatchMatmulTranspose";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
   bool is_310p = ascend_soc_version() == "ascend310p";
@@ -712,11 +714,11 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   }
 
   std::set<std::string> enable_fusion_list;
-  if (is_enable_internal_op) {
-    common::SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
-  }
+
   if (is_310p) {
     common::SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
+  } else if (is_enable_internal_op) {
+    common::SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
   }
 
   std::string env = common::GetEnv("MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST");
