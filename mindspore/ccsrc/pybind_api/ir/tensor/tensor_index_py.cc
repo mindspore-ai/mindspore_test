@@ -2671,17 +2671,16 @@ TensorPtr ProcessDimInMultiDimIndex(const TensorPtr &prev_result, const TensorPt
     const std::vector<TypeId> int_types = {kNumberTypeInt8,  kNumberTypeInt16,  kNumberTypeInt32,  kNumberTypeInt64,
                                            kNumberTypeUInt8, kNumberTypeUInt16, kNumberTypeUInt32, kNumberTypeUInt64};
     auto type_id = tensor_index->data_type();
-    if (tensor_index->DataDim() == 0) {
-      if (std::find(int_types.begin(), int_types.end(), type_id) != int_types.end()) {
-        result = DoSelect(prev_result, *dim, DoItem(tensor_index), orig_tensor->shape_c()[*orig_dim]);
-        *orig_dim += 1;
-      } else if (type_id == kNumberTypeBool) {
+    if (tensor_index->DataDim() == 0 &&
+        (std::find(int_types.begin(), int_types.end(), type_id) != int_types.end() || type_id == kNumberTypeBool)) {
+      if (type_id == kNumberTypeBool) {
         result = DoExpandDims(prev_result, *dim);
         TensorPtr index_for_bool = DoItem(tensor_index) ? tensor_1d : empty_tensor_1d;
         RecordTensorIndex(index_for_bool, remain_indexes, *dim);
         *dim += 1;
       } else {
-        MS_EXCEPTION(IndexError) << "Invalid tensor index type";
+        result = DoSelect(prev_result, *dim, DoItem(tensor_index), orig_tensor->shape_c()[*orig_dim]);
+        *orig_dim += 1;
       }
     } else {
       RecordTensorIndex(tensor_index, remain_indexes, *dim);
