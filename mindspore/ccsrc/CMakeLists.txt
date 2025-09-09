@@ -264,7 +264,7 @@ else()
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_frontend
             mindspore_runtime_pipeline mindspore_dump mindspore_backend_common mindspore_pyboost mindspore_pynative
             mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler mindspore_extension
-            mindspore_runtime_utils)
+            mindspore_runtime_utils mindspore_cluster)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
