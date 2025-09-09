@@ -291,6 +291,8 @@ from mindspore.ops.auto_generate import UniqueDim, Unique2
 # 119 unsqeeze
 
 # 120 view
+def tensor_view_dtype(input, dtype):
+    raise NotImplementedError("Currently not support.")
 
 # 121 contiguous
 
