@@ -64,6 +64,7 @@ class ActivationWithAxisDistributedOp(DistributedOp):
         min_slice_num = 1
         x_dict = layouts[0].to_dict()
         x_dev = x_dict["tensor_map"]
+        extra_args = extra_args[0]
         if not isinstance(extra_args, (int, tuple)):
             raise ValueError(
                 f"Operation {self.op_name}: The extra args should be int or tuple, but got ({type(extra_args)})")

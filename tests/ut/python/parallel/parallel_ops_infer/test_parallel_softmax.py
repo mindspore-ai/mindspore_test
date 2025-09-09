@@ -18,6 +18,7 @@ from mindspore.parallel.spmd.ops.parallel_ops_register import get_distributed_op
 
 op = get_distributed_op("Softmax")
 
+
 def test_softmax_layout_data_parallel():
     """
     Feature: Softmax data parallel
@@ -32,11 +33,13 @@ def test_softmax_layout_data_parallel():
     x_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
     x_layout = x_layout("dp", "None")
 
-    output_layout = op.infer_layout((x_layout,), -1)
+    output_layout = op.infer_layout((x_layout,), (-1,))
     expected_map = (0, -1)  # Expected output tensor map
-    assert output_layout.to_dict()["tensor_map"] == expected_map, \
-        f"Data Parallel with transpose_a test failed. Expected {expected_map}," \
+    assert output_layout.to_dict()["tensor_map"] == expected_map, (
+        f"Data Parallel with transpose_a test failed. Expected {expected_map},"
         f" got {output_layout.to_dict()['tensor_map']}"
+    )
+
 
 def test_softmax_layout_data_parallel_value_failed():
     """
@@ -53,4 +56,4 @@ def test_softmax_layout_data_parallel_value_failed():
     x_layout = x_layout("dp", "None")
 
     with pytest.raises(ValueError):
-        _ = op.infer_layout((x_layout,), 0)
+        _ = op.infer_layout((x_layout,), (0,))
