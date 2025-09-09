@@ -30,7 +30,7 @@ from mindspore import context, ops, dtype
 from mindspore.common.api import jit
 from mindspore.common import Tensor, Parameter
 from mindspore.ops import operations as P
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 log = logging.getLogger("test")
 log.setLevel(level=logging.ERROR)

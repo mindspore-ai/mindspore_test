@@ -25,7 +25,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, Model, context
 from mindspore.nn.optim import Momentum
 from mindspore.ops.composite import add_flags
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 log = logging.getLogger("test")
 log.setLevel(level=logging.ERROR)

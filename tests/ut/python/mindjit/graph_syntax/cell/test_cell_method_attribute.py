@@ -17,6 +17,7 @@ import pytest
 import mindspore as ms
 import mindspore.nn as nn
 
+ms.set_context(mode=ms.GRAPH_MODE)
 
 class InnerCellNet(nn.Cell):
     def __init__(self):

@@ -17,7 +17,7 @@ import numpy as np
 
 from mindspore import Tensor, Model, context
 from mindspore.nn import Cell
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 
 def run_test(netclass, count):

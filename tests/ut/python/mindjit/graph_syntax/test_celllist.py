@@ -17,7 +17,7 @@ import numpy as np
 
 from mindspore import context, nn, Tensor, Model, ParameterTuple
 from mindspore import dtype as mstype
-from ..ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 
 class Net(nn.Cell):

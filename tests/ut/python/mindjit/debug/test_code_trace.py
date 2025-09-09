@@ -26,7 +26,7 @@ from mindspore.common.parameter import Parameter
 from mindspore import dataset as ds
 from tests.security_utils import security_off_wrap
 from tests.code_trace_analyzer import CodeTraceAnalyzer
-from tests.ut.python.debug.resnet import resnet50, DatasetResNet
+from tests.ut.python.mindjit.debug.resnet import resnet50, DatasetResNet
 
 context.set_context(mode=context.GRAPH_MODE)
 
