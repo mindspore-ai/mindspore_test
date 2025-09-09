@@ -105,7 +105,7 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   BackendBasePtr backends_[kInvalidBackend];
 };
 
-class BACKEND_MANAGER_EXPORT BackendRegister {
+class BackendRegister {
  public:
   BackendRegister(const std::string &backend_name, BackendCreator &&backend_creator) {
     BackendManager::GetInstance().Register(backend_name, std::move(backend_creator));
