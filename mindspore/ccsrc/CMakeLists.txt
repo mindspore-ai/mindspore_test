@@ -34,7 +34,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
 ## make sub objects
 set(SUB_COMP
-        transform/express_ir
+        utils/ir_dump/onnx
         frontend/optimizer
         frontend/parallel
         frontend/operator

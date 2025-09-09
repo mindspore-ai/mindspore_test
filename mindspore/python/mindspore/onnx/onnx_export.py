@@ -95,7 +95,8 @@ def export(net, *inputs, file_name, input_names=None, output_names=None, export_
     net.set_train(mode=False)
 
     extra_save_params = False
-    if _calculation_net_size(net) > PROTO_LIMIT_SIZE:
+    total_size = _calculation_net_size(net)
+    if total_size > PROTO_LIMIT_SIZE:
         logger.warning('Network size is: {}G, it exceeded the protobuf: {}G limit, now parameters in network are saved '
                        'in external data files.'.format(total_size / 1024 / 1024, PROTO_LIMIT_SIZE / 1024 / 1024))
         extra_save_params = True
