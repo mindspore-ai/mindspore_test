@@ -26,10 +26,11 @@ from mindspore.parallel.parameter_broadcast import parameter_broadcast
 from mindspore.parallel.shard import shard, Layout
 from mindspore.parallel.local_func import custom_shard
 from mindspore.parallel.transform_safetensors import unified_safetensors
+from mindspore.parallel.spmd.parameter_init import init_parameters
 
 __all__ = ["set_algo_parameters", "reset_algo_parameters", "get_algo_parameters", "rank_list_for_transform",
            "transform_checkpoint_by_rank", "transform_checkpoints", "merge_pipeline_strategys", "shard",
            "sync_pipeline_shared_parameters", "Layout", "parameter_broadcast", "load_segmented_checkpoints",
            "unified_safetensors", "load_distributed_checkpoint", "merge_sliced_parameter", "restore_group_info_list",
            "build_searched_strategy", "set_op_strategy_config", "rank_list_for_convert",
-           "convert_checkpoint_by_rank", "convert_checkpoints", "custom_shard"]
+           "convert_checkpoint_by_rank", "convert_checkpoints", "custom_shard", "init_parameters"]

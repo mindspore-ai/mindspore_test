@@ -22,7 +22,7 @@ from mindspore.communication.management import init
 from mindspore.parallel.spmd.hsdp.hsdp import hsdp
 os.environ["MS_SIMULATION_LEVEL"] = "1"
 os.environ["RANK_SIZE"] = "32"
-os.environ["RANK_ID"] = "0"
+os.environ["RANK_ID"] = "32"
 init()
 
 loss_fn = nn.MSELoss()
@@ -147,7 +147,7 @@ def run_hsdp_with_layout(w1_layout, w2_layout, data_layout, label_layout):
 def get_device_layout():
     device_matrix = (4, 8)
     alias_name = ("dp", "mp")
-    rank_list = list(range(32))
+    rank_list = [i + 32 for i in list(range(32))]
     layout = Layout(device_matrix, alias_name, rank_list)
     return layout
 
@@ -177,3 +177,23 @@ def test_hsdp_with_mp_layout():
     data_layout = layout("dp", "None")
     label_layout = layout("dp", "None")
     run_hsdp_with_layout(w1_layout, w2_layout, data_layout, label_layout)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_with_exception():
+    """
+    Feature: hsdp
+    Description: test hsdp with exception
+    Expectation: run success
+    """
+    result = ""
+    try:
+        os.environ["RANK_ID"] = "64"
+        layout = get_device_layout()
+        w_layout = layout("None", "None")
+        data_layout = layout("dp", "None")
+        label_layout = layout("dp", "None")
+        run_hsdp_with_layout(w_layout, w_layout, data_layout, label_layout)
+    except ValueError as e:
+        result = str(e)
+    assert "invalid rank" in result
+    os.environ["RANK_ID"] = "32"

@@ -59,7 +59,7 @@ class HSDPParam:
             if m < n:
                 m, n = n, m
             if n == 0:
-                raise ValueError(f"Invalid gcd input 0.")
+                raise ValueError(f"HSDP invalid gcd input 0.")
             r = m % n
             if r == 0:
                 return n
@@ -75,11 +75,20 @@ class HSDPParam:
         """init parameter rank info"""
         self.rank_id = get_rank()
         self.hsdp_rank = self.rank_id
+        self.local_rank = self.rank_id
         self.tp_rank = 0
         if self.param.layout is None:
-            self.sharded_axis_set = None
             self.rank_size = get_group_size()
             return
+
+        if len(self.param.layout.rank_list) == 1:
+            self.rank_size = 1
+            return
+
+        try:
+            self.local_rank = self.param.layout.rank_list.index(self.rank_id)
+        except ValueError:
+            raise ValueError(f"HSDP invalid rank {self.rank_id} with rank list {self.param.layout.rank_list}.")
 
         tensor_map = self.param.layout.tensor_map
         sharded_axis_set = set()
@@ -118,7 +127,7 @@ class HSDPParam:
         self.tp_rank_stride_list.reverse()
 
         rank_indices = []
-        index = self.rank_id
+        index = self.local_rank
         for stride in self.global_rank_stride_list:
             rank_indices.append(index // stride)
             index = index % stride
@@ -151,16 +160,16 @@ class HSDPParam:
                 global_rank = global_rank + index * self.global_rank_stride_list[axis]
             if self.param.layout is not None:
                 if global_rank >= len(self.param.layout.rank_list):
-                    print(f"invalid rank {global_rank} with rank list len {len(self.param.layout.rank_list)}")
-                else:
-                    global_rank = self.param.layout.rank_list[global_rank]
+                    raise ValueError(f"HSDP invalid index {global_rank} with"
+                                     f"rank list len {len(self.param.layout.rank_list)}.")
+                global_rank = self.param.layout.rank_list[global_rank]
             rank_list.append(global_rank)
         return rank_list
 
     def _get_op_rank_list(self):
         """get data parallel rank list"""
         if self.param.layout is None:
-            rank_base = self.rank_id // self.shard_size * self.shard_size
+            rank_base = self.local_rank // self.shard_size * self.shard_size
             rank_list = [i + rank_base for i in range(self.shard_size)]
             return rank_list
 
@@ -172,7 +181,7 @@ class HSDPParam:
         """get optimizer parallel rank list"""
         if self.param.layout is None:
             rank_stride = self.shard_size
-            rank_base = self.rank_id % rank_stride
+            rank_base = self.local_rank % rank_stride
             rank_list = [i * rank_stride + rank_base for i in range(self.dp_size)]
             return rank_list
 
