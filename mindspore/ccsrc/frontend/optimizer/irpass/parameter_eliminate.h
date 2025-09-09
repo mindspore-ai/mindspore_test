@@ -240,6 +240,9 @@ static inline void AdjustCallerArgs(const FuncGraphPtr &called, const CNodePtr &
 
   TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(caller->debug_info()));
   auto new_caller = caller->func_graph()->NewCNode(new_args);
+  new_caller->set_primal_attrs(caller->primal_attrs());
+  new_caller->set_attrs(caller->attrs());
+  new_caller->set_scope(caller->scope());
   new_caller->set_abstract(caller->abstract());
   // Should be done before manager. Replace as caller CNode will be dropped after Replace, the ReplaceInOrder will be
   // no effect.
