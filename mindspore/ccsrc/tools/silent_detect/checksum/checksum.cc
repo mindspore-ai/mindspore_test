@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tools/checksum/checksum.h"
+#include "tools/silent_detect/checksum/checksum.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -23,8 +23,8 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
-#include "tools/checksum/checksum_kernel.h"
-#include "tools/checksum/checksum_mgr.h"
+#include "tools/silent_detect/checksum/checksum_kernel.h"
+#include "tools/silent_detect/checksum/checksum_mgr.h"
 
 namespace mindspore {
 namespace checksum {

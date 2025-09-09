@@ -32,7 +32,7 @@
 #endif
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
-#include "tools/checksum/checksum.h"
+#include "tools/silent_detect/checksum/checksum.h"
 #include "tools/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "tools/data_dump/overflow_counter.h"

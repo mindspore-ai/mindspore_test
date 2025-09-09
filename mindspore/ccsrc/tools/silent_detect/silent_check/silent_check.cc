@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 #include "include/common/utils/stream_util.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -55,7 +57,7 @@ void SilentCheckerBase::ClearAll() {
   for (auto &elem : GetInstanceMap()) {
     elem.second->Clear();
   }
-  // Note do not clear `GetInstanceMap()`, keep trainning after uce fault can still use silent check
+  // Note do not clear `GetInstanceMap()`, keep training after uce fault can still use silent check
 }
 
 bool SilentCheckerBase::NeedInsertCheckForLastGrad() {
@@ -65,5 +67,19 @@ bool SilentCheckerBase::NeedInsertCheckForLastGrad() {
   // check whether is pipeline parallel stage 0
   return pp_stage_ == 0;
 }
+
+void SilentCheckSetPipelineStage(uint32_t pp_stage, const string &group_name, const std::vector<uint32_t> &group_ranks,
+                                 uint32_t local_group_size) {
+  auto checker = SilentCheckerBase::GetInstance();
+  if (checker != nullptr) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Pipeline parallel group_name: " << group_name
+                                    << ", group_ranks: " << group_ranks << ", local_group_rank: " << pp_stage
+                                    << ", local_group_size: " << local_group_size;
+    checker->SetPipelineStage(pp_stage);
+  }
+}
+
+REGISTER_KERNEL_CALLBACK(SilentCheckSetPipelineStage);
+
 }  // namespace silentcheck
 }  // namespace mindspore

@@ -55,7 +55,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
@@ -450,7 +450,7 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       if (!((cnode == last_grad_node_) || NeedCheckCommOperator(cnode->input(ops::kInputIndex0)))) {
         continue;
       }
-      // add attriute "need_silent_check" to cnode
+      // add attribute "need_silent_check" to cnode
       auto silent_check_op_type = common::AnfAlgo::IsCommunicationOp(cnode) ? silentcheck::kSilentCheckGradCommOp
                                                                             : silentcheck::kSilentCheckGradLastOp;
       cnode->AddPrimalAttr(silentcheck::kAttrSilentCheckOpType, MakeValue<int>(silent_check_op_type));

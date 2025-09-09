@@ -30,7 +30,7 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "utils/ms_utils.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace kernel {

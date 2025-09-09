@@ -83,7 +83,7 @@
 #include "tools/profiler/profiling.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "kernel/ascend/silent_detect/ascend_silent_check.h"
 #include "plugin/ascend/res_manager/ascend_res_manager.h"
 #include "kernel/ascend/acl/acl_kernel_mod.h"
 #include "plugin/ascend/ascend_device_context.h"

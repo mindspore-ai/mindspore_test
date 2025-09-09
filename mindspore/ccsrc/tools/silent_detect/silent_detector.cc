@@ -20,7 +20,7 @@
 
 #include "tools/silent_detect/silent_detect_config_parser.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "tools/checksum/checksum_mgr.h"
+#include "tools/silent_detect/checksum/checksum_mgr.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #else

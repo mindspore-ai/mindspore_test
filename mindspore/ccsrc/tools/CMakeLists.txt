@@ -3,7 +3,7 @@ include_directories(${CMAKE_BINARY_DIR})
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)
 add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
-set(_DEBUG_SRC_LIST)
+set(_TOOLS_SRC_LIST)
 
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -11,7 +11,7 @@ if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
 endif()
 
 if(ENABLE_DEBUGGER)
-    list(APPEND _DEBUG_SRC_LIST
+    list(APPEND _TOOLS_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/debugger.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/proto_exporter.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/tensor_summary.cc"
@@ -21,17 +21,17 @@ if(ENABLE_DEBUGGER)
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/utils.cc"
         )
 else()
-    list(APPEND _DEBUG_SRC_LIST
+    list(APPEND _TOOLS_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/debugger/proto_exporter_stub.cc"
         )
 endif()
 
-list(APPEND _DEBUG_SRC_LIST
+list(APPEND _TOOLS_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/kernel_cache.cc"
     )
 
-list(APPEND _DEBUG_SRC_LIST
+list(APPEND _TOOLS_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/cpu_e2e_dump.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_utils.cc"
@@ -43,21 +43,24 @@ list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
     )
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
-    list(APPEND _DEBUG_SRC_LIST
+    list(APPEND _TOOLS_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
         )
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
+list(APPEND _TOOLS_SRC_LIST ${_DEVICE_STATISTIC_LIST})
 
 file(GLOB_RECURSE _ERROR_HANDLER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/error_handler/*.cc")
-list(APPEND _DEBUG_SRC_LIST ${_ERROR_HANDLER_LIST})
-list(LENGTH _DEBUG_SRC_LIST debug_files_size)
-list(APPEND _DEBUG_SRC_LIST ${_DEVICE_STATISTIC_LIST})
-file(GLOB_RECURSE _CHECKSUM_LIST "${CMAKE_CURRENT_SOURCE_DIR}/checksum/*.cc")
-list(APPEND _DEBUG_SRC_LIST ${_CHECKSUM_LIST})
+list(APPEND _TOOLS_SRC_LIST ${_ERROR_HANDLER_LIST})
+file(GLOB_RECURSE _SILENT_CHECK_LIST "${CMAKE_CURRENT_SOURCE_DIR}/silent_detect/silent_check/*.cc")
+list(APPEND _TOOLS_SRC_LIST ${_SILENT_CHECK_LIST})
+file(GLOB_RECURSE _CHECKSUM_LIST "${CMAKE_CURRENT_SOURCE_DIR}/silent_detect/checksum/*.cc")
+list(APPEND _TOOLS_SRC_LIST ${_CHECKSUM_LIST})
+
+list(LENGTH _TOOLS_SRC_LIST debug_files_size)
 if(${debug_files_size} GREATER 0)
-  add_library(_mindspore_tools_obj OBJECT ${_DEBUG_SRC_LIST})
+  add_library(_mindspore_tools_obj OBJECT ${_TOOLS_SRC_LIST})
   add_dependencies(_mindspore_tools_obj proto_input)
 endif()
 
@@ -74,7 +77,7 @@ foreach(_comp ${DEBUG_SUB_COMP})
         list(APPEND DEBUG_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
         add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core)
         if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE DEBUG_DLL)
+            target_compile_definitions(_mindspore_${sub}_obj PRIVATE DUMP_DLL)
         endif()
     endif()
 endforeach()

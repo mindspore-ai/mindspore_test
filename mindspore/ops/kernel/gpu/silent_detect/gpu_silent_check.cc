@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
 namespace silentcheck {
-namespace cpu {
-class CpuSilentChecker : public SilentCheckerBase {};
+namespace gpu {
+class GpuSilentChecker : public SilentCheckerBase {};
 
-SILENT_CHECK_REG(kCPUDevice, CpuSilentChecker);
-}  // namespace cpu
+SILENT_CHECK_REG(kGPUDevice, GpuSilentChecker);
+}  // namespace gpu
 }  // namespace silentcheck
 }  // namespace mindspore

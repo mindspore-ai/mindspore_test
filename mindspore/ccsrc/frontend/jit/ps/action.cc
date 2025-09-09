@@ -85,7 +85,7 @@
 #endif
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiler.h"
-#include "availability/silent_check/silent_check.h"
+#include "tools/silent_detect/silent_check/silent_check.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "include/common/pynative/adapter.h"
 #include "backend/backend_manager/backend_jit_config.h"
