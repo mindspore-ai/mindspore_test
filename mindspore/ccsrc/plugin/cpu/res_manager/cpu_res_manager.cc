@@ -287,6 +287,39 @@ void CopyData(const DeviceAddress *src_device_address, const DeviceAddress *dst_
   }
   it->second(src_ptr, dst_ptr, src_size, dst_type_id);
 }
+
+void FloatToHalf(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto float_data = static_cast<const float *>(src);
+  auto half_data = static_cast<float16 *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    half_data[i] = float16(float_data[i]);
+  }
+}
+
+void IntToShort(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto int_data = static_cast<const int *>(src);
+  auto half_data = static_cast<int16_t *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    half_data[i] = static_cast<int16_t>(int_data[i]);
+  }
+}
+
+void IntToLong(void *dst, const void *src, size_t elem_num) {
+  if (dst == nullptr || src == nullptr) {
+    return;
+  }
+  auto int_data = static_cast<const int *>(src);
+  auto long_data = static_cast<int64_t *>(dst);
+  for (size_t i = 0; i < elem_num; ++i) {
+    long_data[i] = static_cast<int64_t>(int_data[i]);
+  }
+}
 }  // namespace
 
 bool CPUResManager::SyncCopy(const DeviceAddressPtr &dst_device_sync, const DeviceAddressPtr &src_device_sync,

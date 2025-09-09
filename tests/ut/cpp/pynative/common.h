@@ -24,7 +24,6 @@
 #include "pybind11/pybind11.h"
 
 #include "ir/tensor.h"
-#include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
@@ -58,6 +57,6 @@ class PyCommon : public testing::Test {
   inline static pybind11::module tensor_module_;
   inline static std::unique_ptr<pybind11::scoped_interpreter> guard_;
 };
-}
+}  // namespace mindspore
 
 #endif  // MINDSPORE_TESTS_UT_CPP_PYNATIVE_COMMON_H_

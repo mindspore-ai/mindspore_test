@@ -18,7 +18,6 @@
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
-#include "include/common/utils/stub_tensor.h"
 #include "include/common/pynative/common_utils.h"
 
 namespace mindspore {

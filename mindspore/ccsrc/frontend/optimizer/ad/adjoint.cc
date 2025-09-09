@@ -20,7 +20,6 @@
 #include "ir/tensor_py_wrapperbase.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "mindspore/ccsrc/frontend/operator/composite/composite.h"
-#include "include/common/utils/hook.h"
 #include "utils/tensor_hook_map.h"
 
 namespace mindspore {

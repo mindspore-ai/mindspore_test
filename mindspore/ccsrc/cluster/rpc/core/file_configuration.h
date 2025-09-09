@@ -26,8 +26,8 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <nlohmann/json.hpp>
 
-#include "include/common/utils/json_operation_utils.h"
 #include "include/backend/distributed/ps/constants.h"
 #include "utils/log_adapter.h"
 #include "cluster/rpc/core/comm_util.h"
@@ -61,6 +61,23 @@ class BACKEND_COMMON_EXPORT FileConfiguration : public Configuration {
   std::vector<nlohmann::json> GetVector(const std::string &key) const override;
 
   int64_t GetInt(const std::string &key, int64_t default_value) const override;
+
+  template <typename T>
+  T GetJsonValue(const nlohmann::json &json, const std::string &key) {
+    auto obj_json = json.find(key);
+    if (obj_json != json.end()) {
+      try {
+        T value = obj_json.value();
+        return value;
+      } catch (std::exception &e) {
+        MS_LOG(ERROR) << "Get Json Value Error, error info: " << e.what();
+        MS_LOG(EXCEPTION) << "Get Json Value Error, target type: " << typeid(T).name() << ", key: [" << key << "]"
+                          << ", json dump: " << json.dump();
+      }
+    } else {
+      MS_LOG(EXCEPTION) << "Get Json Value Error, can not find key [" << key << "], json dump: " << json.dump();
+    }
+  }
 
   template <typename T>
   T GetValue(const std::string &key) const {

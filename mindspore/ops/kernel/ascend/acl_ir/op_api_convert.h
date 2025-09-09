@@ -34,7 +34,6 @@
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "ir/device_address.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 
 namespace mindspore::device::ascend {
 // Api data struct.

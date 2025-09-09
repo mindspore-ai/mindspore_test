@@ -7,6 +7,12 @@ file(GLOB_RECURSE HARDWARE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "memory_manager/*.cc"
   "stream/*.cc")
 
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+  list(REMOVE_ITEM HARDWARE_SRC_LIST "kernel_base/duplex_pipe.cc")
+else()
+  list(REMOVE_ITEM HARDWARE_SRC_LIST "kernel_base/duplex_pipe_win.cc")
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-abstract-non-virtual-dtor")
 endif()

@@ -25,7 +25,6 @@
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "ir/device_address.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"

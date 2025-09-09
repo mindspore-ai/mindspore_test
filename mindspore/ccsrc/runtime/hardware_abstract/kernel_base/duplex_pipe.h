@@ -24,7 +24,6 @@
 #include <functional>
 
 #include "utils/log_adapter.h"
-#include "include/common/visible.h"
 #include "utils/os.h"
 
 #define DP_INFO MS_LOG(INFO) << "[DuplexPipe] "
@@ -35,7 +34,7 @@
 namespace mindspore {
 // A tool to run a command as child process and build a duplex pipe between them.
 // Similar to 'popen()', but use duplex not simplex pipe, more like 'socketpair'.
-class COMMON_EXPORT DuplexPipe : public std::enable_shared_from_this<mindspore::DuplexPipe> {
+class DuplexPipe : public std::enable_shared_from_this<mindspore::DuplexPipe> {
  public:
   constexpr inline static int kBufferSize = 4096;
   constexpr inline static unsigned int kTimeOutSeconds = 5;
@@ -105,7 +104,7 @@ class COMMON_EXPORT DuplexPipe : public std::enable_shared_from_this<mindspore::
   int remote_stdin_{};
   int remote_stdout_{};
 
-  class COMMON_EXPORT SignalHandler {
+  class SignalHandler {
    public:
     SignalHandler(const std::weak_ptr<DuplexPipe> &dp, pid_t *pid);
     ~SignalHandler();

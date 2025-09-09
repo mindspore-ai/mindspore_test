@@ -21,6 +21,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "utils/hash_map.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "plugin/ascend/res_manager/collective/ascend_communication_group.h"
 

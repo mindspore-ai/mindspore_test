@@ -23,7 +23,7 @@
 #include <memory>
 #include <mutex>
 
-#include "include/common/duplex_pipe.h"
+#include "runtime/hardware_abstract/kernel_base/duplex_pipe.h"
 #include "runtime/hardware_abstract/visible.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

@@ -23,7 +23,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/callbacks.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"

@@ -28,7 +28,6 @@
 
 #include "acl/acl.h"
 #include "ops_utils/op_constants.h"
-#include "utils/dlopen_macro.h"
 #include "utils/log_adapter.h"
 
 #include "include/backend/anf_runtime_algorithm.h"

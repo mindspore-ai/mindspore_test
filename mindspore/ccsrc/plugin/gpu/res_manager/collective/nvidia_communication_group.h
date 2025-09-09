@@ -22,7 +22,6 @@
 #include <vector>
 #include <memory>
 #include "runtime/hardware_abstract/collective/communication_group.h"
-#include "utils/dlopen_macro.h"
 
 namespace mindspore {
 namespace device {

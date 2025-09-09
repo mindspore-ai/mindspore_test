@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/image_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "utils/core_op_utils.h"

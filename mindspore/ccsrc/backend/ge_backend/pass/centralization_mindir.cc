@@ -20,7 +20,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 
 namespace mindspore {
 namespace opt {

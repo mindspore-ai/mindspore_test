@@ -39,9 +39,6 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/common/utils/signal_util.h"
-#endif
 #ifndef ENABLE_SECURITY
 #include "backend/ge_backend/dump/hook_debugger.h"
 #endif

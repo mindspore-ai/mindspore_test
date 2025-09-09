@@ -24,7 +24,6 @@
 #include "ir/anf.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "plugin/ascend/res_manager/mbuf_manager/mbuf_receive_manager.h"
-#include "utils/dlopen_macro.h"
 #include "utils/ms_utils.h"
 #include "plugin/ascend/res_manager/visible.h"
 

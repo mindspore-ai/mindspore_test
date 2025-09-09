@@ -18,7 +18,6 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "include/common/fallback.h"
-#include "include/common/utils/stub_tensor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/utils.h"

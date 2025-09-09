@@ -25,7 +25,6 @@
 #include "ir/anf.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "symbolic_shape/utils.h"
 #include "abstract/abstract_value.h"

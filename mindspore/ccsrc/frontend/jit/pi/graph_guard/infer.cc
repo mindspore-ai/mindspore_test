@@ -25,7 +25,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "frontend/operator/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"

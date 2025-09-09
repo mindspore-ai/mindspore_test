@@ -25,11 +25,10 @@
 #include "ir/anf.h"
 #include "base/base.h"
 #include "ir/func_graph.h"
-#include "include/common/utils/hook.h"
 
 namespace mindspore {
-namespace pynative {
 namespace py = pybind11;
+namespace pynative {
 class COMMON_EXPORT CommonUtils {
  public:
   static void ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position);

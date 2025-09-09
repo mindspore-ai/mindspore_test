@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include <functional>
 #include <unordered_map>
 #include <numeric>

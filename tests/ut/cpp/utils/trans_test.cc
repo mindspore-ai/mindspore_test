@@ -16,7 +16,7 @@
 
 #include <vector>
 #include "common/common_test.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/common/utils/utils.h"
 
 using namespace std;
