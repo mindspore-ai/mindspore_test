@@ -34,7 +34,7 @@ namespace dataset {
 constexpr uint32_t MAX_CHN_HEIGHT = 4096;
 constexpr uint32_t MAX_CHN_WIDTH = 4096;
 constexpr float BUF_SIZE_FACTOR = 1.5;
-constexpr int32_t SEND_TIMEOUT = 30;
+constexpr int32_t SEND_TIMEOUT = 1000;
 constexpr uint32_t WAIT_TIMEOUT = 5000000;  // in us
 constexpr uint32_t REF_FRAME_NUM = 16;
 constexpr uint32_t DISPLAY_FRAME_NUM = 16;
