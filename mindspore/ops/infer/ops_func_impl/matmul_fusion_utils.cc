@@ -15,7 +15,6 @@
  */
 
 #include "infer/ops_func_impl/matmul_fusion_utils.h"
-#include <vector>
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
@@ -32,15 +31,15 @@ BaseShapePtr MatmulFusionUtils::InferenceMultiMatmulInferShape(const PrimitivePt
   constexpr size_t kSize3 = 3;
   const size_t x_rank = x_shape.size();
   const size_t w_rank = w_shape.size();
-  MS_CHECK_VALUE((x_rank == kSize3 || x_rank == kSize2),
-                 CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', x_rank should be 3 or 2."));
+  MS_CHECK_VALUE(x_rank == kSize3,
+                 CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', x_rank should be 3."));
 
   MS_CHECK_VALUE(w_rank == kSize2,
                  CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', w_rank should be 2."));
 
-  auto b = x_rank == kSize3 ? x_shape[0] : 1;  // in matmul, m = b * s
-  auto s = x_shape[x_rank - 2];
-  auto k = x_shape[x_rank - 1];
+  auto b = x_shape[0];  // in matmul, m = b * s
+  auto s = x_shape[1];
+  auto k = x_shape[2];
   auto k0 = w_shape[1];
   MS_CHECK_VALUE(k == k0, CheckAndConvertUtils::FormatCommMsg(
                             "For '" + primitive->name() + "', the K axis of all inputs must have the same length."));
@@ -53,16 +52,13 @@ BaseShapePtr MatmulFusionUtils::InferenceMultiMatmulInferShape(const PrimitivePt
     (n_len_list.size() == kSize2 || n_len_list.size() == kSize3),
     CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', attr 'n_lens' must have 2 or 3 value."));
 
-  ShapeVector output_0_shape = x_rank == kSize3 ? std::vector<ShapeValueDType>{b, s, n_len_list[kIndex0]}
-                                                : std::vector<ShapeValueDType>{s, n_len_list[kIndex0]};
-  ShapeVector output_1_shape = x_rank == kSize3 ? std::vector<ShapeValueDType>{b, s, n_len_list[kIndex1]}
-                                                : std::vector<ShapeValueDType>{s, n_len_list[kIndex1]};
+  ShapeVector output_0_shape = {b, s, n_len_list[kIndex0]};
+  ShapeVector output_1_shape = {b, s, n_len_list[kIndex1]};
   std::vector<BaseShapePtr> shape_lists;
   (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_0_shape));
   (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_1_shape));
   if (n_len_list.size() == kSize3) {
-    ShapeVector output_2_shape = x_rank == kSize3 ? std::vector<ShapeValueDType>{b, s, n_len_list[kIndex2]}
-                                                  : std::vector<ShapeValueDType>{s, n_len_list[kIndex2]};
+    ShapeVector output_2_shape = {b, s, n_len_list[kIndex2]};
     (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_2_shape));
   }
   return std::make_shared<abstract::TupleShape>(shape_lists);
@@ -151,5 +147,6 @@ TypePtr MatmulFusionUtils::FusedMatMulElemInferType(const PrimitivePtr &primitiv
   }
   return x_type;
 }
+
 }  // namespace ops
 }  // namespace mindspore
