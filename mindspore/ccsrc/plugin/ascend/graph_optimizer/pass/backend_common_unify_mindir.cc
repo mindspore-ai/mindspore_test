@@ -83,10 +83,6 @@
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/moe_init_routing_dyn_quantv2_fusion.h"
-#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/matmul_split_fusion.h"
-#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/addext_cast_rms_norm_cast_fusion.h"
-#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/matmul_addext_split_fusion.h"
-#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/matmul_add_split_fusion.h"
 #include "backend/common/pass/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
 #include "backend/common/pass/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 
@@ -189,7 +185,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::RmsNormAddQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>(), infer_boost);
-  pm->AddFusionPass(std::make_shared<opt::AddExtCastRmsNormCastFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
   pm->AddFusionPass(std::make_shared<opt::InferenceQbmmElemwiseFusion>(), infer_boost);
@@ -201,9 +196,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MoeInitRoutingDynQuantV2Fusion>(), infer_boost);
-  pm->AddFusionPass(std::make_shared<opt::MatmulSplitFusion>(), infer_boost);
-  pm->AddFusionPass(std::make_shared<opt::MatmulAddExtSplitFusion>(), infer_boost);
-  pm->AddFusionPass(std::make_shared<opt::MatmulAddSplitFusion>(), infer_boost);
 #endif  // ENABLE_INTERNAL_KERNELS
 
   pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
