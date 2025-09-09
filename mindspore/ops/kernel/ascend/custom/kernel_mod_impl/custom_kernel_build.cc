@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/custom/custom_kernel_build.h"
-
-#include <string>
-#include <vector>
-
+#include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_build.h"
 #include "kernel/ascend/kernel_plugin.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "kernel/ascend/custom/custom_kernel_factory.h"
-#include "kernel/ascend/custom/custom_kernel_internal.h"
+#include "kernel/ascend/custom/kernel_mod_impl/custom_kernel_factory.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

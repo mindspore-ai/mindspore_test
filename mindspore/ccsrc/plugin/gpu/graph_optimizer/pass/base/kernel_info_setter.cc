@@ -40,7 +40,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/gpu/custom/custom_aot_gpu_kernel.h"
+#include "kernel/gpu/custom/kernel_mod_impl/custom_aot_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/cpu/custom/custom_aot_cpu_kernel.h"
+#include "kernel/cpu/custom/kernel_mod_impl/custom_aot_cpu_kernel.h"
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
