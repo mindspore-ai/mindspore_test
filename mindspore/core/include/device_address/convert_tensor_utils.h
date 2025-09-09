@@ -20,19 +20,18 @@
 #include <iostream>
 #include <vector>
 #include "ir/tensor.h"
-#include "include/common/visible.h"
 
 namespace mindspore {
 namespace device {
-COMMON_EXPORT void HalfToFloat(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void FloatToHalf(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void DoubleToFloat(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void FloatToDouble(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void ShortToInt(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void IntToShort(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void LongToInt(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void IntToLong(void *dst, const void *src, size_t elem_num);
-COMMON_EXPORT void ConvertSameType(void *const dst, const void *src, size_t size, TypeId type);
+MS_CORE_API void HalfToFloat(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void FloatToHalf(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void DoubleToFloat(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void FloatToDouble(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void ShortToInt(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void IntToShort(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void LongToInt(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void IntToLong(void *dst, const void *src, size_t elem_num);
+MS_CORE_API void ConvertSameType(void *const dst, const void *src, size_t size, TypeId type);
 
 template <typename T>
 void ConvertSameType(T *dst, const T *src, size_t elem_num) {

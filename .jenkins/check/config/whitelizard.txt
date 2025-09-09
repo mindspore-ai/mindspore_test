@@ -27,7 +27,7 @@ mindspore/mindspore/ccsrc/frontend/optimizer/ad/dfunctor.cc:mindspore::ad::DFunc
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/gather_v2_p_info.cc:mindspore::parallel::GatherV2PInfo::CheckStrategy
 mindspore/mindspore/ccsrc/runtime/device/device_address_utils.cc:mindspore::runtime::DeviceAddressUtils::CreateParameterDeviceAddress
 mindspore/mindspore/ccsrc/runtime/device/device_address_utils.cc:mindspore::runtime::DeviceAddressUtils::CreateKernelOutputDeviceAddress
-mindspore/mindspore/ccsrc/utils/convert_tensor_utils.cc:mindspore::device::ConvertSameType
+mindspore/mindspore/core/device_address/convert_tensor_utils.cc:mindspore::device::ConvertSameType
 mindspore/mindspore/ccsrc/runtime/core/graph_scheduler/base/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel

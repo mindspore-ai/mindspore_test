@@ -57,7 +57,7 @@
 #endif
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/convert_tensor_utils.h"
+#include "mindspore/core/include/device_address/convert_tensor_utils.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "runtime/hardware_abstract/utils.h"

@@ -15,8 +15,10 @@
  */
 
 #include "ir/device_address.h"
+#include <complex>
 #include "ir/format_utils.h"
 #include "utils/ms_context.h"
+#include "device_address/convert_tensor_utils.h"
 
 namespace mindspore {
 SyncCopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
@@ -31,7 +33,28 @@ MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync
   g_sync_ptr_func[static_cast<int>(device_type)] = sync_ptr_func;
 }
 
+namespace {
+bool Copy(void *dst, const void *src, uint64_t size) {
+  if (size == 0) {
+    return true;
+  }
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  auto ret_code = memcpy_s(dst, size, src, size);
+  if (ret_code == ERANGE) {
+    device::ConvertSameType(dst, src, size, kNumberTypeUInt8);
+  } else if (ret_code != EOK) {
+    MS_LOG(ERROR) << "Failed to copy tensor from ptr:" << src << " to :" << dst << " size:" << size;
+    return false;
+  }
+  return true;
+}
+}  // namespace
+
 bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size, size_t stream_id) {
+  if (device_type == device::DeviceType::kCPU) {
+    return Copy(dst, src, size);
+  }
   MS_EXCEPTION_IF_NULL(g_sync_ptr_func[static_cast<int>(device_type)]);
   return g_sync_ptr_func[static_cast<int>(device_type)](dst, src, size, stream_id);
 }
@@ -48,9 +71,7 @@ bool SyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr
   }
   if (dst_device_address->GetDeviceType() == device::DeviceType::kCPU &&
       src_device_address->GetDeviceType() == device::DeviceType::kCPU) {
-    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)]);
-    return g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_address, src_device_address,
-                                                                        stream_id);
+    return HostCopy(dst_device_address, src_device_address);
   }
   if (dst_device_address->GetDeviceType() == device::DeviceType::kAscend ||
       src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
@@ -75,9 +96,7 @@ bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPt
   }
   if (dst_device_address->GetDeviceType() == device::DeviceType::kCPU &&
       src_device_address->GetDeviceType() == device::DeviceType::kCPU) {
-    MS_EXCEPTION_IF_NULL(g_sync_copy_func[static_cast<int>(device::DeviceType::kCPU)]);
-    return g_async_copy_func[static_cast<int>(device::DeviceType::kCPU)](dst_device_address, src_device_address,
-                                                                         stream_id, keep_host);
+    return HostCopy(dst_device_address, src_device_address);
   }
   if (dst_device_address->GetDeviceType() == device::DeviceType::kAscend ||
       src_device_address->GetDeviceType() == device::DeviceType::kAscend) {
@@ -354,4 +373,181 @@ void DeviceAddress::ClearDeviceMemory() {
   }
 }
 }  // namespace device
+
+namespace {
+
+// clang-format off
+#define FOR_EACH_TYPE_BASE(M)                    \
+  M(kNumberTypeBool, bool)                       \
+  M(kNumberTypeUInt8, uint8_t)                   \
+  M(kNumberTypeInt4, int8_t)                     \
+  M(kNumberTypeInt8, int8_t)                     \
+  M(kNumberTypeInt16, int16_t)                   \
+  M(kNumberTypeInt32, int32_t)                   \
+  M(kNumberTypeInt64, int64_t)                   \
+  M(kNumberTypeUInt16, uint16_t)                 \
+  M(kNumberTypeUInt32, uint32_t)                 \
+  M(kNumberTypeUInt64, uint64_t)                 \
+  M(kNumberTypeFloat16, float16)                 \
+  M(kNumberTypeFloat32, float)                   \
+  M(kNumberTypeFloat64, double)                  \
+  M(kNumberTypeFloat8E4M3FN, float8_e4m3fn)      \
+  M(kNumberTypeFloat8E5M2, float8_e5m2)          \
+  M(kNumberTypeHiFloat8, hifloat8)               \
+  M(kNumberTypeComplex64, ComplexStorage<float>) \
+  M(kNumberTypeComplex128, ComplexStorage<double>)
+
+#ifndef KERNEL_EXECUTOR_ANDROID
+#define FOR_EACH_TYPE_EXTRA(M) M(kNumberTypeBFloat16, bfloat16)
+#else
+#define FOR_EACH_TYPE_EXTRA(M)
+#endif
+
+#define FOR_EACH_TYPE(M) \
+  FOR_EACH_TYPE_BASE(M)  \
+  FOR_EACH_TYPE_EXTRA(M)
+
+#define REGISTER_SIZE(address_type_id, address_type) { address_type_id, sizeof(address_type) },
+
+static const std::unordered_map<TypeId, size_t> kTypeSizeMap = {
+  FOR_EACH_TYPE(REGISTER_SIZE)
+};
+
+size_t GetTypeSize(TypeId tid) {
+  return kTypeSizeMap.at(tid);
+}
+
+template <typename T>
+using DstCopyFunc = void (*)(T *src_ptr, void *dst_ptr, size_t size);
+
+template <typename T>
+static const std::unordered_map<TypeId, DstCopyFunc<T>> g_dst_copy_map = {
+#define REGISTER_DST(dst_type_id, dst_type)                     \
+  {dst_type_id, +[](T *src_ptr, void *dst_ptr, size_t size) {   \
+    auto buf = static_cast<dst_type *>(dst_ptr);                \
+    return tensor::TransDataType<dst_type>(src_ptr, buf, size); \
+    }},
+  FOR_EACH_TYPE(REGISTER_DST)
+#undef REGISTER_DST
+};
+
+template <typename T>
+void CopyData(T *src_ptr, size_t size, void *dst_ptr, TypeId dst_type_id) {
+  auto &m = g_dst_copy_map<T>;
+  auto it = m.find(dst_type_id);
+  if (it == m.end()) {
+    MS_LOG(EXCEPTION) << "Cannot construct Tensor because of unsupported dst data type: " << dst_type_id << ".";
+  }
+  it->second(src_ptr, dst_ptr, size);
+}
+
+using SrcCopyFunc = std::function<void(void *src_ptr, void *dst_ptr, size_t size, TypeId dst_type_id)>;
+
+static const std::unordered_map<TypeId, SrcCopyFunc> g_src_copy_map = {
+#define REGISTER_SRC(src_type_id, src_type)                                          \
+  {src_type_id, +[](void *src_ptr, void *dst_ptr, size_t size, TypeId dst_type_id) { \
+    auto buf = static_cast<src_type *>(src_ptr);                                     \
+    return CopyData<src_type>(buf, size, dst_ptr, dst_type_id);                      \
+    }},
+  FOR_EACH_TYPE(REGISTER_SRC)
+#undef REGISTER_SRC
+};
+
+#undef FOR_EACH_TYPE
+#undef FOR_EACH_TYPE_BASE
+#undef FOR_EACH_TYPE_EXTRA
+#undef REGISTER_SIZE
+// clang-format on
+
+void CopyData(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address) {
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+
+  TypeId src_type_id = src_device_address->type_id();
+  TypeId dst_type_id = dst_device_address->type_id();
+  auto src_size = src_device_address->GetSize() / GetTypeSize(src_type_id);
+  auto dst_size = dst_device_address->GetSize() / GetTypeSize(dst_type_id);
+  if (src_size != dst_size) {
+    MS_LOG(EXCEPTION) << "Not same shape in device address:" << src_device_address->ToString()
+                      << " and:" << dst_device_address->ToString();
+  }
+
+  void *src_ptr = src_device_address->GetMutablePtr();
+  void *dst_ptr = dst_device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(src_ptr);
+  MS_EXCEPTION_IF_NULL(dst_ptr);
+
+  auto it = g_src_copy_map.find(src_type_id);
+  if (it == g_src_copy_map.end()) {
+    MS_LOG(EXCEPTION) << "Unsupported conversion from " << src_type_id << " to " << dst_type_id;
+  }
+  it->second(src_ptr, dst_ptr, src_size, dst_type_id);
+}
+}  // namespace
+
+bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address) {
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
+    MS_LOG(INFO) << "No need sync for dst device address: " << dst_device_address
+                 << " and src device address: " << src_device_address;
+    return true;
+  }
+
+  if (dst_device_address->format() != src_device_address->format()) {
+    MS_LOG(ERROR) << "Format is different, src(format:" << src_device_address->format()
+                  << "), dst(format:" << dst_device_address->format() << ") for device address:" << dst_device_address;
+    return false;
+  }
+  auto dst_ptr = dst_device_address->GetMutablePtr();
+  auto src_ptr = src_device_address->GetMutablePtr();
+  MS_EXCEPTION_IF_NULL(src_device_address->GetMutablePtr());
+  MS_EXCEPTION_IF_NULL(dst_device_address->GetMutablePtr());
+  if (dst_ptr == src_ptr) {
+    MS_LOG(DEBUG) << "host_ptr is equal to device ptr, request ignored.";
+    return true;
+  }
+  auto dst_type_id = dst_device_address->type_id();
+  auto src_type_id = src_device_address->type_id();
+
+  if (src_type_id == dst_type_id) {
+    if (src_device_address->GetSize() > dst_device_address->GetSize()) {
+      MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
+                      << ", dst size: " << dst_device_address->GetSize();
+      return true;
+    }
+    auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
+    // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
+    if (ret_code == ERANGE) {
+      MS_LOG(DEBUG) << "Copy for same type and return erange from device address:" << src_device_address->ToString()
+                    << " to:" << dst_device_address->ToString();
+      device::ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
+                              dst_device_address->GetSize(), src_type_id);
+      return true;
+    } else if (ret_code != EOK) {
+      MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address
+                    << " to :" << dst_device_address;
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  if (dst_type_id == kNumberTypeFloat16 && src_type_id == kNumberTypeFloat32) {
+    device::FloatToHalf(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
+  } else if (dst_type_id == kNumberTypeFloat64 && src_type_id == kNumberTypeFloat32) {
+    device::FloatToDouble(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(double));
+  } else if (dst_type_id == kNumberTypeFloat32 && src_type_id == kNumberTypeFloat64) {
+    device::DoubleToFloat(dst_ptr, src_ptr, dst_device_address->GetSize() >> 2);
+  } else if (dst_type_id == kNumberTypeInt16 && src_type_id == kNumberTypeInt32) {
+    device::IntToShort(dst_ptr, src_ptr, dst_device_address->GetSize() >> 1);
+  } else if (dst_type_id == kNumberTypeInt64 && src_type_id == kNumberTypeInt32) {
+    device::IntToLong(dst_ptr, src_ptr, dst_device_address->GetSize() / sizeof(int64_t));
+  } else {
+    MS_LOG(DEBUG) << "Types not match. src type: " << TypeIdLabel(src_type_id)
+                  << ", dst type: " << TypeIdLabel(dst_type_id) << " device_address:" << dst_device_address << " !";
+    CopyData(dst_device_address, src_device_address);
+  }
+  return true;
+}
 }  // namespace mindspore
