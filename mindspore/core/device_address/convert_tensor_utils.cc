@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/convert_tensor_utils.h"
+#include "mindspore/core/include/device_address/convert_tensor_utils.h"
 #include <complex>
 #include <vector>
 #include "base/float8_e4m3fn.h"

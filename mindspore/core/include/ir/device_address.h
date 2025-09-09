@@ -339,5 +339,6 @@ MS_CORE_API bool SyncCopy(const DeviceAddressPtr &dst_device_address, const Devi
                           size_t stream_id);
 MS_CORE_API bool AsyncCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address,
                            size_t stream_id, bool keep_src = true);
+MS_CORE_API bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr &src_device_address);
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_DEVICE_ADDRESS_H_
