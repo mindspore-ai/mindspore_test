@@ -13,7 +13,7 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
     // Run op
     ${convert_body}
     kernel::pyboost::OpRunStatus::Get().set_run_info(
-      kernel::pyboost::OpStatus(true, false, 0, device_target_));
+      kernel::pyboost::OpStatus(true, false, device_target_));
     auto outputs = kernel::pyboost::${operator_name}(${call_args});
     abstract::AbstractBasePtr output_abs = kNativeAbstractConverter.ConvertAbstract(outputs);
     ${output_expr}

@@ -617,14 +617,6 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
   MS_LOG(DEBUG) << "Cur top last cell " << input_args_info->cell_id;
 }
 
-TopCellInfoPtr GradExecutor::GetReadyRunTopCell(const std::string &ready_run_cell_id) const {
-  const auto it = ready_run_top_cell_.find(ready_run_cell_id);
-  if (it != ready_run_top_cell_.end()) {
-    return it->second;
-  }
-  return nullptr;
-}
-
 py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                                  const py::object &grad_position, const py::object &has_aux, const py::args &args) {
   // Wait forward task finish.
@@ -895,7 +887,6 @@ void GradExecutor::ClearRes() {
   is_run_recompute_ = false;
   save_graphs_ = false;
   forward_use_dynamic_shape_process_ = false;
-  custom_bprop_cell_count_ = 0;
   grad_order_ = 0;
   op_num_in_bprop_graph_ = kDefaultContainerSize;
 

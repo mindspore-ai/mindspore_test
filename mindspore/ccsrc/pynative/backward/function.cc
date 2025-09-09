@@ -28,8 +28,7 @@ void PrepareForForward() {
 
   const auto &pynative_executor = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(pynative_executor);
-  kernel::pyboost::OpStatus status{false, false, pynative_executor->grad_executor()->custom_bprop_cell_count(),
-                                   pynative_executor->forward_executor()->device_target()};
+  kernel::pyboost::OpStatus status{false, false, pynative_executor->forward_executor()->device_target()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
 }
 
