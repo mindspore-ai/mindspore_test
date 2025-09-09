@@ -56,6 +56,7 @@ def test_index_add_std(mode):
     set_mode(mode)
     x = ms.Tensor(
         np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float32))
+    ori_x = x.clone()
     dim = 1
     index = ms.Tensor([0, 2], ms.int32)
     source = ms.Tensor(
@@ -67,6 +68,7 @@ def test_index_add_std(mode):
         np.array([[1., 1.], [1., 1.], [1., 1.]], dtype=np.float32))
     output = index_add_forward_func(x, dim, index, source, 1)
     backward_output = index_add_backward_func(x, dim, index, source, 1)
+    assert np.allclose(x.asnumpy(), ori_x.asnumpy())
     assert np.allclose(output.asnumpy(), expect_output.asnumpy())
     assert np.allclose(backward_output, expect_backward_output.asnumpy())
 
