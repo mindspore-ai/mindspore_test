@@ -16,11 +16,12 @@
 
 #include "pynative/backward/hook/function_py.h"
 
+#include <vector>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 
-#include "frontend/operator/primitive_py.h"
 #include "utils/log_adapter.h"
 #include "utils/ordered_map.h"
 #include "pynative/utils/pynative_utils.h"
@@ -60,8 +61,7 @@ TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self) {
   return kernel::pyboost::view(self, self->shape());
 }
 
-void ProcessInputs(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx, const py::args &inputs,
-                   std::vector<TensorMeta> *inputs_meta) {
+void ProcessInputs(const std::shared_ptr<FunctionContext> &context, const FunctionPtr &ctx, const py::args &inputs) {
   size_t inputs_size = inputs.size();
   std::vector<bool> is_tensor_input;
   is_tensor_input.reserve(inputs_size);
@@ -76,14 +76,12 @@ void ProcessInputs(const std::shared_ptr<FunctionContext> &context, const Functi
       tensor->set_need_pipeline_sync(true);
       need_grad_input[i] = AutoGradUtil::NeedGrad(tensor) ? py::bool_(true) : py::bool_(false);
       (void)context->inputs.emplace_back(tensor);
-      (void)inputs_meta->emplace_back(TensorMeta(tensor->shape(), tensor->Dtype()));
       (void)context->input_value_grad_type.emplace_back(AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));
       input_base_tensors.insert(tensor);
     } else {
       (void)is_tensor_input.emplace_back(false);
       need_grad_input[i] = py::bool_(false);
       (void)context->inputs.emplace_back(kNone);
-      (void)inputs_meta->emplace_back();
     }
   }
   ctx->set_is_tensor_input(is_tensor_input);
@@ -293,15 +291,13 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   py::object ctx_obj = cls();
   auto ctx = py::cast<FunctionPtr>(ctx_obj);
   MS_EXCEPTION_IF_NULL(ctx);
-  std::vector<TensorMeta> inputs_meta;
-  inputs_meta.reserve(inputs.size());
   context->inputs.reserve(inputs.size());
 
   runtime::Pipeline::Get().WaitFrontend();
   runtime::Pipeline::Get().WaitBpropStage();  // wait to get inputs value
-  ProcessInputs(context, ctx, inputs, &inputs_meta);
+  ProcessInputs(context, ctx, inputs);
   auto type_name = py::cast<std::string>(ctx_obj.get_type().attr("__name__"));
-  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj, inputs_meta);
+  const auto custom_fn = BackwardNode::Create<PyBackwardNode>(std::move(type_name), backward_fn, ctx_obj);
   UpdateNextEdges(custom_fn, context->inputs);
   // Get need grad before forward.
   bool need_do_grad = GradState::Get().RequiresGrad() && AutoGradUtil::NeedGrad(context->inputs);

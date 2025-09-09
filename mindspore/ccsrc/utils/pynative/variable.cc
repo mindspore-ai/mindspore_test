@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#include "include/utils/pynative//variable.h"
+#include <string>
+#include <vector>
+#include <utility>
 #include <memory>
+#include "include/utils/pynative//variable.h"
 #include "include/utils/pynative/common_utils.h"
-#include "tools/profiler/profiler.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/core/include/utils/ms_context.h"
@@ -91,6 +93,24 @@ SavedNodePtr SavedNode::ConstructSavedNode(const ValuePtr &output, bool is_view_
   return std::make_shared<SavedNode>(detach_value, nullptr, false, is_placeholder);
 }
 
+bool TensorMeta::IsBroadcastTo(const ShapeVector &expand_shape) const {
+  size_t rank = shape_.size();
+  size_t target_rank = expand_shape.size();
+  if (rank > target_rank) {
+    return false;
+  }
+  for (size_t i = 0; i < rank; ++i) {
+    const auto &axis_size = shape_[rank - i - 1];
+    const auto &target_axis_size = expand_shape[target_rank - i - 1];
+    if (axis_size != target_axis_size && axis_size != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TensorMeta::IsSameShape(const ShapeVector &shape) const { return shape_ == shape; }
+
 bool AutoGradMetaData::requires_grad() const {
   if (requires_grad_) {
     return true;
@@ -141,6 +161,10 @@ bool BackwardNode::IsEmpty() const {
     return true;
   }
   return false;
+}
+
+void BackwardNode::add_output_metadata(const tensor::TensorPtr &output) {
+  (void)metadata_.emplace_back(TensorMeta(output->shape(), output->Dtype()));
 }
 
 std::string BackwardNode::ToString() const {
@@ -194,6 +218,31 @@ AutoDiffGuard::~AutoDiffGuard() {
 }
 
 namespace impl {
+void SetTensorGradMetaData(const TensorPtr &tensor, const BackwardNodePtr &grad_node, size_t index) {
+  auto auto_grad_meta_data = tensor->auto_grad_meta_data();
+  if (auto_grad_meta_data == nullptr) {
+    MS_LOG(DEBUG) << "Tensor " << tensor->id() << " has no auto_grad_meta_data";
+    auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
+    tensor->set_auto_grad_meta_data(auto_grad_meta_data);
+  }
+  auto_grad_meta_data->set_grad_node(grad_node);
+  auto_grad_meta_data->set_output_index(index);
+  grad_node->add_output_metadata(tensor);
+}
+
+void SetVariable(const ValuePtrList &flatten_outs, const BackwardNodePtr &grad_node) {
+  grad_node->mutable_metadata().reserve(flatten_outs.size());
+  for (size_t i = 0; i < flatten_outs.size(); ++i) {
+    if (flatten_outs[i]->isa<tensor::Tensor>()) {
+      auto tensor = flatten_outs[i]->cast<tensor::TensorPtr>();
+      SetTensorGradMetaData(tensor, grad_node, i);
+    } else {
+      grad_node->mutable_metadata().emplace_back();
+    }
+  }
+  MS_LOG(DEBUG) << "End update next edge for " << grad_node->ToString();
+}
+
 AutoGradMetaDataPtr GetAutogradMetaImpl(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   return GetAutogradMetaImpl(*tensor);
@@ -237,5 +286,6 @@ bool RequiresGrad(const tensor::TensorPtr &tensor) {
 }
 
 AutoDiffInterfacePtr CurrentAutoDiffEngine() { return local_auto_diff_engine; }
+
 }  // namespace impl
 }  // namespace mindspore::pynative::autograd

@@ -43,8 +43,7 @@ void DoViewGrad(const TensorPtr &input_tensor, const TensorPtr &output_tensor, c
     if (AutoGradUtil::NeedGrad(input_tensor)) {
       auto view_grad_node = make_func();
       UpdateNextEdges(view_grad_node, {input_tensor});
-      auto output_meta_data = output_tensor->auto_grad_meta_data();
-      output_meta_data->set_grad_node(view_grad_node);
+      autograd::impl::SetTensorGradMetaData(output_tensor, view_grad_node, 0);
     }
     UpdateVersion(output_tensor);
   }

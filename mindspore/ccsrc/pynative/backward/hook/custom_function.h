@@ -55,11 +55,10 @@ struct CustomContext {
 
 class CustomBackward : public BackwardNode {
  public:
-  CustomBackward(string name, py::function bprop_fn, const std::vector<TensorMeta> &input_meta,
-                 abstract::AbstractBasePtr out_abstract, bool is_recompute = false, size_t output_size = 1)
+  CustomBackward(string name, py::function bprop_fn, abstract::AbstractBasePtr out_abstract, bool is_recompute = false,
+                 size_t output_size = 1)
       : BackwardNode(std::move(name), output_size),
         bprop_fn_(std::move(bprop_fn)),
-        input_meta_(input_meta),
         out_abstract_(std::move(out_abstract)),
         is_recompute_(is_recompute) {}
   ~CustomBackward() override;
@@ -71,19 +70,14 @@ class CustomBackward : public BackwardNode {
  private:
   py::function bprop_fn_;
   ValuePtrList saved_values_;
-  std::vector<TensorMeta> input_meta_;
   abstract::AbstractBasePtr out_abstract_;
   bool is_recompute_{false};
 };
 
 class PyBackwardNode : public BackwardNode {
  public:
-  PyBackwardNode(string name, py::function backward_fn, py::object obj, std::vector<TensorMeta> input_meta,
-                 size_t output_size = 1)
-      : BackwardNode(std::move(name), output_size),
-        backward_fn_(std::move(backward_fn)),
-        obj_(std::move(obj)),
-        input_meta_(std::move(input_meta)) {}
+  PyBackwardNode(string name, py::function backward_fn, py::object obj, size_t output_size = 1)
+      : BackwardNode(std::move(name), output_size), backward_fn_(std::move(backward_fn)), obj_(std::move(obj)) {}
   ~PyBackwardNode() override;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   ValuePtrList PostProcess(const ValuePtrList &gradient_value) override;
@@ -96,7 +90,6 @@ class PyBackwardNode : public BackwardNode {
  private:
   py::function backward_fn_;
   py::object obj_;
-  std::vector<TensorMeta> input_meta_;
   abstract::AbstractBasePtr out_abstract_;
   SavedTensorPtrList saved_tensors_;
 };

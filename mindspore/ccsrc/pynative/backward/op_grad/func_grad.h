@@ -124,7 +124,9 @@ class LeafNode : public BackwardNode {
         shape_(std::move(shape)),
         dtype_(std::move(dtype)),
         is_parameter_(is_parameter),
-        should_execute_(should_execute) {}
+        should_execute_(should_execute) {
+    add_output_metadata(leaf_tensor);
+  }
   ~LeafNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
   bool IsLeaf() override { return true; }
@@ -163,9 +165,10 @@ class CopySliceNode : public BackwardNode {
       : BackwardNode(std::move(name), output_size),
         inplace_func_(std::move(inplace_op_func)),
         emitter_(std::move(emitter)) {
-    base_ = TensorDescriptor(base->shape(), base->stride(), base->Dtype(), base->storage_offset());
+    base_ = TensorMeta(base->shape(), base->Dtype(), base->stride(), base->storage_offset());
     MS_EXCEPTION_IF_NULL(output->storage_info());
-    output_ = TensorDescriptor(output->shape(), output->stride(), output->Dtype(), output->storage_offset());
+    output_ = TensorMeta(output->shape(), output->Dtype(), output->stride(), output->storage_offset());
+    add_output_metadata(base);
   }
   ~CopySliceNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
@@ -175,8 +178,8 @@ class CopySliceNode : public BackwardNode {
  private:
   BackwardNodePtr inplace_func_;
   FuncBuilderPtr emitter_;
-  TensorDescriptor base_;
-  TensorDescriptor output_;
+  TensorMeta base_;
+  TensorMeta output_;
 };
 
 /// Update next edge of inputs and set gradient info to output tensor.
