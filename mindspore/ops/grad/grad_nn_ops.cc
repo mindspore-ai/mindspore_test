@@ -1422,25 +1422,26 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     auto &w_shape = inputs.at(i1);
     auto &b_shape = inputs.at(i2);
     auto &dout_shape = inputs.at(i3);
-    ShapeVector x_2d_shape = {-1, x_shape.back()};
-    ShapeVector w_2d_shape = {-1, w_shape.back()};
+
+    auto get_product_dim = [](const ShapeVector &shape) -> int64_t {
+      return std::accumulate(shape.begin(), shape.end() - 1, 1, std::multiplies<int64_t>());
+    };
+
+    ShapeVector x_2d_shape = {get_product_dim(x_shape), x_shape.back()};
+    ShapeVector w_2d_shape = {get_product_dim(w_shape), w_shape.back()};
     ShapeVector dout_2d_shape;
     if (dout_shape.size() == 0) {
       dout_2d_shape = {1, 1};
     } else if (w_shape.size() == 1) {
       dout_2d_shape = {-1, 1};
     } else {
-      dout_2d_shape = {-1, dout_shape.back()};
+      dout_2d_shape = {get_product_dim(dout_shape), dout_shape.back()};
     }
     ShapeVector b_reduce_shape;
     if (b_shape.size() > 0) {
       b_reduce_shape.push_back(0);
     }
-    // Special handling of input tensor shape(0,) scenarios.
-    if (x_shape.size() == 1 && x_shape[0] == 0 && w_shape.size() == 1 && w_shape[0] == 0) {
-      x_2d_shape = {1, 0};
-      w_2d_shape = {1, 0};
-    }
+
     return {x_2d_shape, w_2d_shape, dout_2d_shape, b_reduce_shape, x_shape, w_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
