@@ -2681,6 +2681,40 @@ void GraphScheduler::LinkDataArrowForDeviceTensorStore(AbstractActor *const, Abs
   auto from_kernel = from_kernel_with_output_idx.first;
   MS_EXCEPTION_IF_NULL(from_kernel);
   auto device_tensor_store_key = AnfAlgo::FetchFrontNodeByBackendNode(from_kernel, *graph);
+  MS_EXCEPTION_IF_NULL(device_tensor_store_key);
+  // front graph:
+  // ------- %0 = TupleGetItem((1), 0)
+  // ------- %1 = MakeTuple(%0)
+  // ------- %2 = Convolution(para1, para2, %1)
+  // return %2
+  // after split the graph:
+  // backend graph 1:
+  // ------- %0 = MakeTuple(1)
+  // ------- return %0
+  // backend graph 2:
+  // ------- %0 = MakeTuple(para3)
+  // ------- %1 = Convolution(para1, para2, %0)
+  // ------- return %1
+  // the front node of para3 would be the scalar 1 in value tuple (1), and it only exist in graph 1.
+  if (from_kernel->isa<Parameter>() && device_tensor_store_key->isa<ValueNode>() &&
+      device_tensor_store_key->abstract() != nullptr &&
+      device_tensor_store_key->abstract()->isa<abstract::AbstractSequence>()) {
+    auto front_node_with_index = graph->GetFrontNodeByInternalParameter(from_kernel);
+    if (graph_output_to_actor_.count(front_node_with_index) > 0 &&
+        graph_output_to_actor_[front_node_with_index].second.first != nullptr) {
+      MS_LOG(DEBUG) << "Update device tensor store key from:" << device_tensor_store_key->DebugString()
+                    << " to:" << graph_output_to_actor_[front_node_with_index].second.first->DebugString()
+                    << " index:" << to_kernel_with_input_idx.second << " for actor:" << to_actor->GetAID();
+      device_tensor_store_key = graph_output_to_actor_[front_node_with_index].second.first;
+      if (AnfAlgo::ExistOutputKernelTensor(from_kernel, 0)) {
+        auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, 0, false);
+        if (kernel_tensor != nullptr) {
+          SchedulerHelper::AddDeviceTensorStore(graph_output_to_actor_[front_node_with_index].second.first,
+                                                kernel_tensor);
+        }
+      }
+    }
+  }
   (void)to_actor->device_tensor_store_keys_.emplace_back(to_kernel_with_input_idx.second, device_tensor_store_key);
 }
 
