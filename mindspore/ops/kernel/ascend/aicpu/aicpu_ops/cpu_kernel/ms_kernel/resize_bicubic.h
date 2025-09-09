@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2022-2023. All rights reserved.
+ * Copyright 2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AICPU_KERNELS_NORMALIZED_SPARSEMATRIXNNZ_H_
-#define AICPU_KERNELS_NORMALIZED_SPARSEMATRIXNNZ_H_
+#ifndef AICPU_KERNELS_NORMALIZED_RESIZE_BICUBIC_H_
+#define AICPU_KERNELS_NORMALIZED_RESIZE_BICUBIC_H_
 
+#include <string>
+
+#include "Eigen/Core"
 #include "inc/ms_cpu_kernel.h"
 
 namespace aicpu {
 
-class SparseMatrixNNZCpuKernel : public CpuKernel {
+template <typename T1, typename T2>
+uint32_t DoCompute(CpuKernelContext &ctx);
+class ResizeBicubicCpuKernel : public CpuKernel {
  public:
-  ~SparseMatrixNNZCpuKernel() = default;
+  ~ResizeBicubicCpuKernel() = default;
   uint32_t Compute(CpuKernelContext &ctx) override;
 
  private:
-  // do the actual compute
-  template <typename indiceT>
-  uint32_t DoCompute(CpuKernelContext &ctx);
-};
+  uint32_t GetInputAndCheck(CpuKernelContext &ctx);
 
+  DataType dtype_ = DT_INT32;
+};
 }  // namespace aicpu
 #endif
