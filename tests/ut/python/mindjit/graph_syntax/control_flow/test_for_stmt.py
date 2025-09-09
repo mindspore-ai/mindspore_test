@@ -21,7 +21,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from mindspore.nn import Cell
 from mindspore.nn import ReLU
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 
 @jit_class

@@ -20,7 +20,7 @@ from mindspore import Tensor, Model, context
 from mindspore.nn import Cell
 from mindspore.nn import ReLU
 from mindspore.ops import operations as P
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 
 class arithmetic_Net(Cell):

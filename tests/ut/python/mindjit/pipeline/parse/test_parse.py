@@ -33,7 +33,7 @@ from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.primitive import prim_attr_register, PrimitiveWithInfer
 from mindspore.ops.functional import tensor_add
 from mindspore._extends.parse import compile_config
-from ...ut_filter import non_graph_engine
+from tests.ut.python.ut_filter import non_graph_engine
 
 
 # pylint: disable=W0613,W0612
