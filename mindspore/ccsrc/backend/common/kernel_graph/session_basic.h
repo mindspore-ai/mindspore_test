@@ -91,6 +91,6 @@ using SessionPtr = std::shared_ptr<session::SessionBasic>;
 }  // namespace session
 BACKEND_COMMON_EXPORT void DumpGraphExeOrder(const std::string &file_name, const std::string &target_dir,
                                              const std::vector<CNodePtr> &execution_order);
-BACKEND_COMMON_EXPORT uint32_t GetRankId();
+uint32_t GetRankId();
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H

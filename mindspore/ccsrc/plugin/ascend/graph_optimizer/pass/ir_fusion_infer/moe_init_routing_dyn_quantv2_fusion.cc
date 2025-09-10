@@ -19,7 +19,6 @@
 #include <vector>
 #include <set>
 
-#include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

@@ -25,15 +25,6 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_COMMON_EXPORT AdaptiveMaxPool2DFusion : public PatternProcessPass {
- public:
-  explicit AdaptiveMaxPool2DFusion(const std::string &name = "adaptive_max_pool2d_fusion", bool multigraph = true)
-      : PatternProcessPass(name, multigraph) {}
-  ~AdaptiveMaxPool2DFusion() override = default;
-  const BaseRef DefinePattern() const override;
-  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
-};
-
 class BACKEND_COMMON_EXPORT AdaptiveMaxPool2DGeFusion : public PatternProcessPass {
  public:
   explicit AdaptiveMaxPool2DGeFusion(const std::string &name = "adaptive_max_pool2d_ge_fusion", bool multigraph = true)

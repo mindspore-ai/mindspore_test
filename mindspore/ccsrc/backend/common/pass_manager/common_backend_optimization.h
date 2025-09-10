@@ -20,12 +20,11 @@
 #include "include/backend/optimizer/pass_manager.h"
 namespace mindspore {
 namespace opt {
-BACKEND_COMMON_EXPORT void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kernel_graph);
-BACKEND_COMMON_EXPORT void OpBackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kernel_graph);
+void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 BACKEND_COMMON_EXPORT void CommonFinalOptimization(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 BACKEND_COMMON_EXPORT void CommonUnifyMindIR(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 BACKEND_COMMON_EXPORT void AddDynamicShapeAttrPass(const std::shared_ptr<session::KernelGraph> &kernel_graph);
-BACKEND_COMMON_EXPORT PassManagerPtr GetCommonUnifyMindIRPassManager();
+PassManagerPtr GetCommonUnifyMindIRPassManager();
 void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 PassManagerPtr GetEliminateIllegalDataTypePassManager();
 PassManagerPtr GetBackendCommonOptimizationPassManagerPtr();
