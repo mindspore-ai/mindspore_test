@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Distributed implementation for MatMul operator.
+Distributed implementation for Embedding operator.
 """
 
 from mindspore.parallel import Layout
