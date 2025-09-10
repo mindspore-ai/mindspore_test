@@ -42,9 +42,6 @@ conv1d:
         For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
         <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
         Args:
             input (Tensor): Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.
             weight (Tensor): Tensor of shape
@@ -53,7 +50,7 @@ conv1d:
             bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
                 When bias is ``None`` , zeros will be used. Default: ``None`` .
             stride (Union[int, tuple[int], list[int]], optional): The movement stride of the 1D convolution kernel.
-                The data type is an integer or a tuple of one integer. Default: ``1`` .` .
+                The data type is an integer or a tuple of one integer. Default: ``1`` .
             padding (Union[int, tuple[int], list[int], str], optional): The number of padding
                 on the input.
                 The data type is an integer or a tuple of one integer or string {`valid`, `same`}.

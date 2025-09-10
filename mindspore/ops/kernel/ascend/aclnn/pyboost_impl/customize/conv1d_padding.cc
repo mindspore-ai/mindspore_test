@@ -49,8 +49,8 @@ bool Conv1DGetSymmetricPadding(std::vector<int64_t> &padding_l, std::vector<int6
   for (size_t i = 0; i < dim; ++i) {
     auto stride_value = stride_vector.size() == 1 ? stride_vector[0] : stride_vector[i];
     auto dilation_value = dilation_vector.size() == 1 ? dilation_vector[0] : dilation_vector[i];
-    auto inputSize = input_sizes[i + 2];
-    auto kernelSize = weight_sizes[i + 2];
+    auto inputSize = input_sizes[i + kNumber2];
+    auto kernelSize = weight_sizes[i + kNumber2];
     auto total_padding = dilation_value * (kernelSize - 1);
     if (stride_value > kNumber2 && (total_padding % kNumber2 == 1)) {
       auto wiggle_room = inputSize % stride_value - 1;
@@ -58,7 +58,7 @@ bool Conv1DGetSymmetricPadding(std::vector<int64_t> &padding_l, std::vector<int6
         --total_padding;
       }
     }
-    auto left = total_padding / 2;
+    auto left = total_padding / kNumber2;
     auto right = total_padding - left;
 
     padding_l.push_back(left);
@@ -96,7 +96,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
   std::vector<int64_t> pad_vector = {0};
   if (padding_enum_imm == PadMode::SAME) {
     auto k = weight_tensor->DataNDim();
-    auto dim = static_cast<size_t>(k - 2);
+    auto dim = static_cast<size_t>(k - kNumber2);
     auto weight_sizes = weight_tensor->shape();
     auto input_sizes = input_tensor->shape();
     if (!is_batchify) {
@@ -113,7 +113,7 @@ tensor::TensorPtr Conv1DPaddingAscendCustomize(const std::shared_ptr<OpRunner> &
       for (size_t i = 0; i < dim; ++i) {
         // Apply padding by the difference, leaving only a symmetric padding
         auto delta_pad = padding_r[i] - padding_l[i];
-        auto pad_idx = 2 * (dim - 1 - i);  // F.pad goes from last dim to first
+        auto pad_idx = kNumber2 * (dim - 1 - i);  // F.pad goes from last dim to first
         if (delta_pad > 0) {
           pad_nd[pad_idx + 1] = std::make_shared<Int64Imm>(delta_pad);
         } else {
