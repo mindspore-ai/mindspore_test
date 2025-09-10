@@ -567,3 +567,19 @@ def test_param_getitem_with_assign_value():
     assert np.allclose(np_expected, pynative_res.asnumpy()), f"ms_x: {ms_x}" \
                                                              f"expected: {np_expected} {np_expected.shape}, " \
                                                              f"pynative_res: {pynative_res} {pynative_res.shape}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_data_ptr_with_offset():
+    """
+    Feature: Tensor data_ptr
+    Description: Test Tensor data_ptr with storage offset
+    Expectation: success
+    """
+    x = Tensor(np.ones(10, dtype=np.float32))
+    y = x[5]
+    # nbytes = element(5) * element_size(4)
+    assert y.data_ptr() - x.data_ptr() == 20
+
+    y = x[5::2]
+    assert y.data_ptr() - x.data_ptr() == 20
