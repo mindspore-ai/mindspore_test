@@ -31,7 +31,7 @@ target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspor
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
-target_link_libraries(mindspore_ascend PRIVATE mindspore::securec)
+target_link_libraries(mindspore_ascend PRIVATE mindspore::securec d_collective)
 set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH})
 
