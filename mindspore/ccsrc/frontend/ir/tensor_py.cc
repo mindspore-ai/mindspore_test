@@ -964,7 +964,9 @@ uintptr_t TensorPybind::DataPtr(const TensorPtr &tensor) {
   }
   auto *data_ptr = device_address->GetMutablePtr();
   MS_LOG(DEBUG) << "Get Tensor data ptr " << data_ptr;
-  return reinterpret_cast<uintptr_t>(data_ptr);
+  auto base_addr = reinterpret_cast<uintptr_t>(data_ptr);
+  auto offset = static_cast<uintptr_t>(tensor->storage_offset() * abstract::TypeIdSize(tensor->data_type()));
+  return base_addr + offset;
 }
 
 std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
