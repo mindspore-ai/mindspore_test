@@ -23,12 +23,12 @@
 #include <utility>
 #include <functional>
 #include <string>
-#include "ms_extension/pynative/pyboost_extension.h"
+#include "pyboost/custom/pyboost_extension.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 
 namespace ms::pynative {
-class EXTENSION_API AclnnOpRunner final : public PyboostRunner {
+class OPS_ASCEND_API AclnnOpRunner final : public PyboostRunner {
  public:
   using AclnnLaunchFunc = std::function<void(mindspore::device::DeviceContext *, size_t)>;
   using PyboostRunner::PyboostRunner;

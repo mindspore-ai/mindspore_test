@@ -1,12 +1,19 @@
 file(GLOB_RECURSE _PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "auto_generate/*.cc"
-        "*.cc"
         "customize/*.cc"
         "functions/*.cc"
         "functions/auto_generate/*.cc"
         "grad_functions/*.cc"
         "grad_functions/auto_generate/*.cc"
+        "comm_handle.cc"
+        "comm_utils.cc"
+        "pyboost_utils.cc"
 )
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    file(GLOB_RECURSE _CUSTOM_SRC "custom/*.cc")
+    list(APPEND _PYBOOST_SRC_LIST ${_CUSTOM_SRC})
+endif()
 
 set_property(SOURCE ${_PYBOOST_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PYNATIVE)
 add_library(mindspore_pyboost SHARED ${_PYBOOST_SRC_LIST})

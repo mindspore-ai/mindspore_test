@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "ms_extension/ascend/atb/atb_common.h"
+#include "kernel/ascend/custom/pyboost_impl/atb/atb_common.h"
 #include <map>
-#include "ms_extension/common/tensor.h"
+#include "pyboost/custom/tensor.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 

@@ -23,7 +23,7 @@
 #include "acl/acl.h"
 #include "atb/atb_infer.h"
 #include "atb/infer_op_params.h"
-#include "ms_extension/ascend/atb/operation_cache.h"
+#include "kernel/ascend/custom/pyboost_impl/atb/operation_cache.h"
 
 namespace ms::pynative {
 /**
@@ -34,7 +34,7 @@ namespace ms::pynative {
  * for initializing and running ATB operations on Ascend hardware. It manages input
  * and output tensors, memory allocation, and kernel launches specific to ATB.
  */
-class EXTENSION_API AtbOpRunner : public PyboostRunner {
+class OPS_ASCEND_API AtbOpRunner : public PyboostRunner {
  public:
   using PyboostRunner::PyboostRunner;
   size_t CalcWorkspace() override;

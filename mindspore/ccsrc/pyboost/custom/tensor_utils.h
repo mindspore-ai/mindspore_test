@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_EXTENSION_TENSOR_UTILS_H_
 #define MINDSPORE_CCSRC_EXTENSION_TENSOR_UTILS_H_
 #include <vector>
-#include "ms_extension/common/tensor.h"
+#include "pyboost/custom/tensor.h"
 
 namespace ms {
 /// \brief Creates a tensor from a single integer value.
@@ -28,7 +28,7 @@ namespace ms {
 /// \param[in] dtype The data type of the tensor. Defaults to `ms::TypeId::kNumberTypeInt64`.
 ///
 /// \return A tensor containing the specified integer value.
-EXTENSION_API Tensor tensor(int64_t value, TypeId dtype = TypeId::kNumberTypeInt64);
+PYBOOST_API Tensor tensor(int64_t value, TypeId dtype = TypeId::kNumberTypeInt64);
 
 /// \brief Creates a tensor from a vector of integer values.
 ///
@@ -38,7 +38,7 @@ EXTENSION_API Tensor tensor(int64_t value, TypeId dtype = TypeId::kNumberTypeInt
 /// \param[in] dtype The data type of the tensor. Defaults to `ms::TypeId::kNumberTypeInt64`.
 ///
 /// \return A tensor containing the specified integer values.
-EXTENSION_API Tensor tensor(const std::vector<int64_t> &value, TypeId dtype = TypeId::kNumberTypeInt64);
+PYBOOST_API Tensor tensor(const std::vector<int64_t> &value, TypeId dtype = TypeId::kNumberTypeInt64);
 
 /// \brief Creates a tensor from a single floating-point value.
 ///
@@ -48,7 +48,7 @@ EXTENSION_API Tensor tensor(const std::vector<int64_t> &value, TypeId dtype = Ty
 /// \param[in] dtype The data type of the tensor. Defaults to `ms::TypeId::kNumberTypeFloat64`.
 ///
 /// \return A tensor containing the specified floating-point value.
-EXTENSION_API Tensor tensor(double value, TypeId dtype = TypeId::kNumberTypeFloat64);
+PYBOOST_API Tensor tensor(double value, TypeId dtype = TypeId::kNumberTypeFloat64);
 
 /// \brief Creates a tensor from a vector of floating-point values.
 ///
@@ -58,7 +58,7 @@ EXTENSION_API Tensor tensor(double value, TypeId dtype = TypeId::kNumberTypeFloa
 /// \param[in] dtype The data type of the tensor. Defaults to `ms::TypeId::kNumberTypeFloat64`.
 ///
 /// \return A tensor containing the specified floating-point values.
-EXTENSION_API Tensor tensor(const std::vector<double> &value, TypeId dtype = TypeId::kNumberTypeFloat64);
+PYBOOST_API Tensor tensor(const std::vector<double> &value, TypeId dtype = TypeId::kNumberTypeFloat64);
 
 /// \brief Creates a tensor filled with ones.
 ///
@@ -68,7 +68,7 @@ EXTENSION_API Tensor tensor(const std::vector<double> &value, TypeId dtype = Typ
 /// \param[in] dtype The data type of the tensor. Defaults to `TypeId::kNumberTypeFloat32`.
 ///
 /// \return A tensor filled with ones.
-EXTENSION_API Tensor ones(const ShapeVector &shape, TypeId dtype = TypeId::kNumberTypeFloat32);
+PYBOOST_API Tensor ones(const ShapeVector &shape, TypeId dtype = TypeId::kNumberTypeFloat32);
 
 /// \brief Creates a tensor filled with zeros.
 ///
@@ -78,6 +78,6 @@ EXTENSION_API Tensor ones(const ShapeVector &shape, TypeId dtype = TypeId::kNumb
 /// \param[in] dtype The data type of the tensor. Defaults to `TypeId::kNumberTypeFloat32`.
 ///
 /// \return A tensor filled with zeros.
-EXTENSION_API Tensor zeros(const ShapeVector &shape, TypeId dtype = TypeId::kNumberTypeFloat32);
+PYBOOST_API Tensor zeros(const ShapeVector &shape, TypeId dtype = TypeId::kNumberTypeFloat32);
 }  // namespace ms
 #endif  // MINDSPORE_CCSRC_EXTENSION_TENSOR_UTILS_H_

@@ -23,7 +23,7 @@
 #include <utility>
 #include <list>
 #include <unordered_map>
-#include "ms_extension/ascend/asdsip/asdsip_utils.h"
+#include "kernel/ascend/custom/pyboost_impl/asdsip/asdsip_utils.h"
 
 namespace ms::pynative {
 /// \brief A runner for executing Ascend SiP Boost (ASDSIP) FFT operations.
@@ -31,7 +31,7 @@ namespace ms::pynative {
 /// This class extends the `PyboostRunner` class and provides additional functionality
 /// for initializing and running ASDSIP FFT operations on Ascend hardware. It manages input
 /// and output tensors, memory allocation, and kernel launches specific to ASDSIP.
-class EXTENSION_API AsdSipFFTOpRunner : public PyboostRunner {
+class OPS_ASCEND_API AsdSipFFTOpRunner : public PyboostRunner {
  public:
   explicit AsdSipFFTOpRunner(std::string op_name) : PyboostRunner(op_name) {}
   void ProcessWithWorkspace() override;

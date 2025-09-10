@@ -14,7 +14,7 @@
 // This file includes code sourced from the project "op-plugin".
 // Original repository: https://gitee.com/ascend/op-plugin.
 
-#include "ms_extension/ascend/atb/operation_cache.h"
+#include "kernel/ascend/custom/pyboost_impl/atb/operation_cache.h"
 #include "mindspore/core/mindrt/include/fork_utils.h"
 
 namespace atb {
