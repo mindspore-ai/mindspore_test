@@ -7,6 +7,7 @@ approvers:
 - liulili-huawei
 - zichun_ye
 - yiyanzhi_akane
+- zhanghanLeo
 
 options:
     no_parent_owners: true
