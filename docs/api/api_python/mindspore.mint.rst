@@ -135,6 +135,7 @@ Tensor
     mindspore.mint.floor_divide
     mindspore.mint.fmod
     mindspore.mint.frac
+    mindspore.mint.imag
     mindspore.mint.lerp
     mindspore.mint.log
     mindspore.mint.log10
@@ -151,6 +152,7 @@ Tensor
     mindspore.mint.neg
     mindspore.mint.negative
     mindspore.mint.pow
+    mindspore.mint.real
     mindspore.mint.reciprocal
     mindspore.mint.remainder
     mindspore.mint.round

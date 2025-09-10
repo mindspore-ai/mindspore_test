@@ -1967,3 +1967,10 @@ def tensor_squeeze(input, axis=None):
 
 def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     raise NotImplementedError('conv2d only supports Ascend.')
+
+
+def tensor_real(input):
+    return ops.real(input)
+
+def tensor_imag(input):
+    return ops.imag(input)
