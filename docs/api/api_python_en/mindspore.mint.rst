@@ -297,6 +297,7 @@ Convolution Layers
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.Conv1d
     mindspore.mint.nn.Conv2d
     mindspore.mint.nn.Conv3d
     mindspore.mint.nn.ConvTranspose2d
@@ -454,6 +455,7 @@ Convolution functions
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.conv1d
     mindspore.mint.nn.functional.conv2d
     mindspore.mint.nn.functional.conv3d
     mindspore.mint.nn.functional.conv_transpose2d
