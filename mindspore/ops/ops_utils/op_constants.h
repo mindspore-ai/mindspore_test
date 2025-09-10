@@ -78,6 +78,7 @@ constexpr size_t kInputNum1 = 1;
 constexpr size_t kInputNum2 = 2;
 constexpr size_t kInputNum3 = 3;
 constexpr size_t kInputNum4 = 4;
+constexpr size_t kInputNum5 = 5;
 
 // attr key name
 constexpr auto kAttrInternalSepcialFormat = "internal_special_format";

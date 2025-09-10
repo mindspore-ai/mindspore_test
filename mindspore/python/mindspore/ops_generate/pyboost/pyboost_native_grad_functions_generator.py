@@ -24,7 +24,7 @@ import os
 
 from pyboost import pyboost_utils
 from pyboost.pyboost_utils import is_optional_param
-import common.template as template
+from common import template
 from common.template import Template
 import common.gen_constants as K
 from common.gen_utils import save_file
@@ -53,6 +53,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         self.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE
         self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = template.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE
         self.native_function_multi_output_template = template.MULTI_OUTPUT_TEMPLATE
+        self.PYBOOST_NATIVE_COMM_GRAD_FUNCTION_TEMPLATE = template.PYBOOST_NATIVE_COMM_GRAD_FUNCTION_TEMPLATE
         self.native_view_function_output_template =\
             "const auto &output_value = runtime::ValueConverter::ToValue(outputs);\n"
         self.native_function_single_output_template = "const auto &output_value = op->outputs()[0];\n"
@@ -77,7 +78,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         pyboost_func_str = ''
         ops_inc_head_set = set()
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
+            if op_proto.op_dispatch is None:
                 continue
             if not op_proto.op_dispatch.enable:
                 continue
@@ -113,6 +114,8 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
     def _get_native_grad_function_template(self, op_proto):
         if op_proto.op_view:
             return self.PYBOOST_NATIVE_VIEW_GRAD_FUNCTION_TEMPLATE
+        if op_proto.op_dispatch.enable and op_proto.op_dispatch.is_comm_op:
+            return self.PYBOOST_NATIVE_COMM_GRAD_FUNCTION_TEMPLATE
         return self.PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE
 
     def _convert_native_value_type(self, op_proto: OpProto) -> str:

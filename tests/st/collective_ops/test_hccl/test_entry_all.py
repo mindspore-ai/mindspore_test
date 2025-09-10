@@ -366,3 +366,120 @@ def test_hccl_multi_stream():
     return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_multi_stream.py")
     assert return_code == 0
     del os.environ['MS_DEV_RUNTIME_CONF']
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_all_gather_into_tensor_net():
+    """
+    Feature: mpi run 2P case of 'all_gather_into_tensor' dynamic and static unified ops.
+    Description: mpi run 2P case of 'all_gather_into_tensor' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_all_gather_into_tensor.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_all_reduce_net():
+    """
+    Feature: mpi run 2P case of 'test_ops_all_reduce' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_ops_all_reduce' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_all_reduce.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_isend_irecv_net():
+    """
+    Feature: mpi run 2P case of 'test_ops_isend_irecv' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_ops_isend_irecv' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_isend_irecv.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_reduce_scatter_tensor_net():
+    """
+    Feature: mpi run 2P case of 'test_ops_reduce_scatter_tensor' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_ops_reduce_scatter_tensor' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_reduce_scatter_tensor.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_reduce_scatter_net():
+    """
+    Feature: mpi run 2P case of 'test_ops_reduce_scatter' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_ops_reduce_scatter' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_reduce_scatter.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_ops_all_to_all_single_net():
+    """
+    Feature: mpi run 2P case of 'test_ops_all_to_all_single' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_ops_all_to_all_single' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_ops_all_to_all_single.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_alltoall_grad_net():
+    """
+    Feature: mpi run 2P case of 'test_grad_alltoall' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_grad_alltoall' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_grad_alltoall.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_grad_allgather_net():
+    """
+    Feature: mpi run 2P case of 'test_grad_alltoall' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_grad_alltoall' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_grad_allgather.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_grad_allreduce_net():
+    """
+    Feature: mpi run 2P case of 'test_grad_allreduce' dynamic and static unified ops.
+    Description: mpi run 2P case of 'test_grad_allreduce' dynamic and static unified ops.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True "
+                            "pytest -s test_grad_allreduce.py")
+    assert return_code == 0

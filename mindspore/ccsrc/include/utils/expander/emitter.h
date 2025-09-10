@@ -932,6 +932,35 @@ class COMMON_EXPORT Emitter {
                                            bias, transpose_x, transpose_weight, antiquant_group_size});
   }
 
+  virtual NodePtr InnerCommAllReduce(const NodePtr &grad, const NodePtr &op, const NodePtr &group) {
+    return Emit("InnerCommAllReduce", {grad, op, group});
+  }
+
+  virtual NodePtr InnerCommAllGather(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &group) {
+    return Emit("InnerCommAllGather", {grad, rank_size, group});
+  }
+
+  virtual NodePtr InnerCommReduceScatter(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &type,
+                                         const NodePtr &group) {
+    return Emit("InnerCommReduceScatter", {grad, rank_size, type, group});
+  }
+
+  virtual NodePtr InnerCommIsend(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &group,
+                                 const NodePtr &tag) {
+    return Emit("InnerCommIsend", {grad, rank_size, group, tag});
+  }
+
+  virtual NodePtr InnerCommIrecv(const NodePtr &tag, const NodePtr &rank_size, const NodePtr &shape,
+                                 const NodePtr &group, const NodePtr &type) {
+    return Emit("InnerCommIrecv", {tag, rank_size, shape, group, type});
+  }
+
+  virtual NodePtr InnerCommAllToAllV(const NodePtr &grad, const NodePtr &group, const NodePtr &send_numel_list,
+                                     const NodePtr &recv_numel_list, const NodePtr &rank_size,
+                                     const NodePtr &split_sizes_empty) {
+    return Emit("InnerCommAllToAllV", {grad, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty});
+  }
+
  protected:
   virtual NodePtr EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs);
   NodePtr CmpOpWithCast(const std::string &op, const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {

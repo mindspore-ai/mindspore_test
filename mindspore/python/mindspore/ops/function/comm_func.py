@@ -17,8 +17,8 @@ from __future__ import absolute_import
 import hashlib
 import builtins
 import io
-import sys
 import pickle
+import os
 from datetime import timedelta
 import numpy as np
 from mindspore import log as logger
@@ -31,11 +31,11 @@ from mindspore.ops.operations.comm_ops import ReduceOp
 from mindspore.ops.auto_generate import cat
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import TensorPy as Tensor_
-from mindspore.ops.primitive import _primexpr
+from mindspore._c_expression import CollectiveManager
+from mindspore.ops.primitive import _primexpr, constexpr
 from mindspore.communication.management import _init_without_sched
 from mindspore.communication._comm_helper import (
     _destroy_group_helper,
-    _get_rank_helper,
     _get_size_helper,
     _get_backend,
     _get_group_ranks,
@@ -57,13 +57,13 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     inner_comm_all_gather_op,
     inner_comm_all_to_all_v_op,
     inner_comm_irecv_op,
+    inner_comm_isend_op,
     inner_comm_reduce_scatter_op
 )
 from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_all_gather_op,
     dist_comm_all_reduce_op,
     dist_comm_reduce_scatter_op,
-    dist_comm_isend_op,
     dist_comm_all_to_all_v_op,
     dist_comm_reduce_scatter_tensor_op,
     dist_comm_reduce_scatter_tensor_uneven_op,
@@ -72,6 +72,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_all_gather_into_tensor_op,
     dist_comm_all_gather_into_tensor_uneven_op,
     dist_comm_irecv_op,
+    dist_comm_isend_op,
     dist_comm_scatter_tensor_op,
     dist_comm_gather_into_tensor_op,
     dist_comm_gather_op,
@@ -132,7 +133,6 @@ BACKEND_HCCL = "hccl"
 BACKEND_MCCL = "mccl"
 _GROPU_SIZE_CACHE = {}
 _GROPU_RANK_CACHE = {}
-_ALL_TO_ALL_CACHE = {}
 
 safe_builtins = {
     'range',
@@ -143,18 +143,39 @@ safe_builtins = {
 }
 
 
+@constexpr
+def _get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.info("You are invoking this interface without calling `init` method."
+                    "Return 'RANK_SIZE' env value instead. If 'RANK_SIZE' is not set, return 1 as default value.")
+        return int(os.getenv("RANK_SIZE", "1"))
+    size = CollectiveManager.get_instance().get_group_size(group)
+    return size
+
+@constexpr
+def _get_rank_helper(group=GlobalComm.WORLD_COMM_GROUP):
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.info("You are invoking this interface without calling `init` method."
+                    "Return 'RANK_SIZE' env value instead. If 'RANK_SIZE' is not set, return 1 as default value.")
+        return int(os.getenv("RANK_SIZE", "1"))
+    rank_id = CollectiveManager.get_instance().get_rank_id(group)
+    return rank_id
+
+
 def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache group size."""
-    global _GROPU_SIZE_CACHE
+    global _GROPU_SIZE_CACHE # pylint: disable=global-variable-not-assigned
     if group not in _GROPU_SIZE_CACHE:
-        _GROPU_SIZE_CACHE[group] = _get_size_helper(group)
+        _GROPU_SIZE_CACHE[group] = _get_group_size(group)
     group_size = _GROPU_SIZE_CACHE[group]
     return group_size
 
 
 def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache rank id."""
-    global _GROPU_RANK_CACHE
+    global _GROPU_RANK_CACHE # pylint: disable=global-variable-not-assigned
     if group not in _GROPU_RANK_CACHE:
         _GROPU_RANK_CACHE[group] = _get_rank_helper(group)
     group_rank = _GROPU_RANK_CACHE[group]
@@ -225,10 +246,9 @@ comm_funcs = [
 _COMM_ENABLE_PLACE = {item: True for item in comm_funcs}
 
 
-def is_inplace_func():
+def is_inplace_func(caller_name=None):
     """if is inplace func name."""
-    global _COMM_ENABLE_PLACE
-    caller_name = sys._getframe(1).f_code.co_name # pylint: disable=protected-access
+    global _COMM_ENABLE_PLACE # pylint: disable=global-variable-not-assigned
     if caller_name in _COMM_ENABLE_PLACE:
         return _COMM_ENABLE_PLACE[caller_name]
     return False
@@ -263,7 +283,7 @@ def set_comm_ops_inplace(is_enable, func_list=None):
         >>> from mindspore.ops.communication import set_comm_ops_inplace
         >>> set_comm_ops_inplace(True)
     """
-    global _COMM_ENABLE_PLACE
+    global _COMM_ENABLE_PLACE # pylint: disable=global-variable-not-assigned
     if not isinstance(is_enable, bool):
         raise TypeError(
             "For 'set_comm_ops_inplace', the argument 'is_enable' must be type of bool, "
@@ -290,7 +310,7 @@ class CommHandle(CommHandle_):
     """
 
     def __init__(self, handle=None, exec_sync=False):
-        super(CommHandle, self).__init__()
+        super(CommHandle, self).__init__() # pylint: disable=super-with-arguments
         self.handle = handle
         self.exec_sync = exec_sync
 
@@ -1453,7 +1473,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
 
-    if is_inplace_func() is True:
+    if is_inplace_func("all_reduce") is True:
         output = dist_comm_all_reduce_op(tensor, op, group)
         _, handle = _deal_comm_outputs(output, async_op)
         return handle
@@ -1527,7 +1547,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
     """
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
-    if is_inplace_func() is True and \
+    if is_inplace_func("all_gather_into_tensor") is True and \
        not isinstance(output_tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the output tensor must be tensor")
     if group is None:
@@ -1542,7 +1562,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     group_size = get_cache_group_size(group)
-    if is_inplace_func() is True:
+    if is_inplace_func("all_gather_into_tensor") is True:
         output = dist_comm_all_gather_into_tensor_op(
             output_tensor, input_tensor, group_size, group
         )
@@ -1617,7 +1637,7 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
          [1. 1. 1. 1.]
          [1. 1. 1. 1.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("all_gather_into_tensor_uneven") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -1708,7 +1728,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
     """
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the input tensor must be tensor")
-    if is_inplace_func() is True and \
+    if is_inplace_func("reduce_scatter_tensor") is True and \
        not isinstance(output, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the output tensor must be tensor")
     if not isinstance(op, str):
@@ -1729,7 +1749,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     rank_size = get_cache_group_size(group)
-    if is_inplace_func() is True:
+    if is_inplace_func("reduce_scatter_tensor") is True:
         out = dist_comm_reduce_scatter_tensor_op(output, input, rank_size, op, group)
         _, handle = _deal_comm_outputs(out, async_op)
         return handle
@@ -1806,7 +1826,7 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
          [2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("reduce_scatter_tensor_uneven") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(op, str):
         raise TypeError("For reduce_scatter_tensor_uneven, the input op type must be str")
@@ -1894,7 +1914,7 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
         Process with rank 1: [[2. 2. 2. 2. 2. 2. 2. 2.]
                              [2. 2. 2. 2. 2. 2. 2. 2.]],
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("reduce") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For reduce, the input tensor must be tensor")
@@ -2063,14 +2083,14 @@ def batch_isend_irecv(p2p_op_list):
         rank 1:
         1.0
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("batch_isend_irecv") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     tensors = []
     op_types = []
     remotes_ranks = []
     tags = []
     if not p2p_op_list:
-        raise TypeError(f"p2p_op_list can not be empty list.")
+        raise TypeError("p2p_op_list can not be empty list.")
     for _, p2p_op in enumerate(p2p_op_list):
         if not isinstance(p2p_op, P2POp):
             raise TypeError("The elements in p2p_op_list must be type of P2POp.")
@@ -2170,7 +2190,7 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
         [[4. 5.]
          [6. 7.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("scatter_tensor") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For scatter_tensor, the input tensor must be tensor")
@@ -2265,7 +2285,7 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
                               [0. 0.],
                               [0. 0.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("gather_into_tensor") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(input_tensor, (Tensor, Tensor_)):
         raise TypeError("For gather_into_tensor, the input tensor must be tensor")
@@ -2347,7 +2367,7 @@ def broadcast(tensor, src, group=None, async_op=False):
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("broadcast") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For broadcast, the input tensor must be tensor")
@@ -2500,9 +2520,11 @@ def send(tensor, dst=0, group=None, tag=0):
             "the rank of the current process."
         )
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
-    output = dist_comm_isend_op(tensor, _dst, group, tag)
+    if is_inplace_func("send") is False:
+        output = inner_comm_isend_op(tensor, _dst, group, tag)
+    else:
+        output = dist_comm_isend_op(tensor, _dst, group, tag)
     _deal_comm_outputs(output, False)
-
 
 
 def recv(tensor, src=0, group=None, tag=0):
@@ -2578,7 +2600,7 @@ def recv(tensor, src=0, group=None, tag=0):
         )
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
 
-    if is_inplace_func() is True:
+    if is_inplace_func("recv") is True:
         output = dist_comm_irecv_op(tensor, tag, _src, group)
         _deal_comm_outputs(output, False)
         return 0
@@ -2664,7 +2686,10 @@ def isend(tensor, dst=0, group=None, tag=0):
             "the rank of the current process."
         )
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
-    output = dist_comm_isend_op(tensor, _dst, group, tag)
+    if is_inplace_func("isend") is False:
+        output = inner_comm_isend_op(tensor, _dst, group, tag)
+    else:
+        output = dist_comm_isend_op(tensor, _dst, group, tag)
     _, handle = _deal_comm_outputs(output, True)
     return handle
 
@@ -2746,7 +2771,7 @@ def irecv(tensor, src=0, group=None, tag=0):
         raise TypeError("For irecv, the src must be int")
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
 
-    if is_inplace_func() is True:
+    if is_inplace_func("irecv") is True:
         output = dist_comm_irecv_op(tensor, tag, _src, group)
         _, handle = _deal_comm_outputs(output, True)
         return handle
@@ -2851,7 +2876,7 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
     send_flatten_tensor = cat(send_flatten_tensor)
     rank_size = get_cache_group_size(group)
 
-    if is_inplace_func() is False:
+    if is_inplace_func("all_to_all") is False:
         _check_all_tensors_or_tuple(output_tensor_list)
         for tensor in output_tensor_list:
             if isinstance(tensor, Tensor):
@@ -3007,7 +3032,6 @@ def all_to_all_single(output,
 
     """
     _check_all_tensors([input])
-    _check_all_tensors([output])
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
     if not isinstance(group, str):
@@ -3023,24 +3047,18 @@ def all_to_all_single(output,
     _input = input.reshape(-1)
     rank_size = get_cache_group_size(group)
 
-    if is_inplace_func() is False:
-        if isinstance(output_split_sizes, list):
-            output_split_sizes = tuple(output_split_sizes)
-        if isinstance(input_split_sizes, list):
-            input_split_sizes = tuple(input_split_sizes)
-        global _ALL_TO_ALL_CACHE
-        tensor_shape = output
-        cache_key = (tensor_shape, output, output_split_sizes, input_split_sizes, group)
-        if cache_key not in _ALL_TO_ALL_CACHE:
-            _ALL_TO_ALL_CACHE[cache_key] = _get_all_to_all_single_numel_list(*cache_key)
-        send_numel_list, recv_numel_list, recv_shape_without_first_dim = _ALL_TO_ALL_CACHE[cache_key]
+    if is_inplace_func("all_to_all_single") is False:
+        tensor_shape = input
+        cache_key = (tensor_shape, tensor_shape, output_split_sizes, input_split_sizes, group)
+        send_numel_list, recv_numel_list, recv_shape_without_first_dim =\
+            _get_all_to_all_single_numel_list(*cache_key)
         result = \
             inner_comm_all_to_all_v_op(_input, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty)
         result, handle = _deal_comm_outputs(result, async_op)
         if any(recv_numel_list):
             result = result.reshape((-1,) + recv_shape_without_first_dim)
         return result, handle
-
+    _check_all_tensors([output])
     send_numel_list, recv_numel_list, _ = \
         _get_all_to_all_single_numel_list(input, output, output_split_sizes, input_split_sizes, group)
     result = dist_comm_all_to_all_v_single_op(
@@ -3133,7 +3151,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
 
 
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("all_gather") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(tensor_list)
     _check_all_tensor_same_dtype(tensor_list)
@@ -3152,7 +3170,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
         )
     group_size = get_cache_group_size(group)
     _check_group_tensor_list(tensor_list, group_size)
-    rank_id = get_group_rank_from_world_rank(get_rank(), group)
+    rank_id = _get_group_rank_from_world_rank_from_cache_helper(_get_rank_helper(), group)
     _check_output_shape(tensor, tensor_list[rank_id].shape, "all_gather")
     _check_output_dtype(tensor, tensor_list[0].dtype, "all_gather")
     result = dist_comm_all_gather_op(tensor_list, tensor, group_size, group)
@@ -3216,7 +3234,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
          [2. 2. 2. 2. 2. 2. 2. 2.]]
 
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("reduce_scatter") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(input_list)
     _check_all_tensor_same_dtype(input_list)
@@ -3242,7 +3260,7 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
     rank_size = get_cache_group_size(group)
     _check_group_tensor_list(input_list, rank_size)
 
-    rank_id = get_group_rank_from_world_rank(get_rank(), group)
+    rank_id = _get_group_rank_from_world_rank_from_cache_helper(_get_rank_helper(), group)
     _check_output_shape(output, input_list[rank_id].shape, "reduce_scatter")
     _check_output_dtype(output, input_list[0].dtype, "reduce_scatter")
     result = dist_comm_reduce_scatter_op(output, input_list, rank_size, op, group)
@@ -3312,7 +3330,7 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
         [[1. 1.]
          [1. 1.]]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("scatter") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors(scatter_list)
     _check_all_tensor_same_dtype_and_shape(scatter_list)
@@ -3415,7 +3433,7 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
          [ 0.00000000e+00,  0.00000000e+00]]), Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 0.00000000e+00,  0.00000000e+00], [ 0.00000000e+00,  0.00000000e+00]])]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("gather") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For gather, the input tensor must be tensor")
@@ -3492,7 +3510,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
         # rank_1
         [{1: 2}]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("scatter_object_list") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3502,7 +3520,7 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
             "but got 'group' type : {}.".format(type(group))
         )
     if not isinstance(scatter_object_output_list, list) or not scatter_object_output_list:
-        raise TypeError(f"The scatter_object_output_list can not be empty.")
+        raise TypeError("The scatter_object_output_list can not be empty.")
     if not isinstance(src, int):
         raise TypeError("For scatter_object_list, the src must be int")
     group_size = get_cache_group_size(group)
@@ -3585,7 +3603,7 @@ def gather_object(obj, object_gather_list=None, dst=0, group=None):
         # rank_0
         ['test', {1: 2}]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("gather_object") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3666,7 +3684,7 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
         >>> print(obj)
         ['test', 12, {1: 2}]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("broadcast_object_list") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3678,12 +3696,13 @@ def broadcast_object_list(object_list, src=0, group=None, device=None):
     if not isinstance(src, int):
         raise TypeError("For broadcast_object_list, the src must be int")
     if not isinstance(object_list, list) or not object_list:
-        raise TypeError(f"The object_list can not be empty.")
+        raise TypeError("The object_list can not be empty.")
     rank_id = get_cache_group_rank()
     tensor_sizes = []
     tensor_list = []
     size = 0
     object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(len(object_list))]
+    object_tensor = None
     if rank_id == src:
         tensor_list, tensor_sizes = zip(
             *[_object_to_tensor(obj) for obj in object_list]
@@ -3752,7 +3771,7 @@ def all_gather_object(object_list, obj, group=None):
         # rank_1
         ['test', {1: 2}]
     """
-    if is_inplace_func() is False:
+    if is_inplace_func("all_gather_object") is False:
         raise ValueError("Non-inplace mode is currently not supported.")
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -3847,7 +3866,8 @@ def all_to_all_v_c(output, input, send_count_matrix, group=None, async_op=False)
         rank 1:
         [0. 0. 0]
     """
-
+    if is_inplace_func("all_to_all_v_c") is False:
+        raise ValueError("Non-inplace mode is currently not supported.")
     _check_all_tensors([input])
     _check_all_tensors([output])
     if group is None:

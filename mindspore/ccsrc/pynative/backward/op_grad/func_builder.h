@@ -355,6 +355,17 @@ class FuncBuilder : public BpropBuilder {
                                  const NodePtr &quant_offset, const NodePtr &bias, const NodePtr &transpose_x,
                                  const NodePtr &transpose_weight, const NodePtr &antiquant_group_size) override;
 
+  NodePtr InnerCommAllReduce(const NodePtr &grad, const NodePtr &op, const NodePtr &group) override;
+  NodePtr InnerCommAllGather(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &group) override;
+  NodePtr InnerCommReduceScatter(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &type,
+                                 const NodePtr &group) override;
+  NodePtr InnerCommIsend(const NodePtr &grad, const NodePtr &rank_size, const NodePtr &group,
+                         const NodePtr &tag) override;
+  NodePtr InnerCommIrecv(const NodePtr &tag, const NodePtr &rank_size, const NodePtr &shape, const NodePtr &group,
+                         const NodePtr &type) override;
+  NodePtr InnerCommAllToAllV(const NodePtr &grad, const NodePtr &group, const NodePtr &send_numel_list,
+                             const NodePtr &recv_numel_list, const NodePtr &rank_size,
+                             const NodePtr &split_sizes_empty) override;
   // paas
   NodePtr BatchNormGrad(const NodePtrList &inputs, bool is_scale_or_bias_grad) override;
   NodePtr SparseSoftmaxCrossEntropyWithLogits(const NodePtrList &inputs, const expander::DAttr &attrs,

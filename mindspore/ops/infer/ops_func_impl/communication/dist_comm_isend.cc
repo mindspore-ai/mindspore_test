@@ -25,7 +25,8 @@ ShapeArray DistCommIsendFuncImpl::InferShape(const PrimitivePtr &primitive, cons
 
 std::vector<TypeId> DistCommIsendFuncImpl::InferType(const PrimitivePtr &primitive,
                                                      const InferInfoPtrList &input_infos) const {
-  return {kTypeNone->type_id()};
+  auto type = input_infos[kIndex0]->GetType();
+  return {CheckInferType(primitive->name(), type)};
 }
 }  // namespace ops
 }  // namespace mindspore

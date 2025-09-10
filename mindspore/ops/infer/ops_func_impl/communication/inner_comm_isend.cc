@@ -26,7 +26,7 @@ BaseShapePtr InnerCommIsendFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr InnerCommIsendFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  return kTypeNone;
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

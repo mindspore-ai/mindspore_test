@@ -17,7 +17,9 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INNER_COMM_REDUCE_SCATTER_H_
 
 #include <vector>
+#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
@@ -25,6 +27,7 @@ class InnerCommReduceScatterFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex1, kInputIndex2}; };
 };
 }  // namespace ops
 }  // namespace mindspore

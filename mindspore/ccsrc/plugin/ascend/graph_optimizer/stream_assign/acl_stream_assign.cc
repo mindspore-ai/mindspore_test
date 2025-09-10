@@ -33,6 +33,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -103,14 +104,44 @@ void AssignStreamForMoveTo(const AnfNodePtr &node) {
     MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
   }
 }
-
+std::string GetGroupName(const CNodePtr &cnode) {
+  auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
+  if (common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+    auto group_value = prim->GetAttr(kAttrGroup);
+    if (group_value == nullptr) {
+      MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << cnode->fullname_with_scope();
+    }
+    if (group_value->isa<StringImm>()) {
+      return common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    }
+  } else {
+    auto name = common::AnfAlgo::GetCNodeName(cnode);
+    size_t input_size = ops::GetOpInputsNum(name);
+    size_t group_idx = ops::GetInputIndexByName(name, kAttrGroup);
+    if (group_idx != SIZE_MAX) {
+      size_t real_input_num = common::AnfAlgo::GetInputTensorNum(cnode);
+      // for all_gather and reducescatter, input has list tensor.
+      group_idx = group_idx + real_input_num - input_size;
+      auto group_node = common::AnfAlgo::GetInputNode(cnode, group_idx);
+      auto group = GetScalarValue<std::string>(group_node->cast<ValueNodePtr>()->value());
+      if (group.has_value()) {
+        MS_LOG(DEBUG) << "Group name is " << group.value();
+        return group.value();
+      } else {
+        MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << cnode->fullname_with_scope();
+      }
+    }
+  }
+  return "";
+}
 void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_manager) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
   }
   auto cnode = node->cast<CNodePtr>();
-  if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+  if (!common::AnfAlgo::IsCommunicationOp(cnode)) {
     if (IsPrimitiveCNode(node, prim::kPrimMoveTo) || IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
       AssignStreamForMoveTo(node);
     } else {
@@ -123,14 +154,8 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
     MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
                  << ", because it is an LCCL operator.";
   } else {
-    auto prim = GetCNodePrimitive(cnode);
-    MS_EXCEPTION_IF_NULL(prim);
-    auto group_value = prim->GetAttr(kAttrGroup);
-    if (group_value == nullptr) {
-      MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << node->fullname_with_scope();
-    }
-    if (group_value->isa<StringImm>()) {
-      auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    auto group_name = GetGroupName(cnode);
+    if (!group_name.empty()) {
       size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
       AnfAlgo::SetStreamId(comm_stream_id, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
@@ -139,8 +164,8 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
-      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope() << ", because group value is "
-                   << group_value->ToString();
+      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
+                   << ", because group value is not string.";
     }
   }
 }

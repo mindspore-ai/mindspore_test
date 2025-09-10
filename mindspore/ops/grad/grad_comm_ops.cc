@@ -117,7 +117,7 @@ REG_BPROP_BUILDER("_MirrorOperator").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(
   return {dx};
 });
 
-REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommAllReduceOpName).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto op = ib->GetInput(i1);
   const auto &op_type = GetStringFromNode(op);
@@ -130,13 +130,7 @@ REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
     dy = ib->Mul(dout, out);
   }
 
-  auto group_value = group->BuildValue();
-  auto dx = ib->Emit(kAllReduceOpName, {dy},
-                     {{"op", MakeValue("sum")},
-                      {"group", group_value},
-                      {"index", MakeValue<int64_t>(0)},
-                      {"fusion", MakeValue<int64_t>(0)},
-                      {"no_eliminate", MakeValue(true)}});
+  auto dx = ib->InnerCommAllReduce(dy, op, group);
   dx->set_debug_info("grad" + dx->debug_info());
   if (op_type == "prod") {
     dx = ib->RealDiv(dx, x);
@@ -149,26 +143,19 @@ REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(op), ib->OutZeros(group)};
 });
 
-REG_BPROP_BUILDER("InnerCommAllGather").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommAllGatherOpName).SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto rank_size = ib->GetInput(i1);
   auto group = ib->GetInput(i2);
   auto dout = ib->GetInput(i4);
 
-  auto rank_size_value = rank_size->BuildValue();
-  auto group_value = group->BuildValue();
-  auto dx = ib->Emit(kReduceScatterOpName, {dout},
-                     {{"op", MakeValue("sum")},
-                      {"rank_size", rank_size_value},
-                      {"group", group_value},
-                      {"fusion", MakeValue<int64_t>(0)},
-                      {"no_eliminate", MakeValue(true)}});
+  auto dx = ib->InnerCommReduceScatter(dout, rank_size, ib->Value("sum"), group);
   auto ins_name = ib->GetInstanceName();
   dx->set_debug_info("grad" + ins_name);
 
   return {dx, ib->OutZeros(rank_size), ib->OutZeros(group)};
 });
 
-REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommReduceScatterOpName).SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto rank_size = ib->GetInput(i1);
   auto op = ib->GetInput(i2);
   auto op_type = GetStringFromNode(op);
@@ -177,17 +164,14 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
   if (op_type != "sum") {
     MS_LOG(EXCEPTION) << "The reducescatter bprop only support ReduceOp.SUM until now.";
   }
-
-  auto group_value = group->BuildValue();
-
   auto dout = ib->GetInput(i5);
-  auto dx = ib->Emit(kAllGatherOpName, {dout}, {{"group", group_value}});
+  auto dx = ib->InnerCommAllGather(dout, rank_size, group);
   auto ins_name = ib->GetInstanceName();
   dx->set_debug_info("grad" + ins_name);
   return {dx, ib->OutZeros(rank_size), ib->OutZeros(op), ib->OutZeros(group)};
 });
 
-REG_BPROP_BUILDER("InnerCommIrecv").FreeUselessValues_IO({i2, i4}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommIRecvOpName).FreeUselessValues_IO({i2, i4}, {}).SetBody(BODYFUNC(ib) {
   auto tag = ib->GetInput(i0);
   auto rank = ib->GetInput(i1);
   auto shape = ib->GetInput(i2);
@@ -197,16 +181,14 @@ REG_BPROP_BUILDER("InnerCommIrecv").FreeUselessValues_IO({i2, i4}, {}).SetBody(B
 
   auto out_tensor = ib->Tensor(0.0, kFloat16);
 
-  auto send_out =
-    ib->Emit(kSendOpName, {dout},
-             {{"sr_tag", tag->BuildValue()}, {"dest_rank", rank->BuildValue()}, {"group", group->BuildValue()}});
+  auto send_out = ib->InnerCommIsend(dout, rank, group, tag);
   auto dx = ib->Depend(ib->Cast(out_tensor, dtype_node), send_out);
 
   return {
     dx, ib->OutZeros(tag), ib->OutZeros(rank), ib->OutZeros(shape), ib->OutZeros(group), ib->OutZeros(dtype_node)};
 });
 
-REG_BPROP_BUILDER("InnerCommIsend").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommISendOpName).FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(i0);
   auto rank = ib->GetInput(i1);
   auto group = ib->GetInput(i2);
@@ -214,27 +196,19 @@ REG_BPROP_BUILDER("InnerCommIsend").FreeUselessValues_IO({i0}, {}).SetBody(BODYF
 
   auto shape = ib->GetShape(input);
   auto dtype = ib->GetDtype(input);
-  auto virtual_input = ib->Tensor(0.0, dtype);
-
-  auto dx = ib->Emit(kReceiveOpName, {virtual_input},
-                     {{"sr_tag", tag->BuildValue()},
-                      {"src_rank", rank->BuildValue()},
-                      {"shape", MakeValue(shape)},
-                      {"dtype", dtype},
-                      {"group", group->BuildValue()}});
+  auto dx = ib->InnerCommIrecv(tag, rank, ib->Value(shape), group, ib->Value(dtype));
 
   return {dx, ib->OutZeros(rank), ib->OutZeros(group), ib->OutZeros(tag)};
 });
 
-REG_BPROP_BUILDER("InnerCommAllToAllV").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER(kInnerCommAllToAllVOpName).FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto group = ib->GetInput(i1);
   auto send_numel_list = ib->GetInput(i2);
   auto recv_numel_list = ib->GetInput(i3);
   auto rank_size = ib->GetInput(i4);
   auto split_sizes_empty = ib->GetInput(i5);
   auto dout = ib->GetInput(i7);
-  auto dx =
-    ib->Emit("InnerCommAllToAllV", {dout, group, recv_numel_list, send_numel_list, rank_size, split_sizes_empty});
+  auto dx = ib->InnerCommAllToAllV(dout, group, recv_numel_list, send_numel_list, rank_size, split_sizes_empty);
   return {dx,
           ib->OutZeros(group),
           ib->OutZeros(send_numel_list),

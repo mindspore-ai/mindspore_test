@@ -10,9 +10,13 @@ dist_comm_all_gather:
             dtype: int
         group:
             dtype: str
+    args_signature:
+        rw_write: tensor_list
     returns:
         output:
             dtype: tensor
+    labels:
+        side_effect_mem: True
     function:
         disable: True
     dispatch:
