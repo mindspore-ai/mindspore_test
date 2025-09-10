@@ -51,7 +51,7 @@ using GraphPartitionPtr = compile::GraphPartitionPtr;
 using mindspore::abstract::AbstractFunction;
 using AbstractFunctionPtr = std::shared_ptr<AbstractFunction>;
 
-class BACKEND_EXPORT MSBackendBase : public BackendBase {
+class MSBackendBase : public BackendBase {
  public:
   MSBackendBase();
   virtual ~MSBackendBase() = default;

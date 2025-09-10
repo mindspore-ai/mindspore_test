@@ -54,7 +54,7 @@ class BACKEND_EXPORT ViewBackend {
   inline static ContiguousFunc contiguous_func_;
 };
 
-class BACKEND_EXPORT PostRunOp {
+class PostRunOp {
  public:
   void UpdateOutput(const std::vector<session::KernelWithIndex> &output_nodes, VectorRef *outputs) const;
 

@@ -20,11 +20,10 @@
 #include <vector>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BACKEND_COMMON_EXPORT ConvertEmbeddingDenseGradPadding : public PatternProcessPass {
+class ConvertEmbeddingDenseGradPadding : public PatternProcessPass {
  public:
   explicit ConvertEmbeddingDenseGradPadding(bool multi_graph = true)
       : PatternProcessPass("convert_embedding_dense_grad_padding", multi_graph) {}

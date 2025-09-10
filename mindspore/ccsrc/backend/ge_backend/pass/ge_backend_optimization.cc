@@ -76,7 +76,7 @@
 #include "backend/common/pass/other/process_partial_inline.h"
 #include "backend/ge_backend/pass/expander_fallback.h"
 #include "backend/common/pass/other/convert_pad_v3_paddings.h"
-#include "backend/common/pass/other/convert_embedding_dense_grad_padding.h"
+#include "backend/ge_backend/pass/convert_embedding_dense_grad_padding.h"
 #include "backend/common/pass/mindir/renorm_split.h"
 #include "backend/common/pass/mindir/reduce_axis_update.h"
 #include "backend/common/pass/mindir/clip_by_norm_fission.h"

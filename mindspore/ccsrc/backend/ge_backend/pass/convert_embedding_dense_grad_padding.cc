@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/pass/other/convert_embedding_dense_grad_padding.h"
+#include "backend/ge_backend/pass/convert_embedding_dense_grad_padding.h"
 #include <memory>
 #include <string>
 #include <vector>
