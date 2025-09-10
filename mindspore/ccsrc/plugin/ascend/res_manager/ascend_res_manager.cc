@@ -61,7 +61,7 @@
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "runtime/hardware_abstract/utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
@@ -80,7 +80,7 @@ std::string GetCommName(const std::string &group) {
   }
   return AscendCollectiveCommLib::GetInstance().CommName(group);
 }
-REGISTER_KERNEL_CALLBACK(GetCommName);
+REGISTER_COMMON_CALLBACK(GetCommName);
 
 using Callback = std::function<void(void)>;
 typedef HcclResult (*HcclSetConfigFunc)(HcclConfig, HcclConfigValue);

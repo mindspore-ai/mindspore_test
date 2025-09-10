@@ -179,7 +179,7 @@ target_link_libraries(mindspore_ms_backend PRIVATE mindspore::pybind11_module)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_backend_manager proto_input mindspore_hardware_abstract
         mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool
-        mindspore_runtime_utils mindspore_cluster)
+        mindspore_runtime_utils)
 
 target_link_libraries(mindspore_backend_common PRIVATE mindspore::securec)
 target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)

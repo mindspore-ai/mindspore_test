@@ -26,13 +26,6 @@ if(ENABLE_GPU)
 endif()
 
 if(ENABLE_GPU)
-    set(PLUGIN_GPU_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../device/gpu/hal")
-    file(GLOB_RECURSE GPU_PLUGIN_SRC_LIST
-        "${PLUGIN_GPU_PATH}/device/distribution/*.cc")
-    list(REMOVE_ITEM GPU_PLUGIN_SRC_LIST
-            "${PLUGIN_GPU_PATH}/device/distribution/collective_wrapper.cc"
-            "${PLUGIN_GPU_PATH}/device/distribution/mpi_wrapper.cc"
-            "${PLUGIN_GPU_PATH}/device/distribution/nccl_wrapper.cc")
     if(NOT ${TENSORRT_HOME} STREQUAL "")
         find_path(TENSORRT_HOME_INCLUDE NvInfer.h HINTS ${TENSORRT_HOME}/include)
         if(TENSORRT_HOME_INCLUDE STREQUAL TENSORRT_HOME_INCLUDE-NOTFOUND)

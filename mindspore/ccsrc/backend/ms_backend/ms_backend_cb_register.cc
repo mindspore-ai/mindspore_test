@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/backend_common_callback.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "include/backend/distributed/init.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
@@ -77,7 +76,7 @@ void WaitAsyncResizeAndLaunchFinish() {
 
 // Register a wait callback to kernel::KernelTensor, used to wait runtime async kernel launch task finish when get value
 // from device side.
-REGISTER_KERNEL_CALLBACK(WaitAsyncResizeAndLaunchFinish);
+REGISTER_COMMON_CALLBACK(WaitAsyncResizeAndLaunchFinish);
 }  // namespace ms_backend
 }  // namespace backend
 }  // namespace mindspore

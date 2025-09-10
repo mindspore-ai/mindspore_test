@@ -29,7 +29,8 @@ set_property(SOURCE ${_CLUSTER_SRC_FILES} PROPERTY COMPILE_DEFINITIONS
 add_library(mindspore_cluster SHARED ${_CLUSTER_SRC_FILES})
 
 target_link_libraries(mindspore_cluster PRIVATE proto_input mindspore_core
-                      mindspore_hardware_abstract mindspore_runtime_pipeline)
+                      mindspore_hardware_abstract mindspore_runtime_pipeline
+                      mindspore_common)
 
 if(ENABLE_CPU AND NOT WIN32)
     target_link_libraries(mindspore_cluster PRIVATE mindspore::ssl mindspore::crypto

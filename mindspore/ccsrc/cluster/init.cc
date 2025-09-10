@@ -23,17 +23,15 @@
 #include <memory>
 #include <map>
 #include <functional>
+#include "include/common/callback.h"
 #include "tools/error_handler/exit_handler.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace distributed {
+constexpr auto kOpExecutorWorkerJoinName = "OpExecutorWorkerJoin";
 using mindspore::tools::TFTWaitSem;
-
-constexpr char kOpExecutorWorkerJoinFunc[] = "OpExecutorWorkerJoin";
-std::map<std::string, std::function<void()>> gDistributedCallbackMap;
-
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
   PROF_START(distributed_cluster_init);
@@ -68,7 +66,7 @@ bool Initialize() {
 
     // Release PyNative resources.
     runtime::Pipeline::Get().WaitAll();
-    gDistributedCallbackMap[kOpExecutorWorkerJoinFunc]();
+    callback::CommonCallback::GetInstance().GetCallback<void>(kOpExecutorWorkerJoinName)();
     MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
     return true;
@@ -204,9 +202,5 @@ bool FinalizeCollective() { return collective::CollectiveManager::instance()->Fi
 void set_cluster_exit_with_exception() { cluster::ClusterContext::instance()->set_cluster_exit_with_exception(); }
 
 bool cluster_exit_with_exception() { return cluster::ClusterContext::instance()->cluster_exit_with_exception(); }
-
-void RegisterCallback(const std::string &name, const std::function<void()> &func) {
-  gDistributedCallbackMap[name] = func;
-}
 }  // namespace distributed
 }  // namespace mindspore

@@ -17,7 +17,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "ir/format_utils.h"
 #include "include/common/utils/utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/common/utils/convert_utils.h"
@@ -539,7 +539,7 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   host_info_->value_mutex_.unlock();
   constexpr char kWaitAsyncResizeAndLaunchFinishCallback[] = "WaitAsyncResizeAndLaunchFinish";
   static const auto wait_resize_and_launch_finish =
-    KernelCallback::GetInstance().GetCallback<void>(kWaitAsyncResizeAndLaunchFinishCallback);
+    callback::CommonCallback::GetInstance().GetCallback<void>(kWaitAsyncResizeAndLaunchFinishCallback);
   if (wait_resize_and_launch_finish) {
     wait_resize_and_launch_finish();
   }

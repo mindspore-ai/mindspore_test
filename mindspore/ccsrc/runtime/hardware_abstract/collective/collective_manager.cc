@@ -35,7 +35,7 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_callback.h"
+#include "include/common/callback.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 #include "utils/ms_exception.h"
@@ -356,7 +356,7 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   if (group_name.find(kPipelineGroupNamePrefix) == 0) {
     constexpr char kSilentCheckSetPipelineStage[] = "SilentCheckSetPipelineStage";
     static const auto silent_check_set_pipeline_stage =
-      kernel::KernelCallback::GetInstance()
+      callback::CommonCallback::GetInstance()
         .GetCallback<void, uint32_t, const string &, const std::vector<uint32_t> &, uint32_t>(
           kSilentCheckSetPipelineStage);
     if (silent_check_set_pipeline_stage) {

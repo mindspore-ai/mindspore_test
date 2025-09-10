@@ -102,6 +102,7 @@
 "mindspore/mindspore/ccsrc/plugin/ascend/res_manager/op_adapter/custom_op_infer.cc"              "runtime/references"
 "mindspore/mindspore/ops/kernel/cpu/native/grid_sampler_2d_grad_cpu_kernel.h"                           "legal/copyright"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                          "build/include"
+"mindspore/mindspore/ccsrc/plugin/gpu/gpu_register_callback.cc" "build/include_order"
 
 
 # Modelzoo

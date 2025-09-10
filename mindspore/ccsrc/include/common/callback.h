@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_KERNEL_COMMON_KERNEL_CALLBACK_H
-#define MINDSPORE_OPS_KERNEL_COMMON_KERNEL_CALLBACK_H
+#ifndef MINDSPORE_CALLBACK_CALLBACK_H_
+#define MINDSPORE_CALLBACK_CALLBACK_H_
 
 #include <string>
 #include <functional>
@@ -23,10 +23,10 @@
 #include <tuple>
 #include <utility>
 #include <memory>
-#include "runtime/hardware_abstract/visible.h"
+#include "include/common/visible.h"
 #include "utils/log_adapter.h"
 
-namespace mindspore::kernel {
+namespace mindspore::callback {
 // Base class for type-erased callbacks
 struct CallbackBase {
   virtual ~CallbackBase() = default;
@@ -43,16 +43,14 @@ struct Callback : CallbackBase {
 
   Ret invoke(Args... args) { return func(args...); }
 };
-class RUNTIME_HARDWARE_EXPORT KernelCallback {
+
+class COMMON_EXPORT CommonCallback {
  public:
-  static KernelCallback &GetInstance() {
-    static KernelCallback instance;
-    return instance;
-  }
+  static CommonCallback &GetInstance();
 
   // Delete copy constructor and assignment operator
-  KernelCallback(const KernelCallback &) = delete;
-  KernelCallback &operator=(const KernelCallback &) = delete;
+  CommonCallback(const CommonCallback &) = delete;
+  CommonCallback &operator=(const CommonCallback &) = delete;
 
   // Register a callback function with a name
   template <typename Ret, typename... Args>
@@ -73,25 +71,25 @@ class RUNTIME_HARDWARE_EXPORT KernelCallback {
   }
 
  private:
-  KernelCallback() = default;
+  CommonCallback() = default;
   std::unordered_map<std::string, std::unique_ptr<CallbackBase>> callback_map_;
 };
 
 template <typename Func>
-class KernelCallbackRegister {
+class CommonCallbackRegister {
  public:
-  KernelCallbackRegister(const std::string &name, Func func) { register_impl(name, std::move(func)); }
+  CommonCallbackRegister(const std::string &name, Func func) { register_impl(name, std::move(func)); }
 
  private:
   template <typename R, typename... Args>
   void register_impl(const std::string &name, std::function<R(Args...)> func) {
-    KernelCallback::GetInstance().RegisterCallback<R, Args...>(name, std::move(func));
+    CommonCallback::GetInstance().RegisterCallback<R, Args...>(name, std::move(func));
   }
 };
 
-#define REGISTER_KERNEL_CALLBACK(func)                                                                                \
-  static const mindspore::kernel::KernelCallbackRegister<std::function<decltype(func)>> g_##func##_callback_register( \
-    #func, func)
-}  // namespace mindspore::kernel
+#define REGISTER_COMMON_CALLBACK(func)                                                    \
+  static const mindspore::callback::CommonCallbackRegister<std::function<decltype(func)>> \
+    g_##func##_callback_register(#func, func)
+}  // namespace mindspore::callback
 
-#endif  // MINDSPORE_OPS_KERNEL_COMMON_KERNEL_CALLBACK_H
+#endif  // MINDSPORE_CALLBACK_CALLBACK_H_

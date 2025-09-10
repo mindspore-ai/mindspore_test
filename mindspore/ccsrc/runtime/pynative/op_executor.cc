@@ -15,11 +15,11 @@
  */
 
 #include "runtime/pynative/op_executor.h"
+#include "include/common/callback.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
-#include "include/backend/distributed/init.h"
 
 namespace mindspore::runtime {
 OpExecutor &OpExecutor::GetInstance() {
@@ -93,5 +93,5 @@ void OpExecutor::ChildAfterFork() {
 }
 
 void OpExecutorWorkerJoin() { runtime::OpExecutor::GetInstance().WorkerJoin(); }
-REGISTER_DISTRIBUTED_CALLBACK(OpExecutorWorkerJoin);
+REGISTER_COMMON_CALLBACK(OpExecutorWorkerJoin);
 }  // namespace mindspore::runtime
