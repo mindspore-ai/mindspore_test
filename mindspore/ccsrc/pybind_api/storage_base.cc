@@ -121,6 +121,12 @@ void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
       auto dst_tensor = tensor::from_spec(kNumberTypeUInt8, dst_shape, device::DeviceType::kNone);
       dst_tensor->set_device_address(dst);
       auto non_blocking_value = std::make_shared<mindspore::BoolImm>(non_blocking);
+      // Fix inplace_copy. In recompute task, the rng state will be set, which cause the device_target to be cpu,
+      // then the inplace_copy operator will not be dispatched Ascend. So reset the device_target of OpStatus here.
+      if (device::IsAscendDeviceType(src_tensor->device_address()->GetDeviceType()) ||
+          device::IsAscendDeviceType(dst_tensor->device_address()->GetDeviceType())) {
+        kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device::DeviceType::kAscend));
+      }
       kernel::pyboost::inplace_copy(dst_tensor, src_tensor, non_blocking_value);
       (void)kernel::pyboost::OpRunStatus::Get().GetLastOp();
     }));

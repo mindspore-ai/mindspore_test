@@ -37,6 +37,9 @@ py::object PYNATIVE_EXPORT PyboostDetach(const py::object &input) {
   DispatchOp(std::make_shared<PassthroughFrontendTask>(
     [input_value, promises]() {
       const auto &input_tensor = PyNativeAlgo::Common::StubNodeToTensor(input_value);
+      if (device::IsAscendDeviceType(input_tensor->device_address()->GetDeviceType())) {
+        kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device::DeviceType::kAscend));
+      }
       const auto device_context =
         runtime::OpRunner::GetDeviceContext(kernel::pyboost::OpRunStatus::Get().device_target());
       kernel::pyboost::PyBoostUtils::PrepareOpInputs(
