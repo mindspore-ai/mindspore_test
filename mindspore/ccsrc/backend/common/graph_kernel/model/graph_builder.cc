@@ -20,7 +20,7 @@
 #include "utils/ms_context.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/shape_vector.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
 
 namespace mindspore::graphkernel::inner {

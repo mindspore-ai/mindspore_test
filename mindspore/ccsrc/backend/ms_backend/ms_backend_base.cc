@@ -66,7 +66,7 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 

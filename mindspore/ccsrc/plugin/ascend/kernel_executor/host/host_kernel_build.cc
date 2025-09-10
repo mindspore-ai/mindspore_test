@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/log_adapter.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {

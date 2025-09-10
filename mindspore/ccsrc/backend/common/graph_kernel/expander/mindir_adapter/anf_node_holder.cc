@@ -15,7 +15,7 @@
  */
 
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "abstract/abstract_value.h"
 
 namespace mindspore::graphkernel::expander {

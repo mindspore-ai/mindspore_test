@@ -16,7 +16,7 @@
 
 #include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {

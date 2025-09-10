@@ -23,7 +23,7 @@
 #include "common/mockcpp.h"
 #include "common/graph_optimizer_test_framework.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "backend/common/graph_kernel/core/arithmetic_simplify.h"

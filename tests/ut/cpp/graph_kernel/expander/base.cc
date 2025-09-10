@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "graph_kernel/expander/base.h"
 
 namespace mindspore::graphkernel::test {

@@ -23,7 +23,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

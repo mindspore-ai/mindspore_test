@@ -571,6 +571,16 @@ inline bool NeedRunMemTracker() {
   }
   return device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info();
 }
+
+// If node is not aclnn or is a Reshape, need convert input into contiguous.
+inline bool NeedCheckInputContiguous(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto kernel_type = AnfAlgo::GetKernelType(cnode);
+  if (kernel_type != KernelType::OPAPI_KERNEL && kernel_type != KernelType::INTERNAL_KERNEL) {
+    return true;
+  }
+  return false;
+}
 }  // namespace runtime
 }  // namespace mindspore
 

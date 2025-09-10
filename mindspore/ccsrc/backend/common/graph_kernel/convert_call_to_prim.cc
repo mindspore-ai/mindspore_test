@@ -17,7 +17,7 @@
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 
 #include <memory>
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"

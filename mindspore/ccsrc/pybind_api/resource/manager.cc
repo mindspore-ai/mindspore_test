@@ -56,8 +56,8 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "tools/profiler/profiling.h"
 #include "tools/error_handler/exit_handler.h"
-#include "kernel/graph_kernel/graph_kernel_builder_manager.h"
-#include "kernel/graph_kernel_info.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_builder_manager.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "frontend/jit/ps/pass_config.h"
 

@@ -24,7 +24,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "ir/func_graph_flag.h"

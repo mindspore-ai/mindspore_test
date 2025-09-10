@@ -21,7 +21,7 @@
 #include <unordered_set>
 
 #include "backend/common/graph_kernel/model/lite_graph.h"
-#include "backend/common/graph_kernel/model/node.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "ir/value.h"
 #include "utils/check_convert_utils.h"
 

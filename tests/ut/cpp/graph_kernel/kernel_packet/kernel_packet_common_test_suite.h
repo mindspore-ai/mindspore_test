@@ -22,7 +22,7 @@
 #include "backend/common/graph_kernel/kernel_packet/symbol_engine_extender.h"
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "symbolic_shape/utils.h"
 
 namespace mindspore::graphkernel::test {

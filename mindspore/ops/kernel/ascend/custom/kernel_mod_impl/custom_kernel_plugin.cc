@@ -24,7 +24,7 @@
 #include "plugin/ascend/kernel_executor/kernel_select_ascend.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore::kernel {
 KernelModPtr CustomKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {

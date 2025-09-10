@@ -19,7 +19,7 @@
 #include <memory>
 #include "ir/func_graph.h"
 #include "include/backend/visible.h"
-#include "backend/common/graph_kernel/core/graph_kernel_callback.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel {
 class BACKEND_COMMON_EXPORT Expander {

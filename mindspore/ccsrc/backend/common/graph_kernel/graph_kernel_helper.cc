@@ -22,7 +22,7 @@
 #include <utility>
 
 #include "backend/common/graph_kernel/core/graph_builder.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "base/base.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
@@ -33,10 +33,10 @@
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/dtype/tensor_type.h"
-#include "kernel/framework_utils.h"
-#include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
-#include "kernel/graph_kernel/fake_abstract_shape.h"
-#include "kernel/graph_kernel/graph_kernel_json_generator.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_json_decoder.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/fake_abstract_shape.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/check_convert_utils.h"
@@ -286,7 +286,7 @@ CNodePtr CreateCNode(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &
   std::vector<size_t> feature_map_input_indexs;
   kernel_info->set_feature_map_flag(false);
   for (size_t i = 1; i < inputs.size(); ++i) {
-    if (AnfAlgo::IsFeatureMapOutput(inputs[i])) {
+    if (common::AnfAlgo::IsFeatureMapOutput(inputs[i])) {
       kernel_info->set_feature_map_flag(true);
       feature_map_input_indexs.push_back(i);
     }

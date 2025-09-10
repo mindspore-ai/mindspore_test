@@ -28,7 +28,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "plugin/gpu/graph_optimizer/pass/base/kernel_info_setter.h"
 #include "utils/ms_context.h"
-#include "kernel/graph_kernel_info.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_info.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

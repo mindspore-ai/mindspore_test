@@ -16,7 +16,7 @@
 
 #include <mindspore/core/include/ir/core_ops_primitive.h>
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
 #include "backend/common/graph_kernel/convert_bfloat16.h"
 #include "utils/anf_utils.h"

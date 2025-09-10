@@ -18,7 +18,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -34,7 +34,7 @@ void AkgMetadataInfo(const CNodePtr &kernel_node, std::vector<KernelBuildInfoPtr
       continue;
     }
 
-    if (!ParseMetadata(kernel_node, op_info_ptr, Processor(i), kernel_info_list)) {
+    if (!AnfAlgo::ParseMetadata(kernel_node, op_info_ptr, Processor(i), kernel_info_list)) {
       MS_LOG(WARNING) << "Akg parsed metadata of op[" << op_name << "], device[" << support_devices[i] << "] failed.";
     } else {
       MS_LOG(DEBUG) << "Akg parsed metadata of op[" << op_name << "], device[" << support_devices[i] << "].";

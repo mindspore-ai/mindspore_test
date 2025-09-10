@@ -30,7 +30,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/gpu/res_manager/symbol_interface/cuda_env_checker.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

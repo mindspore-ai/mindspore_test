@@ -26,7 +26,8 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/convert_utils.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/infershape_functor.h"
 
 namespace mindspore::opt::dynamic_shape {
 BACKEND_COMMON_EXPORT BaseShapePtr InferShape(const PrimitivePtr &primitive,
@@ -40,29 +41,5 @@ BACKEND_COMMON_EXPORT abstract::AbstractBasePtr InferShapeAndType(const Primitiv
 
 BACKEND_COMMON_EXPORT void UpdateKernelTensorType(const TypePtr &type,
                                                   const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
-/// \brief The class to implement an InferShape function, which is decoupled from the mindspore/core.
-class BACKEND_COMMON_EXPORT InferShapeFunctor : public Functor {
- public:
-  /// \brief Constructor of InferShapeFunctor.
-  explicit InferShapeFunctor(const std::string &name) : Functor(name) {}
-
-  /// \brief Destructor of InferShapeFunctor.
-  ~InferShapeFunctor() override = default;
-  MS_DECLARE_PARENT(InferShapeFunctor, Functor)
-
-  /// \brief Infer output shape.
-  /// \param[in] args AbstractBasePtrList of the inputs.
-  /// \return Result BaseShapePtr.
-  virtual BaseShapePtr InferShape(const AbstractBasePtrList &args) = 0;
-
-  /// \brief Pack functor name to a Value
-  /// \return The name of this infershape functor.
-  ValuePtr ToValue() const override { return MakeValue(name_); };
-
-  /// \brief Rename the functor.
-  void FromValue(const ValuePtr &value) override { name_ = GetValue<std::string>(value); };
-};
-using InferShapeFunctorPtr = std::shared_ptr<InferShapeFunctor>;
-constexpr auto kAttrInferShapeFunctor = "infer_shape_functor";
 }  // namespace mindspore::opt::dynamic_shape
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_OPTIMIZER_DYNAMIC_SHAPE_DYNAMIC_SHAPE_HELPER_H

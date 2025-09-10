@@ -22,7 +22,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
 

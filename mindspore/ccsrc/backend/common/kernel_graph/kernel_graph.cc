@@ -26,7 +26,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/framework_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"
@@ -123,10 +123,10 @@ void ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) {
   auto input_node = common::AnfAlgo::GetInputNode(cnode, 0);
   MS_EXCEPTION_IF_NULL(input_node);
   auto assign_value_node = common::AnfAlgo::GetInputNode(cnode, 1);
-  if (AnfAlgo::IsFeatureMapOutput(input_node)) {
+  if (common::AnfAlgo::IsFeatureMapOutput(input_node)) {
     return;
   }
-  if (!AnfAlgo::IsFeatureMapOutput(input_node) && AnfAlgo::IsFeatureMapOutput(assign_value_node)) {
+  if (!common::AnfAlgo::IsFeatureMapOutput(input_node) && common::AnfAlgo::IsFeatureMapOutput(assign_value_node)) {
     auto kernel_info = dynamic_cast<device::KernelInfo *>(input_node->kernel_info());
     MS_EXCEPTION_IF_NULL(kernel_info);
     kernel_info->set_feature_map_flag(true);
@@ -145,7 +145,7 @@ void SetKernelInfoForCNode(const CNodePtr &node, const std::shared_ptr<device::K
   kernel_info->set_feature_map_flag(false);
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
   for (size_t index = 0; index < input_num; ++index) {
-    if (AnfAlgo::IsFeatureMapInput(node, index)) {
+    if (common::AnfAlgo::IsFeatureMapInput(node, index)) {
       kernel_info->set_feature_map_flag(true);
       feature_map_input_indexs.push_back(index);
     }

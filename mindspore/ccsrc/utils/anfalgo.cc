@@ -53,6 +53,7 @@
 #include "frontend/operator/primitive_py.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_build_info.h"
+#include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
@@ -3318,6 +3319,52 @@ bool AnfAlgo::IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, 
     return true;
   }
   return false;
+}
+
+bool AnfAlgo::IsFeatureMapOutput(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<ValueNode>()) {
+    auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    ValuePtr value = value_node->value();
+    std::vector<tensor::TensorPtr> tensors;
+    TensorValueToTensor(value, &tensors);
+    auto ret = false;
+    if (!tensors.empty()) {
+      auto all_tensor_have_address = true;
+      for (const auto &tensor : tensors) {
+        MS_EXCEPTION_IF_NULL(tensor);
+        if (tensor->device_address() == nullptr) {
+          all_tensor_have_address = false;
+          break;
+        }
+      }
+      ret = all_tensor_have_address;
+    }
+    return ret;
+  }
+  if (IsPrimitiveCNode(node, prim::kPrimLoad) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
+    return IsFeatureMapOutput(node->cast<CNodePtr>()->input(1));
+  }
+  auto kernel_info = dynamic_cast<const device::KernelInfo *>(node->kernel_info());
+  // If node is a call node which not have kernel info
+  if (kernel_info == nullptr) {
+    return false;
+  }
+  return kernel_info->is_feature_map();
+}
+
+bool AnfAlgo::IsFeatureMapInput(const AnfNodePtr &node, size_t input_index) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, node)
+      << "Cannot input a parameter or a valuenode to charge it's input if is a feature map."
+      << trace::DumpSourceLines(node);
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto input_node = cnode->input(input_index + 1);
+  return IsFeatureMapOutput(input_node);
 }
 }  // namespace common
 }  // namespace mindspore
