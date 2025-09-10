@@ -2796,7 +2796,6 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
   MS_EXCEPTION_IF_NULL(pynative_executor);
   kernel::pyboost::OpRunStatus::Get().set_run_info(
     kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
-                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
                               pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   if (py::isinstance<py::bool_>(py_index)) {
@@ -2889,7 +2888,6 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
   MS_EXCEPTION_IF_NULL(pynative_executor);
   kernel::pyboost::OpRunStatus::Get().set_run_info(
     kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
-                              pynative_executor->grad_executor()->custom_bprop_cell_count(),
                               pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   TensorPtr tensor_value;

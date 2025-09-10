@@ -41,8 +41,7 @@ void DoViewGrad(const TensorPtr &input_tensor, const TensorPtr &output_tensor, c
   if (requires_grad) {
     runtime::Pipeline::Get().WaitBpropStage();
     const auto &async_status = kernel::pyboost::OpRunStatus::Get().op_status();
-    if (AutoGradUtil::NeedGrad(input_tensor) &&
-        (!async_status.is_jit_compiling && async_status.custom_bprop_cell_count <= 0)) {
+    if (AutoGradUtil::NeedGrad(input_tensor) && (!async_status.is_jit_compiling)) {
       auto view_grad_node = make_func();
       UpdateNextEdges(view_grad_node, {input_tensor});
       auto output_meta_data = output_tensor->auto_grad_meta_data();

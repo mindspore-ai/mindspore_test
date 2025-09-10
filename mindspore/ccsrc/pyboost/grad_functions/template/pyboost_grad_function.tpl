@@ -2,7 +2,7 @@ void PYBOOST_API ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_output
   MS_EXCEPTION_IF_NULL(op_runner_info);
   ${convert_body}
   kernel::pyboost::OpRunStatus::Get().set_run_info(
-        kernel::pyboost::OpStatus(true, false, 0, op_runner_info->device_target));
+        kernel::pyboost::OpStatus(true, false, op_runner_info->device_target));
   auto outputs = kernel::pyboost::${operator_name}(${call_args});
   auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
   if (op->output_value_simple_info() != nullptr) {

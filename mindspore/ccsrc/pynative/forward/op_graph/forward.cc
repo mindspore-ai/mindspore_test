@@ -418,8 +418,7 @@ void ForwardExecutor::DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_in
 }
 
 void ForwardExecutor::ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const {
-  MS_LOG(DEBUG) << "Current custom bprop cell count " << async_status.custom_bprop_cell_count;
-  if (!async_status.is_jit_compiling && async_status.custom_bprop_cell_count <= 0) {
+  if (!async_status.is_jit_compiling) {
     grad()->ProcessOpGradInfo(grad_info);
   }
 }
