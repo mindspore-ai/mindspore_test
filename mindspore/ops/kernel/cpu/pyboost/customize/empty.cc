@@ -48,7 +48,7 @@ device::DeviceType GetEmptyDeviceName(const std::optional<Int64ImmPtr> &device) 
   device::DeviceType device_type = device::DeviceType::kCPU;
   if (device.has_value()) {
     auto device_name_enum = GetValue<int64_t>(device.value());
-    if (device_name_enum == DEVICE_ASCEND || device_name_enum == DEVICE_NPU_LOWER) {
+    if (device_name_enum == DEVICE_ASCEND || device_name_enum == DEVICE_NPU_LOWER || device_name_enum == DEVICE_NPU) {
       device_type = device::DeviceType::kAscend;
     } else if (device_name_enum == DEVICE_CPU || device_name_enum == DEVICE_CPU_LOWER) {
       device_type = device::DeviceType::kCPU;

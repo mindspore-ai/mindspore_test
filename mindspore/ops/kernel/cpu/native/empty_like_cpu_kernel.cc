@@ -48,7 +48,7 @@ bool EmptyLikeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   auto device_name_opt = inputs[kIndex2]->GetOptionalValueWithCheck<int64_t>();
   if (device_name_opt.has_value()) {
     auto device_name_enum = device_name_opt.value();
-    if (device_name_enum != DEVICE_ASCEND && device_name_enum != DEVICE_NPU_LOWER) {
+    if (device_name_enum != DEVICE_ASCEND && device_name_enum != DEVICE_NPU_LOWER && device_name_enum != DEVICE_NPU) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the device must be 'Ascend' or 'npu' in GRAPH mode.";
     }
   }

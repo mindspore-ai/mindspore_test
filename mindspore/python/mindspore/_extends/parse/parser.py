@@ -855,6 +855,14 @@ def check_attrs(target_object, func_name: str):
     return False
 
 
+def get_function_obj_attrs(function_obj):
+    """Get the attributes iof function object."""
+    if not isinstance(function_obj, types.FunctionType) and type(function_obj).__name__ != 'cython_function_or_method':
+        return {}
+    logger.debug(f'The attributes of {function_obj} is {function_obj.__dict__}')
+    return function_obj.__dict__
+
+
 def check_is_subclass(target_object, parent):
     """Check if target_object is a subclass."""
     if issubclass(target_object.__class__, parent):

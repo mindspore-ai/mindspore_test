@@ -1007,6 +1007,28 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
   if (func_graph->has_flag(FUNC_GRAPH_FLAG_NO_INLINE)) {
     functor->k_graph_->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
   }
+
+  if (func_graph->has_attr(FUNC_GRAPH_FLAG_PACK_FN)) {
+    MS_LOG(DEBUG) << "The func_graph has pack_fn flag: " << func_graph->ToString();
+    auto pack_fn_value = func_graph->get_attr(FUNC_GRAPH_FLAG_PACK_FN);
+    MS_LOG(DEBUG) << "pack_fn_value: " << pack_fn_value->ToString();
+    functor->k_graph_->set_attr(FUNC_GRAPH_FLAG_PACK_FN_GRAD, pack_fn_value);
+  }
+
+  if (func_graph->has_attr(FUNC_GRAPH_FLAG_UNPACK_FN)) {
+    MS_LOG(DEBUG) << "The func_graph has unpack_fn flag: " << func_graph->ToString();
+    auto unpack_fn_value = func_graph->get_attr("unpack_fn");
+    MS_LOG(DEBUG) << "unpack_fn_value: " << unpack_fn_value->ToString();
+    functor->k_graph_->set_attr(FUNC_GRAPH_FLAG_UNPACK_FN_GRAD, unpack_fn_value);
+  }
+
+  if (func_graph->has_attr(FUNC_GRAPH_FLAG_PREFETCH)) {
+    MS_LOG(DEBUG) << "The func_graph has count flag:" << func_graph->ToString();
+    auto count_value = func_graph->get_attr(FUNC_GRAPH_FLAG_PREFETCH);
+    MS_LOG(DEBUG) << "count_value: " << count_value->ToString();
+    functor->k_graph_->set_attr(FUNC_GRAPH_FLAG_PREFETCH_GRAD, count_value);
+  }
+
   if (func_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
     functor->k_graph_->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, true);
   }

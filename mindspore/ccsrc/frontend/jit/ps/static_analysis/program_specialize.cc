@@ -1191,7 +1191,14 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
   AnfNodePtr new_node = GetReplicatedNode(node);
   MS_EXCEPTION_IF_NULL(new_node);
-  if (new_node->func_graph() != specialized_func_graph_) {
+
+  bool need_check = true;
+  if (new_node->func_graph()->has_flag(FUNC_GRAPH_FLAG_NOT_CHECK)) {
+    MS_LOG(DEBUG) << "new_node->func_graph() has not_check flag: " << new_node->func_graph()->ToString();
+    need_check = false;
+  }
+
+  if (need_check && new_node->func_graph() != specialized_func_graph_) {
     MS_LOG(INTERNAL_EXCEPTION) << "Found not specialized node, node: " << node->DebugString()
                                << ", new_node: " << new_node->DebugString() << ", new_node->func_graph(): "
                                << (new_node->func_graph() ? new_node->func_graph()->ToString() : "FG(Null)")

@@ -119,6 +119,7 @@
 #include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
 #include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
+#include "frontend/optimizer/irpass/offload.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "primitive/auto_generate/gen_ops_primitive_a.h"
@@ -655,6 +656,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, cons
      {"merge_recompute_call_nodes", opt::OptPassConfig(parallel::MergeRecomputeCallNodes)},
      {"before_grad", before_grad},
      {kSetForwardCommIdForCommNodePass, opt::OptPassConfig(parallel::SetForwardCommIdForCommNode)},
+     {"offload", opt::OptPassConfig(opt::OptPassConfig(opt::irpass::OffLoad))},
      {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},

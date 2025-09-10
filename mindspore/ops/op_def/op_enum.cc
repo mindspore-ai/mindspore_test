@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,7 +243,8 @@ REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}
 StrToEnumMap StrToDeviceMap = {{"Ascend", Device::DEVICE_ASCEND},
                                {"npu", Device::DEVICE_NPU_LOWER},
                                {"CPU", Device::DEVICE_CPU},
-                               {"cpu", Device::DEVICE_CPU_LOWER}};
+                               {"cpu", Device::DEVICE_CPU_LOWER},
+                               {"NPU", Device::DEVICE_NPU}};
 REG_STRING_TO_ENUM_SPECIAL(device, StrToDeviceMap);
 }  // namespace
 
