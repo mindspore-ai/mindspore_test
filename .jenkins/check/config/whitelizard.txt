@@ -70,6 +70,7 @@ mindspore/mindspore/ccsrc/frontend/jit/ps/action.cc:mindspore::pipeline::TaskEmi
 mindspore/mindspore/ccsrc/frontend/jit/ps/debug/anf_ir_utils.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/utils/ir_dump/anf_ir_dump.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/transform/express_ir/onnx_exporter.cc:mindspore::OnnxExporter::ExportPrimDynamicRNN
+mindspore/mindspore/ccsrc/utils/ir_dump/onnx/onnx_exporter.cc:mindspore::OnnxExporter::ExportPrimDynamicRNN
 mindspore/mindspore/python/mindspore/ops/operations/array_ops.py:_compute_slicing_shape
 mindspore/mindspore/python/mindspore/ops/operations/manually_defined/ops_def.py:flash_attention_score
 mindspore/mindspore/python/mindspore/ops/operations/manually_defined/ops_def.py:fused_infer_attention_score
