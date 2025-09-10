@@ -42,7 +42,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
-#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "plugin/gpu/profiler/gpu_profiling.h"
 #include "plugin/gpu/profiler/gpu_profiling_utils.h"
