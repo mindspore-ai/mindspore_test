@@ -119,6 +119,15 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<TensorIndex> &t
   return stream;
 }
 
+namespace {
+inline void PrepareOpStatus() {
+  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
+  MS_EXCEPTION_IF_NULL(pynative_executor);
+  kernel::pyboost::OpRunStatus::Get().set_run_info(
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->device_target()));
+}
+}  // namespace
+
 TensorIndex::TensorIndex(const py::handle &py_object) {
   if (py::isinstance<py::list>(py_object)) {
     this->list_ = py_object.cast<py::list>();
@@ -2526,6 +2535,8 @@ TensorPtr DoSelect(const TensorPtr &self, int dim, int index, int dim_size) {
   index = (index + dim_size) % dim_size;
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "SelectExtView");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::select_ext_view(self, dim, index);
 }
 
@@ -2632,12 +2643,16 @@ TensorPtr DoSlice(const TensorPtr &self, const int dim, const py::slice &index, 
   }
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "SliceExtView");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::slice_ext_view(self, dim, start, end, step);
 }
 
 TensorPtr DoExpandDims(const TensorPtr &self, const int dim) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "ExpandDimsView");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::expand_dims_view(self, dim);
 }
 
@@ -2764,6 +2779,8 @@ int CountIndexedDims(const py::tuple &indexes) {
 
 TensorPtr DoIndex(TensorPtr self, const TensorPtrList &indices) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "aclnnIndex");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::index(self, TensorListToValueTuple(indices));
 }
 
@@ -2791,11 +2808,6 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      "TensorGetItem");
   runtime::Pipeline::Get().WaitFrontend();
-  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
-  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
-  MS_EXCEPTION_IF_NULL(pynative_executor);
-  kernel::pyboost::OpRunStatus::Get().set_run_info(
-    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   if (py::isinstance<py::bool_>(py_index)) {
     TensorPtr self_viewed = DoExpandDims(self, 0);
@@ -2846,12 +2858,16 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
 
 TensorPtr DoView(const TensorPtr &self, const ShapeVector &shape) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "View");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::view(self, shape);
 }
 
 TensorPtr DoInplaceCopy(TensorPtr dst, const TensorPtr &src) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "aclnnInplaceCopy");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::inplace_copy(dst, src, std::make_shared<BoolImm>(false));
 }
 
@@ -2874,6 +2890,8 @@ TensorPtr DoCopy(TensorPtr dst, const TensorPtr &src) {
 TensorPtr DoInplaceIndexPut(TensorPtr self, const TensorPtrList &indices, const TensorPtr &value) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      "aclnnInplaceIndexPut");
+  PrepareOpStatus();
+  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
   return kernel::pyboost::inplace_index_put(self, TensorListToValueTuple(indices), value,
                                             std::make_shared<BoolImm>(false));
 }
@@ -2882,11 +2900,6 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      "TensorSetItem");
   runtime::Pipeline::Get().WaitFrontend();
-  kernel::pyboost::RequireGradGuard require_grad_guard(pynative::GradState::Get().RequiresGrad());
-  const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
-  MS_EXCEPTION_IF_NULL(pynative_executor);
-  kernel::pyboost::OpRunStatus::Get().set_run_info(
-    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   TensorPtr tensor_value;
   TypePtr self_dtype = TypeIdToType(self->data_type());
