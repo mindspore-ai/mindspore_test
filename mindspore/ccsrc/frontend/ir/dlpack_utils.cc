@@ -255,7 +255,6 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
     nullptr, address_size, storage_info->shape, DEFAULT_FORMAT, type_id,
     device::GetDeviceNameByType(device_context->device_context_key().device_type_), stream_id);
 
-  device_address->SetShapeVector(ori_shape);
   device_address->set_tensor_storage_info(storage_info);
   tensor->set_device_address(device_address);
   tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
