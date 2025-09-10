@@ -15,6 +15,8 @@ mindspore.train
 .. mscnautosummary::
     :toctree: train
 
+    mindspore.train.AdaptiveCheckpointConfig
+    mindspore.train.AdaptiveModelCheckpoint
     mindspore.train.BackupAndRestore
     mindspore.train.Callback
     mindspore.train.CheckpointConfig
