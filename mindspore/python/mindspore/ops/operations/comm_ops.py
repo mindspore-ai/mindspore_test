@@ -2001,7 +2001,7 @@ class AlltoAllV(PrimitiveWithInfer):
         ...    send_tensor = Tensor([0, 1, 2.])
         ...    send_numel_list = [1, 2]
         ...    recv_numel_list = [1, 2]
-        >>> elif rank == 1:
+        ... elif rank == 1:
         ...    send_tensor = Tensor([3, 4, 5.])
         ...    send_numel_list = [2, 1]
         ...    recv_numel_list = [2, 1]

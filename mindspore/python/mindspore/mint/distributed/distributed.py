@@ -1343,9 +1343,9 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
         >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> if get_rank() == 0:
-        >>>     input_tensor = Tensor(np.ones([3, 4]).astype(np.float32))
-        >>> else:
-        >>>     input_tensor = Tensor(np.ones([2, 4]).astype(np.float32))
+        ...     input_tensor = Tensor(np.ones([3, 4]).astype(np.float32))
+        ... else:
+        ...     input_tensor = Tensor(np.ones([2, 4]).astype(np.float32))
         >>> out_tensor = Tensor(np.zeros([5, 4]).astype(np.float32))
         >>> output_split_sizes = [3, 2]
         >>> output = all_gather_into_tensor_uneven(out_tensor, input_tensor, output_split_sizes)
@@ -1521,9 +1521,9 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([5, 8]).astype(np.float32))
         >>> if get_rank() == 0:
-        >>>     output_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> else:
-        >>>     output_tensor = Tensor(np.ones([3, 8]).astype(np.float32))
+        ...     output_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
+        ... else:
+        ...     output_tensor = Tensor(np.ones([3, 8]).astype(np.float32))
         >>> input_split_sizes = [2, 3]
         >>> output = reduce_scatter_tensor_uneven(output_tensor, input_tensor, input_split_sizes)
         >>> print(output_tensor)
