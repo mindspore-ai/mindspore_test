@@ -2795,8 +2795,7 @@ TensorPtr TensorIndex::TensorGetItem(const TensorPtr &self, const py::object &py
   const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(pynative_executor);
   kernel::pyboost::OpRunStatus::Get().set_run_info(
-    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
-                              pynative_executor->forward_executor()->device_target()));
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   if (py::isinstance<py::bool_>(py_index)) {
     TensorPtr self_viewed = DoExpandDims(self, 0);
@@ -2887,8 +2886,7 @@ TensorPtr TensorIndex::TensorSetItem(TensorPtr self, const py::object &py_index,
   const auto &pynative_executor = pynative::PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(pynative_executor);
   kernel::pyboost::OpRunStatus::Get().set_run_info(
-    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->is_jit_compiling(),
-                              pynative_executor->forward_executor()->device_target()));
+    kernel::pyboost::OpStatus(true, pynative_executor->forward_executor()->device_target()));
   self->set_need_pipeline_sync(true);
   TensorPtr tensor_value;
   TypePtr self_dtype = TypeIdToType(self->data_type());

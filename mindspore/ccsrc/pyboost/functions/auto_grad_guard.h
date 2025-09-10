@@ -31,12 +31,9 @@ class OpRunner;
 using OpPtr = std::shared_ptr<OpRunner>;
 struct PYBOOST_API OpStatus {
   OpStatus();
-  OpStatus(bool _disable_mix_precision, bool _is_jit_compiling, device::DeviceType device_target)
-      : disable_mix_precision(_disable_mix_precision),
-        is_jit_compiling(_is_jit_compiling),
-        device_target(device_target) {}
+  OpStatus(bool _disable_mix_precision, device::DeviceType device_target)
+      : disable_mix_precision(_disable_mix_precision), device_target(device_target) {}
   bool disable_mix_precision{false};
-  bool is_jit_compiling{false};
   device::DeviceType device_target{};
 };
 

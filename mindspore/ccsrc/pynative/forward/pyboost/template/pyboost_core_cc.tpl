@@ -37,8 +37,7 @@ namespace mindspore::pynative {
 AsyncStatus GetAsyncStatus() {
   const auto &op_status = kernel::pyboost::OpRunStatus::Get().op_status();
   AsyncStatus status = {
-    op_status.disable_mix_precision,
-    op_status.is_jit_compiling,
+    op_status.disable_mix_precision
   };
   return status;
 }

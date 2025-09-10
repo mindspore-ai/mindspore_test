@@ -54,7 +54,7 @@ ValuePtrList ConvertOutputTensorList(const py::object &obj) {
 }
 
 TensorPtr ViewAsSelfWithNoGrad(const TensorPtr &self) {
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   kernel::pyboost::RequireGradGuard require_grad_guard(false);
   return kernel::pyboost::view(self, self->shape());
