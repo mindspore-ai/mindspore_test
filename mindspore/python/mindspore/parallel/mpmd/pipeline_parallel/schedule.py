@@ -206,9 +206,14 @@ class Schedule1F1B(PipelineScheduleSingle):
             for _ in range(warmup_micro_batches):
                 if stage_index != 0:
                     order_list.append(MetaStep(fwd_index, MetaStepType.FWD_RECV, stage_index))
-                order_list.append(MetaStep(fwd_index, MetaStepType.FWD, stage_index))
-                if fwd_index != warmup_micro_batches - 1:
-                    order_list.append(MetaStep(fwd_index, MetaStepType.FWD_SEND, stage_index))
+                if stage_index % 2 == 0:
+                    order_list.append(MetaStep(fwd_index, MetaStepType.FWD, stage_index))
+                    if fwd_index != warmup_micro_batches - 1:
+                        order_list.append(MetaStep(fwd_index, MetaStepType.FWD_SEND, stage_index))
+                else:
+                    if fwd_index > 0:
+                        order_list.append(MetaStep(fwd_index - 1, MetaStepType.FWD_SEND, stage_index))
+                    order_list.append(MetaStep(fwd_index, MetaStepType.FWD, stage_index))
                 fwd_index += 1
 
             # if warmup phase cannot filled up, then we need to execute fwd send in advance
