@@ -63,8 +63,12 @@ class SimpleModel(nn.Cell):
     def __init__(self, input_size, output_size, strategy_list):
         super().__init__()
         self.weight = ms.Parameter(
-            Tensor(np.random.randn(input_size, output_size).astype(np.float32)),
+            Tensor(np.random.randn(input_size, output_size).astype(np.float16)),
             name='weight'
+        )
+        self.gamma = ms.Parameter(
+            Tensor(np.random.randn(output_size).astype(np.float16)),
+            name='gamma'
         )
         self.cell_list = ms.nn.CellList()
         for in_strategy, out_strategy in strategy_list:
@@ -74,6 +78,7 @@ class SimpleModel(nn.Cell):
 
     def construct(self, x):
         x = ms.mint.matmul(x, self.weight)
+        x, _ = ms.ops.rms_norm(x, self.gamma)
         for cell in self.cell_list:
             x = cell(x)
         return x
@@ -81,7 +86,7 @@ class SimpleModel(nn.Cell):
 
 def create_dtensor(data, layout):
     """create_dtensor"""
-    tensor = Tensor(data, dtype=ms.float32)
+    tensor = Tensor(data, dtype=ms.float16)
     return tensor.local_to_global(layout)
 
 
@@ -144,6 +149,7 @@ def run_scenario_with_bprop(x_layout, w_layout, target_layout, strategy_list):
     target = create_dtensor(np_target, target_layout)
     print_layout_info(x, "Input X")
     model.weight = model.weight.local_to_global(w_layout)
+    model.gamma = model.gamma.local_to_global(w_layout('None'))
     print_layout_info(model.weight, "Input w")
     print_layout_info(target, "Input target")
     for epoch in range(epochs):

@@ -18,3 +18,4 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
   return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);
 #endif
 }
+

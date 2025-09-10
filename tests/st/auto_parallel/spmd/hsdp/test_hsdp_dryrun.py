@@ -36,6 +36,7 @@ class Net(nn.Cell):
     def construct(self, x):
         x = self.dense1(x)
         x = self.dense2(x)
+        x = x.reduce_partial()
         return x
 
 def get_forward_fn(net):

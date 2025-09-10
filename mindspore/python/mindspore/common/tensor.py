@@ -3757,6 +3757,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
     def reduce_partial(self):
         """syntax suger. Reduce all partial status, equal to call: tensor.redistribute(tensor.layout)"""
+        if not self.layout:
+            return self
         to_layout = cp.deepcopy(self.layout)
         to_layout.reset_partial()
         out = _tensor_redistribution.reduce_partial(self, to_layout)

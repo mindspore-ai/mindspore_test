@@ -764,6 +764,7 @@ class Layout:
 
         if (self._device_shape != other.device_matrix or
                 self._alias_name != other.alias_name or
+                self._partial != other.partial or
                 self._rank_list != other.rank_list):
             return False
 
