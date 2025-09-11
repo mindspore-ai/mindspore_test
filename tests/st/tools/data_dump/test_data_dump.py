@@ -24,7 +24,8 @@ import mindspore.context as context
 
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore import Tensor, set_dump
+from mindspore import Tensor
+from mindspore.tools import set_dump
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops import operations as P, constexpr
 from mindspore.nn import Cell

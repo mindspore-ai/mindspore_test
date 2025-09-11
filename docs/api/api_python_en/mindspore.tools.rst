@@ -10,3 +10,5 @@ mindspore.tools
 .. autofunction:: mindspore.tools.sdc_detect_stop
 
 .. autofunction:: mindspore.tools.get_sdc_detect_result
+
+.. autofunction:: mindspore.tools.set_dump
