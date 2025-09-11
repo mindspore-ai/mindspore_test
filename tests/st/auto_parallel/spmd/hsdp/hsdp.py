@@ -19,7 +19,7 @@ import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
 from mindspore import nn, ops
 from mindspore.communication import init
-from mindspore.parallel.spmd.hsdp import hsdp
+from mindspore.parallel import hsdp
 from hsdp_test_common import Network, hsdp_network_ckpt_path
 
 ms.set_seed(1)

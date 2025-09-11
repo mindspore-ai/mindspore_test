@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
 from mindspore.communication.management import init
-from mindspore.parallel.spmd.hsdp.hsdp import hsdp
+from mindspore.parallel import hsdp
 os.environ["MS_SIMULATION_LEVEL"] = "1"
 os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "32"

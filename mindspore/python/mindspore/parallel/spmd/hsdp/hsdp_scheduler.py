@@ -45,7 +45,10 @@ class HSDPScheduler:
 
     def set_requires_grad_sync(self, requires_grad_sync):
         """set requires grad sync flag to control gradient sync."""
-        self.requires_grad_sync = requires_grad_sync
+        if self.use_cell_hook:
+            self.requires_grad_sync = requires_grad_sync
+        else:
+            ops.assign(self.requires_grad_sync, Tensor(requires_grad_sync))
 
     def zero_grads(self):
         """set requires grad sync flag to control gradient sync."""
@@ -53,7 +56,7 @@ class HSDPScheduler:
             for hsdp_param in self.hsdp_state.hsdp_params:
                 hsdp_param.zero_acc_grad()
 
-    def _get_hsdp_param_forward_hook(self, param):
+    def _get_param_forward_hook(self, param):
         """get param forward hook."""
 
         def stateless_param_forward_hook(origin_param):
@@ -77,15 +80,15 @@ class HSDPScheduler:
         """register param forward and grad hook."""
         for hsdp_param in self.hsdp_state.hsdp_params:
             if not hsdp_param.sharded:
-                hsdp_param.param.register_hook(self._get_hsdp_param_grad_hook(hsdp_param))
+                hsdp_param.param.register_hook(self._get_param_grad_hook(hsdp_param))
             else:
-                hsdp_param.param.register_hsdp_hook(self._get_hsdp_param_forward_hook(hsdp_param),
-                                                    self._get_hsdp_param_grad_hook(hsdp_param))
+                hsdp_param.param.register_hsdp_hook(self._get_param_forward_hook(hsdp_param),
+                                                    self._get_param_backward_hook(hsdp_param))
 
     def _register_cell_hooks(self):
         """register cell process hooks."""
         for hsdp_param in self.hsdp_state.hsdp_params:
-            hsdp_param.param.register_hook(self._get_hsdp_param_grad_hook(hsdp_param))
+            hsdp_param.param.register_hook(self._get_param_grad_hook(hsdp_param))
         if self.no_param_sharded:
             return
 
@@ -205,7 +208,7 @@ class HSDPScheduler:
 
         return grad_reduce_scatter_acc_hook
 
-    def _get_hsdp_param_grad_hook(self, param):
+    def _get_param_grad_hook(self, param):
         """get hook for param gradient process."""
         if not param.sharded:
             if param.dp_size == 1:
@@ -216,3 +219,19 @@ class HSDPScheduler:
             return self._get_hsdp_param_fully_sharded_hook(param)
 
         return self._get_hsdp_param_partial_sharded_hook(param)
+
+    def _get_param_backward_hook(self, param):
+        """get hook for param backward process."""
+        grad_hook = self._get_param_grad_hook(param)
+        def backward_hook(grad):
+            ops.assign(param.unsharded_param_available, Tensor(False))
+            return grad_hook(grad)
+
+        def backward_acc_grad_hook(grad):
+            if self.requires_grad_sync:
+                ops.assign(param.unsharded_param_available, Tensor(False))
+            return grad_hook(grad)
+
+        if self.requires_acc_grad:
+            return backward_acc_grad_hook
+        return backward_hook

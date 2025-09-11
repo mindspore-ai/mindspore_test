@@ -13,8 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """hybrid shard data parallel interface"""
-from mindspore.nn.cell import Cell
-from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler, OptimizerLevel
+from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel
 
 origin_class_to_extend_class = {}
 optimizer_level_map = {
@@ -33,6 +32,7 @@ class HSDPCell:
     """
     def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale):
         """init hsdp scheduler."""
+        from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler
         self.hsdp_scheduler = HSDPScheduler(cell,
                                             shard_size,
                                             threshold,
@@ -45,9 +45,13 @@ class HSDPCell:
             set requires grad sync flag.
             Args:
                 requires_grad_sync(bool): requires_grad_sync is used to control gradient sync process.
+            Raises:
+                ValueError: If `requires_grad_sync` is not bool.
         """
+        if not isinstance(requires_grad_sync, bool):
+            raise ValueError("requires_grad_sync must be bool but got {}.".format(requires_grad_sync))
         if not hasattr(self, "hsdp_scheduler"):
-            return
+            raise ValueError("call hsdp interface first.")
         self.hsdp_scheduler.set_requires_grad_sync(requires_grad_sync)
         for sub_cell in self.cells():
             if isinstance(sub_cell, HSDPCell):
@@ -110,6 +114,7 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             ValueError: If `enable_grad_accumulation` is not bool.
             ValueError: If `grad_scale` is not float.
         """
+    from mindspore.nn.cell import Cell
     if not isinstance(cell, Cell):
         raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
     if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
