@@ -24,7 +24,10 @@
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList UnstackExtViewBasicTypeCalc(const tensor::TensorPtr &x_tensor, const int64_t &dim) {
-  return UnstackStridesCalc(x_tensor->shape(), x_tensor->stride(), x_tensor->storage_info(), dim);
+  auto storage_info_list = UnstackStridesCalc(x_tensor->shape(), x_tensor->stride(), x_tensor->storage_info(), dim);
+  MS_CHECK_VALUE(storage_info_list.size() > 0, "For 'UnstackExtView', output_num should be greater than 0, but got " +
+                                                 std::to_string(storage_info_list.size()));
+  return storage_info_list;
 }
 
 TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {

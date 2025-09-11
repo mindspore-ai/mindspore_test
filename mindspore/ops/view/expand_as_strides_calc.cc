@@ -22,8 +22,8 @@
 #include "view/broadcast_to_strides_calc.h"
 
 namespace mindspore::ops {
-OPS_API TensorStorageInfoPtrList ExpandAsBasicTypeCalc(const mindspore::tensor::TensorPtr &input,
-                                                       const mindspore::tensor::TensorPtr &other) {
+TensorStorageInfoPtrList ExpandAsBasicTypeCalc(const mindspore::tensor::TensorPtr &input,
+                                               const mindspore::tensor::TensorPtr &other) {
   return BroadcastToBasicTypeCalc(input, other->shape());
 }
 
