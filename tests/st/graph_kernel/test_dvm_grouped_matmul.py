@@ -63,7 +63,7 @@ def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
 )
 @pytest.mark.parametrize(
     "M0 ,K0, N0,E0, group_list_np",
-    [(320, 256, 128, 8, [10, 30, 100, 140, 180, 220, 240, 320])],
+    [(320, 256, 128, 10, [0, 10, 30, 100, 140, 180, 220, 220, 240, 320])],
 )
 def test_dvm_grouped_matmul_splititem3_grouptype0(M0, K0, N0, E0, group_list_np):
     """
@@ -101,7 +101,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype0(M0, K0, N0, E0, group_list_np)
 )
 @pytest.mark.parametrize(
     "M0 ,K0, N0,E0, group_list_np",
-    [(1024, 2560, 1024, 8, [10, 300, 1024, 1400, 1800, 2048, 2200, 2560])],
+    [(1024, 2560, 1024, 11, [0, 10, 300, 1024, 1024, 1400, 1800, 2048, 2048, 2200, 2560])],
 )
 def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np):
     """
@@ -136,7 +136,7 @@ def test_dvm_grouped_matmul_splititem3_grouptype2(M0, K0, N0, E0, group_list_np)
 )
 @pytest.mark.parametrize(
     "M0 ,K0, N0,E0, group_list_np",
-    [(320, 256, 128, 8, [10, 30, 100, 140, 180, 220, 240, 320])],
+    [(320, 256, 128, 12, [0, 10, 30, 30, 100, 140, 140, 180, 220, 220, 240, 320])],
 )
 def test_dvm_grouped_matmul_dyn_shape(M0, K0, N0, E0, group_list_np):
     """
