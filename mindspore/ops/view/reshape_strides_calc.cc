@@ -103,10 +103,12 @@ inline std::vector<int64_t> infer_size_impl(const std::vector<int64_t> &proposed
     std::vector<int64_t> res(proposed_shape);
     if (infer_dim) {
       if (newsize == 0) {
-        MS_EXCEPTION(ValueError) << "cannot reshape tensor of 0 elements into proposed_shape " << proposed_shape
-                                 << ", because the unspecified dimension size -1 can be any value and is ambiguous";
+        MS_LOG(WARNING) << "cannot reshape tensor of 0 elements into proposed_shape " << proposed_shape
+                        << ", because the unspecified dimension size -1 can be any value and is ambiguous";
+        res[*infer_dim] = 0;
+      } else {
+        res[*infer_dim] = numel / newsize;
       }
-      res[*infer_dim] = numel / newsize;
     }
     return res;
   }

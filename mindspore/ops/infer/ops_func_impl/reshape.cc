@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/reshape.h"
+#include <algorithm>
 #include <memory>
 #include <functional>
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -60,13 +61,17 @@ BaseShapePtr ReshapeFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              std::multiplies<int64_t>());
         auto itr = std::find(shape_vec.begin(), shape_vec.end(), -1);
         auto index = LongToSize(std::distance(shape_vec.begin(), itr));
-        auto computed_dim_value = input_element;
-        for (size_t i = 0; i < shape_vec.size(); ++i) {
-          if (shape_vec[i] != -1 && shape_vec[i] != 0) {
-            computed_dim_value = computed_dim_value / shape_vec[i];
-          }
+        int64_t new_size = 1;
+        (void)std::for_each(shape_vec.begin(), shape_vec.end(),
+                            [&new_size](int64_t val) { new_size *= (val > -1 ? val : 1); });
+        if (MS_UNLIKELY(new_size == 0)) {
+          MS_LOG(WARNING) << "cannot reshape tensor of " << input_element << " elements into proposed_shape "
+                          << shape_vec
+                          << ", because the unspecified dimension size -1 can be any value and is ambiguous";
+          shape_vec[index] = 0;
+        } else {
+          shape_vec[index] = input_element / new_size;
         }
-        shape_vec[index] = computed_dim_value;
       }
     }
     if (!IsDynamic(input_shape_vec)) {

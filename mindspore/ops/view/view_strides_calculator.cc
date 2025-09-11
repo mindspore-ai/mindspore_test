@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "view/view_strides_calculator.h"
+#include <functional>
+#include <numeric>
 
 namespace mindspore::ops {
 ViewStridesCalcFactory &ViewStridesCalcFactory::GetInstance() {
@@ -59,15 +61,17 @@ std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape) {
 }
 
 bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides) {
-  if (shape.size() == 0) {
-    return true;
-  }
   if (shape.size() != strides.size()) {
     MS_LOG(EXCEPTION) << "shape.size() != strides.size()";
   }
 
+  auto numel = std::accumulate(shape.begin(), shape.end(), (int64_t)1, std::multiplies<int64_t>());
+  if (numel == 0) {
+    return true;
+  }
+
   int64_t z = 1;
-  for (int64_t i = SizeToLong(shape.size() - 1); i >= 0; --i) {
+  for (int64_t i = SizeToLong(shape.size()) - 1; i >= 0; --i) {
     const auto &shape_i = shape[i];
     if (shape_i != 1) {
       if (strides[i] == z) {

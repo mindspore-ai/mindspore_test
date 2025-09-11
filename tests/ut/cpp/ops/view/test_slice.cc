@@ -56,7 +56,7 @@ TEST_F(TestViewSlice, SliceFunction) {
   std::vector<int64_t> expect_shape_2({1, 0, 1});
   std::vector<int64_t> expect_strides_2({6, 3, 1});
   ASSERT_EQ(storage_list.size(), expect_size);
-  ASSERT_FALSE(storage_list[0]->is_contiguous);
+  ASSERT_TRUE(storage_list[0]->is_contiguous);
   ASSERT_TRUE(storage_list[0]->shape == expect_shape_2);
   ASSERT_TRUE(storage_list[0]->strides == expect_strides_2);
   ASSERT_TRUE(storage_list[0]->storage_offset == expect_offset);
