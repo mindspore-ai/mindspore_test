@@ -1052,15 +1052,12 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
   if (w->need_compute_grad_out()) {
     x = ib->Reshape(x, x_2d_shape);
     if (no_bias) {
-      if (ops::UseOptimizedOpImpl()) {
-        MS_LOG(DEBUG) << "Using optimized operator implementation in Dense's backward.";
-        dw = ib->MatMulExt(ib->Emit("Transpose", {dout_conj, ib->Value(ShapeVector{1, 0})}), x);
-      } else {
-        x = ib->Emit("Transpose", {x, ib->Value(ShapeVector{1, 0})});
-        dw = ib->Emit("Transpose", {ib->MatMulExt(x, dout_conj), ib->Value(ShapeVector{1, 0})});
-      }
+      dw = ib->Transpose(ib->MatMulExt(ib->Transpose(x, {1, 0}), dout), {1, 0});
     } else {
-      dw = ib->MatMul(dout_conj, x, true, false);
+      dw = ib->MatMulExt(ib->Transpose(dout, {1, 0}), x);
+    }
+    if (is_complex) {
+      dw = ib->Emit("Conj", {dw});
     }
     dw = is_complex ? ib->Emit("Conj", {dw}) : dw;
     dw = ib->Reshape(dw, w_shape);

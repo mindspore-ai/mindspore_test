@@ -4962,10 +4962,11 @@ REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
     input_grad = ib->OutZeros(input);
   }
   auto mat1_grad = mat1->need_compute_grad_out()
-                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(dout, mat2, false, true), alpha, "alpha")
+                     ? MaybeMultiply(ib, input_type, ib->MatMul(dout, mat2, false, true), alpha, "alpha")
                      : ib->OutZeros(mat1);
+  auto mat2_grad_ori = ib->Transpose(ib->MatMul(dout, mat1, true, false), {1, 0});
   auto mat2_grad = mat2->need_compute_grad_out()
-                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(mat1, dout, true, false), alpha, "alpha")
+                     ? MaybeMultiply(ib, input_type, mat2_grad_ori, alpha, "alpha")
                      : ib->OutZeros(mat2);
   return {input_grad, mat1_grad, mat2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
