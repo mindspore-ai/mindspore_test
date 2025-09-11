@@ -7,8 +7,7 @@ endif()
 
 set_property(SOURCE ${RUNTIME_COMMON_LIST} PROPERTY SUBMODULE_ID=mindspore::SubModuleId::SM_RUNTIME_FRAMEWORK)
 add_library(mindspore_runtime_utils SHARED ${RUNTIME_COMMON_LIST})
-target_link_libraries(mindspore_runtime_utils PRIVATE mindspore_core mindspore_common
-        mindspore::pybind11_module)
+target_link_libraries(mindspore_runtime_utils PRIVATE mindspore_core mindspore::pybind11_module)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(mindspore_runtime_utils PRIVATE RUNTIME_UTILS_DLL)
 endif()
