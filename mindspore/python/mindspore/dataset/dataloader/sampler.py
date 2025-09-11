@@ -113,6 +113,7 @@ class RandomSampler(Sampler[int]):
                 generator.manual_seed(seed)
         else:
             generator = self.generator
+            seed = generator.initial_seed()
 
         if self.replacement:
             for _ in range(self.num_samples // 32):
