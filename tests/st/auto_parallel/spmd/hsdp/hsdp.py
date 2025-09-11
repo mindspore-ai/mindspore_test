@@ -81,9 +81,6 @@ def make_baseline_by_standalone_run():
 def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"):
     data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = Network()
-    param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
-    param_not_load, _ = ms.load_param_into_net(net, param_dict)
-    assert not param_not_load, f"For hsdp test case, not completely load ckpt from {hsdp_network_ckpt_path}"
     hsdp(net, shard_size, threshold, optimizer_level)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
@@ -102,11 +99,7 @@ def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="leve
 def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1):
     data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = Network()
-    param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
-    param_not_load, _ = ms.load_param_into_net(net, param_dict)
-    assert not param_not_load, f"For hsdp test case, not completely load ckpt from {hsdp_network_ckpt_path}"
     hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True)
-
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)

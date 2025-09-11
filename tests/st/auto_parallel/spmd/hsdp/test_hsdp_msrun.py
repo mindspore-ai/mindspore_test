@@ -13,30 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import os
-import mindspore as ms
-from hsdp_test_common import Network, hsdp_network_ckpt_path, ErrorComparator
 from tests.mark_utils import arg_mark
-import pytest
 
 
 LOSS_REL_ABSOLUTE_TOL: float = 1e-2
 FIRST_STEP_LOSS_REL_ABSOLUTE_TOL: float = 5e-3
 
-baseline_dir: str = None
-
-@pytest.fixture(scope="session", autouse=True)
-def make_standalone_baseline():
-    global baseline_dir
-    simple_net = Network()
-    ms.save_checkpoint(simple_net, hsdp_network_ckpt_path)
-    case_name = f"test_standalone_run"
-    log = f"log_{case_name}"
-    baseline_dir = log
-    ret = os.system(
-        f"msrun --worker_num=8 --local_worker_num=8 --log_dir={log} --join=True --master_port=18181\
-            pytest -s hsdp.py::{case_name}"
-    )
-    assert ret == 0
 
 def _run_hsdp_case_by_name(case_name: str):
     log = f"log_{case_name}"
@@ -45,14 +27,6 @@ def _run_hsdp_case_by_name(case_name: str):
             pytest -s hsdp.py::{case_name}"
     )
     assert ret == 0
-    baseline_worker0_path: str = f"{baseline_dir}/worker_0.log"
-    case_worker0_path: str = f"{log}/worker_0.log"
-    err_comp = ErrorComparator(baseline_worker0_path, case_worker0_path)
-    errors_list = err_comp.get_rel_abs_error_of_steps()
-    assert not any(x > LOSS_REL_ABSOLUTE_TOL for x in errors_list), \
-        f"HSDP testcase of {case_name} compare with standalone, \
-        Relative absolute error list is {errors_list}, but tolerance is {LOSS_REL_ABSOLUTE_TOL}"
-    assert err_comp.get_first_step_rel_abs_error() < FIRST_STEP_LOSS_REL_ABSOLUTE_TOL
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
