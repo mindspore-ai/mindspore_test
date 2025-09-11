@@ -171,10 +171,9 @@ dvm::NDObject *LazyFusionKernelAscend::Input(const TensorPtr &x, bool enable_cas
     }
     auto load = inputs_[input_used_++];
     if (shape == std::nullopt) {
-      load->shape = x->shape();  // directly point to Tensor shape
+      load->shape = cached_shape_.emplace_back(x->shape(), nullptr).first;
     } else {
-      auto &item = cached_shape_.emplace_back(shape.value(), nullptr);
-      load->shape = item.first;
+      load->shape = cached_shape_.emplace_back(shape.value(), nullptr).first;
     }
     auto load_op = dvm::Kernel::Load(nullptr, &(load->shape), input_type);
     auto op = cast_to_fp32 ? Cast(load_op, dvm::DType::kFloat32) : load_op;
