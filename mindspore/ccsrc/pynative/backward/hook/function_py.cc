@@ -158,10 +158,7 @@ static TensorPtrSet parse_to_save(const FunctionPtr &fptr) {
   size_t num_to_save = to_save_tp.size();
   for (size_t i = 0; i < num_to_save; i++) {
     py::object elem = to_save_tp[i];
-    if (!tensor::IsTensorPy(elem) && !py::isinstance<py::none>(elem)) {
-      MS_LOG(EXCEPTION) << "element of to_save should be a tensor, but get a " << elem.get_type();
-    }
-    if (py::isinstance<py::none>(elem)) {
+    if (!tensor::IsTensorPy(elem)) {
       continue;
     }
     auto base_tensor = tensor::ConvertToTensor(elem);

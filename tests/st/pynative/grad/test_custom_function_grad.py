@@ -1050,3 +1050,26 @@ def test_custom_function_ctx_get_unset_attr():
 
     x = mindspore.Tensor(1.0)
     CustomOp.apply(x)
+
+
+class CustomFunctionNotRaiseError(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        ctx.save_for_backward((x, y))
+        return x + y
+
+    @staticmethod
+    def backward(ctx, *args):
+        return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
+               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+
+
+def test_custom_function_not_raise_error():
+    """
+    Feature: Custom autograd function.
+    Description: Test save tuple not raise error
+    Expectation: success.
+    """
+    x = Tensor([3, 3, 3], mindspore.float32)
+    y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
+    _ = CustomFunctionNotRaiseError.apply(x, y)
