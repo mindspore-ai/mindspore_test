@@ -43,6 +43,7 @@
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "tools/error_handler/error_handler.h"
 #include "tools/profiler/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -879,6 +880,7 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
                                   profiler::GetClockSyscnt(), 1);
 
   CheckInferPerformanceFeature(graph_compiler_info, actor_set.get());
+  tools::ErrorHandler::GetInstance().SaveConstants(graph_compiler_info.graphs_);
   return actor_set.get();
 }
 

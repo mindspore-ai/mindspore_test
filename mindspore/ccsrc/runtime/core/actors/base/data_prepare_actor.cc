@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <set>
 
+#include "ir/anf.h"
 #include "ir/map_tensor.h"
 #include "ir/tensor_new.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -31,6 +32,7 @@
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
+#include "tools/error_handler/error_handler.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "utils/llm_manager.h"
@@ -1203,8 +1205,12 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
   MS_EXCEPTION_IF_NULL(front_node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
-  auto &node_value = node->value();
+  ValuePtr node_value = node->value();
   MS_EXCEPTION_IF_NULL(node_value);
+  if (UCEException::GetInstance().get_uce_flag() && node_value->isa<tensor::Tensor>()) {
+    // In UCE scenario, the constants value in device may be corrupted, so here restore from host backup values
+    node_value = tools::ErrorHandler::GetInstance().GetConstant(node);
+  }
   MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " front node:" << front_node->DebugString();
   if (node_value->isa<tensor::Tensor>()) {
     PrepareDataForValueNodeTensor(node, node_value, front_node, device_context, context);
