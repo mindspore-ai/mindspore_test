@@ -28,7 +28,7 @@ from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _r
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
 from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, \
-    inplace_index_add_op
+    inplace_index_add_op, inplace_sign_op
 from mindspore.ops.auto_generate import inplace_copy_op, inplace_uniform_op, inplace_erfinv_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 from mindspore.ops.auto_generate import inplace_exponential_op
@@ -4361,6 +4361,13 @@ def sign(x):
     For details, please refer to :func:`mindspore.ops.sign`.
     """
     return F.sign(x)
+
+
+def sign_(input):
+    r"""
+    In-place version of :func:`mindspore.mint.sign`.
+    """
+    return inplace_sign_op(input)
 
 
 def signbit(x):
