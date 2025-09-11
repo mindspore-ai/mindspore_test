@@ -20,7 +20,7 @@ import copy
 import numpy as np
 from mindspore.common.api import _wrap_func
 from mindspore.log import _LogActionOnce
-from mindspore import context, log as logger
+from mindspore import log as logger
 from mindspore.parallel._utils import _is_in_auto_parallel_mode, _is_in_data_parallel_mode, \
     _is_in_hybrid_parallel_mode, SUPPORTED_TUPLE_IN_TUPLE_STRATEGY
 from mindspore.parallel._ps_context import _is_ps_mode, _is_role_sched
@@ -214,22 +214,6 @@ class Primitive(Primitive_):
         if in_strategy is None and out_strategy is not None:
             raise ValueError(f'The out_strategy of {self.name} is {out_strategy}, need to set in_strategy,'
                              f' but got none')
-        if not _is_in_auto_parallel_mode():
-            mode = context.get_auto_parallel_context("parallel_mode")
-            if in_strategy is not None:
-                logger.warning(f"The in_strategy/in_layout of the operator in your network "
-                               f"will not take effect in {mode} mode. "
-                               f"This means the the shard function called in the network is ignored. \n"
-                               f"If you want to enable it, please use semi auto or auto parallel mode by "
-                               f"context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL "
-                               f"or context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL)")
-            if out_strategy is not None:
-                logger.warning(f"The out_strategy/out_layout of the operator in your network "
-                               f"will not take effect in {mode} mode."
-                               f" This means the the shard function called in the network is ignored. \n"
-                               f"If you want to enable it, please use semi auto or auto parallel mode by "
-                               f"context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL "
-                               f"or context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL)")
 
     def del_prim_attr(self, name):
         """
