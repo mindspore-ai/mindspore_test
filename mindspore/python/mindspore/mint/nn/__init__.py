@@ -19,6 +19,7 @@ Predefined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
 import mindspore.ops as ops
+from mindspore.nn import *
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import AdaptiveMaxPool2d
