@@ -171,6 +171,7 @@ void AscendDeviceContext::Destroy() {
   }
   silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
   tools::ascend::AscendSnapshotMgr::GetInstance()->Clear();
+  tools::ErrorHandler::GetInstance().Clear();
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   // for ge, has destropy in graph_executor->finalize
   device_res_manager_->Destroy();
