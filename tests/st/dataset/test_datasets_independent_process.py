@@ -27,22 +27,18 @@ from tests.mark_utils import arg_mark
 import mindspore.dataset as ds
 
 
-def check_message_queue():
-    cmd = "ipcs -q | awk 'NR>3 {print $2;}'"
-    output = subprocess.check_output(cmd, shell=True).decode().strip('\n')
+def check_message_queue(queue_input):
+    cmd = f"ipcs -q -p | grep -E '{queue_input}' | wc -l"
+    output = subprocess.check_output(cmd, shell=True).decode()
     lines = output.split('\n')
-    msg_keys = [msg_key for msg_key in lines if msg_key.strip()]
-    key_count = len(msg_keys)
-    return key_count
+    assert lines[0] == str(0)
 
 
-def check_shared_memory():
-    cmd = ["ipcs", "-m", " | ", "awk 'NR>3 {print $2;}'"]
-    output = subprocess.check_output(cmd, shell=False).decode()
+def check_shared_memory(memory_input):
+    cmd = f"ipcs -m -p | grep -E '{memory_input}' | wc -l"
+    output = subprocess.check_output(cmd, shell=True).decode()
     lines = output.split('\n')
-    shm_keys = [shm_key for shm_key in lines if shm_key.strip()]
-    key_count = len(shm_keys)
-    return key_count
+    assert lines[0] == str(0)
 
 
 def wait_independent_dataset_process_run():
@@ -121,8 +117,9 @@ def test_dataset_two_stage_pipeline_with_big_data():
     os.environ['MS_INDEPENDENT_DATASET'] = 'True'
     ds.config.set_multiprocessing_start_method("spawn")
 
-    start_msg_keys_count = check_message_queue()
-    start_shm_keys_count = check_shared_memory()
+    independent_dataset_process_pid = None
+    worker_processes_pids = None
+    current_pid = os.getpid()
 
     class FirstDataset:
         """FirstDataset"""
@@ -176,8 +173,10 @@ def test_dataset_two_stage_pipeline_with_big_data():
     check_processes_until([independent_dataset_process_pid])
     check_processes_until(worker_processes_pids)
 
-    assert check_shared_memory() == start_shm_keys_count
-    assert check_message_queue() == start_msg_keys_count
+    work_ids = [independent_dataset_process_pid] + worker_processes_pids + [current_pid]
+    input_workers = "|".join(str(x) for x in work_ids)
+    check_shared_memory(input_workers)
+    check_message_queue(input_workers)
 
     ds.config.set_multiprocessing_start_method("fork")
     os.environ['MS_INDEPENDENT_DATASET'] = 'False'
@@ -206,9 +205,6 @@ def test_dfx_independent_generator_dataset_kill_main_process():
     #                                       |-    worker process
     #                                       |-    ......
 
-    start_msg_keys_count = check_message_queue()
-    start_shm_keys_count = check_shared_memory()
-
     kill_signal = [15, 9]
     parallel_mode = [False, True]
     for signal in kill_signal:
@@ -222,9 +218,6 @@ def test_dfx_independent_generator_dataset_kill_main_process():
             cmd = "python ./simple_dataset_pipeline.py " + str(mode) + " >" + log_file + " 2>&1"
             os.popen(cmd)
             wait_independent_dataset_process_run()
-
-            assert check_message_queue() > start_msg_keys_count
-            assert check_shared_memory() > start_shm_keys_count
 
             shell_process_pid = psutil.Process(current_pid).children(recursive=False)[0].pid
             main_process_pid = psutil.Process(shell_process_pid).children(recursive=False)[0].pid
@@ -249,8 +242,11 @@ def test_dfx_independent_generator_dataset_kill_main_process():
 
             check_processes_until(worker_processes_pids)
 
-            assert check_shared_memory() == start_shm_keys_count
-            assert check_message_queue() == start_msg_keys_count
+            work_ids = [independent_dataset_process_pid] + worker_processes_pids + [main_process_pid]
+            input_workers = "|".join(str(x) for x in work_ids)
+
+            check_shared_memory(input_workers)
+            check_message_queue(input_workers)
 
             # check the log
             ret = os.system(r"grep -RE '\[INFO\] .* Main process: " + str(main_process_pid) +
@@ -287,9 +283,6 @@ def test_dfx_independent_generator_dataset_kill_independent_dataset_process():
     #                                       |-    worker process
     #                                       |-    ......
 
-    start_msg_keys_count = check_message_queue()
-    start_shm_keys_count = check_shared_memory()
-
     kill_signal = [15, 9]
     parallel_mode = [False, True]
     for signal in kill_signal:
@@ -303,9 +296,6 @@ def test_dfx_independent_generator_dataset_kill_independent_dataset_process():
             cmd = "python ./simple_dataset_pipeline.py " + str(mode) + " >" + log_file + " 2>&1"
             os.popen(cmd)
             wait_independent_dataset_process_run()
-
-            assert check_message_queue() > start_msg_keys_count
-            assert check_shared_memory() > start_shm_keys_count
 
             shell_process_pid = psutil.Process(current_pid).children(recursive=False)[0].pid
             main_process_pid = psutil.Process(shell_process_pid).children(recursive=False)[0].pid
@@ -330,8 +320,11 @@ def test_dfx_independent_generator_dataset_kill_independent_dataset_process():
 
             check_processes_until(worker_processes_pids)
 
-            assert check_shared_memory() == start_shm_keys_count
-            assert check_message_queue() == start_msg_keys_count
+            work_ids = [independent_dataset_process_pid] + worker_processes_pids + [main_process_pid]
+            input_workers = "|".join(str(x) for x in work_ids)
+
+            check_shared_memory(input_workers)
+            check_message_queue(input_workers)
 
             # check the log
             ret = os.system(r"grep -RE '\[ERROR\] \[Monitor\] The sub-process: " +
@@ -369,9 +362,6 @@ def test_dfx_independent_generator_dataset_kill_worker_process():
     #                                       |-    worker process
     #                                       |-    ......
 
-    start_msg_keys_count = check_message_queue()
-    start_shm_keys_count = check_shared_memory()
-
     kill_signal = [15, 9]
     parallel_mode = [True]
     for signal in kill_signal:
@@ -385,9 +375,6 @@ def test_dfx_independent_generator_dataset_kill_worker_process():
             cmd = "python ./simple_dataset_pipeline.py " + str(mode) + " >" + log_file + " 2>&1"
             os.popen(cmd)
             wait_independent_dataset_process_run()
-
-            assert check_message_queue() > start_msg_keys_count
-            assert check_shared_memory() > start_shm_keys_count
 
             shell_process_pid = psutil.Process(current_pid).children(recursive=False)[0].pid
             main_process_pid = psutil.Process(shell_process_pid).children(recursive=False)[0].pid
@@ -412,8 +399,11 @@ def test_dfx_independent_generator_dataset_kill_worker_process():
 
             check_processes_until(worker_processes_pids)
 
-            assert check_shared_memory() == start_shm_keys_count
-            assert check_message_queue() == start_msg_keys_count
+            work_ids = [independent_dataset_process_pid] + worker_processes_pids + [main_process_pid]
+            input_workers = "|".join(str(x) for x in work_ids)
+
+            check_shared_memory(input_workers)
+            check_message_queue(input_workers)
 
             # check the log
             signal_str = "Terminated"
