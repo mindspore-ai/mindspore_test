@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <algorithm>
 #include "frontend/jit/pi/capture_context.h"
+#include <algorithm>
 #include "frontend/jit/pi/external.h"
 #include "frontend/jit/pi/jit_compile_results.h"
 #include "utils/log_adapter.h"

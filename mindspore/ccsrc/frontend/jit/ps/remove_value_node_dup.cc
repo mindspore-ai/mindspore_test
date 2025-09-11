@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
-
 #include "frontend/jit/ps/remove_value_node_dup.h"
+#include <string>
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/tensor.h"

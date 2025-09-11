@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include <iostream>
 #include <iterator>
 #include <vector>
@@ -24,7 +25,6 @@
 #include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_dump_utils.h"
-#include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "include/common/debug/common.h"
 
 namespace mindspore {

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+#include "frontend/jit/ps/pipeline_split.h"
 #include <set>
 #include <map>
 #include <vector>
 #include <string>
 #include <memory>
 #include "ir/graph_utils.h"
-#include "frontend/jit/ps/pipeline_split.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
