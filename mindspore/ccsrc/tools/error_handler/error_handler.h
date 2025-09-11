@@ -43,7 +43,7 @@ class BACKEND_COMMON_EXPORT ErrorHandler {
 
  private:
   // save constant values for uce scenario, for constant tensor device memory may be corrupted
-  std::map<AnfNodePtr, ValuePtr> const_values_;
+  std::map<AnfNodePtr, ValuePtr> const_values_{};
 };
 
 // Parameter snapshot manager

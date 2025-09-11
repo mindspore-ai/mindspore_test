@@ -35,6 +35,7 @@ ErrorHandler &ErrorHandler::GetInstance() {
 void ErrorHandler::SaveConstants(const std::vector<KernelGraphPtr> &graphs) {
   if (!UCEException::IsEnableUCE()) {
     MS_LOG(INFO) << "Not enable UCE, skip saving constants.";
+    return;
   }
   MS_LOG(INFO) << "Save constants of graphs for UCE recovery";
   for (auto &graph : graphs) {
