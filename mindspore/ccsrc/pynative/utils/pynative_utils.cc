@@ -1887,7 +1887,7 @@ tensor::TensorPtr Common::CaculateGradNorm(const tensor::TensorPtr &grad) {
     return grad;
   }
   static constexpr const float norm_val = 2;
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   return kernel::pyboost::norm(grad, std::make_shared<FP32Imm>(norm_val), std::nullopt,
                                std::make_shared<BoolImm>(false), std::nullopt);

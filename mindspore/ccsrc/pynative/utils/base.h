@@ -62,7 +62,6 @@ struct BaseOpRunInfo {
 
 struct AsyncStatus {
   bool disable_mix_precision{false};
-  bool is_jit_compiling{false};
 };
 
 using OperatorType = kernel::pyboost::OperatorType;

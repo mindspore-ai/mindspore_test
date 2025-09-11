@@ -25,7 +25,7 @@ namespace mindspore::pynative::autograd {
 namespace {
 inline void SetDeviceTarget() {
   const auto &device_target = DeviceManagerConf::GetInstance()->device_type();
-  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, false, device_target));
+  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device_target));
 }
 }  // namespace
 

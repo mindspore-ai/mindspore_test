@@ -243,7 +243,7 @@ bool TensorMeta::IsBroadcastTo(const ShapeVector &expand_shape) const {
 bool TensorMeta::IsSameShape(const ShapeVector &shape) const { return shape_ == shape; }
 
 tensor::TensorPtr TensorMeta::ReduceGrad(const tensor::TensorPtr &grad) const {
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   auto src_size = shape_.size();
   auto grad_size = grad->shape().size();
@@ -270,7 +270,7 @@ tensor::TensorPtr TensorMeta::Cast(const tensor::TensorPtr &grad) const {
   if (grad->data_type() != dtype_->type_id()) {
     MS_LOG(DEBUG) << "grad dtype is not same as input, try to cast dtype";
 
-    kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+    kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
     kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
     return kernel::pyboost::cast(grad, std::make_shared<Int64Imm>(static_cast<int64_t>(dtype_->type_id())));
   }
@@ -969,7 +969,7 @@ void AutoGradUtil::CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inpla
     return;
   }
   MS_LOG(DEBUG) << "Begin clone src value for op " << prim->name();
-  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, false, device_target));
+  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device_target));
   auto output = kernel::pyboost::clone(input_tensor);
   inplace_op->set_clone_tensor(output);
 }
@@ -992,20 +992,20 @@ ValuePtr AutoGradUtil::ShallowCopyAndDetach(const ValuePtr &value) {
 }
 
 TensorPtr AutoGradUtil::ViewAsSelfWithNoGrad(const TensorPtr &self) {
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   kernel::pyboost::RequireGradGuard require_grad_guard(false);
   return kernel::pyboost::view(self, self->shape());
 }
 
 TensorPtr AutoGradUtil::Add(const TensorPtr &input, const TensorPtr &other) {
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   return kernel::pyboost::add(input, other);
 }
 
 TensorPtr AutoGradUtil::Clone(const TensorPtr &input) {
-  kernel::pyboost::OpStatus status{false, false, DeviceManagerConf::GetInstance()->device_type()};
+  kernel::pyboost::OpStatus status{false, DeviceManagerConf::GetInstance()->device_type()};
   kernel::pyboost::OpRunStatus::Get().set_run_info(std::move(status));
   return kernel::pyboost::clone(input);
 }

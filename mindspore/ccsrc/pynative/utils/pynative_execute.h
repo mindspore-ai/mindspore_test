@@ -87,7 +87,7 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
   void Sync() const;
   void SetMixedPrecisionType(const MixedPrecisionType mix_type, bool is_push) const;
   void WorkerJoin();
-  void SetJitCompileStatus(bool is_compiling, const std::string &phase) const;
+  void SetJitCompilePhase(const std::string &phase) const;
   void SetIsRunRecompute(bool is_runing_recompute) const;
   void ParentBeforeFork();
   void ChildAfterFork();

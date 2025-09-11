@@ -418,9 +418,7 @@ void ForwardExecutor::DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_in
 }
 
 void ForwardExecutor::ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const {
-  if (!async_status.is_jit_compiling) {
-    grad()->ProcessOpGradInfo(grad_info);
-  }
+  grad()->ProcessOpGradInfo(grad_info);
 }
 
 void ForwardExecutor::ForwardRunViewKernelTask(const FrontendOpRunInfoPtr &op_run_info,
@@ -1040,7 +1038,6 @@ void ForwardExecutor::ClearRes() {
 
   init_ = false;
   enable_async_ = false;
-  is_jit_compiling_ = false;
   last_target_ = "Unknown";
   std::stack<MixedPrecisionType>().swap(mix_precision_type_stack_);
   cast_operation()->ClearRes();

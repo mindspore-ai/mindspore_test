@@ -85,8 +85,6 @@ class PYNATIVE_EXPORT ForwardExecutor {
     MS_EXCEPTION_IF_NULL(infer_operation_);
     return infer_operation_;
   }
-  inline void set_is_jit_compiling(bool is_jit_compiling) { is_jit_compiling_ = is_jit_compiling; }
-  bool is_jit_compiling() const { return is_jit_compiling_; }
 
   void WaitForwardTask();
   device::DeviceType GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
@@ -149,7 +147,6 @@ class PYNATIVE_EXPORT ForwardExecutor {
  private:
   bool init_{false};
   bool enable_async_{true};
-  bool is_jit_compiling_{false};
   std::stack<MixedPrecisionType> mix_precision_type_stack_;
   device::DeviceType device_target_{device::DeviceType::kUnknown};
   std::string last_target_{"Unknown"};

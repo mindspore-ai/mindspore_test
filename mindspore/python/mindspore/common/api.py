@@ -664,9 +664,9 @@ class _JitExecutor:
             args_list = args_list[1:]
         phase = ""
         try:
-            _pynative_executor.set_jit_compile_status(True, phase)
+            _pynative_executor.set_jit_compile_phase(phase)
             phase = self.compile(self.fn.__name__, *args_list, **kwargs)
-            _pynative_executor.set_jit_compile_status(False, phase)
+            _pynative_executor.set_jit_compile_phase(phase)
         except Exception as err:
             _pynative_executor.clear_res()
             raise err
@@ -1842,17 +1842,16 @@ class _PyNativeExecutor:
         """
         return self._executor.requires_grad()
 
-    def set_jit_compile_status(self, status, phase):
+    def set_jit_compile_phase(self, phase):
         """
-        Set jit is compiling
+        Set jit phase
 
         Args:
-            status(bool): jit compile status
             phase (str): The phase of cell/function instance.
         Return:
             None.
         """
-        self._executor.set_jit_compile_status(status, phase)
+        self._executor.set_jit_compile_phase(phase)
 
     def set_is_run_recompute(self, status):
         """

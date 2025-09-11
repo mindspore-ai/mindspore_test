@@ -93,13 +93,11 @@ void SetCallbackForInputTensor(const std::vector<ValuePtr> &input_values) {
 void PyNativeExecutor::StoreAsyncStatus(const PyboostOpRunInfoPtr &op_run_info) const {
   // Pure function running or cell not set mix precision
   op_run_info->async_status.disable_mix_precision = forward_executor()->CellNotSetMixedPrecision(op_run_info);
-  op_run_info->async_status.is_jit_compiling = forward_executor()->is_jit_compiling();
 }
 
 void PyNativeExecutor::StoreAsyncStatus(const FrontendOpRunInfoPtr &op_run_info) const {
   // Pure function running or cell not set mix precision
   op_run_info->async_status.disable_mix_precision = forward_executor()->CellNotSetMixedPrecision(op_run_info);
-  op_run_info->async_status.is_jit_compiling = forward_executor()->is_jit_compiling();
 }
 
 py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
@@ -273,8 +271,7 @@ void PyNativeExecutor::WorkerJoin() {
   runtime::Pipeline::Get().stress_detect()->WorkerJoin();
 }
 
-void PyNativeExecutor::SetJitCompileStatus(bool is_compiling, const std::string &phase) const {
-  forward_executor()->set_is_jit_compiling(is_compiling);
+void PyNativeExecutor::SetJitCompilePhase(const std::string &phase) const {
   grad_executor()->jit()->set_graph_phase(phase);
 }
 
@@ -386,7 +383,7 @@ void RegPyNativeExecutor(const py::module *m) {
          "set python executable path.")
     .def("set_kernel_build_server_dir", &PyNativeExecutor::set_kernel_build_server_dir,
          py::arg("kernel_build_server_dir") = py::str(""), "set kernel build server directory path.")
-    .def("set_jit_compile_status", &PyNativeExecutor::SetJitCompileStatus, "set jit compile status.")
+    .def("set_jit_compile_phase", &PyNativeExecutor::SetJitCompilePhase, "set jit compile status.")
     .def("set_is_run_recompute", &PyNativeExecutor::SetIsRunRecompute, "set grad is in recompile status.")
     .def("real_run_op", &PyNativeExecutor::RealRunOp, "run op synchronously")
     .def("run_op_async", &PyNativeExecutor::RunOpStub, "run op asynchronously")
