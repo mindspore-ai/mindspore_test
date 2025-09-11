@@ -319,6 +319,24 @@ bool InferenceMatmulSplitFusion::CheckSplitSize(const AnfNodePtr &weight_cnode, 
   return true;
 }
 
+bool InferenceMatmulSplitFusion::CheckSplitSizeValid(const CNodePtr &split_cnode) const {
+  size_t num_split = GetSplitSizeLen(split_cnode);
+  if (num_split == 0) {
+    MS_LOG(DEBUG) << "split size num is zero";
+    return false;
+  }
+  auto split_size_node = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
+  auto split_size_shape = GetValue<std::vector<int64_t>>(split_size_node->value());
+  for (size_t i = 0; i < num_split; i++) {
+    auto split_size = split_size_shape[i];
+    if (split_size % kValidShape != 0) {
+      MS_LOG(DEBUG) << "split size should be a multiple of 16";
+      return false;
+    }
+  }
+  return true;
+}
+
 size_t InferenceMatmulSplitFusion::GetSplitSizeLen(const CNodePtr &split_cnode) const {
   auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
   if (split_size == nullptr || !split_size->isa<ValueNode>()) {
@@ -375,7 +393,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitNode(const FuncGraphPtr &f
   MS_CHECK_TRUE_RET(input_w != nullptr, nullptr);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
   if (!CheckSupportDataType(input_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
-      !CheckSplitSize(input_w, split_cnode)) {
+      !CheckSplitSize(input_w, split_cnode) || !CheckSplitSizeValid(split_cnode)) {
     return nullptr;
   }
 
@@ -428,7 +446,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitNode(const FuncGrap
   MS_EXCEPTION_IF_NULL(input_bias);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
   if (!CheckSupportDataType(matmul_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
-      !CheckSplitSize(matmul_w, split_cnode)) {
+      !CheckSplitSize(matmul_w, split_cnode) || !CheckSplitSizeValid(split_cnode)) {
     return nullptr;
   }
 

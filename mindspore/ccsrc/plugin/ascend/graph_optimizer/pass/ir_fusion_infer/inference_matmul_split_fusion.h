@@ -76,6 +76,7 @@ class InferenceMatmulSplitFusion : public Pass {
   std::string GetSiluFastGeluAddMulPattern(const CNodePtr &mul_input0_node, const CNodePtr &mul_input1_node) const;
   std::string GetSiluFastGeluAddMulSubPattern(const CNodePtr &tuple_input_node, const CNodePtr &tuple2_input_node,
                                               const CNodePtr &tuple3_input_node) const;
+  bool CheckSplitSizeValid(const CNodePtr &split_cnode) const;
 
   bool enable_fusion_silu = false;
   mutable std::set<CNodePtr> visited_cnodes;
@@ -104,6 +105,7 @@ class InferenceMatmulSplitFusion : public Pass {
   const std::string kPatternNameMatMulBiasAddSplitSilu = "MatmulBiasAddSplitSilu";
   const std::string kPatternNameQuantbatchmatmulSplit = "QuantbatchmatmulSplit";
   const std::string kPatternNameQuantbatchmatmulSplitSilu = "QuantbatchmatmulSplitSilu";
+  const int64_t kValidShape = 16;
 
   std::map<size_t, std::map<std::string, std::string>> PatternPrimMap = {
     {kMatmulGatedSizeLen,
