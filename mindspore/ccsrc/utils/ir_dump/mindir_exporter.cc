@@ -298,9 +298,9 @@ std::string IrExportBuilder::GetProtoString() const {
 }
 
 void IrExportBuilder::BuildModelInfo() {
-  constexpr auto ir_version = "0.1.1";
+  constexpr char kCurrentMindIRVersion[] = "1.0";
   constexpr auto mindspore_name = "MindSpore";
-  model_->set_ir_version(ir_version);
+  model_->set_ir_version(kCurrentMindIRVersion);
   model_->set_producer_name(mindspore_name);
   model_->set_model_version(VERSION);
   model_->set_little_endian(common::IsLittleByteOrder());
