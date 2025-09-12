@@ -27,6 +27,7 @@
 #include "pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/core/include/utils/stream_guard.h"
 
 namespace mindspore {
 namespace {
@@ -39,7 +40,7 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_address->GetMutablePtr(), device_address->size(), shape,
     kernel::GetFormatFromStrToEnum(device_address->format()), kNumberTypeUInt8,
-    device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->stream_id());
+    device::GetDeviceNameByType(device_address->GetDeviceType()), CurrentStream::id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
 }
@@ -93,13 +94,14 @@ void StorageBase::InplaceReSize(int64_t size) {
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ResizeStorage", "ResizeStorage", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "ResizeStorage", memory::mem_pool::MemType::kOther, size,
                                                  device_data_.get());
-  device_ptr = host_context->device_res_manager_->AllocateMemory(size, device_data_->stream_id());
+  device_ptr = host_context->device_res_manager_->AllocateMemory(size, CurrentStream::id());
   if (!device_ptr) {
     return;
   }
   device_data_->set_ptr(device_ptr);
   device_data_->set_from_mem_pool(true);
   device_data_->SetSize(size);
+  device_data_->set_stream_id(CurrentStream::id());
 }
 
 int64_t StorageBase::NBytes() const {
