@@ -64,6 +64,9 @@ constexpr auto kReturnPrimNode = "_return_prim_node";
 constexpr auto kReturnNode = "_return_node";
 constexpr auto kKernelGraphTypeName = "KernelGraph";
 
+constexpr char kCurrentMindIRVersion[] = "1.0";
+constexpr char kLegacyMindIRVersion[] = "0.1.1";
+
 static const int MAX_DIRECTORY_LENGTH = 1024;
 static const int MAX_FILENAME_LENGTH = 128;
 static const int MAX_OS_FILENAME_LENGTH = 255;
@@ -2218,6 +2221,67 @@ void MSANFModelParser::TrytoBuildCNodeAbstract() {
   }
 }
 
+bool ParseVersion(const std::string &version_str, int32_t *major, int32_t *minor) {
+  if (version_str.empty()) {
+    return false;
+  }
+
+  std::vector<std::string> parts;
+  size_t start = 0;
+  size_t end = version_str.find('.');
+  while (end != std::string::npos) {
+    parts.push_back(version_str.substr(start, end - start));
+    start = end + 1;
+    end = version_str.find('.', start);
+  }
+  parts.push_back(version_str.substr(start));
+  if (parts.size() < 2) {
+    return false;
+  }
+  try {
+    *major = std::stoi(parts[0]);
+    *minor = std::stoi(parts[1]);
+    return true;
+  } catch (const std::exception &e) {
+    MS_LOG(ERROR) << "Failed to parse version string: " << version_str << ", error: " << e.what();
+    return false;
+  }
+}
+
+void CheckAndWarnMindIRVersion(const mind_ir::ModelProto &model_proto) {
+  std::string loaded_version;
+  if (model_proto.has_ir_version()) {
+    loaded_version = model_proto.ir_version();
+  } else {
+    loaded_version = kLegacyMindIRVersion;
+    MS_LOG(DEBUG) << "Loaded legacy MindIR without version info, using version: " << kLegacyMindIRVersion;
+  }
+
+  int32_t loaded_major, loaded_minor;
+  int32_t current_major, current_minor;
+  if (!ParseVersion(loaded_version, &loaded_major, &loaded_minor) ||
+      !ParseVersion(kCurrentMindIRVersion, &current_major, &current_minor)) {
+    MS_LOG(ERROR) << "Failed to parse MindIR version, compatibility check skipped.";
+    return;
+  }
+  if (loaded_major != current_major) {
+    MS_LOG(WARNING) << "Loaded MindIR version is " << loaded_version
+                    << ", but current MindSpore supported MindIR major version is " << std::to_string(current_major)
+                    << ". Cross-major version compatibility is not guaranteed, which may cause model load failure or "
+                       "functional errors.";
+    return;
+  }
+  if (loaded_minor > current_minor) {
+    MS_LOG(WARNING) << "Loaded MindIR version is " << loaded_version
+                    << ", which is higher than current supported minor version " << kCurrentMindIRVersion
+                    << ". The model may rely on new features not supported by the current framework, which may cause "
+                       "functional errors.";
+    return;
+  }
+  MS_LOG(DEBUG) << "Loaded MindIR version " << loaded_version << " is compatible with current version "
+                << kCurrentMindIRVersion;
+}
+
 bool CheckMindIRVseriosn(const mind_ir::ModelProto &model_proto) {
   if (model_proto.has_mind_ir_version()) {
     auto mind_ir_version = model_proto.mind_ir_version();
@@ -2231,6 +2295,7 @@ bool CheckMindIRVseriosn(const mind_ir::ModelProto &model_proto) {
 FuncGraphPtr MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto,
                                      const std::map<std::string, ValuePtr> &weights,
                                      mindspore::HashMap<std::string, AnfNodePtr> *name_to_node) {
+  CheckAndWarnMindIRVersion(model_proto);
   if (IsLite()) {
     abstract_valid_ = true;
   }
