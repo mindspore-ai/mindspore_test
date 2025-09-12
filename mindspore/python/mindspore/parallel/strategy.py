@@ -85,7 +85,7 @@ def get_strategy_metadata(network, rank_id=None) -> Dict[int, Dict[str, List[Lay
         >>> rank0_info = get_strategy_metadata(network=model.train_network, rank_id=0)
         >>> local_info = get_current_strategy_metadata(network=model.train_network)
         >>> clear_strategy_metadata()
-        """
+    """
     return _NetStrategyInfo(network, global_layout=None, local_layout=None).get_rank_layout(rank_id)
 
 
