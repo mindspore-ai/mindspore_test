@@ -834,6 +834,7 @@ const std::string GetSubModuleName(SubModuleId module_id) {
     "KERNEL",             // SM_KERNEL
     "MD",                 // SM_MD
     "ME",                 // SM_ME
+    "EXPRESS",            // SM_EXPRESS
     "OPTIMIZER",          // SM_OPTIMIZER
     "PARALLEL",           // SM_PARALLEL
     "PARSER",             // SM_PARSER
