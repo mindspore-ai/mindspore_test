@@ -55,7 +55,11 @@ class COMMON_EXPORT CommonCallback {
   // Register a callback function with a name
   template <typename Ret, typename... Args>
   void RegisterCallback(const std::string &name, std::function<Ret(Args...)> func) {
-    callback_map_[name] = std::make_unique<Callback<Ret, Args...>>(func);
+    if (callback_map_.find(name) == callback_map_.end()) {
+      callback_map_[name] = std::make_unique<Callback<Ret, Args...>>(func);
+    } else {
+      MS_LOG(ERROR) << "Callback function " << name << " already exists, you should not register it again.";
+    }
   }
 
   // Get a registered callback function by name
