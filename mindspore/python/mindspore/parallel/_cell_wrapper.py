@@ -263,7 +263,7 @@ def _single_parameter_broadcast(net, layout, param_not_load=None, param_loaded=N
     if not single_params:
         return
     param_redundancy_reversed = _get_param_redundancy_reversed(param_redundancy, cur_rank)
-    if not param_redundancy_reversed or cur_rank not in single_params:
+    if not param_redundancy_reversed:
         return
     net_param_dict = net.parameters_dict()
     _chang_parallel_context(origin_dataset_strategy)
