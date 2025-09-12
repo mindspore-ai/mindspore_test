@@ -62,6 +62,21 @@
 /mindspore/ops/kernel/ascend/kernel_packet/ @gaoxiong1
 /mindspore/ops/kernel/ascend/silent_detect/ @DavidFFFan
 /mindspore/ops/kernel/ascend/simu/ @limingqi107
+/mindspore/ops/kernel/cpu/akg/ @gaoxiong1
+/mindspore/ops/kernel/cpu/custom/ @limingqi107
+/mindspore/ops/kernel/cpu/dynamic_akg/ @gaoxiong1
+/mindspore/ops/kernel/cpu/nnacl/ @YeFeng_24
+/mindspore/ops/kernel/cpu/silent_detect/ @DavidFFFan
+/mindspore/ops/kernel/gpu/akg/ @gaoxiong1
+/mindspore/ops/kernel/gpu/control/ @ZPaC @zhangyinxia
+/mindspore/ops/kernel/gpu/custom/ @limingqi107
+/mindspore/ops/kernel/gpu/data/ @limingqi107
+/mindspore/ops/kernel/gpu/debug/ @fary86
+/mindspore/ops/kernel/gpu/dynamic_akg/ @gaoxiong1
+/mindspore/ops/kernel/gpu/environ/ @limingqi107
+/mindspore/ops/kernel/gpu/nccl/ @zhangyinxia
+/mindspore/ops/kernel/gpu/silent_detect/ @DavidFFFan
+/mindspore/ops/kernel/gpu/trt/ @limingqi107
 /mindspore/ops/api_def/method_doc/ @gemini524
 /mindspore/ops/api_def/function_doc/ @gemini524
 /mindspore/ops/op_def/yaml/doc/ @gemini524
@@ -81,6 +96,7 @@
 /mindspore/python/mindspore/hal/ @limingqi107
 /mindspore/python/mindspore/mindrecord/ @jonyguo
 /mindspore/python/mindspore/mint/ @liangchenghui
+/mindspore/python/mindspore/mint/distributed/ @zhangyinxia
 /mindspore/python/mindspore/multiprocessing/ @ZPaC
 /mindspore/python/mindspore/nn/ @changzherui
 /mindspore/python/mindspore/nn/grad/ @ginfung
