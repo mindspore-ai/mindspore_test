@@ -485,7 +485,6 @@ void MemCopyFromCacheToHost(void *hashmap_addr, void *host_addr, void *cache_add
 void TensorPybind::FlushFromCache(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
   tensor::TensorPtr cpu_tensor = tensor.cpu();
-
   if (cpu_tensor->cache_enable()) {
     MS_LOG(INFO) << cpu_tensor->ToString() << " is cache enable.";
     auto hashmap_tensor_ptr = cpu_tensor->hashmap_tensor_ptr();

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "frontend/jit/pi/graph_capture/node.h"
 #include <iterator>
 #include <string>
 #include <vector>
 #include "frontend/jit/pi/graph_capture/abstract_object.h"
-#include "frontend/jit/pi/graph_capture/node.h"
 #include "frontend/jit/pi/graph_capture/cfg.h"
 #include "frontend/jit/pi/graph_capture/graph.h"
 #include "frontend/jit/pi/graph_guard/infer.h"

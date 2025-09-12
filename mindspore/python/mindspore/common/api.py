@@ -2154,7 +2154,8 @@ class _CellGraphExecutor:
         new_param = {x.name: replace[x] for x in replace if id(x) != id(replace[x])}
         return self._graph_executor.updata_param_node_default_input(phase, new_param)
 
-    def _set_real_args(self, args, kwargs):
+    def set_real_args(self, args, kwargs):
+        """Set real arguments to graph executor."""
         self._graph_executor.set_real_args(args, kwargs)
 
     def _get_shard_strategy(self, obj):
