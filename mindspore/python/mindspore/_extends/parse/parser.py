@@ -250,6 +250,13 @@ def resolve_symbol(namespace, symbol):
     return resolve_
 
 
+def check_is_builtin_function(namespace, symbol):
+    """Check if the symbol under the namespace is a built-in function."""
+    resolve_symbol_obj = namespace[symbol]
+    logger.debug("The resolve_symbol_obj is: %r", resolve_symbol_obj)
+    return isinstance(resolve_symbol_obj, types.BuiltinFunctionType)
+
+
 def generate_scope(obj):
     """Generate the scope for every cell object in the network."""
     if isinstance(obj, nn.Cell):
