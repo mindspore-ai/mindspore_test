@@ -432,7 +432,7 @@ def test_jit_grad_with_out_cell_custom_bprop():
         def bprop(self, x, y, out, dout):
             x_dout = x + y
             y_dout = x * y
-            return x_dout, y_dout, out, dout
+            return x_dout, y_dout
 
     context.set_context(mode=1)
     grad_all = ops.GradOperation(get_all=True)
@@ -510,7 +510,7 @@ def test_jit_grad_with_out_cell_custom_bprop_node_reuse():
         def bprop(self, x, y, out, dout):
             x_dout = x - out
             y_dout = x - y
-            return x_dout, y_dout, out, dout
+            return x_dout, y_dout
 
     class Net(nn.Cell):
         def __init__(self):

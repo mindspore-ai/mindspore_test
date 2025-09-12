@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 
+#include "frontend/jit/ps/static_analysis/auto_monad.h"
 #include "frontend/operator/primitive_py.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/irpass.h"
@@ -132,11 +133,16 @@ CNodePtr CreateNewCNode(const FuncGraphPtr &fg, const CNodePtr &cnode, size_t st
   return func_graph->NewCNode(inputs);
 }
 
-void AddMonadParameterForFuncGraph(const FuncGraphPtr &fg, size_t target_fg_param_size, size_t cnode_monad_size) {
+void AddMonadParameterForFuncGraph(const FuncGraphPtr &fg, const CNodePtr cnode, size_t target_fg_param_size,
+                                   size_t start_of_monad) {
+  size_t cnode_monad_size = cnode->size() - start_of_monad;
   size_t monad_param_size = GetMonadParameterSize(fg);
   for (size_t idx = 0; idx < cnode_monad_size; ++idx) {
     if (fg->parameters().size() < target_fg_param_size - 1) {
-      (void)fg->add_parameter();
+      const auto abs = cnode->input(start_of_monad + idx)->abstract();
+      MS_EXCEPTION_IF_NULL(abs);
+      std::string name = abs->isa<abstract::AbstractIOMonad>() ? "io" : "u";
+      mindspore::pipeline::AddMonadParameter(fg, name, abs);
       ++monad_param_size;
     }
   }
@@ -240,7 +246,7 @@ AnfNodePtr Morph::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   auto new_cnode = CreateNewCNode(fg, cnode, start_of_monad);
 
   // add monad parameters for funcgraph
-  AddMonadParameterForFuncGraph(fg, new_cnode->size(), cnode->size() - start_of_monad);
+  AddMonadParameterForFuncGraph(fg, cnode, new_cnode->size(), start_of_monad);
 
   return new_cnode;
 }
