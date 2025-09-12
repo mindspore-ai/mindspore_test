@@ -2,6 +2,7 @@
   "CODECHECK": {
     "DIR_ARRAY": [
       "build.sh",
+      "CODEOWNERS_TEMP",
       ".jenkins",
       ".clang-format",
       "setup.py",
