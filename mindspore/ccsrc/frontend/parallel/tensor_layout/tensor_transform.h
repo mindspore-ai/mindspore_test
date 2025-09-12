@@ -85,6 +85,7 @@ class FRONTEND_EXPORT TensorTransform {
   void MergeAllConcat(std::vector<RedisOpPair> *transform_op_list);
   void MergeSlice(std::vector<RedisOpPair> *transform_op_list);
   RedistributionOpList ConstructRedistributionOpListByRedisOpList(const std::vector<RedisOpPair> &transform_op_list);
+  RankList ParseRankListFromGroupName(const std::string &group_name) const;
   TensorRedistribution tensor_redistribution_;
 
  private:

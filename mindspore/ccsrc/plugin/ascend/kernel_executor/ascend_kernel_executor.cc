@@ -1188,28 +1188,32 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
+void ResetCNodeName(const AnfNodePtrList &all_nodes) {
+  mindspore::HashMap<std::string, int> node_ids;
+  for (const auto &node : all_nodes) {
+    if (node != nullptr && node->isa<CNode>()) {
+      const auto &cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      const auto &fullname = cnode->fullname_with_scope();
+      auto op_index = fullname.rfind("-op");
+      if (op_index != string::npos) {
+        auto scope_prefix = fullname.substr(0, op_index);
+        if (node_ids.find(scope_prefix) == node_ids.end()) {
+          node_ids[scope_prefix] = 0;
+        } else {
+          node_ids[scope_prefix]++;
+        }
+        cnode->set_fullname_with_scope(scope_prefix + "-op" + std::to_string(node_ids[scope_prefix]));
+      }
+    }
+  }
+}
+
 void ResetNodeIds(const KernelGraphPtr &kernel_graph) {
   if (!kernel_graph->memory_managed_by_ge()) {
     MS_LOG(INFO) << "Start reset node id";
-    mindspore::HashMap<std::string, int> node_ids;
     const auto &all_nodes = mindspore::TopoSort(kernel_graph->get_return(), SuccDeeperSimple);
-    for (const auto &node : all_nodes) {
-      if (node != nullptr && node->isa<CNode>()) {
-        const auto &cnode = node->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(cnode);
-        const auto &fullname = cnode->fullname_with_scope();
-        auto op_index = fullname.rfind("-op");
-        if (op_index != string::npos) {
-          auto scope_prefix = fullname.substr(0, op_index);
-          if (node_ids.find(scope_prefix) == node_ids.end()) {
-            node_ids[scope_prefix] = 0;
-          } else {
-            node_ids[scope_prefix]++;
-          }
-          cnode->set_fullname_with_scope(scope_prefix + "-op" + std::to_string(node_ids[scope_prefix]));
-        }
-      }
-    }
+    ResetCNodeName(all_nodes);
     MS_LOG(INFO) << "End reset node id";
   }
 }
