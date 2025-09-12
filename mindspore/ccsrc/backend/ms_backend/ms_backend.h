@@ -35,13 +35,12 @@
 #include "runtime/pynative/task/device_task.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
-#include "include/backend/visible.h"
 #include "backend/ms_backend/ms_backend_base.h"
 #include "runtime/pynative/op_runner.h"
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
-class BACKEND_EXPORT MSBackend : public MSBackendBase {
+class MSBackend : public MSBackendBase {
  public:
   MSBackend() : MSBackendBase() {}
   ~MSBackend() override;
@@ -70,6 +69,5 @@ class BACKEND_EXPORT MSBackend : public MSBackendBase {
 };
 }  // namespace ms_backend
 }  // namespace backend
-using BackendOpRunInfoPtr = std::shared_ptr<session::BackendOpRunInfo>;
 }  // namespace mindspore
 #endif
