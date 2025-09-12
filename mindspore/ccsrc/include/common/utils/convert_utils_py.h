@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <shared_mutex>
 
 #include "pybind11/pybind11.h"
 #include "utils/any.h"
@@ -39,16 +40,23 @@ class PyRecursionScope {
  public:
   explicit PyRecursionScope(const py::object &obj) {
     address_ = obj.ptr();
-    if (!recursion_set_.insert(address_).second) {
-      MS_LOG(EXCEPTION) << "Detect recursion when converting python object.";
+    {
+      std::unique_lock lock(recursion_mutex_);
+      if (!recursion_set_.insert(address_).second) {
+        MS_LOG(EXCEPTION) << "Detect recursion when converting python object.";
+      }
     }
   }
 
-  ~PyRecursionScope() { recursion_set_.erase(address_); }
+  ~PyRecursionScope() {
+    std::unique_lock lock(recursion_mutex_);
+    recursion_set_.erase(address_);
+  }
 
  private:
   PyObject *address_;
   static inline std::unordered_set<PyObject *> recursion_set_;
+  static inline std::shared_mutex recursion_mutex_;
 };
 
 py::object AnyToPyData(const Any &value);
