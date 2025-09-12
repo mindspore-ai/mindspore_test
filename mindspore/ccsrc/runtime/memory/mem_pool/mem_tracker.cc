@@ -292,8 +292,8 @@ void MemoryTrackerEnabled::BindDevicePtr(DeviceAddress *device_address, DeviceMe
 }
 
 void MemoryTrackerEnabled::AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name,
-                                         size_t actual_peak_memory, size_t in_used_size, size_t total_size,
-                                         uint32_t stream_id, bool is_persistent, bool is_small_pool) {
+                                         size_t actual_peak_memory, size_t in_used_size, uint32_t stream_id,
+                                         bool is_persistent, bool is_small_pool) {
   std::lock_guard lock(mutex_);
   time_stamp_++;
   auto mem_block = std::make_shared<MemBlockInfo>();
@@ -302,6 +302,7 @@ void MemoryTrackerEnabled::AllocMemBlock(DeviceMemPtr device_addr, size_t size, 
   mem_block->start_time_stamp = time_stamp_;
   mem_block->actual_peak_memory = actual_peak_memory;
   mem_block->size = size;
+  mem_block->used_size = in_used_size;
   mem_block->pool_name = pool_name;
   mem_block->stream_id = stream_id;
   mem_block->is_persistent = is_persistent;
@@ -391,6 +392,7 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
   {"stream_id", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->stream_id; }},
   {"pool_type", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->pool_name; }},
   {"size", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->size; }},
+  {"actual_used_memory", [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->used_size; }},
   {"actual_peak_memory",
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) { oss << mem_block->actual_peak_memory; }},
   {"file_name",

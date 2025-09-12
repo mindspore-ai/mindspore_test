@@ -160,7 +160,7 @@ bool AscendMemAdapter::Initialize() {
     }
   }
 
-  if (AscendVmmAdapter::GetInstance().IsEnabled()) {
+  if (AscendVmmAdapter::IsEnabled()) {
     ms_used_hbm_size_ = SizeToLong(AscendVmmAdapter::GetInstance().GetRoundDownAlignSize(ms_used_hbm_size_));
   } else if (AscendGmemAdapter::GetInstance().is_eager_free_enabled()) {
     ms_used_hbm_size_ = SizeToLong(AscendGmemAdapter::GetInstance().GetRoundDownAlignSize(ms_used_hbm_size_));
@@ -290,7 +290,7 @@ struct HugeMemReserver {
 
 uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
   uint8_t *ptr = nullptr;
-  if (AscendVmmAdapter::GetInstance().IsEnabled()) {
+  if (AscendVmmAdapter::IsEnabled()) {
     return nullptr;
   }
   if (AscendGmemAdapter::GetInstance().is_eager_free_enabled()) {

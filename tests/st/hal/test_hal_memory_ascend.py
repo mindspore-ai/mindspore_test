@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from mindspore import Tensor
+import mindspore.context as context
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore.ops import operations as P
@@ -173,3 +174,24 @@ def test_small_allocator():
     fragment_with_small_pool = int(stdout.split()[-1])
 
     assert fragment_with_small_pool < fragment_without_small_pool
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_runtime_memory_stats_idle():
+    """
+    Feature: runtime memory api.
+    Description: Test runtime.memory_stats api.
+    Expectation: runtime.memory_stats api performs as expected.
+    """
+    set_device()
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    input1 = ms.Tensor(np.random.random([2, 2]), ms.float32)
+    input2 = ms.Tensor(np.random.random([2, 2]), ms.float32)
+    add = ms.ops.Add()
+    output = add(input1, input2)
+    del output
+    del input1
+    del input2
+
+    # 512b for each input and output, so the total memory usage is 512 * 3
+    assert ms.runtime.memory_stats()["total_idle_memory"] == (512 * 3)
