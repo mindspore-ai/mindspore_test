@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, default_generator
 import pytest
 import numpy as np
 from tests.mark_utils import arg_mark
@@ -237,3 +237,30 @@ def test_storage_copy_cpu_big_size():
 
     assert b.sum().item() == 0
     assert c.sum().item() == 0
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_storage_copy_after_rng():
+    """
+    Feature: storage copy
+    Description: Verify the result of storage inplace_copy, after setting rng state
+    Expectation: success
+    """
+    ms.set_device("Ascend")
+    a = Tensor(2.0)
+    b = a * 1
+    c = a * 3
+
+    # after setting rng state, the device_target of OpsStatus will become CPU, so reset the device_target to be Ascend
+    # in storage inplace_copy if the input tensor's device_type is Ascend.
+    state = default_generator.get_state()
+    default_generator.set_state(state)
+
+    storage_b = b.untyped_storage()
+    storage_c = c.untyped_storage()
+
+    assert b.item() == 2.0
+
+    storage_b.copy_(storage_c)
+
+    assert b.item() == 6.0
