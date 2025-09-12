@@ -249,6 +249,9 @@ class HiFloat8 {
 
       case ExponentRange::DOT_0000: {
         exponent += fp8_DML_adjust;
+        if (exponent > std::numeric_limits<uint8_t>::max()) {
+          MS_LOG(INTERNAL_EXCEPTION) << "The exponent " << exponent << " exceeds the maximum value of uint8_t.";
+        }
         uint8_t dot_bit = 0x00;
         uint32_t mantissa_width = 3;
         uint32_t exponent_width = 0;
