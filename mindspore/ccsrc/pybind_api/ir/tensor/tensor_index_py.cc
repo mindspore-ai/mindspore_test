@@ -2530,7 +2530,10 @@ void RecordTensorIndex(const TensorPtr index, TensorPtrList *remain_indexes, con
 
 TensorPtr DoSelect(const TensorPtr &self, int dim, int index, int dim_size) {
   if (index >= dim_size || index < -dim_size) {
-    MS_EXCEPTION(IndexError) << "Index is out of bounds";
+    // Fix the issue in the test environment where Python fails to correctly catch the exception thrown when the index
+    // is out of bounds during loop traversal of each data element in a Tensor. The original exception handling method
+    // is: MS_EXCEPTION(IndexError) << "Index is out of bounds"
+    throw py::index_error("Index is out of bounds");
   }
   index = (index + dim_size) % dim_size;
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
