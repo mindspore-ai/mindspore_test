@@ -415,14 +415,23 @@ void FunctionBase::GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ct
   }
 }
 
+template <typename Getter>
+auto make_getter(Getter getter) {
+  return py::cpp_function([getter](FunctionBase &self) -> py::object {
+    py::object result = (self.*getter)();
+    return result ? result : py::none();
+  });
+}
+
 void RegFunctionBase(const py::module *m) {
   (void)py::class_<FunctionBase, std::shared_ptr<FunctionBase>>(*m, "FunctionBase")
     .def(py::init<>())
     .def_static("apply", &FunctionBase::apply, "functionbase apply interface.")
-    .def_property("needs_input_grad", &FunctionBase::needs_input_grad, &FunctionBase::set_needs_input_grad)
+    .def_property("needs_input_grad", make_getter(&FunctionBase::needs_input_grad), &FunctionBase::set_needs_input_grad)
     .def_property("saved_tensors", &FunctionBase::saved_tensors, &FunctionBase::set_saved_tensors)
-    .def_property("non_differentiable", &FunctionBase::non_differentiable, &FunctionBase::set_non_differentiable)
-    .def_property("dirty_tensors", &FunctionBase::dirty_tensors, &FunctionBase::set_dirty_tensors)
+    .def_property("non_differentiable", make_getter(&FunctionBase::non_differentiable),
+                  &FunctionBase::set_non_differentiable)
+    .def_property("dirty_tensors", make_getter(&FunctionBase::dirty_tensors), &FunctionBase::set_dirty_tensors)
     .def_property("materialize_grads", &FunctionBase::materialize_grads, &FunctionBase::set_materialize_grads);
 }
 }  // namespace autograd

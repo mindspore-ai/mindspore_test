@@ -1028,3 +1028,25 @@ def test_custom_function_out_requires_grad_true():
     z = CustomFunctionOutRequiresGrad.apply(x, y)
     assert x._requires_grad is False
     assert z._requires_grad is False
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_ctx_get_unset_attr():
+    """
+    Feature: Custom autograd function.
+    Description: Verify that all unset attributes of the autograd context (ctx) can be safely accessed.
+    Expectation: Not raise error.
+    """
+
+    class CustomOp(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            for key in dir(ctx):
+                getattr(ctx, key)
+            return x
+
+    x = mindspore.Tensor(1.0)
+    CustomOp.apply(x)
