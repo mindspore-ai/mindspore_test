@@ -19,9 +19,11 @@
 #include <vector>
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "ir/device_type.h"
 #include "ir/tensor_new.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "symbolic_shape/symbol.h"
 #include "utils/ms_context.h"
@@ -111,8 +113,33 @@ void AscendSnapshotMgr::SaveParameters(const std::vector<AnfNodePtr> &weights, a
       auto tensor = param->default_param()->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       if (iter->second == nullptr) {
-        saved_params_[param->name()] = tensor::from_spec(static_cast<mindspore::TypeId>(tensor->data_type_c()),
-                                                         tensor->shape_c(), device::DeviceType::kCPU);
+        // NOTE: here use `pin_mem_allocator` to allocate host memory for saving snapshot, otherwise there would be more
+        // overhead when copying data from device to host
+        const auto &shape = tensor->shape();
+        const auto &dtype = tensor->data_type();
+        auto device_address = DeviceAddressMaker(nullptr, dtype, shape)
+                                .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+                                .make_device_address();
+
+        auto ascend_device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(
+          device::GetDeviceNameByType(device::DeviceType::kAscend));
+        if (ascend_device_ctx == nullptr || ascend_device_ctx->device_res_manager_ == nullptr) {
+          MS_LOG(EXCEPTION) << "Cannot find Ascend device context. ascend_device_ctx or device_res_manager is null.";
+        }
+
+        auto pin_memory_allocator = ascend_device_ctx->device_res_manager_->pin_mem_allocator();
+        std::dynamic_pointer_cast<device::DeviceAddress>(device_address)->set_allocator(pin_memory_allocator);
+
+        auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(
+          device::GetDeviceNameByType(device::DeviceType::kCPU));
+        bool allocate_mem_ret = device_ctx->device_res_manager_->AllocateMemory(
+          std::dynamic_pointer_cast<device::DeviceAddress>(device_address).get());
+        if (!allocate_mem_ret) {
+          MS_LOG(EXCEPTION) << "Tensor.pin_memory allocate memory failed!";
+        }
+
+        auto tensor_ptr = std::make_shared<tensor::Tensor>(dtype, shape, device_address);
+        saved_params_[param->name()] = tensor_ptr;
       }
       auto host_tensor = saved_params_[param->name()];
       auto size = tensor->Size();
