@@ -871,6 +871,10 @@ bool TensorPybind::SharedMemory(const TensorPtr &tensor) {
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device::GetDeviceTypeByName(device_name), device_id});
   auto shared_mem_allocator = device_context->device_res_manager_->shared_mem_allocator();
+  if (shared_mem_allocator == nullptr) {
+    MS_LOG(ERROR) << "Shared memory allocator is null!";
+    return false;
+  }
 
   if (!device_address) {
     MS_LOG(WARNING) << "Tensor does not have a device address, creation failed";

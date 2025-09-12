@@ -1241,7 +1241,7 @@ extern PyObject *TensorPython_RetainGrad(PyObject *self, PyObject *) {
 
 extern PyObject *TensorPython_SetSharedMemory(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   auto ret = TensorPybind::SharedMemory(tensor->value.GetTensor());
   if (!ret) {
     MS_LOG(WARNING) << "Failed to create shared memory between host and device";
