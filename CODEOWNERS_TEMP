@@ -25,6 +25,7 @@
 /mindspore/ccsrc/minddata/ @jonyguo
 /mindspore/ccsrc/plugin/ @limingqi107
 /mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fusion_infer/ @liulili-huawei
+/mindspore/ccsrc/plugin/ascend/res_manager/error_manager/ @fary86
 /mindspore/ccsrc/pybind_api/ @chujinjin
 /mindspore/ccsrc/pybind_api/ir/ @ginfung
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
@@ -36,7 +37,7 @@
 /mindspore/ccsrc/runtime/pipeline/ @chujinjin
 /mindspore/ccsrc/runtime/pynative/ @chujinjin
 /mindspore/ccsrc/tools/ @DavidFFFan
-/mindspore/ccsrc/tools/error_handle/ @fary86
+/mindspore/ccsrc/tools/error_handler/ @fary86
 /mindspore/ccsrc/utils/ @limingqi107
 /mindspore/ccsrc/utils/expander/ @gaoxiong1
 /mindspore/ccsrc/utils/ir_dump/ @ginfung
@@ -146,8 +147,9 @@
 /tests/st/sparse/ @yi-zhang95
 /tests/st/tensor/ @changzherui
 /tests/st/tools/ @DavidFFFan
+/tests/st/tools/tre/ @fary86
+/tests/st/tools/uce/ @fary86
 /tests/st/train/ @changzherui
-/tests/st/uce/ @fary86
 /tests/st/vmap/ @yi-zhang95
 
 # The maintainers of tests/ut/cpp.
