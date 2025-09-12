@@ -15,6 +15,7 @@
 // Original repository: https://gitee.com/ascend/op-plugin.
 
 #include "ms_extension/ascend/atb/operation_cache.h"
+#include "mindspore/core/mindrt/include/fork_utils.h"
 
 namespace atb {
 
@@ -174,4 +175,19 @@ uint64_t calc_hash_id() {
   return hash_id;
 }
 
+AtbContextManager &AtbContextManager::GetInstance() {
+  static std::unique_ptr<AtbContextManager> instance_ptr = nullptr;
+  if (instance_ptr == nullptr) {
+    instance_ptr = std::unique_ptr<AtbContextManager>(new AtbContextManager());
+    MS_EXCEPTION_IF_NULL(instance_ptr);
+    instance_ptr->RegForkCallbacks();
+  }
+  return *instance_ptr;
+}
+
+void AtbContextManager::RegForkCallbacks() {
+  mindspore::ForkUtils::GetInstance().RegisterCallbacks(&AtbContextManager::GetInstance(), &AtbContextManager::Release,
+                                                        static_cast<void (AtbContextManager::*)()>(nullptr),
+                                                        static_cast<void (AtbContextManager::*)()>(nullptr));
+}
 }  // namespace atb

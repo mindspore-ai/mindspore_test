@@ -104,10 +104,7 @@ class EXTENSION_EXPORT AtbContextManager {
   class OpParamCache;
 
  public:
-  static AtbContextManager &GetInstance() {
-    static AtbContextManager ins;
-    return ins;
-  }
+  static AtbContextManager &GetInstance();
 
   /// \brief OperationHolder ensures that an `atb::Operation` can only be held by one operator at a time.
   ///
@@ -162,7 +159,8 @@ class EXTENSION_EXPORT AtbContextManager {
     return cache->getOperation(param, name);
   }
 
-  ~AtbContextManager() {
+  ~AtbContextManager() { Release(); }
+  void Release() {
     // all operations must be freed before context
     op_param_caches_.clear();
     std::lock_guard<std::mutex> lock(ctx_mutex_);
@@ -170,11 +168,13 @@ class EXTENSION_EXPORT AtbContextManager {
       auto st = atb::DestroyContext(iter.second);
       CHECK_ATB_RET("", st, DestroyContext);
     }
+    ctx_map_.clear();
   }
   AtbContextManager(const AtbContextManager &) = delete;
   AtbContextManager &operator=(const AtbContextManager &) = delete;
 
  private:
+  void RegForkCallbacks();
   template <typename ParamType>
   OpParamCache<ParamType> *GetOperationCache(const ParamType &param) {
     std::lock_guard<std::mutex> lock(op_mutex_);
