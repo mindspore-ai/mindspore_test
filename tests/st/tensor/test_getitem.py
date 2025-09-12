@@ -476,6 +476,13 @@ def test_getitem_exception(mode, capture_mode):
         _ = sum(ms_x)
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func7(x): return ms_x[ms.Tensor(1.4), :, : ]
+    ms_x = Tensor(np_x)
+    with pytest.raises(TypeError) as exc:
+        _ = ms_x[ms.Tensor(1.4), :, : ] if mode == ms.PYNATIVE_MODE else func7(ms_x)
+    assert "For 'Index', tensors used as indices must be long, int, uint8, or bool tensors" in str(exc.value)
+
 
 class NetMutableSequenceIndex(nn.Cell):
     def construct(self, x, index):
