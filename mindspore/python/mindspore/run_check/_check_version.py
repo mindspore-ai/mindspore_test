@@ -488,6 +488,85 @@ def _set_pb_env():
         os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 
+def _check_dir_path_safety(dir_path):
+    """Check safety of env directory path."""
+    if not os.path.exists(dir_path):
+        logger.warning(f"Path {dir_path} not exists.")
+        return False
+
+    if not os.path.isdir(dir_path):
+        logger.warning(f"Path {dir_path} is not a directory.")
+        return False
+
+    # check if path is suspicious
+    suspicious_patterns = [
+        "/tmp/", "/var/tmp/", "/dev/", "/proc/",
+        "\\temp\\", "\\windows\\temp\\",
+        "appdata", "local\\temp"
+    ]
+    lower_path = dir_path.lower()
+    for pattern in suspicious_patterns:
+        if pattern in lower_path:
+            logger.warning(f"Path {dir_path} is suspicious.")
+            return False
+
+    # check whether the path points to a system-critical directory
+    critical_dirs = [
+        "/bin", "/sbin", "/usr/bin", "/usr/sbin",
+        "/windows", "/system32", "c:\\windows"
+    ]
+    for critical_dir in critical_dirs:
+        if critical_dir in lower_path:
+            logger.warning(f"Path {dir_path} points to a system-critical directory.")
+            return False
+
+    return True
+
+
+def check_cuda_path_safety(cuda_path):
+    """Check safety of cuda path."""
+    if not _check_dir_path_safety(cuda_path):
+        return False
+
+    expected_files = ["nvcc", "cudart.dll", "cudart.so"]
+    has_expected_content = False
+    for expected_file in expected_files:
+        if os.path.exists(os.path.join(cuda_path, "bin", expected_file)):
+            has_expected_content = True
+            break
+
+    if not has_expected_content:
+        logger.warning(f"The directory {cuda_path} does not contain the typical file structure of CUDA")
+        return False
+
+    return True
+
+
+def check_cudnn_path_safety(cudnn_path):
+    """Check safety of cudnn path."""
+    if not _check_dir_path_safety(cudnn_path):
+        return False
+
+    expected_files = [
+        "include/cudnn.h",
+        "lib64/libcudnn.so",  # Linux
+        "lib/libcudnn.dylib",  # macOS
+        "lib/x64/cudnn.lib",  # Windows
+        "bin/cudnn64_7.dll"   # Windows
+    ]
+    found_files = []
+    for expected_file in expected_files:
+        full_path = os.path.join(cudnn_path, expected_file)
+        if os.path.exists(full_path):
+            found_files.append(expected_file)
+
+    if not found_files:
+        logger.warning(f"The directory {cudnn_path} does not contain the typical file structure of CUDNN")
+        return False
+
+    return True
+
+
 def _add_cuda_path():
     """add cuda path on windows."""
     if platform.system().lower() == 'windows':
@@ -495,15 +574,21 @@ def _add_cuda_path():
         if cuda_home is None:
             pass
         else:
+            if not check_cuda_path_safety(cuda_home):
+                logger.error(f"CUDA_PATH {cuda_home} is not safe, skip add cuda path.")
+                return
             cuda_bin_path = os.path.join(os.environ['CUDA_PATH'], 'bin')
             if sys.version_info >= (3, 8):
                 os.add_dll_directory(cuda_bin_path)
             else:
                 os.environ['PATH'] += os.pathsep + cuda_bin_path
-        cudann_home = os.environ.get('CUDNN_HOME')
-        if cudann_home is None:
+        cudnn_home = os.environ.get('CUDNN_HOME')
+        if cudnn_home is None:
             pass
         else:
+            if not check_cudnn_path_safety(cudnn_home):
+                logger.error(f"CUDNN_HOME {cuda_home} is not safe, skip add cudnn home.")
+                return
             cuda_home_bin_path = os.path.join(os.environ['CUDNN_HOME'], 'bin')
             if sys.version_info >= (3, 8):
                 os.add_dll_directory(cuda_home_bin_path)
