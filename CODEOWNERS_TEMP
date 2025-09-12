@@ -17,6 +17,7 @@
 /mindspore/ccsrc/common/ @limingqi107
 /mindspore/ccsrc/common/pynative/ @chujinjin
 /mindspore/ccsrc/frontend/ @ginfung
+/mindspore/ccsrc/frontend/operator/meta_dsl/func_op @liangchenghui
 /mindspore/ccsrc/frontend/np_dtypes/ @changzherui
 /mindspore/ccsrc/frontend/parallel/ @yangzhenzhang
 /mindspore/ccsrc/include/ @limingqi107
@@ -27,6 +28,7 @@
 /mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fusion_infer/ @liulili-huawei
 /mindspore/ccsrc/pybind_api/ @chujinjin
 /mindspore/ccsrc/pybind_api/ir/ @ginfung
+/mindspore/ccsrc/pybind_api/ir/tensor @chujinjin
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
 /mindspore/ccsrc/pybind_api/tools/ @DavidFFFan
 /mindspore/ccsrc/pyboost/ @chujinjin
@@ -46,6 +48,8 @@
 
 # The maintainers of mindspore/core.
 /mindspore/core/ @ginfung
+/mindspore/core/device_address @limingqi107
+/mindspore/core/include/device_address @limingqi107
 /mindspore/core/mindrt/ @limingqi107
 /mindspore/core/utils/llm_manager.cc @liulili-huawei
 
