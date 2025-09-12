@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "plugin/device/ascend/hal/hardware/gpto.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -146,10 +147,7 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
 }
 }  // namespace
 
-void AclStreamAssign::AssignStream(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
-  DeviceResManager *device_res_manager) {
+void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager) {
   auto kernels = kernel_graph->execution_order();
   if (kernels.empty()) {
     return;
@@ -208,7 +206,7 @@ void AclStreamAssign::AssignStream(
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(stream_id), kernels[i - 1]);
     }
   }
-  InsertEventForNonTaskSink(kernel_graph, mock_exec_order);
+  InsertEventForNonTaskSink(kernel_graph);
 }
 
 void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {
@@ -728,13 +726,30 @@ void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(
   kernel_graph->set_execution_order(new_exec_order);
 }
 
-void AclStreamAssign::InsertEventForNonTaskSink(
-  const NotNull<KernelGraphPtr> &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) {
+void AclStreamAssign::InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph) {
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_send;
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_recv;
   mindspore::HashMap<AnfNodePtr, std::set<size_t>> producer_streams;
   AnfAlgo::SetStreamId(kDefaultStreamIndex, kernel_graph->output().get());
+
+  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
+
+  // Enable GPTO globally
+  const auto &backend_jit_config = kernel_graph->backend_jit_config();
+  auto it = backend_jit_config.gpto_options.find("mode");
+  if (it == backend_jit_config.gpto_options.end()) {
+    MS_LOG(WARNING) << "'mode' not set in gpto_options. Disabling GPTO by default";
+  } else {
+    const auto &mode = it->second;
+    if (mode == "basic" || mode == "advance") {
+      MS_LOG(INFO) << "Current Exec Order Algo is GPTO (" << mode << " mode)";
+      mindspore::gpto::GPTO(kernel_graph, &mock_exec_order);
+    } else if (mode == "off") {
+      MS_LOG(INFO) << "GPTO disabled by configuration";
+    } else {
+      MS_LOG(WARNING) << "Invalid value for 'mode': '" << mode << "'. Disabling GPTO by default";
+    }
+  }
 
   if (mock_exec_order.empty()) {
     GenEventsForParallelOp(kernel_graph, &kernel_send, &kernel_recv, &producer_streams);

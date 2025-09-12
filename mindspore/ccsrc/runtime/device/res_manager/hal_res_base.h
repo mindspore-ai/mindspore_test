@@ -40,8 +40,8 @@
 
 namespace mindspore {
 namespace device {
-constexpr auto kDefaultStreamIndex = 0;
-constexpr auto kWorldGroupStreamIndex = 1;
+constexpr size_t kDefaultStreamIndex = 0;
+constexpr size_t kWorldGroupStreamIndex = 1;
 
 using KernelTensor = kernel::KernelTensor;
 

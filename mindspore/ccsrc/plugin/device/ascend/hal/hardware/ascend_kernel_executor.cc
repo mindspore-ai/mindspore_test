@@ -33,7 +33,6 @@
 #include "plugin/device/ascend/hal/hardware/ascend_graph_optimization.h"
 #include "plugin/device/ascend/hal/hardware/acl_somas.h"
 #include "plugin/device/ascend/hal/hardware/acl_stream_assign.h"
-#include "plugin/device/ascend/hal/hardware/gpto.h"
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
@@ -1121,9 +1120,7 @@ kernel::KernelModPtr AscendKernelExecutor::CreateKernelMod(const std::string &op
   return kernel_ptr;
 }
 
-void AscendKernelExecutor::DoStreamAssign(
-  const KernelGraphPtr &kernel_graph,
-  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const {
+void AscendKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -1137,7 +1134,7 @@ void AscendKernelExecutor::DoStreamAssign(
   if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -1266,12 +1263,7 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
     }
   }
   ResetNodeIds({kernel_graph});
-  std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> mock_exec_order;
-  if (common::GetEnv("MS_ENABLE_GPTO") == "1") {
-    MS_LOG(INFO) << "Current Exec Order Algo in MS Context is GPTO";
-    mindspore::gpto::GPTO(res_manager_, kernel_graph, &mock_exec_order);
-  }
-  DoStreamAssign(kernel_graph, mock_exec_order);
+  DoStreamAssign(kernel_graph);
   CreateEventKernelMod(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));
