@@ -14,37 +14,12 @@
 # ============================================================================
 import os
 import pytest
-from tests.mark_utils import arg_mark
-from mindspore import nn, ops
-from mindspore.common.parameter import Parameter
-from mindspore.common.initializer import initializer
 from mindspore.communication.management import init
 from mindspore.nn.utils import no_init_parameters
 from mindspore.parallel import init_parameters
 from mindspore.parallel.spmd.hsdp.hsdp import hsdp
-
-class NetL2(nn.Cell):
-    def __init__(self, in_channels, hidden_size):
-        super(NetL2, self).__init__()
-        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="ones", has_bias=False)
-        self.bias = Parameter(initializer("zeros", [hidden_size], self.dense1.weight.dtype))
-        self.add = ops.BiasAdd()
-
-    def construct(self, x):
-        x = self.dense1(x)
-        x = self.add(x, self.bias)
-        return x
-
-class NetL3(nn.Cell):
-    def __init__(self, in_channels, out_channels, hidden_size):
-        super(NetL3, self).__init__()
-        self.block = NetL2(in_channels, hidden_size)
-        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="ones", has_bias=False)
-
-    def construct(self, x):
-        x = self.block(x)
-        x = self.dense2(x)
-        return x
+from tests.mark_utils import arg_mark
+from tests.st.auto_parallel.spmd.common_net import DenseL3
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 @pytest.mark.parametrize('use_hsdp', [True, False])
@@ -63,7 +38,7 @@ def test_init_parameters(use_hsdp):
     out_channels = 32
     hidden_size = 512
     with no_init_parameters():
-        net = NetL3(in_channels, out_channels, hidden_size)
+        net = DenseL3(in_channels, out_channels, hidden_size)
     if use_hsdp:
         shard_size = 4
         threshold = 4

@@ -25,7 +25,7 @@ os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "0"
 init()
 
-def hsdp_param_to_unsharded(net):
+def get_hsdp_param(net):
     shard_size = 2
     threshold = 1
     requires_acc_grad = True
@@ -33,9 +33,7 @@ def hsdp_param_to_unsharded(net):
     use_cell_hook = True
     hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook)
     hsdp_param = HSDPParam(net, net.weight.name, net.weight, hsdp_config)
-    hsdp_param.to_sharded()
-    hsdp_param.to_unsharded()
-    hsdp_param.zero_acc_grad()
+    return hsdp_param
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_param_to_unsharded():
@@ -47,7 +45,11 @@ def test_hsdp_param_to_unsharded():
     in_channels = 256
     out_channels = 64
     net = nn.Dense(in_channels, out_channels, weight_init="ones")
-    hsdp_param_to_unsharded(net)
+    hsdp_param.to_sharded()
+    assert net.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.weight.local_shape == (64, 256)
+
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_to_unsharded():
@@ -60,7 +62,10 @@ def test_hsdp_no_init_param_to_unsharded():
     out_channels = 64
     with no_init_parameters():
         net = nn.Dense(in_channels, out_channels, weight_init="ones")
-    hsdp_param_to_unsharded(net)
+    hsdp_param.to_sharded()
+    assert net.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.weight.local_shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_param_with_layout():
@@ -80,7 +85,11 @@ def test_hsdp_param_with_layout():
     w_layout = layout("mp", "None")
     net.weight = net.weight.local_to_global(w_layout)
 
-    hsdp_param_to_unsharded(net)
+    hsdp_param = get_hsdp_param(net)
+    hsdp_param.to_sharded()
+    assert net.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.weight.local_shape == (64, 256)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_with_layout():
@@ -101,4 +110,8 @@ def test_hsdp_no_init_param_with_layout():
     w_layout = layout("mp", "None")
     net.weight = net.weight.local_to_global(w_layout)
 
-    hsdp_param_to_unsharded(net)
+    hsdp_param = get_hsdp_param(net)
+    hsdp_param.to_sharded()
+    assert net.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.weight.local_shape == (64, 256)

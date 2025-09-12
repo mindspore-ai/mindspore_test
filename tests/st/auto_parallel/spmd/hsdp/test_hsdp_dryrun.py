@@ -14,30 +14,20 @@
 # ============================================================================
 import os
 import numpy as np
-from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import nn, Tensor
 from mindspore.parallel import Layout
 from mindspore.communication.management import init
 from mindspore.parallel import hsdp
+from tests.mark_utils import arg_mark
+from tests.st.auto_parallel.spmd.common_net import DenseNet
+
 os.environ["MS_SIMULATION_LEVEL"] = "1"
 os.environ["RANK_SIZE"] = "32"
 os.environ["RANK_ID"] = "32"
 init()
 
 loss_fn = nn.MSELoss()
-
-class Net(nn.Cell):
-    def __init__(self, in_channels, out_channels, hidden_size):
-        super(Net, self).__init__()
-        self.dense1 = nn.Dense(in_channels, hidden_size, weight_init="ones", has_bias=False)
-        self.dense2 = nn.Dense(hidden_size, out_channels, weight_init="ones", has_bias=False)
-
-    def construct(self, x):
-        x = self.dense1(x)
-        x = self.dense2(x)
-        x = x.reduce_partial()
-        return x
 
 def get_forward_fn(net):
     def forward_fn(data, label):
@@ -67,7 +57,7 @@ def construct_net_and_data():
     out_channels = 64
     hidden_size = 128
     batch_size = 4
-    net = Net(in_channels, out_channels, hidden_size)
+    net = DenseNet(in_channels, out_channels, hidden_size)
     data = Tensor(np.random.randn(batch_size, in_channels).astype(np.float32))
     label = Tensor(np.random.randn(batch_size, out_channels).astype(np.float32))
     return net, data, label
@@ -198,3 +188,17 @@ def test_hsdp_with_exception():
         result = str(e)
     assert "invalid rank" in result
     os.environ["RANK_ID"] = "32"
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_custom_shard_size():
+    """
+    Feature: hsdp
+    Description: test self define param hsdp shard size
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    net.dense1.weight.hsdp_shard_size = 2
+    net.dense2.weight.hsdp_shard_size = 8
+    run_hsdp(net, data, label, "level1")
+    assert net.dense1.weight.shape == (64, 256)
+    assert net.dense2.weight.shape == (8, 128)

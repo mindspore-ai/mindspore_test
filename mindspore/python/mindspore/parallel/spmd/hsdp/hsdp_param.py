@@ -33,7 +33,7 @@ class HSDPParam:
         self.param_name = param_name
         self.param = param
         self.config = config
-        self.shard_size = config.shard_size
+        self.shard_size = 1
         self.unsharded_param = None
         self.sharded_param = None
         self.acc_grad = None
@@ -48,6 +48,15 @@ class HSDPParam:
 
     def _init_param_shard_size(self):
         """init parameter dp shard size"""
+        if hasattr(self.param, "hsdp_shard_size"):
+            if not isinstance(self.param.hsdp_shard_size, int) or \
+                    (self.param.hsdp_shard_size <= 0 and self.param.hsdp_shard_size != -1):
+                raise ValueError(f"param's hsdp_shard_size must be a positive integer, "
+                                 f"but got {self.param.hsdp_shard_size}.")
+            self.shard_size = self.param.hsdp_shard_size
+        else:
+            self.shard_size = self.config.shard_size
+
         param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
         if param_size < self.config.threshold:
             self.shard_size = 1

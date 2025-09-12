@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """HSDP scheduler"""
+import mindspore as ms
 import mindspore.ops as ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
@@ -29,7 +30,7 @@ class HSDPScheduler:
         self.cell = cell
         self.shard_level = shard_level
         self.no_param_sharded = (shard_size == 1)
-        self.use_cell_hook = True
+        self.use_cell_hook = (ms.get_context("mode") != ms.GRAPH_MODE)
         self.requires_acc_grad = enable_grad_accumulation
         self.grad_scale = grad_scale
 
