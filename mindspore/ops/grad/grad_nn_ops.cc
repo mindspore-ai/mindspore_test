@@ -1265,15 +1265,11 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
   const auto &w_shape = ret_shape[i5];
 
   dout = ib->Reshape(dout, dout_2d_shape);
-  if (is_complex) {
-    dout = ib->Emit("Conj", {dout});
-  }
+  auto dout_conj = is_complex ? ib->Emit("Conj", {dout}) : dout;
   if (x->need_compute_grad_out()) {
     w = ib->Reshape(w, w_2d_shape);
-    dx = no_bias ? ib->MatMulExt(dout, w) : ib->MatMul(dout, w, false, false);
-    if (is_complex) {
-      dx = ib->Emit("Conj", {dx});
-    }
+    dx = no_bias ? ib->MatMulExt(dout_conj, w) : ib->MatMul(dout_conj, w, false, false);
+    dx = is_complex ? ib->Emit("Conj", {dx}) : dx;
     dx = ib->Reshape(dx, x_shape);
   } else {
     dx = ib->OutZeros(x);
@@ -1284,17 +1280,15 @@ REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
     if (no_bias) {
       if (ops::UseOptimizedOpImpl()) {
         MS_LOG(DEBUG) << "Using optimized operator implementation in Dense's backward.";
-        dw = ib->MatMulExt(ib->Emit("Transpose", {dout, ib->Value(ShapeVector{1, 0})}), x);
+        dw = ib->MatMulExt(ib->Emit("Transpose", {dout_conj, ib->Value(ShapeVector{1, 0})}), x);
       } else {
         x = ib->Emit("Transpose", {x, ib->Value(ShapeVector{1, 0})});
-        dw = ib->Emit("Transpose", {ib->MatMulExt(x, dout), ib->Value(ShapeVector{1, 0})});
+        dw = ib->Emit("Transpose", {ib->MatMulExt(x, dout_conj), ib->Value(ShapeVector{1, 0})});
       }
     } else {
-      dw = ib->MatMul(dout, x, true, false);
+      dw = ib->MatMul(dout_conj, x, true, false);
     }
-    if (is_complex) {
-      dw = ib->Emit("Conj", {dw});
-    }
+    dw = is_complex ? ib->Emit("Conj", {dw}) : dw;
     dw = ib->Reshape(dw, w_shape);
   } else {
     dw = ib->OutZeros(w);
