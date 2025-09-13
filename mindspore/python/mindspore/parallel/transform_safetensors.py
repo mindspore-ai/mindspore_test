@@ -759,6 +759,11 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
             param_type_dict[param_name][src_rank] = str(param.data.dtype)
             param_total_dict[param_name][src_rank] = param
             param_attr_dict[param_name][src_rank] = (True, False)
+
+    ckpt_prefix = os.path.basename(ckpt_prefix)
+    if '..' in ckpt_prefix or '/' in ckpt_prefix or '\\' in ckpt_prefix:
+        raise ValueError(f"Invalid ckpt_prefix: {ckpt_prefix}. Must not contain path traversal characters.")
+
     for local_rank_id in range(dst_stage_device_num):
         transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                               param_attr_dict, src_strategy_list, dst_strategy_list,
