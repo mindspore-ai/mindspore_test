@@ -915,6 +915,15 @@ def set_op_strategy_config(mode="SAVE", path=""):
     if file_type != ".json":
         raise KeyError("File type must be .json")
     dir_path = os.path.dirname(path)
+
+    normalized_path = os.path.abspath(os.path.realpath(path))
+    dangerous_paths = ['/etc', '/usr', '/bin', '/sbin', '/boot', '/proc', '/sys']
+    for dangerous_path in dangerous_paths:
+        if normalized_path.startswith(dangerous_path):
+            raise PermissionError(
+                f"Writing to system directory '{dangerous_path}' is not allowed"
+            )
+
     if dir_path and not os.path.exists(dir_path):
         os.makedirs(dir_path, mode=0o700, exist_ok=True)
     check_mode_type = ["SAVE", "LOAD"]
