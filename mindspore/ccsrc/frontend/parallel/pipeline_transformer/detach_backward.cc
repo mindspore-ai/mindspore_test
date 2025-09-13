@@ -83,7 +83,9 @@ AnfNodePtr GetAssignAddRealInput(const AnfNodePtr &node) {
            is_redistribe_node(n);
   };
   while (bypass_op(assign_add_input)) {
-    assign_add_input = assign_add_input->cast<CNodePtr>()->input(1);
+    auto cnode = assign_add_input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    assign_add_input = cnode->input(1);
   }
   return assign_add_input;
 }
