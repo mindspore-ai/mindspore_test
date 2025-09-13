@@ -13,6 +13,9 @@
 # limitations under the License.
 # ============================================================================
 
+import os
+import shutil
+import tempfile
 import pytest
 import numpy as np
 import mindspore as ms
@@ -81,6 +84,17 @@ class CustomNetSplitTensor(Cell):
     def construct(self, x1, split_size, dim):
         res = self.split(x1, split_size, dim)
         return res
+
+
+@pytest.fixture(scope="function", autouse=True)
+def compiler_cache():
+    temp_dir = tempfile.mkdtemp(prefix="ms_compiler_cache_")
+    os.environ["MS_COMPILER_CACHE_PATH"] = temp_dir
+    print(f"[SETUP] Set MS_COMPILER_CACHE_PATH to {temp_dir}")
+    yield
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    os.environ.pop("MS_COMPILER_CACHE_PATH", None)
+    print(f"[TEARDOWN] Removed temp dir and unset MS_COMPILER_CACHE_PATH")
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
