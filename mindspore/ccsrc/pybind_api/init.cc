@@ -34,6 +34,7 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
+#include "frontend/parallel/device_manager.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/parallel/costmodel_context.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32))
@@ -76,6 +77,7 @@ using MetaFuncGraph = mindspore::MetaFuncGraph;
 using EventWriter = mindspore::summary::EventWriter;
 using OpLib = mindspore::kernel::OpLib;
 using ParallelContext = mindspore::parallel::ParallelContext;
+using ParallelCommManager = mindspore::parallel::ParallelCommManager;
 using CostModelContext = mindspore::parallel::CostModelContext;
 using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
@@ -522,6 +524,10 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_auto_parallel_new_interface", &ParallelContext::set_auto_parallel_new_interface, "Set interface flag.")
     .def("get_auto_parallel_new_interface", &ParallelContext::auto_parallel_new_interface, "Get interface flag.")
     .def("reset", &ParallelContext::Reset, "Reset auto parallel context.");
+  (void)py::class_<ParallelCommManager, std::shared_ptr<ParallelCommManager>>(m, "ParallelCommManager")
+    .def_static("get_instance", &ParallelCommManager::GetInstance, "Get parallel comm manager instance.")
+    .def("set_hccl_groups", &ParallelCommManager::SetHcclGroups, "Record hccl_groups created by rank_list.")
+    .def("hccl_groups", &ParallelCommManager::HcclGroups, "Weather hccl_groups has been created by rank_list.");
   MS_LOG(INFO) << "Start CostModelContext...";
   (void)py::class_<CostModelContext, std::shared_ptr<CostModelContext>>(m, "CostModelContext")
     .def_static("get_instance", &CostModelContext::GetInstance, "Get cost_model context instance.")

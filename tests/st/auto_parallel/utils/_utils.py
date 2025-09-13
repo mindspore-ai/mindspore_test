@@ -95,6 +95,11 @@ def parallel_mode_get_ckpt_path_with_strategy(strategy_file=None, cpkt_path=None
     print(f"Find checkpoint file: {ckpt_file_new}")
 
 
+def save_ir_graphs(file_path):
+    os.environ['MS_DEV_SAVE_GRAPHS'] = "2"
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = file_path
+
+
 # compare accuracy
 def compare_params(ex_params, actual_params):
     assert np.allclose(ex_params.asnumpy(), actual_params.asnumpy(), atol=1e-3, rtol=1e-3)
