@@ -169,6 +169,7 @@ class MsprofCmdTool:
             raise PermissionError(f"The '{msprof_script_path}' path or '{msprof_path}' path is not executable."
                                   f"Please execute chmod u+x {msprof_script_path} and "
                                   f"chmod u+x {msprof_path}")
+        PathManager.check_path_is_other_writable(msprof_script_path)
 
     def _find_msprof_path(self) -> Optional[str]:
         """Find msprof path in environment variables.
