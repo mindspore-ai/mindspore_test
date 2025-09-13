@@ -1510,7 +1510,11 @@ AnfNodePtr PipelineTransformer::CreateZeroseOutput(const AnfNodePtr &node, size_
 
   auto out_shape_type = GetShapeType(node, out_shape, index);
   auto zero_tensor = TensorConstructUtils::CreateZerosTensor(out_shape_type.second, out_shape);
-  MS_EXCEPTION_IF_NULL(zero_tensor);
+  if (zero_tensor == nullptr) {
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "create output tensor failed, the shape of output [" << out_shape
+                                      << "] may be too large, "
+                                      << "please check the input_shape and parallel sharding strategy.";
+  }
 
   auto value_node = NewValueNode(zero_tensor);
   MS_EXCEPTION_IF_NULL(value_node);
