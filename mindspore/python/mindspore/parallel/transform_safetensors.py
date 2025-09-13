@@ -784,6 +784,7 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     """
     Transform distributed checkpoint from source sharding strategy to destination sharding strategy by rank.
     """
+    save_safetensor_file_name = os.path.abspath(save_safetensor_file_name)
     if not isinstance(safetensor_files_map, dict):
         raise TypeError("The safetensor_files_map should be a dict.")
     if not isinstance(rank_id, int):

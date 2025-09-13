@@ -69,7 +69,9 @@ def merge_pipeline_strategys(src_strategy_dirs, dst_strategy_file):
         >>> ms.parallel.merge_pipeline_strategys("./src_strategy_dir", "./dst_strategy.ckpt")
 
     """
-    dst_strategy_dir, _ = os.path.split(dst_strategy_file)
+    dst_strategy_file = os.path.normpath(dst_strategy_file)
+    dst_strategy_file = os.path.abspath(dst_strategy_file)
+    dst_strategy_dir = os.path.dirname(dst_strategy_file)
     if not os.path.exists(dst_strategy_dir):
         _make_dir(dst_strategy_dir, "path")
     if not os.path.isdir(src_strategy_dirs):
@@ -1182,6 +1184,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
 
     param_total_dict = defaultdict(dict)
     for file_index, file_name in enumerate(checkpoint_filenames):
+        file_name = os.path.abspath(file_name)
         ckpt_dict = ms.load_checkpoint(file_name, dec_key=dec_key, dec_mode=dec_mode)
         for param_name, param in ckpt_dict.items():
             param_total_dict[param_name][file_index] = param
