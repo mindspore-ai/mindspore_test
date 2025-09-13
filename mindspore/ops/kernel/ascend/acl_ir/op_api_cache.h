@@ -21,6 +21,7 @@
 #include <vector>
 #include <utility>
 #include "kernel/ascend/acl_ir/op_api_convert.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore::device::ascend {
 typedef aclOpExecutor *(*GetExecCache)(uint64_t, uint64_t *);
@@ -83,6 +84,9 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
   g_hash_offset += size_expression;
 }
 
+// Add core num to hash
+BACKEND_EXPORT void GatherCoreNumHash();
+
 // Old cache hash for kbk only when cache is disabled.
 BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
@@ -130,6 +134,9 @@ BACKEND_EXPORT void GatherInfo();
 
 template <typename T, typename... Args>
 void GatherInfo(const T &arg, const Args &... args) {
+  if (runtime::RuntimeConf::GetInstance()->IsEnableSetResLimit()) {
+    GatherCoreNumHash();
+  }
   GatherInfo(arg);
   GatherInfo(args...);
 }
@@ -260,6 +267,9 @@ void GatherHash(const T &arg, const Args &... args) {
 template <typename... Args>
 uint64_t AclnnHash(const std::string &arg, const Args &... args) {
   g_hash_offset = 0;
+  if (runtime::RuntimeConf::GetInstance()->IsEnableSetResLimit()) {
+    GatherCoreNumHash();
+  }
   GatherHash(arg, args...);
   return calc_hash_id();
 }

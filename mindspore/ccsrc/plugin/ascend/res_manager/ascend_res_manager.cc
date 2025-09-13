@@ -34,6 +34,7 @@
 #include "ir/tensor_new.h"
 #include "hccl/hccl.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
@@ -1763,6 +1764,7 @@ void AscendResManager::SetDeviceLimit(int32_t device_id, int32_t cube_num, int32
   if (device_id != -1) {
     dev = device_id_;
   }
+  runtime::RuntimeConf::GetInstance()->EnableSetResLimit();
   if (cube_num > 0) {
     auto ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
                                static_cast<uint32_t>(cube_num));
@@ -1794,6 +1796,7 @@ void AscendResManager::GetStreamLimit(size_t stream_id, uint32_t *cube_num, uint
 }
 void AscendResManager::SetStreamLimit(size_t stream_id, int32_t cube_num, int32_t vector_num) {
   enable_res_limit_ = true;
+  runtime::RuntimeConf::GetInstance()->EnableSetResLimit();
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   if (cube_num > 0) {
     auto ret = CALL_ASCEND_API(aclrtSetStreamResLimit, stream, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
