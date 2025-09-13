@@ -13,6 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """ Distributed data parallel wrapper. """
+from __future__ import absolute_import
+
+__all__ = ["DistributedDataParallel"]
+
 import itertools
 from contextlib import contextmanager
 from typing import Optional
@@ -26,8 +30,6 @@ from mindspore.common.api import _pynative_executor
 from mindspore.mint.distributed import broadcast, get_global_rank
 from mindspore.parallel.distributed.flatten_grad_buffer import FlattenGradBuffer
 from mindspore._c_expression import Reducer, _find_unused_parameters
-
-__all__ = ["DistributedDataParallel"]
 
 
 def get_data_parallel_group():
