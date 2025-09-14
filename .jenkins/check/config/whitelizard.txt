@@ -501,3 +501,6 @@ mindspore/mindspore/lite/providers/nnie/src/custom_infer.cc:mindspore::nnie::Cus
 mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape
 mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:transform_checkpoints
 mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:load_distributed_checkpoint
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_safetensors_single
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_parallel_safetensor
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:unified_safetensors 
