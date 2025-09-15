@@ -348,3 +348,5 @@ mindspore/mindspore/python/mindspore/train/dataset_helper.py:connect_network_wit
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape
+mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:transform_checkpoints
+mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:load_distributed_checkpoint
