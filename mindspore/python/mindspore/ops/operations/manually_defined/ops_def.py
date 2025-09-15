@@ -1965,11 +1965,26 @@ def infer_value_for_BroadcastTo(x, shape):
         validator.check_value_type("shape", shape, [tuple], "BroadcastTo")
         shape = list(shape)
 
-    np_data = np.broadcast_to(x.asnumpy(), shape)
-    if 0 in shape:
+    # Resolve -1 entries and support input rank < target rank.
+    input_shape = list(x.shape)
+    target_shape = list(shape)
+    in_rank = len(input_shape)
+    out_rank = len(target_shape)
+    for k in range(1, out_rank + 1):
+        t = target_shape[-k]
+        if t == -1:
+            if k <= in_rank:
+                target_shape[-k] = input_shape[-k]
+            else:
+                pass
+
+    resolved_shape = target_shape
+
+    np_data = np.broadcast_to(x.asnumpy(), resolved_shape)
+    if 0 in resolved_shape:
         init_func = Zero()
         init_func.__enable_zero_dim__ = True
-        out = Tensor(shape=shape, dtype=x.dtype, init=init_func)
+        out = Tensor(shape=resolved_shape, dtype=x.dtype, init=init_func)
         out.init_data()
         return out
     return Tensor(np_data)
