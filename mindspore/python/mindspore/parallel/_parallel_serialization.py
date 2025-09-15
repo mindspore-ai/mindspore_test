@@ -525,10 +525,7 @@ def _make_dir(path, arg_name):
     else:
         ms.log.debug("The directory(%s) doesn't exist, will create it", path)
         try:
-            permissions = os.R_OK | os.W_OK | os.X_OK
-            os.umask(permissions << 3 | permissions)
-            mode = permissions << 6
-            os.makedirs(path, mode=mode, exist_ok=True)
+            os.makedirs(path, mode=0o700, exist_ok=True)
             real_path = path
         except PermissionError as e:
             ms.log.critical("No write permission on the directory(%r), error = %r", path, e)

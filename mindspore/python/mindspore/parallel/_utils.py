@@ -14,6 +14,7 @@
 # ============================================================================
 """Utils of auto parallel"""
 import os
+import re
 from time import perf_counter
 from importlib import import_module
 import numpy as np
@@ -804,3 +805,30 @@ def _check_rank(cur_rank, initial_rank, pipeline_stages):
         raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
     if initial_rank % (get_group_size() / pipeline_stages) != 0:
         raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
+
+
+def _check_path_safe(path, arg_name):
+    """
+    Check input path string is safe.
+    """
+    illegal_patterns = [
+        r"\.\.",
+        r"//+",
+        r"~",
+        r"^\s*$",
+        r"\./\."
+    ]
+    for pattern in illegal_patterns:
+        if re.search(pattern, path):
+            pattern_info = pattern.replace('\\', '')
+            raise ValueError(f"{arg_name} contains '{pattern_info}' is not safe, please use a safe one.")
+
+
+def _check_path_writable(path):
+    """
+    Check the write permission of the input path.
+    """
+    if not os.path.exists(path):
+        raise RuntimeError(f"{path} Path does not exist.")
+    if not os.access(path, os.W_OK):
+        raise PermissionError(f"Don't have the write permission on the directory {path}.")
