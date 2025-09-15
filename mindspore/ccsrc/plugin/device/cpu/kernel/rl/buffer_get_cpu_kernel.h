@@ -83,7 +83,16 @@ class BufferGetCpuKernelMod : public NativeCpuKernelMod {
         MS_EXCEPTION_IF_NULL(item_addr);
         size_t one_exp_len = output_size_list_[i];
         size_t dist_len = one_exp_len;
-        if (memcpy_s(item_addr, one_exp_len, buffer_addr + IntToSize(index) * one_exp_len, dist_len) != EOK) {
+        size_t index_size = IntToSize(index);
+        if (one_exp_len > 0 && (index_size > SIZE_MAX / one_exp_len)) {
+          MS_LOG(EXCEPTION) << "Multiplication overflow detected for input[" << i << "], index size is: " << index_size
+                            << ", one exp len: " << one_exp_len;
+        }
+        if (index_size * one_exp_len >= inputs[i]->size()) {
+          MS_LOG(EXCEPTION) << "Find output of range for input[" << i << "], index size is: " << index_size
+                            << ", one exp len: " << one_exp_len << ", total size: " << inputs[i]->size();
+        }
+        if (memcpy_s(item_addr, one_exp_len, buffer_addr + index_size * one_exp_len, dist_len) != EOK) {
           MS_LOG(EXCEPTION) << "Launch kernel error: memcpy failed";
         }
       }
