@@ -160,6 +160,16 @@ void SetKernelInfoForCNode(const CNodePtr &node, const std::shared_ptr<device::K
     common::AnfAlgo::SetNodeAttr(kIsFeatureMapInputList, MakeValue(feature_map_input_indexs), node);
   }
 }
+
+bool NeedSkipFormatTransmit(const ParameterPtr &parameter) {
+  // for 910 ge, special format is default turn-on, need to skip 5HD transmit for BN's param(shape dim = 1),
+  // can be deleted when 910 or ge or special format is deprecated
+  if (parameter->format() == kOpFormat_NC1HWC0) {
+    auto shape = common::AnfAlgo::GetOutputInferShape(parameter, 0);
+    return shape.size() == 1;
+  }
+  return False;
+}
 }  // namespace
 
 AnfNodePtr KernelGraph::MakeValueNode(const AnfNodePtr &node) const {
@@ -384,7 +394,7 @@ void KernelGraph::SetKernelInfoForNode(const AnfNodePtr &node) const {
                     << ", storage format: " << store_fmt << ", pre param: " << node->DebugString()
                     << ", full name: " << node->ToString();
       formats[0] = store_fmt;
-    } else if (!parameter->format().empty()) {
+    } else if (!parameter->format().empty() && !NeedSkipFormatTransmit(parameter)) {
       MS_LOG(DEBUG) << "Update desc format from param format: " << parameter->format()
                     << ", param: " << node->DebugString();
       formats[0] = parameter->format();
