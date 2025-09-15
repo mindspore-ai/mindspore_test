@@ -75,6 +75,7 @@
 #include "kernel/cpu/contiguous_cpu_kernel.h"
 #include "kernel/cpu/custom/kernel_mod_impl/op_plugin_utils.h"
 #include "kernel/cpu/custom/kernel_mod_impl/custom_op_plugin_kernel.h"
+#include "backend/common/custom_pass/custom_pass_plugin.h"
 
 namespace mindspore {
 namespace device {
@@ -675,6 +676,39 @@ void CPUKernelExecutor::RebuildKernelSelectBackoffOp(const std::vector<CNodePtr>
 
     CreateKernel({node});
   }
+}
+
+void CPUKernelExecutor::AddCustomPass(const KernelGraphPtr &graph) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  PROF_START(CustomOptimization);
+  MS_LOG(INFO) << "start custom optimization. graph id: " << graph->graph_id();
+#ifdef ENABLE_DUMP_IR
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_cpu_custom_optimization_before_graph_" + std::to_string(graph->graph_id()) + ".ir";
+    DumpIR(file_name, graph);
+  }
+#endif
+
+  auto opt = std::make_shared<opt::GraphOptimizer>();
+
+  auto &plugin_manager = mindspore::opt::CustomPassPluginManager::GetInstance();
+
+  // Plugin passes enable extensible optimization for CPU backends
+  plugin_manager.RegisterPassesToOptimizer(opt, "cpu");
+
+  (void)opt->Optimize(graph);
+
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_cpu_custom_optimization_after_graph_" + std::to_string(graph->graph_id()) + ".ir";
+    DumpIR(file_name, graph);
+  }
+#endif
+
+  MS_LOG(INFO) << "end custom optimization. graph id: " << graph->graph_id();
+  PROF_END(CustomOptimization);
 }
 
 MS_REGISTER_DEVICE(kCPUDevice, CPUDeviceContext);

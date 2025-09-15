@@ -75,5 +75,6 @@ void DeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   }
   address->set_ptr(nullptr);
 }
+
 }  // namespace device
 }  // namespace mindspore

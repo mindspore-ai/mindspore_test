@@ -46,6 +46,7 @@ from mindspore._check_jit_forbidden_api import get_obj_module_and_name_info, is_
 from mindspore import mint
 from mindspore.ops._utils import arg_handler, arg_dtype_cast
 from mindspore import onnx
+from mindspore import graph
 
 __all__ = ["run_check"]
 __all__.extend(__version__)
@@ -58,4 +59,5 @@ __all__.extend(rewrite.__all__)
 __all__.extend(safeguard.__all__)
 __all__.extend(device_manager.__all__)
 __all__.extend(runtime.__all__)
+__all__.extend(graph.__all__)
 __all__.append("Profiler")

@@ -340,6 +340,7 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/safeguard
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/run_check
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/experimental
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/graph
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/mint
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/multiprocessing
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/hal
