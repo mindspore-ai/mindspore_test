@@ -16,6 +16,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import shutil
 from mindspore import log as logger
@@ -59,8 +60,33 @@ class CustomOOC():
         self.current_path = dir_path
         self.custom_project = os.path.join(dir_path, "CustomProject")
 
+    def check_path(self, path):
+        """check if the path is valid"""
+        PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
+        if not isinstance(path, str):
+            raise TypeError('Path must be str, not {}.'.format(type(path).__name__))
+        if not path:
+            raise ValueError("The value of the path cannot be empty.")
+        if PATH_WHITE_LIST_REGEX.search(path):  # Check special char
+            raise ValueError(
+                "Input path contains invalid characters.")
+        path = os.path.expanduser(path)  # Consider paths starting with "~"
+        if os.path.islink(os.path.abspath(path)):  # when checking link, get rid of the "/" at the path tail if any
+            raise ValueError("The value of the path cannot be soft link: {}.".format(path))
+
+        real_path = os.path.realpath(path)
+
+        if len(real_path) > 4096:
+            raise ValueError("The length of file path should be less than 4096.")
+
+        if real_path != path and PATH_WHITE_LIST_REGEX.search(real_path):
+            raise ValueError(
+                "Input path contains invalid characters.")
+
     def check_args(self):
         """check config"""
+        self.check_path(self.args.op_host_path)
+        self.check_path(self.args.op_kernel_path)
         if not os.path.isdir(self.args.op_host_path):
             raise ValueError(
                 f"Config error! op host path [{self.args.op_host_path}] is not exist,"
