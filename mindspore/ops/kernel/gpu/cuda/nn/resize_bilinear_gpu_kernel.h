@@ -52,8 +52,15 @@ class ResizeBilinearGpuKernelMod : public NativeGpuKernelMod {
 
  private:
   float Scaling(const int in_size, const int out_size, bool align_corners) {
-    return (align_corners && out_size > 1) ? (in_size - 1) / static_cast<float>(out_size - 1)
-                                           : in_size / static_cast<float>(out_size);
+    if (align_corners && out_size > 1) {
+      return (in_size - 1) / static_cast<float>(out_size - 1);
+    } else {
+      if (out_size == 0) {
+        MS_EXCEPTION(ValueError) << "For " << kernel_name_ << ", out_size cannot be 0, but got out_size = " << out_size
+                                 << ", align_corners = " << align_corners << ".";
+      }
+      return in_size / static_cast<float>(out_size);
+    }
   }
 
   template <typename T>

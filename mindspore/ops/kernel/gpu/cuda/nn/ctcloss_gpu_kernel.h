@@ -229,8 +229,21 @@ class CtcLossGpuKernelMod : public NativeGpuKernelMod {
   void LaunchSecondHalf(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
     cudaStream_t stream = reinterpret_cast<cudaStream_t>(stream_ptr);
-    const int SOffSet = 2 * max_labels_length_host + 1;
-    int log_prob_size = batch * SOffSet * max_time;
+    int64_t temp_result = 2 * static_cast<int64_t>(max_labels_length_host) + 1;
+    if (temp_result > static_cast<int64_t>(std::numeric_limits<int>::max())) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', SOffSet calculation overflow: "
+                        << "max_labels_length_host=" << max_labels_length_host << ", result would be " << temp_result
+                        << ", max allowed=" << std::numeric_limits<int>::max();
+    }
+    const int SOffSet = static_cast<int>(temp_result);
+
+    temp_result = static_cast<int64_t>(batch) * static_cast<int64_t>(SOffSet) * static_cast<int64_t>(max_time);
+    if (temp_result > static_cast<int64_t>(std::numeric_limits<int>::max())) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', log_prob_size calculation overflow: "
+                        << "batch=" << batch << ", SOffSet=" << SOffSet << ", max_time=" << max_time
+                        << ", result would be " << temp_result << ", max allowed=" << std::numeric_limits<int>::max();
+    }
+    int log_prob_size = static_cast<int>(temp_result);
     cudaError_t status = cudaErrorNotReady;
 
     if (!ignore_longer_outputs_than_inputs_ && max_labels_length_host > max_time) {
