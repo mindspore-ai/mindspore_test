@@ -630,6 +630,14 @@ class SwigluInfo : public Softmax {
   Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) override;
   Status InferOutputTensorInfo() override;
 };
+
+class ContiguousInfo : public ActivationOther {
+ public:
+  ContiguousInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<TanhCost>()) {}
+  ~ContiguousInfo() = default;
+};
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_ACTIVATION_INFO_H_
