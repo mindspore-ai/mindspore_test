@@ -15,7 +15,7 @@
 """pipeline stage"""
 from abc import ABC
 import mindspore as ms
-from mindspore import ops, Tensor, nn, mint
+from mindspore import ops, Tensor, mint
 from mindspore.mint.distributed import isend, irecv, get_global_rank
 from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
 from ._utils import _RecvInfo
@@ -28,7 +28,7 @@ class P2PInfo:
 
     Args:
         dtype (dtype): The dtype of p2p input tensor.
-        shape (list): The shape of p2p input tensor. In dynamic shape scenarios, the dynamic dim shuold be set to -1.
+        shape (list): The shape of p2p input tensor. In dynamic shape scenarios, the dynamic dim should be set to -1.
         layout (Layout): The Layout of received tensor. Default ``None``.
         src_stage(int): The source stage of receive op. Default ``None``.
         dst_stage(int): The destination stage of send op. Default ``None``.
@@ -85,7 +85,7 @@ class PipelineStage(ABC):
     as well as P2P communication.
 
     Args:
-        submodule (nn.Cell): Segmented model.
+        submodule (HSDPCell): Segmented model.
         stage_index (int): Stage index of current stage.
         stage_num (int): Total stage number.
         group (str): Group of p2p communication.
@@ -93,7 +93,7 @@ class PipelineStage(ABC):
         recv_info(P2PInfo, optional): Specify Receive information. Default ``None``.
         send_info(P2PInfo, optional): Specify Send information. Default ``None``.
     """
-    def __init__(self, submodule: nn.Cell, stage_index: int, stage_num: int, group: str,
+    def __init__(self, submodule: HSDPCell, stage_index: int, stage_num: int, group: str,
                  has_backward=True, recv_info=None, send_info=None):
         super().__init__()
         if not isinstance(submodule, HSDPCell):

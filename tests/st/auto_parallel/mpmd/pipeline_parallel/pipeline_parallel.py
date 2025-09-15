@@ -25,9 +25,8 @@ from mindspore import nn, Tensor, mint, ops
 from mindspore.common import dtype as mstype
 from mindspore.communication.management import init, get_rank, get_group_size, create_group
 from mindspore.mint.nn import Linear, SiLU, LayerNorm, Embedding, CrossEntropyLoss
-from mindspore.parallel import Layout
-from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage, P2PInfo
-from mindspore.parallel.spmd.hsdp.hsdp import hsdp
+from mindspore.parallel import Layout, hsdp
+from mindspore.parallel.mpmd import Schedule1F1B, PipelineStage, P2PInfo
 
 
 @dataclass
