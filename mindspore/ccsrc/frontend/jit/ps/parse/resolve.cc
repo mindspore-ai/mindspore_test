@@ -627,18 +627,6 @@ py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symb
   const auto &res =
     python_adapter::CallPyModFn(mod, PYTHON_MOD_RESOLVE_FUNCTION, obj, common::SafeCStr(symbol->symbol()));
   MS_LOG(DEBUG) << "namespace: " << py::str(obj) << ", symbol: " << symbol << ", result: " << py::str(res);
-  // When checking if the namespace is under mindspore.ops, the resolved function cannot be a built-in function.
-  const std::string prefix = "Namespace:mindspore.ops";
-  auto obj_str = py::isinstance<py::str>(obj) ? obj.cast<std::string>() : py::str(obj).cast<std::string>();
-  bool is_ms_function = (obj_str == prefix);
-  if (is_ms_function) {
-    bool is_builtin_function =
-      python_adapter::CallPyModFn(mod, PYTHON_MOD_CHECK_IS_BUILTIN_FUNCTION, obj, common::SafeCStr(symbol->symbol()))
-        .cast<bool>();
-    if (is_builtin_function) {
-      MS_EXCEPTION(AttributeError) << "module 'mindspore.ops' has no attribute '" << symbol->ToString() << "'.";
-    }
-  }
   return res;
 }
 
