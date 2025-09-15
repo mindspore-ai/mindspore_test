@@ -72,7 +72,7 @@ class OpRegister {
   });
 
 #define CREATE_PYBOOST_OP(NAME, DEVICE) \
-  mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create(DEVICE, CurrentStream::id());
+  mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create(DEVICE, CurrentStream::id())
 
 // for internal op
 template <typename T>

@@ -475,7 +475,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get tensor storage offset.
   ///
   /// \return storage offset.
-  const int64_t storage_offset() const;
+  size_t storage_offset() const;
 
   /// \brief Get version.
   ///

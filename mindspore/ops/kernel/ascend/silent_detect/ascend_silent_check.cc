@@ -355,8 +355,8 @@ void CheckObject::LaunchSilentCheckV3(const TensorPtr &input_grad, const Dynamic
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<TensorPtr>{op->output(kIndex3)});
   LAUNCH_ACLNN(aclnnSilentCheckV2, device_context, op->stream_id(), val, max, avg, input_grad, step,
-               input_grad->shape_c(), input_grad->stride(), ShapeVector({input_grad->storage_offset()}), c_thresh_l1,
-               c_thresh_l2, beta, npu_asd_detect, op->output(kIndex3));
+               input_grad->shape_c(), input_grad->stride(), ShapeVector({SizeToLong(input_grad->storage_offset())}),
+               c_thresh_l1, c_thresh_l2, beta, npu_asd_detect, op->output(kIndex3));
 
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <string>
 #include "ir/device_type.h"
+#include <string>
 #include "utils/log_adapter.h"
 
 namespace mindspore {

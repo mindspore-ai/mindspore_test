@@ -174,8 +174,8 @@ extern PyObject *TensorPython_get_itemsize(PyObject *self, void *) {
 extern PyObject *TensorPython_get_nbytes(PyObject *self, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  ssize_t nbytes = obj->value.GetTensor()->DataNBytes();  // use DataNBytes()
-  return PyLong_FromSsize_t(nbytes);
+  size_t nbytes = obj->value.GetTensor()->DataNBytes();  // use DataNBytes()
+  return PyLong_FromSize_t(nbytes);
   HANDLE_MS_EXCEPTION_END
 }
 

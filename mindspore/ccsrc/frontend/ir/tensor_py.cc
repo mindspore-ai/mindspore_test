@@ -58,7 +58,6 @@ TensorPtr MakeCpuTensor(const TensorPtr &tensor) {
     MS_LOG(EXCEPTION) << "SyncStream failed in Offload.";
   }
   auto cpu_tensor = tensor::from_spec_fast(tensor->data_type(), tensor->shape_c(), device::DeviceType::kCPU);
-
   if (!SyncCopy(cpu_tensor->device_address(), device_address, CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "Offload failed. Copy data from device to host failed. Src:" << device_address->ToString()
                       << " Dst:" << cpu_tensor->device_address()->ToString();

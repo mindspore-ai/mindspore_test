@@ -1012,7 +1012,6 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
     const auto &input_edge = inputs[i];
 
     auto device_address = input_tensor->device_address();
-
     if (device_address->GetTensorStorageInfo() != nullptr) {
       MS_EXCEPTION(RuntimeError) << "Not support view tensor for " << op_compiler_info->graph_info_;
     }

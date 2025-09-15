@@ -429,7 +429,7 @@ class PyboostKernelExtraFuncRegistrar {
 
 #define REG_PYBOOST_KERNEL_EXTRA_FUN(DEVICE, func)                                                          \
   static PyboostKernelExtraFuncRegistrar g_##op_name##PyboostKernelExtraFunc(device::DeviceType::k##DEVICE, \
-                                                                             std::make_shared<func>());
+                                                                             std::make_shared<func>())
 
 class PYBOOST_API ProfileTracker {
  public:
