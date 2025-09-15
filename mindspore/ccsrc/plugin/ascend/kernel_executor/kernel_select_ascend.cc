@@ -517,16 +517,18 @@ auto CreateProcessTupleOutputLambda(size_t *output_num, kernel::KernelObjectType
   };
 }
 
-void GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_type, size_t input_num,
-                               size_t output_num, std::vector<std::string> *input_formats,
-                               std::vector<std::string> *output_formats, std::vector<std::string> *input_reshape_types,
-                               std::vector<std::string> *output_reshape_types,
-                               kernel::KernelObjectType *output_object_type) {
+std::tuple<bool, size_t> GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_type,
+                                                   size_t input_num, size_t output_num,
+                                                   std::vector<std::string> *input_formats,
+                                                   std::vector<std::string> *output_formats,
+                                                   std::vector<std::string> *input_reshape_types,
+                                                   std::vector<std::string> *output_reshape_types,
+                                                   kernel::KernelObjectType *output_object_type) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 
-  auto process_tuple_output =
-    CreateProcessTupleOutputLambda(&output_num, output_object_type, output_formats, output_reshape_types);
+  bool is_acl = false;
+  size_t cur_output_number = output_num;
 
   if (kernel_type == KernelType::ACL_KERNEL) {
     device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, input_formats, output_formats, input_reshape_types,
@@ -538,7 +540,8 @@ void GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_
     std::string name = GetCNodeFuncName(kernel);
     const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
-    process_tuple_output(kernel, true, adapter_output_num);
+    is_acl = true;
+    cur_output_number = adapter_output_num;
   } else if (context_ptr->IsEnableInferBoost() && NeedTransDataWhenInferBoost(kernel, kernel_type)) {
     input_formats->clear();
     output_formats->clear();
@@ -562,8 +565,10 @@ void GetFormatInfoByKernelType(const CNodePtr &kernel, const KernelType &kernel_
   } else {
     device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, input_formats, output_formats, input_reshape_types,
                                                        output_reshape_types, kernel_type);
-    process_tuple_output(kernel, false, 1);
+    cur_output_number = 1;
   }
+
+  return std::make_tuple(is_acl, cur_output_number);
 }
 
 void BuildTypeInfo(const CNodePtr &kernel, const KernelType &kernel_type, size_t input_num, size_t output_num,
@@ -637,8 +642,14 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
   MS_LOG(INFO) << kernel->fullname_with_scope() << " input_num: " << input_num << ", output_num: " << output_num;
   auto output_object_type = kernel::KernelObjectType::TENSOR;
 
-  GetFormatInfoByKernelType(kernel, kernel_type, input_num, output_num, &input_formats, &output_formats,
-                            &input_reshape_types, &output_reshape_types, &output_object_type);
+  auto [is_acl, cur_output_number] =
+    GetFormatInfoByKernelType(kernel, kernel_type, input_num, output_num, &input_formats, &output_formats,
+                              &input_reshape_types, &output_reshape_types, &output_object_type);
+
+  // Process tuple output
+  auto process_tuple_output =
+    CreateProcessTupleOutputLambda(&output_num, &output_object_type, &output_formats, &output_reshape_types);
+  process_tuple_output(kernel, is_acl, cur_output_number);
 
   std::vector<TypeId> input_types;
   std::vector<TypeId> output_types;
