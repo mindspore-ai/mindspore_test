@@ -25,13 +25,12 @@
 #include <shared_mutex>
 #include <thread>
 #include <unordered_map>
-#include "include/common/visible.h"
 #include "ir/tensor.h"
 
 namespace mindspore {
 namespace silentdetect {
 
-DUMP_EXPORT void SilentDetect(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
+void SilentDetect(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
 
 struct StatData {
   double avg = 0.0;
@@ -47,7 +46,7 @@ struct StrikeRecord {
   StatData stat;
 };
 
-class DUMP_EXPORT SilentDetector {
+class SilentDetector {
  public:
   static SilentDetector &GetInstance() {
     static SilentDetector instance;

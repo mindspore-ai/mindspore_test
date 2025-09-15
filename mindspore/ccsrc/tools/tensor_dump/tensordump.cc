@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tools/dump/tensordump.h"
+#include "tools/tensor_dump/tensordump.h"
 
 #include <atomic>
 #include <vector>
@@ -121,8 +121,6 @@ std::string TensorDumpManager::ProcessFileName(const std::string &filename, cons
   }
   return TensorNameToArrayName(filename, dtype, mode);
 }
-
-void TensorDumpManager::SetAclDumpCallbackReg(void *callbackReg) { aclDumpCallbackReg_ = callbackReg; }
 
 TensorDumpManager::task_type TensorDumpManager::GetTaskType(const std::string &tensor_name, const int mode) {
   constexpr std::string_view step_flag{"<tensordump-update-step>"};

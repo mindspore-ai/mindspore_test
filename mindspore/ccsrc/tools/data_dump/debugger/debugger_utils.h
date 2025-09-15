@@ -35,21 +35,20 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
                                       const std::vector<KernelTensor *> &tensors = {});
 
 // when used in abnormal dump, the async_copy should set to false
-void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t exec_order,
-                uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
-                const uint32_t sample_mode, const uint32_t sample_num, const bool async_copy = true);
+void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t root_graph_id,
+                const DeviceContext *device_context, const bool trans_flag, const uint32_t sample_mode,
+                const uint32_t sample_num, const bool async_copy = true);
 
-void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t exec_order,
-                 uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
-                 const uint32_t sample_mode, const uint32_t sample_num);
+void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t root_graph_id,
+                 const DeviceContext *device_context, const bool trans_flag, const uint32_t sample_mode,
+                 const uint32_t sample_num);
 
 BACKEND_COMMON_EXPORT bool CheckReadData(const CNodePtr &cnode);
 
 BACKEND_COMMON_EXPORT void ReadDataAndDump(const CNodePtr &cnode,
                                            std::vector<kernel::KernelTensor *> input_kernel_tensors,
                                            std::vector<kernel::KernelTensor *> output_kernel_tensors,
-                                           uint32_t exec_order, const DeviceContext *device_context,
-                                           const bool abnormal_dump = false);
+                                           const DeviceContext *device_context, const bool abnormal_dump = false);
 
 BACKEND_COMMON_EXPORT void DumpDataViaCallback(const CNodePtr &cnode,
                                                const std::vector<KernelTensor *> &input_device_tensors,

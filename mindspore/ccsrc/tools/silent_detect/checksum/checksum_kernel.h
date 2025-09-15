@@ -28,7 +28,7 @@ using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
 using mindspore::device::DeviceContext;
 
-class BACKEND_COMMON_EXPORT CheckSumKernel {
+class CheckSumKernel {
  public:
   explicit CheckSumKernel(const DeviceContext *device_context) : device_context_(device_context) {
     MS_EXCEPTION_IF_NULL(device_context);

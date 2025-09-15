@@ -556,7 +556,7 @@ void MbufDataHandler::ProcessData() {
                               << std::boolalpha << output_finished;
     if (output_finished) {
       MS_VLOG(VL_PRINT_DUMP_V0) << "Channel " << channel_name_ << " write data to disk or stdout start";
-      func_(*scoped_ds);
+      func_(scoped_ds->GetDatasetName(), scoped_ds->GetDataItems());
       MS_VLOG(VL_PRINT_DUMP_V0) << "Channel " << channel_name_ << " write data to disk or stdout end";
       scoped_ds->Reset();
     }

@@ -424,7 +424,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(*addr, tensor_name, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       } else {
@@ -483,7 +483,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(*addr, tensor_name, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       }

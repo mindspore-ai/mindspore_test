@@ -370,9 +370,9 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
   return out_tensor;
 }
 
-bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, int execution_order,
-                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
-                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy) {
+bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, const std::string &host_fmt,
+                   const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev, uint32_t root_graph_id,
+                   bool force_update, bool trans_flag, bool async_copy) {
   bool ret = false;
   if (addr.GetSize() == 0) {
     MS_VLOG(VL_DUMP) << tensor_name << " size is 0, skip it.";
@@ -410,7 +410,6 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
   auto tensor_data = std::make_shared<mindspore::TensorData>();
   MS_EXCEPTION_IF_NULL(tensor_data);
   tensor_data->SetName(tensor_name);
-  tensor_data->SetExecutionOrder(execution_order);
   tensor_data->SetSlot(slot);
   tensor_data->SetTensor(out_tensor);
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));

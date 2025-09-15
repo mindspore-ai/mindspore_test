@@ -19,16 +19,11 @@
 
 #include <map>
 #include <memory>
-#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
 #include "runtime/core/actors/base/actor_common.h"
-#include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
-#ifdef ENABLE_DEBUGGER
-#include "include/backend/debug/data_dump/dump_utils.h"
-#endif
 
 namespace mindspore {
 namespace runtime {
@@ -45,8 +40,6 @@ class DebugActor : public ActorBase {
   DebugActor() : ActorBase("DebugActor") {}
   ~DebugActor() override = default;
 
-  void ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk);
-
   // The debug of each node.
   void DebugPreLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &op_input_kernel_tensors,
                       const std::vector<KernelTensorPtr> &op_output_kernel_tensors, const DeviceContext *device_context,
@@ -55,13 +48,6 @@ class DebugActor : public ActorBase {
                        const std::vector<KernelTensorPtr> &op_output_kernel_tensors,
                        const DeviceContext *device_context, OpContext<KernelTensor> *const op_context,
                        const AID *from_aid);
-#ifdef ENABLE_DEBUGGER
-  void AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTensor *> &input_kernel_tensors,
-                     const std::vector<KernelTensor *> &output_kernel_tensors, const DeviceContext *device_context);
-#endif
-  void AscendStepStart(const std::vector<KernelGraphPtr> &graphs, std::vector<DeviceContext *> device_contexts);
-
-  void AscendStepEnd();
 
   // The debug on step begin.
   void DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
@@ -70,25 +56,12 @@ class DebugActor : public ActorBase {
                         const AID *from_aid);
 
   // The debug on step end.
-  void DebugOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *from_aid, int total_running_count_,
-                      int sink_size_);
-  static inline uint64_t current_step{1};
+  void DebugOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *from_aid, int total_running_count,
+                      std::vector<const DeviceContext *> device_contexts);
 
  private:
   // Print unused Kernel.
   void Finalize() override;
-
-  // class members
-  uint32_t exec_order_ = 0;
-  int step_count_ = 0;
-  bool dump_flag_ = false;
-  int is_dataset_sink_ = 0;
-
-  bool profile_started_ = false;
-  DeviceContext *device_ctx_ = nullptr;
-
-  // Support multi-thread.
-  std::mutex debug_mutex_;
 };
 
 }  // namespace runtime

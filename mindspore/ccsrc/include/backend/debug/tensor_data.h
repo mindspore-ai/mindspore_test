@@ -106,12 +106,11 @@ typedef enum DbgDataType : unsigned int {
 
 class TensorData {
  public:
-  TensorData() : slot_(0), execution_order_(-1) {}
+  TensorData() : slot_(0) {}
 
   TensorData(const TensorData &obj) {
     MS_LOG(INFO) << "Copy Constructor";
     this->name_ = obj.name_;
-    this->execution_order_ = obj.execution_order_;
     this->slot_ = obj.slot_;
     this->size_ = obj.size_;
     this->data_type_ = obj.data_type_;
@@ -132,7 +131,6 @@ class TensorData {
     if (this != &other) {
       MS_LOG(INFO) << "Copy Constructor";
       this->name_ = other.name_;
-      this->execution_order_ = other.execution_order_;
       this->slot_ = other.slot_;
       this->size_ = other.size_;
       this->data_type_ = other.data_type_;
@@ -163,10 +161,6 @@ class TensorData {
   std::string GetTimeStamp() const { return this->time_stamp_; }
 
   size_t GetSlot() const { return this->slot_; }
-
-  int GetExecutionOrder() const { return this->execution_order_; }
-
-  void SetExecutionOrder(int execution_order) { this->execution_order_ = execution_order; }
 
   void SetName(const std::string &name) { this->name_ = name; }
 
@@ -441,7 +435,6 @@ class TensorData {
   unsigned int device_id_{0};
   unsigned int root_graph_id_{0};
   bool is_output_{true};
-  int execution_order_{-1};
   std::string time_stamp_;
   const float INT4_SIZE = 0.5;
   std::string format_{""};

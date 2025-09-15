@@ -228,14 +228,15 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
                 -Wl,--no-whole-archive mindspore_core mindspore_frontend mindspore_hardware_abstract mindspore_ops
                 mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
                 mindspore_backend_manager mindspore_profiler mindspore_runtime_pipeline
-                mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_cluster)
+                mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_cluster
+                mindspore_tools)
         target_link_libraries(_c_expression PRIVATE -Wl,--no-as-needed mindspore_ops_cpu -Wl,--as-needed)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops mindspore_common
                 mindspore_ms_backend mindspore_frontend mindspore_ops_grad mindspore_ops_fallback mindspore_pyboost
                 mindspore_pynative mindspore_backend_manager mindspore_hardware_abstract mindspore_ops_cpu
                 mindspore_profiler mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
-                mindspore_runtime_utils mindspore_cluster)
+                mindspore_runtime_utils mindspore_cluster mindspore_tools)
         target_link_options(_c_expression PRIVATE
                 "/WHOLEARCHIVE:mindspore_ops_grad.lib"
                 "/WHOLEARCHIVE:mindspore_ops_fallback.lib"
@@ -246,7 +247,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         -Wl,-all_load mindspore_ops_grad mindspore_ops_fallback proto_input
         -Wl,-noall_load mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost
         mindspore_hardware_abstract mindspore_frontend mindspore_pynative mindspore_profiler mindspore_runtime_pipeline
-        mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_backend_manager mindspore_cluster)
+        mindspore_dump mindspore_backend_common mindspore_runtime_utils mindspore_backend_manager mindspore_cluster
+        mindspore_tools)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     target_link_libraries(_c_expression PRIVATE
@@ -254,7 +256,7 @@ else()
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_frontend
             mindspore_runtime_pipeline mindspore_dump mindspore_backend_common mindspore_pyboost mindspore_pynative
             mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler mindspore_extension
-            mindspore_runtime_utils mindspore_cluster)
+            mindspore_runtime_utils mindspore_cluster mindspore_tools)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 

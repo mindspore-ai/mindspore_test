@@ -93,9 +93,9 @@ void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &ad
  * Runtime category: MSBackend
  * Description: Load the device data into host mem.
  */
-bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, int execution_order,
-                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
-                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = True);
+bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, const std::string &host_fmt,
+                   const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev, uint32_t root_graph_id,
+                   bool force_update, bool trans_flag, bool async_copy = True);
 
 /*
  * Feature group: Dump.

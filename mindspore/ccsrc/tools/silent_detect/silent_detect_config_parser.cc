@@ -312,5 +312,10 @@ std::string SilentDetectConfigParser::GetSilentDetectFeatureName(const std::stri
   return std::string(kSilentDetectFeatureFlag) + name;
 }
 
+bool IsSilentDetectEnable() {
+  auto &silentdetect = SilentDetectConfigParser::GetInstance();
+  return silentdetect.IsEnable();
+}
+
 }  // namespace silentdetect
 }  // namespace mindspore

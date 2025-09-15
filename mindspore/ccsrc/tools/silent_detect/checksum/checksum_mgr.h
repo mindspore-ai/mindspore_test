@@ -17,12 +17,12 @@
 #define MINDSPORE_CCSRC_TOOLS_SILENT_DETECT_CHECKSUM_CHECKSUM_MGR_H_
 
 #include <shared_mutex>
-#include "include/backend/visible.h"
+#include "tools/visible.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace checksum {
-class BACKEND_COMMON_EXPORT CheckSumMgr {
+class TOOLS_EXPORT CheckSumMgr {
  public:
   static CheckSumMgr &GetInstance() {
     static CheckSumMgr instance;
@@ -44,6 +44,9 @@ class BACKEND_COMMON_EXPORT CheckSumMgr {
   mutable std::shared_mutex enable_mutex_;
   mutable std::shared_mutex result_mutex_;
 };
+
+bool NeedEnableCheckSum();
+
 }  // namespace checksum
 }  // namespace mindspore
 

@@ -101,7 +101,7 @@ void LoopCountActor::RealRun(OpContext<KernelTensor> *const context) {
 
 void LoopCountActor::SendDebugReq(OpContext<KernelTensor> *const context) {
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_,
-                            sink_size_);
+                            device_contexts_);
 }
 
 void LoopCountActor::SendProfilerReq(OpContext<KernelTensor> *const context) {

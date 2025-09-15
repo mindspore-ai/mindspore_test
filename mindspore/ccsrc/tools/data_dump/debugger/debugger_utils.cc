@@ -240,9 +240,9 @@ inline ShapeVector GetInputKernelShapeVec(const AnfNodePtr &input_kernel, Kernel
  * Runtime category: MindRT.
  * Description: Get kernel inputs from device_tensors and load the inputs from device to host.
  */
-void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensors, uint32_t exec_order,
-                uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
-                const uint32_t sample_mode, const uint32_t sample_num, const bool async_copy) {
+void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensors, uint32_t root_graph_id,
+                const DeviceContext *device_context, const bool trans_flag, const uint32_t sample_mode,
+                const uint32_t sample_num, const bool async_copy) {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(device_context);
   auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
@@ -274,8 +274,8 @@ void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensor
 
     auto dump_shape = GetInputKernelShapeVec(input_kernel, kernel_tensors[index], index, trans_flag);
 
-    auto ret = LoadMemToHost(*device_addr, input_tensor_name, UintToInt(exec_order), host_format, dump_shape, type, 0,
-                             true, root_graph_id, false, trans_flag, async_copy);
+    auto ret = LoadMemToHost(*device_addr, input_tensor_name, host_format, dump_shape, type, 0, true, root_graph_id,
+                             false, trans_flag, async_copy);
     if (!ret) {
       MS_LOG(WARNING) << "LoadMemToHost failed: tensor_name:" << input_tensor_name << ", host_format:" << host_format
                       << ", device_format:" << device_format << ".";
@@ -289,9 +289,9 @@ void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensor
  * Runtime category: MindRT.
  * Description: Get kernel outputs from device_tensors and load the inputs from device to host.
  */
-void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensors, uint32_t exec_order,
-                 uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
-                 const uint32_t sample_mode, const uint32_t sample_num) {
+void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tensors, uint32_t root_graph_id,
+                 const DeviceContext *device_context, const bool trans_flag, const uint32_t sample_mode,
+                 const uint32_t sample_num) {
   auto output_size = AnfAlgo::GetOutputTensorNum(cnode);
   auto node_name = common::AnfAlgo::GetCNodeName(cnode);
   std::string kernel_name = GetKernelNodeName(cnode);
@@ -311,8 +311,8 @@ void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> kernel_tenso
     auto device_addr = kernel_tensors[index]->device_address();
     auto dump_shape = GetOutputKernelShapeVec(cnode, kernel_tensors[index], index, trans_flag);
 
-    auto ret = LoadMemToHost(*device_addr, tensor_name, UintToInt(exec_order), host_format, dump_shape, type, index,
-                             false, root_graph_id, false, trans_flag);
+    auto ret = LoadMemToHost(*device_addr, tensor_name, host_format, dump_shape, type, index, false, root_graph_id,
+                             false, trans_flag);
     if (!ret) {
       MS_LOG(WARNING) << "LoadMemToHost failed: tensor_name:" << tensor_name << ", host_format:" << host_format
                       << ", device_format:" << device_format << ".!";
@@ -377,8 +377,8 @@ bool CheckOverFlow(const DeviceContext *device_context, std::vector<KernelTensor
  * PostExecuteNode function on the given node for GPU.
  */
 void ReadDataAndDump(const CNodePtr &cnode, std::vector<KernelTensor *> input_kernel_tensors,
-                     std::vector<KernelTensor *> output_kernel_tensors, uint32_t exec_order,
-                     const DeviceContext *device_context, const bool abnormal_dump) {
+                     std::vector<KernelTensor *> output_kernel_tensors, const DeviceContext *device_context,
+                     const bool abnormal_dump) {
   auto debugger = Debugger::GetInstance();
   if (!debugger) {
     return;
@@ -406,16 +406,15 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<KernelTensor *> input_ke
       datadump::DumpKernelTensorStats(device_context, input_kernel_tensors, true, cnode, root_graph_id);
     } else {
       bool async_copy = !abnormal_dump;
-      LoadInputs(cnode, input_kernel_tensors, exec_order, root_graph_id, device_context, trans_flag, sample_mode,
-                 sample_num, async_copy);
+      LoadInputs(cnode, input_kernel_tensors, root_graph_id, device_context, trans_flag, sample_mode, sample_num,
+                 async_copy);
     }
   }
   if (dump_json_parser.OutputNeedDump()) {
     if (DumpJsonParser::GetInstance().IsDeviceCalcStats()) {
       datadump::DumpKernelTensorStats(device_context, output_kernel_tensors, false, cnode, root_graph_id);
     } else if (!abnormal_dump) {
-      LoadOutputs(cnode, output_kernel_tensors, exec_order, root_graph_id, device_context, trans_flag, sample_mode,
-                  sample_num);
+      LoadOutputs(cnode, output_kernel_tensors, root_graph_id, device_context, trans_flag, sample_mode, sample_num);
     }
   }
   // Dump kernel
@@ -826,11 +825,6 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
 void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *> &input_kernel_tensors,
                          const std::vector<KernelTensor *> &output_kernel_tensors,
                          const DeviceContext *device_context) {
-  auto debugger = Debugger::GetInstance();
-  if (!debugger) {
-    return;
-  }
-
   TensorInfoCommForDump tensor_info_comm = GetTensorInfoCommFromCnode(cnode);
   auto stream_id = tensor_info_comm.stream_id;
 
