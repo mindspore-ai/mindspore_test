@@ -30,7 +30,7 @@ def _generate_cmd(cmd, cmd_args, output_name):
 
     """
     if cmd not in ['python', 'pytest', 'python3']:
-        # If user don't set binary file name, defaulty use 'python' to launch the job.
+        # If user don't set binary file name, defaultly use 'python' to launch the job.
         command = f"python {cmd} {' '.join(cmd_args)} > {output_name} 2>&1 &"
     else:
         command = f"{cmd} {' '.join(cmd_args)} > {output_name} 2>&1 &"
@@ -42,7 +42,7 @@ def _generate_cmd_args_list(cmd, cmd_args):
     Generates arguments list for 'Popen'. It consists of a binary file name and subsequential arguments.
     """
     if cmd not in ['python', 'pytest', 'python3']:
-        # If user don't set binary file name, defaulty use 'python' to launch the job.
+        # If user don't set binary file name, defaultly use 'python' to launch the job.
         return ['python'] + [cmd] + cmd_args
     return [cmd] + cmd_args
 
@@ -55,7 +55,7 @@ def _generate_cmd_args_list_with_core(cmd, cmd_args, affinity_cpu_str):
     taskset_args = ['taskset'] + ['-c'] + [affinity_cpu_str]
     final_cmd = []
     if cmd not in ['python', 'pytest', 'python3']:
-        # If user don't set binary file name, defaulty use 'python' to launch the job.
+        # If user don't set binary file name, defaultly use 'python' to launch the job.
         final_cmd = taskset_args + ['python'] + [cmd] + cmd_args
     else:
         final_cmd = taskset_args + [cmd] + cmd_args
@@ -143,8 +143,14 @@ def _parse_global_device_to_cpu_map(local_rank_id, physical_device_id, device_to
     Parse the global device_to_cpu_map and return a cpu list for assigned local_rank_id.
 
     """
+    if local_rank_id >= len(list(device_to_cpu_map.keys())):
+        logger.warning(f"Cannot find process[{local_rank_id}] in args '--bind_core'. "
+                       "Will not launch process with taskset.")
+        return ""
     input_device_id = int(list(device_to_cpu_map.keys())[local_rank_id].replace("device", ""))
     if physical_device_id != input_device_id:
+        logger.warning(f"Cannot find physical_device_id[{physical_device_id}] for process[{local_rank_id}] "
+                       "in args '--bind_core'. Will not launch process with taskset.")
         return ""
     affinity_cpu_list = list(device_to_cpu_map.values())[local_rank_id]
     affinity_cpu_str = ",".join(affinity_cpu_list)
@@ -212,8 +218,6 @@ def _generate_bind_core_strategy(local_rank_id, device_to_cpu_map, arg_bind_core
     if isinstance(arg_bind_core, dict):
         affinity_cpu_str = _parse_global_device_to_cpu_map(local_rank_id, physical_device_id, arg_bind_core)
         if not affinity_cpu_str:
-            logger.warning(f"Failed to find physical_device_id[{physical_device_id}] for "
-                           f"process[{local_rank_id}]. Will not launch process with taskset.")
             return None
     elif arg_bind_core is True:
         cpu_list_for_device = device_to_cpu_map.get(physical_device_id, [])
