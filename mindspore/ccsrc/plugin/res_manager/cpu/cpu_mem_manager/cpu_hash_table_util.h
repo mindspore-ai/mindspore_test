@@ -48,12 +48,13 @@ void CreateCPUHashTable(const UserDataPtr &user_data) {
   MS_EXCEPTION_IF_NULL(shape_vector);
   MS_EXCEPTION_IF_NULL(default_value);
 
-  int32_t value_size = 1;
+  size_t value_size = 1;
   for (size_t i = 0; i < (*shape_vector).size(); ++i) {
-    value_size *= (*shape_vector)[i];
-  }
-  if (value_size <= 0) {
-    MS_LOG(WARNING) << "Invalid value size:" << value_size;
+    size_t dim = LongToSize((*shape_vector)[i]);
+    if (dim > 0 && (value_size > SIZE_MAX / dim)) {
+      MS_LOG(EXCEPTION) << "Multiplication overflow detected, value size is: " << value_size << ", dim : " << dim;
+    }
+    value_size *= dim;
   }
   if (default_value->isa<StringImm>()) {
     user_data->set<CPUHashTable<KeyType, ValueType>>(
