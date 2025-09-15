@@ -31,7 +31,7 @@ from mindspore.communication.management import get_rank, get_group_size
 from mindspore.parallel._tensor import _load_tensor, _reshape_param_data, _reshape_param_data_with_weight, \
     _get_tensor_slice_index, _get_tensor_strategy
 from mindspore.parallel._utils import _is_in_auto_parallel_mode, _get_pipeline_stages, _infer_rank_list, \
-    _remove_repeated_slices, _get_auto_parallel_net
+    _remove_repeated_slices, _get_auto_parallel_net, _check_path_safe, _check_path_writable
 from mindspore.parallel._parallel_serialization import _rank_list_for_transform_parallel_checkpoint, \
     _transform_parallel_checkpoint, _get_device_num_from_strategy, _make_dir, _build_searched_strategy, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
@@ -497,6 +497,9 @@ def _transform_checkpoint_by_stage(src_checkpoints_dir, dst_checkpoints_dir, ckp
 def _transform_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix, src_strategy_file=None,
                            dst_strategy_file=None):
     """Transform checkpoints for all stages in src_strategy_file"""
+    _check_path_safe(dst_checkpoints_dir, "dst_checkpoints_dir")
+    dst_checkpoints_dir = os.path.realpath(dst_checkpoints_dir)
+    _check_path_safe(ckpt_prefix, "ckpt_prefix")
     checkpoints_rank_dir_list = os.path.join(src_checkpoints_dir, "rank_[0-9]*")
     all_checkpoint_files_map = {}
     for checkpoint_dir in glob.glob(checkpoints_rank_dir_list):
@@ -565,6 +568,7 @@ def _transform_checkpoints(src_checkpoints_dir, dst_checkpoints_dir, ckpt_prefix
             save_checkpoint_file_dir = os.path.join(dst_checkpoints_dir, "rank_{}".format(transform_rank))
             if not os.path.exists(save_checkpoint_file_dir):
                 _make_dir(save_checkpoint_file_dir, "path")
+            _check_path_writable(save_checkpoint_file_dir)
             save_checkpoint_file_name = os.path.join(save_checkpoint_file_dir, save_checkpoint_file)
             ms.save_checkpoint(transform_param_list, save_checkpoint_file_name)
             del param_total_dict_copy
