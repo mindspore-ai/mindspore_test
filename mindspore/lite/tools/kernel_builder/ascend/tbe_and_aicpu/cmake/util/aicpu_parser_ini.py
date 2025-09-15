@@ -127,7 +127,6 @@ def check_op_opinfo(required_op_info_keys, required_custom_op_info_keys,
         if required_op_info_key not in op_info:
             missing_keys.append(required_op_info_key)
     if missing_keys:
-        print("op: " + op_key + " opInfo missing: " + ",".join(missing_keys))
         raise KeyError("Check opInfo required key failed.")
     if op_info["opKernelLib"] == "CUSTAICPUKernel":
         check_custom_op_opinfo(required_custom_op_info_keys, ops, op_key)
