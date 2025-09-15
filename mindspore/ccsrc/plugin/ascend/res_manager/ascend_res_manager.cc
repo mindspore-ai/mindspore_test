@@ -65,6 +65,8 @@
 #include "plugin/ascend/res_manager/hal_manager/ascend_err_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
+#include "include/runtime/utils/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace device {
@@ -855,6 +857,21 @@ bool AscendResManager::BaseCopy(void *dst, const void *src, uint64_t size, aclrt
     MS_LOG(EXCEPTION) << "Failed to get stream by id:" << stream_id;
   }
   LockRuntime(stream);
+  static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
+  if (sync_copy_input && src_device_sync != nullptr) {
+    device::DeviceContextKey host_key = {src_device_sync->GetDeviceType(), src_device_sync->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    host_context->device_res_manager_->SyncAllStreams();
+    auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(ERROR) << "Call runtime rtMemcpy error, src ptr:" << src << " dst ptr:" << dst << " size:" << size;
+      return false;
+    }
+    return true;
+  }
   auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, kind, stream);
   if (ret_rt_memcpy != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error, src ptr:" << src << " dst ptr:" << dst << " size:" << size
