@@ -369,7 +369,7 @@ extern int TensorPython_set_requires_grad(PyObject *self, PyObject *value, void 
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The requires_grad property value must be a boolean.");
   }
-  obj->value.GetTensor()->set_requires_grad(value == Py_True);
+  obj->value.GetTensor()->set_requires_grad(PyObject_IsTrue(value) == 1);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }

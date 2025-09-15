@@ -1525,8 +1525,8 @@ void PyBoost::MarkSideEffect(PyObject *arg) {
     return;
   }
   if (PyTuple_Check(arg)) {
-    size_t tup_size = PyTuple_Size(arg);
-    for (size_t i = 0; i < tup_size; ++i) {
+    Py_ssize_t tup_size = PyTuple_Size(arg);
+    for (Py_ssize_t i = 0; i < tup_size; ++i) {
       MarkSideEffect(PyTuple_GetItem(arg, i));
     }
   }
