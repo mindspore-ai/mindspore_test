@@ -1,0 +1,153 @@
+# Copyright 2025 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+import time
+import numpy as np
+import mindspore as ms
+import mindspore.communication as comm
+import mindspore.communication.management as D
+from mindspore import nn, Tensor
+from mindspore.parallel import Layout, hsdp, init_parameters, custom_shard
+from mindspore.nn.utils import no_init_parameters
+from mindspore.common.initializer import initializer
+
+learning_rate = 0.01
+epochs = 2
+
+class SimpleModel(nn.Cell):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.weight = ms.Parameter(initializer("ones", [input_size, output_size], ms.float32), name='weight')
+        self.relu = ms.mint.nn.ReLU()
+
+    def construct(self, x):
+        x = ms.mint.matmul(x, self.weight)
+        x = self.relu(x)
+        x = ms.mint.sum(x)
+        return x
+
+
+def local_func(x, w, group):
+    x = ms.mint.matmul(x, w)
+    x, _ = comm.comm_func.all_reduce(x, "sum", group)
+    return x
+
+
+class ParallelModel(nn.Cell):
+    def __init__(self, input_size, output_size, out_layouts, in_layouts):
+        super().__init__()
+        self.weight = ms.Parameter(initializer("ones", [input_size, output_size], ms.float32), name='weight')
+        self.relu = ms.mint.nn.ReLU()
+        self.wrap = custom_shard(func=local_func, out_layouts=out_layouts, in_layouts=in_layouts)
+        self.group = in_layouts[0].get_comm_group_by_axis("mp", comm.get_rank())
+
+    def construct(self, x):
+        x = self.wrap(x, self.weight, self.group)
+        x = self.relu(x)
+        x = ms.mint.sum(x)
+        return x
+
+
+def create_dtensor(data, layout):
+    """create_dtensor"""
+    tensor = Tensor(data, dtype=ms.float32)
+    return tensor.local_to_global(layout)
+
+
+def run_model(x, model):
+    def forward_fn(data):
+        logits = model(data)
+        return logits
+
+    optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
+    grad_fn = ms.value_and_grad(forward_fn, None, optimizer.parameters, has_aux=False)
+
+    ret_loss = None
+    ret_grads = None
+    for epoch in range(epochs):
+        start = time.time()
+        (loss_value, grads) = grad_fn(x)
+        optimizer(grads)
+        end = time.time()
+        ret_loss = loss_value
+        ret_grads = grads
+        print(f"[standalone] Epoch: {epoch+1}/{epochs}, Loss: {loss_value}, Time: {end - start}")
+
+    return ret_loss, ret_grads
+
+
+def base_case(dp, mp, hsdp_shard_size):
+    D.init()
+
+    # standalone
+    input_size = 32
+    output_size = 2
+    batch_size = 4
+
+    standalone_x = Tensor(np.ones([batch_size, input_size]).astype(np.float32), dtype=ms.float32)
+    standalone_model = SimpleModel(input_size, output_size)
+    standalone_loss, standalone_grads = run_model(standalone_x, standalone_model)
+
+    # parallel
+    local_batch_size = batch_size // dp
+    local_input_size = input_size // mp
+    local_output_size = output_size
+    local_x = np.ones([local_batch_size, local_input_size]).astype(np.float32)
+    layout = Layout((dp, mp), ("dp", "mp"))
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    out_layout = layout()
+    custom_in_layouts = (x_layout, w_layout, None)
+    custom_out_layouts = (layout("dp", "None"),)
+    relu_strategy = ((layout("dp", "None"),), (layout("dp", "None"),))
+
+    # step 1: define network with no init parameters
+    with no_init_parameters():
+        model = ParallelModel(input_size, output_size, custom_out_layouts, custom_in_layouts)
+
+    # step 2: shard
+    model.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
+    model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
+
+    # step 3: hsdp
+    model = hsdp(model, shard_size=hsdp_shard_size, threshold=0)
+
+    # step 4: init parameters
+    model = init_parameters(model)
+
+    x = create_dtensor(local_x, x_layout)
+    parallel_loss, parallel_grads = run_model(x, model)
+
+    # compare loss
+    assert np.allclose(standalone_loss.asnumpy(), parallel_loss.asnumpy(), 0.001, 0.001)
+
+    # compare grad
+    if hsdp_shard_size < 0:
+        hsdp_shard_size = dp
+
+    standalone_grad = standalone_grads[0].asnumpy()
+    # note: this way of obtaining grad slice is a simplified way, not a strict way
+    standalone_grad_slice = standalone_grad[:local_input_size // hsdp_shard_size, :local_output_size]
+    parallel_grad = parallel_grads[0].asnumpy()
+    assert np.allclose(standalone_grad_slice, parallel_grad, 0.001, 0.001)
+
+
+def test_base_custom_shard():
+    '''
+    Feature: with no_init_parameters + cell shard + hsdp + init param + loss repeat + partial + custom shard.
+    Description: Test base shard.
+    Expectation: Run success.
+    '''
+    base_case(dp=4, mp=2, hsdp_shard_size=4)
