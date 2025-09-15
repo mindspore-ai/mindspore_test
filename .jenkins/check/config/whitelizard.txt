@@ -499,3 +499,8 @@ mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindsp
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 mindspore/mindspore/lite/providers/nnie/src/custom_infer.cc:mindspore::nnie::CustomInterface::Infer
 mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape
+mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:transform_checkpoints
+mindspore/mindspore/python/mindspore/parallel/checkpoint_transform.py:load_distributed_checkpoint
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_safetensors_single
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:_transform_parallel_safetensor
+mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py:unified_safetensors 
