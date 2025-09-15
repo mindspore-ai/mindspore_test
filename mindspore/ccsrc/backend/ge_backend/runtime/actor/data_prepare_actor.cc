@@ -922,8 +922,7 @@ void CopyHostTensorToDeviceTensor(const AnfNodePtr &backend_node, const AnfNodeP
                  << ", device tensor type:" << device_tensor->GetDeviceType();
     // The fake heterogeneous scenario.
     if (DeviceTensorStore::GetInstance().Fetch(front_node.get()).size() == 1) {
-      MS_LOG(ERROR) << "Deprecated code is called. Execution aborted.";
-      std::abort();
+      MS_LOG(EXCEPTION) << "Deprecated code is called. Execution aborted.";
     }
   } else if (host_tensor_address != device_tensor) {
     // In the scenario of training + inference , the device address of the weight node can not be changed when
