@@ -1352,11 +1352,9 @@ bool AscendKernelExecutor::SilentCheckAndPreSaveWeight(const CNodePtr &kernel, K
   // 2. async ckpt and snap short
   auto opt_start_type = OptimizerEventInfo::GetInstance().GetOptimizerStartType(kernel_mod, kernel);
   bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
-  if (MS_UNLIKELY(tools::ascend::NeedSaveAsyncCkpt() || tools::ascend::NeedSaveSnapshot())) {
-    if (is_opt_start_kernel) {
-      tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
-      tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
-    }
+  if (MS_UNLIKELY(is_opt_start_kernel && tools::ascend::AscendSnapshotMgr::GetInstance()->IsSavingSnapshot())) {
+    tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
+    tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
   }
   if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
     // skip execute TensorReport op with attribute "snapshot", it is just used as a tag
