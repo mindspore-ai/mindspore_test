@@ -1,4 +1,4 @@
-PYNATIVE_EXPORT PyObject* ${func_name}_Base(const PrimitivePtr &prim, PyObject* &args) {
+PYNATIVE_EXPORT PyObject* ${func_name}_Base(const PrimitivePtr &prim, PyObject* args) {
 #ifndef ENABLE_TEST
   ${mark_side_effect}
   static Converter converter(&ops::g${class_name});
