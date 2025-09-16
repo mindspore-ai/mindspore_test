@@ -146,7 +146,6 @@ class RSCPluginHandle:
             self.init_taskd_agent = init_taskd_agent
             self.start_taskd_agent = start_taskd_agent
             self.register_func = register_func
-            self.using_agent = True
         except ImportError as e:
             logger.warning(f"Import task agent: {str(e)}, try to using mindx plugin.")
             return False
@@ -160,6 +159,7 @@ class RSCPluginHandle:
         except Exception as e:  # pylint: disable=broad-except
             logger.warning(f"Register callback func failed: {str(e)}, try to using mindx plugin.")
             return False
+        self.using_agent = True
         return True
 
     def _register_by_plugin(self, func_map):
