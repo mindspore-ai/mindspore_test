@@ -12,10 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "plugin/ascend/profiler/ascend_profiling.h"
 #include <map>
 #include <string>
 #include <vector>
-
 #include <nlohmann/json.hpp>
 
 #include "utils/log_adapter.h"
@@ -25,7 +26,6 @@
 #include "tools/profiler/profiling_python.h"
 #include "plugin/ascend/profiler/mstx/mstx_dispatcher.h"
 #include "plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
-#include "plugin/ascend/profiler/ascend_profiling.h"
 #include "plugin/ascend/profiler/parallel_strategy_profiling.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_prof_symbol.h"
