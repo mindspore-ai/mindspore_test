@@ -96,7 +96,7 @@ class COMMON_EXPORT ConfigManager {
   void set_iter_num(const std::string &queue_name, const int64_t num) {
     queue_name_ = queue_name;
     iter_num_ = num;
-    queue_info_map[queue_name_] = static_cast<int16_t>(num);
+    queue_info_map[queue_name_] = num;
   }
 
   std::string dataset_phase() const { return dataset_phase_; }
@@ -129,7 +129,7 @@ class COMMON_EXPORT ConfigManager {
   int64_t iter_num_{1};
   std::string queue_name_{""};
   // now only save iter_num_ in the map
-  std::map<std::string, int16_t> queue_info_map;
+  std::map<std::string, int64_t> queue_info_map;
   std::string dataset_phase_{""};
   int64_t gpu_loopsink_size_{1};
 };
