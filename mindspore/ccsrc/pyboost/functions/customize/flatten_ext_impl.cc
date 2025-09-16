@@ -22,7 +22,7 @@ namespace mindspore::kernel::pyboost {
 mindspore::tensor::TensorPtr flatten_ext_impl(const mindspore::tensor::TensorPtr &input, const int64_t &start_dim,
                                               const int64_t &end_dim) {
   const auto &input_shape = input->shape();
-  const int64_t ndim = input_shape.size();
+  const int64_t ndim = static_cast<int64_t>(input_shape.size());
   auto start = ops::DynamicDimWrap(start_dim, ndim, true);
   auto end = ops::DynamicDimWrap(end_dim, ndim, true);
   if (MS_UNLIKELY(start > end)) {

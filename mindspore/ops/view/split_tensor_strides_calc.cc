@@ -72,6 +72,7 @@ TensorStorageInfoPtrList SplitTensorStridesCalc(const std::vector<int64_t> &old_
 
 TensorStorageInfoPtrList SplitTensorBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                   const int64_t &split_size, const int64_t &dim) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return SplitTensorStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), split_size,
                                 dim);
 }

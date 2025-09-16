@@ -53,6 +53,7 @@ TensorStorageInfoPtrList SelectExtStridesCalc(const std::vector<int64_t> &old_sh
 
 TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                     const int64_t &dim, const int64_t &index) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return SelectExtStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim, index);
 }
 

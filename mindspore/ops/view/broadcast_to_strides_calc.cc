@@ -114,6 +114,7 @@ TensorStorageInfoPtrList BroadCastToStrideCalc(const std::vector<int64_t> &old_s
 
 TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                   const std::vector<int64_t> &shape) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return BroadCastToStrideCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), shape);
 }
 

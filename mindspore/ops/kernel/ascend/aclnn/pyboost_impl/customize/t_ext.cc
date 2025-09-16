@@ -31,7 +31,7 @@ void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &i
   MS_LOG(DEBUG) << "TExt Launch start";
 
   auto input_rank = input_tensor->shape().size();
-  if (MS_UNLIKELY(input_rank > 2)) {
+  if (MS_UNLIKELY(input_rank > kIndex2)) {
     MS_EXCEPTION(ValueError) << "For TExt, the input rank should be less equal to 2, but got " << input_rank;
   }
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device::DeviceType::kAscend);

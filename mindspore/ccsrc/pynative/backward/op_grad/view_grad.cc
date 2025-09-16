@@ -37,10 +37,10 @@ ValuePtrList ViewBackwardNode::CallBackward(const ValuePtrList &grads) {
 
 ValuePtrList TransposeBackwardNode::CallBackward(const ValuePtrList &grads) {
   SetDeviceTarget();
-  auto ndims = perm_.size();
+  int64_t ndims = static_cast<int64_t>(perm_.size());
   std::vector<int64_t> invert_perm(ndims);
-  for (size_t i = 0; i < ndims; ++i) {
-    invert_perm[ops::DynamicDimWrap(perm_[i], static_cast<int64_t>(ndims))] = i;
+  for (int64_t i = 0; i < ndims; ++i) {
+    invert_perm[ops::DynamicDimWrap(perm_[i], ndims)] = i;
   }
   auto output = kernel::pyboost::transpose(grads[0]->cast<TensorPtr>(), invert_perm);
   return {output};
@@ -55,7 +55,8 @@ ValuePtrList TransposeExtViewBackwardNode::CallBackward(const ValuePtrList &grad
 ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
   SetDeviceTarget();
   auto size = PackBasicTypeToValue(self_shape_);
-  auto grad = grads[0]->cast<TensorPtr>();
+  auto grad = grads.at(0)->cast<TensorPtr>();
+  MS_EXCEPTION_IF_NULL(grad);
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
   auto grad_input = kernel::pyboost::zeros(size, dtype);
   auto select_part = kernel::pyboost::select_ext_view(grad_input, dim_, index_);
@@ -66,7 +67,8 @@ ValuePtrList SelectExtViewBackwardNode::CallBackward(const ValuePtrList &grads) 
 ValuePtrList SliceExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
   SetDeviceTarget();
   auto size = PackBasicTypeToValue(self_shape_);
-  auto grad = grads[0]->cast<TensorPtr>();
+  auto grad = grads.at(0)->cast<TensorPtr>();
+  MS_EXCEPTION_IF_NULL(grad);
   auto dtype = std::make_shared<Int64Imm>(grad->data_type());
   auto grad_input = kernel::pyboost::zeros(size, dtype);
   auto slice_part = kernel::pyboost::slice_ext_view(grad_input, dim_, start_, end_, step_);

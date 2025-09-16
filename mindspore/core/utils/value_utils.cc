@@ -320,23 +320,23 @@ struct TypeIdTrait {};
   template <>                             \
   struct TypeIdTrait<prototype> {         \
     static const TypeId type_id = typeid; \
-  };
+  }
 
-TYPEID_TRAIT(kNumberTypeInt8, int8_t)
-TYPEID_TRAIT(kNumberTypeUInt8, uint8_t)
-TYPEID_TRAIT(kNumberTypeInt16, int16_t)
-TYPEID_TRAIT(kNumberTypeUInt16, uint16_t)
-TYPEID_TRAIT(kNumberTypeInt32, int32_t)
-TYPEID_TRAIT(kNumberTypeUInt32, uint32_t)
-TYPEID_TRAIT(kNumberTypeInt64, int64_t)
-TYPEID_TRAIT(kNumberTypeUInt64, uint64_t)
-TYPEID_TRAIT(kNumberTypeFloat16, float16)
-TYPEID_TRAIT(kNumberTypeFloat32, float)
-TYPEID_TRAIT(kNumberTypeFloat64, double)
-TYPEID_TRAIT(kNumberTypeBFloat16, bfloat16)
-TYPEID_TRAIT(kNumberTypeBool, bool)
-TYPEID_TRAIT(kNumberTypeComplex64, std::complex<float>)
-TYPEID_TRAIT(kNumberTypeComplex128, std::complex<double>)
+TYPEID_TRAIT(kNumberTypeInt8, int8_t);
+TYPEID_TRAIT(kNumberTypeUInt8, uint8_t);
+TYPEID_TRAIT(kNumberTypeInt16, int16_t);
+TYPEID_TRAIT(kNumberTypeUInt16, uint16_t);
+TYPEID_TRAIT(kNumberTypeInt32, int32_t);
+TYPEID_TRAIT(kNumberTypeUInt32, uint32_t);
+TYPEID_TRAIT(kNumberTypeInt64, int64_t);
+TYPEID_TRAIT(kNumberTypeUInt64, uint64_t);
+TYPEID_TRAIT(kNumberTypeFloat16, float16);
+TYPEID_TRAIT(kNumberTypeFloat32, float);
+TYPEID_TRAIT(kNumberTypeFloat64, double);
+TYPEID_TRAIT(kNumberTypeBFloat16, bfloat16);
+TYPEID_TRAIT(kNumberTypeBool, bool);
+TYPEID_TRAIT(kNumberTypeComplex64, std::complex<float>);
+TYPEID_TRAIT(kNumberTypeComplex128, std::complex<double>);
 }  // namespace
 
 template <typename T>
@@ -362,23 +362,23 @@ T TensorItem(const tensor::TensorPtr &tensor) {
   }
 }
 
-#define TENSOR_ITEM_TEMPLATE(TYPE) template MS_CORE_API TYPE TensorItem<TYPE>(const tensor::TensorPtr &value);
+#define TENSOR_ITEM_TEMPLATE(TYPE) template MS_CORE_API TYPE TensorItem<TYPE>(const tensor::TensorPtr &value)
 
-TENSOR_ITEM_TEMPLATE(int8_t)
-TENSOR_ITEM_TEMPLATE(uint8_t)
-TENSOR_ITEM_TEMPLATE(int16_t)
-TENSOR_ITEM_TEMPLATE(uint16_t)
-TENSOR_ITEM_TEMPLATE(int32_t)
-TENSOR_ITEM_TEMPLATE(uint32_t)
-TENSOR_ITEM_TEMPLATE(int64_t)
-TENSOR_ITEM_TEMPLATE(uint64_t)
-TENSOR_ITEM_TEMPLATE(float16)
-TENSOR_ITEM_TEMPLATE(float)
-TENSOR_ITEM_TEMPLATE(double)
-TENSOR_ITEM_TEMPLATE(bfloat16)
-TENSOR_ITEM_TEMPLATE(bool)
-TENSOR_ITEM_TEMPLATE(std::complex<float>)
-TENSOR_ITEM_TEMPLATE(std::complex<double>)
+TENSOR_ITEM_TEMPLATE(int8_t);
+TENSOR_ITEM_TEMPLATE(uint8_t);
+TENSOR_ITEM_TEMPLATE(int16_t);
+TENSOR_ITEM_TEMPLATE(uint16_t);
+TENSOR_ITEM_TEMPLATE(int32_t);
+TENSOR_ITEM_TEMPLATE(uint32_t);
+TENSOR_ITEM_TEMPLATE(int64_t);
+TENSOR_ITEM_TEMPLATE(uint64_t);
+TENSOR_ITEM_TEMPLATE(float16);
+TENSOR_ITEM_TEMPLATE(float);
+TENSOR_ITEM_TEMPLATE(double);
+TENSOR_ITEM_TEMPLATE(bfloat16);
+TENSOR_ITEM_TEMPLATE(bool);
+TENSOR_ITEM_TEMPLATE(std::complex<float>);
+TENSOR_ITEM_TEMPLATE(std::complex<double>);
 
 std::optional<int64_t> FetchTensorIntValue(const tensor::TensorPtr &tensor) {
   const auto &tensor_type_id = tensor->data_type();

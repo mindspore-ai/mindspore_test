@@ -75,6 +75,7 @@ TensorStorageInfoPtrList ChunkBasicTypeCalc(const mindspore::tensor::TensorPtr &
   if (MS_UNLIKELY(chunks < 1)) {
     MS_EXCEPTION(ValueError) << "For 'Chunk', chunks should be greater equal than 1, but got " << chunks;
   }
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return ChunkStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), chunks, dim);
 }
 
