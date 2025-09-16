@@ -176,7 +176,7 @@ void CumsumReverseInt(const int32_t *input, int32_t *output, int out_dim, int ax
       int j = 0;
       SIMD_RUN_NO_SCALAR(CumsumIntOutputInitWithZero, j, layer_output, inner_dim);
       for (; j < inner_dim; ++j) {
-        *(layer_output++) = 0.0f;
+        *(layer_output++) = 0;
       }
     }
   }

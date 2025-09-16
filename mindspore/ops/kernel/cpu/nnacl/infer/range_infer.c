@@ -20,6 +20,13 @@
 #include "nnacl/range_parameter.h"
 #include "nnacl/tensor_c_utils.h"
 
+#define NNACL_MINUS_DIV_PARAM_CHECK(delta, limit, start)                                                              \
+  do {                                                                                                                \
+    if (delta == 0 || (((int64_t)limit - (int64_t)start) > INT_MAX && ((int64_t)limit - (int64_t)start) < INT_MIN)) { \
+      return NNACL_ERR;                                                                                               \
+    }                                                                                                                 \
+  } while (0)
+
 int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **outputs, size_t outputs_size,
                     OpParameter *parameter) {
   int check_ret = CheckAugmentNullSizeInputTwo(inputs, inputs_size, outputs, outputs_size, parameter, 1, C3NUM, 1);
@@ -55,9 +62,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
         int start = *(int *)(inputs[0]->data_);
         int limit = *(int *)(inputs[1]->data_);
         int delta = *(int *)(inputs[2]->data_);
-        if (delta == 0) {
-          return NNACL_ERR;
-        }
+        NNACL_MINUS_DIV_PARAM_CHECK(delta, limit, start);
         shape_size = imax((int)(ceil((float)(limit - start) / delta)), 0);
       } break;
       case kNumberTypeFloat32:
@@ -77,9 +82,7 @@ int RangeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
   } else {
     RangeParameter *param = (RangeParameter *)parameter;
     NNACL_CHECK_NULL_RETURN_ERR(param);
-    if (param->delta_ == 0) {
-      return NNACL_PARAM_INVALID;
-    }
+    NNACL_MINUS_DIV_PARAM_CHECK(param->delta_, param->limit_, param->start_);
     shape_size = ceil((float)(param->limit_ - param->start_) / param->delta_);
   }
 
