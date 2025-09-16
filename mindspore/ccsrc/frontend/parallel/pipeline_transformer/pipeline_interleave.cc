@@ -1347,9 +1347,6 @@ void PipelinePostProcess::ModifySendRecvAttr(const std::vector<AnfNodePtr> &all_
       auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
       MS_EXCEPTION_IF_NULL(shape_ptr);
       slice_shape = shape_ptr->shape();
-      if (IsPrimitiveCNode(cnode, prim::kPrimReceive)) {
-        cnode->AddPrimalAttr(FREEZE, MakeValue(true));
-      }
     } else {
       MS_EXCEPTION_IF_NULL(pre_node->cast<CNodePtr>());
       auto op_info = pre_node->cast<CNodePtr>()->user_data<OperatorInfo>();
