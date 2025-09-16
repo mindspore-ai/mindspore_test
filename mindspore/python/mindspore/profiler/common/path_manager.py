@@ -48,7 +48,7 @@ class PathManager:
         cls._input_path_common_check(path)
 
         if os.path.isfile(path):
-            msg = f"Invalid input path is a file path: {path}"
+            msg = "Invalid input path, input path is a file path."
             raise ProfilerPathErrorException(msg)
 
     @classmethod
@@ -238,26 +238,6 @@ class PathManager:
             raise ProfilerPathErrorException(f"Failed to make directory: {path}, err: {err}") from err
 
     @classmethod
-    def create_file_safety(cls, path: str):
-        """
-        Function Description:
-            create file safety
-        Parameter:
-            path: the file to remove
-        Exception Description:
-            when invalid data throw exception
-        """
-        if os.path.islink(path):
-            raise RuntimeError(f"Failed to create file: {path}, is a soft link")
-        if os.path.exists(path):
-            logger.warning("File already exists: %s", path)
-            return
-        try:
-            os.close(os.open(path, os.O_WRONLY | os.O_CREAT, cls.DATA_FILE_AUTHORITY))
-        except Exception as err:
-            raise RuntimeError(f"Failed to create file: {path}, err: {err}") from err
-
-    @classmethod
     def _input_path_common_check(cls, path: str):
         """
         Function Description:
@@ -268,22 +248,22 @@ class PathManager:
             when invalid data throw exception
         """
         if len(path) > cls.MAX_PATH_LENGTH:
-            msg = f"Path {path} length {len(path)} exceeds the limit {cls.MAX_PATH_LENGTH}."
+            msg = f"Input path length {len(path)} exceeds the limit {cls.MAX_PATH_LENGTH}."
             raise ProfilerPathErrorException(msg)
 
         if os.path.islink(path):
-            msg = f"Invalid input path is a soft link: {path}"
+            msg = "Invalid input path, input path is a soft link."
             raise ProfilerPathErrorException(msg)
 
         pattern = r"(\.|/|_|-|\s|[~0-9a-zA-Z]|[\u4e00-\u9fa5])+"
         if not re.fullmatch(pattern, path):
-            msg = f"Invalid input path: {path}, contains invalid characters."
+            msg = "Invalid input path, input path contains invalid characters."
             raise ProfilerPathErrorException(msg)
 
         path_split_list = path.split("/")
         for name in path_split_list:
             if len(name) > cls.MAX_FILE_NAME_LENGTH:
-                msg = f"Length of input path {path} file name {name} exceeds the limit {cls.MAX_FILE_NAME_LENGTH}."
+                msg = f"Length of file name in input path exceeds the limit {cls.MAX_FILE_NAME_LENGTH}."
                 raise ProfilerPathErrorException(msg)
 
     @classmethod
@@ -390,6 +370,6 @@ class PathManager:
             return False
         if os.name == 'nt':
             return False
-        if os.stat(path).st_uid == 0 or os.stat(path).st_uid == os.getuid():
+        if os.stat(lib_path).st_uid == 0 or os.stat(lib_path).st_uid == os.getuid():
             return True
         return False
