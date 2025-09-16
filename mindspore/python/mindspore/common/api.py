@@ -612,7 +612,7 @@ class _JitExecutor:
         else:
             self._graph_executor = GraphExecutor_.get_instance()
         self._create_time = ms_create_time
-        self._compile_args = None
+        self._mutable_flags = None
         self._enable_auto_dynamic = dynamic == 1
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
         self._cell_cache_key_extend = cell_cache_key_extend
@@ -702,10 +702,11 @@ class _JitExecutor:
         # 1) Origin args is mutable.
         # 2) Args contains sequence with gradient tensor.
         compile_args = _add_mutable_attr(args, compile_args, _pynative_executor.requires_grad())
-        self._compile_args = compile_args
-        # Store the compile_args in the cell obj for incremental inference.
+        mutable_flags = _get_mutable_flags(compile_args)
+        self._mutable_flags = mutable_flags
+        # Store the _mutable_flags in the cell obj for incremental inference.
         if self.obj is not None:
-            self.obj._compile_args = compile_args
+            self.obj._mutable_flags = mutable_flags
         generate_name, echo_function_name = self._get_generate_name()
         # The full Function name
         full_function_name = generate_name
@@ -907,9 +908,11 @@ class _JitExecutor:
         Returns:
             new_inputs, new input args, which are required for running.
         """
-        if self._compile_args is None and self.obj is not None:
-            self._compile_args = self.obj._compile_args
-        return _get_args_for_run(self, args_list, kwargs, _get_mutable_flags(self._compile_args), is_predict)
+        if self.obj is not None and hasattr(self.obj, '_mutable_flags'):
+            mutable_flags = self.obj._mutable_flags
+        else:
+            mutable_flags = self._mutable_flags
+        return _get_args_for_run(self, args_list, kwargs, mutable_flags, is_predict)
 
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
         """Get graph proto from pipeline."""
