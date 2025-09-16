@@ -593,7 +593,6 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelRunnerPtr &kernel_act
         if (!safe_update) {
           auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
           kernel_tensor->set_device_ptr(ptr);
-
         } else {
           auto &kernel_tensor = kernel_actor->output_kernel_tensors_.at(block->index_);
           std::lock_guard<SpinLock> lock(block->lock_);
