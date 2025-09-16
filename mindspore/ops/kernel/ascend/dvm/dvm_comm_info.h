@@ -15,7 +15,7 @@
  */
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_COMM_INFO_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_DVM_COMM_INFO_H_
-#include "backend/common/graph_kernel/adapter/graph_kernel_comm_info_manager.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_comm_info_manager.h"
 #include "utils/ms_context.h"
 #include "kernel/ascend/visible.h"
 namespace mindspore {

@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "utils/check_convert_utils.h"
 #include "plugin/ascend/res_manager/collective/dvm_collective_comm_lib.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"

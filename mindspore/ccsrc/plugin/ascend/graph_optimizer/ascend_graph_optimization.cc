@@ -21,7 +21,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"

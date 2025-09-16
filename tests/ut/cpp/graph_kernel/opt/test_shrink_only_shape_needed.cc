@@ -16,9 +16,9 @@
 
 #include <mindspore/core/include/ir/core_ops_primitive.h>
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
-#include "backend/common/graph_kernel/adapter/symbol_engine_builder.h"
-#include "backend/common/graph_kernel/shrink_only_shape_needed.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
+#include "backend/ms_backend/graph_fusion/adapter/symbol_engine_builder.h"
+#include "backend/ms_backend/graph_fusion/shrink_only_shape_needed.h"
 #include "utils/anf_utils.h"
 #include "ir/functor.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

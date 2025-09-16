@@ -20,6 +20,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <vector>
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/graph_ir/convert.h"
 

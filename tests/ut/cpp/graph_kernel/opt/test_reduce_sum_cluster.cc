@@ -16,8 +16,8 @@
 
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
-#include "backend/common/graph_kernel/convert_input_and_attr.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
+#include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 
 namespace mindspore::graphkernel::test {
 /// Feature: GraphKernelCluster

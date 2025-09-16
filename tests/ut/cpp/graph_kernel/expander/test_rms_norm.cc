@@ -21,7 +21,7 @@
 #include "abstract/abstract_value.h"
 #include "common/graph_optimizer_test_framework.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_expander_cloud.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_expander_cloud.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "graph_kernel/expander/base.h"

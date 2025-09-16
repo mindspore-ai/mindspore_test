@@ -29,7 +29,7 @@ class BACKEND_COMMON_EXPORT CommonSubexpressionElimination : public Pass {
   bool Run(const FuncGraphPtr &func_graph) override;
 };
 
-class BackendCSE : public CSE {
+class BACKEND_COMMON_EXPORT BackendCSE : public CSE {
  public:
   BackendCSE() = default;
   ~BackendCSE() override = default;
