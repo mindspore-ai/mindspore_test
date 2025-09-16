@@ -87,6 +87,7 @@ std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoP
     auto real_abstract = out_abstract;
     if (out_abstract->isa<abstract::AbstractSequence>()) {
       auto abstract_tuple = out_abstract->cast<abstract::AbstractSequencePtr>();
+      MS_EXCEPTION_IF_NULL(abstract_tuple);
       if (i >= abstract_tuple->elements().size()) {
         MS_LOG(EXCEPTION) << "abstract_tuple size is " << abstract_tuple->elements().size() << " ,but get index is"
                           << i;
