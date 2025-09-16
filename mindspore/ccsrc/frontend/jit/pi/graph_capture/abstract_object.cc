@@ -64,7 +64,11 @@ constexpr size_t kValueToStringLimit = 120;
     PyErr_Clear();                              \
   }
 #else
-#define CHECK_PYTHON_EXCEPTION(check_res) PyErr_Clear()
+#define CHECK_PYTHON_EXCEPTION(check_res)               \
+  if (PyErr_Occurred()) {                               \
+    py::error_already_set e;                            \
+    MS_LOG(INFO) << "Has a python error! " << e.what(); \
+  }
 #endif
 
 // mindspore graph can accept these value

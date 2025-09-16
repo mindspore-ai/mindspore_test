@@ -1205,13 +1205,20 @@ bool GraphBuilder::HandleSuper(const Instr &instr, AObject *super) {
   }
   ValueNode *self_super = SearchSelfPyObject(graph_->GetCodeObj()).second;
   if (self_super == nullptr) {
+    MS_LOG(INFO) << "Cannot find self object";
+    return false;
+  }
+  if (super->GetPyObject().ptr() == nullptr) {
+    MS_LOG(INFO) << "super() python object is nullptr";
     return false;
   }
   py::object method = super->GetPyObject().attr(instr.name().c_str());
   if (!PyMethod_Check(method.ptr())) {
+    MS_LOG(INFO) << "super()." << instr.name() << " is not a method";
     return false;
   }
 
+  MS_LOG(DEBUG) << "Resolve super()." << instr.name() << " method";
   // method type object
   auto mtype_obj = reinterpret_cast<PyObject *>(&PyMethod_Type);
   DoLoadConst({LOAD_CONST, -1, py::cast<py::object>(mtype_obj)});
@@ -2558,7 +2565,15 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
 
   const auto &params = call_node->inputs();
   AObject *instance = nullptr;
-  if (CheckSupportCreateInstance(call_node, t, type, params)) {
+  if (reinterpret_cast<PyTypeObject *>(vobj->GetPyObject().ptr()) == &PySuper_Type) {
+    // take super ptr and compare with PySuper_Type
+    MS_LOG(DEBUG) << "Handle call super(), node: " << call_node->ToString();
+    instance = BuildSuperObject(graph_->GetCodeObj());
+    this->graph_->GetTracedNodes().pop_back();
+    if (PyErr_Occurred()) {
+      throw py::error_already_set();
+    }
+  } else if (CheckSupportCreateInstance(call_node, t, type, params)) {
     MS_LOG(INFO) << "Build instance:" << call_node->ToString();
     std::vector<py::object> args;
     std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [vobj](ValueNode *n) {
@@ -2567,14 +2582,6 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
     });
     py::object res = t->BuildInstance(args, call_node->GetOpcode(), call_node->kw_names());
     instance = res.ptr() ? AObject::Convert(res) : nullptr;
-  } else if (reinterpret_cast<PyTypeObject *>(vobj->GetPyObject().ptr()) == &PySuper_Type) {
-    // take super ptr and compare with PySuper_Type
-    MS_LOG(INFO) << "Build super object";
-    instance = BuildSuperObject(graph_->GetCodeObj());
-    this->graph_->GetTracedNodes().pop_back();
-    if (PyErr_Occurred()) {
-      throw py::error_already_set();
-    }
   }
 
   if (!instance) {
