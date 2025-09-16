@@ -67,71 +67,31 @@ struct FunctionContext {
   PyBackwardNodePtr grad_node;
 };
 
-class PYNATIVE_EXPORT FunctionBase {
- public:
-  // The enter of custom function.
-  static py::object apply(const py::object &cls, const py::args &inputs);
-
-  py::object needs_input_grad() const { return needs_input_grad_; }
-
-  void set_needs_input_grad(const py::object &needs_input_grad) { needs_input_grad_ = needs_input_grad; }
-
-  py::object saved_tensors() const;
-
-  py::object raw_saved_tensors() const { return saved_tensors_; }
-
-  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = saved_tensors; }
-
-  py::object non_differentiable() { return non_differentiable_; }
-
-  void set_non_differentiable(const py::object &non_differentiable) { non_differentiable_ = non_differentiable; }
-
-  py::object dirty_tensors() { return dirty_tensors_; }
-
-  void set_dirty_tensors(const py::object &dirty_tensors) { dirty_tensors_ = dirty_tensors; }
-
-  bool materialize_grads() { return materialize_grads_; }
-
-  void set_materialize_grads(const py::object &materialize_grads) {
-    if (!py::isinstance<py::bool_>(materialize_grads)) {
-      MS_LOG(EXCEPTION) << "set_materialize_grads need bool value, but get a " << materialize_grads.get_type();
-    }
-    materialize_grads_ = py::cast<bool>(materialize_grads);
-  }
-
-  std::vector<bool> is_tensor_input() { return is_tensor_input_; }
-
-  void set_weak_grad_node(const PyBackwardNodePtr &grad_node) { weak_grad_node_ = grad_node; }
-
-  void set_is_tensor_input(const std::vector<bool> &is_tensor_input) { is_tensor_input_ = is_tensor_input; }
-
- private:
-  // A python tuple return to use to indicate whether inputs need grad.
-  py::object needs_input_grad_;
+struct FunctionBase {
+  PyObject_HEAD
+    // A python tuple return to use to indicate whether inputs need grad.
+    PyObject *needs_input_grad;
 
   // The context carry tensors from forward function to backward function. Result of `save_for_backward` function.
-  py::object saved_tensors_;
+  PyObject *saved_tensors;
 
   // The tensors that are not differentiable decided by use. Result of `mark_non_differentiable` function.
-  py::object non_differentiable_;
+  PyObject *non_differentiable;
 
   // The tensor that have been modified. Result of `mark_dirty` function.
-  py::object dirty_tensors_;
+  PyObject *dirty_tensors;
 
   // The flag indicate whether to materialize none output grad tensors into
   // tensors full of zeros.
-  bool materialize_grads_ = true;
+  bool materialize_grads = true;
 
   // True is the input is tensor
-  std::vector<bool> is_tensor_input_;
+  std::vector<bool> is_tensor_input;
 
   // This is used for unpack saved tensors.
-  std::weak_ptr<PyBackwardNode> weak_grad_node_;
+  std::weak_ptr<PyBackwardNode> weak_grad_node;
 };
 
 using FunctionPtr = std::shared_ptr<FunctionBase>;
-
-PYNATIVE_EXPORT void RegFunctionBase(const py::module *m);
-
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_PY_H_

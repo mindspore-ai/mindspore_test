@@ -47,6 +47,7 @@ tensor::TensorPtr PySavedTensorHook::RunUnpackHook() {
   const auto ret_tensor = tensor::ConvertToTensor(ret);
   runtime::Pipeline::Get().WaitFrontend();
   MS_EXCEPTION_IF_NULL(ret_tensor);
+  runtime::Pipeline::Get().WaitFrontend();
   return ret_tensor;
 }
 
@@ -82,4 +83,6 @@ void DefaultSavedTensorHookUtil::SetDisableErrorMessage(std::optional<std::strin
 }
 
 bool DefaultSavedTensorHookUtil::IsEnabled() { return !disabled_error_message_.has_value(); }
+
+bool DefaultSavedTensorHookUtil::IsActive() { return IsEnabled() && GetTopHook() != nullptr; }
 }  // namespace mindspore::pynative::autograd

@@ -1297,6 +1297,7 @@ BackwardNodePtr BuildFakeBackwardNode(const PrimitivePtr &prim, const ValuePtrLi
 }
 
 AutoDiff::AutoDiff(const ValuePtr &output, bool keep_graph, bool high_order, bool is_run_recompute) {
+  static size_t unique_engine_id = 0;
   device_target_ = DeviceManagerConf::GetInstance()->device_type();
   func_impl_ = std::make_shared<FuncBuilder>("func_emitter", device_target_);
   output_ = output;
@@ -1304,6 +1305,7 @@ AutoDiff::AutoDiff(const ValuePtr &output, bool keep_graph, bool high_order, boo
   flatten_sens_out_ = CommonUtils::FlattenOnlyTensor(output);
   keep_graph_ = keep_graph || high_order;
   high_order_ = high_order;
+  engine_id_ = ++unique_engine_id;
   MS_LOG(DEBUG) << "Is high order graph: " << high_order;
 }
 
@@ -1928,6 +1930,8 @@ void AutoDiff::AddNodeToExecGraph(const BackwardNodePtr &node) {
   }
   gradient_contexts_[node.get()] = GradientContext(true);
 }
+
+size_t AutoDiff::CurrentAutoDiffEngineId() { return engine_id_; }
 
 void AutoDiff::AddFinalCallback(std::function<void()> callback) {
   (void)final_callbacks_.emplace_back(std::move(callback));

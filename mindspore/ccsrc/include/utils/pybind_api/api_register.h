@@ -84,6 +84,7 @@ FRONTEND_EXPORT void RegReducer(py::module *m);
 namespace pynative::autograd {
 FRONTEND_EXPORT void RegBackwardFunction(py::module *m);
 FRONTEND_EXPORT void RegBackwardNode(py::module *m);
+FRONTEND_EXPORT void RegFunctionBase(py::module *m);
 }  // namespace pynative::autograd
 
 namespace pijit {

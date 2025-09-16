@@ -394,6 +394,7 @@ class COMMON_EXPORT AutoDiffInterface {
  public:
   [[nodiscard]] virtual bool IsInExecGraph(const BackwardNodePtr &node) const = 0;
   virtual void AddNodeToExecGraph(const BackwardNodePtr &node) = 0;
+  virtual size_t CurrentAutoDiffEngineId() = 0;
 };
 using AutoDiffInterfacePtr = std::shared_ptr<AutoDiffInterface>;
 

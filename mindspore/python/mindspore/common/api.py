@@ -2157,6 +2157,24 @@ class _PyNativeExecutor:
         """
         self._executor.enable_frontend_and_bprop_pipeline()
 
+    def is_saved_tensor_hook_active(self):
+        """
+        Is current saved tensor hook active
+
+        Return:
+            bool.
+        """
+        return self._executor.is_saved_tensor_hook_active()
+
+    def get_current_autodiff_engine_id(self):
+        """
+        get current autodiff engine id, if not in autodiff engine, return -1
+
+        Return:
+            autodiff engine id.
+        """
+        return self._executor.get_current_autodiff_engine_id()
+
 
 class _CellGraphExecutor:
     """

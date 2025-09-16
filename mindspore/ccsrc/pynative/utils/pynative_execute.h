@@ -101,6 +101,8 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
   void SetSavedTensorHookDisableErrorMessage(std::optional<std::string> error_msg);
   bool DisableFrontendAndBpropPipeline();
   void EnableFrontendAndBpropPipeline();
+  bool IsSavedTensorHookActive();
+  int64_t CurrentAutoDiffEngineId();
 
  private:
   PyNativeExecutor() = default;
