@@ -145,11 +145,15 @@ class PipelineScheduleSingle(PipelineScheduleBase):
         for cur_step in self.exec_order[self.stage.stage_index]:
             micro_index = cur_step.micro_index
             if cur_step.type == MetaStepType.FWD_RECV:
+                if micro_index == 0 and self.stage.recv_info is None:
+                    self.stage.communicate_p2p_info(self.micro_batch_num)
                 self.stage.exec_fwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.FWD:
                 out = self.stage.forward_one_chunk(micro_index, args_mb[micro_index], kwargs_mb[micro_index])
                 out_list.append(out)
             if cur_step.type == MetaStepType.FWD_SEND:
+                if micro_index == 0 and self.stage.send_info is None:
+                    self.stage.communicate_p2p_info(self.micro_batch_num, send_out=True)
                 self.stage.exec_fwd_send_ops(micro_index)
             if cur_step.type == MetaStepType.BWD_RECV:
                 self.stage.exec_bwd_recv_ops(micro_index)

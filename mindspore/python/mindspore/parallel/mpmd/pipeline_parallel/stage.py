@@ -21,6 +21,28 @@ from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
 from ._utils import _RecvInfo
 
 
+class TypeConverter:
+    """
+    Used for converting mindspore dtype to int value and vice versa.
+
+    This function provides conversion functionality between mindspore data types
+    and their corresponding integer representations.
+    """
+    from mindspore.common import dtype as mstype
+    _type_map = {
+        0: mstype.float16,
+        1: mstype.bfloat16,
+        2: mstype.float32
+    }
+    _reverse_map = {v: k for k, v in _type_map.items()}
+
+    @staticmethod
+    def convert(key):
+        if isinstance(key, int):
+            return TypeConverter._type_map.get(key, None)
+        return TypeConverter._reverse_map.get(key, None)
+
+
 class P2PInfo:
     """
     Used for inputing P2P communication information, including
@@ -105,7 +127,7 @@ class PipelineStage(ABC):
         self._has_backward = has_backward
         self._recv_info = self._check_p2p_info(recv_info)
         self._send_info = self._check_p2p_info(send_info)
-        self._recv_num = len(recv_info)
+        self._recv_num = len(recv_info) if recv_info is not None else 0
         self._backward_func = None
         if self._has_backward:
             self.submodule.set_grad(True)
@@ -124,8 +146,9 @@ class PipelineStage(ABC):
 
     def init_states(self, microbatches_num):
         self._microbatches_num = microbatches_num
-        self._prepare_forward_infra(microbatches_num)
-        if self._has_backward:
+        if self._recv_info is not None:
+            self._prepare_forward_infra(microbatches_num)
+        if self._has_backward and self._send_info is not None:
             self._prepare_backward_infra(microbatches_num)
 
     def clear_states(self):
@@ -151,6 +174,41 @@ class PipelineStage(ABC):
         raise TypeError(f"Argument send_info and recv_info must be of type None, P2PInfo, \
                           list/tuple of P2PInfo, but got {p2p_info}.")
 
+    def communicate_p2p_info(self, micro_batch_num, send_out=False):
+        """used for communicate p2p info when not given"""
+        if send_out:
+            fwd_output = self.fwd_outputs_cache[0]
+            out_size = Tensor([len(fwd_output)], dtype=ms.int64)
+            global_rank = get_global_rank(self.pp_group, self.stage_index + 1)
+            self._communicate_value(global_rank, tensor_send=out_size)
+            send_info_list = []
+            for out_idx in range(out_size):
+                cur_dtype = Tensor([TypeConverter.convert(fwd_output[out_idx].dtype)], ms.int64)
+                self._communicate_value(global_rank, tensor_send=Tensor(cur_dtype))
+                # send shape dim
+                self._communicate_rank(global_rank, tensor_send=fwd_output[out_idx])
+                # send shape
+                self._communicate_shape(global_rank, tensor_send=fwd_output[out_idx])
+                send_info = P2PInfo(shape=fwd_output[out_idx].shape, dtype=fwd_output[out_idx].dtype)
+                send_info_list.append(send_info)
+            self.send_info = send_info_list
+            self._prepare_backward_infra(micro_batch_num)
+        else:
+            global_rank = get_global_rank(self.pp_group, self.stage_index - 1)
+            out_size = self._communicate_value(global_rank, shape_dim=1)
+            recv_info_list = []
+            for out_idx in range(out_size):
+                dtype = TypeConverter.convert(self._communicate_value(global_rank, shape_dim=1))
+                # recv shape dim
+                shape_dim = self._communicate_rank(global_rank)
+                # recv shape
+                shape = self._communicate_shape(global_rank, shape_dim)
+                recv_info = P2PInfo(shape, dtype)
+                recv_info_list.append(recv_info)
+            self.recv_info = recv_info_list
+            self._prepare_forward_infra(micro_batch_num)
+            self._recv_num = len(recv_info_list)
+
     def _make_tensor(self, recv_info, global_rank):
         """create recv buffer."""
         shape_dim = None
@@ -164,6 +222,17 @@ class PipelineStage(ABC):
         else:
             shape = recv_info.shape
         return mint.empty(shape, dtype=recv_info.dtype)
+
+    def _communicate_value(self, global_rank, shape_dim=None, tensor_send=None):
+        if tensor_send is not None:
+            handle = isend(Tensor(tensor_send, dtype=ms.int64), global_rank)
+            handle.wait()
+            return None
+
+        recv_tensor = mint.empty([shape_dim], dtype=ms.int64)
+        handle = irecv(recv_tensor, global_rank)
+        handle.wait()
+        return recv_tensor.tolist()[0]
 
     def _communicate_shape(self, global_rank, shape_dim=None, tensor_send=None):
         if tensor_send is not None:
@@ -200,6 +269,22 @@ class PipelineStage(ABC):
             return
         for info in self.grad_recv_info[micro_index]:
             info.buffer = None
+
+    @property
+    def recv_info(self):
+        return self._recv_info
+
+    @recv_info.setter
+    def recv_info(self, val):
+        self._recv_info = self._check_p2p_info(val)
+
+    @property
+    def send_info(self):
+        return self._send_info
+
+    @send_info.setter
+    def send_info(self, val):
+        self._send_info = self._check_p2p_info(val)
 
     @property
     def is_first_stage(self):
@@ -263,7 +348,7 @@ class PipelineStage(ABC):
             grad_out = self._backward_func(*fwd_args, **fwd_kwargs, sens=recv_args)
         self._clear_recv_buffer(micro_index)
         if not self.is_first_stage:
-            self.bwd_cache[micro_index] = grad_out[0][-self._recv_num :]
+            self.bwd_cache[micro_index] = grad_out[0][-self._recv_num:]
         # return grads for parameters
         if self.is_first_stage:
             return grad_out

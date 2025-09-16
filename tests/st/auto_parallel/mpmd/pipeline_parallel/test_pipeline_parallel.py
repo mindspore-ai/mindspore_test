@@ -27,6 +27,16 @@ def run_case(case_name, master_port):
     ret = os.system(cmd)
     assert ret == 0
 
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
+def test_pipeline_no_p2p_info_init():
+    """
+    Feature: schedule 1f1b.
+    Description: Test schedule 1f1b without p2p inited.
+    Expectation: Run success.
+    """
+    case_name = "test_pipeline_no_p2p_info"
+    master_port = 12346
+    run_case(case_name, master_port)
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="unessential")
 def test_schedule_1f1b_precision():

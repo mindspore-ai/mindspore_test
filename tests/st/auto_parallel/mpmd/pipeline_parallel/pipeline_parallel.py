@@ -333,7 +333,7 @@ def run_standalone(input_id_list: list, target_list: list, run_config: RunningCo
 
 
 def run_parallel(input_id_list, target_list, run_config: RunningConfig, model_config: ModelArgs, x_layout, w_layout,
-                 norm_layout, rank_list, dynamic_shape=False, dynamic_rank=False):
+                 norm_layout, rank_list, dynamic_shape=False, dynamic_rank=False, init_p2p_info=True):
     pp_group = "pp_group"
     create_group(pp_group, rank_list)
     if dynamic_shape:
@@ -341,6 +341,8 @@ def run_parallel(input_id_list, target_list, run_config: RunningConfig, model_co
                                                                             run_config.seq_length)
     elif dynamic_rank:
         send_info_list, recv_info_list = build_send_recv_info_dynamic_rank(model_config.stage_idx, model_config)
+    elif not init_p2p_info:
+        send_info_list, recv_info_list = None, None
     else:
         send_info_list, recv_info_list = build_send_recv_info(model_config.stage_idx, model_config,
                                                               run_config.per_batch_size,
@@ -544,5 +546,44 @@ def test_pipeline_dynamic_rank_precision():
                                                         parallel_model_config, x_layout, w_layout, norm_layout,
                                                         rank_list=group_rank_list,
                                                         dynamic_rank=True)
+    if parallel_model_config.stage_idx == parallel_model_config.num_stages - 1:
+        assert np.allclose(standalone_loss, parallel_loss, 1e-3, 1e-3)
+
+
+def test_pipeline_no_p2p_info():
+    """
+    Feature: Pipeline schedule 1f1b with no p2p info
+    Description: Execute micro batches according to schedule
+    Expectation: Run success.
+    """
+    running_config = RunningConfig()
+    running_config.per_batch_size = 2
+    running_config.micro_batch_num = 4
+    running_config.epoch_num = 5
+
+    model_config = build_model_config()
+    model_config.compute_dtype = mstype.float32
+    input_id_list = []
+    target_list = []
+    input_shape = (running_config.per_batch_size * running_config.micro_batch_num, running_config.seq_length)
+    for epoch_idx in range(running_config.epoch_num):
+        np.random.seed(42 + epoch_idx)
+        input_id_list.append(Tensor(np.random.randint(0, model_config.vocab_size, input_shape), dtype=mstype.int32))
+        target_list.append(Tensor(np.random.randint(0, model_config.vocab_size, input_shape), dtype=mstype.int32))
+
+    init("hccl")
+    standalone_loss = run_standalone(input_id_list, target_list, running_config, copy.copy(model_config))
+    # parallel
+    parallel_model_config = copy.copy(model_config)
+    layout_rank_list, group_rank_list = build_rank_list(parallel_model_config)
+    dp = 1
+    mp = 1
+    layout = Layout((dp, mp), ("dp", "mp"), rank_list=layout_rank_list)
+    x_layout = layout("dp", "mp")
+    w_layout = layout("mp", "None")
+    norm_layout = layout("None")
+    parallel_loss, parallel_model_config = run_parallel(input_id_list, target_list, running_config,
+                                                        parallel_model_config, x_layout, w_layout, norm_layout,
+                                                        rank_list=group_rank_list, init_p2p_info=False)
     if parallel_model_config.stage_idx == parallel_model_config.num_stages - 1:
         assert np.allclose(standalone_loss, parallel_loss, 1e-3, 1e-3)
