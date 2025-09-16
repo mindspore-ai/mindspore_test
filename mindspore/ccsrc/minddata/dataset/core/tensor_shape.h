@@ -141,6 +141,11 @@ class DATASET_API TensorShape {
   bool operator!=(const TensorShape &rhs) const { return !(rhs == *this); }
 
   dsize_t operator[](const dsize_t index) const {
+    // index range: [-raw_shape_.size(), raw_shape_.size())
+    if (index < (-1 * (dsize_t)raw_shape_.size()) || index >= (dsize_t)raw_shape_.size()) {
+      MS_LOG(EXCEPTION) << "Illegal index: " << index << ", valid range: [" << -1 * raw_shape_.size() << ", "
+                        << raw_shape_.size() << ").";
+    }
     if (index < 0) {
       return raw_shape_[raw_shape_.size() + index];
     }
