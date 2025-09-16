@@ -629,6 +629,11 @@ def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-G
     _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
 
+def _should_move_to_cpu(async_save, append_dict):
+    """Determine if parameter should be moved to CPU."""
+    return async_save is not False or (append_dict and "__exception_save__" in append_dict)
+
+
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     async_save=False, append_dict=None, enc_key=None, enc_mode="AES-GCM", choice_func=None,
                     crc_check=False, format="ckpt", **kwargs):
@@ -722,13 +727,14 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     remove_redundancy = Validator.check_isinstance("remove_redundancy", remove_redundancy, (type(None), bool))
     _check_save_checkpoint_unsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
-    if append_dict and "__exception_save__" in append_dict:
+    if _should_move_to_cpu(async_save, append_dict):
         s1 = mindspore.hal.Stream()
         with mindspore.hal.StreamCtx(s1):
-            save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
-            for k_name, value in append_dict.items():
-                if isinstance(value, (Tensor, Parameter)):
-                    append_dict[k_name] = Tensor(Tensor_.move_to(value, "CPU", False))
+            save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func, async_save)
+            if append_dict is not None:
+                for k_name, value in append_dict.items():
+                    if isinstance(value, (Tensor, Parameter)):
+                        append_dict[k_name] = Tensor(Tensor_.move_to(value, "CPU", False))
         s1.synchronize()
     else:
         save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
@@ -932,7 +938,7 @@ def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mod
     return param_dict
 
 
-def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func):
+def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func, async_save=False):
     """Convert nn.Cell to param_list."""
     sync_pipeline_shared_parameters(save_obj)
     param_list = []
@@ -964,7 +970,7 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_data.append(str(param_tensor.dtype))
             param_data.append(value.key)
         else:
-            if append_dict and "__exception_save__" in append_dict:
+            if _should_move_to_cpu(async_save, append_dict):
                 param_data = Tensor(Tensor_.move_to(value, "CPU", False))
             else:
                 # when enable MS_ENABLE_D2H_ASYNC=1, fetch param from sanpshot in priority
@@ -981,7 +987,7 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     return param_list
 
 
-def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func):
+def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func, async_save=False):
     """Convert a save_obj to param_list."""
     if isinstance(save_obj, (list, dict)):
         if isinstance(save_obj, list):
@@ -993,7 +999,7 @@ def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choi
         return _handle_shared_param_for_pipeline_parallel(save_obj)
 
     if isinstance(save_obj, nn.Cell):
-        return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+        return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func, async_save)
 
     raise TypeError("For 'save_checkpoint', the argument 'save_obj' must be list、dict or nn.cell, "
                     "but got {}.".format(type(save_obj)))
