@@ -509,7 +509,6 @@ bool HostCopy(const DeviceAddressPtr &dst_device_address, const DeviceAddressPtr
   }
   auto dst_type_id = dst_device_address->type_id();
   auto src_type_id = src_device_address->type_id();
-
   if (src_type_id == dst_type_id) {
     if (src_device_address->GetSize() > dst_device_address->GetSize()) {
       MS_LOG(WARNING) << "Please check whether need sync data, src size: " << src_device_address->GetSize()
