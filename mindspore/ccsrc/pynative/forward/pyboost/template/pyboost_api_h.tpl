@@ -15,7 +15,9 @@
  */
 
 #include "pynative/utils/pynative_utils.h"
+#include "pynative/forward/pyboost/converter.h"
 #include "pybind11/pybind11.h"
+#include "op_def/auto_generate/gen_ops_def.h"
 #include <Python.h>
 
 namespace py = pybind11;

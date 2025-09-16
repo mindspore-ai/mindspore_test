@@ -73,9 +73,6 @@ PyObject* WithLayoutInfer(const PrimitivePtr &prim, Func &&func, PyObject* py_ar
             MS_LOG(EXCEPTION) << "Input args is not a list.";
         }
         py::list py_args_list = py::cast<py::list>(py_args);
-        auto& cache_manager = LayoutCacheManager::GetInstance();
-        auto& layout_cache = cache_manager.GetLayoutCache()[prim->name()];
-        py::object distribute_op = cache_manager.GetDistributedOp(prim->name());
 
         LayoutCacheKey cache_key;
         py::list input_layouts;
@@ -120,6 +117,8 @@ PyObject* WithLayoutInfer(const PrimitivePtr &prim, Func &&func, PyObject* py_ar
         if (!contain_parallel_args) {
             return std::forward<Func>(func)(std::forward<Args>(args)...);
         }
+        auto& cache_manager = LayoutCacheManager::GetInstance();
+        auto& layout_cache = cache_manager.GetLayoutCache()[prim->name()];
 
         py::object output_layout;
         auto it = layout_cache.find(cache_key);
@@ -127,6 +126,7 @@ PyObject* WithLayoutInfer(const PrimitivePtr &prim, Func &&func, PyObject* py_ar
         if (it != layout_cache.end()) {
             output_layout = it->second;
         } else {
+            py::object distribute_op = cache_manager.GetDistributedOp(prim->name());
             py::tuple all_args = py::make_tuple(input_layouts, extra_args);
             output_layout = distribute_op.attr("infer_layout")(*all_args);
             layout_cache[cache_key] = output_layout;
@@ -155,6 +155,173 @@ PyObject* WithLayoutInfer(const PrimitivePtr &prim, Func &&func, PyObject* py_ar
             obj.attr("_layout") = output_layout;
         }
 
+        return py_output;
+    } catch (const py::error_already_set &e) {
+        MS_LOG(ERROR) << "Python exception in layout inference: " << e.what();
+        throw;
+    } catch (const std::exception &e) {
+        MS_LOG(ERROR) << "Exception in layout inference: " << e.what();
+        throw;
+    }
+}
+
+template <typename Func>
+PyObject* WithLayoutInferReshape(const PrimitivePtr &prim, Func &&func, PyObject* py_args) {
+    try {
+        if (!py::isinstance<py::list>(py_args)) {
+            MS_LOG(EXCEPTION) << "Input args is not a list.";
+        }
+        py::list py_args_list = py::cast<py::list>(py_args);
+
+        static Converter converter(&ops::gReshape);
+        converter.Parse(py_args);
+        auto source_type = converter.source_type();
+        auto input = converter.ToTensor(py_args, kIndex0);
+
+        const auto &input_py = py_args_list[kIndex0];
+        if (!py::hasattr(input_py, "_layout")) {
+            auto shape = converter.ToBasicIntVector(py_args, kIndex1);
+            return func(prim, source_type, input, shape);
+        }
+
+        // Input layouts.
+        LayoutCacheKey cache_key;
+        py::list input_layouts;
+        py::object layout = input_py.attr("_layout");
+        input_layouts.append(layout);
+        py::object layout_id = layout.attr("compact_str");
+        std::string id_str = py::cast<std::string>(py::str(layout_id));
+        cache_key.layout_ids.emplace_back(id_str);
+
+        // Extra args: shape, input shape.
+        py::list extra_args;
+        extra_args.append(py_args_list[kIndex1]);
+        cache_key.layout_ids.emplace_back(py::str(py_args_list[kIndex1]));
+        const auto &input_shape = input_py.attr("shape");
+        extra_args.append(input_shape);
+        cache_key.layout_ids.emplace_back(py::str(input_shape));
+
+        // Run Reshape infer layout or use cache.
+        auto& cache_manager = LayoutCacheManager::GetInstance();
+        auto& layout_cache = cache_manager.GetLayoutCache()[prim->name()];
+        py::object infer_output;
+        auto it = layout_cache.find(cache_key);
+        if (it != layout_cache.end()) {
+            infer_output = it->second;
+        } else {
+            py::object distribute_op = cache_manager.GetDistributedOp(prim->name());
+            py::tuple all_args = py::make_tuple(input_layouts, extra_args);
+            infer_output = distribute_op.attr("infer_layout")(*all_args);
+            layout_cache[cache_key] = infer_output;
+        }
+
+        // Run Reshape op with local destination shape.
+        py::tuple infer_output_tuple = py::cast<py::tuple>(infer_output);
+        auto local_shape = infer_output_tuple[kIndex1];
+        py::list converter_input;
+        converter_input.append(py::none());
+        converter_input.append(local_shape);
+        auto local_shape_vector = converter.ToBasicIntVector(converter_input.ptr(), kIndex1);
+        auto py_output = func(prim, source_type, input, local_shape_vector);
+
+        auto obj = py::reinterpret_borrow<py::object>(py_output);
+        obj.attr("_layout") = infer_output_tuple[kIndex0];
+        return py_output;
+    } catch (const py::error_already_set &e) {
+        MS_LOG(ERROR) << "Python exception in layout inference: " << e.what();
+        throw;
+    } catch (const std::exception &e) {
+        MS_LOG(ERROR) << "Exception in layout inference: " << e.what();
+        throw;
+    }
+}
+
+template <typename Func, typename... Args>
+PyObject* WithLayoutInferWithShape(const PrimitivePtr &prim, Func &&func, PyObject* py_args, Args &&... args) {
+    try {
+        if (!py::isinstance<py::list>(py_args)) {
+            MS_LOG(EXCEPTION) << "Input args is not a list.";
+        }
+        py::list py_args_list = py::cast<py::list>(py_args);
+
+        LayoutCacheKey cache_key;
+        py::list input_layouts;
+        py::list extra_args;
+        py::list input_shapes;
+        bool contain_parallel_args = false;
+
+        // Collect layout and no layout args
+        for (auto arg : py_args_list) {
+            if (arg.is_none()) {
+                input_layouts.append(py::none());
+                input_shapes.append(py::none());
+                continue;
+            }
+            if (!py::hasattr(arg, "_layout")) {
+                py::object arg_str = py::str(arg);
+                std::string id_str = py::cast<std::string>(arg_str);
+                cache_key.layout_ids.emplace_back(id_str);
+                extra_args.append(arg);
+                input_layouts.append(py::none());
+            } else {
+                contain_parallel_args = true;
+                py::object layout = arg.attr("_layout");
+                py::object layout_id = layout.attr("compact_str");
+                std::string id_str = py::cast<std::string>(py::str(layout_id));
+                cache_key.layout_ids.push_back(id_str);
+                input_layouts.append(layout);
+            }
+
+             if (!py::hasattr(arg, "shape")) {
+                 input_shapes.append(py::none());
+             } else {
+                 const auto &input_shape = arg.attr("shape");
+                 input_shapes.append(input_shape);
+                 cache_key.layout_ids.emplace_back(py::str(input_shape));
+             }
+        }
+
+        if (!contain_parallel_args) {
+            return std::forward<Func>(func)(std::forward<Args>(args)...);
+        }
+        auto& cache_manager = LayoutCacheManager::GetInstance();
+        auto& layout_cache = cache_manager.GetLayoutCache()[prim->name()];
+
+        py::object output_layout;
+        auto it = layout_cache.find(cache_key);
+
+        if (it != layout_cache.end()) {
+            output_layout = it->second;
+        } else {
+            extra_args.append(input_shapes);
+            py::object distribute_op = cache_manager.GetDistributedOp(prim->name());
+            py::tuple all_args = py::make_tuple(input_layouts, extra_args);
+            output_layout = distribute_op.attr("infer_layout")(*all_args);
+            layout_cache[cache_key] = output_layout;
+        }
+
+        auto py_output = std::forward<Func>(func)(std::forward<Args>(args)...);
+        if (py::isinstance<py::tuple>(py_output)) {
+            py::tuple output_tuple = py::cast<py::tuple>(py_output);
+            if (py::isinstance<py::tuple>(output_layout)) {
+                py::tuple layout_tuple = py::cast<py::tuple>(output_layout);
+                if (output_tuple.size() == layout_tuple.size()) {
+                    for (size_t i = 0; i < output_tuple.size(); ++i) {
+                        output_tuple[i].attr("_layout") = layout_tuple[i];
+                    }
+                } else {
+                    MS_LOG(ERROR) << "Output tuple size (" << output_tuple.size()
+                                  << ") does not match layout tuple size (" << layout_tuple.size() << ")";
+                    throw std::runtime_error("Output and layout tuple size mismatch");
+                }
+            } else {
+                MS_LOG(ERROR) << "Output is a tuple but layout is not";
+                throw std::runtime_error("Output is tuple but layout is not");
+            }
+        } else {
+            auto obj = py::reinterpret_borrow<py::object>(py_output);
+            obj.attr("_layout") = output_layout;
+        }
         return py_output;
     } catch (const py::error_already_set &e) {
         MS_LOG(ERROR) << "Python exception in layout inference: " << e.what();

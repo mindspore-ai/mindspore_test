@@ -62,3 +62,38 @@ Silu:
   dist_op_name: _silu_dist_op
   distributed_op_class: ElementWiseDistributedOp
   distributed_op_file: parallel_elementwise
+
+Cos:
+  dist_op_name: _cos_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Sin:
+  dist_op_name: _sin_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Log:
+  dist_op_name: _log_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Neg:
+  dist_op_name: _neg_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Exp:
+  dist_op_name: _exp_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+NotEqual:
+  dist_op_name: _not_equal_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise
+
+Cast:
+  dist_op_name: _cast_dist_op
+  distributed_op_class: ElementWiseDistributedOp
+  distributed_op_file: parallel_elementwise

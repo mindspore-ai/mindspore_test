@@ -84,27 +84,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
-        ops_data = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
-        self.layout_infer_ops = list(ops_data.keys())
-        self.pyboost_with_layout_infer_template = Template(
-            '${arg_handler_processor}\n'
-            'MS_LOG(INFO) << "Call Tensor${class_name} with LayoutInfer";\n'
-            '// Construct py_args including self at the correct position\n'
-            'py::list py_args;\n'
-            'for (size_t i = 0; i < parse_args.arg_list_.size(); ++i) {\n'
-            '  py_args.append(parse_args.arg_list_[i]);\n'
-            '}\n'
-            'auto res = mindspore::pynative::WithLayoutInfer(\n'
-            '    mindspore::prim::kPrim${class_name},\n'
-            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
-            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
-            '    },\n'
-            '    py_args.ptr(),\n'
-            '    mindspore::prim::kPrim${class_name}, parse_args.src_types_${convert_args_comma}\n'
-            ');\n'
-            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
-            'return res;\n'
-        )
+        self._init_with_layout_infer()
 
         self.callback_python_template = Template(
             'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
@@ -129,6 +109,45 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.header_func_header_template = Template(
             "PyObject* TensorMethod${cpp_func_name}"
             "(PyObject* self, PyObject* py_args, PyObject* py_kwargs);\n"
+        )
+
+    def _init_with_layout_infer(self):
+        """
+        Generates C++ tensor function WithLayoutInfer code for distributed ops.
+        """
+
+        self.layout_infer_ops = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.PARALLEL_OP_YAML_PATH))
+        self.pyboost_with_layout_infer_template = dict()
+        prepare_pyargs_code = ('MS_LOG(INFO) << "Call Tensor${class_name} with LayoutInfer";\n'
+                               '// Construct py_args including self at the correct position\n'
+                               'py::list py_args;\n'
+                               'for (size_t i = 0; i < parse_args.arg_list_.size(); ++i) {\n'
+                               '  py_args.append(parse_args.arg_list_[i]);\n'
+                               '}\n')
+        self.pyboost_with_layout_infer_template['default'] = Template(
+            '${arg_handler_processor}\n' +
+            prepare_pyargs_code +
+            'auto res = mindspore::pynative::WithLayoutInfer${suffix}(\n'
+            '    mindspore::prim::kPrim${class_name},\n'
+            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
+            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
+            '    },\n'
+            '    py_args.ptr(),\n'
+            '    mindspore::prim::kPrim${class_name}, parse_args.src_types_${convert_args_comma}\n'
+            ');\n'
+            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            'return res;\n'
+        )
+        self.pyboost_with_layout_infer_template['without_parse'] = Template(
+            prepare_pyargs_code +
+            'auto res = mindspore::pynative::WithLayoutInfer${suffix}(\n'
+            '    mindspore::prim::kPrim${class_name},\n'
+            '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
+            '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
+            '    },\n'
+            '   py_args.ptr());\n'
+            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrimReshape, &res);\n'
+            'return res;\n'
         )
 
     def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
@@ -481,7 +500,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
             convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
             self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
-            if func_proto.op_proto.op_class.name in self.layout_infer_ops:
+            if func_proto.op_proto.op_class.name in self.layout_infer_ops.keys():
                 num_args = len(func_proto.op_proto.op_args)
                 lambda_params = ""
                 lambda_args = ""
@@ -493,13 +512,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
                 convert_args_comma = ", " + convert_args_str if convert_args_str else ""
 
-                return self.pyboost_with_layout_infer_template.replace(
+                layout_infer_info = self.layout_infer_ops[func_proto.op_proto.op_class.name]
+                template_name = layout_infer_info.get('template_name', 'default')
+                return self.pyboost_with_layout_infer_template[template_name].replace(
                     arg_handler_processor=arg_handler_processor_str,
                     class_name=func_proto.op_proto.op_class.name,
                     pyboost_function=op_pyboost_func_name,
                     lambda_params=lambda_params,
                     lambda_args=lambda_args,
-                    convert_args_comma=convert_args_comma
+                    convert_args_comma=convert_args_comma,
+                    suffix=layout_infer_info.get('infer_layout_suffix', '')
                 )
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,

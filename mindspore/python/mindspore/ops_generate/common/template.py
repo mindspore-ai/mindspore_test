@@ -446,5 +446,11 @@ OP_DEF_INC_HEAD_TEMPLATE = Template(
 LAYOUT_INFER_DEF_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR, './mindspore/python/mindspore/parallel/spmd/layout_infer_def.tpl'))
 
-PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR, './mindspore/python/mindspore/parallel/spmd/pyboost_api_body_with_layout_cc.tpl'))
+PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE = dict()
+PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE['default'] = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/python/mindspore/parallel/spmd/pyboost_api_body'
+                             '/pyboost_api_body_with_layout_cc.tpl'))
+
+PYBOOST_API_BODY_WITH_LAYOUT_CC_TEMPLATE['without_parse'] = Template.load_from_file(
+    os.path.join(K.WORK_DIR, './mindspore/python/mindspore/parallel/spmd/pyboost_api_body'
+                             '/pyboost_api_body_with_layout_without_parse_cc.tpl'))
