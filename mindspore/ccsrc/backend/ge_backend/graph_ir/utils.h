@@ -24,7 +24,6 @@
 #include "backend/ge_backend/graph_ir/graph_runner.h"
 #include "backend/ge_backend/graph_ir/types.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
-#include "include/common/utils/config_manager.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -105,7 +104,6 @@ BACKEND_EXPORT Status RegisterExternalAllocator(const std::shared_ptr<GraphRunne
 
 BACKEND_EXPORT Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream);
 
-backend::ge_backend::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase = "dataset");
 BACKEND_EXPORT string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
 }  // namespace backend::ge_backend
 }  // namespace mindspore

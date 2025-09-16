@@ -228,10 +228,6 @@ Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, c
   return runner->UnregisterExternalAllocator(stream);
 }
 
-backend::ge_backend::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase) {
-  return BuildDatasetGraph(param, phase);
-}
-
 string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file) {
   auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
