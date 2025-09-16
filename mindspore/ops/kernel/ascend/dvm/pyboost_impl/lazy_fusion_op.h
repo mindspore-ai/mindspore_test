@@ -19,7 +19,7 @@
 
 #include <utility>
 #include <tuple>
-#include "kernel/ascend/dvm/lazy_fusion_kernel.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_kernel.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/concat.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/abs.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/add.h"

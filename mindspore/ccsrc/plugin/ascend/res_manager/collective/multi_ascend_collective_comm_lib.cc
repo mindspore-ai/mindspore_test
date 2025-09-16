@@ -17,7 +17,7 @@
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/ascend/res_manager/hal_manager/ascend_hal_manager.h"
-#include "kernel/ascend/dvm/dvm_comm_info.h"
+#include "kernel/ascend/dvm/kernel_mod_impl/dvm_comm_info.h"
 
 namespace mindspore {
 namespace device {

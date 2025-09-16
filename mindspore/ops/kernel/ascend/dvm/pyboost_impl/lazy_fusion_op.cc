@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/dvm/lazy_fusion_op.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_op.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -22,8 +22,8 @@
 #include <algorithm>
 #include "ir/tensor_new.h"
 #include "infer/ops_func_impl/tile.h"
-#include "kernel/ascend/dvm/lazy_fusion_kernel.h"
-#include "kernel/ascend/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_kernel.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_flags.h"
 #include "runtime/pipeline/pipeline.h"
 #include "view/view_strides_calculator.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"

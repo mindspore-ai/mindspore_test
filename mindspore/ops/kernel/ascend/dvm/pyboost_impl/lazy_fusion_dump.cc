@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/dvm/lazy_fusion_dump.h"
-#include "kernel/ascend/dvm/lazy_fusion_flags.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_dump.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_flags.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

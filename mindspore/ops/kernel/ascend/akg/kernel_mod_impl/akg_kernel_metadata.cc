@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <string>
-#include "kernel/ascend/akg/akg_kernel_metadata.h"
+#include "kernel/ascend/akg/kernel_mod_impl/akg_kernel_metadata.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"

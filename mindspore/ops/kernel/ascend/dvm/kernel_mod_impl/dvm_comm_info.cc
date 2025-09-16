@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/dvm/dvm_comm_info.h"
+#include "kernel/ascend/dvm/kernel_mod_impl/dvm_comm_info.h"
 
 #include <string>
 #include <unordered_set>

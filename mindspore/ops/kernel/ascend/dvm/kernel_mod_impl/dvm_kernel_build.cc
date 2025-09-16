@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/dvm/dvm_kernel_build.h"
+#include "kernel/ascend/dvm/kernel_mod_impl/dvm_kernel_build.h"
 #include <memory>
 #include <vector>
 #include <string>
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
-#include "kernel/ascend/dvm/dvm_kernel_mod.h"
+#include "kernel/ascend/dvm/kernel_mod_impl/dvm_kernel_mod.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/graph_utils.h"

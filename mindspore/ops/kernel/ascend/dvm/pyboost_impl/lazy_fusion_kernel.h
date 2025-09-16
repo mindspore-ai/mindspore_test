@@ -29,7 +29,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pynative/lazy_fusion.h"
-#include "kernel/ascend/dvm/lazy_fusion_dump.h"
+#include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_dump.h"
 
 namespace mindspore {
 namespace kernel {

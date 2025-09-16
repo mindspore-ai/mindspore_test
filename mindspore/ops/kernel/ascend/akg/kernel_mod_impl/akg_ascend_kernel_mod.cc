@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/akg/akg_ascend_kernel_mod.h"
+#include "kernel/ascend/akg/kernel_mod_impl/akg_ascend_kernel_mod.h"
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
