@@ -67,8 +67,12 @@ private:
 };
 
 template <typename Func, typename... Args>
-py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list &py_args, Args &&... args) {
+PyObject* WithLayoutInfer(const PrimitivePtr &prim, Func &&func, PyObject* py_args, Args &&... args) {
     try {
+        if (!py::isinstance<py::list>(py_args)) {
+            MS_LOG(EXCEPTION) << "Input args is not a list.";
+        }
+        py::list py_args_list = py::cast<py::list>(py_args);
         auto& cache_manager = LayoutCacheManager::GetInstance();
         auto& layout_cache = cache_manager.GetLayoutCache()[prim->name()];
         py::object distribute_op = cache_manager.GetDistributedOp(prim->name());
@@ -80,7 +84,7 @@ py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list
 
         // Parse tuple tensor args
         py::list expanded_args;
-        for (auto arg : py_args) {
+        for (auto arg : py_args_list) {
             if (py::isinstance<py::tuple>(arg)) {
                 py::tuple tuple_arg = py::cast<py::tuple>(arg);
                 for (size_t j = 0; j < tuple_arg.size(); ++j) {
@@ -147,7 +151,8 @@ py::object WithLayoutInfer(const PrimitivePtr &prim, Func &&func, const py::list
                 throw std::runtime_error("Output is tuple but layout is not");
             }
         } else {
-            py_output.attr("_layout") = output_layout;
+            auto obj = py::reinterpret_borrow<py::object>(py_output);
+            obj.attr("_layout") = output_layout;
         }
 
         return py_output;

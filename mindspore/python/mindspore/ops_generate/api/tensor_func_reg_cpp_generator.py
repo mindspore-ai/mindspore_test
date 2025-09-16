@@ -99,10 +99,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '    [](const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE> &source_types${lambda_params}) {\n'
             '        return mindspore::pynative::${pyboost_function}(prim, source_types${lambda_args});\n'
             '    },\n'
-            '    py_args,\n'
+            '    py_args.ptr(),\n'
             '    mindspore::prim::kPrim${class_name}, parse_args.src_types_${convert_args_comma}\n'
             ');\n'
-            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
 

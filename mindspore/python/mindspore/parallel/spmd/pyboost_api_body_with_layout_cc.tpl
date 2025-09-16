@@ -1,4 +1,4 @@
-py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
+PYNATIVE_EXPORT PyObject* ${func_name}_Base(const PrimitivePtr &prim, PyObject* &args) {
 #ifndef ENABLE_TEST
   ${mark_side_effect}
   static Converter converter(&ops::g${class_name});
@@ -15,7 +15,9 @@ py::object PYNATIVE_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py:
     prim, source_type${forward_args}
   );
 #else
-  return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);
+  py::object py_args = py::reinterpret_borrow<py::object>(args);
+  py::object res = PyNativeAlgo::PyBoost::RunPyFunction(prim, py_args);
+  return res.release().ptr();
 #endif
 }
 
