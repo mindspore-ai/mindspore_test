@@ -94,6 +94,11 @@ class FastSortGpuKernelMod : public NativeGpuKernelMod {
     delete output_index_info_;
     delete output_value_info_;
 
+    if (input_rank_ > MAX_TENSORINFO_DIMS) {
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "', only support sort dim less or equal to " << MAX_TENSORINFO_DIMS
+                    << ", but got: " << input_rank_;
+      return KRET_RESIZE_FAILED;
+    }
     int shape[MAX_TENSORINFO_DIMS];
     for (int i = 0; i < input_rank_; i++) {
       shape[i] = input_shape_[i];
