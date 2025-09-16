@@ -964,7 +964,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
 
   SetGlobalCommInfo(group, group_name);
 
-  // Step 1: Generate device information of the root node (required for NPU backend without rank table).
+  // Step 1: Generate and broadcast device information of the root node (required for NPU backend without rank table).
   static bool use_ranktable = !common::GetEnv("RANK_TABLE_FILE").empty();
   bool use_cross_cluster = DistributedMeta::GetInstance()->enable_cross_cluster();
   bool ret = false;
@@ -976,18 +976,21 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     PROF_END(GenerateRootInfo);
     MS_EXCEPTION_IF_NULL(root_info);
 
-    // Step 2: Broadcast the device root information to all nodes on host side.
-    PROF_START(BroadcastUniqueID);
-    while (!ret) {
-      RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
-                               "Broadcast for device root info failed on the host side.");
-      ret = true;
-      MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
+    // Broadcast the device root information to all nodes on host side. CCOOL broadcasts inner comm
+    // group's rootinfo within func 'GenerateRootInfo', do not need to broadcast outer comm group's rootinfo.
+    if (!use_cross_cluster) {
+      PROF_START(BroadcastUniqueID);
+      while (!ret) {
+        RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
+                                 "Broadcast for device root info failed on the host side.");
+        ret = true;
+        MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
+      }
+      PROF_END(BroadcastUniqueID);
     }
-    PROF_END(BroadcastUniqueID);
   }
 
-  // Step 3: Initialize communication group on the device side.
+  // Step 2: Initialize communication group on the device side.
   std::function<bool()> init_device_comm_group_func = [&, this]() {
     MS_EXCEPTION_IF_NULL(device_ctx_);
     device_ctx_->Initialize();
