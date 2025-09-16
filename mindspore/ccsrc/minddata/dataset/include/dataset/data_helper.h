@@ -336,6 +336,10 @@ class DATASET_API DataHelper {
       ofs.close();
       return Status(kMDUnexpectedError, "Input data is empty.");
     }
+    if (SIZE_MAX / sizeof(T) < length) {
+      ofs.close();
+      return Status(kMDUnexpectedError, "Input data is too long to write bin file.");
+    }
     (void)ofs.write(reinterpret_cast<const char *>(&data[0]), static_cast<std::streamsize>(length * sizeof(T)));
     if (!ofs.good()) {
       ofs.close();
@@ -372,6 +376,10 @@ class DATASET_API DataHelper {
     std::ofstream ofs(in_file, std::ios::binary | std::ios::out);
     if (!ofs.is_open()) {
       return Status(kMDUnexpectedError, "Failed to open file: " + in_file);
+    }
+    if (SIZE_MAX / sizeof(T) < length) {
+      ofs.close();
+      return Status(kMDUnexpectedError, "Input data is too long to write bin file.");
     }
     (void)ofs.write(reinterpret_cast<const char *>(data), static_cast<std::streamsize>(length * sizeof(T)));
     if (!ofs.good()) {
