@@ -84,6 +84,8 @@ class TrackerGraph {
   std::vector<uintptr_t> GetAllAddresses();
   int32_t GetStreamSize();
 };
+
+bool NeedSkipRaceCheck(const TaskInfoPtr &task_info);
 }  // namespace graph
 }  // namespace tracker
 }  // namespace device

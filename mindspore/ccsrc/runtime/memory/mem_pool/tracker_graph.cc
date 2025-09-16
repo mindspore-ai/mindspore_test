@@ -16,11 +16,13 @@
 
 #include "include/runtime/memory/mem_pool/tracker_graph.h"
 
+#include <cctype>
 #include <fstream>
 #include <memory>
 #include <mutex>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include "include/runtime/memory/mem_pool/race_checker.h"
@@ -154,7 +156,7 @@ void TrackerGraph::RaceCheck() {
       race_checker.WaitEvent(stream_id, iter->second);
     } else {
       // check read and write
-      if (op->task_info->node_name == "Reshape") {
+      if (NeedSkipRaceCheck(op->task_info)) {
         continue;
       }
       // not need to check side effect, because assign output and input are the same address.
@@ -310,6 +312,49 @@ int32_t TrackerGraph::GetStreamSize() {
     stream_num = std::max(stream_num, stream_id);
   }
   return stream_num + 1;
+}
+
+namespace {
+bool MatchOp(const std::string_view &src, const std::string_view &opname) {
+  // Find the starting position of the operator name
+  size_t op_start = src.rfind(opname);
+  if (op_start == std::string_view::npos) {
+    return false;
+  }
+
+  // Check if there is a delimiter before the operator name.
+  if (op_start > 0 && src[op_start - 1] != '/') {
+    return false;
+  }
+
+  // Check if there is a valid suffix after the operator name.
+  size_t op_end = op_start + opname.length() - 1;
+  if (op_end < src.length() - 1) {
+    // Check if the suffix is "-op" followed by digits
+    const size_t kSuffixLength = 4;
+    if (op_end + kSuffixLength > src.length() - 1) {
+      return false;
+    }
+
+    const std::string_view kExpectedSuffix = std::string_view{"-op"};
+    if (src.substr(op_end + 1, kExpectedSuffix.length()).compare(0, kExpectedSuffix.length(), kExpectedSuffix) != 0) {
+      return false;
+    }
+
+    // Check whether the remaining characters are digits.
+    for (size_t i = op_end + kSuffixLength; i < src.length(); ++i) {
+      if (!std::isdigit(src[i])) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+}  // namespace
+
+bool NeedSkipRaceCheck(const TaskInfoPtr &task_info) {
+  return task_info == nullptr || MatchOp(task_info->node_name, "Reshape");
 }
 }  // namespace graph
 }  // namespace tracker
