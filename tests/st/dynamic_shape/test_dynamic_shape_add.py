@@ -14,10 +14,11 @@
 # ============================================================================
 import pytest
 import numpy as np
+
+import mindspore as ms
 from mindspore import context
 from mindspore import ops
 from mindspore import Tensor
-import mindspore as ms
 
 from tests.st.utils.test_utils import get_inputs_np, get_inputs_tensor, compare, to_cell_obj, run_with_cell
 from tests.mark_utils import arg_mark

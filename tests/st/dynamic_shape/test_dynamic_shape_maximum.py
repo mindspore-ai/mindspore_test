@@ -15,10 +15,12 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
+
 import mindspore as ms
 from mindspore import ops
+
+from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell

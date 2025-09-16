@@ -15,10 +15,11 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 
-from mindspore import ops
 import mindspore as ms
+from mindspore import ops
+
+from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 

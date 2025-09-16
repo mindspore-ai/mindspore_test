@@ -13,10 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.mark_utils import arg_mark
+
 import mindspore as ms
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
+
+from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):

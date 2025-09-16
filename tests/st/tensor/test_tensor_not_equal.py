@@ -15,11 +15,12 @@
 
 import numpy as np
 import pytest
-from tests.mark_utils import arg_mark
 
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
+
+from tests.mark_utils import arg_mark
 
 
 class NotEqualNet(nn.Cell):
