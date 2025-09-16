@@ -167,10 +167,10 @@ def _tft_clean_callback(is_uce_error, args, ctx):
 def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.warning(f"Enter _tft_stop_callback device_id: {cb_ctx.device_id}")
-    _stop_device(cb_ctx.device_id)
     if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):  # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
     cb_ctx.is_uce_rank = False
+    _stop_device(cb_ctx.device_id)
     if cb_ctx.tft.tft_get_repair_type() == "recover":
         logger.warning(f"Reset limit step")
         cb_ctx.tft.tft_reset_limit_step()
