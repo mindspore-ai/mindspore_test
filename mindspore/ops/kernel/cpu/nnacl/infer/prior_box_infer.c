@@ -69,7 +69,10 @@ int PriorBoxInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC
 
   int32_t min_sizes_size = param->min_sizes_size;
   int32_t max_sizes_size = param->max_sizes_size;
-  int32_t num_priors_box = min_sizes_size * different_aspect_ratios_size + max_sizes_size;
+  NNACL_CHECK_INT_MUL_NOT_OVERFLOW(min_sizes_size, different_aspect_ratios_size, NNACL_ERRCODE_MUL_OVERFLOW);
+  int32_t num_priors_box = min_sizes_size * different_aspect_ratios_size;
+  NNACL_CHECK_INT_ADD_NOT_OVERFLOW(num_priors_box, max_sizes_size, NNACL_ERRCODE_ADD_OVERFLOW);
+  num_priors_box += max_sizes_size;
   const int kPriorBoxPoints = 4;
   const int kPriorBoxN = 1;
   const int kPriorBoxW = 1;
