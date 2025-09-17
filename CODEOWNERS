@@ -85,6 +85,8 @@
 /mindspore/ops/api_def/method_doc/ @gemini524
 /mindspore/ops/api_def/function_doc/ @gemini524
 /mindspore/ops/op_def/yaml/doc/ @gemini524
+/mindspore/ops/op_def/yaml/communication/ @zhangyinxia
+/mindspore/ops/infer/ops_func_impl/communication/  @zhangyinxia
 
 # The maintainers of mindspore/python.
 /mindspore/python/ @zwiori

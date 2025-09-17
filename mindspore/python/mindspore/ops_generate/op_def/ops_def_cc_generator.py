@@ -71,8 +71,12 @@ class OpsDefCcGenerator(BaseGenerator):
             operator_name = op_proto.op_name
             class_name = op_proto.op_class.name
             if not op_proto.func_op:
-                gen_include_list.append(self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH,
-                                                                      operator_name=operator_name))
+                if op_proto.op_dispatch and op_proto.op_dispatch.is_comm_op:
+                    gen_include_list.append(self.include_template.replace(path=K.MS_OPS_COMM_FUNC_IMPL_PATH,
+                                                                          operator_name=operator_name))
+                else:
+                    gen_include_list.append(self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH,
+                                                                          operator_name=operator_name))
                 func_impl_declaration_str = self.func_impl_declaration_template.replace(class_name=class_name)
             else:
                 func_impl_declaration_str = self.empty_func_impl_declaration_template.replace(class_name=class_name)
