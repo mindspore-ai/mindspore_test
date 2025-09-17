@@ -58,7 +58,6 @@ foreach(_comp ${SUB_COMP})
     endif()
 endforeach()
 
-add_subdirectory(cluster)
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
@@ -69,6 +68,7 @@ if(NOT WIN32)
     target_link_libraries(mindspore_frontend PRIVATE dl)
 endif()
 
+add_subdirectory(cluster)
 
 set(PROFILER_SUB_COMP
     tools/profiler
@@ -147,7 +147,7 @@ set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIO
 add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
         proto_input mindspore_memory_pool mindspore_hardware_abstract mindspore_profiler
-        mindspore_runtime_pipeline mindspore_dump mindspore_runtime_utils mindspore_cluster)
+        mindspore_runtime_pipeline mindspore_dump mindspore_runtime_utils)
 
 
 set(MS_BACKEND_SUB_COMP
@@ -194,15 +194,6 @@ endif()
 
 if(NOT WIN32)
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
-endif()
-
-if(ENABLE_DEBUGGER)
-    # debugger: link grpc
-    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        target_link_libraries(mindspore_backend_common PRIVATE mindspore::grpc++)
-    else()
-        target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::grpc++)
-    endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")

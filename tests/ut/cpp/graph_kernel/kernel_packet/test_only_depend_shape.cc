@@ -15,7 +15,7 @@
  */
 
 #include "graph_kernel/kernel_packet/kernel_packet_common_test_suite.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_cluster_cloud.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_cluster_cloud.h"
 #include "common/mockcpp.h"
 
 namespace mindspore::graphkernel::packet {

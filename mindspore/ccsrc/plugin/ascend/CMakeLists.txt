@@ -37,11 +37,6 @@ set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
 
 include(${CMAKE_SOURCE_DIR}/cmake/dependency_metadef.cmake)
 
-if(ENABLE_DEBUGGER)
-    # debugger: link grpc
-    target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore::grpc++)
-endif()
-
 find_library(GE_RUNNER ge_runner ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 target_link_libraries(mindspore_ascend PRIVATE ${GE_RUNNER} ${GRAPH})

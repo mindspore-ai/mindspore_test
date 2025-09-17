@@ -18,8 +18,8 @@
 #include "utils/ms_context.h"
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "backend/common/graph_kernel/model/graph_builder.h"
-#include "backend/common/graph_kernel/adapter/split_model_ascend.h"
+#include "backend/ms_backend/graph_fusion/model/graph_builder.h"
+#include "backend/ms_backend/graph_fusion/adapter/split_model_ascend.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore::graphkernel::test {

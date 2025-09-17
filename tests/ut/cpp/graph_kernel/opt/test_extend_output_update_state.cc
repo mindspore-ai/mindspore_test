@@ -21,7 +21,7 @@
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "backend/common/graph_kernel/core/update_state_formatter.h"
+#include "backend/ms_backend/graph_fusion/core/update_state_formatter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel::test {

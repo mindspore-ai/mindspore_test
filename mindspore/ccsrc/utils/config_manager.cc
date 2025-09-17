@@ -39,7 +39,6 @@ void ConfigManager::SetDatasetModeConfig(const std::string &mode) {
 void ConfigManager::ResetConfig() noexcept {
   parallel_strategy_ = ONE_DEVICE;
   dataset_mode_ = DS_NORMAL_MODE;
-  dataset_param_ = DatasetGraphParam("", 0, 0, {}, {}, {});
   iter_num_ = 1;
 }
 

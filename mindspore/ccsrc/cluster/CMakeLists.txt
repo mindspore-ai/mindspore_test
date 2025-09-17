@@ -30,7 +30,7 @@ add_library(mindspore_cluster SHARED ${_CLUSTER_SRC_FILES})
 
 target_link_libraries(mindspore_cluster PRIVATE proto_input mindspore_core
                       mindspore_hardware_abstract mindspore_runtime_pipeline
-                      mindspore_common)
+                      mindspore_common mindspore::securec)
 
 if(ENABLE_CPU AND NOT WIN32)
     target_link_libraries(mindspore_cluster PRIVATE mindspore::ssl mindspore::crypto

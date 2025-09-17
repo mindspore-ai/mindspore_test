@@ -51,7 +51,7 @@
 #include "backend/common/pass/add_training_attr.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
-#include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
+#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_optimization.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"

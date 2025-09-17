@@ -35,41 +35,6 @@ enum ParallelStrategy {
 
 enum DatasetMode { DS_NORMAL_MODE = 0, DS_SINK_MODE };
 
-class DatasetGraphParam {
- public:
-  DatasetGraphParam(const std::string &name, int64_t size, int64_t batch_size, const std::vector<int64_t> &ge_types,
-                    const std::vector<std::vector<int64_t>> &shapes, const std::vector<int64_t> &input_indexes)
-      : queue_name_(name),
-        loop_size_(size),
-        batch_size_(batch_size),
-        ge_types_(ge_types),
-        shapes_(shapes),
-        input_indexes_(input_indexes) {}
-
-  ~DatasetGraphParam() = default;
-
-  std::string ToString() const {
-    std::ostringstream buffer;
-    buffer << "DatasetGraphParam: queue_name=" << queue_name_ << " size=" << loop_size_ << " batch_size=" << batch_size_
-           << " ge_types=" << ge_types_ << " shapes=" << shapes_ << " input_indexes=" << input_indexes_;
-    return buffer.str();
-  }
-  std::string queue_name() const { return queue_name_; }
-  int64_t loop_size() const { return loop_size_; }
-  int64_t batch_size() const { return batch_size_; }
-  std::vector<int64_t> ge_types() const { return ge_types_; }
-  std::vector<std::vector<int64_t>> shapes() const { return shapes_; }
-  std::vector<int64_t> input_indexes() const { return input_indexes_; }
-
- private:
-  std::string queue_name_;
-  int64_t loop_size_;
-  int64_t batch_size_;
-  std::vector<int64_t> ge_types_;
-  std::vector<std::vector<int64_t>> shapes_;
-  std::vector<int64_t> input_indexes_;
-};
-
 class COMMON_EXPORT ConfigManager {
  public:
   ConfigManager(const ConfigManager &) = delete;
@@ -102,9 +67,6 @@ class COMMON_EXPORT ConfigManager {
   std::string dataset_phase() const { return dataset_phase_; }
   void set_dataset_phase(const std::string &phase) { dataset_phase_ = phase; }
 
-  DatasetGraphParam dataset_param() const { return dataset_param_; }
-  void set_dataset_param(const DatasetGraphParam &param) { dataset_param_ = param; }
-
   static void SetDatasetModeConfig(const std::string &mode);
 
   void ResetConfig() noexcept;
@@ -125,7 +87,6 @@ class COMMON_EXPORT ConfigManager {
 
   ParallelStrategy parallel_strategy_{ONE_DEVICE};
   DatasetMode dataset_mode_{DS_NORMAL_MODE};
-  DatasetGraphParam dataset_param_{"", 0, 0, {}, {}, {}};
   int64_t iter_num_{1};
   std::string queue_name_{""};
   // now only save iter_num_ in the map
