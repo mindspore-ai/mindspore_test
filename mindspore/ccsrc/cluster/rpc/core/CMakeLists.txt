@@ -42,4 +42,3 @@ endif()
 
 set_property(SOURCE ${_PS_SRC_FILES} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PS)
 add_library(_mindspore_ps_obj OBJECT ${_PS_SRC_FILES})
-target_link_libraries(_mindspore_ps_obj mindspore::flatbuffers)

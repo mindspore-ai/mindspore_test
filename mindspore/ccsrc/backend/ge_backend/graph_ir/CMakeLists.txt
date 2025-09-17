@@ -40,7 +40,7 @@ if(ENABLE_D OR ENABLE_ACL)
             $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>)
     endif()
 
-    target_link_libraries(mindspore_graph_ir PRIVATE mindspore_core mindspore_ops mindspore::protobuf)
+    target_link_libraries(mindspore_graph_ir PRIVATE mindspore_core mindspore_ops)
     find_library(ACL ascendcl ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
     find_library(GE_RUNNER ge_runner ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
     find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
