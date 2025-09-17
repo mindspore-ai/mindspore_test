@@ -207,11 +207,11 @@ class LazyFusionKernelAscend : public dvm::Kernel {
     outputs_.clear();
     reloc_entry_.clear();
     workspace_.clear();
-    cached_shape_.clear();
     dump_ops_.clear();
   }
 
   void ClearKernel() {
+    cached_shape_.clear();
     cross_stream_addrs_.clear();
     EagerClear();
     g_lazy_fusion_manager.FreeKernel(this);
