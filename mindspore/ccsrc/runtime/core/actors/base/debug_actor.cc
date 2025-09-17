@@ -30,6 +30,7 @@
 #include "tools/data_dump/debugger/debugger_utils.h"
 #include "tools/data_dump/device_statistic/mem_manager.h"
 #endif
+#include "tools/silent_detect/silent_detector.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "tools/silent_detect/checksum/checksum.h"
@@ -302,6 +303,7 @@ void DebugActor::Finalize() {
   DumpJsonParser::GetInstance().PrintUnusedKernel();
 #ifdef ENABLE_DEBUGGER
   datadump::DumpMemManager::GetInstance().ClearCache();
+  silentdetect::SilentDetector::Stop();
 #endif
 }
 }  // namespace runtime
