@@ -30,7 +30,7 @@ Fixes #
 * Need to describe clearly
 
 
-**Self-checklist**:（**请认真自检，在[]内打上x，我们将检视你的完成情况**）
+**Self-checklist**:（**Please check carefully,and mark an x in the [] brackets. We will review your completion status.**）
 
 + - [ ] **Design**: Has the solution corresponding to the PR been reviewed by the Maintainer, and have all review comments been replied to and revised
 + - [ ] **Test**: Has the code in the PR been fully covered by UT/ST test cases, and have the newly added test cases been uploaded to the repository along with this PR or already uploaded.
