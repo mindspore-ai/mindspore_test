@@ -1317,6 +1317,15 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+  if (host_tensor_address == nullptr) {
+    // Tensor with initializer but didn't init_data yet.
+    auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
+    tensor->set_device_address(empty_tensor->device_address());
+    host_tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+    MS_EXCEPTION_IF_NULL(host_tensor_address);
+    MS_LOG(DEBUG) << "Create device address:" << host_tensor_address->ToString() << " for host tensor:" << tensor.get()
+                  << " for backend node:" << backend_node->DebugString() << " front node:" << front_node->DebugString();
+  }
   auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
   host_kernel_tensor->set_device_address(host_tensor_address);
   MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();

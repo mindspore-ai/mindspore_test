@@ -48,6 +48,7 @@ void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset)
 
   // create src device address if null
   auto src = tensor::ConvertToTensor(src_);
+  MS_EXCEPTION_IF_NULL(src);
   MS_EXCEPTION_IF_NULL(src->device_address());
   if (src->device_address()->GetDeviceType() != device_ctx->GetDeviceType()) {
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
