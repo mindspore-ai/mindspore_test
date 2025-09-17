@@ -21,6 +21,7 @@
 /mindspore/ccsrc/frontend/np_dtypes/ @changzherui
 /mindspore/ccsrc/frontend/parallel/ @yangzhenzhang
 /mindspore/ccsrc/include/ @limingqi107
+/mindspore/ccsrc/include/backend/distributed @ZPaC
 /mindspore/ccsrc/include/utils/expander @gaoxiong1
 /mindspore/ccsrc/kernel/ @limingqi107
 /mindspore/ccsrc/minddata/ @jonyguo
@@ -29,6 +30,15 @@
 /mindspore/ccsrc/plugin/ascend/res_manager/error_manager/ @fary86
 /mindspore/ccsrc/plugin/ascend/res_manager/mbuf_manager/tensorprint_utils.* @fary86
 /mindspore/ccsrc/plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.* @fary86
+/mindspore/ccsrc/plugin/ascend/res_manager/collective @ZPaC
+/mindspore/ccsrc/plugin/ascend/res_manager/stream_manager @ZPaC
+/mindspore/ccsrc/plugin/ascend/res_manager/mem_menager @ZPaC
+/mindspore/ccsrc/plugin/ascend/res_manager/event @ZPaC
+/mindspore/ccsrc/plugin/cpu/res_manager/collective @ZPaC
+/mindspore/ccsrc/plugin/cpu/res_manager/mem_menager @ZPaC
+/mindspore/ccsrc/plugin/gpu/res_manager/collective @ZPaC
+/mindspore/ccsrc/plugin/gpu/res_manager/mem_menager @ZPaC
+/mindspore/ccsrc/plugin/gpu/res_manager/event_manager @ZPaC
 /mindspore/ccsrc/pybind_api/ @chujinjin
 /mindspore/ccsrc/pybind_api/ir/ @ginfung
 /mindspore/ccsrc/pybind_api/ir/tensor @chujinjin
@@ -39,6 +49,7 @@
 /mindspore/ccsrc/pynative/ @chujinjin
 /mindspore/ccsrc/runtime/ @limingqi107
 /mindspore/ccsrc/runtime/hardware_abstract/kernel_base/graph_fusion/ @gaoxiong1
+/mindspore/ccsrc/runtime/hardware_abstract/collective/ @ZPaC
 /mindspore/ccsrc/runtime/pipeline/ @chujinjin
 /mindspore/ccsrc/runtime/pynative/ @chujinjin
 /mindspore/ccsrc/tools/ @DavidFFFan
@@ -119,6 +130,7 @@
 /mindspore/python/mindspore/ops/ @liangchenghui
 /mindspore/python/mindspore/ops_generate/ @chujinjin
 /mindspore/python/mindspore/parallel/ @yangzhenzhang
+/mindspore/python/mindspore/parallel/cluster @ZPaC
 /mindspore/python/mindspore/profiler/ @DavidFFFan
 /mindspore/python/mindspore/rewrite/ @changzherui
 /mindspore/python/mindspore/runtime/ @limingqi107
@@ -134,7 +146,7 @@
 /tests/st/broadcast/ @yangzhenzhang
 /tests/st/compiler/ @ginfung
 /tests/st/container/ @changzherui
-/tests/st/cpu_data_parallel/ @fary86
+/tests/st/cpu_data_parallel/ @ZPaC
 /tests/st/dataset/ @jonyguo
 /tests/st/dataset_helper/ @changzherui
 /tests/st/data_transfer/ @jonyguo
@@ -158,7 +170,7 @@
 /tests/st/msrun/ @ZPaC
 /tests/st/nccl/ @ZPaC
 /tests/st/nn/ @changzherui
-/tests/st/nontask_sink/ @yangzhenzhang
+/tests/st/nontask_sink/ @zhangyinxia
 /tests/st/numpy_native/ @yi-zhang95
 /tests/st/offload/ @limingqi107
 /tests/st/ops/ @liangchenghui
