@@ -19,6 +19,7 @@ from mindspore.parallel import Layout
 from mindspore.parallel.shard import _DeviceMatrix
 from mindspore.communication import get_rank, create_group
 
+
 def _infer_slice_area_by_rank(dev_matrix, tensor_map, rank_id: int, full_shape: tuple): # -> tuple[tuple[int]]:
     """Return the range of each axis from full tensor for slice in current rank."""
     _get_dev_num_alone_dim = lambda matrix, dim: dev_matrix[-dim - 1] if dim != -1 else 1
@@ -86,6 +87,7 @@ def local_to_global(local_tensor):
     to_layout = layout(*none_structure)
     return local_tensor.redistribute(to_layout)
 
+
 def mesh_scatter(output: Tensor, scatter_list: List[Tensor], dev_mesh: _DeviceMatrix,
                  mesh_alias: str, group_src_rank: Optional[int] = 0):
     rank_id = get_rank()
@@ -98,6 +100,7 @@ def mesh_scatter(output: Tensor, scatter_list: List[Tensor], dev_mesh: _DeviceMa
     scatter_list = [chunk.contiguous() if not chunk.is_contiguous() else chunk for chunk in scatter_list]
     mint.distributed.scatter(output, scatter_list, source_rank, scatter_group_name)
     return output
+
 
 def mesh_broadcast(tensor: Tensor, dev_mesh: _DeviceMatrix,
                    mesh_alias: str, group_src_rank: Optional[int] = 0):
@@ -112,6 +115,7 @@ def mesh_broadcast(tensor: Tensor, dev_mesh: _DeviceMatrix,
     source_rank = broadcast_ranks[group_src_rank]
     mint.distributed.broadcast(tensor, source_rank, broadcast_group_name)
     return tensor
+
 
 def distribute_tensor(tensor: Tensor,
                       layout: Layout,
