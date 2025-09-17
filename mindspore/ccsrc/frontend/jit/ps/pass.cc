@@ -1735,6 +1735,9 @@ bool ValidatePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   MS_EXCEPTION_IF_NULL(resource->func_graph());
   FuncGraphPtr func_graph = resource->func_graph();
+  auto jit_config = PhaseManager::GetInstance().jit_config();
+  resource->func_graph()->set_user_data<std::map<std::string, std::string>>(
+    "jit_config", std::make_shared<std::map<std::string, std::string>>(jit_config));
   Validate(func_graph);
   return true;
 }
