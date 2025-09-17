@@ -1137,6 +1137,7 @@ def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=
 
 # 105 swapaxes
 
+
 # 106 t
 def tensor_t(input):
     return t(input)
@@ -1165,6 +1166,7 @@ def deprecated_tensor_tile(input, reps):
 
 # 109 tolist
 
+
 # 110 topk
 def tensor_topk(input, k, dim=-1, largest=True, sorted=True):
     return topk(input, k, dim, largest, sorted)
@@ -1183,9 +1185,11 @@ def deprecated_tensor_transpose(input, *axes):
     perm = validator.check_transpose_axis(axes, input.ndim)
     return transpose(input, perm)
 
+
 def deprecated_tensor_permute(input, *axis):
     perm = validator.check_transpose_axis(axis, input.ndim)
     return permute(input, perm)
+
 
 # 112 tril
 def deprecated_tensor_tril(input, diagonal=0):
@@ -1198,6 +1202,7 @@ def tensor_trunc(input):
 
 
 # 114 type
+
 
 # 115 type_as
 def deprecated_tensor_type_as(input, other):
@@ -1976,7 +1981,14 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
 
 def tensor_real(input):
+    r"""
+    For details, please refer to :func:`mindspore.ops.real`.
+    """
     return ops.real(input)
 
+
 def tensor_imag(input):
+    r"""
+    For details, please refer to :func:`mindspore.ops.imag`.
+    """
     return ops.imag(input)
