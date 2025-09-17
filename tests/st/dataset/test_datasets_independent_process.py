@@ -28,14 +28,14 @@ import mindspore.dataset as ds
 
 
 def check_message_queue(queue_input):
-    cmd = f"ipcs -q -p | grep -E '{queue_input}' | wc -l"
+    cmd = f"ipcs -q -p | grep -E '\\b({queue_input})\\b' | wc -l"
     output = subprocess.check_output(cmd, shell=True).decode()
     lines = output.split('\n')
     assert lines[0] == str(0)
 
 
 def check_shared_memory(memory_input):
-    cmd = f"ipcs -m -p | grep -E '{memory_input}' | wc -l"
+    cmd = f"ipcs -m -p | grep -E '\\b({memory_input})\\b' | wc -l"
     output = subprocess.check_output(cmd, shell=True).decode()
     lines = output.split('\n')
     assert lines[0] == str(0)
@@ -349,7 +349,7 @@ def test_dfx_independent_generator_dataset_kill_worker_process():
     os.environ['MS_INDEPENDENT_DATASET'] = 'True'
     os.environ['GLOG_v'] = '1'
 
-    log_file = "./test_dfx_independent_generator_dataset_kill_independent_dataset_process.log"
+    log_file = "./test_dfx_independent_generator_dataset_kill_worker_process.log"
     current_pid = os.getpid()
 
     # testcase process
