@@ -148,7 +148,7 @@ void GetAllFiles(const std::string &pathList, std::vector<std::string> &fileVec)
 
   for (const std::string &everyPath : pathVec) {
     // check path exist or not
-    if (!IsPathExist(pathList)) {
+    if (!IsPathExist(everyPath)) {
       ACLLITE_LOG_ERROR("Failed to deal path=%s. Reason: not exist or can not access.", everyPath.c_str());
       continue;
     }
