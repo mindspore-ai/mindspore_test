@@ -63,7 +63,6 @@
 #include "backend/ge_backend/pass/unfold_nested_output.h"
 #include "backend/ge_backend/pass/unfold_maketuple.h"
 #include "backend/ge_backend/pass/broadcast_for_select.h"
-#include "backend/ge_backend/pass/add_noop_to_es_grad.h"
 #include "backend/ge_backend/pass/bce_with_logits_loss_for_ge.h"
 #include "backend/ge_backend/pass/matmul_allreduce_fusion.h"
 #include "backend/common/pass/custom_defined_depend.h"
@@ -339,7 +338,6 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::UnfoldNestedOutput>("unfold_nested_output"));
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::UnfoldMaketuple>("unfold_nested_maketuple"));
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::BroadCastForSelect>());
-  opt_ge_pm->AddPass(std::make_shared<mindspore::opt::AddNoOpToESGrad>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::BCEWithLogitsLossForGe>());
   opt_ge_pm->AddPass(std::make_shared<mindspore::opt::CustomDefinedDepend>(true, kernel_graph->graph_id()));
 

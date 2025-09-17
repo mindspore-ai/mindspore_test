@@ -2864,17 +2864,7 @@ std::string AnfAlgo::GetInputName(const CNodePtr &origin_op, size_t input_index)
 
 bool AnfAlgo::IsNoOuputNode(const AnfNodePtr &node) {
   const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> no_output_prims = {
-    prim::kPrimSend,
-    prim::kPrimNPUClearFloatStatusV2,
-    prim::kPrimInitPartitionMap,
-    prim::kPrimInitEmbeddingHashmap,
-    prim::kPrimEmbeddingTableImport,
-    prim::kPrimEmbeddingComputeVarExport,
-    prim::kPrimEmbeddingComputeVarImport,
-    prim::kPrimEmbeddingTableExport,
-    prim::kPrimEmbeddingTableEvict,
-    prim::kPrimEmbeddingFeatureMappingExport,
-    prim::kPrimEmbeddingFeatureMappingInsert};
+    prim::kPrimSend, prim::kPrimNPUClearFloatStatusV2};
   if (IsOneOfPrimitiveCNode(node, no_output_prims)) {
     return true;
   }

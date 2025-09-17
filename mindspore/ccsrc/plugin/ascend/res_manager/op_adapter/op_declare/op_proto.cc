@@ -302,35 +302,16 @@ bool OpProto::IsInputOptionalTypeByName(const std::string &name) const {
 }
 
 bool OpProto::IsAttrOptionalTypeByName(const std::string &name) const {
-  const std::set<std::string> emdedding_service_ops = {prim::kPrimInitPartitionMap->name(),
-                                                       prim::kPrimInitEmbeddingHashmap->name(),
-                                                       prim::kPrimEmbeddingTableFind->name(),
-                                                       prim::kPrimEmbeddingTableFindAndInit->name(),
-                                                       prim::kPrimEmbeddingTableImport->name(),
-                                                       prim::kPrimEmbeddingTableExport->name(),
-                                                       prim::kPrimEmbeddingComputeVarImport->name(),
-                                                       prim::kPrimEmbeddingComputeVarExport->name(),
-                                                       prim::kPrimEmbeddingApplyAdam->name(),
-                                                       prim::kPrimEmbeddingApplyAdamW->name(),
-                                                       prim::kPrimEmbeddingApplyAdaGrad->name(),
-                                                       prim::kPrimEmbeddingApplyFtrl->name(),
-                                                       prim::kPrimFakeRemoteLookupUniqued->name(),
-                                                       prim::kPrimEmbeddingApplySgd->name(),
-                                                       prim::kPrimEmbeddingApplyRmsprop->name(),
-                                                       prim::kPrimEmbeddingTableEvict->name(),
-                                                       prim::kPrimEmbeddingFeatureMappingV2->name(),
-                                                       prim::kPrimEmbeddingFeatureMappingFind->name(),
-                                                       prim::kPrimEmbeddingFeatureMappingImport->name(),
-                                                       prim::kPrimEmbeddingFeatureMappingInsert->name()};
   auto iter = attr_optional_flags_.find(name);
   if (iter != attr_optional_flags_.end()) {
     return iter->second;
   }
   // The attribute of the ES ops is not on the prototype and will not be verified.
-  if (emdedding_service_ops.find(name_) != emdedding_service_ops.end() &&
-      (name.find_first_of("_") == 0 || name == "num" || name == "table_actual_size")) {
-    return true;
-  }
+  // 71016 加入，如果上面的表格算子删除完毕 需要删掉下面的if语句
+  // if (emdedding_service_ops.find(name_) != emdedding_service_ops.end() &&
+  //     (name.find_first_of("_") == 0 || name == "num" || name == "table_actual_size")) {
+  //   return true;
+  // }
   // NOTE: delete the if statement when CANN supporting OutfeedEnqueueOpV2 second stage wait
   if (name_ == "OutfeedEnqueueOpV2") {
     return true;
