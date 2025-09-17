@@ -25,7 +25,7 @@
 namespace mindspore {
 namespace opt {
 // Insert MoveAssign and MoveTo node according to parameter info
-class BACKEND_EXPORT InsertMoveTo : public Pass {
+class InsertMoveTo : public Pass {
   struct OffloadParamInfo {
     CNodePtr user_node_;
     size_t input_index_;

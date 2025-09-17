@@ -35,8 +35,7 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 
-class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
-                                                          public AbstractEnhancedDynamicMemPool {
+class DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public AbstractEnhancedDynamicMemPool {
  public:
   DefaultAscendMemoryPool();
   DefaultAscendMemoryPool(const DefaultAscendMemoryPool &) = delete;
@@ -65,7 +64,7 @@ class ASCEND_RES_MANAGER_EXPORT DefaultAscendMemoryPool : public AbstractAscendM
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
 
-class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
+class DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
  public:
   explicit DefaultEnhancedAscendMemoryPool(const DefaultAscendMemoryPoolPtr &instance);
   DefaultEnhancedAscendMemoryPool(const DefaultEnhancedAscendMemoryPool &) = delete;
@@ -252,8 +251,7 @@ class ASCEND_RES_MANAGER_EXPORT DefaultEnhancedAscendMemoryPool : public Default
   size_t last_vmm_used_size_{0};
 };
 
-class ASCEND_RES_MANAGER_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
-                                                          public DynamicMemPoolBestFit {
+class BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public DynamicMemPoolBestFit {
  public:
   BestFitAscendMemoryPool();
   BestFitAscendMemoryPool(const BestFitAscendMemoryPool &) = delete;

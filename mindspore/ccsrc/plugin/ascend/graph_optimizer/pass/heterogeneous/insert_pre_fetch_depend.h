@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace opt {
 // Insert Depend for MoveTo(In) in backward, so that data can be prefetched from offload.
-class BACKEND_EXPORT InsertPreFetchDepend : public Pass {
+class InsertPreFetchDepend : public Pass {
  public:
   InsertPreFetchDepend() : Pass("insert_pre_fetch_depend") {}
   ~InsertPreFetchDepend() override = default;
