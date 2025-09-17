@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct EluExtParams {
+  bool can_expand;
   ShapeVector input_shape;
   float alpha;
   ShapeVector expect_shape;
@@ -67,10 +68,17 @@ TEST_P(TestEluExtExpander, EluExt) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpEluExt, TestEluExtExpander,
-                        testing::Values(EluExtParams{{16, 16}, 1.0, {16, 16}, kFloat16},
-                                        EluExtParams{{16, 16}, 1.0, {16, 16}, kFloat32}));
+                        testing::Values(EluExtParams{true, {16, 16}, 1.0, {16, 16}, kFloat16},
+                                        EluExtParams{true, {16, 16}, 1.0, {16, 16}, kFloat32},
+                                        EluExtParams{true, {16, 16}, 1.0, {16, 16}, kBFloat16},
+                                        EluExtParams{false, {16, 16}, 1.0, {16, 16}, kFloat64},
+                                        EluExtParams{false, {16, 16}, 1.0, {16, 16}, kInt64},
+                                        EluExtParams{false, {16, 16}, 1.0, {16, 16}, kInt32},
+                                        EluExtParams{false, {16, 16}, 1.0, {16, 16}, kInt16},
+                                        EluExtParams{false, {16, 16}, 1.0, {16, 16}, kInt8}));
 }  // namespace mindspore::graphkernel::test

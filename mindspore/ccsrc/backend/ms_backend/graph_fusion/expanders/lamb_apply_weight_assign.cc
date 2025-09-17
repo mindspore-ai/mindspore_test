@@ -28,8 +28,16 @@ class LambApplyWeightAssign : public OpDesc {
   bool CheckInputs() override {
     const auto &g_norm = inputs_info_[1];
     if (g_norm.type != kNumberTypeFloat32 && g_norm.type != kNumberTypeFloat16) {
-      MS_LOG(INFO) << "In LambApplyWeightAssign, g_norm's dtype must be float16 or float32";
+      MS_LOG(DEBUG) << "In LambApplyWeightAssign, g_norm's data type must be float16 or float32";
       return false;
+    }
+    for (size_t i = kIndex0; i <= kIndex4; ++i) {
+      if (inputs_info_[i].type != g_norm.type) {
+        MS_LOG(DEBUG) << "In LambApplyWeightAssign, inputs[" << i
+                      << "] data type: " << TypeIdToString(inputs_info_[i].type)
+                      << ", which is different from g_norm data type: " << TypeIdToString(g_norm.type);
+        return false;
+      }
     }
     return true;
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct SoftplusExtParams {
+  bool can_expand;
   ShapeVector input_shape;
   int64_t beta;
   int64_t threshold;
@@ -70,10 +71,13 @@ TEST_P(TestSoftplusExtExpander, SoftplusExt) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpSoftplusExt, TestSoftplusExtExpander,
-                        testing::Values(SoftplusExtParams{{16, 16}, 1, 20, {16, 16}, kFloat16},
-                                        SoftplusExtParams{{16, 16}, 1, 20, {16, 16}, kFloat32}));
+                        testing::Values(SoftplusExtParams{true, {16, 16}, 1, 20, {16, 16}, kFloat16},
+                                        SoftplusExtParams{true, {16, 16}, 1, 20, {16, 16}, kFloat32},
+                                        SoftplusExtParams{true, {16, 16}, 1, 20, {16, 16}, kBFloat16},
+                                        SoftplusExtParams{false, {16, 16}, 1, 20, {16, 16}, kFloat64}));
 }  // namespace mindspore::graphkernel::test

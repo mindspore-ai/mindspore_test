@@ -224,7 +224,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimAddN, AddNCheck},
   {kAscendDevice, OpLevel_0, prim::kPrimBiasAdd, FloatIntCheck},
   {kAscendDevice, OpLevel_0, prim::kPrimBiasAddGrad, FloatCheck},
-  {kAscendDevice, OpLevel_0, prim::kPrimFillV2, FloatIntCheck},
+  {kAscendDevice, OpLevel_0, prim::kPrimFillV2},
   {kAscendDevice, OpLevel_0, prim::kPrimGeLU, FloatCheck},
   {kAscendDevice, OpLevel_0, prim::kPrimFastGelu, FloatCheck},
   {kAscendDevice, OpLevel_0, prim::kPrimFastGeluGrad, FloatCheck},

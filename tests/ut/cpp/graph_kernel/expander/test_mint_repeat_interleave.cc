@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct RepeatInterleaveIntParams {
+  bool can_expand;
   ShapeVector input_shape;
   int64_t repeat;
   int64_t dim;
@@ -40,8 +41,8 @@ struct RepeatInterleaveIntParams {
 }  // namespace
 
 /// Feature: Test graph kernel RepeatInterleaveInt expander
-/// Description: RepeatInterleaveInt will expanded
-/// Expectation: After expand, the output shape and data type of sub graph should match expect
+/// Description: test op with different inputs
+/// Expectation: Can be expanded only when its input data types are supported.
 class TestRepeatInterleaveIntExpander : public TestGraphKernelExpander,
                                         public testing::WithParamInterface<RepeatInterleaveIntParams> {
   void SetUp() override {
@@ -71,10 +72,18 @@ TEST_P(TestRepeatInterleaveIntExpander, RepeatInterleaveInt) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpRepeatInterleaveInt, TestRepeatInterleaveIntExpander,
-                        testing::Values(RepeatInterleaveIntParams{{2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kFloat16},
-                                        RepeatInterleaveIntParams{{2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kFloat32}));
+                        testing::Values(RepeatInterleaveIntParams{true, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kFloat16},
+                                        RepeatInterleaveIntParams{true, {2, 3, 4, 5}, 2, -2, {2, 3, 8, 5}, kFloat32},
+                                        RepeatInterleaveIntParams{true, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kBFloat16},
+                                        RepeatInterleaveIntParams{true, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kInt32},
+                                        RepeatInterleaveIntParams{false, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kFloat64},
+                                        RepeatInterleaveIntParams{false, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kBool},
+                                        RepeatInterleaveIntParams{false, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kInt8},
+                                        RepeatInterleaveIntParams{false, {2, 3, 4, 5}, 2, 2, {2, 3, 8, 5}, kInt64},
+                                        RepeatInterleaveIntParams{false, {-2}, 2, 2, {-2}, kFloat32}));
 }  // namespace mindspore::graphkernel::test

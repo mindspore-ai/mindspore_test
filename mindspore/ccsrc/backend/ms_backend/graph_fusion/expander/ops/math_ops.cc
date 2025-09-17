@@ -196,6 +196,9 @@ REG_EXPANDER_FUNC("SiLUGrad").SetBody(BODYFUNC(ib) {
 });
 
 REG_EXPANDER_FUNC("Addcmul").SetBody(BODYFUNC(ib) {
+  if (!CheckAllDataTypeSame(ib)) {
+    return {};
+  }
   const auto &input_data = ib->input(kIndex0);
   const auto &x1 = ib->input(kIndex1);
   const auto &x2 = ib->input(kIndex2);
@@ -241,6 +244,9 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
       result = ib->Cast(result, f32);
     }
     result = ib->Trunc(result);
+  } else {
+    MS_LOG(DEBUG) << "rounding_mode is not supported: " << rounding_mode_value;
+    return {};
   }
   result = out_type == f32 ? result : ib->Cast(result, out_type);
   return {result};

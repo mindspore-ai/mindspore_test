@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct HSwishParams {
+  bool can_expand;
   ShapeVector input_shape;
   ShapeVector expect_shape;
   TypePtr type;
@@ -65,10 +66,15 @@ TEST_P(TestHSwishExpander, HSwish) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpHSwish, TestHSwishExpander,
-                        testing::Values(HSwishParams{{16, 16}, {16, 16}, kFloat16},
-                                        HSwishParams{{16, 16}, {16, 16}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpHSwish, TestHSwishExpander,
+  testing::Values(HSwishParams{true, {16, 16}, {16, 16}, kFloat16}, HSwishParams{true, {16, 16}, {16, 16}, kFloat32},
+                  HSwishParams{true, {16, 16}, {16, 16}, kBFloat16}, HSwishParams{false, {16, 16}, {16, 16}, kFloat64},
+                  HSwishParams{false, {16, 16}, {16, 16}, kInt64}, HSwishParams{false, {16, 16}, {16, 16}, kInt32},
+                  HSwishParams{false, {16, 16}, {16, 16}, kInt16}, HSwishParams{false, {16, 16}, {16, 16}, kInt8},
+                  HSwishParams{false, {16, 16}, {16, 16}, kBool}));
 }  // namespace mindspore::graphkernel::test

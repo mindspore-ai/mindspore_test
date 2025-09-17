@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct AddcmulParams {
+  bool can_expand;
   ShapeVector a_shape;
   ShapeVector x1_shape;
   ShapeVector x2_shape;
@@ -66,11 +67,18 @@ TEST_P(TestAddcmulExpander, addcmul) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpAddcmul, TestAddcmulExpander,
-                        testing::Values(AddcmulParams{{16, 128}, {16, 128}, {16, 128}, {16, 128}, {16, 128}, kFloat16},
-                                        AddcmulParams{{16, 8}, {16, 8}, {16, 8}, {1}, {16, 8}, kFloat32},
-                                        AddcmulParams{{16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kFloat16}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpAddcmul, TestAddcmulExpander,
+  testing::Values(AddcmulParams{true, {16, 128}, {16, 128}, {16, 128}, {16, 128}, {16, 128}, kFloat16},
+                  AddcmulParams{true, {16, 8}, {16, 8}, {16, 8}, {1}, {16, 8}, kFloat32},
+                  AddcmulParams{true, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kFloat16},
+                  AddcmulParams{true, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kBFloat16},
+                  AddcmulParams{true, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kInt32},
+                  AddcmulParams{false, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kFloat64},
+                  AddcmulParams{false, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kInt8},
+                  AddcmulParams{false, {16, 32}, {16, 32}, {1, 32}, {16, 32}, {16, 32}, kInt64}));
 }  // namespace mindspore::graphkernel::test

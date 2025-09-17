@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,10 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct LeakyReLUExtParams {
+  bool can_expand;
   ShapeVector input_shape;
   ShapeVector expect_shape;
-  TypePtr type;
+  std::vector<TypePtr> inputs_type;
 };
 }  // namespace
 
@@ -53,24 +54,31 @@ class TestLeakyReLUExtExpander : public TestGraphKernelExpander,
 TEST_P(TestLeakyReLUExtExpander, LeakyReLUExt) {
   const auto &param = GetParam();
   ConstructGraph c;
-  auto shape = c.NewTensorInput("input_shape", param.type, param.input_shape);
-  auto negative_slope = c.NewScalarInput("negative_slope", kFloat32);
+  auto shape = c.NewTensorInput("input_shape", param.inputs_type[0], param.input_shape);
+  auto negative_slope = c.NewValueNode(NewScalar(param.inputs_type[1], 0.01, true));
   auto op = c.NewCNodeWithBuildInfo("LeakyReLUExt", {shape, negative_slope}, {});
   c.SetOutput(op);
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>()});
   auto nodes = TopoSort(c.GetGraph()->get_return());
   for (const auto &node : nodes) {
     if (node != nullptr && AnfUtils::IsGraphKernel(node)) {
-      CompareShapeAndType(node, 0, param.expect_shape, param.type->type_id());
+      CompareShapeAndType(node, 0, param.expect_shape, param.inputs_type[0]->type_id());
     }
   }
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpLeakyReLUExt, TestLeakyReLUExtExpander,
-                        testing::Values(LeakyReLUExtParams{{16, 16}, {16, 16}, kFloat16},
-                                        LeakyReLUExtParams{{16, 16}, {16, 16}, kFloat32}));
+                        testing::Values(LeakyReLUExtParams{true, {16, 16}, {16, 16}, {kFloat16, kFloat32}},
+                                        LeakyReLUExtParams{true, {16, 16}, {16, 16}, {kFloat32, kFloat32}},
+                                        LeakyReLUExtParams{true, {16, 16}, {16, 16}, {kBFloat16, kFloat32}},
+                                        LeakyReLUExtParams{false, {16, 16}, {16, 16}, {kFloat64, kFloat32}},
+                                        LeakyReLUExtParams{false, {16, 16}, {16, 16}, {kFloat16, kFloat64}},
+                                        LeakyReLUExtParams{false, {16, 16}, {16, 16}, {kFloat32, kFloat64}},
+                                        LeakyReLUExtParams{false, {16, 16}, {16, 16}, {kBFloat16, kFloat64}},
+                                        LeakyReLUExtParams{false, {16, 16}, {16, 16}, {kFloat64, kFloat64}}));
 }  // namespace mindspore::graphkernel::test

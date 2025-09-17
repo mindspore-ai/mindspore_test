@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,13 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct DivModParams {
+  bool can_expand;
   ShapeVector x1_shape;
   ShapeVector x2_shape;
   ops::RoundingMode rounding_mode;
   ShapeVector expect_shape;
   TypePtr type;
+  bool is_none{false};
 };
 }  // namespace
 
@@ -57,7 +59,12 @@ TEST_P(TestDivModExpander, DivMod) {
   ConstructGraph c;
   auto x1 = c.NewTensorInput("x1_shape", param.type, param.x1_shape);
   auto x2 = c.NewTensorInput("x2_shape", param.type, param.x2_shape);
-  auto rounding_mode = c.NewScalarInput("rounding_mode", MakeValue(static_cast<int64_t>(param.rounding_mode)), kInt64);
+  AnfNodePtr rounding_mode;
+  if (param.is_none) {
+    rounding_mode = c.NewValueNode(kNone);
+  } else {
+    rounding_mode = c.NewValueNode(NewScalar(kInt64, static_cast<int64_t>(param.rounding_mode), true));
+  }
   auto op = c.NewCNodeWithBuildInfo("DivMod", {x1, x2, rounding_mode}, {});
   c.SetOutput(op);
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>()});
@@ -70,13 +77,25 @@ TEST_P(TestDivModExpander, DivMod) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpDivMod, TestDivModExpander,
-                        testing::Values(DivModParams{{16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat16},
-                                        DivModParams{{16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat32},
-                                        DivModParams{{16, 16}, {16, 16}, ops::RoundingMode::TRUNC, {16, 16}, kFloat16},
-                                        DivModParams{
-                                          {16, 16}, {16, 16}, ops::RoundingMode::TRUNC, {16, 16}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpDivMod, TestDivModExpander,
+  testing::Values(DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat16, true},
+                  DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat16},
+                  DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat32},
+                  DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::TRUNC, {16, 16}, kFloat16},
+                  DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::TRUNC, {16, 16}, kFloat32},
+                  DivModParams{true, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kBFloat16},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::ROUND, {16, 16}, kFloat16},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::CEIL, {16, 16}, kFloat16},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kFloat64},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kInt64},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kInt32},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kInt16},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kInt8},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kUInt8},
+                  DivModParams{false, {16, 16}, {16, 16}, ops::RoundingMode::FLOOR, {16, 16}, kBool}));
 }  // namespace mindspore::graphkernel::test

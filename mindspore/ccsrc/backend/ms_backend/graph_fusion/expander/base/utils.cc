@@ -46,6 +46,27 @@ bool CheckAllFormatsSame(const DefaultIrBuilder *ib,
   return true;
 }
 
+bool CheckAllDataTypeSame(const DefaultIrBuilder *ib) {
+  MS_EXCEPTION_IF_NULL(ib);
+  const auto &inputs = ib->inputs();
+  TypeId base_type{kTypeUnknown};
+  for (size_t i = 0; i < inputs.size(); i++) {
+    if (inputs[i] == nullptr || inputs[i]->GetDtype() == nullptr) {
+      continue;
+    }
+    auto type_id = inputs[i]->GetDtype()->type_id();
+    if (base_type == kTypeUnknown) {
+      base_type = type_id;
+    }
+    if (type_id != base_type) {
+      MS_LOG(INFO) << "The " << i << "th data type: " << TypeIdToString(type_id)
+                   << " is not same as base data type: " << TypeIdToString(base_type) << " of op " << ib->name();
+      return false;
+    }
+  }
+  return true;
+}
+
 bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attrs) {
   for (auto &a : attrs) {
     if (ib->attrs().count(a) == 0) {

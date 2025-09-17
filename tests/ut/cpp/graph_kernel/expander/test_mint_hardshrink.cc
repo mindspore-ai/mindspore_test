@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct HShrinkParams {
+  bool can_expand;
   ShapeVector input_shape;
   float lambd;
   ShapeVector expect_shape;
@@ -67,10 +68,14 @@ TEST_P(TestHShrinkExpander, HShrink) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
 INSTANTIATE_TEST_CASE_P(TestOpHShrink, TestHShrinkExpander,
-                        testing::Values(HShrinkParams{{16, 16}, 0.5, {16, 16}, kFloat16},
-                                        HShrinkParams{{16, 16}, 0.5, {16, 16}, kFloat32}));
+                        testing::Values(HShrinkParams{true, {16, 16}, 0.5, {16, 16}, kFloat16},
+                                        HShrinkParams{true, {16, 16}, 0.5, {16, 16}, kFloat32},
+                                        HShrinkParams{true, {16, 16}, 0.5, {16, 16}, kBFloat16},
+                                        HShrinkParams{false, {-2}, 0.5, {-2}, kFloat32},
+                                        HShrinkParams{false, {4, -1}, 0.5, {4, -1}, kFloat32}));
 }  // namespace mindspore::graphkernel::test
