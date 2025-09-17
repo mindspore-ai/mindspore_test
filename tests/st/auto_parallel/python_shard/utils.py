@@ -13,6 +13,12 @@
 # limitations under the License.
 # ============================================================================
 
+from typing import List, Optional
+from mindspore import Tensor, mint
+from mindspore.parallel import Layout
+from mindspore.parallel.shard import _DeviceMatrix
+from mindspore.communication import get_rank, create_group
+
 def _infer_slice_area_by_rank(dev_matrix, tensor_map, rank_id: int, full_shape: tuple): # -> tuple[tuple[int]]:
     """Return the range of each axis from full tensor for slice in current rank."""
     _get_dev_num_alone_dim = lambda matrix, dim: dev_matrix[-dim - 1] if dim != -1 else 1
@@ -79,3 +85,64 @@ def local_to_global(local_tensor):
     none_structure = tuple(update_layout(dim) for dim in tensor_map)
     to_layout = layout(*none_structure)
     return local_tensor.redistribute(to_layout)
+
+def mesh_scatter(output: Tensor, scatter_list: List[Tensor], dev_mesh: _DeviceMatrix,
+                 mesh_alias: str, group_src_rank: Optional[int] = 0):
+    rank_id = get_rank()
+    if rank_id not in dev_mesh.rank_list:
+        raise ValueError(f"rank {rank_id} not in {dev_mesh}")
+    scatter_ranks = dev_mesh.get_rank_list_along_axis(mesh_alias)
+    scatter_group_name = f"mesh_processgroup:{'-'.join([str(i) for i in scatter_ranks])}"
+    create_group(scatter_group_name, scatter_ranks)
+    source_rank = scatter_ranks[group_src_rank]
+    scatter_list = [chunk.contiguous() if not chunk.is_contiguous() else chunk for chunk in scatter_list]
+    mint.distributed.scatter(output, scatter_list, source_rank, scatter_group_name)
+    return output
+
+def mesh_broadcast(tensor: Tensor, dev_mesh: _DeviceMatrix,
+                   mesh_alias: str, group_src_rank: Optional[int] = 0):
+    rank_id = get_rank()
+    if rank_id not in dev_mesh.rank_list:
+        raise ValueError(f"rank {rank_id} not in {dev_mesh}")
+    if not tensor.is_contiguous():
+        tensor = tensor.contiguous()
+    broadcast_ranks = dev_mesh.get_rank_list_along_axis(mesh_alias)
+    broadcast_group_name = f"mesh_processgroup:{'-'.join([str(i) for i in broadcast_ranks])}"
+    create_group(broadcast_group_name, broadcast_ranks)
+    source_rank = broadcast_ranks[group_src_rank]
+    mint.distributed.broadcast(tensor, source_rank, broadcast_group_name)
+    return tensor
+
+def distribute_tensor(tensor: Tensor,
+                      layout: Layout,
+                      src_data_rank: Optional[int] = 0):
+    """
+        Shard global tensor by layout
+        Do scatter if the tensor sharded along an axis.
+        Do broadcast if the tensor replicated along an axis.
+    """
+    if not layout.tensor_map:
+        raise RuntimeError(f"For distribute_tensor, layout should config 'tensor_map'")
+    local_tensor = tensor
+    shardmap_alias_names = layout.alias_tensor_map
+    dev_matrix = layout.mesh
+    dev_mat_aliases = dev_matrix.alias_name
+    sharded_dim_set = set()
+    for dim, shard_alias in enumerate(shardmap_alias_names):
+        if shard_alias != "None":
+            sharded_dim_set.add(shard_alias)
+            num_chunk = dev_matrix.get_device_num_along_axis(shard_alias)
+            if local_tensor.shape[dim] < num_chunk and local_tensor.shape[dim] % num_chunk != 0:
+                raise ValueError((f"For local tensor shape: {local_tensor.shape},"),
+                                 (f"dim '{dim}' should >= num_chunk and can be evenly divided by num_chunk."),
+                                 (f"but got dim({dim})={local_tensor.shape[dim]}, num_chunk={num_chunk}"))
+            scatter_list = mint.chunk(local_tensor, num_chunk, dim)
+            output = mint.empty(size=scatter_list[0].shape, dtype=scatter_list[0].dtype)
+            local_tensor = mesh_scatter(output, scatter_list, dev_matrix, shard_alias, src_data_rank)
+    # Do broadcast on the rest of dim
+    for _, dev_mat_dim_alias in enumerate(dev_mat_aliases):
+        if dev_mat_dim_alias in sharded_dim_set:
+            continue
+        local_tensor = mesh_broadcast(local_tensor, dev_matrix, dev_mat_dim_alias, src_data_rank)
+    local_tensor.local_to_global(layout)
+    return local_tensor
