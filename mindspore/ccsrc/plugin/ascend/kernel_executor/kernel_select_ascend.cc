@@ -849,17 +849,18 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
     return iter->second;
   }
 
+  std::string group = "";
+  if (primitive->HasAttr(kAttrGroup)) {
+    auto group_attr = primitive->GetAttr(kAttrGroup);
+    if (group_attr != nullptr && group_attr->isa<StringImm>()) {
+      group = GetValue<std::string>(group_attr);
+    }
+  }
+  if (IsSupportLcoc(group, op_name)) {
+    return false;
+  }
+
   if (kernel::IsEnabledAclnnDispatch(op_name)) {
-    std::string group = "";
-    if (primitive->HasAttr(kAttrGroup)) {
-      auto group_attr = primitive->GetAttr(kAttrGroup);
-      if (group_attr != nullptr && group_attr->isa<StringImm>()) {
-        group = GetValue<std::string>(group_attr);
-      }
-    }
-    if (IsSupportLcoc(group, op_name)) {
-      return false;
-    }
     if (!kernel::IsRegisteredAclnnOp(op_name)) {
       if (kernel::IsViewOp(op_name)) {
         MS_LOG(INFO) << "Kernel " << node->fullname_with_scope() << " is view op and not support aclnn";
