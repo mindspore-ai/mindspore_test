@@ -175,31 +175,20 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_dynamic_mem_adapter.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/event/ascend_event.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_gmem_adapter.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_launch_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_launch_mul.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_launch_transdata.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_adapter.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_pool.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_runtime_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/stream_manager/ascend_stream_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/stream_manager/callback_thread.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/hal_manager/ascend_hal_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/hal_manager/ascend_error_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_two_pointer_mem_adapter.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_vmm_adapter.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/kernel_select_ascend.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/lic_manager.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/profiling/*.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_auto_monad.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/error_manager/collective_comm_monitor.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/ascend_res_manager.cc"
         "../../../mindspore/ccsrc/backend/ge_backend/executor/ge_memory_manager.cc"
         "../../../mindspore/ccsrc/plugin/ascend/profiler/*.cc"
         "../../../mindspore/ops/kernel/ascend/hccl/*.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/rts/rt_kernel_info.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/backend_common_unify_mindir.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/common/gllo_utils.cc"
         "${ASCEND_PLUGIN_PATH}/graph_optimizer/pass/format_type/deal_ref_output.cc"
@@ -250,7 +239,7 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
 target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_ms_backend mindspore_core _c_dataengine proto_input
-        mindspore_common mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler
+        mindspore_common mindspore_backend_manager mindspore_hardware_abstract
         mindspore_backend_common mindspore_runtime_utils)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
@@ -268,7 +257,7 @@ include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_ms_backend mindspore_pyboost mindspore_backend_manager
-                      mindspore_hardware_abstract mindspore_profiler mindspore_backend_common mindspore::protobuf)
+                      mindspore_hardware_abstract mindspore_profiler mindspore_backend_common)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
 
@@ -290,7 +279,6 @@ foreach(comp ${ALL_UT_COMPS})
             mindspore_backend_common)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp
-                mindspore::event mindspore::event_pthreads mindspore::event_openssl mindspore::ssl mindspore::crypto
                 ${PYTHON_LIBRARIES} pthread util dl)
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::sqlite mindspore::jpeg_turbo mindspore::turbojpeg
                 mindspore::opencv_core mindspore::opencv_imgcodecs mindspore::opencv_imgproc mindspore::tinyxml2
@@ -299,6 +287,10 @@ foreach(comp ${ALL_UT_COMPS})
         if(ENABLE_FFMPEG)
             target_link_libraries(ut_${comp}_tests PRIVATE mindspore::avcodec mindspore::avdevice mindspore::avfilter
                     mindspore::avformat mindspore::avutil mindspore::swresample mindspore::swscale)
+        endif()
+        if(${comp} STREQUAL "PS")
+            target_link_libraries(ut_${comp}_tests PRIVATE mindspore::event mindspore::event_pthreads
+                    mindspore::event_openssl mindspore::ssl mindspore::crypto)
         endif()
     elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
         target_link_libraries(ut_${comp}_tests PRIVATE  mindspore::z)
