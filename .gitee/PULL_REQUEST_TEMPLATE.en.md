@@ -30,13 +30,13 @@ Fixes #
 * Need to describe clearly
 
 
-**Self-checklist**:（**请认真自检，我们将检视你的完成情况**）
+**Self-checklist**:（**请认真自检，在[]内打上x，我们将检视你的完成情况**）
 
-+ - [ ] **设计**：PR对应的方案是否已经经过Maintainer评审，方案检视意见是否均已答复并完成方案修改
-+ - [ ] **测试**：PR中的代码是否已有UT/ST测试用例进行充分的覆盖，新增测试用例是否随本PR一并上库或已经上库
-+ - [ ] **验证**：PR描述信息中是否已包含对该PR对应的Feature、Refactor、Bugfix的预期目标达成情况的详细验证结果描述
-+ - [ ] **接口**：是否涉及对外接口变更，相应变更已得到接口评审组织的通过，API对应的注释信息已经刷新正确
-+ - [ ] **文档**：是否涉及官网文档修改，如果涉及请及时提交资料到Doc仓
++ - [ ] **Design**: Has the solution corresponding to the PR been reviewed by the Maintainer, and have all review comments been replied to and revised
++ - [ ] **Test**: Has the code in the PR been fully covered by UT/ST test cases, and have the newly added test cases been uploaded to the repository along with this PR or already uploaded.
++ - [ ] **Verification**: Does the PR description contains a detailed description of the verification results regarding the achievement of the expected goals for the Feature, Refactor, and Bugfix to this PR.
++ - [ ] **Interface**: Does it involve changes to external interfaces? The corresponding changes have been approved by the interface review organization, and the annotation information for the API has been correctly refreshed.
++ - [ ] **Document**: Does it involve modifications to the official website documentation? If so, please submit the materials to the Doc repository in a timely manner.
 
 <!-- **Special notes for your reviewers**: -->
 <!-- + - [ ] Whether it causes forward compatibility failure -->
