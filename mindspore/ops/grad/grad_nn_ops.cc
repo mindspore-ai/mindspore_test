@@ -2812,6 +2812,13 @@ REG_BPROP_BUILDER("BatchNormExt").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYF
   auto d_x = ib->TupleGetItem(result, 0);
   auto d_weight = ib->TupleGetItem(result, 1);
   auto d_bias = ib->TupleGetItem(result, 2);
+
+  if (ib->GetDtype(d_weight) != ib->GetDtype(weight)) {
+    d_weight = ib->Cast(d_weight, ib->GetDtype(weight));
+  }
+  if (ib->GetDtype(d_bias) != ib->GetDtype(bias)) {
+    d_bias = ib->Cast(d_bias, ib->GetDtype(bias));
+  }
   return {d_x,
           d_weight,
           d_bias,
