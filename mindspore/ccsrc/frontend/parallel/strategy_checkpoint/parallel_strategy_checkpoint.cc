@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "mindspore/core/include/utils/distributed_meta.h"
 #include "ir/dtype/ref.h"
 #include "ir/dtype/tensor_type.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -308,8 +309,8 @@ void StrategyLayout::SortCurNetGlobalLayout() {
   for (auto &item : sorted_items) {
     (void)global_layout_list_.emplace_back(std::move(item.second));
   }
-  const uint64_t device_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
-  (void)local_layout_list_.emplace_back(global_layout_list_[device_id]);
+  const uint32_t rank_id = DistributedMeta::GetInstance()->global_rank_id();
+  (void)local_layout_list_.emplace_back(global_layout_list_[rank_id]);
   layout_sorted_ = true;
 }
 
