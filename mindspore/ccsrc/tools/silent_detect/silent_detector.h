@@ -63,6 +63,7 @@ class DUMP_EXPORT SilentDetector {
   std::optional<StrikeRecord> CheckValue(const string &name, double value);
   std::optional<StrikeRecord> CheckValueWithCoolDown(const string &name, double value, std::chrono::minutes cooldown);
   friend void SilentDetect(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr);
+  static void Stop();
 
  private:
   SilentDetector();
@@ -76,6 +77,7 @@ class DUMP_EXPORT SilentDetector {
   std::string GetTcpStore(const std::string &key);
   void AddTcpStore(const std::string &key, int64_t value);
 #endif
+  void StopStrikeoutDetector();
 
   // feature value detection
   std::unordered_map<std::string, StatData> check_status_;
@@ -94,6 +96,7 @@ class DUMP_EXPORT SilentDetector {
   std::chrono::minutes checksum_cooldown_;
   std::thread strikeout_detector_;
   std::atomic<bool> strikeout_detector_running_;
+  static std::atomic<bool> instantiated_;
 };
 
 }  // namespace silentdetect

@@ -119,7 +119,10 @@ void SilentDetect(std::string name, mindspore::tensor::TensorPtr tensor) {
   }
 }
 
+std::atomic<bool> SilentDetector::instantiated_{false};
+
 SilentDetector::SilentDetector() {
+  instantiated_ = true;
   rank_id_ = GetRankID();
   rank_size_ = GetRankSize();
   prev_strike_time_ = std::chrono::system_clock::time_point::min();
@@ -148,7 +151,15 @@ SilentDetector::SilentDetector() {
 #endif
 }
 
-SilentDetector::~SilentDetector() {
+SilentDetector::~SilentDetector() { StopStrikeoutDetector(); }
+
+void SilentDetector::Stop() {
+  if (instantiated_) {
+    GetInstance().StopStrikeoutDetector();
+  }
+}
+
+void SilentDetector::StopStrikeoutDetector() {
   if (strikeout_detector_running_) {
     strikeout_detector_running_ = false;
     if (strikeout_detector_.joinable()) {
