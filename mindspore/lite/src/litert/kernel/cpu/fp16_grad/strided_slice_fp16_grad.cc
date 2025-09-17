@@ -123,6 +123,10 @@ int StridedSliceFp16GradImpl(void *cdata, int task_id, float lhs_scale, float rh
 }
 
 int StridedSliceGradCPUKernelFp16::Run() {
+  if (in_tensors_.at(0)->ElementsNum() > INT_MAX || out_tensors_.at(0)->ElementsNum() > INT_MAX) {
+    MS_LOG(ERROR) << "Resize cannot support big data operations, the upper limit is INT32_MAX";
+    return RET_ERROR;
+  }
   int error_code = ParallelLaunch(this->ms_context_, StridedSliceFp16GradImpl, this, 1);
   if (error_code != RET_OK) {
     MS_LOG(ERROR) << "Strided slice error error_code[" << error_code << "]";
