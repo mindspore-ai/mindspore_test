@@ -30,7 +30,7 @@ Fixes #
 **What scenarios were tested, and what were the verification results（Function, performance, reliability, etc.）**：
 * Need to describe clearly
 
-**Self-checklist**:（**请认真自检，我们将检视你的完成情况**）
+**Self-checklist**:（**请认真自检，在[ ]内打上x，我们将检视你的完成情况**）
 
 + - [ ] **设计**：PR对应的方案是否已经经过Maintainer评审，方案检视意见是否均已答复并完成方案修改
 + - [ ] **测试**：PR中的代码是否已有UT/ST测试用例进行充分的覆盖，新增测试用例是否随本PR一并上库或已经上库
