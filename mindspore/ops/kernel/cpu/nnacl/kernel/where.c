@@ -126,6 +126,8 @@ int WhereRunWithSingleInput(WhereStruct *where) {
 
   if (true_num > 0) {
     output->data_ = result;
+  } else {
+    where->base_.env_->Free(where->base_.env_->allocator_, result);
   }
   return NNACL_OK;
 }
