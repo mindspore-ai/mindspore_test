@@ -262,7 +262,7 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
     auto device_addr = device_address;
     MS_EXCEPTION_IF_NULL(device_addr);
     // as_numpy sync promise contiguous run_sync
-    return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr, true);
+    return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr);
   });
 
   // set data
