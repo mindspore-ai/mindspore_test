@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "view/imag_view_strides_calc.h"
 #include <memory>
 #include <set>
+#include "view/real_view_strides_calc.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "view/imag_view_strides_calc.h"
-#include "view/real_view_strides_calc.h"
 
 namespace mindspore::ops {
 

@@ -137,6 +137,8 @@ bool SvdCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &input
 
   // Set 0 for u and v if not compute u and v.
   if (!compute_uv_) {
+    MS_EXCEPTION_IF_NULL(output_u);
+    MS_EXCEPTION_IF_NULL(output_v);
     output_u[0] = static_cast<T>(0);
     output_v[0] = static_cast<T>(0);
   }
@@ -197,6 +199,8 @@ bool SvdCpuKernelMod::LaunchKernelComplex(const std::vector<KernelTensor *> &inp
 
   // Set 0 for u and v if not compute u and v.
   if (!compute_uv_) {
+    MS_EXCEPTION_IF_NULL(output_u);
+    MS_EXCEPTION_IF_NULL(output_v);
     output_u[0] = static_cast<T>(0);
     output_v[0] = static_cast<T>(0);
   }

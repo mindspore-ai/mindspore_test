@@ -23,6 +23,9 @@
 
 namespace mindspore::ops {
 
+// Complex numbers are stored as pairs of real numbers, so strides need to be doubled
+constexpr int kComplexStrideMultiplier = 2;
+
 TypeId GetRealTypeFromComplex(TypeId complex_type) {
   static const std::unordered_map<TypeId, TypeId> complex_to_real_map = {
     {kNumberTypeComplex, kNumberTypeFloat16},     // complex -> float16
@@ -64,16 +67,16 @@ BasicCalcResult RealImagViewBasicTypeCalc(const tensor::TensorPtr &input_tensor,
   if (is_complex_data_type && dim_size > 0 && ori_dim_size > 0) {
     // if old tensor has shape, and because of the complex storage, the new stride is doubled
     for (int i = 0; i < dim_size; i++) {
-      new_strides[i] *= 2;
+      new_strides[i] *= kComplexStrideMultiplier;
     }
     // we reexplained the complex storage into two parts, so the original shape is doubled, eg. complex64 to 2 float32
-    ori_shape[ori_dim_size - 1] *= 2;
+    ori_shape[ori_dim_size - 1] *= kComplexStrideMultiplier;
     ori_strides[ori_dim_size - 1] = 1;
     // recalculate the original strides with the new shape
     for (int i = ori_dim_size - 2; i >= 0; i--) {
       ori_strides[i] = ori_strides[i + 1] * ori_shape[i + 1];
     }
-    new_storage_offset *= 2;
+    new_storage_offset *= kComplexStrideMultiplier;
   }
 
   // for imag part, the storage offset need to add 1
