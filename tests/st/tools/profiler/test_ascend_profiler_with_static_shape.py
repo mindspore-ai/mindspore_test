@@ -142,6 +142,10 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
 def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, rank_id: int):
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
     ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
+    msprof_db_path = glob.glob(f"{ascend_ms_dir}/PROF_*/*.db")
+
+    # check db in PROF_* is deleted
+    assert not msprof_db_path, f"Expect no db file in PROF_*, but got {len(msprof_db_path)}"
 
     # check hbm*.csv
     hbm_path = glob.glob(f"{ascend_profiler_output_path}/hbm*")[0]
