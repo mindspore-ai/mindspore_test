@@ -3173,6 +3173,21 @@ std::string GetMindirPath(const string &cache_path, int root_graph_num, const Ke
   return GetKernelGraphMindIRPath(kernel_graph, cache_path);
 }
 
+std::map<GraphId, KernelGraphPtr> BuildGraphIdMapping(const std::vector<std::vector<KernelGraphPtr>> &root_sub_graphs) {
+  std::map<GraphId, KernelGraphPtr> graphid_to_graph;
+
+  for (const auto &graph_vec : root_sub_graphs) {
+    for (const auto &graph : graph_vec) {
+      if (graph != nullptr) {
+        graphid_to_graph[graph->graph_id()] = graph;
+        MS_LOG(DEBUG) << "Kernel graph:" << graph->ToString();
+      }
+    }
+  }
+
+  return graphid_to_graph;
+}
+
 std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<KernelGraphPtr> *all_out_graph) {
   MS_LOG(INFO) << "Use the compile cache to construct kernel graph, Be aware of correctness risks.";
   auto &context = CompileCacheContext::GetInstance();
@@ -3185,6 +3200,19 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
   std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> graph_ids_node_name;
   std::vector<std::vector<KernelGraphPtr>> root_sub_graphs;
   nlohmann::json model_json;
+  // catch error information for load mindir and json in multi-thread.
+  std::atomic<bool> thread_success{true};
+  std::string thread_error_msg;
+  std::exception_ptr thread_exception = nullptr;
+  auto handle_thread_error = [&](const std::string &error_msg, bool is_exception = false) {
+    thread_success = false;
+    thread_error_msg = error_msg;
+    if (is_exception) {
+      thread_exception = std::current_exception();
+    }
+    MS_LOG(ERROR) << error_msg;
+  };
+
   if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
     MS_LOG(INFO) << "Disable thread load by backend config. Start to load mindir by compile "
                     "cache without thread.";
@@ -3199,51 +3227,59 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
     auto root_graph_num = LoadGraphForCompileCache(&root_sub_graphs);
     PROF_START(Cache_thread_load_mindir);
     // Thread for load mindir and json
-    std::thread loadmindir([cache_path, &root_sub_graphs, &graph_ids_node_name, &root_graph_num]() {
-      std::string mindir_path;
-      MindIRLoader mindir_loader;
-      for (const auto &graphs_vec : root_sub_graphs) {
-        std::vector<FuncGraphPtr> graphs_for_load;
-        mindspore::HashMap<std::string, AnfNodePtr> name_to_node;
-        (void)(std::transform(graphs_vec.begin(), graphs_vec.end(), std::back_inserter(graphs_for_load),
-                              [](const KernelGraphPtr &kg) { return kg->cast<FuncGraphPtr>(); }));
-        if (graphs_vec.empty()) {
-          MS_LOG(EXCEPTION) << "Fail to get root graph by compile cache, root graph number:" << graphs_vec.size();
+    std::thread loadmindir([&]() {
+      try {
+        std::string mindir_path;
+        MindIRLoader mindir_loader;
+        for (const auto &graphs_vec : root_sub_graphs) {
+          std::vector<FuncGraphPtr> graphs_for_load;
+          mindspore::HashMap<std::string, AnfNodePtr> name_to_node;
+          (void)(std::transform(graphs_vec.begin(), graphs_vec.end(), std::back_inserter(graphs_for_load),
+                                [](const KernelGraphPtr &kg) { return kg->cast<FuncGraphPtr>(); }));
+          if (graphs_vec.empty()) {
+            handle_thread_error("Fail to get root graph by compile cache, root graph vector is empty.");
+            return;
+          }
+          auto root_kernel_graph = graphs_vec[0];
+          if (root_kernel_graph == nullptr) {
+            handle_thread_error("Fail to get root graph by compile cache, root graph is null.");
+            return;
+          }
+          mindir_path = GetMindirPath(cache_path, root_graph_num, root_kernel_graph);
+          MS_LOG(INFO) << "Get mindIR path:" << mindir_path << ", for graph " << root_kernel_graph->ToString()
+                       << " success.";
+          auto real_path = Common::CreatePrefixPath(mindir_path, true);
+          if (!CheckPath(real_path)) {
+            handle_thread_error("Fail to get root graph by compile cache, invalid mindir path: " + mindir_path);
+            return;
+          }
+          PROF_START(Cache_LoadMindIR_thread);
+          if (!mindir_loader.LoadMindIR(real_path.value(), graphs_for_load, &name_to_node)) {
+            handle_thread_error("Load mindIR from real mindir path: " + real_path.value() + " failed.");
+            return;
+          }
+          PROF_END(Cache_LoadMindIR_thread);
+          graph_ids_node_name[root_kernel_graph->graph_id()] = name_to_node;
+          MS_LOG(INFO) << "Load mindir for compile cache from path " << mindir_path << " success.";
         }
-        auto root_kernel_graph = graphs_vec[0];
-        MS_EXCEPTION_IF_NULL(root_kernel_graph);
-        mindir_path = GetMindirPath(cache_path, root_graph_num, root_kernel_graph);
-        MS_LOG(INFO) << "Get mindir path:" << mindir_path << ", for graph " << root_kernel_graph->ToString()
-                     << " success.";
-        auto real_path = Common::CreatePrefixPath(mindir_path, true);
-        if (!CheckPath(real_path)) {
-          MS_LOG(EXCEPTION) << "Invalid mindir path:" << mindir_path;
-        }
-        PROF_START(Cache_LoadMindIR_thread);
-        if (!mindir_loader.LoadMindIR(real_path.value(), graphs_for_load, &name_to_node)) {
-          MS_LOG(EXCEPTION) << "Load mindir for compile graph cache " << real_path.value() << " failed.";
-        }
-        PROF_END(Cache_LoadMindIR_thread);
-        graph_ids_node_name[root_kernel_graph->graph_id()] = name_to_node;
-        MS_LOG(INFO) << "Load mindir for compile cache from path " << mindir_path << " success.";
+      } catch (const std::exception &e) {
+        handle_thread_error("Load in mindIR failed in multi-thread: " + std::string(e.what()));
+        return;
       }
     });
     PROF_START(Cache_LoadJson);
     auto load_json_success = LoadJson(json_path, &model_json);
     PROF_END(Cache_LoadJson);
-    if (!load_json_success) {
-      MS_LOG(EXCEPTION) << "Load json file " << json_path << " failed.";
-    }
     loadmindir.join();
     PROF_END(Cache_thread_load_mindir);
-  }
-  std::map<GraphId, KernelGraphPtr> graphid_to_graph;
-  for (auto iter : root_sub_graphs) {
-    for (auto graph : iter) {
-      graphid_to_graph[graph->graph_id()] = graph;
-      MS_LOG(DEBUG) << "Kernel graph:" << graph->ToString();
+    if (!thread_success || !load_json_success || thread_exception) {
+      MS_LOG(ERROR) << "Load compile cache in multi-thread failed: " << thread_error_msg << ". Load Json "
+                    << (load_json_success == false ? "failed" : "success") << ". Load mindIR "
+                    << (thread_success == false ? "failed." : "success.");
+      return {};
     }
   }
+  std::map<GraphId, KernelGraphPtr> graphid_to_graph = BuildGraphIdMapping(root_sub_graphs);
   if (!frontend_graph->func_graphs_used_total().empty() && model_json.contains(kKernelGraphNum) &&
       model_json[kKernelGraphNum] > 1) {
     MS_LOG(INFO) << "Construct kernel graph by cache for multi graphs.";

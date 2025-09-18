@@ -85,10 +85,11 @@ def test_aclnn_cache_length_kbyk():
     Expectation: set aclnn cache length failed
     """
     os.environ["VLOG_v"] = "20002"
-    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_2 > log_cache_kbyk.txt 2>&1")
-    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 100' log_cache_kbyk.txt")
+    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_2 > log_cache_kbyk_1.txt 2>&1")
+    assert os.path.exists("log_cache_kbyk_1.txt")
+    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 100' log_cache_kbyk_1.txt")
     assert ret == 0
-    os.system("rm -rf log_cache_kbyk.txt")
+    os.system("rm -rf log_cache_kbyk_1.txt")
     del os.environ["VLOG_v"]
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -100,10 +101,11 @@ def test_global_aclnn_cache_kbyk():
     """
     # use ms global aclnn cache
     os.environ["VLOG_v"] = "20002"
-    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_1 > log_cache_kbyk.txt 2>&1")
-    ret_miss = os.popen("grep -i ' gen executor miss cache, hash id: ' log_cache_kbyk.txt | wc -l").read()
+    os.system("pytest -sv test_aclnn_cache.py::test_kbyk_aclnn_cache_1 > log_cache_kbyk_2.txt 2>&1")
+    assert os.path.exists("log_cache_kbyk_2.txt")
+    ret_miss = os.popen("grep -i ' gen executor miss cache, hash id: ' log_cache_kbyk_2.txt | wc -l").read()
     assert int(ret_miss.strip()) == 2
-    os.system("rm -rf log_cache_kbyk.txt")
+    os.system("rm -rf log_cache_kbyk_2.txt")
     del os.environ["VLOG_v"]
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
