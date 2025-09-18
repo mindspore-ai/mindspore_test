@@ -51,7 +51,7 @@ class _CollateFnType(Protocol):
     """
 
     @overload
-    def __call__(self, batch: Union[Sequence[npt.NDArray[Any]], Sequence[numbers.Number]]) -> npt.NDArray[Any]:
+    def __call__(self, batch: Union[Sequence[npt.NDArray], Sequence[numbers.Number]]) -> npt.NDArray:
         pass
 
     @overload
@@ -106,9 +106,11 @@ class DataLoader(Generic[_T_co]):
             If ``None`` , will not batch. Default: ``1`` .
         shuffle (Union[bool, None], optional): Whether to shuffle the dataset. Default: ``None`` , not shuffle.
         sampler (Union[Sampler, Iterable, None], optional): The sampler to use. Default: ``None`` , use
-            ``SequentialSampler`` if `shuffle` is ``False`` , or use ``RandomSampler`` .
+            :class:`~mindspore.dataset.dataloader.SequentialSampler` if `shuffle` is ``False`` , or use
+            :class:`~mindspore.dataset.dataloader.RandomSampler` .
         batch_sampler (Union[Sampler[List], Iterable[List], None], optional): The batch sampler to use.
-            Default: ``None`` ,generate internal ``BatchSampler`` if `batch_size` is not ``None`` .
+            Default: ``None`` ,generate internal :class:`~mindspore.dataset.dataloader.BatchSampler` if `batch_size`
+            is not ``None`` .
         num_workers (int, optional): The number of workers for loading. Default: ``0`` , load in main process.
         collate_fn (Union[_CollateFnType, None], optional): The collate function to use. Default: ``None`` , use
             default collate function.
@@ -119,7 +121,7 @@ class DataLoader(Generic[_T_co]):
         worker_init_fn (Union[Callable[[int], None], None], optional): The worker init function to use.
             Default: ``None`` , do nothing.
         multiprocessing_context (Union[multiprocessing.context.BaseContext, str, None], optional): The multiprocessing
-            context to use. Default: ``None`` , use ``mindspore.multiprocessing`` .
+            context to use. Default: ``None`` , use :mod:`mindspore.multiprocessing`.
         generator (Union[Generator, None], optional): The generator to use. Default: ``None`` , use default generator.
 
     Keyword Args:
@@ -127,6 +129,39 @@ class DataLoader(Generic[_T_co]):
             Default: ``None`` , use ``2`` when `num_workers` is greater than ``0`` .
         persistent_workers (bool, optional): Whether to keep the worker alive after iteration. Default: ``False`` .
         in_order (bool, optional): Whether to keep the order of the data in multi-process loading. Default: ``True`` .
+
+    Examples:
+        >>> from mindspore.dataset.dataloader import DataLoader, Dataset, IterableDataset
+        >>>
+        >>> # 1. Load from map style dataset
+        >>> class MapStyleDataset(Dataset):
+        ...     def __init__(self, data):
+        ...         self.data = data
+        ...
+        ...     def __getitem__(self, index):
+        ...         return self.data[index]
+        ...
+        ...     def __len__(self):
+        ...         return len(self.data)
+        >>>
+        >>> dataset = MapStyleDataset(range(2))
+        >>> dataloader = DataLoader(dataset)
+        >>> print(list(dataloader))
+        [Tensor(shape=[1], dtype=Int64, value= [0]), Tensor(shape=[1], dtype=Int64, value= [1])]
+        >>>
+        >>> # 2. Load from iterable style dataset
+        >>> class IterableStyleDataset(IterableDataset):
+        ...     def __init__(self, num_samples):
+        ...         self.start = 0
+        ...         self.end = num_samples
+        ...
+        ...     def __iter__(self):
+        ...         return iter(range(self.start, self.end))
+        >>>
+        >>> dataset = IterableStyleDataset(2)
+        >>> dataloader = DataLoader(dataset)
+        >>> print(list(dataloader))
+        [Tensor(shape=[1], dtype=Int64, value= [0]), Tensor(shape=[1], dtype=Int64, value= [1])]
     """
 
     def __init__(
