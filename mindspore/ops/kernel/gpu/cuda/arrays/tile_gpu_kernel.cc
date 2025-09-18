@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/tile_gpu_kernel.h"
 #include <algorithm>
 #include <map>
-#include "kernel/gpu/cuda/arrays/tile_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "kernel/ascend/aclnn/pyboost_impl/customize/matmul_reduce_scatter.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "kernel/ascend/aclnn/pyboost_impl/customize/matmul_reduce_scatter.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

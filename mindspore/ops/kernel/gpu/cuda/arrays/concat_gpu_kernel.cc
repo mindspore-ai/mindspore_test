@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/concat_gpu_kernel.h"
 #include <utility>
 #include <map>
-#include "kernel/gpu/cuda/arrays/concat_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "ops_utils/op_utils.h"
 #include "utils/convert_utils_base.h"

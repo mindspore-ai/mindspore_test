@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <memory>
 #include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_scatter_value.h"
+#include <memory>
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"

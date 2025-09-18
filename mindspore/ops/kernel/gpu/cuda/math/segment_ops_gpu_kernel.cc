@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/math/segment_ops_gpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "kernel/gpu/cuda/math/segment_ops_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {

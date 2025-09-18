@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/adjust_saturation_gpu_kernel.h"
 #include <algorithm>
 #include <map>
 #include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/gpu/cuda/arrays/adjust_saturation_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adjustsaturation_impl.cuh"
 
 namespace mindspore {

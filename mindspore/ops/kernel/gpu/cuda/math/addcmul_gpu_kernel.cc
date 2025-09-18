@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <utility>
 #include "kernel/gpu/cuda/math/addcmul_gpu_kernel.h"
+#include <utility>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/cuda_fp16.h"
 

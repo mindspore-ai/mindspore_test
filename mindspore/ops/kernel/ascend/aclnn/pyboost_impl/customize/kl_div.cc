@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <memory>
 #include "kernel/ascend/aclnn/pyboost_impl/customize/kl_div.h"
+#include <memory>
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"

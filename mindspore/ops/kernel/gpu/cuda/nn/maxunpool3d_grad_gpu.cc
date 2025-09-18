@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/cuda/nn/maxunpool3d_grad_gpu_kernel.h"
 #include <utility>
+#include "kernel/gpu/cuda/nn/maxunpool3d_grad_gpu_kernel.h"
 namespace mindspore {
 namespace kernel {
 namespace {

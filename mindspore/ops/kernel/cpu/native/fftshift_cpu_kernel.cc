@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/native/fftshift_cpu_kernel.h"
 #include <functional>
 #include <algorithm>
 #include <utility>
@@ -21,7 +22,6 @@
 #include <complex>
 #include "ops_utils/op_utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "kernel/cpu/native/fftshift_cpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {

@@ -496,9 +496,9 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
                                    const ValueTuplePtr &value_tuple) {
   MS_EXCEPTION_IF_NULL(value_tuple);
   const auto values = value_tuple->value();
-  size_t tensor_num = std::count_if(values.cbegin(), values.cend(), [](const ValuePtr &value) {
+  const auto tensor_num = static_cast<size_t>(std::count_if(values.cbegin(), values.cend(), [](const ValuePtr &value) {
     return value != nullptr && value->isa<tensor::Tensor>();
-  });
+  }));
   if (tensor_num == values.size() && tensor_num != 0) {
     for (const auto &value : values) {
       const auto &tensor = value->cast<tensor::TensorPtr>();

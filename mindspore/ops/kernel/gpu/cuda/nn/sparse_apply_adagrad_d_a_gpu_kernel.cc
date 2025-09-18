@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/nn/sparse_apply_adagrad_d_a_gpu_kernel.h"
+
 #include <vector>
 #include <map>
 #include <string>
@@ -22,7 +24,6 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
-#include "kernel/gpu/cuda/nn/sparse_apply_adagrad_d_a_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_apply_adagrad_d_a_impl.cuh"
 
 namespace mindspore {
