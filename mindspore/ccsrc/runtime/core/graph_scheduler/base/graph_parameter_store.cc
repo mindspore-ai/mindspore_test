@@ -318,6 +318,7 @@ void GraphParameterStore::ReleaseData() {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << kernel_tensor->ToString();
         // Record released info, so that it can check input next step.
+        // Used for CheckInputSize for fetching parameter.
         if (sync_copy_input) {
           auto new_device_tensor = device_tensor->CloneDeviceAddress();
           new_device_tensor->set_ptr(nullptr);
