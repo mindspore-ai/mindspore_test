@@ -11,7 +11,7 @@
 
 # The maintainers of mindspore/ccsrc.
 /mindspore/ccsrc/backend/ @limingqi107
-/mindspore/ccsrc/backend/common/graph_kernel/ @gaoxiong1
+/mindspore/ccsrc/backend/ms_backend/graph_fusion/ @gaoxiong1
 /mindspore/ccsrc/cluster/ @ZPaC
 /mindspore/ccsrc/cmake/ @nicholas_yhr
 /mindspore/ccsrc/common/ @limingqi107
@@ -195,7 +195,7 @@
 
 # The maintainers of tests/ut/cpp.
 /tests/ut/cpp/backend/ @limingqi107
-/tests/ut/cpp/backend/common/graph_kernel/ @gaoxiong1
+/tests/ut/cpp/backend/ms_backend/graph_fusion/ @gaoxiong1
 /tests/ut/cpp/cluster/ @ZPaC
 /tests/ut/cpp/common/ @limingqi107
 /tests/ut/cpp/common/pynative/ @chujinjin

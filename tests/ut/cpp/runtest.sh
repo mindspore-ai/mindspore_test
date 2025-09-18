@@ -38,7 +38,7 @@ cp -fr $PROJECT_PATH/tests/ut/data ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/
 python ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/data/dataset/testAlbum/gen_json.py
 
 ## prepare data for graph kernel
-cp -fr $PROJECT_PATH/tests/ut/cpp/graph_kernel/opt/config ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/graph_kernel_config
+cp -fr $PROJECT_PATH/tests/ut/cpp/backend/ms_backend/graph_fusion/opt/config ${PROJECT_PATH}/build/mindspore/tests/ut/cpp/graph_kernel_config
 
 RET=0
 if [ $# -gt 0 ]; then
