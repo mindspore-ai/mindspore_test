@@ -202,7 +202,10 @@ class TrainFaultTolerance(Callback):
         ckpt_save_path (str): Checkpoint save directory when failure occurs. When saved,
             a new directory named 'ttp_saved_checkpoints-step_{cur_step_num}'
             is created in that directory. Default: ``None``.
-        kwargs (dict): Other dictionary type parameters.
+        kwargs (dict): Other dictionary type parameters. When argument `ckpt_save_path` is ``None``, `kwargs` must
+            provide a parameter named `ckpt_save_fn`, which points to a function used to save checkpoint. The
+            prototype of `ckpt_save_fn` is ``def save_ckpt(cb_params, append_dict)``. When both `ckpt_save_path`
+            and `ckpt_save_fn` are provided, `ckpt_save_fn` is used in priority.
 
     Raises:
         Exception: TFT init failed.
