@@ -2831,6 +2831,11 @@ def tensor_scatter_add(input_x, indices, updates):
     .. math::
         output\left [indices  \right ] = input\_x + update
 
+    The figure below shows an example of the computational process of tensor_scatter_add:
+
+    .. image:: ../images/TensorScatterAdd.png
+        :align: center
+
     Note:
         - On GPU, if some values of the `indices` are out of bound, instead of raising an index error,
           the corresponding `updates` will not be updated to self tensor.

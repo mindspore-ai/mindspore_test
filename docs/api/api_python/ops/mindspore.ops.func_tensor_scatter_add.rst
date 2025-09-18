@@ -8,6 +8,11 @@
     .. math::
         output\left [indices  \right ] = input\_x + update
 
+    下图是tensor_scatter_add计算过程的例子：
+
+    .. image:: ../images/TensorScatterAdd.png
+        :align: center
+
     .. note::
         如果 `indices` 中的值超出输入 `input_x` 索引范围：
 
