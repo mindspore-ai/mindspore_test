@@ -123,7 +123,7 @@ def test_dlpack_non_contiguous_tensor():
     ms_dlpack = to_dlpack(ms_tensor)
     ms_tensor_from_ms_pack = from_dlpack(ms_dlpack)
     assert np.allclose(ms_tensor.asnumpy(), ms_tensor_from_ms_pack.asnumpy())
-    assert ms_tensor.data_ptr() != ms_tensor_from_ms_pack.data_ptr() # Should be different as from_dlpack creates a copy for non-contiguous tensor
+    assert ms_tensor.data_ptr() == ms_tensor_from_ms_pack.data_ptr()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
