@@ -340,6 +340,10 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
   prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
   prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
   prim->set_attr(DATASET_BROADCAST, MakeValue(True));
+  prim->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue<bool>(True));
+  // Broadcast's first input will be inplace updated.
+  // Because primitive created from C++ prim does not have extra signature info, we need to set rw_write manually.
+  prim->set_rw_write_input_indexes({kIndex0});
 
   broadcast->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
   depend->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));

@@ -1775,7 +1775,10 @@ void KernelRunner::ProcessMultiStreamAfterKernelLaunch(OpContext<KernelTensor> *
   // Reset cross stream addresses.
   cross_stream_addresses_.clear();
   // Add ref processes for sync stream on demand.
-  if (!rw_write_index_.empty() && stream_id != kDefaultStreamIndex) {
+  // For 2.7.1 version. Broadcast inplace tuple input is not supported, so we add hard code here.
+  // Remove this hard code after inplace input of AbstractTuple type is supported.
+  if ((!rw_write_index_.empty() || common::AnfAlgo::GetCNodeName(kernel_) == kBroadcastOpName) &&
+      stream_id != kDefaultStreamIndex) {
     auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
       device_contexts_[0]->device_context_key().device_type_);
     multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, stream_id);
