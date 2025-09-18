@@ -344,15 +344,7 @@ def _get_layout_opt_shard(layout_obj, param_redundancy_dict):
     """Layout ckpt append opt shard."""
     for key, value in layout_obj.items():
         if value[5]:
-            world_groups = ("hccl_world_group", "nccl_world_group", "mccl_world_group")
-            if value[5] in world_groups:
-                opt_para_num = get_group_size()
-            elif "-" in value[5]:
-                opt_para_str = value[5].split("-")[0]
-                opt_para_num = int(opt_para_str)
-            else:
-                raise ValueError(f"For get_parameter_redundancy, the format of the parallel communication domain for "
-                                 f"the optimizer is incorrect.")
+            opt_para_num = get_group_size(value[5])
             param_redundancy_ranks = param_redundancy_dict.get(key)
             res = []
             for param_ranks in param_redundancy_ranks:
