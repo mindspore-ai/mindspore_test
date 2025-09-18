@@ -458,5 +458,14 @@ GraphBuildHelperPtr AbstractWrapper::graph_builder_helper() const {
 void AbstractWrapper::set_graph_builder_helper(const GraphBuildHelperPtr &graph_builder_helper) {
   abstract_->set_user_data(kPijitBuildHelper, graph_builder_helper);
 }
+
+bool IsInterpretedObject(const AbstractWrapperPtr &wrapper) {
+  if (wrapper == nullptr || wrapper->abstract() == nullptr) {
+    return false;
+  }
+  auto value = wrapper->abstract()->BuildValue();
+  return value != nullptr && value->isa<parse::InterpretedObject>();
+}
+
 }  // namespace pijit
 }  // namespace mindspore
