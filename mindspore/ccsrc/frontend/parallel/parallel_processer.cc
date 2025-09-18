@@ -138,6 +138,7 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
       }
       auto loss_cnode = loss_node_info.loss_node;
       MS_EXCEPTION_IF_NULL(loss_cnode);
+      MS_EXCEPTION_IF_NULL(sens_cnode);
       if (sens_cnode->size() != loss_cnode->size()) {
         MS_LOG_WITH_NODE(EXCEPTION, sens_cnode) << "for multi output, sens cnode size is not equal to loss cnode size";
       }
