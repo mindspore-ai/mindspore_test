@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/ascend/aclnn/pyboost_impl/customize/fused_infer_attention_score.h"
 #include <utility>
 #include <string>
-#include "kernel/ascend/aclnn/pyboost_impl/customize/fused_infer_attention_score.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"

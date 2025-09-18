@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/nn/adam_gpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "kernel/gpu/cuda/nn/adam_gpu_kernel.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {

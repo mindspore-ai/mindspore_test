@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/arrays/strided_slice_grad_gpu_kernel.h"
 
 #include <algorithm>
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_utils.h"
-#include "kernel/gpu/cuda/arrays/strided_slice_grad_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 
 namespace mindspore {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/fill_gpu_kernel.h"
 #include <limits>
 #include <memory>
 #include <functional>
@@ -21,7 +22,6 @@
 #include "base/float16.h"
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "kernel/gpu/cuda/arrays/fill_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_impl.cuh"
 #include "include/common/utils/utils.h"
 

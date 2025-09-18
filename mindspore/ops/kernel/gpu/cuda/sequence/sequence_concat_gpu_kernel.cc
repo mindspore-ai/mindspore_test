@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/sequence/sequence_concat_gpu_kernel.h"
 #include <algorithm>
 #include <utility>
 #include <complex>
 #include <functional>
-#include "kernel/gpu/cuda/sequence/sequence_concat_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/concat_impl.cuh"
 
 namespace mindspore {

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include "kernel/ascend/aclnn/pyboost_impl/customize/isinf.h"
+
 #include <limits>
 
-#include "kernel/ascend/aclnn/pyboost_impl/customize/isinf.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/abs.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/equal.h"
 

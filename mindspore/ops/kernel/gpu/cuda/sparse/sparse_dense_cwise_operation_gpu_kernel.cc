@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/sparse/sparse_dense_cwise_operation_gpu_kernel.h"
+
 #include <functional>
 #include <vector>
 
@@ -22,7 +24,6 @@
 #include "mindspore/ops/infer/sparse_dense_cwise_div.h"
 #include "mindspore/ops/infer/sparse_dense_cwise_mul.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "kernel/gpu/cuda/sparse/sparse_dense_cwise_operation_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {

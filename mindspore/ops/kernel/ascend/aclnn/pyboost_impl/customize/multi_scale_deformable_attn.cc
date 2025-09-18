@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/ascend/aclnn/pyboost_impl/customize/multi_scale_deformable_attn.h"
 #include <memory>
 #include <tuple>
-#include "kernel/ascend/aclnn/pyboost_impl/customize/multi_scale_deformable_attn.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/cast.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/native/apply_ada_max_cpu_kernel.h"
 #include <cmath>
 #include <map>
 #include <functional>
-#include "kernel/cpu/native/apply_ada_max_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"

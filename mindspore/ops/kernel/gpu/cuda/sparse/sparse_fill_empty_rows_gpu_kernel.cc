@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <functional>
 #include "kernel/gpu/cuda/sparse/sparse_fill_empty_rows_gpu_kernel.h"
+#include <functional>
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 

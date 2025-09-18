@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/cpu/native/adam_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
 #include "mindspore/ops/infer/adam.h"
-#include "kernel/cpu/native/adam_cpu_kernel.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 

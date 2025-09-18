@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/sparse/sparse_matrix_mul_gpu_kernel.h"
 #include <algorithm>
 #include <map>
 #include <set>
 #include <utility>
-#include "kernel/gpu/cuda/sparse/sparse_matrix_mul_gpu_kernel.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/sparse_matrix_mul.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_matrix_mul.cuh"

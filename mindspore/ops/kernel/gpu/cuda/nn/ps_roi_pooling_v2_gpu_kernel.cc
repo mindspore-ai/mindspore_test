@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <utility>
 #include "kernel/gpu/cuda/nn/ps_roi_pooling_v2_gpu_kernel.h"
+#include <utility>
 #include "mindspore/ops/infer/ps_roi_pooling.h"
 
 namespace mindspore {

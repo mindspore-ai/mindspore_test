@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/nn/maxpool_with_argmax_v2_gpu_kernel.h"
 #include <algorithm>
 #include <memory>
-#include "kernel/gpu/cuda/nn/maxpool_with_argmax_v2_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_with_argmax_v2_impl.cuh"
 #include "mindspore/ops/infer/max_pool_with_argmax_v2.h"
 

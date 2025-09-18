@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/native/sparse_matrix_mul_cpu_kernel.h"
 #include <algorithm>
 #include <map>
 #include <set>
 #include <utility>
-#include "kernel/cpu/native/sparse_matrix_mul_cpu_kernel.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/sparse_matrix_mul.h"
 

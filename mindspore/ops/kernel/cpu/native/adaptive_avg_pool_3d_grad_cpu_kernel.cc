@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/native/adaptive_avg_pool_3d_grad_cpu_kernel.h"
 #include <cmath>
 #include <memory>
-#include "kernel/cpu/native/adaptive_avg_pool_3d_grad_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 
 namespace mindspore {

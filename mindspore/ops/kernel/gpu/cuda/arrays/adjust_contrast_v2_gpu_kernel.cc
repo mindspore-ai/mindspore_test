@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/arrays/adjust_contrast_v2_gpu_kernel.h"
 
 #include <algorithm>
 #include <map>
@@ -20,7 +21,6 @@
 #include <functional>
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/gpu/cuda/arrays/adjust_contrast_v2_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adjust_contrast_v2_impl.cuh"
 #include "mindspore/ops/op_def/op_name.h"
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/sparse/sparse_tensor_to_csr_sparse_matrix_gpu_kernel.h"
 #include <complex>
 #include <algorithm>
 #include <functional>
@@ -21,7 +22,6 @@
 #include <map>
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "kernel/gpu/cuda/sparse/sparse_tensor_to_csr_sparse_matrix_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace kernel {

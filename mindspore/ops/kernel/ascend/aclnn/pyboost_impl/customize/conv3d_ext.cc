@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/ascend/aclnn/pyboost_impl/customize/conv3d_ext.h"
 #include <memory>
 #include <algorithm>
 #include <string>
-#include "kernel/ascend/aclnn/pyboost_impl/customize/conv3d_ext.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"

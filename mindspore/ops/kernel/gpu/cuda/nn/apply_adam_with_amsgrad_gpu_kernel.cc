@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include "kernel/gpu/cuda/nn/apply_adam_with_amsgrad_gpu_kernel.h"
+#include <algorithm>
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_adam_with_amsgrad_impl.cuh"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/curand.h"

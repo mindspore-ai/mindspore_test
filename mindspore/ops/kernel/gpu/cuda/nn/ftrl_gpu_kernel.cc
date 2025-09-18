@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <algorithm>
 #include "kernel/gpu/cuda/nn/ftrl_gpu_kernel.h"
+#include <algorithm>
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 

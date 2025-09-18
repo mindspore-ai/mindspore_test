@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/diag_part_gpu_kernel.h"
 #include <functional>
 #include <utility>
 #include <string>
 #include <algorithm>
 #include "kernel/gpu/cuda_impl/cuda_ops/diag_part_impl.cuh"
-#include "kernel/gpu/cuda/arrays/diag_part_gpu_kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 
 namespace mindspore {

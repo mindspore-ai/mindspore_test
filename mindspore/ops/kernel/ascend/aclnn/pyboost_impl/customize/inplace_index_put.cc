@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <functional>
 #include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_index_put.h"
+#include <functional>
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_inplace_index_put.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/inner_non_zero.h"
 #include "kernel/ascend/aclnn/pyboost_impl/auto_generate/select_ext_view.h"

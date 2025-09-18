@@ -342,8 +342,10 @@ must be provided for comm op {operator_name}")
                     f'#include "mindspore/ops/kernel/ascend/hccl/pyboost/{operator_name.lower()}.h"\n'
             else:
                 if self.device == 'ascend':
-                    customize_include = \
-                        f'#include "{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/customize/{operator_name.lower()}.h"\n'
+                    customize_include = (
+                        f'#include "{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/customize/'
+                        f'{operator_name.lower()}.h"\n'
+                    )
                 else:
                     customize_include = \
                         f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'

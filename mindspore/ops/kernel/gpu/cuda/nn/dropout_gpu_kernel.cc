@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/nn/dropout_gpu_kernel.h"
 #include <functional>
 #include <algorithm>
-#include "kernel/gpu/cuda/nn/dropout_gpu_kernel.h"
 #include "mindspore/ops/infer/ops_func_impl/dropout.h"
 #include "runtime/hardware_abstract/kernel_base/philox_random.h"
 

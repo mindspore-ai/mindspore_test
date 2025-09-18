@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/ones_gpu_kernel.h"
 #include <cstdint>
 #include <algorithm>
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "kernel/gpu/cuda/arrays/ones_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_v2_impl.cuh"
 #include "kernel/gpu/gpu_common.h"

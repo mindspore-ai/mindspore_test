@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/arrays/conjugate_transpose_gpu_kernel.h"
 #include <functional>
 #include <utility>
 #include <string>
@@ -22,7 +23,6 @@
 #include <tuple>
 #include <memory>
 #include <complex>
-#include "kernel/gpu/cuda/arrays/conjugate_transpose_gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

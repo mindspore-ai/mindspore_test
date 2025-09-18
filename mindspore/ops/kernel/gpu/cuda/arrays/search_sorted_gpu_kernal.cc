@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <iostream>
 #include "kernel/gpu/cuda/arrays/search_sorted_gpu_kernal.h"
+#include <iostream>
 #include "kernel/gpu/cuda_impl/cuda_ops/search_sorted_impl.cuh"
 
 namespace mindspore {

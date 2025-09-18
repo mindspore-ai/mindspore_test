@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/nn/dropout_grad_kernel.h"
 #include <algorithm>
 #include <functional>
 #include <map>
 #include <utility>
 
-#include "kernel/gpu/cuda/nn/dropout_grad_kernel.h"
 #include "mindspore/ops/infer/grad/dropout_grad.h"
 
 namespace mindspore {

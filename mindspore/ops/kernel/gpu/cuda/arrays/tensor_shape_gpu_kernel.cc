@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/arrays/tensor_shape_gpu_kernel.h"
+
 #include <cstdint>
 
-#include "kernel/gpu/cuda/arrays/tensor_shape_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 

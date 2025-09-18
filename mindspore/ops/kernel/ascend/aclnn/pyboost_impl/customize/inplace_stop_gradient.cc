@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_stop_gradient.h"
 #include <memory>
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "kernel/ascend/aclnn/pyboost_impl/customize/inplace_stop_gradient.h"
 #include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/include/common/pynative/variable.h"
 
