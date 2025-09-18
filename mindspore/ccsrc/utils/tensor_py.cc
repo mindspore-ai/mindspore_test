@@ -217,7 +217,7 @@ bool TensorPy::IsContiguous() const { return GetTensor()->is_contiguous(); }
 
 std::vector<int64_t> TensorPy::GetStride() const { return GetTensor()->stride(); }
 
-const int64_t TensorPy::GetStorageOffset() const { return GetTensor()->storage_offset(); }
+const int64_t TensorPy::GetStorageOffset() const { return SizeToLong(GetTensor()->storage_offset()); }
 
 std::string TensorPy::ToString() const { return GetTensor()->ToString(); }
 

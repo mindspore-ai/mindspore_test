@@ -373,9 +373,9 @@ std::vector<int64_t> Tensor::stride() const {
   return ret;
 }
 
-const int64_t Tensor::storage_offset() const {
+size_t Tensor::storage_offset() const {
   const auto &storage = storage_info();
-  return storage == nullptr ? 0 : SizeToLong(storage->storage_offset);
+  return storage == nullptr ? 0 : storage->storage_offset;
 }
 
 void Tensor::ExecuteLazyTask() const {
