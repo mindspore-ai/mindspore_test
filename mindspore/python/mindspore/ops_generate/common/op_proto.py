@@ -229,7 +229,8 @@ class OpProtoLoader(ResourceLoader):
     def __init__(self):
         ops_yaml_path = os.path.join(K.WORK_DIR, K.MS_OP_DEF_YAML_PATH)
         infer_ops_yaml_path = os.path.join(ops_yaml_path, 'infer')
-        self.yaml_paths = [ops_yaml_path, infer_ops_yaml_path]
+        comm_ops_yaml_path = os.path.join(ops_yaml_path, 'communication')
+        self.yaml_paths = [ops_yaml_path, infer_ops_yaml_path, comm_ops_yaml_path]
         self.type = ResourceType.OP_PROTO
         self.is_deprecated = False
         self.func_op = False

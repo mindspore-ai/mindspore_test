@@ -80,6 +80,7 @@ INPUT_NAME_MAP = {"DeprecatedExpandAs": "input"}
 
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"
+MS_OPS_COMM_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl/communication"
 
 # view
 MS_OPS_VIEW_PATH = "mindspore/ops/view"
