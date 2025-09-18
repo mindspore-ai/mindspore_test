@@ -199,7 +199,6 @@ double GammaCpuKernelMod::GenerateSingleGammaSample(random::PhiloxRandom *gen, d
 
     double u_max = 1 - 0.0331 * (x * x) * (x * x);
     double u_lmax = 0.5 * x * x + su * (1 - v + log(v));
-
     if ((u < u_max) || (log(u) < u_lmax)) {
       double res = su * v;
       if (alpha_less_than_one) {

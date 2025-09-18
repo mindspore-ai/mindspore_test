@@ -31,7 +31,6 @@ tensor::TensorPtr Dropout2dExtAscendCustomize(const std::shared_ptr<OpRunner> &o
   auto training_ = training->value();
   auto inplace_ = inplace->value();
   auto p_ = static_cast<double>(p->value());
-
   if (MS_UNLIKELY(p_ < 0 || p_ > 1)) {
     MS_EXCEPTION(ValueError) << "For Dropout2d, 'p' must be in [0, 1], but got " << p_;
   }

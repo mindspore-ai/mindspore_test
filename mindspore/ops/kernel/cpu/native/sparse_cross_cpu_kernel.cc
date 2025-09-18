@@ -38,16 +38,6 @@ constexpr int64_t kOutputShape = 2;
 }  // namespace
 
 template <typename T>
-class TensorColumnBase {
- public:
-  virtual int64_t FeatureCount(int64_t batch) const = 0;
-
-  virtual T Feature(int64_t batch, int64_t n) const = 0;
-
-  virtual ~TensorColumnBase() {}
-};
-
-template <typename T>
 class SparseTensorColumn : public TensorColumnBase<T> {
  public:
   SparseTensorColumn(const T *values_ptr, const std::vector<int64_t> &feature_counts,
@@ -189,7 +179,7 @@ class ProductIterator {
   bool HasNext() const { return has_next_; }
 
  private:
-  bool has_next_;
+  bool has_next_ = false;
   const std::vector<std::unique_ptr<TensorColumnBase<T>>> &columns_;
   const int64_t batch_index_;
   std::vector<int64_t> next_permutation_;
@@ -279,12 +269,11 @@ std::vector<std::unique_ptr<TensorColumnBase<T>>> GenerateColumnsFromInput(
   ExtractFeatureData(indices_list_in, batch_size, &feature_counts, &feature_start_indices);
   columns.reserve(values_list_in.size() + dense_base_ptrs.size());
   for (uint32_t i = 0; i < values_list_in.size(); ++i) {
-    columns.emplace_back(std::unique_ptr<TensorColumnBase<T>>(
-      new SparseTensorColumn<T>(values_list_in[i].data(), feature_counts[i], feature_start_indices[i])));
+    columns.emplace_back(
+      std::make_unique<SparseTensorColumn<T>>(values_list_in[i].data(), feature_counts[i], feature_start_indices[i]));
   }
   for (uint32_t i = 0; i < dense_base_ptrs.size(); ++i) {
-    columns.emplace_back(
-      std::unique_ptr<TensorColumnBase<T>>(new DenseTensorColumn<T>(dense_base_ptrs[i], dense_row_strides[i])));
+    columns.emplace_back(std::make_unique<DenseTensorColumn<T>>(dense_base_ptrs[i], dense_row_strides[i]));
   }
   return columns;
 }
