@@ -13,5 +13,5 @@
 # limitations under the License.
 # ============================================================================
 """Interfaces for hybrid sharded data parallel"""
-from mindspore.parallel.spmd.hsdp.hsdp import hsdp
-__all__ = ["hsdp"]
+from mindspore.parallel.spmd.hsdp.hsdp import hsdp, HSDPCell
+__all__ = ["hsdp", "HSDPCell"]

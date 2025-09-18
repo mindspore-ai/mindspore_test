@@ -60,7 +60,7 @@ class HSDPCell:
     def zero_grads(self):
         """zero accumunication grads"""
         if not hasattr(self, "hsdp_scheduler"):
-            return
+            raise ValueError("call hsdp interface first.")
         self.hsdp_scheduler.zero_grads()
         for sub_cell in self.cells():
             if isinstance(sub_cell, HSDPCell):

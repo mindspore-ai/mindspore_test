@@ -55,6 +55,8 @@ class HSDPScheduler:
         """set requires grad sync flag to control gradient sync."""
         if self.requires_acc_grad:
             for hsdp_param in self.hsdp_state.hsdp_params:
+                if not hsdp_param.param.requires_grad:
+                    continue
                 hsdp_param.zero_acc_grad()
 
     def _get_param_forward_hook(self, param):
@@ -89,6 +91,8 @@ class HSDPScheduler:
     def _register_cell_hooks(self):
         """register cell process hooks."""
         for hsdp_param in self.hsdp_state.hsdp_params:
+            if not hsdp_param.param.requires_grad:
+                continue
             hsdp_param.param.register_hook(self._get_param_grad_hook(hsdp_param))
         if self.no_param_sharded:
             return

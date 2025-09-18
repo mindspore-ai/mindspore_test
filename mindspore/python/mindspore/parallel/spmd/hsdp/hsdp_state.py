@@ -32,8 +32,6 @@ class HSDPState:
         for _, sub_cell in cells:
             params = sub_cell._params.items() #pylint: disable=W0212
             for param_name, param in params:
-                if not param.requires_grad:
-                    continue
                 if hasattr(param, "has_hsdp_param"):
                     continue
                 hsdp_param = HSDPParam(sub_cell, param_name, param, self.config)

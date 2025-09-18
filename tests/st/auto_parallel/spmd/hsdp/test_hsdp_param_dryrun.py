@@ -22,7 +22,7 @@ from mindspore.parallel.spmd.hsdp.hsdp_param import HSDPParam
 from mindspore.parallel.spmd.hsdp.hsdp_utils import OptimizerLevel, HSDPConfig
 os.environ["MS_SIMULATION_LEVEL"] = "0"
 os.environ["RANK_SIZE"] = "32"
-os.environ["RANK_ID"] = "0"
+os.environ["RANK_ID"] = "9"
 init()
 
 def get_hsdp_param(net):
@@ -91,7 +91,7 @@ def test_hsdp_param_with_layout():
     hsdp_param.to_unsharded()
     assert net.weight.local_shape == (64, 256)
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_hsdp_no_init_param_with_layout():
     """
     Feature: hsdp no init param with layout.
@@ -105,6 +105,30 @@ def test_hsdp_no_init_param_with_layout():
 
     device_matrix = (4, 8)
     alias_name = ("dp", "mp")
+    rank_list = list(range(32))
+    layout = Layout(device_matrix, alias_name, rank_list)
+    w_layout = layout("mp", "None")
+    net.weight = net.weight.local_to_global(w_layout)
+
+    hsdp_param = get_hsdp_param(net)
+    hsdp_param.to_sharded()
+    assert net.weight.local_shape == (32, 256)
+    hsdp_param.to_unsharded()
+    assert net.weight.local_shape == (64, 256)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_param_with_two_axis_unshard():
+    """
+    Feature: hsdp param with layout.
+    Description: hsdp param device matrix two axis not sharded.
+    Expectation: construct hsdp param without error.
+    """
+    in_channels = 256
+    out_channels = 64
+    net = nn.Dense(in_channels, out_channels, weight_init="ones")
+
+    device_matrix = (4, 8, 1)
+    alias_name = ("dp", "mp", "xp")
     rank_list = list(range(32))
     layout = Layout(device_matrix, alias_name, rank_list)
     w_layout = layout("mp", "None")

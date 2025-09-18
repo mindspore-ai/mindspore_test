@@ -202,3 +202,18 @@ def test_hsdp_custom_shard_size():
     run_hsdp(net, data, label, "level1")
     assert net.dense1.weight.shape == (64, 256)
     assert net.dense2.weight.shape == (8, 128)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_hsdp_freeze_param():
+    """
+    Feature: hsdp
+    Description: test hsdp with weight freezed
+    Expectation: run success
+    """
+    net, data, label = construct_net_and_data()
+    net.dense1.weight.hsdp_shard_size = 2
+    net.dense2.weight.hsdp_shard_size = 8
+    net.dense2.weight.requires_grad = False
+    run_hsdp(net, data, label, "level1")
+    assert net.dense1.weight.shape == (64, 256)
+    assert net.dense2.weight.shape == (8, 128)

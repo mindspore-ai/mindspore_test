@@ -134,6 +134,7 @@ class HSDPParam:
         self.global_rank_stride_list.reverse()
         self.hsdp_rank_stride_list.reverse()
         self.tp_rank_stride_list.reverse()
+        self.unsharded_reverse_axis_list.reverse()
 
         rank_indices = []
         index = self.local_rank
@@ -268,7 +269,7 @@ class HSDPParam:
             self.sharded = False
             self.fully_sharded = False
             self.param.init_data()
-            if self.config.requires_acc_grad:
+            if self.config.requires_acc_grad and self.param.requires_grad:
                 self.acc_grad = Parameter(initializer("zeros", self.param.local_shape, self.param.dtype),
                                           name="acc_grad_"+self.param.name,
                                           requires_grad=False)
@@ -278,7 +279,7 @@ class HSDPParam:
         origin_param_shape = [i for i in self.param.local_shape]
         self._init_unsharded_param()
         self._init_sharded_param()
-        if self.config.requires_acc_grad:
+        if self.config.requires_acc_grad and self.param.requires_grad:
             acc_grad_shape = origin_param_shape
             if self.config.shard_level != OptimizerLevel.SHARD_OPT:
                 acc_grad_shape = self.sharded_param.shape
