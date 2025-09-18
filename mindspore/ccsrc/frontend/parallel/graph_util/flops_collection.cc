@@ -135,7 +135,8 @@ int64_t CalFAFlops(const std::vector<ShapeVector> &input_shapes, int64_t input_l
       h1 = q_shape[1] * q_shape[kIndex3];
       break;
     default:
-      MS_LOG(EXCEPTION) << "FA Not support layout: " << input_layout << " in flops collection.";
+      MS_LOG(WARNING) << "FA Not support layout: " << input_layout << " in flops collection.";
+      return -1;
   }
   return k_double_expand_ratio * k_double_expand_ratio * b * s1 * s2 * h1;
 }
