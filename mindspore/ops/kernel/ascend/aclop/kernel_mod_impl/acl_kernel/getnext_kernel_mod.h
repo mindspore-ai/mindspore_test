@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,37 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_CUSTOM_OP_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_CUSTOM_OP_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_GETNEXT_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_GETNEXT_KERNEL_MOD_H_
 #include <vector>
-#include <set>
-#include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
-class CustomOpAclKernelMod : public AclKernelMod {
+class GetNextAclKernelMod : public AclKernelMod {
  public:
-  CustomOpAclKernelMod() {}
-  ~CustomOpAclKernelMod() = default;
+  GetNextAclKernelMod() {}
+  ~GetNextAclKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
-  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
-  bool IsNeedUpdateOutputShapeAndSize() override {
-    // Subsequently, consider configuring based on user settings in dynamic shape scenarios.
-    return false;
-  }
+  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
 
+  // Already update output shape and size in Resize, just skip UpdateOutputShapeAndSize impl.
   void UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
                                 const std::vector<KernelTensor *> &outputs) override {}
 
-  void SetValueDependArgs(const std::set<int64_t> &indices) override {}
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_CUSTOM_OP_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_GETNEXT_KERNEL_MOD_H_

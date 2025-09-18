@@ -11,7 +11,7 @@
 
 # The maintainers of mindspore/ccsrc.
 /mindspore/ccsrc/backend/ @limingqi107
-/mindspore/ccsrc/backend/common/graph_kernel/ @gaoxiong1
+/mindspore/ccsrc/backend/ms_backend/graph_fusion/ @gaoxiong1
 /mindspore/ccsrc/cluster/ @ZPaC
 /mindspore/ccsrc/cmake/ @nicholas_yhr
 /mindspore/ccsrc/common/ @limingqi107
@@ -70,7 +70,7 @@
 
 # The maintainers of mindspore/ops.
 /mindspore/ops/ @liangchenghui
-/mindspore/ops/kernel/ascend/acl/ @limingqi107
+/mindspore/ops/kernel/ascend/aclop/ @limingqi107
 /mindspore/ops/kernel/ascend/acl_ir/ @limingqi107
 /mindspore/ops/kernel/ascend/akg/ @gaoxiong1
 /mindspore/ops/kernel/ascend/ascendc/ @limingqi107

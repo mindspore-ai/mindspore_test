@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/acl/acl_kernel_build.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"
 #include <vector>
-#include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

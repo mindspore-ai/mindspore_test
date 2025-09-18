@@ -27,7 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_build.h"
-#include "kernel/ascend/acl/acl_kernel_build.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"
 #include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_build.h"
 #include "plugin/ascend/kernel_executor/host/host_kernel_metadata.h"
