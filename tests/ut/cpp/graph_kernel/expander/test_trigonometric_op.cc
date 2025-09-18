@@ -26,13 +26,13 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "graph_kernel/expander/base.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore::graphkernel::test {
 namespace {
-struct SigmoidParams {
+struct Params {
   bool can_expand;
+  std::string op_name;
   ShapeVector input_shape;
   ShapeVector expect_shape;
   TypePtr type;
@@ -45,69 +45,68 @@ struct GradParams {
 };
 }  // namespace
 
-/// Feature: Test graph kernel Sigmoid expander
-/// Description: Sigmoid will expanded
-/// Expectation: After expand, the output shape and data type of sub graph should match expect
-class TestSigmoidExpander : public TestGraphKernelExpander, public testing::WithParamInterface<SigmoidParams> {
-  void SetUp() override {
-    SetDeviceTarget(kAscendDevice);
-    std::map<std::string, std::string> jit_config;
-    jit_config["graph_kernel_flags"] = "--kernel_generator=DVM";
-    graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
-  }
+/// Feature: Test graph kernel Tanh/Cosh/... expander
+/// Description: test op with different inputs
+/// Expectation: Can be expanded only when its input data types are supported.
+class TestTrigonometricExpander : public TestGraphKernelExpander, public testing::WithParamInterface<Params> {
+  void SetUp() override { SetDeviceTarget(kAscendDevice); }
 };
 
-TEST_P(TestSigmoidExpander, Sigmoid) {
+TEST_P(TestTrigonometricExpander, trigonometric_op) {
   const auto &param = GetParam();
   ConstructGraph c;
-  auto shape = c.NewTensorInput("input_shape", param.type, param.input_shape);
-  auto op = c.NewCNodeWithBuildInfo("Sigmoid", {shape}, {});
+  auto x = c.NewTensorInput("x", param.type, param.input_shape);
+  auto op = c.NewCNodeWithBuildInfo(param.op_name, {x});
   c.SetOutput(op);
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>()});
   auto nodes = TopoSort(c.GetGraph()->get_return());
   for (const auto &node : nodes) {
     if (node != nullptr && AnfUtils::IsGraphKernel(node)) {
-      auto fg = GetCNodeFuncGraph(node);
-      auto output_node = fg->output();
-      if (IsPrimitiveCNode(output_node, prim::kPrimCast)) {
-        auto cnode = output_node->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(cnode);
-        output_node = cnode->input(1);
-      }
-      CompareShapeAndType(output_node, 0, param.expect_shape, kFloat32->type_id());
+      CompareShapeAndType(node, 0, param.expect_shape, param.type->type_id());
     }
   }
+  auto g = c.GetGraph();
+  UT_CHECK_NULL(g);
+  auto gknodes = GetAllGKNodes(g);
   size_t gk_size = param.can_expand ? 1 : 0;
-  ASSERT_EQ(GetAllGKNodes(c.GetGraph()).size(), gk_size);
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-/// Feature: Test graph kernel SigmoidGrad expander
+/// Feature: Test graph kernel TanhGrad expander
 /// Description: test op with different inputs
 /// Expectation: Can be expanded only when its input data types are supported.
-class TestSigmoidGradExpander : public TestGraphKernelExpander, public testing::WithParamInterface<GradParams> {
+class TestTanhGradExpander : public TestGraphKernelExpander, public testing::WithParamInterface<GradParams> {
   void SetUp() override { SetDeviceTarget(kAscendDevice); }
 };
 
-TEST_P(TestSigmoidGradExpander, sigmoid_grad) {
+TEST_P(TestTanhGradExpander, tanh_grad) {
   const auto &param = GetParam();
   ConstructGraph c;
   auto y = c.NewTensorInput("y", param.type, param.shape);
   auto dy = c.NewTensorInput("dy", param.type, param.shape);
-  auto op = c.NewCNodeWithBuildInfo("SigmoidGrad", {y, dy});
+  auto op = c.NewCNodeWithBuildInfo("TanhGrad", {y, dy});
   c.SetOutput(op);
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>()});
   size_t gk_size = param.can_expand ? 1 : 0;
   ASSERT_EQ(GetAllGKNodes(c.GetGraph()).size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpSigmoid, TestSigmoidExpander,
-                        testing::Values(SigmoidParams{true, {16, 16}, {16, 16}, kFloat16},
-                                        SigmoidParams{true, {16, 16}, {16, 16}, kFloat32},
-                                        SigmoidParams{true, {16, 16}, {16, 16}, kBFloat16},
-                                        SigmoidParams{false, {16, 16}, {16, 16}, kInt64}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpTrigonometric, TestTrigonometricExpander,
+  testing::Values(
+    Params{true, "Tanh", {16, 16}, {16, 16}, kFloat32}, Params{false, "Tanh", {16, 16}, {16, 16}, kFloat16},
+    Params{false, "Tanh", {16, 16}, {16, 16}, kBFloat16}, Params{false, "Tanh", {16, 16}, {16, 16}, kFloat64},
+    Params{true, "Cosh", {16, 16}, {16, 16}, kFloat32}, Params{false, "Cosh", {16, 16}, {16, 16}, kFloat16},
+    Params{false, "Cosh", {16, 16}, {16, 16}, kBFloat16}, Params{false, "Cosh", {16, 16}, {16, 16}, kFloat64},
+    Params{true, "Sinh", {16, 16}, {16, 16}, kFloat32}, Params{false, "Sinh", {16, 16}, {16, 16}, kFloat16},
+    Params{false, "Sinh", {16, 16}, {16, 16}, kBFloat16}, Params{false, "Sinh", {16, 16}, {16, 16}, kFloat64},
+    Params{true, "AcoshExt", {16, 16}, {16, 16}, kFloat32}, Params{true, "AcoshExt", {16, 16}, {16, 16}, kFloat16},
+    Params{true, "AcoshExt", {16, 16}, {16, 16}, kBFloat16}, Params{false, "AcoshExt", {16, 16}, {16, 16}, kFloat64},
+    Params{true, "AsinhExt", {16, 16}, {16, 16}, kFloat32}, Params{true, "AsinhExt", {16, 16}, {16, 16}, kFloat16},
+    Params{true, "AsinhExt", {16, 16}, {16, 16}, kBFloat16}, Params{false, "AsinhExt", {16, 16}, {16, 16}, kFloat64}));
 
-INSTANTIATE_TEST_CASE_P(TestOpSigmoidGrad, TestSigmoidGradExpander,
+INSTANTIATE_TEST_CASE_P(TestOpTanhGrad, TestTanhGradExpander,
                         testing::Values(GradParams{true, kFloat16, {16, 16}}, GradParams{true, kFloat32, {16, 16}},
                                         GradParams{true, kBFloat16, {16, 16}}, GradParams{true, kBFloat16, {-1, -1}},
-                                        GradParams{false, kInt64, {16, 16}}));
+                                        GradParams{false, kFloat64, {16, 16}}, GradParams{false, kInt64, {16, 16}}));
 }  // namespace mindspore::graphkernel::test

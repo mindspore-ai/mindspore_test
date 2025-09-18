@@ -26,7 +26,7 @@ namespace mindspore::graphkernel::expander {
 bool FormatDefaultNchwSame(const std::string &f0, const std::string &f1);
 bool CheckAllFormatsSame(const DefaultIrBuilder *ib,
                          const std::function<bool(const std::string &, const std::string &)> &check = nullptr);
-
+bool CheckAllDataTypeSame(const DefaultIrBuilder *ib);
 bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attrs);
 bool CheckSupportFormat(const DefaultIrBuilder *ib, const std::vector<std::vector<std::string>> &formats_list);
 ShapeVector ExpandDimsInferShape(const ShapeVector &shape, const std::vector<int64_t> &axis);

@@ -16,8 +16,43 @@
 #include "backend/ms_backend/graph_fusion/expander/base/ir_builder.h"
 #include "backend/ms_backend/graph_fusion/expander/base/utils.h"
 #include "ops_utils/op_utils.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore::graphkernel::expander {
+namespace {
+bool GetShapeValue(const NodePtr &node, ShapeVector *shape) {
+  if (node == nullptr || shape == nullptr) {
+    return false;
+  }
+  auto value = node->GetValue();
+  if (value == nullptr || !IsValueKnown(value)) {
+    MS_LOG(DEBUG) << "input is not const value";
+    return false;
+  }
+  if (value->isa<ValueSequence>()) {
+    auto seq = value->cast<ValueSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq);
+    for (const auto &v : seq->value()) {
+      if (v == nullptr) {
+        return false;
+      }
+      if (v->isa<Int64Imm>()) {
+        shape->push_back(GetValue<int64_t>(v));
+      } else {
+        MS_LOG(DEBUG) << "ValueSequence element is not int64";
+        return false;
+      }
+    }
+  } else if (value->isa<tensor::Tensor>()) {
+    *shape = CheckAndConvertUtils::CheckTensorIntValue("input", value, "GetShapeValue");
+  } else {
+    MS_LOG(DEBUG) << "input is not ValueSequence or Tensor";
+    return false;
+  }
+  return true;
+}
+}  // namespace
+
 REG_EXPANDER_FUNC("Identity").SetBody(BODYFUNC(ib) {
   const auto &input_x = ib->input(0);
   auto x_shape = input_x->GetShape();
@@ -69,13 +104,26 @@ REG_EXPANDER_FUNC("ZerosLikeExt").SetBody(BODYFUNC(ib) {
 
 REG_EXPANDER_FUNC("FillV2").SetBody(BODYFUNC(ib) {
   const auto &shape = ib->input(kIndex0);
-  auto shape_value_ptr = shape->GetValue();
-  if (shape_value_ptr == nullptr || !IsValueKnown(shape_value_ptr)) {
-    MS_LOG(DEBUG) << "shape is not const value";
+  ShapeVector output_shape;
+  if (!GetShapeValue(shape, &output_shape)) {
+    MS_LOG(DEBUG) << "Fail to get shape value";
     return {};
   }
   const auto &val = ib->input(kIndex1);
-  auto result = ib->BroadcastTo(val, shape);
+  auto value_ptr = val->GetValue();
+  if (value_ptr == nullptr || !IsValueKnown(value_ptr)) {
+    MS_LOG(DEBUG) << "value is not const value";
+    return {};
+  }
+  auto value_type = val->GetDtype();
+  MS_EXCEPTION_IF_NULL(value_type);
+  auto value_type_id = value_type->type_id();
+  if (value_type_id != kNumberTypeFloat16 && value_type_id != kNumberTypeFloat32 &&
+      value_type_id != kNumberTypeBFloat16 && value_type_id != kNumberTypeInt32) {
+    MS_LOG(DEBUG) << "value data type is not supported: " << TypeIdToString(value_type_id);
+    return {};
+  }
+  auto result = ib->BroadcastTo(val, ib->Value(output_shape));
   return {result};
 });
 

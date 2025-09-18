@@ -25,6 +25,18 @@ class LambApplyOptimizerAssign : public OpDesc {
   ~LambApplyOptimizerAssign() = default;
 
  protected:
+  bool CheckInputs() override {
+    for (size_t i = kIndex1; i <= kIndex11; ++i) {
+      if (inputs_info_[i].type != inputs_info_[0].type) {
+        MS_LOG(DEBUG) << "In LambApplyOptimizerAssign, inputs[" << i
+                      << "] data type: " << TypeIdToString(inputs_info_[i].type)
+                      << ", which is different from inputs[0] data type: " << TypeIdToString(inputs_info_[0].type);
+        return false;
+      }
+    }
+    return true;
+  }
+
   NodePtrList Expand(const NodePtrList &inputs) override {
     const auto &grad = inputs[0];
     const auto &inputv = inputs[1];

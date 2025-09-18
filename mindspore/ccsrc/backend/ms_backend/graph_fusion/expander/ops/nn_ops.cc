@@ -70,10 +70,15 @@ NodePtr CastOp(const DefaultIrBuilder *ib, const NodePtr &node, TypeId dst_type)
 }
 }  // namespace
 
-REG_EXPANDER_FUNC("AdamApplyOneWithDecay").SetBody(BODYFUNC(ib) { return ComputeAdamApplyOneWithDecay(ib); });
+REG_EXPANDER_FUNC("AdamApplyOneWithDecay").SetBody(BODYFUNC(ib) {
+  if (!CheckAllFormatsSame(ib) || !CheckAllDataTypeSame(ib)) {
+    return {};
+  }
+  return ComputeAdamApplyOneWithDecay(ib);
+});
 
 REG_EXPANDER_FUNC("AdamApplyOneWithDecayAssign").SetBody(BODYFUNC(ib) {
-  if (!CheckAllFormatsSame(ib)) {
+  if (!CheckAllFormatsSame(ib) || !CheckAllDataTypeSame(ib)) {
     return {};
   }
   auto compute_res = ComputeAdamApplyOneWithDecay(ib);
@@ -388,10 +393,30 @@ REG_EXPANDER_FUNC("HShrink").SetBody(BODYFUNC(ib) {
     return {};
   }
   auto lambd = ib->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(input->GetDtype());
+  MS_EXCEPTION_IF_NULL(lambd->GetDtype());
+  auto input_type = input->GetDtype()->type_id();
+  auto lambd_type = lambd->GetDtype()->type_id();
+  if (lambd_type != input_type) {
+    TypeId compute_type = input_type;
+    if (input_type == kNumberTypeFloat32 || input_type == kNumberTypeBFloat16 || lambd_type == kNumberTypeFloat32 ||
+        lambd_type == kNumberTypeBFloat16) {
+      compute_type = kNumberTypeFloat32;
+    }
+    if (input_type != compute_type) {
+      input = ib->Cast(input, compute_type);
+    }
+    if (lambd_type != compute_type) {
+      lambd = ib->Cast(lambd, compute_type);
+    }
+  }
   auto abs = ib->Abs(input);
   auto const_zero = ib->Tensor(0, input->GetDtype());
   auto le_cmp = ib->LessEqual(abs, lambd);
   auto result = ib->Select(le_cmp, const_zero, input);
+  if (result->GetDtype()->type_id() != input_type) {
+    result = ib->Cast(result, input_type);
+  }
   return {result};
 });
 

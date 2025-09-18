@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 namespace mindspore::graphkernel::test {
 namespace {
 struct ErfParams {
+  bool can_expand;
   ShapeVector input_shape;
   ShapeVector expect_shape;
   TypePtr type;
@@ -65,10 +66,15 @@ TEST_P(TestErfExpander, Erf) {
   auto g = c.GetGraph();
   UT_CHECK_NULL(g);
   auto gknodes = GetAllGKNodes(g);
-  EXPECT_EQ(gknodes.size(), 1);
+  size_t gk_size = param.can_expand ? 1 : 0;
+  EXPECT_EQ(gknodes.size(), gk_size);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpErf, TestErfExpander,
-                        testing::Values(ErfParams{{16, 16}, {16, 16}, kFloat16},
-                                        ErfParams{{16, 16}, {16, 16}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpErf, TestErfExpander,
+  testing::Values(ErfParams{true, {16, 16}, {16, 16}, kFloat16}, ErfParams{true, {16, 16}, {16, 16}, kFloat32},
+                  ErfParams{true, {16, 16}, {16, 16}, kBFloat16}, ErfParams{false, {16, 16}, {16, 16}, kFloat64},
+                  ErfParams{false, {16, 16}, {16, 16}, kInt64}, ErfParams{false, {16, 16}, {16, 16}, kInt32},
+                  ErfParams{false, {16, 16}, {16, 16}, kInt16}, ErfParams{false, {16, 16}, {16, 16}, kInt8},
+                  ErfParams{false, {16, 16}, {16, 16}, kBool}));
 }  // namespace mindspore::graphkernel::test
