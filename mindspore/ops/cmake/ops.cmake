@@ -131,7 +131,7 @@ endif()
 
 if((${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE) AND (NOT TARGET_AOS_ARM) AND (NOT ANDROID_NDK) AND
         (NOT MSLITE_SIMPLEST_CLOUD_INFERENCE))
-    target_link_libraries(mindspore_ops PRIVATE mindspore::crypto -pthread)
+    target_link_libraries(mindspore_ops PRIVATE -pthread)
 endif()
 
 if(ANDROID_NDK)

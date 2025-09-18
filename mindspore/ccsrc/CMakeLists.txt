@@ -260,7 +260,7 @@ endif()
 
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 if(ENABLE_CPU)
-    target_link_libraries(_c_expression PRIVATE mindspore::dnnl mindspore::mkldnn nnacl mindspore_cpu)
+    target_link_libraries(_c_expression PRIVATE mindspore_cpu)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
