@@ -457,8 +457,10 @@ class Dataset:
                 each bucket. Must contain len(bucket_boundaries)+1 elements.
             element_length_function (Callable, optional): A function that takes in
                 M arguments where M = len(column_names) and returns an integer. If no value
-                provided, parameter M the len(column_names) must be 1, and the size of the first
-                dimension of that column will be taken as the length. Default: ``None``.
+                provided, parameter M the len(column_names) must be 1. At this time, the length of the data in this
+                column is determined based on its ndim. If ndim=0, the data length is 0, indicating a str, bool, int,
+                or float scalar; if it is an array with ndim > 0, the length of the data is array.shape[0].
+                Default: ``None`` , indicating this parameter is not specified.
             pad_info (dict, optional): The information about how to batch each column. The key
                 corresponds to the column name, and the value must be a tuple of 2 elements.
                 The first element corresponds to the shape to pad to, and the second
