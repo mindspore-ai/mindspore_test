@@ -166,3 +166,48 @@ def test_multi_graph_cache_for_capture_graph():
     finally:
         if os.path.exists(log_file):
             os.remove(log_file)
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_multi_graph_cache_with_num_limit_for_capture_graph():
+    """
+    Feature: capture graph add env to control max capture limit
+    Description: Test capture count and replay count are both correct
+    Expectation: No exception and result is correct
+    """
+    expected_capture_count = 2
+    expected_replay_count = 10
+
+    os.environ["MS_DEV_RUNTIME_CONF"] = "max_capture_dynamic_shape_number:2"
+
+    command = 'export GLOG_v=1 && python run_capture_graph.py > capture_graph_num_limit.log 2>&1'
+    os.system(command)
+
+    log_file = "capture_graph_num_limit.log"
+
+    try:
+        capture_count = int(subprocess.check_output(
+            f"grep 'Begin launch all kernels with capture graph' {log_file} | wc -l",
+            shell=True
+        ).decode().strip())
+
+        replay_count = int(subprocess.check_output(
+            f"grep 'Begin launch all kernels with replay graph' {log_file} | wc -l",
+            shell=True
+        ).decode().strip())
+
+        assert capture_count == expected_capture_count, \
+            f"Expected {expected_capture_count} capture graph launched, got {capture_count}"
+        assert replay_count == expected_replay_count, \
+            f"Expected {expected_replay_count} capture graph launched, got {replay_count}"
+
+    except subprocess.CalledProcessError as e:
+        pytest.fail(f"Failed to analyse logs: {str(e)}")
+    finally:
+        if os.path.exists(log_file):
+            os.remove(log_file)

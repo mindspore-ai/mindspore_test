@@ -27,7 +27,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendCaptureGraph : public CaptureGraph {
  public:
   AscendCaptureGraph() = default;
   ~AscendCaptureGraph() override;
-  void CaptureBegin(uint32_t stream_id) override;
+  bool CaptureBegin(uint32_t stream_id) override;
   void CaptureGetInfo(uint32_t stream_id) override;
   void CaptureEnd(uint32_t stream_id) override;
   void ExecuteCaptureGraph(uint32_t stream_id) override;

@@ -166,7 +166,14 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
       size_t end = capture_kernel_range_positions_[executor.second].second;
       const auto &cur_capture_graph = capture_graphs_[shape_key_][executor.second];
       MS_EXCEPTION_IF_NULL(cur_capture_graph);
-      cur_capture_graph->CaptureBegin(0);
+      if (!cur_capture_graph->CaptureBegin(0)) {
+        MS_LOG(EXCEPTION)
+          << "Capture graph failed, most likely because the number of subgraphs you captured exceeded the "
+             "hardware limit. Currently captured shape count: "
+          << capture_graphs_.size() - 1
+          << ", Please set export MS_DEV_RUNTIME_CONF='max_capture_dynamic_shape_number:" << capture_graphs_.size() - 1
+          << " to control the maximum number of captured shapes.";
+      }
       MS_LOG(DEBUG) << "Begin captrue graph, executor index: " << i << ", range[" << start << ", " << end << "].";
 
       for (size_t j = start; j <= end; j++) {
@@ -411,6 +418,33 @@ bool GraphCaptureManager::IsSingleOp(const std::vector<KernelRunnerPtr> &kernel_
     }
   }
   return false;
+}
+
+bool IsPositiveInteger(const std::string &str) {
+  if (str.empty()) return false;
+  for (char c : str) {
+    if (!std::isdigit(c)) return false;
+  }
+  return str != "0";
+}
+
+bool GraphCaptureManager::IsExceedMaxCaptureCount() {
+  auto max_capture_dynamic_shape_number = runtime::GetRuntimeConfigValue(runtime::kRuntimeMaxCaptureDynamicShapeNumber);
+  if (max_capture_dynamic_shape_number.empty()) {
+    MS_LOG(INFO)
+      << "Get max capture count failed, max capture count config is empty, max_capture_dynamic_shape_number: "
+      << max_capture_dynamic_shape_number;
+    return false;
+  }
+  if (!IsPositiveInteger(max_capture_dynamic_shape_number)) {
+    MS_EXCEPTION(RuntimeError)
+      << "Max capture dynamic shape number config is not a positive integer, max_capture_dynamic_shape_number: "
+      << max_capture_dynamic_shape_number;
+  }
+  size_t max_count = std::stoul(max_capture_dynamic_shape_number);
+  MS_LOG(INFO) << "Max capture count is " << max_count << ", current capture graph count is "
+               << capture_graphs_.size() - 1;
+  return capture_graphs_.size() >= max_count;
 }
 
 void GraphCaptureManager::InitFixedInputInfoForSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners) {

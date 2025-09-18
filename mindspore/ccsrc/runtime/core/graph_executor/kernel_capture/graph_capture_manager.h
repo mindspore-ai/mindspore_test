@@ -140,6 +140,8 @@ class BACKEND_EXPORT GraphCaptureManager {
 
   bool IsSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners, size_t kernel_index);
 
+  bool IsExceedMaxCaptureCount();
+
   void SetStreamId(size_t stream_id) {
     if (stream_id_ != 0) {
       MS_LOG(WARNING) << "Has set stream for capture graph";
