@@ -26,6 +26,7 @@
 #include "frontend/jit/pi/runtime.h"
 #include "frontend/jit/pi/utils/utils.h"
 #include "frontend/jit/pi/graph_capture/graph_build.h"
+#include "frontend/jit/pi/graph_capture/abstract_wrapper.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_guard/cache.h"
 #include "utils/convert_utils_base.h"
@@ -573,7 +574,13 @@ bool Graph::GuardValueNode(ValueNode *node, GuardLevel level) {
 }
 
 void Graph::GuardParameter(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (node->abstract_wrapper() == nullptr) {
+    GuardType(node);
+    return;
+  }
+  if (IsInterpretedObject(node->abstract_wrapper())) {
+    MS_LOG(DEBUG) << "Got an InterpretedObject as graph parameter, guard its type: " << node->ToString();
     GuardType(node);
     return;
   }
