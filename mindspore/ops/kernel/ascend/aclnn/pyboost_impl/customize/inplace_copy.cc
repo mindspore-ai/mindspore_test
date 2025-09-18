@@ -146,7 +146,6 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
             MS_LOG(DEBUG) << "InplaceCopyH2D Callback_func exec, src device sync:" << src_device_address
                           << " use count:" << src_device_address.use_count() << " stream id:" << stream_id;
           };
-
           if (!device_context->device_res_manager_->LaunchCallback(callback_func, stream_id)) {
             MS_LOG(EXCEPTION) << "InplaceCopyH2D LaunchCallback failed, stream id:" << stream_id;
           }

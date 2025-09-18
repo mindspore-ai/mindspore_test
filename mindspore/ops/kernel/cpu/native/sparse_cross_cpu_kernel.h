@@ -32,7 +32,14 @@ namespace mindspore {
 namespace kernel {
 namespace sparse_cross_cpu {
 template <typename T>
-class TensorColumnBase;
+class TensorColumnBase {
+ public:
+  virtual int64_t FeatureCount(int64_t batch) const = 0;
+
+  virtual T Feature(int64_t batch, int64_t n) const = 0;
+
+  virtual ~TensorColumnBase() {}
+};
 
 class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseCrossCpuKernelMod> {
  public:
