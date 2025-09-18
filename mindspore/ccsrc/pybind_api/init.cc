@@ -319,6 +319,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("__call__", &JitExecutorPy::Run, py::arg("args"), py::arg("phase") = py::str(""), "Executor run function.")
     .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
+    .def("get_func_graph", &JitExecutorPy::GetFuncGraph, py::arg("phase") = py::str(""), "Get graph pointer.")
     .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
          py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
@@ -345,6 +346,8 @@ PYBIND11_MODULE(_c_expression, m) {
          "Get graph proto string by specifying ir type.");
 
   (void)m.def("_run_jit_pipeline", &mindspore::pipeline::RunJitPipeline, "Whether to run the jit pipeline.");
+  (void)m.def("dump_func_graph", &mindspore::pipeline::DumpFuncGraph, py::arg("func_graph"),
+              "Get the dump string of a func_graph");
   (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
               "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");

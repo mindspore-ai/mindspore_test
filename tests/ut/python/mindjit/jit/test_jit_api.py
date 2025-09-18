@@ -18,6 +18,7 @@ import shutil
 import glob
 from mindspore import dtype as mstype
 from mindspore import Tensor, ops, nn, jit
+from mindspore.common.api import _frontend_compile
 
 graph_save_path = './graph_save_path'
 
@@ -421,6 +422,25 @@ def test_jit_ast_function_for_cell_instance_twice_and_set_graph_name():
     jit_net1(x, y)
     net._set_jit_graph_name('second_net')  # pylint: disable=protected-access
     jit_net2 = jit(net)
+    jit_net2(x, y)
+    glob_list = glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
+    assert len(glob_list) == 2
+
+
+def test_frontend_compile_function_for_cell_instance_twice_and_set_graph_name():
+    """
+    Feature: Use _frontend_compile api to create two callable MindSpore graph for a cell instance but reset graph name.
+    Description: Use the _frontend_compile api as a function.
+    Expectation: Success to create two callable MindSpore graphs and compile twice.
+    """
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3]], dtype=mstype.float32)
+    net = Net()
+    jit_net1 = _frontend_compile(net)
+    jit_net1(x, y)
+    net._set_jit_graph_name('second_net')  # pylint: disable=protected-access
+    jit_net2 = _frontend_compile(net)
     jit_net2(x, y)
     glob_list = glob.glob(os.path.join(graph_save_path, '*_validate*.ir'))
     assert len(glob_list) == 2

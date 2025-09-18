@@ -1174,6 +1174,17 @@ bool RunJitPipeline() {
   return true;
 }
 
+std::string DumpFuncGraph(const py::object &obj) {
+  auto func_graph = obj.cast<FuncGraphPtr>();
+  if (func_graph == nullptr) {
+    MS_LOG(ERROR) << "The python object is not a func_graph";
+    return "";
+  }
+  std::ostringstream out_oss;
+  DumpIR(out_oss, func_graph, false, kOff, false);
+  return out_oss.str();
+}
+
 void PreJit(const py::object &args, const py::object &kwargs) {
   const auto &self = GetSelfFromArgs(args);
   parse::Parser::InitParserEnvironment(self);
