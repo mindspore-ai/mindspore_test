@@ -1022,7 +1022,11 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
     }
   } else if (ActorDispatcher::enable_async_launch_kernel() && !sync_run) {
     auto &llm_manager = LLMManager::GetInstance();
-    if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name()) || kernel_actor->is_dynamic_value_) {
+    // Execution Rules:
+    // 1. The force resize operator rely on the resize of runtime framework.
+    // 2. Dynamic shapes in non-dynamic-to-static require infer shape and resize.
+    // 3. Dynamic values ​​in dynamic-to-static scenarios require resize and not need to infer shape.
+    if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
       kernel_actor->ResizeKernelMod();
       kernel_actor->FetchOutputDeviceTensor(context);
       kernel_actor->FetchWorkspaceDeviceTensor();
@@ -1030,6 +1034,10 @@ bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, cons
       kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
       // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
       kernel_actor->InferAndUpdateDeviceTensorSize(context);
+    } else if (kernel_actor->is_dynamic_value_) {
+      kernel_actor->ResizeKernelMod();
+      kernel_actor->FetchOutputDeviceTensor(context);
+      kernel_actor->FetchWorkspaceDeviceTensor();
     }
 
     AsyncLaunchKernelByCondition(context, kernel_actor.get(), hp_mode);

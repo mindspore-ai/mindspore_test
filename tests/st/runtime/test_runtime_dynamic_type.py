@@ -475,3 +475,64 @@ def test_pyexecute_launch_d2h():
     assert np.allclose(np.ones([2, 3]), ms_grad.asnumpy(), 0, 0)
     assert np.allclose(np.array([[0, 1], [1, 0]]), obj.x.asnumpy(), 0, 0)
     assert np.allclose(ret2.asnumpy(), ret1.asnumpy(), 0, 0)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_sequence_slice():
+    """
+    Feature: dynamic shape and dynamic value op.
+    Description: sequenceslice op.
+    Expectation: success
+    """
+    class Net(nn.Cell):
+        def __init__(self, list_input, flag=1):
+            super().__init__()
+            self.tensor_list = list_input
+            self.flag = flag
+
+        def construct(self, x, y):
+            if self.flag == 1:
+                start = x + y
+                tensor_list_slice = self.tensor_list[start::]
+            elif self.flag == 2:
+                stop = x + y
+                tensor_list_slice = self.tensor_list[:stop:]
+            else:
+                step = x + y
+                tensor_list_slice = self.tensor_list[::step]
+            return tensor_list_slice
+
+    ms.runtime.dispatch_threads_num(2)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"}, device_target="CPU")
+    import numpy as np
+    tensor_list = [1, 3, 4, 15, 6, 7, 9, 8, 14]
+    x = Tensor(np.array(0), ms.int32)
+    y = Tensor(np.array(1), ms.int32)
+    net = Net(tensor_list, flag=2)
+    print(net(x, y))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_pyexecute_for_single_pipeline():
+    """
+    Feature: dynamic shape and dynamic value op.
+    Description: pyexecute op.
+    Expectation: success
+    """
+    import numpy as np
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.weight = Parameter(Tensor(np.full((2, 2), 2), ms.float32), name="w")
+            self.m = 2
+
+        def construct(self, x):
+            self.weight = x
+            self.m = 3
+            return x
+
+    ms.runtime.dispatch_threads_num(2)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"}, device_target="CPU")
+    x = Tensor(np.full((2, 2), 5).astype(np.float32))
+    net = Net()
+    print(net(x))
