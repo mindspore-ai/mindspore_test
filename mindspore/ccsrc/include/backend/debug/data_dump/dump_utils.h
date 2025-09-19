@@ -88,6 +88,16 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
 
 /*
  * Feature group: Dump.
+ * Target device group: Ascend, GPU.
+ * Runtime category: MSBackend
+ * Description: Extracts elements from the original tensor via specified shape, storage offset and strides,
+ * then constructs a new contiguous tensor in host memory (output is contiguous regardless of the original layout).
+ */
+mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &ori_tensor, const ShapeVector &host_shape,
+                                                     TypeId host_type, size_t storage_offset,
+                                                     std::vector<int64_t> host_strides);
+/*
+ * Feature group: Dump.
  * Target device group: Ascend, GPU, CPU.
  * Runtime category: Old runtime, MindRT.
  * Description: Dump string content into file path. Current purpose is to save operator overflow information in json

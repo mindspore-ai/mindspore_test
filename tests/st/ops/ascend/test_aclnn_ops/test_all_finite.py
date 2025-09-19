@@ -24,7 +24,7 @@ from tests.mark_utils import arg_mark
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.all_finite = AllFinite()
 
     def construct(self, x):

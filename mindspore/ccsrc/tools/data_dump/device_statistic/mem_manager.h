@@ -46,7 +46,8 @@ class BACKEND_COMMON_EXPORT DumpMemManager {
  private:
   void Initialize(const DeviceContext *device_context);
   KernelTensorPtr CreateOutPutKernelTensor(const DeviceContext *device_context, const TypeId &dtype_id);
-  KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context, const size_t &workspace_size);
+  KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context, const size_t &workspace_size,
+                                              size_t stream_id);
   DumpMemManager() = default;
 
   std::unordered_map<size_t, std::vector<KernelTensorPtr>> output_cache_;

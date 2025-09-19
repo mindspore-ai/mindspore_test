@@ -20,8 +20,10 @@
 #endif
 #include <map>
 #include <vector>
+#include <string>
 #include <stack>
 #include <queue>
+#include <memory>
 #include <algorithm>
 
 #include "mindspore/core/include/ir/tensor_new.h"
@@ -252,6 +254,51 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
   return out_tensor;
 }
 
+mindspore::tensor::TensorPtr ExtractContiguousTensor(const tensor::TensorPtr &ori_tensor, const ShapeVector &host_shape,
+                                                     TypeId host_type, size_t storage_offset,
+                                                     std::vector<int64_t> host_strides) {
+  MS_EXCEPTION_IF_NULL(ori_tensor);
+  if (host_shape.size() != host_strides.size()) {
+    MS_LOG(ERROR) << "host_shape and host_strides must have the same dimension, but got " << host_shape.size() << " vs "
+                  << host_strides.size();
+    return nullptr;
+  }
+  if (host_shape.size() == 0) {
+    MS_LOG(ERROR) << "host_shape is empty (dimension 0)";
+    return nullptr;
+  }
+  mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
+  MS_EXCEPTION_IF_NULL(out_tensor->device_address());
+  MS_EXCEPTION_IF_NULL(ori_tensor->device_address());
+  const char *src_data_ptr = static_cast<char *>(ori_tensor->data_c());
+  char *dst_data_ptr = static_cast<char *>(out_tensor->data_c());
+  auto element_size = ori_tensor->DataItemSize();
+  size_t element_nums = SizeOf(host_shape);
+  size_t max_element_offset = SizeOf(ori_tensor->shape());
+  std::vector<int64_t> indices(host_shape.size(), 0);
+  for (size_t idx = 0; idx < element_nums; ++idx) {
+    size_t currentOffset = storage_offset;
+    for (size_t dim = 0; dim < host_shape.size(); ++dim) {
+      currentOffset += indices[dim] * host_strides[dim];
+    }
+    if (currentOffset >= max_element_offset) {
+      MS_LOG(ERROR) << "Offset out of bounds: currentOffset(" << currentOffset << ") >= max_element_offset("
+                    << max_element_offset << ")";
+      return nullptr;
+    }
+    memcpy_s(dst_data_ptr + idx * element_size, element_size, src_data_ptr + currentOffset * element_size,
+             element_size);
+    for (int dim = host_shape.size() - 1; dim >= 0; --dim) {
+      indices[dim]++;
+      if (indices[dim] < host_shape[dim]) {
+        break;
+      }
+      indices[dim] = 0;
+    }
+  }
+  return out_tensor;
+}
+
 bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, const std::string &host_fmt,
                    const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev, uint32_t root_graph_id,
                    bool force_update, bool trans_flag, bool async_copy) {
@@ -274,7 +321,21 @@ bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_
     MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
     return false;
   }
-  auto out_tensor = LoadDeviceAddressToHost(addr, tensor_name, host_shape, host_type, trans_flag, async_copy);
+  // For non-contiguous cases, dump the original tensor.
+  auto correct_shape = host_shape;
+  auto tensor_storage_info = addr.GetTensorStorageInfo();
+  if (tensor_storage_info != nullptr) {
+    MS_VLOG(VL_DUMP) << "Get dump value from non-contiguous Kernel Tensor:" << tensor_name;
+    correct_shape = tensor_storage_info->ori_shape;
+  }
+  auto out_tensor = LoadDeviceAddressToHost(addr, tensor_name, correct_shape, host_type, trans_flag, async_copy);
+  // Convert to contiguous on host side.
+  if (tensor_storage_info != nullptr) {
+    MS_VLOG(VL_DUMP) << "Convert the non-contiguous Kernel Tensor:" << tensor_name << " to contiguous";
+    out_tensor = ExtractContiguousTensor(out_tensor, host_shape, host_type, tensor_storage_info->storage_offset,
+                                         tensor_storage_info->strides);
+  }
+
   if (!out_tensor) {
     MS_LOG(ERROR) << tensor_name << " load mem to host failed.";
     return false;

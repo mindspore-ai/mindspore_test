@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <vector>
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/all_finite_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
