@@ -470,5 +470,13 @@ bool IsInt(const AbstractWrapperPtr &wrapper) {
   return abstract->GetType() != nullptr && abstract->GetType()->isa<mindspore::Int>();
 }
 
+bool IsInterpretedObject(const AbstractWrapperPtr &wrapper) {
+  if (wrapper == nullptr || wrapper->abstract() == nullptr) {
+    return false;
+  }
+  auto value = wrapper->abstract()->BuildValue();
+  return value != nullptr && value->isa<parse::InterpretedObject>();
+}
+
 }  // namespace pijit
 }  // namespace mindspore

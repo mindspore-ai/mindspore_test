@@ -74,6 +74,7 @@ inline bool IsSequence(const AbstractWrapperPtr &wrapper) {
 }
 
 bool IsInt(const AbstractWrapperPtr &wrapper);
+bool IsInterpretedObject(const AbstractWrapperPtr &wrapper);
 }  // namespace pijit
 }  // namespace mindspore
 
