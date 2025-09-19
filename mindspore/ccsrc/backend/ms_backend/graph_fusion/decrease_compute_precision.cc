@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "backend/ms_backend/graph_fusion/decrease_compute_precision.h"
 #include <algorithm>
 #include <vector>
 #include <string>
@@ -30,7 +31,6 @@
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "backend/ms_backend/graph_fusion/decrease_compute_precision.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

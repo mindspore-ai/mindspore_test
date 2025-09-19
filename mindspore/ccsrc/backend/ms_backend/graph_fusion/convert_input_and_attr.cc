@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -21,7 +22,6 @@
 #include <vector>
 #include <unordered_map>
 #include "base/base.h"
-#include "backend/ms_backend/graph_fusion/convert_input_and_attr.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
