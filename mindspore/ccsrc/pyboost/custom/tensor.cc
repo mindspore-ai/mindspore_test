@@ -59,7 +59,7 @@ void *Tensor::GetDataPtr() const {
   MS_EXCEPTION_IF_NULL(t);
   auto device_address = t->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  int64_t offset = static_cast<int64_t>(t->DataItemSize()) * t->storage_offset();
+  auto offset = t->DataItemSize() * t->storage_offset();
   return static_cast<void *>(static_cast<int8_t *>(t->device_address()->GetMutablePtr()) + offset);
 }
 
