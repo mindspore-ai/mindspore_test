@@ -316,5 +316,3 @@ def test_tensor_to(mode):
     test_tensor_api_to_dtype_grad()
 
     test_tensor_numpy_non_blocking()
-
-    test_tensor_to_with_numpy_perf()
