@@ -589,6 +589,7 @@ void GraphScheduler::Clear(const ActorInfo &actor_info, const std::vector<Kernel
 }
 
 void GraphScheduler::Clear() {
+  GraphCaptureManager::GetInstance().Finalize();
   // Terminate all actors.
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
@@ -608,8 +609,6 @@ void GraphScheduler::Clear() {
 
   // Clear all cache memory info before process exits.
   MemoryTraceManager::GetInstance().ClearAllCache();
-
-  GraphCaptureManager::GetInstance().Finalize();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {

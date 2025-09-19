@@ -683,6 +683,21 @@ void GraphCaptureManager::Finalize() {
   if (!weight_kv_addrs_.empty()) {
     weight_kv_addrs_.clear();
   }
+  if (!fix_single_op_input_info_.empty()) {
+    fix_single_op_input_info_.clear();
+  }
+  if (!fix_single_op_output_info_.empty()) {
+    fix_single_op_output_info_.clear();
+  }
+  if (!fix_single_op_workspace_info_.empty()) {
+    fix_single_op_workspace_info_.clear();
+  }
+  if (!fix_replay_graph_output_info_.empty()) {
+    fix_replay_graph_output_info_.clear();
+  }
+  if (!fix_network_input_for_replay_single_op_.empty()) {
+    fix_network_input_for_replay_single_op_.clear();
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore
