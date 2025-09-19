@@ -221,6 +221,8 @@ class Recomputation {
                               std::unordered_map<CNodePtr, CNodePtr> *origin_to_new_nodes);
   void CopyOriginalInputs(const FuncGraphPtr &bprop_fg, const CNodePtr &node, const AnfNodePtr &depend_nodes,
                           std::vector<AnfNodePtr> *new_inputs);
+  void ReplaceFinalForwardGetter(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg,
+                                 const AnfNodePtr &origin_forward_getter, const AnfNodePtr &new_forward_getter);
 
   mindspore::HashMap<FuncGraphPtr, AnfNodePtr> bprop_to_umonad_fv_;
   mindspore::HashMap<FuncGraphPtr, AnfNodePtr> bprop_to_iomonad_fv_;
