@@ -30,6 +30,7 @@ from mindspore.common._decorator import deprecated
 
 _lazy_adam_opt = C.MultitypeFuncGraph("lazy_adam_opt")
 
+
 @_lazy_adam_opt.register("Function", "Function", "Bool", "Bool", "Bool", "Tensor", "Tensor",
                          "Tensor", "Tensor", "Tensor", "Tensor", "RowTensor", "Tensor", "Tensor", "Tensor")
 def _run_opt_with_sparse(opt, sparse_opt, use_locking, use_nesterov, target, beta1_power, beta2_power,

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "hccl/hccl_types.h"
 #include "kernel/ascend/hccl/hcom_matmul_all_reduce.h"
+#include "hccl/hccl_types.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"

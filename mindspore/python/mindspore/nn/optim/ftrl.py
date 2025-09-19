@@ -60,6 +60,7 @@ def _apply_map_tensor_ftrl(l1, l2, lr_power, learning_rate, linear, weight, mome
 
     return success
 
+
 @_ftrl_opt.register("Function", "Function", "Number", "Number", "Number", "Tensor", "Tensor",
                     "RowTensor", "Tensor", "Tensor")
 def _tensor_run_opt_with_sparse(opt, spars_opt, l1, l2, lr_power, learning_rate, linear,
