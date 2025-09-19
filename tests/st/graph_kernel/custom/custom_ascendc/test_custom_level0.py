@@ -14,6 +14,9 @@
 # ============================================================================
 
 import pytest
+import os
+import shutil
+import tempfile
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore as ms
@@ -108,6 +111,16 @@ class BaseNet(Cell):
         res = self.sub(res, z)
         return res
 
+
+@pytest.fixture(scope="function", autouse=True)
+def compiler_cache():
+    temp_dir = tempfile.mkdtemp(prefix="ms_compiler_cache_")
+    os.environ["MS_COMPILER_CACHE_PATH"] = temp_dir
+    print(f"[SETUP] Set MS_COMPILER_CACHE_PATH to {temp_dir}")
+    yield
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    os.environ.pop("MS_COMPILER_CACHE_PATH", None)
+    print(f"[TEARDOWN] Removed temp dir and unset MS_COMPILER_CACHE_PATH")
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
