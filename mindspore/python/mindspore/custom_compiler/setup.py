@@ -60,14 +60,15 @@ class CustomOOC():
         self.current_path = dir_path
         self.custom_project = os.path.join(dir_path, "CustomProject")
 
-    def check_path(self, path):
+    @staticmethod
+    def check_path(path):
         """check if the path is valid"""
-        PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
+        path_white_list_regex = re.compile(r"[^_A-Za-z0-9/.-]")
         if not isinstance(path, str):
             raise TypeError('Path must be str, not {}.'.format(type(path).__name__))
         if not path:
             raise ValueError("The value of the path cannot be empty.")
-        if PATH_WHITE_LIST_REGEX.search(path):  # Check special char
+        if path_white_list_regex.search(path):  # Check special char
             raise ValueError(
                 "Input path contains invalid characters.")
         path = os.path.expanduser(path)  # Consider paths starting with "~"
@@ -79,7 +80,7 @@ class CustomOOC():
         if len(real_path) > 4096:
             raise ValueError("The length of file path should be less than 4096.")
 
-        if real_path != path and PATH_WHITE_LIST_REGEX.search(real_path):
+        if real_path != path and path_white_list_regex.search(real_path):
             raise ValueError(
                 "Input path contains invalid characters.")
 
