@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_
-#define MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_H_
+#define MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_H_
 
 #include <set>
 #include <string>
@@ -26,7 +26,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "include/common/visible.h"
+#include "tools/visible.h"
 
 namespace mindspore {
 namespace datadump {
@@ -34,7 +34,7 @@ namespace datadump {
 inline constexpr int kCallFromCXX = 0;
 inline constexpr int kCallFromPython = 1;
 
-class DUMP_EXPORT TensorDumpManager {
+class TOOLS_EXPORT TensorDumpManager {
  public:
   enum class task_type { dump = 0, skip = 1, update_step = 2, silentdetect = 3, unknown = 100 };
   static TensorDumpManager &GetInstance() {
@@ -60,11 +60,10 @@ class DUMP_EXPORT TensorDumpManager {
   std::atomic<size_t> id_;
   std::array<size_t, 2> step_ = {0, 0};
   std::set<size_t> valid_steps_;
-  void *aclDumpCallbackReg_;
   std::mutex mtx_;
 };
 
 }  // namespace datadump
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_TOOLS_DUMP_TENSORDUMP_H_
+#endif  // MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_H_

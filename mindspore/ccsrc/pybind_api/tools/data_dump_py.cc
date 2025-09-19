@@ -19,7 +19,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/debug/data_dump/dump_control.h"
 #include "include/common/utils/tensor_py.h"
-#include "tools/dump/tensordump.h"
+#include "tools/tensor_dump/tensordump.h"
 #include "utils/ms_context.h"
 
 namespace py = pybind11;

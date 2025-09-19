@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include "tools/silent_detect/silent_check/silent_check.h"
+#include "include/common/callback.h"
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"
@@ -58,7 +59,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "tools/silent_detect/silent_detect_config_parser.h"
 
 namespace mindspore {
 namespace silentcheck {
@@ -199,7 +199,11 @@ bool IsAsdEnable() {
     return false;
   }
   static bool new_silent_detect_enable = []() {
-    bool enable = silentdetect::SilentDetectConfigParser::GetInstance().IsEnable();
+    constexpr char kIsSilentDetectEnable[] = "IsSilentDetectEnable";
+    static const auto is_silent_detect_enable =
+      callback::CommonCallback::GetInstance().GetCallback<bool>(kIsSilentDetectEnable);
+    MS_EXCEPTION_IF_CHECK_FAIL(is_silent_detect_enable, "Failed to get IsSilentDetectEnable");
+    bool enable = is_silent_detect_enable();
     if (enable) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << std::string("MS_NPU_ASD_CONFIG-enable is true, using SilentCheck 4.0, '")
                                       << kNpuAsdEnable << "' is ignored.";

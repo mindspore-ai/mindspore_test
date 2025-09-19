@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
-#define MINDSPORE_CCSRC_DEBUG_DUMP_NPY_HEADER_H_
+#ifndef MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_UTILS_H_
+#define MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_UTILS_H_
 
 #include <string>
-#include "utils/shape_utils.h"
-#include "ir/dtype/type_id.h"
-#include "tools/visible.h"
+#include <vector>
+#include <memory>
+#include <variant>
+#include "ir/tensor_new.h"
 
-namespace mindspore {
-DUMP_EXPORT std::string GenerateNpyHeader(const ShapeVector &shape, TypeId type_id, bool fortran_order = false);
-}  // namespace mindspore
-#endif
+namespace mindspore::datadump {
+
+void MbufTensorDumpCallback(const std::string &tensor_name,
+                            const std::vector<std::variant<std::string, mindspore::tensor::TensorPtr>> &data_items);
+
+}  // namespace mindspore::datadump
+
+#endif  // MINDSPORE_CCSRC_TOOLS_TENSOR_DUMP_TENSORDUMP_UTILS_H_

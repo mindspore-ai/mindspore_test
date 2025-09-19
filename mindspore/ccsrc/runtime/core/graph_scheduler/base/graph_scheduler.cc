@@ -49,6 +49,7 @@
 #include "async/async.h"
 #include "ir/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/callback.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/optimizer/helper.h"
@@ -65,7 +66,6 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#include "tools/silent_detect/checksum/checksum_mgr.h"
 #include "tools/profiler/profiling.h"
 #include "include/common/debug/common.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -777,8 +777,11 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   }
 #endif
   // if silent check is enabled, create debugger actor for CheckSum
-  auto &checkSumMgr = checksum::CheckSumMgr::GetInstance();
-  if (checkSumMgr.NeedEnableCheckSum()) {
+  constexpr char kNeedEnableCheckSum[] = "NeedEnableCheckSum";
+  static const auto need_enable_checksum =
+    callback::CommonCallback::GetInstance().GetCallback<bool>(kNeedEnableCheckSum);
+  MS_EXCEPTION_IF_CHECK_FAIL(need_enable_checksum, "Failed to get NeedEnableCheckSum");
+  if (need_enable_checksum()) {
     debugger_actor_need = true;
   }
   if (debugger_actor_need) {

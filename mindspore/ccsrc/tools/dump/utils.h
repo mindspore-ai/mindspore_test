@@ -20,7 +20,7 @@
 #include <string>
 
 #include "utils/ms_utils.h"
-#include "include/common/visible.h"
+#include "tools/visible.h"
 #include "ir/tensor.h"
 
 namespace mindspore {

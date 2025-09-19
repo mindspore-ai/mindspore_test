@@ -37,11 +37,12 @@ const std::map<string, string> channel_name_suffix = {{"ms_tensor_summary", "[:T
                                                       {"ms_histogram_summary", "[:Histogram]"}};
 }  // namespace
 
-void SummaryReceiveData(const ScopeAclTdtDataset &dataset, const string &channel_name) {
+void SummaryReceiveData(const std::string &tensor_name,
+                        const std::vector<std::variant<std::string, mindspore::tensor::TensorPtr>> &data_items,
+                        const string &channel_name) {
   //  Acquire Python GIL
   py::gil_scoped_acquire gil_acquire;
 
-  std::string tensor_name = dataset.GetDatasetName();
   auto suffix = channel_name_suffix.find(channel_name);
   if (suffix == channel_name_suffix.end()) {
     MS_LOG(ERROR) << "Unknown summary channel name: " << channel_name;
@@ -50,7 +51,7 @@ void SummaryReceiveData(const ScopeAclTdtDataset &dataset, const string &channel
   std::string summary_name = tensor_name + suffix->second;
   MS_LOG(INFO) << "For " << channel_name << "channel, acltdt received Tensor name is " << tensor_name;
 
-  for (auto data_elem : dataset.GetDataItems()) {
+  for (auto data_elem : data_items) {
     if (std::holds_alternative<std::string>(data_elem)) {
       MS_LOG(WARNING) << "Ignore data of string type: " << std::get<std::string>(data_elem);
       continue;

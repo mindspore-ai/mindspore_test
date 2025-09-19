@@ -29,6 +29,7 @@
 #include "ir/graph_utils.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
+#include "include/common/callback.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/convert_utils.h"
 #include "ir/device_address.h"
@@ -71,7 +72,6 @@
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorprint_utils.h"
-#include "plugin/ascend/res_manager/mbuf_manager/tensordump_utils.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorsummary_utils.h"
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "plugin/ascend/res_manager/collective/ascend_collective_comm_lib.h"
@@ -94,9 +94,12 @@ using mindspore::abstract::AbstractFunctionPtr;
 using PrimTypePair = std::pair<PrimitivePtr, AbstractFunctionPtr>;
 using MapPrimTypeFuncGraph = std::map<PrimTypePair, FuncGraphPtr>;
 using TypedPrimitiveAbstractClosurePtr = std::shared_ptr<abstract::TypedPrimitiveAbstractClosure>;
+using MbufDataItem = std::variant<std::string, mindspore::tensor::TensorPtr>;
 const char kModelNameRuntime[] = "Runtime";
 const char kEventCompileGraph[] = "CompileGraph";
 const char kStageCompileGraphs[] = "CompileGraphs";
+constexpr auto kTensorDumpOpName = "TensorDump";
+constexpr auto kTensorDumpChannelName = "ms_tensor_dump";
 std::mutex g_tsd_mutex;
 
 void CheckContiguousTensor(const tensor::TensorPtr &tensor) {
@@ -544,24 +547,26 @@ bool GEBackend::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
   if (!ms_context_ptr->get_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS)) {
     device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
       std::bind(&device::ascend::TensorPrintUtils::PrintReceiveData, &device::ascend::TensorPrintUtils::GetInstance(),
-                std::placeholders::_1),
+                std::placeholders::_1, std::placeholders::_2),
       device_id, kChannelNameNpuLog, kPrintOpName));
   }
-
+  constexpr char kMbufTensorDumpCallback[] = "MbufTensorDumpCallback";
+  static auto tensordump_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, const std::string &, const std::vector<MbufDataItem> &>(
+      kMbufTensorDumpCallback);
   device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
-    std::bind(&device::ascend::TensorDumpUtils::SaveDatasetToNpyFile, &device::ascend::TensorDumpUtils::GetInstance(),
-              std::placeholders::_1),
-    device_id, device::ascend::tensordump_mapping.first, device::ascend::tensordump_mapping.second));
+    tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
   if (device::ascend::TensorReportUtils::IsEnable()) {
     device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
       std::bind(&device::ascend::TensorReportUtils::ReportReceiveData,
-                &device::ascend::TensorReportUtils::GetInstance(), std::placeholders::_1),
+                &device::ascend::TensorReportUtils::GetInstance(), std::placeholders::_1, std::placeholders::_2),
       device_id, device::ascend::tensorreport_mapping.first, device::ascend::tensorreport_mapping.second));
   }
   for (const std::pair<string, string> &summary_mapping : device::ascend::summary_mappings) {
     device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
-      std::bind(device::ascend::SummaryReceiveData, std::placeholders::_1, summary_mapping.first), device_id,
-      summary_mapping.first, summary_mapping.second));
+      std::bind(device::ascend::SummaryReceiveData, std::placeholders::_1, std::placeholders::_2,
+                summary_mapping.first),
+      device_id, summary_mapping.first, summary_mapping.second));
   }
 
   return true;

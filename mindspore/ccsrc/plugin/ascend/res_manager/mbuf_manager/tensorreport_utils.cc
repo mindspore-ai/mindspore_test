@@ -174,7 +174,9 @@ TensorReportUtils::TensorReportUtils() {}
 
 TensorReportUtils::~TensorReportUtils() {}
 
-void TensorReportUtils::ReportReceiveData(const ScopeAclTdtDataset &dataset) {
+void TensorReportUtils::ReportReceiveData(
+  const std::string &tensor_name,
+  const std::vector<std::variant<std::string, mindspore::tensor::TensorPtr>> &data_items) {
   MS_LOG(DEBUG) << "Enter report recevice data.";
   if (UCEException::IsEnableUCE()) {
     OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(true);

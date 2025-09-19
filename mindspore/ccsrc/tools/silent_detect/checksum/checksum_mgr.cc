@@ -99,5 +99,11 @@ void CheckSumMgr::SetCheckSumResult(bool result) {
   std::unique_lock<std::shared_mutex> lock(result_mutex_);
   result_ = result;
 }
+
+bool NeedEnableCheckSum() {
+  auto &checkSumMgr = CheckSumMgr::GetInstance();
+  return checkSumMgr.NeedEnableCheckSum();
+}
+
 }  // namespace checksum
 }  // namespace mindspore
