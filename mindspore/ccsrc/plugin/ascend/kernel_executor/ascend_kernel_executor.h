@@ -25,7 +25,6 @@
 #include <utility>
 #include <tuple>
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "include/utils/anfalgo.h"
 #include "include/backend/common/kernel_graph/anf_runtime_algorithm.h"
 

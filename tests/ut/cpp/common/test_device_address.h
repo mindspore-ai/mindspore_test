@@ -109,6 +109,9 @@ class TestResManager : public device::DeviceResManager {
       address->set_ptr(nullptr);
     }
   }
+  void *AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) override {
+    return nullptr;
+  }
   void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
   void FreeMemory(void *const ptr) const {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
@@ -148,7 +151,7 @@ class TestResManager : public device::DeviceResManager {
     sync_all_stream_count_ += 1;
     return true;
   }
-
+  device::DynamicMemPool *GetMemoryPool() override { return nullptr; }
   mutable std::map<size_t, size_t> sync_stream_counts_;
   mutable size_t sync_all_stream_count_{0};
 };

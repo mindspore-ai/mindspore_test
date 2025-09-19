@@ -31,6 +31,7 @@
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
+#include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/dtype/number.h"
 #include "ir/tensor.h"
 #include "include/backend/common/kernel_graph/kernel_graph.h"
@@ -50,6 +51,10 @@ enum class KernelTaskType;
 }
 namespace device {
 constexpr size_t kSizeZero = 0;
+const uint32_t kInvalidGraphId = UINT32_MAX;
+constexpr int kGetAllOuts = -1;
+constexpr uint64_t kMemAlignSize = 512;
+constexpr uint64_t kTwiceMemAlignSize = kMemAlignSize << 1;
 using mindspore::kernel::KernelMod;
 using mindspore::kernel::KernelTensor;
 
@@ -137,20 +142,20 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual void ResetStreamAndCtx() const {}
 
   // Relevant function to allocate and free device memory of raw ptr.
+  virtual void *AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) = 0;
   virtual void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const = 0;
   virtual void FreeMemory(void *ptr) const = 0;
   virtual void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                                const std::vector<size_t> &keep_addr_sizes) const = 0;
+  uint8_t *MallocWorkSpaceMem(size_t size);
   virtual void DefragMemory() {}
   virtual bool IsEnableVmm() const { return false; }
 
   virtual void SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
-    return;
   }
   virtual void SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
-    return;
   }
   virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
@@ -212,6 +217,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   }
   virtual void ResetMaxMemoryReserved() {}
   virtual void ResetMaxMemoryAllocated() {}
+  virtual void ResetDynamicMemory() {}
 
   virtual size_t EmptyCache() { return -1L; }
 
@@ -333,8 +339,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   // Return collective communication object for caller to access
   virtual CollectiveCommunicationLib *collective_comm_lib() const = 0;
 
-  virtual std::shared_ptr<MemoryManager> mem_manager() const { return nullptr; }
-
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
   virtual std::shared_ptr<AddressAllocator> pin_mem_allocator() const { return nullptr; }
@@ -365,11 +369,17 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
     return true;
   }
 
+  virtual DynamicMemPool *GetMemoryPool() = 0;
+
  protected:
   // The collective communication library.
   CollectiveCommunicationLib *collective_comm_lib_;
 
   DeviceContext *device_context_{nullptr};
+  // Hold memory pool for common operations on memory.
+  DynamicMemPool *memory_pool_{nullptr};
+
+  virtual uint8_t *MallocDynamicMem(size_t size, bool communication_mem);
 
  private:
   template <class... Args>

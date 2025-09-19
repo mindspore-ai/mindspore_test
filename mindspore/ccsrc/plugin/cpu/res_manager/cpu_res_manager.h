@@ -19,19 +19,17 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 #include "include/runtime/hardware_abstract/memory_manager/swap_manager.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
-#include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
 class CPUResManager : public DeviceResManager {
  public:
-  CPUResManager() { Initialize(); }
+  CPUResManager() = default;
   ~CPUResManager() override = default;
-
-  void Initialize() override;
 
   void Destroy() override;
 
@@ -62,15 +60,30 @@ class CPUResManager : public DeviceResManager {
                                                  size_t end) override;
 
   // Relevant function to allocate and free device memory of raw ptr.
+  void *AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) override;
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;
   bool LoadCollectiveCommLib() override;
   CollectiveCommunicationLib *collective_comm_lib() const override;
+  void ResetDynamicMemory() override;
+
+  DynamicMemPool *GetMemoryPool() override;
+
+ protected:
+  uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
 
  private:
-  std::shared_ptr<CPUMemoryManager> mem_manager_{nullptr};
+  uint8_t *MemMalloc(size_t size);
+  void MemFree() noexcept;
+
+  size_t mem_size_{0};
+  uint8_t *mem_ptr_{nullptr};
+  std::map<void *, size_t> dynamic_mem_;
+  std::map<void *, size_t> static_mem_;
+  std::map<void *, size_t> cached_mem_;
+  std::map<void *, std::shared_ptr<std::vector<uint8_t>>> mem_block_map_;
 };
 }  // namespace cpu
 }  // namespace device

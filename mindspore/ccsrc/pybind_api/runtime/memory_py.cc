@@ -21,7 +21,6 @@
 #include "device_address/device_address.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 namespace mindspore {
 namespace hal {
@@ -222,8 +221,7 @@ struct MemoryReplayProcesser {
     MS_EXCEPTION_IF_NULL(res_manager_);
     res_manager_->Initialize();
     device_context_->Initialize();
-    MS_EXCEPTION_IF_NULL(res_manager_->mem_manager());
-    auto mem_pool = res_manager_->mem_manager()->GetMemoryPool();
+    auto mem_pool = res_manager_->GetMemoryPool();
     MS_EXCEPTION_IF_NULL(mem_pool);
 
     std::ifstream tracker_file(file_path, std::ios::in);

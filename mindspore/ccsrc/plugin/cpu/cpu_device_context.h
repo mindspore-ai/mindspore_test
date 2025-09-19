@@ -25,7 +25,6 @@
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "include/runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
-#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "plugin/cpu/res_manager/cpu_res_manager.h"
 
 namespace mindspore {

@@ -24,7 +24,6 @@
 #include <utility>
 
 #include "include/utils/callback.h"
-#include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
 #include "plugin/cpu/graph_optimizer/pass/base/reg_cpu_const_input_to_attr.h"
 #include "plugin/cpu/graph_optimizer/pass/train/insert_cast_to_pyexecute.h"
 #include "plugin/cpu/graph_optimizer/pass/train/softmax_grad_fusion.h"

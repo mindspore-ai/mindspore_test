@@ -18,13 +18,12 @@
 #include <utility>
 #include <vector>
 #include <string>
-#include <unordered_map>
 #include <memory>
 
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
-#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 #include "mindspore/core/include/device_address/convert_tensor_utils.h"
+#include "plugin/cpu/res_manager/mem_manager/cpu_memory_pool.h"
 #include "include/runtime/hardware_abstract/device_context/device_context.h"
 #include "include/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
@@ -36,28 +35,23 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
-void CPUResManager::Initialize() {
-  mem_manager_ = std::make_shared<CPUMemoryManager>();
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-}
-
 void CPUResManager::Destroy() {
   // Release memory.
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
-  }
+  MemFree();
+  CPUMemoryPool::GetInstance().ReleaseDeviceRes();
+}
+
+void *CPUResManager::AllocateMemory(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) {
+  return CPUMemoryPool::GetInstance().AllocTensorMem(size, from_persistent_mem, need_recycle, stream_id);
 }
 
 void *CPUResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+  return CPUMemoryPool::GetInstance().AllocTensorMem(size, false, false, stream_id);
 }
 
 void CPUResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(ptr);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->FreeMemFromMemPool(ptr);
+  CPUMemoryPool::GetInstance().FreeTensorMem(ptr);
 }
 
 void CPUResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
@@ -67,13 +61,11 @@ void CPUResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const
 
 std::vector<void *> CPUResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                             uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->MallocContinuousMemFromMemPool(size_list, stream_id);
+  return CPUMemoryPool::GetInstance().AllocContinuousTensorMem(size_list, stream_id);
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> CPUResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   std::vector<size_t> after_padding_sizes = before_padding_sizes;
   auto stream_id = DefaultStream();
@@ -242,6 +234,70 @@ bool CPUResManager::LoadCollectiveCommLib() {
 }
 
 CollectiveCommunicationLib *CPUResManager::collective_comm_lib() const { return collective_comm_lib_; }
+
+void CPUResManager::ResetDynamicMemory() {
+  // don't free, for multi graph
+  for (auto &&iter : dynamic_mem_) {
+    cached_mem_[iter.first] = iter.second;
+  }
+  dynamic_mem_.clear();
+}
+
+DynamicMemPool *CPUResManager::GetMemoryPool() {
+  if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+    memory_pool_ = &CPUMemoryPool::GetInstance();
+  }
+  return memory_pool_;
+}
+
+uint8_t *CPUResManager::MallocDynamicMem(size_t size, bool communication_mem) {
+  void *ptr = nullptr;
+  size_t min_size = 0;
+  // first find the smallest cached_mem_ which fits the size
+  for (auto &&iter : cached_mem_) {
+    if (iter.second >= size) {
+      if (min_size == 0 || iter.second < min_size) {
+        ptr = iter.first;
+        min_size = iter.second;
+      }
+    }
+  }
+  if (ptr != nullptr) {
+    if (memset_s(ptr, size, 0, size) != EOK) {
+      free(ptr);
+      MS_LOG(EXCEPTION) << "Failed to init memory.";
+    }
+    dynamic_mem_[ptr] = min_size;
+    (void)cached_mem_.erase(ptr);
+    return reinterpret_cast<uint8_t *>(ptr);
+  }
+  // if not found, malloc
+  auto new_ptr = MemMalloc(size);
+  dynamic_mem_[new_ptr] = size;
+  return new_ptr;
+}
+
+uint8_t *CPUResManager::MemMalloc(size_t size) {
+  auto block = std::make_shared<std::vector<uint8_t>>();
+  try {
+    block->resize(size, 0);
+    auto ptr = block->data();
+    mem_block_map_[ptr] = block;
+    return ptr;
+  } catch (const std::exception &e) {
+    MS_LOG(EXCEPTION) << "Malloc memory failed: size " << size;
+  }
+}
+void CPUResManager::MemFree() noexcept {
+  if (mem_ptr_ != nullptr) {
+    mem_ptr_ = nullptr;
+    mem_size_ = 0;
+  }
+  static_mem_.clear();
+  dynamic_mem_.clear();
+  cached_mem_.clear();
+  mem_block_map_.clear();
+}
 
 MS_REGISTER_HAL_COPY_FUNC(
   DeviceType::kCPU,

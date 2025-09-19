@@ -172,7 +172,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${ASCEND_PLUGIN_PATH}/res_manager/event/ascend_event.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_gmem_adapter.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_adapter.cc"
-        "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/mem_manager/ascend_memory_pool.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/stream_manager/ascend_stream_manager.cc"
         "${ASCEND_PLUGIN_PATH}/res_manager/stream_manager/callback_thread.cc"

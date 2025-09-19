@@ -138,5 +138,11 @@ void DeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   address->set_ptr(nullptr);
 }
 
+uint8_t *DeviceResManager::MallocWorkSpaceMem(size_t size) { return MallocDynamicMem(size, false); }
+
+uint8_t *DeviceResManager::MallocDynamicMem(size_t size, bool communication_mem) {
+  MS_LOG(INFO) << "Call default dynamic malloc " << size << " v " << communication_mem;
+  return nullptr;
+}
 }  // namespace device
 }  // namespace mindspore
