@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "backend/ms_backend/graph_fusion/split_model/split_model.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
 #include <string>
-#include "backend/ms_backend/graph_fusion/split_model/split_model.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "symbolic_shape/int_symbol.h"
 
