@@ -10,7 +10,7 @@ mindspore.train.TrainFaultTolerance
 
     参数：
         - **ckpt_save_path** (str) - 异常发生时ckpt保存的路径，该路径是一个目录。保存时，会在该目录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。默认值为: ``None``。
-        - **kwargs** (dict) - 其他字典类型参数。
+        - **kwargs** (dict) - 其他字典类型参数。当参数 `ckpt_save_path` 的值为 ``None`` 时， `kwargs` 必须包含一个名为 `ckpt_save_fn` 的参数，该参数指向一个保存Checkpoint的函数。 `ckpt_save_fn` 的函数原型为 ``def save_ckpt(cb_params, append_dict)`` 。当同时提供 `ckpt_save_path` 和 `ckpt_save_fn` 参数，则优先使用 `ckpt_save_fn` 参数。
 
     异常：
         - **Exception** - TTP初始化失败，会对外抛Exception异常。
