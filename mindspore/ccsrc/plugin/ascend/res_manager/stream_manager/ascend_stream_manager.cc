@@ -283,7 +283,9 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
   auto RET = ACL_SUCCESS;
   try {
     GilReleaseWithCheck gil_release;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_STREAM) << "Begin sync stream:" << stream;
     RET = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1);
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_STREAM) << "End sync stream:" << stream;
     if (RET != ACL_SUCCESS && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
       MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStreamWithTimeout error."
                     << "Please do the following three things to confirm whether it is caused by the "
@@ -317,7 +319,9 @@ bool AscendStreamMng::SyncAllStreams(bool sync_device) const {
     if (sync_device) {
       // According to CANN, we need to set timeout to 2 hours for aclrtSynchronizeDeviceWithTimeout.
       int timeout = 7200000;
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_STREAM) << "Begin sync device.";
       RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, timeout);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_STREAM) << "End sync device.";
       if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
         MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error."
                       << "Please do the following three things to confirm whether it is caused by the "
