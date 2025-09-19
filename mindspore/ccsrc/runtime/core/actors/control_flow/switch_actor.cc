@@ -41,7 +41,7 @@ void SwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
   // Call the base class interface to get input data and input partial.
   ControlActor::FetchInput(context);
 
-  MS_LOG(INFO) << "Sync stream in the condition switch.";
+  MS_LOG(INFO) << "Sync stream in the switch actor:" << GetAID();
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   size_t index = GetIndex(context);
   if (IsSkippedLaunch()) {
@@ -100,8 +100,8 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-  host_context->device_res_manager_->SyncAllStreams();
-  if (!host_context->device_res_manager_->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
+  if (!host_context->device_res_manager_->SyncAllStreams(false) ||
+      !host_context->device_res_manager_->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
                                                device_tensor->stream_id())) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
