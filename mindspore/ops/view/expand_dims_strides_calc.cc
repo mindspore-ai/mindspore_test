@@ -26,7 +26,7 @@ TensorStorageInfoPtrList ExpandDimsStrideCalc(const std::vector<int64_t> &old_sh
 
   bool is_contiguous = storage_info ? storage_info->is_contiguous : true;
 
-  int64_t old_dim = old_shape.size();
+  int64_t old_dim = static_cast<int64_t>(old_shape.size());
   int64_t axis_new = DynamicDimWrap(axis, old_dim + 1);
 
   auto new_shape = old_shape;
@@ -44,6 +44,7 @@ TensorStorageInfoPtrList ExpandDimsStrideCalc(const std::vector<int64_t> &old_sh
 
 TensorStorageInfoPtrList ExpandDimsBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                  const int64_t &axis) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return ExpandDimsStrideCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), axis);
 }
 

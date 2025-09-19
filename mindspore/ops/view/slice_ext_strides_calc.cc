@@ -73,6 +73,7 @@ TensorStorageInfoPtrList SliceExtStridesCalc(const std::vector<int64_t> &old_sha
 
 TensorStorageInfoPtrList SliceExtBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
                                                const int64_t &start, const int64_t &end, const int64_t &step) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return SliceExtStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim, start,
                              end, step);
 }

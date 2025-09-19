@@ -23,6 +23,7 @@
 namespace mindspore::ops {
 TensorStorageInfoPtrList NarrowBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor, const int64_t &dim,
                                              const int64_t &start, const int64_t &length) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_shape = input_tensor->shape();
 
   int input_dim = SizeToLong(input_shape.size());

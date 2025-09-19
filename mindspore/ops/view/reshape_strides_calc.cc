@@ -86,7 +86,7 @@ inline std::optional<std::vector<int64_t>> try_to_compute_strides(const std::vec
 inline std::vector<int64_t> infer_size_impl(const std::vector<int64_t> &proposed_shape, int64_t numel) {
   int64_t newsize = 1;
   std::optional<int64_t> infer_dim;
-  for (int64_t dim = 0, ndim = proposed_shape.size(); dim != ndim; dim++) {
+  for (int64_t dim = 0, ndim = static_cast<int64_t>(proposed_shape.size()); dim != ndim; dim++) {
     if (proposed_shape[dim] == -1) {
       if (infer_dim) {
         MS_EXCEPTION(ValueError) << "only one dimension can be inferred";
@@ -145,6 +145,7 @@ TensorStorageInfoPtr ReshapeStridesCalc(const std::vector<int64_t> &cur_shape, c
 
 TensorStorageInfoPtr ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
                                           const std::vector<int64_t> &proposed_shape) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return ReshapeStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(),
                             proposed_shape);
 }

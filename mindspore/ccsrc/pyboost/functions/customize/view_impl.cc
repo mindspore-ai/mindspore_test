@@ -20,7 +20,7 @@
 namespace mindspore::kernel::pyboost {
 mindspore::tensor::TensorPtr t_ext_impl(const mindspore::tensor::TensorPtr &input) {
   const auto input_rank = input->shape().size();
-  return transpose_ext_view(input, 0, input_rank < 2 ? 0 : 1);
+  return transpose_ext_view(input, 0, input_rank < kIndex2 ? 0 : 1);
 }
 
 mindspore::tensor::TensorPtr view_as_impl(const mindspore::tensor::TensorPtr &input,

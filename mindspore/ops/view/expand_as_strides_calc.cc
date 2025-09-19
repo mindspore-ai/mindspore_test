@@ -24,6 +24,7 @@
 namespace mindspore::ops {
 TensorStorageInfoPtrList ExpandAsBasicTypeCalc(const mindspore::tensor::TensorPtr &input,
                                                const mindspore::tensor::TensorPtr &other) {
+  MS_EXCEPTION_IF_NULL(other);
   return BroadcastToBasicTypeCalc(input, other->shape());
 }
 

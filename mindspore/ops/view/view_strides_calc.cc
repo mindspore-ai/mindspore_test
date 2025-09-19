@@ -35,6 +35,7 @@ TensorStorageInfoPtrList ViewStridesCalc(const std::vector<int64_t> &cur_shape, 
 }
 
 TensorStorageInfoPtrList ViewBasicTypeCalc(const tensor::TensorPtr &input_tensor, const std::vector<int64_t> &shape) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return ViewStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), shape);
 }
 

@@ -32,7 +32,6 @@ TensorStorageInfoPtrList TransposeExtViewStridesCalc(const std::vector<int64_t> 
   int64_t dim_size = SizeToLong(cur_shape.size());
   auto dim0_new = DynamicDimWrap(dim0, dim_size, true);
   auto dim1_new = DynamicDimWrap(dim1, dim_size, true);
-
   if (dim0_new == dim1_new) {
     bool is_contiguous = IsContiguous(cur_shape, cur_strides);
     auto new_storage_info = std::make_shared<TensorStorageInfo>(
@@ -54,6 +53,7 @@ TensorStorageInfoPtrList TransposeExtViewStridesCalc(const std::vector<int64_t> 
 
 TensorStorageInfoPtrList TransposeExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                        const int64_t &dim0, const int64_t &dim1) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
   return TransposeExtViewStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim0,
                                      dim1);
 }
