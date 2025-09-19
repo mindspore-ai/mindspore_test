@@ -1477,6 +1477,7 @@ def get_cache_group_size(group=GlobalComm.WORLD_COMM_GROUP):
     group_size = _GROPU_SIZE_CACHE[group]
     return group_size
 
+
 def get_cache_group_rank(group=GlobalComm.WORLD_COMM_GROUP):
     """get cache rank id."""
     global _GROPU_RANK_CACHE

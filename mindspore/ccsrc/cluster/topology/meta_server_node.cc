@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cluster/topology/meta_server_node.h"
 #include <functional>
 #include <algorithm>
 #include <string>
@@ -28,7 +29,6 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "cluster/topology/meta_server_node.h"
 #include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
 
