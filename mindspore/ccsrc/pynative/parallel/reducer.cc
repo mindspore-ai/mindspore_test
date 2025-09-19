@@ -22,13 +22,13 @@
 #include "include/backend/distributed/init.h"
 #include "tools/profiler/profiler.h"
 #include "runtime/pipeline/pipeline.h"
+#include "pyboost/functions/auto_generate/functions.h"
+#include "pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/hook/hook_py.h"
 #include "pynative/utils/pynative_utils.h"
 #include "pynative/utils/pynative_execute.h"
 #include "pynative/backward/op_grad/func_grad.h"
-#include "mindspore/ccsrc/pynative/parallel/reducer.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
-#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "pynative/parallel/reducer.h"
 
 namespace mindspore {
 namespace pynative {
