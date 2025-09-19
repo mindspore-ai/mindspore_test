@@ -1070,10 +1070,6 @@ std::string PyParser::BuildPyObjectInputTypeString(PyObject *obj) {
   if (obj == Py_None) {
     return "None";
   }
-  // TODO(wangjialin) 这里直接执行py::isinstance<mindspore::Type>(obj) 也可以
-  // if (py::isinstance<mindspore::Type>(obj)) {
-  //   return "mindspore.dtype";
-  // }
   PyObject *ms_module = PyImport_ImportModule("mindspore");
   if (ms_module && ms_module != Py_None) {
     PyObject *type_class = PyObject_GetAttrString(ms_module, "Type");

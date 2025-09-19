@@ -37,11 +37,6 @@ struct ParserArgs;
 class CPythonTuple {};
 class CPythonList {};
 
-// enum ContainerType {
-//   cpythonTuple,
-//   cpythonList,
-// };
-
 static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"int", ops::OP_DTYPE::DT_INT},
   {"float", ops::OP_DTYPE::DT_FLOAT},
@@ -181,7 +176,6 @@ struct PYNATIVE_EXPORT ParserArgs {
     if (index >= arg_list_.size()) {
       MS_LOG(EXCEPTION) << "Invalid index" << index << "for argument convert.";
     }
-    // PyObject* obj = PyList_GetItem(arg_list_, index);
     PyObject *obj = arg_list_[index];
     if (obj == Py_None) {
       return std::nullopt;

@@ -359,7 +359,6 @@ TensorPtr TensorPybind::MakePinMemoryTensor(const tensor::TensorPy &tensor) {
     MS_LOG(EXCEPTION) << "Only CPU tensor can be pinned.The source tensor should be CPU tensor.";
   }
 
-  // auto tensor_data = tensor::MakeTensorData(dtype, shape);
   auto device_address = DeviceAddressMaker(nullptr, dtype, shape)
                           .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
                           .make_device_address();
