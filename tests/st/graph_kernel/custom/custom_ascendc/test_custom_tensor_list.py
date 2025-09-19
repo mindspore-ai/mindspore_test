@@ -60,7 +60,7 @@ class CustomNetConcat(Cell):
     def bprop(self, x1, x2, axis, out, dout):
         dx1 = ops.slice(dout, (0, 0), (2, 2))
         dx2 = ops.slice(dout, (0, 2), (2, 3))
-        return dx1, dx2
+        return dx1, dx2, 0
 
     def construct(self, x1, x2, axis):
         res = self.concat((x1, x2), axis)

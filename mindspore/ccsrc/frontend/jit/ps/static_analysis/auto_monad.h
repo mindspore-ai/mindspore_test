@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_JIT_PARSE_AUTO_MONAD_H_
 #define MINDSPORE_CCSRC_FRONTEND_JIT_PARSE_AUTO_MONAD_H_
 
+#include <string>
+
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/common/visible.h"
@@ -28,6 +30,10 @@ bool FRONTEND_EXPORT AutoMonad(const FuncGraphPtr &func_graph);
 
 // Run auto-monad after grad or Renormalize, handle side-effects, called from frontend opt pass.
 bool ReAutoMonad(const FuncGraphPtr &func_graph);
+
+// Add monad parameter for func graph.
+AnfNodePtr AddMonadParameter(const FuncGraphPtr &func_graph, const std::string &name,
+                             const abstract::AbstractBasePtr &abs);
 }  // namespace mindspore::pipeline
 
 #endif  // MINDSPORE_CCSRC_FRONTEND_JIT_PARSE_AUTO_MONAD_H_

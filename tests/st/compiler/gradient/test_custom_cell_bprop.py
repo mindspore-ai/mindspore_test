@@ -15,6 +15,7 @@
 """ test_cell_bprop """
 import numpy as np
 import pytest
+import re
 
 import mindspore as ms
 import mindspore.common.dtype as mstype
@@ -849,3 +850,75 @@ def test_bprop_defined_in_cell_attr_register():
     y = Tensor(4, mstype.float32)
     output = ops.grad(net)(x, y)
     assert output == 4
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("bprop_return_len", [0, 1, 2, 3])
+def test_bprop_return_length_simple(bprop_return_len):
+    """
+    Feature: Custom cell bprop
+    Description: When the output of the custom bprop dose not match the parameter size of forward function,
+                 a ValueError should be raised in a simple net.
+    Expectation: ValueError is raised with correct message.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            return x * y
+
+        def bprop(self, x, y, out, dout):
+            return (self.tensor,) * bprop_return_len
+
+    net = Net()
+    x = Tensor(3, mstype.float32)
+    y = Tensor(4, mstype.float32)
+
+    if bprop_return_len >= 2:
+        ops.grad(net)(x, y)
+    else:
+        with pytest.raises(RuntimeError) as err:
+            ops.grad(net)(x, y)
+
+        pattern = f"The output size of the 'bprop' must match the number of parameters in its corresponding primal " \
+            f"function '.*' : {bprop_return_len} vs. 2."
+        found = re.search(pattern, str(err.value))
+        assert found is not None
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("bprop_return_len", [0, 1, 2, 3])
+def test_bprop_return_length_with_side_effect_and_param_lift(bprop_return_len):
+    """
+    Feature: Custom cell bprop
+    Description: When the output of the custom bprop dose not match the parameter size of forward function,
+                 a ValueError should be raised in a net with side effect and parameter lifting.
+    Expectation: ValueError is raised with correct message.
+    """
+    class Net(nn.Cell):
+        def __init__(self) -> None:
+            super().__init__()
+            self.z = Parameter(Tensor(2, mstype.float32), name='z')
+            self.tensor = Tensor(3, mstype.float32)
+
+        def construct(self, x, y):
+            print("This is a message testing for io side effect")
+            ops.assign(self.z, Tensor(3, ms.float32))
+            return x * y * self.z
+
+        def bprop(self, x, y, out, dout):
+            print("This is another message testing for io side effect")
+            return (self.tensor,) * bprop_return_len
+
+    net = Net()
+    x = Tensor(3, mstype.float32)
+    y = Tensor(4, mstype.float32)
+
+    if bprop_return_len >= 2:
+        ops.grad(net)(x, y)
+    else:
+        with pytest.raises(RuntimeError) as err:
+            ops.grad(net)(x, y)
+
+        pattern = f"The output size of the 'bprop' must match the number of parameters in its corresponding primal " \
+            f"function '.*' : {bprop_return_len} vs. 2."
+        found = re.search(pattern, str(err.value))
+        assert found is not None

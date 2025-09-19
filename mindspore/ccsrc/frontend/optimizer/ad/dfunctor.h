@@ -109,16 +109,6 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void CallDoutHoleOnTape() const;
   // Replace the primal graph with k graph
   void EliminatePrimalGraph();
-  // Pynative specialize
-  ValueNodePtr GenNewTensor(const CNodePtr &forward_node);
-  tensor::TensorPtr GenNewTensorInner(const TypePtr &type_elem, const BaseShapePtr &shape_elem);
-  void GetForwardOutNodeAndBpropGraph(const CNodePtr &k_app, CNodePtr *forward_node, FuncGraphPtr *bprop_graph,
-                                      FuncGraphPtr *fprop_graph);
-  std::vector<AnfNodePtr> RunOutputReplace(const CNodePtr &forward_node, const FuncGraphPtr &bprop_graph,
-                                           const FuncGraphPtr &fprop_graph, const CNodePtr &cnode_morph);
-  std::vector<AnfNodePtr> RunInputReplace(const FuncGraphPtr &bprop_graph, const FuncGraphPtr &fprop_graph,
-                                          const CNodePtr &cnode_morph);
-  void ReplaceEquivdout(const CNodePtr &k_app, const CNodePtr &cnode_morph);
 
   void AccumulateInputGradients(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint, const CNodePtr bprop_app);
   AnfNodePtr ApplyBackwardPreHook(const AnfNodePtr &dout);

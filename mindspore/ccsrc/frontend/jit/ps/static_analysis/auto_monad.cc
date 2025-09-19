@@ -61,10 +61,6 @@
 
 namespace mindspore {
 namespace pipeline {
-namespace {  // namespace anonymous
-using ClassTypePtr = std::shared_ptr<parse::ClassType>;
-using RefInputs = OrderedMap<AnfNodePtr, std::vector<size_t>>;
-
 // Add or get a monad parameter.
 AnfNodePtr AddMonadParameter(const FuncGraphPtr &func_graph, const std::string &name,
                              const abstract::AbstractBasePtr &abs) {
@@ -104,6 +100,10 @@ AnfNodePtr AddMonadParameter(const FuncGraphPtr &func_graph, const std::string &
   }
   return para;
 }
+
+namespace {  // namespace anonymous
+using ClassTypePtr = std::shared_ptr<parse::ClassType>;
+using RefInputs = OrderedMap<AnfNodePtr, std::vector<size_t>>;
 
 // Gets side effect propagate attribute value from a ClassType object.
 int GetSideEffectPropagate(const ClassTypePtr &class_type) {
