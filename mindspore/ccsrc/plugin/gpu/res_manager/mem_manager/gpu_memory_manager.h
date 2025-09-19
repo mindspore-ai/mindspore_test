@@ -40,7 +40,6 @@ class GPU_EXPORT GPUMemoryManager : public MemoryManager {
                                                      uint32_t stream_id = kDefaultStreamIndex) override;
   bool MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,
                                       std::vector<size_t> size_list, uint32_t stream_id = kDefaultStreamIndex) override;
-  size_t GetAvailableMemSize() override;
 
   // Relevant function to manage memory statistics
   size_t GetTotalMemStatistics() const override;
@@ -59,9 +58,6 @@ class GPU_EXPORT GPUMemoryManager : public MemoryManager {
   void ResetMaxMemoryAllocated() override;
 
   DynamicMemPool *GetMemoryPool() override;
-
- protected:
-  uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
 };
 }  // namespace gpu
 }  // namespace device

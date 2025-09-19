@@ -30,59 +30,11 @@ size_t MemoryManager::GetCommunicationAlignSize(size_t input_size) {
   return ((input_size + kMemAlignSize - 1) / kMemAlignSize) * kMemAlignSize + kTwiceMemAlignSize;
 }
 
-uint8_t *MemoryManager::MallocOutputMem(const AnfNodePtr &node, size_t index, MemType type, size_t size,
-                                        const DeviceAddressPtr &address, bool comm_mem) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(address);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  uint8_t *ptr = nullptr;
-  if (comm_mem) {
-    bool communication_mem = false;
-    if (context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL)) {
-      communication_mem = true;
-    }
-    if (type == MemType::kStaticMem) {
-      ptr = MallocStaticMem(size, communication_mem);
-      address->set_from_mem_pool(true);
-      if (communication_mem) {
-        address->set_communication_ptr(ptr - kMemAlignSize);
-      }
-    } else {
-      ptr = MallocDynamicMem(size, communication_mem);
-    }
-    address->SetDevicePtr(ptr);
-    return ptr;
-  }
-
-  if (type == MemType::kStaticMem) {
-    ptr = MallocStaticMem(size, false);
-    address->set_from_mem_pool(true);
-  } else if (type == MemType::kDynamicMem) {
-    ptr = MallocDynamicMem(size, false);
-  }
-  address->SetDevicePtr(ptr);
-  return ptr;
-}
-
 uint8_t *MemoryManager::MallocWorkSpaceMem(const AnfNodePtr &node, size_t index, MemType type, size_t size) {
   return MallocDynamicMem(size, false);
 }
 
 uint8_t *MemoryManager::MallocWorkSpaceMem(size_t size) { return MallocDynamicMem(size, false); }
-
-uint8_t *MemoryManager::MallocMem(MemType type, size_t size, const DeviceAddressPtr &address, uint32_t graph_id) {
-  MS_EXCEPTION_IF_NULL(address);
-  uint8_t *ptr = nullptr;
-  if (type == MemType::kStaticMem) {
-    ptr = MallocStaticMem(size, false, graph_id);
-    address->set_from_mem_pool(true);
-  } else if (type == MemType::kDynamicMem) {
-    ptr = MallocDynamicMem(size, false);
-  }
-  address->SetDevicePtr(ptr);
-  return ptr;
-}
 
 uint8_t *MemoryManager::MallocDynamicMem(size_t size, bool communication_mem) {
   MS_LOG(INFO) << "Call default dynamic malloc " << size << " v " << communication_mem;

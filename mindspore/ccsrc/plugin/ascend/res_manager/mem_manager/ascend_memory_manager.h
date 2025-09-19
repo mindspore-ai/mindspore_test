@@ -35,12 +35,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
   void Initialize() override;
   void Finalize() override;
   void ResetDynamicMemory() override;
-  void ClearGlobalIdleMem() override;
   void *MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle = false,
                              uint32_t stream_id = kDefaultStreamIndex) override;
   void FreeMemFromMemPool(void *device_ptr) override;
   size_t GetMaxUsedMemorySize() const override;
-  uint64_t GetMsMaxMemSize() const;
   bool MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,
                                       std::vector<size_t> size_list, uint32_t stream_id = kDefaultStreamIndex) override;
   std::vector<void *> MallocContinuousMemFromMemPool(const std::vector<size_t> &size_list,
@@ -50,8 +48,6 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
 
   void SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) override;
   void SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) override;
-  size_t GetAvailableMemSize() override;
-  uint64_t GetMsUsedHbmSize() const;
 
   // Relevant function to manage memory statistics
   size_t GetTotalMemStatistics() const override;
@@ -68,12 +64,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendMemoryManager : public MemoryManager {
   GetPersistentMemBlocksInfoStatistics() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
-  size_t EmptyCache() override;
 
   DynamicMemPool *GetMemoryPool() override;
 
  protected:
-  uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
   uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
 };
 

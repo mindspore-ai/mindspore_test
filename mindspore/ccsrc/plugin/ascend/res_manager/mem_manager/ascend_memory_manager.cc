@@ -37,12 +37,6 @@ void AscendMemoryManager::Finalize() {
 
 void AscendMemoryManager::ResetDynamicMemory() { AscendMemAdapter::GetInstance()->ResetDynamicMemory(); }
 
-void AscendMemoryManager::ClearGlobalIdleMem() { AscendMemoryPool::GetInstance().ResetIdleMemBuf(); }
-
-uint64_t AscendMemoryManager::GetMsMaxMemSize() const { return AscendMemAdapter::GetInstance()->MaxHbmSizeForMs(); }
-
-uint64_t AscendMemoryManager::GetMsUsedHbmSize() const { return AscendMemAdapter::GetInstance()->GetMsUsedHbmSize(); }
-
 void *AscendMemoryManager::MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle,
                                                 uint32_t stream_id) {
   auto align_size = GetCommonAlignSize(size);
@@ -90,25 +84,6 @@ AscendMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
 }
 void AscendMemoryManager::ResetMaxMemoryReserved() { AscendMemoryPool::GetInstance().ResetMaxMemReserved(); }
 void AscendMemoryManager::ResetMaxMemoryAllocated() { AscendMemoryPool::GetInstance().ResetMaxMemAllocated(); }
-size_t AscendMemoryManager::EmptyCache() { return AscendMemoryPool::GetInstance().EmptyCache(); }
-
-uint8_t *AscendMemoryManager::MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) {
-  size_t align_size = 0;
-  if (communication_mem) {
-    align_size = GetCommunicationAlignSize(size);
-  } else {
-    align_size = GetCommonAlignSize(size);
-  }
-  MS_LOG(INFO) << "Malloc Memory for Static: size[" << align_size << "] communication_mem:" << communication_mem;
-
-  uint8_t *alloc_address = reinterpret_cast<uint8_t *>(AscendMemoryPool::GetInstance().AllocTensorMem(align_size));
-  if (alloc_address != nullptr) {
-    // create protect area [kMemAlignSize -- data -- kMemAlignSize] for communication node memory
-    return communication_mem ? alloc_address + kMemAlignSize : alloc_address;
-  }
-  MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Fail to alloc memory, size: " << align_size
-                    << "B, memory statistics:" << AscendMemAdapter::GetInstance()->DevMemStatistics();
-}
 
 uint8_t *AscendMemoryManager::MallocDynamicMem(size_t size, bool communication_mem) {
   size_t align_size = 0;
@@ -143,13 +118,6 @@ bool AscendMemoryManager::MallocContinuousMemFromMemPool(const DeviceAddressPtrL
     addr_list[i]->set_from_mem_pool(true);
   }
   return true;
-}
-
-size_t AscendMemoryManager::GetAvailableMemSize() {
-  auto available_mem_size = AscendMemoryPool::GetInstance().free_mem_size() +
-                            AscendMemoryPool::GetInstance().TotalMemStatistics() -
-                            AscendMemoryPool::GetInstance().TotalUsedMemStatistics();
-  return available_mem_size;
 }
 
 void AscendMemoryManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
