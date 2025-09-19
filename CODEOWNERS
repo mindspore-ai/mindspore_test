@@ -142,6 +142,9 @@
 /mindspore/python/mindspore/train/callback/_on_request_exit.py @fary86
 /mindspore/python/mindspore/utils/utils.py @fary86
 
+# The maintainers of mindspore/include.
+/mindspore/include/ @limingqi107
+
 # The maintainers of tests/st.
 /tests/st/auto_parallel/ @yangzhenzhang
 /tests/st/backend_ascend/ @limingqi107

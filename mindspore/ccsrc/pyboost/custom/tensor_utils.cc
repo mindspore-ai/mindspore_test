@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ms_extension/common/tensor_utils.h"
+#include "pyboost/custom/tensor_utils.h"
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/dtype.h"

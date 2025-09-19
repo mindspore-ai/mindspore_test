@@ -26,7 +26,8 @@
 #include <list>
 
 #include "atb/atb_infer.h"
-#include "ms_extension/pynative/pyboost_extension.h"
+#include "pyboost/custom/pyboost_extension.h"
+#include "kernel/ascend/visible.h"
 
 #define CHECK_ATB_RET(op, st, func)                                                                                 \
   do {                                                                                                              \
@@ -40,8 +41,8 @@
 namespace atb {
 constexpr int g_hash_buf_size = 8192;
 constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
-EXTENSION_EXPORT char *g_hash_buf_ptr();
-EXTENSION_EXPORT int &g_hash_offset_ref();
+OPS_ASCEND_API char *g_hash_buf_ptr();
+OPS_ASCEND_API int &g_hash_offset_ref();
 
 #define MEMCPY_TO_BUF(data_expression, size_expression)                                                      \
   if (g_hash_offset_ref() + (size_expression) > g_hash_buf_size) {                                           \
@@ -51,14 +52,14 @@ EXTENSION_EXPORT int &g_hash_offset_ref();
   (void)memcpy_s(g_hash_buf_ptr() + g_hash_offset_ref(), size_expression, data_expression, size_expression); \
   g_hash_offset_ref() += size_expression
 
-EXTENSION_EXPORT uint64_t calc_hash_id();
+OPS_ASCEND_API uint64_t calc_hash_id();
 
 template <typename T>
 void add_param_to_buf(const T &value) {
   MEMCPY_TO_BUF(&value, sizeof(T));
 }
 
-EXTENSION_EXPORT void add_param_to_buf(const std::string &s);
+OPS_ASCEND_API void add_param_to_buf(const std::string &s);
 
 // api
 template <typename T>
@@ -94,12 +95,12 @@ uint64_t computeHash(const T &obj) {
   return calc_hash_id();
 }
 
-class EXTENSION_EXPORT OpParamCacheBase {
+class OPS_ASCEND_API OpParamCacheBase {
  public:
   virtual ~OpParamCacheBase() = default;
 };
 
-class EXTENSION_EXPORT AtbContextManager {
+class OPS_ASCEND_API AtbContextManager {
   template <typename ParamType>
   class OpParamCache;
 

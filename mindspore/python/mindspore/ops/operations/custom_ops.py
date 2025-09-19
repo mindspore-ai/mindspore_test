@@ -1471,6 +1471,7 @@ class CustomOpBuilder:
         """include paths for inner module interface."""
         ms_inner_path = os.path.join(self._ms_path, "include", "mindspore")
         include_list = []
+        include_list.append(os.path.join(ms_inner_path, "include"))
         include_list.append(os.path.join(ms_inner_path, "core", "include"))
         include_list.append(os.path.join(ms_inner_path, "core", "mindrt", "include"))
         include_list.append(os.path.join(ms_inner_path, "core", "mindrt"))
@@ -1520,7 +1521,7 @@ class CustomOpBuilder:
             '-lmindspore_core',
             '-lmindspore_ms_backend',
             '-lmindspore_pynative',
-            '-lmindspore_extension'
+            '-lmindspore_pyboost'
         ]
         if self.backend == "Ascend":
             flags.append(f"-L{os.path.abspath(os.path.join(self.ascend_cann_path, 'lib64'))}")

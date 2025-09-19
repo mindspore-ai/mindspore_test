@@ -24,7 +24,7 @@
 #include <utility>
 #include <optional>
 #include <type_traits>
-#include "ms_extension/common/tensor.h"
+#include "pyboost/custom/tensor.h"
 #include "mindspore/ccsrc/tools/profiler/profiler.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
@@ -49,7 +49,7 @@ namespace inner {
  * @param name A mangled symbol name.
  * @return The demangled function name (or the original name if demangling is not available).
  */
-EXTENSION_EXPORT std::string GetFunctionName(const char *name);
+PYBOOST_API std::string GetFunctionName(const char *name);
 
 /**
  * @brief Sets a promise for a stub node to associate it with a Tensor output.
@@ -57,8 +57,8 @@ EXTENSION_EXPORT std::string GetFunctionName(const char *name);
  * @param tuple A tuple of stub nodes.
  * @param output The Tensor output to associate with the promise.
  */
-EXTENSION_EXPORT void SetPromise(const std::string &op_name, const std::tuple<mindspore::stub::StubNodePtr> &tuple,
-                                 const ms::Tensor &output);
+PYBOOST_API void SetPromise(const std::string &op_name, const std::tuple<mindspore::stub::StubNodePtr> &tuple,
+                            const ms::Tensor &output);
 
 /**
  * @brief Helper function for setting promises for multiple outputs.
@@ -152,7 +152,7 @@ namespace pynative {
  * @brief [API] Represents a runner for PyBoost operations, providing methods to manage execution, memory allocation,
  * and kernel launches.
  */
-class EXTENSION_API PyboostRunner : public std::enable_shared_from_this<PyboostRunner> {
+class PYBOOST_API PyboostRunner : public std::enable_shared_from_this<PyboostRunner> {
  public:
   /**
    * @brief Constructs a PyboostRunner with the specified operation name.

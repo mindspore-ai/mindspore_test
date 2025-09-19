@@ -255,8 +255,8 @@ else()
             -Wl,--whole-archive mindspore_ops_grad mindspore_ops_fallback proto_input
             -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_frontend
             mindspore_runtime_pipeline mindspore_dump mindspore_backend_common mindspore_pyboost mindspore_pynative
-            mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler mindspore_extension
-            mindspore_runtime_utils mindspore_cluster mindspore_tools)
+            mindspore_backend_manager mindspore_hardware_abstract mindspore_profiler mindspore_runtime_utils
+            mindspore_cluster mindspore_tools)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
@@ -294,6 +294,3 @@ if(ENABLE_D)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ascend_compile_config.cmake)
 endif()
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    add_subdirectory(ms_extension)
-endif()

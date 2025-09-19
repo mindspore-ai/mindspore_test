@@ -25,8 +25,7 @@
 #include "pybind11/pybind11.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "ms_extension/common/visible.h"
-#include "ms_extension/common/tensor_accessor.h"
+#include "pyboost/custom/tensor_accessor.h"
 
 namespace mindspore {
 namespace tensor {
@@ -44,7 +43,7 @@ using TypeId = mindspore::TypeId;
  * @class [API] Tensor
  * @brief Represents a tensor object in MindSpore, providing methods to manipulate and query its properties.
  */
-class EXTENSION_API Tensor {
+class PYBOOST_API Tensor {
  public:
   /**
    * @brief [API] Constructs a placeholder Tensor.
@@ -333,7 +332,7 @@ class EXTENSION_API Tensor {
    * @struct RealTensorHolder
    * @brief Holds the actual data and metadata of the Tensor object.
    */
-  struct EXTENSION_EXPORT RealTensorHolder {
+  struct PYBOOST_API RealTensorHolder {
     explicit RealTensorHolder(const mindspore::ValuePtr &value);
 
     // Indicates if the Tensor data needs to be contiguous. Defaults to true.
@@ -352,7 +351,7 @@ class EXTENSION_API Tensor {
 namespace pybind11 {
 namespace detail {
 template <>
-struct EXTENSION_EXPORT type_caster<ms::Tensor> {
+struct PYBOOST_API type_caster<ms::Tensor> {
   PYBIND11_TYPE_CASTER(ms::Tensor, _("Tensor"));
   bool load(handle src, bool);
   static handle cast(const ms::Tensor &src, return_value_policy, handle);

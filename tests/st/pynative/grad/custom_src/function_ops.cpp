@@ -16,7 +16,7 @@
 
 #include <string>
 #include "utils/stream_guard.h"
-#include "ms_extension.h"
+#include "custom_op_api.h"
 
 namespace mindspore::pynative {
 namespace autograd {

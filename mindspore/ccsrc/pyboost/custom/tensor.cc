@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ms_extension/common/tensor.h"
+#include "pyboost/custom/tensor.h"
 #include <algorithm>
 #include <functional>
 #include "ir/tensor.h"
