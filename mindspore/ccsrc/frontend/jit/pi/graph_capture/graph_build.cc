@@ -3240,6 +3240,9 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
       case AObject::kTypeCell:
         func_node = TrackExtraAttrArgs(callable_node, "construct");
         break;
+      case AObject::kTypeNNModule:
+        func_node = TrackExtraAttrArgs(callable_node, "forward");
+        break;
       case AObject::kTypeAnyValue:
         func_node = TrackExtraAttrArgs(callable_node, "__call__");
         break;
