@@ -80,7 +80,7 @@ file(GLOB_RECURSE UT_OLD_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./dev
         ./transform/*.cc ./vm/*.cc ./runtime/core/*.cc ./runtime/device/gsm/*.cc)
 file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/graph_scheduler/*.cc
         ./runtime/pipeline/*.cc ./plugin/device/ascend/hal/hardware/*.cc)
-file(GLOB_RECURSE UT_GRAPH_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./graph_kernel/*.cc)
+file(GLOB_RECURSE UT_GRAPH_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/ms_backend/graph_fusion/*.cc)
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     file(GLOB_RECURSE UT_INTERNAL_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./internal/*.cc ./ops/utils/*.cc
