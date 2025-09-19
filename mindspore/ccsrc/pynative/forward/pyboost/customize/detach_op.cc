@@ -37,24 +37,8 @@ py::object PYNATIVE_EXPORT PyboostDetach(const py::object &input) {
   DispatchOp(std::make_shared<PassthroughFrontendTask>(
     [input_value, promises]() {
       const auto &input_tensor = PyNativeAlgo::Common::StubNodeToTensor(input_value);
-      if (device::IsAscendDeviceType(input_tensor->device_address()->GetDeviceType())) {
-        kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device::DeviceType::kAscend));
-      }
-      const auto device_context =
-        runtime::OpRunner::GetDeviceContext(kernel::pyboost::OpRunStatus::Get().device_target());
-      kernel::pyboost::PyBoostUtils::PrepareOpInputs(
-        device_context, device_context->device_res_manager_->GetCurrentStreamId(), input_tensor);
       auto output = std::make_shared<tensor::Tensor>(*input_tensor);
       output->set_auto_grad_meta_data(nullptr);
-      // Async
-      kernel::pyboost::PyBoostUtils::DispatchRun(
-        std::make_shared<runtime::PyBoostDeviceTask>([input_tensor, device_context]() {
-          MS_LOG(DEBUG) << "Run detach malloc op inputs start";
-          // Malloc for input tensors
-          kernel::pyboost::PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-          MS_LOG(DEBUG) << "Run device task Baddbmm end";
-        }));
-
       tensor::SetPromise(promises, output);
     },
     [promises]() { tensor::SetException(promises); }));
