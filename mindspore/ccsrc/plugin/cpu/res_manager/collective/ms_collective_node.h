@@ -20,12 +20,11 @@
 #include <memory>
 #include "cluster/rpc/core/ps_worker_node.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
-#include "plugin/cpu/visible.h"
 
 namespace mindspore {
 namespace ps {
 namespace core {
-class CPU_EXPORT CollectiveNode : public PSWorkerNode {
+class CollectiveNode : public PSWorkerNode {
  public:
   explicit CollectiveNode(const std::shared_ptr<distributed::cluster::topology::TcpNodeBase> &client_node)
       : client_node_(client_node) {}
