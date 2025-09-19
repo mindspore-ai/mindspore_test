@@ -286,7 +286,7 @@ bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device
   bool ret = instance_->DoFreeTensorMem(device_addr);
   if (ret) {
     instance_->ReportMemoryPoolInfo();
-    instance_->ReportMemoryPoolFreeInfoToMstx(device_addr);
+    instance_->ReportMemoryPoolFreeInfoToMstx(enhanced_device_addr);
 
     // Adapt for dry run.
     if (IsNeedProfilieMemoryLog()) {
