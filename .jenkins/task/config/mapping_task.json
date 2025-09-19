@@ -12,6 +12,7 @@
       "mindspore/lite/examples",
       "mindspore/lite/python/api",
       "mindspore/lite/java",
+      "mindspore/lite/providers",
       "README.md",
       "Readme.md",
       "readme.md",
