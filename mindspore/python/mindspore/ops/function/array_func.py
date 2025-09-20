@@ -3573,7 +3573,7 @@ def meshgrid_ext(*tensors, indexing=None):
             for ``'ij'`` indexing, the shape of outputs is :math:`(M, N)`. In the 3-D
             case with inputs of length `M`, `N` and `P`, for ``'xy'`` indexing, the shape of outputs is
             :math:`(N, M, P)` and for ``'ij'`` indexing, the shape of outputs is :math:`(M, N, P)`.
-            Default: ``'ij'`` .
+            Default: ``None`` , which is equivalent to the value ``'ij'`` .
 
     Returns:
         Tensors, a Tuple of N N-D Tensor objects. The data type is the same with the Inputs.

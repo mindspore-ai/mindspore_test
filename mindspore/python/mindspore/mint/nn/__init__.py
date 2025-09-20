@@ -1179,7 +1179,7 @@ class PixelShuffle(Cell):
         >>> input = mint.randn(1, 9, 4, 4)
         >>> output = pixel_shuffle(input)
         >>> print(output.shape)
-            [1, 1, 12, 12]
+            (1, 1, 12, 12)
     """
 
     def __init__(self, upscale_factor):
