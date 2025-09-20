@@ -260,7 +260,6 @@ using ZerosCost = SqrtCost;
 using RemainderCost = SqrtCost;
 using FmodTensorCost = SqrtCost;
 using InplaceCopyCost = SqrtCost;
-using ContiguousCost = SqrtCost;
 
 class ReLU6Cost : public CastCost {
  public:

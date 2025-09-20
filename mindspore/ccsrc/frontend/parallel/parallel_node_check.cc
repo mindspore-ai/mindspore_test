@@ -46,7 +46,7 @@ static const std::set<std::string> PARALLEL_BLACK_LIST_ = {mindspore::kTupleGetI
   "StopGradient", "UpdateState", "Load", "Switch", "Print", "call_instance", "TensorMove", "DType",
   "ScalarAdd", "ScalarSub", "ScalarMul", "ScalarDiv", "ScalarFloorDiv", "ScalarPow", "ScalarSummary", "ScalarCast",
   "ScalarMod", "ScalarGt", "ScalarGe", "ScalarLt", "ScalarLe", "ScalarEq", "TensorToTuple", "TupleToTensor",
-  "Generator"};
+  "Generator", "Contiguous"};
 static const std::set<PrimitivePtr> ALLGATHER_NODE_LIST_ = {prim::kPrimAllGather, prim::kPrimMiniStepAllGather,
                                                             prim::kPrimMicroStepAllGather};
 static const std::set<PrimitivePtr> TRIVIAL_NODE_LIST_ = {prim::kPrimCast, prim::kPrimDepend, prim::kPrimQuant,
