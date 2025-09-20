@@ -22,7 +22,7 @@
 #include "mindspore/ccsrc/pyboost/customize/identity.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
-#include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {

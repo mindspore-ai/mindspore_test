@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
-#include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {

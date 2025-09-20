@@ -30,7 +30,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/ascend/acl_ir/ge_adapter_info.h"
-#include "kernel/ascend/acl/acl_kernel_build.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel_build.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"

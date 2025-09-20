@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/acl/acl_kernel/custom_op_kernel_mod.h"
+#include "kernel/ascend/aclop/kernel_mod_impl/acl_kernel/custom_op_kernel_mod.h"
 #include <memory>
 #include <string>
 #include <algorithm>

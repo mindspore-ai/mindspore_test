@@ -10,7 +10,7 @@ endif()
 
 set(ASCEND_KERNEL_COMP
         silent_detect
-        acl
+        aclop
         acl_ir
         aclnn
         akg

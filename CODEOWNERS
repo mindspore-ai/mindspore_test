@@ -70,7 +70,7 @@
 
 # The maintainers of mindspore/ops.
 /mindspore/ops/ @liangchenghui
-/mindspore/ops/kernel/ascend/acl/ @limingqi107
+/mindspore/ops/kernel/ascend/aclop/ @limingqi107
 /mindspore/ops/kernel/ascend/acl_ir/ @limingqi107
 /mindspore/ops/kernel/ascend/akg/ @gaoxiong1
 /mindspore/ops/kernel/ascend/ascendc/ @limingqi107
