@@ -27,6 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "mindspore/core/include/utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -382,6 +383,32 @@ bool ExtractGradReduceUserList(const CNodePtrList &execute_order_cnode_list, boo
             });
   return true;
 }
+
+void ResetAssignAddGradCommDependWithAccumulation(const KernelGraphPtr &kernel_graph,
+                                                  const GradReduceUser &grad_reduce_user) {
+  auto manager = kernel_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  auto assign_add_list = grad_reduce_user.assign_add_list;
+  auto grad_reduce_list = grad_reduce_user.grad_reduce_list;
+  if (assign_add_list.size() > 1) {
+    AnfNodePtrList inputs(assign_add_list.begin(), assign_add_list.end());
+    auto make_tuple_cnode = common::AnfAlgo::CreateMakeTupleNode(kernel_graph, inputs);
+    MS_EXCEPTION_IF_NULL(make_tuple_cnode);
+    auto accu_input = grad_reduce_list.front()->input(kIndex1);
+    while (IsPrimitiveCNode(accu_input, prim::kPrimDepend)) {
+      auto accu_cnode = accu_input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(accu_cnode);
+      accu_input = accu_cnode->input(kIndex1);
+    }
+    auto depend_cnode = kernel_graph->NewCNode({NewValueNode(prim::kPrimDepend), accu_input, make_tuple_cnode});
+    depend_cnode->set_abstract(accu_input->abstract());
+    depend_cnode->AddAttr("grad_comm_assign_add_depend", MakeValue<bool>(true));
+    manager->SetEdge(grad_reduce_list.front(), kIndex1, depend_cnode);
+  } else {
+    common::AnfAlgo::InsertDepend(assign_add_list.front(), grad_reduce_list.front(), manager, kernel_graph,
+                                  "grad_comm_assign_add_depend");
+  }
+}
 }  // namespace
 
 bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, bool with_accumulation) {
@@ -403,26 +430,7 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
     // Reconstruct depend for grad reduce
     auto next_op_users = manager->node_users()[grad_reduce_user.grad_reduce_list.back()];
     if (with_accumulation) {
-      auto assign_add_list = grad_reduce_user.assign_add_list;
-      auto grad_reduce_list = grad_reduce_user.grad_reduce_list;
-      if (assign_add_list.size() > 1) {
-        AnfNodePtrList inputs(assign_add_list.begin(), assign_add_list.end());
-        auto make_tuple_cnode = common::AnfAlgo::CreateMakeTupleNode(kernel_graph, inputs);
-        MS_EXCEPTION_IF_NULL(make_tuple_cnode);
-        auto accu_input = grad_reduce_list.front()->input(kIndex1);
-        while (IsPrimitiveCNode(accu_input, prim::kPrimDepend)) {
-          auto accu_cnode = accu_input->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(accu_cnode);
-          accu_input = accu_cnode->input(kIndex1);
-        }
-        auto depend_cnode = kernel_graph->NewCNode({NewValueNode(prim::kPrimDepend), accu_input, make_tuple_cnode});
-        depend_cnode->set_abstract(accu_input->abstract());
-        depend_cnode->AddAttr("grad_comm_assign_add_depend", MakeValue<bool>(true));
-        manager->SetEdge(grad_reduce_list.front(), kIndex1, depend_cnode);
-      } else {
-        common::AnfAlgo::InsertDepend(assign_add_list.front(), grad_reduce_list.front(), manager, kernel_graph,
-                                      "grad_comm_assign_add_depend");
-      }
+      ResetAssignAddGradCommDependWithAccumulation(kernel_graph, grad_reduce_user);
     }
     // Move all communication users to the back of the last gradient communication.
     for (const auto &next_op_user : next_op_users) {
@@ -438,7 +446,10 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
   auto is_reorder_dw_dx_in_previous_pass =
     (!ms_context->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP).empty() ||
      parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved());
-  if (is_reorder_dw_dx_in_previous_pass) {
+  auto is_enable_graph_kernel_fusion = graphkernel::GraphKernelFlags::GetInstance()
+                                         .IsEnableGraphKernel();  // When graph kernel fusion is enabled, the gradient
+                                                                  // and recompute nodes may be fusion together.
+  if (is_reorder_dw_dx_in_previous_pass || is_enable_graph_kernel_fusion) {
     // Insert depend according grad_reduce in order
     auto pre_grad_reduce_user = grad_reduce_user_list.front();
     for (size_t i = 1; i < grad_reduce_user_list.size(); ++i) {
