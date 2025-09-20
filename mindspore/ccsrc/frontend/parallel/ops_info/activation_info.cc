@@ -1540,6 +1540,5 @@ REGISTER(RemainderScalarTensorInfo);  // has not bprop
 REGISTER(InvertInfo);                 // has not bprop
 REGISTER(PopulationCountInfo);        // has not bprop
 REGISTER(SwigluInfo);
-REGISTER(ContiguousInfo);
 }  // namespace parallel
 }  // namespace mindspore
