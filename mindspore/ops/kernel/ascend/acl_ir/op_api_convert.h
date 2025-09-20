@@ -407,7 +407,13 @@ inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
   std::vector<int64_t> storage_shape;
   const auto &storage_info = tensor->storage_info();
   if (storage_info) {
-    storage_shape = std::vector<int64_t>{GetTensorNum(storage_info->ori_shape)};
+    // If format is fractal_nz, the StorageDims of aclTensor need use storage_info->ori_shape.
+    if (device_address->format() == kOpFormat_FRAC_NZ) {
+      format = ACL_FORMAT_FRACTAL_NZ;
+      storage_shape = storage_info->ori_shape;
+    } else {
+      storage_shape = std::vector<int64_t>{GetTensorNum(storage_info->ori_shape)};
+    }
   } else {
     storage_shape = std::vector<int64_t>{GetTensorNum(shape)};
   }

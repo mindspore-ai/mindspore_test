@@ -47,6 +47,35 @@ def test_pyboost_atb_swiglu():
     output = my_ops.npu_swiglu(ms.Tensor(x), -1)
     assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_pyboost_aclnn_quant_batch_matmul_nz_format():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+    ms.set_device("Ascend")
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    my_ops = CustomOpBuilder("quant_batch_matmul", ["jit_test_files/pyboost_aclnn_quant_batch_matmul.cpp"],
+                             backend="Ascend").load()
+
+    batch = 2
+    m = 128
+    k = 256
+    n = 128
+    x1 = np.random.randint(-5, 5, size=(batch, m, k)).astype(np.int8)
+    x2 = np.random.randint(-5, 5, size=(batch, k, n)).astype(np.int8)
+    scale = np.ones([n]).astype(np.float32)
+    expected = np.matmul(x1.astype(np.int32), x2.astype(np.int32)) * scale
+
+    ms_x1 = ms.Tensor(x1)
+    ms_x2 = ms.Tensor(x2)
+    # 29 -> FRACTAL_NZ
+    ms_x2 = ms.ops.auto_generate.format_cast(ms_x2, 29)
+    ms_scale = ms.Tensor(scale)
+    # 45 -> output_dtype: ms.bfloat16
+    output = my_ops.quant_batch_matmul(ms_x1, ms_x2, ms_scale, None, None, None, False, False, "FRACTAL_NZ", 45)
+    assert np.allclose(expected, output.astype(ms.float32).asnumpy(), 0.01)
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_pyboost_atb_rope():
