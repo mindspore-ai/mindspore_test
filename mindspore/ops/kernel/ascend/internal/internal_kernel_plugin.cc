@@ -122,6 +122,7 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
+  {prim::kPrimGroupedMatmulV4->name(), {{{1}, {}}, {{1}, {}}}},
   {kMlaPreprocessName, {{{5, 18}, {}}, {{5, 18}, {}}}}};
 
 // unordered_map mean:
@@ -235,7 +236,9 @@ void GetMsTypesList(const CNodePtr &kernel, std::vector<TypeId> *ms_in_dtypes, s
 void UpdateNzFormatOpsList(const AnfNodePtr &node) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() &&
+  auto op_name = AnfUtils::GetCNodeName(node);
+  if ((AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() ||
+       AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmulV4->name()) &&
       common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, cnode)) {
     auto dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrDynInputSizes);
     if (!dyn_input_sizes.empty()) {
@@ -244,7 +247,7 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
       for (size_t i = weight_num; i < weight_num * CONST_2; ++i) {
         input_idx.emplace_back(i);
       }
-      kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
+      kNzFormatOpsList[op_name] = {{input_idx, {}}, {input_idx, {}}};
     }
   }
 }
