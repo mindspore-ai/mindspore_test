@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <map>
+#include <vector>
 #include "backend/backend_manager/backend_base.h"
 
 namespace mindspore {
@@ -56,6 +57,8 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   static BackendManager &GetInstance();
   // Record the BackendCreator by the backend name.
   void Register(const std::string &backend_name, BackendCreator &&backend_creator);
+
+  std::vector<GraphFragmentPtr> Split(const FuncGraphPtr &func_graph, const std::string &backend_name);
 
   // The processing entry of graph building by the given backend.
   // The return value are the selected backend type and the built graph id.

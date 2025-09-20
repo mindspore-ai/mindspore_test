@@ -38,6 +38,7 @@ class FRONTEND_EXPORT JitExecutorPy : public ExecutorPy {
 
   ~JitExecutorPy() override = default;
 
+  py::tuple SplitGraph(const py::object &func_graph_obj);
   static void ClearRes();
   void CleanCompileRes(const ResourcePtr &resource) override;
   // For pi jit compiler.
