@@ -95,6 +95,8 @@ class AscendKernelExecutor : public KernelExecutor {
     return AnfAlgo::IsLaunchIgnoredInputAddressIdx(node, input_idx);
   }
 
+  void AddCustomPass(const KernelGraphPtr &graph) const override;
+
  private:
   static void DoSomas(const FuncGraphPtr &graph);
   void DoStreamAssign(

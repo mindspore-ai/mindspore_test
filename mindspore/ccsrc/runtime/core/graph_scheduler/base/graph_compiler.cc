@@ -512,6 +512,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   // Unify the MindIR, must be before of the kernel_graph optimization.
   auto kernel_executor = device_context->GetKernelExecutor();
   if (kernel_executor != nullptr) {
+    kernel_executor->AddCustomPass(kernel_graph);
     kernel_executor->AddMindIRPass(kernel_graph);
   }
   kernel_graph->SetInputNodes();

@@ -399,6 +399,8 @@ class RUNTIME_HARDWARE_EXPORT KernelExecutor {
 
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
+  virtual void AddCustomPass(const KernelGraphPtr &graph) const {}
+
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
   // Send and receive parameters.
   virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
