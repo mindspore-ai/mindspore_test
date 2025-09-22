@@ -15,12 +15,12 @@
  */
 
 #include "utils/ms_exception.h"
+#include <cstddef>
 #include <string>
 namespace mindspore {
 namespace {
 constexpr char kStrUceTimeBegin[] = "time us=";
 constexpr size_t kStrUceTimeBeginLen = sizeof(kStrUceTimeBegin) - 1;
-constexpr char kStrUceTimeEnd[] = ".[FUNC:ProcHBMRas]";
 }  // namespace
 
 MsException &MsException::Instance() {
@@ -91,6 +91,7 @@ void UCEException::ProcessApiUceError(const FuncInfo &fn_info, int error_code,
 // extract UCE occurs time from string "HBM MULTI BIT ECC, Uncorrectable ECC, device_id=3,
 // event_id=0x80e01801, time us=67672363666.[FUNC:ProcHBMRas][FILE:stars_engine.cc]"
 uint64_t UCEException::ExtractUceTime(const char *error_msg) {
+  MS_VLOG(VL_UCE_HBM_MUTLI_BIT_ECC) << "Error message is " << error_msg;
   if (error_msg == nullptr) {
     return 0;
   }
@@ -99,13 +100,21 @@ uint64_t UCEException::ExtractUceTime(const char *error_msg) {
   if (idx_begin == std::string::npos) {
     return 0;
   }
-  auto idx_end = message.find(kStrUceTimeEnd, idx_begin);
-  if (idx_end == std::string::npos) {
+  size_t num_digits = 0;
+  for (auto idx = idx_begin + kStrUceTimeBeginLen; idx < message.size(); ++idx) {
+    if (!isdigit(message[idx])) {
+      break;
+    }
+    num_digits += 1;
+  }
+  if (num_digits == 0) {
     return 0;
   }
-  auto decimal_str = message.substr(idx_begin + kStrUceTimeBeginLen, idx_end - idx_begin - kStrUceTimeBeginLen);
+  auto decimal_str = message.substr(idx_begin + kStrUceTimeBeginLen, num_digits);
   try {
-    return std::stoull(decimal_str);
+    auto time_us = std::stoull(decimal_str);
+    MS_VLOG(VL_UCE_HBM_MUTLI_BIT_ECC) << "Extracted time is " << time_us << " us.";
+    return time_us;
   } catch (std::logic_error const &ex) {
     MS_LOG(ERROR) << "Convert decimal string " << decimal_str << " to uint64_t value failed.";
     return 0;
