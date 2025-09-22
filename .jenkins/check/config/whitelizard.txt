@@ -40,6 +40,7 @@ mindspore/mindspore/ccsrc/runtime/core/actors/control_flow/exit_actor.cc:mindspo
 mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_runner.cc:mindspore::runtime::KernelRunner::CopyInputDeviceTensor
 mindspore/mindspore/ccsrc/runtime/core/actors/base/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchKernel
 mindspore/mindspore/ccsrc/runtime/core/actors/base/output_actor.cc:mindspore::runtime::OutputActor::HandleOutput
+mindspore/mindspore/ccsrc/runtime/core/actors/base/kernel_runner.cc:mindspore::runtime::KernelRunner::CopyInputDeviceTensor
 mindspore/mindspore/ccsrc/pybind_api/init.cc:PYBIND11_MODULE
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/frontend/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf

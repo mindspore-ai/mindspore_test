@@ -969,9 +969,16 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
     return;
   }
   if (in_increment) {
-    MS_LOG(EXCEPTION) << GetAID().Name()
-                      << " not support copy parameter input in increment infer graph, input index: " << input_index
-                      << " input kernel tensor:" << kernel_tensor->ToString();
+    MS_LOG(EXCEPTION) << GetAID().Name() << "got an unexpected input type, input index: " << input_index
+                      << ", input format: " << kernel::GetFormatFromEnumToStr(kernel_tensor->format())
+                      << ", expected format: " << real_input_info->format_
+                      << ", they are equivalent format: " << std::boolalpha
+                      << AnfAlgo::IsEquivalentFormat(kernel_tensor->format(), real_input_info->format_)
+                      << ", input device type: " << device::GetDeviceNameByType(kernel_tensor->GetDeviceType())
+                      << ", expected device type: " << device::GetDeviceNameByType(device_contexts_[0]->GetDeviceType())
+                      << ", input data type: " << TypeIdToString(device_tensor->type_id())
+                      << ", expected data type: " << TypeIdToString(real_input_info->type_id_)
+                      << ". Full input kernel tensor information: " << kernel_tensor->ToString();
   }
   uint64_t start_time = 0;
   PROFILER_START(start_time);
