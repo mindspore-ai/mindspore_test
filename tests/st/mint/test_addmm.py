@@ -33,10 +33,18 @@ def generate_expect_forward_output(input1, batch1, batch2, beta=1, alpha=1):
 
 
 def generate_expect_backward_output(input1, batch1, batch2, beta=1, alpha=1):
-    out_grad = np.ones((batch1 @ batch2).shape)
-    input_grad = beta * out_grad
-    if input1.size != out_grad.size:
-        input_grad = (beta * out_grad).sum(0).reshape(input1.shape)
+    out_grad = np.ones((batch1 @ batch2).shape, dtype=np.float32)
+    input_grad_full = beta * out_grad
+    in_shape = tuple(input1.shape)
+    out_shape = input_grad_full.shape
+    if len(in_shape) < len(out_shape):
+        in_shape_aligned = (1,) * (len(out_shape) - len(in_shape)) + in_shape
+    else:
+        in_shape_aligned = in_shape
+    axes = tuple(i for i, (din, dout) in enumerate(zip(in_shape_aligned, out_shape)) if din == 1 and dout > 1)
+    if axes:
+        input_grad_full = input_grad_full.sum(axis=axes, keepdims=True)
+    input_grad = input_grad_full.reshape(in_shape)
     b1_grad = alpha * (out_grad @ batch2.transpose((1, 0)))
     b2_grad = alpha * (batch1.transpose((1, 0)) @ out_grad)
     return input_grad, b1_grad, b2_grad
@@ -176,6 +184,42 @@ def test_addmm_normal(mode):
         output_grad2.asnumpy(), expect_grad2, 4e-2, 4e-2)
     np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 4e-2, 4e-2)
     np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 4e-2, 4e-2)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_addmm_input_with_first_dim_1(mode):
+    """
+    Feature: Ops.
+    Description: test op addmm with input whose first dim is 1.
+    Expectation: expect correct result.
+    """
+    input_shape = (15,)
+    mat1_shape = (1, 12)
+    mat2_shape = (12, 15)
+    beta = 1
+    alpha = 2.0
+    input1, mat1, mat2 = generate_random_input(
+        input_shape, mat1_shape, mat2_shape)
+    expect_forward = generate_expect_forward_output(input1, mat1, mat2, beta, alpha)
+    expect_grad, expect_mat1_grad, expect_mat2_grad = generate_expect_backward_output(
+        input1, mat1, mat2, beta, alpha)
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        output_forward = addmm_forward_func(
+            ms.Tensor(input1), ms.Tensor(mat1), ms.Tensor(mat2), beta, alpha)
+        input_grad, mat1_grad, mat2_grad = addmm_backward_func(
+            ms.Tensor(input1), ms.Tensor(mat1), ms.Tensor(mat2), beta, alpha)
+    else:
+        output_forward = (jit(addmm_forward_func, backend="ms_backend", jit_level="O0"))(
+            ms.Tensor(input1), ms.Tensor(mat1), ms.Tensor(mat2), beta, alpha)
+        input_grad, mat1_grad, mat2_grad = (jit(addmm_backward_func, backend="ms_backend", jit_level="O0"))(
+            ms.Tensor(input1), ms.Tensor(mat1), ms.Tensor(mat2), beta, alpha)
+    np.testing.assert_allclose(
+        output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
+    np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, 4e-2, 4e-2)
+    np.testing.assert_allclose(mat1_grad.asnumpy(), expect_mat1_grad, 4e-2, 4e-2)
+    np.testing.assert_allclose(mat2_grad.asnumpy(), expect_mat2_grad, 4e-2, 4e-2)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

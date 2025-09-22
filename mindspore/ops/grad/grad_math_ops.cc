@@ -4936,25 +4936,26 @@ REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
+  auto input_shape = ib->GetShape(input);
+  auto dout_shape = ib->GetShape(dout);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
-    auto input_shape = ib->Shape(input);
-    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
-    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
-      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
-      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {
-          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
+    if (IsDynamic(input_shape) || IsDynamic(dout_shape)) {
+      auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+      auto true_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}),
+                           e->Shape(input))};
       };
       auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
-      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(bc_axis_shape);
-      if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
-                                 input_shape);
+      auto bc_axis = BroadcastGradientArgsInferValue(input_shape, dout_shape);
+      if (!bc_axis[i0].empty()) {
+        input_grad = ib->Emit("SumExt", {input_grad, ib->Value(bc_axis[i0]), ib->Value(false), ib->EmitValue(kNone)});
+      }
+      if (ib->GetRank(input_grad) != input_shape.size()) {
+        input_grad = ib->Reshape(input_grad, input_shape);
       }
     }
   } else {
@@ -5005,25 +5006,26 @@ REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
+  auto input_shape = ib->GetShape(input);
+  auto dout_shape = ib->GetShape(dout);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
-    auto input_shape = ib->Shape(input);
-    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
-    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
-      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
-      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {
-          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
+    if (IsDynamic(input_shape) || IsDynamic(dout_shape)) {
+      auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+      auto true_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}),
+                           e->Shape(input))};
       };
       auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
-      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(bc_axis_shape);
-      if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
-                                 input_shape);
+      auto bc_axis = BroadcastGradientArgsInferValue(input_shape, dout_shape);
+      if (!bc_axis[i0].empty()) {
+        input_grad = ib->Emit("SumExt", {input_grad, ib->Value(bc_axis[i0]), ib->Value(false), ib->EmitValue(kNone)});
+      }
+      if (ib->GetRank(input_grad) != input_shape.size()) {
+        input_grad = ib->Reshape(input_grad, input_shape);
       }
     }
   } else {
@@ -5048,25 +5050,26 @@ REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
   auto input_type = ib->GetDtype(input);
+  auto input_shape = ib->GetShape(input);
+  auto dout_shape = ib->GetShape(dout);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
-    auto input_shape = ib->Shape(input);
-    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
-    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
-      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
-      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {
-          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
+    if (IsDynamic(input_shape) || IsDynamic(dout_shape)) {
+      auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+      auto true_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}),
+                           e->Shape(input))};
       };
       auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
-      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(bc_axis_shape);
-      if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
-                                 input_shape);
+      auto bc_axis = BroadcastGradientArgsInferValue(input_shape, dout_shape);
+      if (!bc_axis[i0].empty()) {
+        input_grad = ib->Emit("SumExt", {input_grad, ib->Value(bc_axis[i0]), ib->Value(false), ib->EmitValue(kNone)});
+      }
+      if (ib->GetRank(input_grad) != input_shape.size()) {
+        input_grad = ib->Reshape(input_grad, input_shape);
       }
     }
   } else {
@@ -5083,6 +5086,7 @@ REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
     batch2->need_compute_grad_out()
       ? MaybeMultiply(ib, input_type, ib->BatchMatMul(batch1, grad_unsqueeze_expand, true, false), alpha, "alpha")
       : ib->OutZeros(batch2);
+  // inverse broadcast should be taken into consideration when addbmm is turned to stable
   return {input_grad, batch1_grad, batch2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 
@@ -5094,26 +5098,27 @@ REG_BPROP_BUILDER("Baddbmm").FreeUselessValues(FreeTensorsOfBaddbmm).SetBody(BOD
   auto alpha = ib->GetInput(i4);
   auto dout = ib->GetInput(i6);
   NodePtr input_grad{nullptr};
+  auto input_shape = ib->GetShape(input);
+  auto dout_shape = ib->GetShape(dout);
   auto input_type = ib->GetDtype(input);
   if (input->need_compute_grad_out()) {
     input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
-    auto input_shape = ib->Shape(input);
-    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-    auto bc_axis_shape_ptr = bc_axis[i0]->GetShape();
-    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
-      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
-      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
-        return {
-          e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}), input_shape)};
+    if (IsDynamic(input_shape) || IsDynamic(dout_shape)) {
+      auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+      auto true_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[i0], e->Value(false), e->EmitValue(kNone)}),
+                           e->Shape(input))};
       };
       auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[i0]}), ib->Value<int64_t>(0));
       input_grad = ib->Conditional(cond, true_branch, false_branch);
     } else {
-      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(bc_axis_shape);
-      if (bc_axis_shape->size() > 0) {
-        input_grad = ib->Reshape(ib->Emit("SumExt", {input_grad, bc_axis[i0], ib->Value(false), ib->EmitValue(kNone)}),
-                                 input_shape);
+      auto bc_axis = BroadcastGradientArgsInferValue(input_shape, dout_shape);
+      if (!bc_axis[i0].empty()) {
+        input_grad = ib->Emit("SumExt", {input_grad, ib->Value(bc_axis[i0]), ib->Value(false), ib->EmitValue(kNone)});
+      }
+      if (ib->GetRank(input_grad) != input_shape.size()) {
+        input_grad = ib->Reshape(input_grad, input_shape);
       }
     }
   } else {
