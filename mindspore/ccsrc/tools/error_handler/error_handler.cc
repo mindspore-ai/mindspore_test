@@ -42,6 +42,7 @@ void ErrorHandler::SaveConstants(const std::vector<KernelGraphPtr> &graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     for (const auto &value_node : graph->graph_value_nodes()) {
       auto node_value = value_node->value();
+      MS_EXCEPTION_IF_NULL(node_value);
       if (node_value->isa<tensor::Tensor>()) {
         auto tensor = node_value->cast<tensor::TensorPtr>();
         const_values_[value_node] = std::make_shared<tensor::Tensor>(*tensor);
