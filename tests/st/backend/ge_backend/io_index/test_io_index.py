@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from ge_test_utils import run_testcase
-from tests.st.utils import test_utils
+from tests.st.backend.ge_backend.ge_test_utils import run_testcase
 from tests.mark_utils import arg_mark
 
 
 @arg_mark(
-    plat_marks=["platform_ascend"],
+    plat_marks=["platform_ascend", "platform_ascend910b"],
     level_mark="level1",
     card_mark="onecard",
-    essential_mark="essential",
+    essential_mark="unessential",
 )
-@test_utils.run_test_with_On
-def test_ge_nested_switch():
+def test_io_index():
     """
-    Description: Test GE nested switch.
-    Description: Support nested switch.
+    Description: Test io_index.
     Expectation: The result match with expect.
     """
-    run_testcase("run_ge_nested_switch", "test_ge_nested_switch")
+    run_testcase("run_io_index", "test_io_index_condition_1")

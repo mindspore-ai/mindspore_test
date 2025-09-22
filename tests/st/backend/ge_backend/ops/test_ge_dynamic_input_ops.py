@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from ge_test_utils import run_testcase
+from tests.st.backend.ge_backend.ge_test_utils import run_testcase
 from tests.mark_utils import arg_mark
 
 
@@ -24,8 +24,8 @@ from tests.mark_utils import arg_mark
 )
 def test_ge_nested_tuple():
     """
-    Description: Test GE nested tuple.
-    Description: Support nested tuple.
+    Description: Test GE dynamic input.
+    Description: Support dynamic inputs.
     Expectation: The result match with expect.
     """
-    run_testcase("run_ge_nested_tuple", "test_ge_nested_tuple")
+    run_testcase("run_ge_dynamic_input_ops", "test_ge_dynamic_input")

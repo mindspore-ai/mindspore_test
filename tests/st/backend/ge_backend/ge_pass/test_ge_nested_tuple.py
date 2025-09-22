@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2023 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from ge_test_utils import run_testcase
+from tests.st.backend.ge_backend.ge_test_utils import run_testcase
 from tests.mark_utils import arg_mark
 
 
@@ -22,9 +22,10 @@ from tests.mark_utils import arg_mark
     card_mark="onecard",
     essential_mark="unessential",
 )
-def test_ge_graph_mode_with_jit_level():
+def test_ge_nested_tuple():
     """
-    Description: Graph Mode jit_level with GE.
-    Expectation: Run ge when jit_level.
+    Description: Test GE nested tuple.
+    Description: Support nested tuple.
+    Expectation: The result match with expect.
     """
-    run_testcase("ge_graph_mode_jit_level")
+    run_testcase("run_ge_nested_tuple", "test_ge_nested_tuple")

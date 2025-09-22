@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from ge_test_utils import run_testcase
+import tests.st.backend.ge_backend.ge_test_utils as utils
 from tests.mark_utils import arg_mark
 
 
@@ -22,10 +22,10 @@ from tests.mark_utils import arg_mark
     card_mark="onecard",
     essential_mark="essential",
 )
-def test_ge_call():
+def test_sparse_tensor():
     """
-    Description: Test GE Call.
-    Description: Support call node.
-    Expectation: The result match with expect.
+    Feature: sparse tensor
+    Description: test sparse tensor with ge backend
+    Expectation: success
     """
-    run_testcase("run_ge_call", "test_ge_call_in_control_flow")
+    utils.run_testcase("run_sparse_tensor")
