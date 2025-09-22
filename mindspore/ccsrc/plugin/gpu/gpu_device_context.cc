@@ -71,7 +71,6 @@
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/gpu/cuda/arrays/contiguous_gpu_kernel.h"
 #include "mindspore/core/include/ir/tensor_new.h"
-#include "backend/common/custom_pass/custom_pass_plugin.h"
 
 namespace mindspore {
 namespace device {
@@ -567,39 +566,6 @@ bool GPUKernelExecutor::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, s
     return true;
   }
   return false;
-}
-
-void GPUKernelExecutor::AddCustomPass(const KernelGraphPtr &graph) const {
-  MS_EXCEPTION_IF_NULL(graph);
-  PROF_START(CustomOptimization);
-  MS_LOG(INFO) << "start custom optimization. graph id: " << graph->graph_id();
-#ifdef ENABLE_DUMP_IR
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_gpu_custom_optimization_before_graph_" + std::to_string(graph->graph_id()) + ".ir";
-    DumpIR(file_name, graph);
-  }
-#endif
-
-  auto opt = std::make_shared<opt::GraphOptimizer>();
-
-  auto &plugin_manager = mindspore::opt::CustomPassPluginManager::GetInstance();
-
-  // Plugin passes enable extensible optimization for GPU backends
-  plugin_manager.RegisterPassesToOptimizer(opt, "gpu");
-
-  (void)opt->Optimize(graph);
-
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_gpu_custom_optimization_after_graph_" + std::to_string(graph->graph_id()) + ".ir";
-    DumpIR(file_name, graph);
-  }
-#endif
-
-  MS_LOG(INFO) << "end custom optimization. graph id: " << graph->graph_id();
-  PROF_END(CustomOptimization);
 }
 
 void GPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
