@@ -1214,7 +1214,8 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
     // In UCE scenario, the constants value in device may be corrupted, so here restore from host backup values
     node_value = tools::ErrorHandler::GetInstance().GetConstant(node);
   }
-  MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " front node:" << front_node->DebugString();
+  MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " node addr:" << node.get()
+                << " front node:" << front_node->DebugString() << " front node addr:" << front_node.get();
   if (node_value->isa<tensor::Tensor>()) {
     PrepareDataForValueNodeTensor(node, node_value, front_node, device_context, context);
   } else if (node_value->isa<ValueSequence>() || node_value->isa<Scalar>()) {
@@ -1236,15 +1237,20 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
   const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
+  MS_LOG(DEBUG) << "Front node: " << front_node->DebugString() << ", node addr: " << front_node.get()
+                << ", kernel tensor num is: " << kernel_tensors.size();
   for (auto &another_kernel_tensor : kernel_tensors) {
     if (another_kernel_tensor == nullptr) {
+      MS_LOG(DEBUG) << "Current kernel tensor is null.";
       continue;
     }
     auto &another_device_tensor = another_kernel_tensor->device_address();
     if (another_device_tensor == host_tensor_address) {
+      MS_LOG(DEBUG) << "Current kernel tensor: " << another_kernel_tensor->ToString() << " is continued.";
       continue;
     }
     MS_EXCEPTION_IF_NULL(another_device_tensor);
+    MS_LOG(DEBUG) << "Current kernel tensor: " << another_kernel_tensor->ToString();
     auto another_device_name = another_device_tensor->GetDeviceType();
     const auto &another_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {another_device_name, device_context->device_context_key().device_id_});
