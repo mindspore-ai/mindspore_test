@@ -58,7 +58,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendEvent : public DeviceEvent {
   bool has_flag_{false};
 };
 
-class ASCEND_RES_MANAGER_EXPORT AscendTimeEvent : public AscendEvent {
+class AscendTimeEvent : public AscendEvent {
  public:
   AscendTimeEvent();
   ~AscendTimeEvent() override = default;

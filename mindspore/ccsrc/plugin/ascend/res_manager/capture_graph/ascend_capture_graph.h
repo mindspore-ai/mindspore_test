@@ -18,12 +18,11 @@
 #define MINDSPORE_ASCEND_CAPTURE_GRAPH_H
 
 #include "acl/acl_mdl.h"
-#include "plugin/ascend/res_manager/visible.h"
 #include "runtime/core/graph_executor/kernel_capture/capture_graph.h"
 
 namespace mindspore::device::ascend {
 
-class ASCEND_RES_MANAGER_EXPORT AscendCaptureGraph : public CaptureGraph {
+class AscendCaptureGraph : public CaptureGraph {
  public:
   AscendCaptureGraph() = default;
   ~AscendCaptureGraph() override;

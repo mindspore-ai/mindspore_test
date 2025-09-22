@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class ASCEND_RES_MANAGER_EXPORT AscendPinMemPool : public PinMemPool {
+class AscendPinMemPool : public PinMemPool {
  public:
   ~AscendPinMemPool() = default;
   static AscendPinMemPool &GetInstance();
