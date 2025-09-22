@@ -56,10 +56,6 @@ from mindspore.parallel import _cost_model_context
 from mindspore.parallel._utils import _is_in_data_parallel_mode
 from mindspore.run_check._check_version import check_version_and_env_config
 from mindspore.dataset.callback.ds_callback import DSCallback, WaitedDSCallback
-from mindspore.dataset.transforms.c_transforms import TensorOperation as CTensorOperation, OneHot as COneHot, \
-    Fill as CFill, TypeCast as CTypeCast, Slice as CSlice, Mask as CMask, PadEnd as CPadEnd, \
-    Concatenate as CConcatenate, Duplicate as CDuplicate, Unique as CUnique, Compose as CCompose, \
-    RandomApply as CRandomApply, RandomChoice as CRandomChoice, Plugin as CPlugin
 from mindspore.dataset.transforms.transforms import TensorOperation, Compose, Concatenate, Duplicate, Fill, Mask, \
     OneHot, PadEnd, Plugin, RandomApply, RandomChoice, Slice, TypeCast, Unique
 from mindspore.dataset.text.transforms import AddToken, JiebaTokenizer, Lookup, Ngram, SentencePieceTokenizer, \
@@ -97,14 +93,6 @@ from mindspore.dataset.engine.datasets import Dataset, BucketBatchByLengthDatase
     TakeDataset, ZipDataset, ConcatDataset, RenameDataset, ProjectDataset, _ToDevice, TransferDataset, Schema
 from mindspore.dataset.engine.samplers import Sampler, DistributedSampler, PKSampler, RandomSampler, SubsetSampler, \
     SequentialSampler, SubsetRandomSampler, WeightedRandomSampler
-from mindspore.dataset.vision.c_transforms import ImageTensorOperation, AdjustGamma, AutoAugment, AutoContrast, \
-    BoundingBoxAugment, CenterCrop, ConvertColor, Crop, CutMixBatch, CutOut, Decode, Equalize, GaussianBlur, \
-    HorizontalFlip, HWC2CHW, Invert, MixUpBatch, Normalize, NormalizePad, Pad, RandomAdjustSharpness, RandomAffine, \
-    RandomAutoContrast, RandomColor, RandomColorAdjust, RandomCrop, RandomCropDecodeResize, RandomCropWithBBox, \
-    RandomEqualize, RandomHorizontalFlip, RandomHorizontalFlipWithBBox, RandomInvert, RandomLighting, RandomRotation, \
-    RandomPosterize, RandomResizedCrop, RandomResizedCropWithBBox, RandomResize, RandomResizeWithBBox, \
-    RandomSelectSubpolicy, RandomSharpness, RandomSolarize, RandomVerticalFlip, RandomVerticalFlipWithBBox, Rescale, \
-    Resize, ResizeWithBBox, RgbToBgr, Rotate, SlicePatches, UniformAugment, VerticalFlip
 from mindspore.dataset.vision.utils import encode_jpeg, encode_png, get_image_num_channels, get_image_size, \
     read_file, read_image, read_video, read_video_timestamps, write_file, write_jpeg, write_png
 from mindspore.dataset.vision.transforms import AdjustBrightness, AdjustContrast, AdjustGamma as VAdjustGamma, \
@@ -166,10 +154,6 @@ def _get_dataset_forbidden_code():
     """Get the forbidden function which should be broken in graph"""
     codes = []
     codes.extend([DSCallback.__init__, WaitedDSCallback.__init__])
-    codes.extend([CTensorOperation.__call__, COneHot.parse, CFill.__init__, CFill.parse, CTypeCast.parse, \
-                  CSlice.parse, CMask.__init__, CMask.parse, CPadEnd.__init__, CPadEnd.parse, CConcatenate.__init__, \
-                  CConcatenate.parse, CDuplicate.parse, CUnique.parse, CCompose.parse, CRandomApply.parse, \
-                  CRandomChoice.parse, CPlugin.parse])
     codes.extend([TensorOperation.__call__, Compose.parse, Concatenate.__init__, Concatenate.parse, Duplicate.parse, \
                   Fill.__init__, Fill.parse, Mask.__init__, Mask.parse, OneHot.parse, PadEnd.__init__, PadEnd.parse, \
                   Plugin.parse, RandomApply.parse, RandomChoice.parse, Slice.parse, TypeCast.parse, Unique.parse])
@@ -218,18 +202,6 @@ def _get_dataset_forbidden_code():
                   SequentialSampler.parse, SequentialSampler.parse_for_minddataset, SubsetSampler.parse, \
                   SubsetSampler.parse_for_minddataset, SubsetRandomSampler.parse, \
                   SubsetRandomSampler.parse_for_minddataset, WeightedRandomSampler.parse])
-    codes.extend([ImageTensorOperation.__call__, AdjustGamma.parse, AutoAugment.parse, AutoContrast.parse, Pad.parse, \
-                  BoundingBoxAugment.parse, CenterCrop.parse, ConvertColor.parse, Crop.parse, CutMixBatch.parse, \
-                  CutOut.parse, Decode.parse, Equalize.parse, GaussianBlur.parse, HorizontalFlip.parse, \
-                  Invert.parse, MixUpBatch.parse, Normalize.parse, NormalizePad.parse, HWC2CHW.parse, \
-                  RandomAdjustSharpness.parse, RandomAffine.parse, RandomAutoContrast.parse, RandomColor.parse, \
-                  RandomColorAdjust.parse, RandomCrop.parse, RandomCropDecodeResize.parse, RandomCropWithBBox.parse, \
-                  RandomEqualize.parse, RandomHorizontalFlip.parse, RandomHorizontalFlipWithBBox.parse, \
-                  RandomInvert.parse, RandomLighting.parse, RandomPosterize.parse, RandomResizedCrop.parse, \
-                  RandomResizedCropWithBBox.parse, RandomResize.parse, RandomResizeWithBBox.parse, Resize.parse, \
-                  RandomRotation.parse, RandomSelectSubpolicy.parse, RandomSharpness.parse, RandomSolarize.parse, \
-                  RandomVerticalFlip.parse, RandomVerticalFlipWithBBox.parse, Rescale.parse, VerticalFlip.parse, \
-                  ResizeWithBBox.parse, RgbToBgr.parse, Rotate.parse, SlicePatches.parse, UniformAugment.parse])
     codes.extend([encode_jpeg, encode_png, get_image_num_channels, get_image_size, read_file, read_image, read_video, \
                   read_video_timestamps, write_file, write_jpeg, write_png])
     codes.extend([AdjustBrightness.parse, AdjustContrast.parse, VAdjustGamma.parse, AdjustHue.parse, \
@@ -595,7 +567,7 @@ for const_code in _get_pijit_constexpr_code():
     _func_map[id(const_code)] = FUNC_KEY_PIJIT_CONSTEXPR
 
 GUARD_KEY_RELAX_FUNC = 1
-_guard_func_map = dict()
+_guard_func_map = {}
 
 
 def infer_after_grad(after_grad_func, inputs, outputs):
