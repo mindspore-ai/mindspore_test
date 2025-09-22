@@ -463,46 +463,6 @@ bool ParamCompare(const std::string &l, const std::string &r, const mindspore::H
   return l.compare(r) < 0;
 }
 
-bool IsESNodeWithNoOutput(const AnfNodePtr &node) {
-  const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> no_output_prims = {
-    prim::kPrimInitPartitionMap,
-    prim::kPrimInitEmbeddingHashmap,
-    prim::kPrimEmbeddingTableImport,
-    prim::kPrimEmbeddingComputeVarExport,
-    prim::kPrimEmbeddingComputeVarImport,
-    prim::kPrimEmbeddingTableExport,
-    prim::kPrimEmbeddingTableEvict,
-    prim::kPrimEmbeddingFeatureMappingExport,
-    prim::kPrimEmbeddingFeatureMappingInsert};
-  if (IsOneOfPrimitiveCNode(node, no_output_prims)) {
-    return true;
-  }
-  return false;
-}
-
-std::vector<AnfNodePtr> GetEmbeddingApplyAdamOutput(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  std::vector<AnfNodePtr> ret_nodes;
-  auto depend = node->input(1);
-  MS_EXCEPTION_IF_NULL(depend);
-  if (!IsPrimitiveCNode(depend, prim::kPrimDepend)) {
-    MS_LOG_WITH_NODE(EXCEPTION, depend) << "Need Depend ops, but get " << depend->fullname_with_scope();
-  }
-  auto depend_cnode = depend->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(depend_cnode);
-  auto tuple = depend_cnode->input(2);
-  MS_EXCEPTION_IF_NULL(tuple);
-  if (!IsPrimitiveCNode(tuple, prim::kPrimMakeTuple)) {
-    MS_LOG_WITH_NODE(EXCEPTION, tuple) << "Need MakeTuple ops, but get " << tuple->fullname_with_scope();
-  }
-  auto tuple_cnode = tuple->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(tuple_cnode);
-  auto output_nodes = tuple_cnode->inputs();
-  ret_nodes.emplace_back(depend_cnode->input(1));
-  ret_nodes.insert(ret_nodes.end(), output_nodes.begin() + 1, output_nodes.end());
-  return ret_nodes;
-}
-
 void GetBranchToParentMapFromFuncGraph(const AnfNodePtr &branch_node, ParamIndexMap *branch_to_parent_node_map) {
   MS_EXCEPTION_IF_NULL(branch_node);
   MS_EXCEPTION_IF_NULL(branch_to_parent_node_map);
@@ -2535,9 +2495,6 @@ DfGraphConvertor &DfGraphConvertor::BuildGraph(const std::string &name) {
 
   IdentityOptimization();
   NoOpOptimization();
-  if (has_es_node_) {
-    ESOptimization();
-  }
 
   compute_sout_ << "}" << endl;
   // For the graph(e.g. eval_subgraph) whose IterNum is 1, do not set NeedIteration flag.
@@ -2571,10 +2528,7 @@ void DfGraphConvertor::SetGraphOutputs(bool is_main_graph) {
     auto ret_node = anf_graph_->get_return();
     MS_EXCEPTION_IF_NULL(ret_node);
     auto output_nodes = ret_node->inputs();
-    if (has_es_node_) {
-      return_nodes = GetEmbeddingApplyAdamOutput(ret_node);
-    } else if (((!HasSubgraph(anf_graph_) && is_main_graph)) ||
-               (output_nodes.size() > 1 && IsESNodeWithNoOutput(output_nodes[1]))) {
+    if (((!HasSubgraph(anf_graph_) && is_main_graph)) || (output_nodes.size() > 1)) {
       // replace return node with graph output node.
       return_nodes.insert(return_nodes.end(), output_nodes.begin() + 1, output_nodes.end());
     } else {
@@ -2826,10 +2780,6 @@ bool DfGraphConvertor::IsDataInput(const AnfNodePtr &node, const AnfNodePtr &inp
   // The NPUClearFloatStatusV2 of GE has no input and output, and the NPUGetFloatStatusV2 has no input.
   // The extra data edges of MindSpore need to be converted to control edges of GE.
   if (IsOverFlowNode(node, input)) {
-    return false;
-  }
-
-  if (IsESNodeWithNoOutput(input)) {
     return false;
   }
 
@@ -3169,26 +3119,6 @@ void DfGraphConvertor::SetDynamicInputBeforeNormalInput(const OpAdapterPtr &adpt
   return;
 }
 
-void DfGraphConvertor::AddInputAttrsForESNode(const CNodePtr &node, const AnfNodePtr &input) {
-  const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> es_need_add_attr = {
-    prim::kPrimInitPartitionMap,          prim::kPrimInitEmbeddingHashmap, prim::kPrimEmbeddingTableEvict,
-    prim::kPrimEmbeddingTableImport,      prim::kPrimEmbeddingTableExport, prim::kPrimEmbeddingComputeVarImport,
-    prim::kPrimEmbeddingComputeVarExport, prim::kPrimEmbeddingApplyAdam,   prim::kPrimEmbeddingApplyAdamW,
-    prim::kPrimEmbeddingApplyAdaGrad,     prim::kPrimEmbeddingApplyFtrl,
-  };
-  if (!IsOneOfPrimitiveCNode(node, es_need_add_attr)) {
-    return;
-  }
-  auto real = GetRealInputNode(node, input);
-  MS_EXCEPTION_IF_NULL(real);
-  auto op = Convert(real);
-  MS_EXCEPTION_IF_NULL(op);
-  if (!real->isa<ValueNode>()) {
-    return;
-  }
-  (void)op->SetAttr(kProcessNodeEngineID, "PS");
-}
-
 void DfGraphConvertor::SetOpInput(const OpAdapterPtr &adpt, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(adpt);
   MS_EXCEPTION_IF_NULL(node);
@@ -3282,7 +3212,6 @@ void DfGraphConvertor::SetOpInput(const OpAdapterPtr &adpt, const CNodePtr &node
       DrawOpInput(node, pred, real_input_idx);
       AddGraphConstInput(handles[0].op);
     }
-    AddInputAttrsForESNode(node, pred);
     real_input_idx += 1;
   }
   // Set input from attr.
@@ -3419,9 +3348,6 @@ bool DfGraphConvertor::IsIdentityRedundant(const ::ge::GNode &node) const {
 
   for (size_t output_index = 0; output_index < node.GetOutputsSize(); output_index++) {
     auto output_nodes = node.GetOutDataNodesAndPortIndexs(static_cast<int32_t>(output_index));
-    if (!output_nodes.empty() && has_es_node_) {
-      return true;
-    }
     if (output_nodes.size() != 1) {
       return false;
     }
@@ -3523,55 +3449,6 @@ void DfGraphConvertor::NoOpOptimization() {
   MS_LOG(INFO) << "End NoopOptimization, graph:" << anf_graph_->ToString();
 }
 
-void DfGraphConvertor::ESOptimization() {
-  MS_EXCEPTION_IF_NULL(anf_graph_);
-  MS_LOG(INFO) << "Start ESOptimization, graph:" << anf_graph_->ToString();
-  MS_EXCEPTION_IF_NULL(df_graph_);
-  auto all_nodes = df_graph_->GetDirectNode();
-  ::ge::GNode no_op;
-  bool not_remove = false;
-  for (const auto &node : all_nodes) {
-    node.GetAttr(kAttrNotRemove, not_remove);
-    if (not_remove) {
-      no_op = node;
-      break;
-    }
-  }
-  if (not_remove) {
-    auto output_control_node = no_op.GetOutControlNodes();
-    if (output_control_node.empty()) {
-      return;
-    }
-    RemoveIdentityForES(*output_control_node[0]);
-  }
-}
-
-void DfGraphConvertor::RemoveIdentityForES(::ge::GNode node) {
-  ::ge::graphStatus ret;
-  auto out_control_node = node.GetOutControlNodes();
-  MS_EXCEPTION_IF_NULL(df_graph_);
-  for (size_t input_index = 0; input_index < node.GetInputsSize(); input_index++) {
-    auto node_input = node.GetInDataNodesAndPortIndexs(static_cast<int32_t>(input_index));
-    ret = df_graph_->RemoveEdge(*node_input.first, node_input.second, node, input_index);
-    if (ret != ::ge::GRAPH_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Remove edge failed, src node: " << GetGNodeName(*node_input.first)
-                        << ", index: " << node_input.second << ", dst identity_node: " << GetGNodeName(node)
-                        << ", index: " << input_index << ", ret: " << ret;
-      return;
-    }
-  }
-  ret = df_graph_->RemoveNode(node);
-  if (ret != ::ge::GRAPH_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Remove node failed, node: " << GetGNodeName(node);
-  }
-  if (out_control_node.empty()) {
-    return;
-  }
-  auto output_node = out_control_node[0];
-  MS_EXCEPTION_IF_NULL(output_node);
-  RemoveIdentityForES(*output_node);
-}
-
 bool DfGraphConvertor::IsNoOpRedundant(const ::ge::GNode &node) const {
   auto node_type = GetGNodeType(node);
   if (node_type != kTypeNoOp) {
@@ -3579,12 +3456,6 @@ bool DfGraphConvertor::IsNoOpRedundant(const ::ge::GNode &node) const {
   }
   if (!training_) {
     return true;
-  }
-
-  bool not_remove = false;
-  node.GetAttr(kAttrNotRemove, not_remove);
-  if (not_remove) {
-    return false;
   }
 
   auto out_control_node = node.GetOutControlNodes();
@@ -4146,22 +4017,6 @@ void DfGraphConvertor::ConvertUniformReal(const CNodePtr &node) {
   (void)op->SetAttr("dtype", ::ge::DataType::DT_FLOAT);
 }
 
-void DfGraphConvertor::ConvertUpdateState(const CNodePtr &node) {
-  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
-  if (adpt == nullptr) {
-    return;
-  }
-  auto op = adpt->generate(node);
-  MS_EXCEPTION_IF_NULL(op);
-  op_cache_[node.get()] = op;
-  if (common::AnfAlgo::HasNodeAttr(kAttrNotRemove, node)) {
-    bool not_remove = common::AnfAlgo::GetNodeAttr<bool>(node, kAttrNotRemove);
-    (void)op->SetAttr(kProcessNodeEngineID, "PS");
-    (void)op->SetAttr(kAttrNotRemove, not_remove);
-    has_es_node_ = true;
-  }
-}
-
 void DfGraphConvertor::ConvertHcclNode(const CNodePtr &node) {
   OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
@@ -4339,7 +4194,6 @@ bool DfGraphConvertor::CheckCNode(const std::string &name, const CNodePtr node) 
       {prim::kPrimUniformReal->name(), &DfGraphConvertor::ConvertUniformReal},
       {prim::kPrimMatmulReduceScatter->name(), &DfGraphConvertor::ConvertHcclNode},
       {prim::kPrimAllGatherMatmul->name(), &DfGraphConvertor::ConvertHcclNode},
-      {prim::kPrimUpdateState->name(), &DfGraphConvertor::ConvertUpdateState},
     };
 
   if (const auto it = auxiliary_node_converters.find(name); it != auxiliary_node_converters.cend()) {

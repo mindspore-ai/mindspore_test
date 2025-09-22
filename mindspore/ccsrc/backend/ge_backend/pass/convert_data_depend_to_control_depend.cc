@@ -36,17 +36,7 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
                                                            const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
-  const PrimitiveSet no_convert_set = {prim::kPrimInitDataSetQueue,
-                                       prim::kPrimCustom,
-                                       prim::kPrimInitPartitionMap,
-                                       prim::kPrimInitEmbeddingHashmap,
-                                       prim::kPrimEmbeddingTableImport,
-                                       prim::kPrimEmbeddingComputeVarExport,
-                                       prim::kPrimEmbeddingComputeVarImport,
-                                       prim::kPrimEmbeddingTableExport,
-                                       prim::kPrimEmbeddingTableEvict,
-                                       prim::kPrimEmbeddingFeatureMappingExport,
-                                       prim::kPrimEmbeddingFeatureMappingInsert};
+  const PrimitiveSet no_convert_set = {prim::kPrimInitDataSetQueue, prim::kPrimCustom};
   auto cnode = node->cast<CNodePtr>();
   if (cnode == nullptr || common::AnfAlgo::HasNodeAttr(kDataToControl, cnode) || !AnfUtils::IsRealKernel(node) ||
       IsOneOfPrimitiveCNode(node, no_convert_set)) {
