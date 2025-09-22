@@ -49,9 +49,11 @@ constexpr auto kGroupedMatmulName = "GroupedMatmul";
 constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
-constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
-constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
-constexpr auto kSingleTensor = 3;              // split_item mode
+constexpr auto kQuantLinearSparseBiasIdx = 5;   // primitive input weight deq_scale compress_idx bias
+constexpr auto kMatMulWeightIdx = 2;            // primitive input weight ...
+constexpr auto kSingleTensor = 3;               // split_item mode
+constexpr auto kMlaPreCacheModeNzAndQuant = 2;  // NZ format + Quant
+constexpr auto kMlaPreCacheModeNz = 3;          // NZ format
 constexpr SubModuleId kInternalSubModuleId = SubModuleId::SM_INTERNAL_KERNEL;
 
 static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogLevel> kLogLevelMap = {
@@ -93,7 +95,7 @@ IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) {
     auto cache_mode_value_node = cache_mode_node->cast<ValueNodePtr>();
     auto cache_mode_value = GetValue<int64_t>(cache_mode_value_node->value());
     MS_LOG(INFO) << "cache_mode is " << cache_mode_value;
-    if (cache_mode_value == 2 || cache_mode_value == 3) {
+    if (cache_mode_value == kMlaPreCacheModeNzAndQuant || cache_mode_value == kMlaPreCacheModeNz) {
       return {{{5, 16, 18, 25}, {}}, {{5, 16, 18, 25}, {}}};
     }
   }
