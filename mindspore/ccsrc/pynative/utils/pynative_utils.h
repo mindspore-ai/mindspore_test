@@ -39,22 +39,12 @@ class PyNativeExecutor;
 namespace PyNativeAlgo {
 // Common function
 struct Common {
-  static AnfNodePtr ConvertValueSequenceToMakeTuple(const ValueNodePtr &node, const FuncGraphPtr &func_graph);
   static std::string GetIdByValue(const ValuePtr &v);
-  static std::string GetCellId(const std::string &obj_id, const std::vector<std::string> &input_arg_id_vec,
-                               const std::vector<ValuePtr> &input_arg_value_vec);
   static void SplitString(const std::string &str, std::vector<std::string> *id_vec);
-  static bool ValueHasDynamicShape(const ValuePtr &value);
   static bool IsTensor(const ValuePtr &v, bool include_sequence = false);
   static bool IsControlFlowGraph(const FuncGraphPtr &func_graph);
   static ValuePtr FilterSensValues(const ValuePtr &value, bool dict_convert_to_tuple);
   static tensor::TensorPtr GetTensorFromParam(const AnfNodePtr &param_node);
-  static TypeId GetTypeFromAbstract(const abstract::AbstractBasePtr &abs);
-  static ShapeVector GetShapeFromAbstract(const abstract::AbstractBasePtr &abs);
-  static std::pair<TypePtr, TypeId> GetTypeFromValue(const ValuePtr &v);
-  static ShapeVector GetShapeFromValue(const ValuePtr &v);
-  static ValuePtr CreatOutputTensorValueByAbstract(const abstract::AbstractBasePtr &abs);
-  static void ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph);
   static const std::shared_ptr<PyNativeExecutor> &GetPyNativeExecutor();
   static ValuePtr StubNodeToValue(const ValuePtr &val);
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
@@ -68,18 +58,12 @@ struct Common {
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad);
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
                                                                   bool need_contiguous, bool requires_grad);
-  static ValuePtr StubNodeToValueInner(const ValuePtr &v);
   static ValueNodePtr CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs = nullptr);
   static void SetOutputUsedInBpropGraph(const ValuePtr &value);
   static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake = false);
-  static tensor::TensorPtr CreateFakeTensorWithoutDeviceAddress(const tensor::TensorPtr &tensor);
   static void ClearDeviceAddress(const ValuePtr &value);
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
   static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);
-  static void FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph);
-  static tensor::TensorPtr ConvertToContiguousTensor(const tensor::TensorPtr &tensor, bool requires_grad);
-  static ValuePtr ConvertToContiguousValue(const ValuePtr &v, bool requires_grad);
-  static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
   static tensor::TensorPtr CaculateGradNorm(const tensor::TensorPtr &grad);
   template <typename T>
   static std::string PrintDebugInfo(const std::vector<T> &items, const std::string &info_header = "",
@@ -110,7 +94,6 @@ struct Common {
   static bool IsVmOp(const std::string &op_name);
   static std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs);
   static void ClearRes();
-  static OperatorType GetOpTypeFromOpdef(const ops::OpDef &op_def);
   static void DoGradInner(runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
   static tensor::TensorPtr GetTensorFromSparseTensor(const ValuePtr &val);
   static void WaitBprop();
@@ -119,28 +102,17 @@ struct Common {
 // Parser python
 struct PyParser {
   static std::string GetIdByPyObj(const py::object &obj);
-  static std::pair<std::vector<std::string>, std::vector<ValuePtr>> GetArgsIdAndValue(const py::args &args);
   static void SetPrim(const FrontendOpRunInfoPtr &op_run_info, const py::object &prim_arg);
   static void ParseOpInputByPythonObj(const FrontendOpRunInfoPtr &op_run_info, const py::list &op_inputs,
                                       bool stub = false);
   static std::string BuilidPyInputTypeString(const py::object &obj);
   static std::string BuildPyObjectInputTypeString(PyObject *obj);
-
-  static inline bool IsSupportTensorCast(const std::vector<ops::OP_DTYPE> &cast_types) {
-    for (const auto &type : cast_types) {
-      if (type == ops::DT_TENSOR) {
-        return true;
-      }
-    }
-    return false;
-  }
   static void PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &op_inputs, size_t idx);
   static void PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObject *op_inputs, size_t idx);
 };
 
 // Data convert
 struct DataConvert {
-  static void FlattenArgs(const std::vector<ValuePtr> &v_vec, std::vector<ValuePtr> *flatten_v, bool has_sens);
   static void GetInputTensor(const FrontendOpRunInfoPtr &op_run_info);
   static void ConvertCSRTensorToTensorList(const FrontendOpRunInfoPtr &op_run_info,
                                            const tensor::CSRTensorPtr &csr_tensor, size_t index);
@@ -154,7 +126,6 @@ struct DataConvert {
   static void MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v, size_t index);
   static bool RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                            size_t input_index);
-  static void TransformValueNodeTensorToTensor(const ValueNodePtr &value_node);
   static ValuePtr ValueListToValue(const ValuePtrList &values, const abstract::AbstractBasePtr &abs);
   static ValuePtrList TensorListToValueList(const tensor::TensorPtrList &tensor_list);
 };
@@ -165,12 +136,9 @@ struct PyBoost {
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void DoGrad(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   PYNATIVE_EXPORT static void MarkSideEffect(PyObject *arg);
-  static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
                                const AbstractBasePtr &abstract, const ValuePtr &real_out);
   static PrimitivePtr ConvertPrimitive(const py::object &obj);
-  static PrimitivePtr ConvertPrimitiveForPyObject(PyObject *obj);
-
   static py::object RunPyFunction(const PrimitivePtr &prim, const py::list &args);
   template <typename T>
   static ValuePtr OptionalToValue(const std::optional<T> &val) {
@@ -236,15 +204,6 @@ struct PyBoost {
   static std::vector<ValuePtr> TupleToVector(const std::tuple<Args...> &t) {
     return UnpackTuple(t, std::index_sequence_for<Args...>{});
   }
-};
-
-// Some common functions used in both jit and PackFunc grad
-struct GradCommon {
-  static bool IsRealOp(const AnfNodePtr &cnode);
-  static bool HasTensorOutput(const abstract::AbstractBasePtr &abs);
-  static void GetUsedCNodeInBpropGraph(const CNodePtr &cnode, const mindspore::HashSet<size_t> &unused_inputs,
-                                       AnfNodePtrList *node_list);
-  static void SetForward(const AnfNodePtrList &node_list);
 };
 };  // namespace PyNativeAlgo
 
