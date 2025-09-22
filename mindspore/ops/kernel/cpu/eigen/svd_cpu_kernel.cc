@@ -15,10 +15,10 @@
  */
 
 #include "kernel/cpu/eigen/svd_cpu_kernel.h"
-#include "kernel/cpu/eigen/svd_cpu_kernel_function.h"
 #include <algorithm>
 #include <memory>
 #include <map>
+#include "kernel/cpu/eigen/svd_cpu_kernel_function.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
 #include "include/common/thread_pool.h"
