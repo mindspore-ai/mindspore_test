@@ -49,7 +49,7 @@ class HSDPCell:
                 ValueError: If `requires_grad_sync` is not bool.
         """
         if not isinstance(requires_grad_sync, bool):
-            raise ValueError("requires_grad_sync must be bool but got {}.".format(requires_grad_sync))
+            raise ValueError(f"requires_grad_sync must be bool but got {requires_grad_sync}.")
         if not hasattr(self, "hsdp_scheduler"):
             raise ValueError("call hsdp interface first.")
         self.hsdp_scheduler.set_requires_grad_sync(requires_grad_sync)
@@ -65,6 +65,28 @@ class HSDPCell:
         for sub_cell in self.cells():
             if isinstance(sub_cell, HSDPCell):
                 sub_cell.zero_grads()
+
+    def set_forward_prefetch_cells(self, hsdp_cell_list):
+        """set forward prefetch cell list to prefetch all gather for unsharded parameters"""
+        if not isinstance(hsdp_cell_list, (tuple, list)):
+            raise ValueError("hsdp_cell_list must be HSDPCell list")
+        for cell in hsdp_cell_list:
+            if not isinstance(cell, HSDPCell):
+                raise ValueError(f"hsdp_cell_list must be HSDPCell list but got {type(cell)} in list.")
+        if not hasattr(self, "hsdp_scheduler"):
+            raise ValueError("call hsdp interface first.")
+        self.hsdp_scheduler.set_forward_prefetch_cells(hsdp_cell_list)
+
+    def set_backward_prefetch_cells(self, hsdp_cell_list):
+        """set backward prefetch cell list to prefetch all gather for unsharded parameters"""
+        if not isinstance(hsdp_cell_list, (tuple, list)):
+            raise ValueError("hsdp_cell_list must be HSDPCell list")
+        for cell in hsdp_cell_list:
+            if not isinstance(cell, HSDPCell):
+                raise ValueError(f"hsdp_cell_list must be HSDPCell list but got {type(cell)} in list.")
+        if not hasattr(self, "hsdp_scheduler"):
+            raise ValueError("call hsdp interface first.")
+        self.hsdp_scheduler.set_backward_prefetch_cells(hsdp_cell_list)
 
 def _extend_cell_with_hsdp_interface(cell):
     """extend Cell with HSDPCell interface"""
@@ -116,19 +138,18 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
         """
     from mindspore.nn.cell import Cell
     if not isinstance(cell, Cell):
-        raise ValueError("cell's type must be Cell but got {}.".format(type(cell)))
+        raise ValueError(f"cell's type must be Cell but got {type(cell)}.")
     if not isinstance(shard_size, int) or (shard_size <= 0 and shard_size != -1):
-        raise ValueError("shard_size must be a positive integer, but got {}.".format(shard_size))
+        raise ValueError(f"shard_size must be a positive integer, but got {shard_size}.")
     if not isinstance(threshold, int) or threshold < 0:
-        raise ValueError("threshold must be a positive integer or 0, but got {}.".format(threshold))
+        raise ValueError(f"threshold must be a positive integer or 0, but got {threshold}.")
     if optimizer_level not in ["level1", "level2", "level3"]:
-        raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
-                         .format(optimizer_level))
+        raise ValueError(f"Optimizer level should in ['level1', 'level2', 'level3'], but got {optimizer_level}.")
     optimizer_level = optimizer_level_map.get(optimizer_level)
     if not isinstance(enable_grad_accumulation, bool):
-        raise ValueError("enable_grad_accumulation must be bool but got {}.".format(enable_grad_accumulation))
+        raise ValueError(f"enable_grad_accumulation must be bool but got {enable_grad_accumulation}.")
     if not isinstance(grad_scale, float):
-        raise ValueError("grad_scale must be float but got {}.".format(grad_scale))
+        raise ValueError(f"grad_scale must be float but got {grad_scale}.")
     _extend_cell_with_hsdp_interface(cell)
     cell.hsdp_init(cell, shard_size, threshold * 1024, optimizer_level, enable_grad_accumulation, grad_scale)
     return cell

@@ -67,3 +67,17 @@ class DenseNet(nn.Cell):
         x = self.dense2(x)
         x = x.reduce_partial()
         return x
+
+class DenseMutiLayerNet(nn.Cell):
+    def __init__(self, hidden_size, layer_num):
+        super(DenseMutiLayerNet, self).__init__()
+        self.layer_num = layer_num
+        self.layers = nn.CellList()
+        for _ in range(self.layer_num):
+            layer = DenseL2(hidden_size, hidden_size)
+            self.layers.append(layer)
+
+    def construct(self, x):
+        for i in range(self.layer_num):
+            x = self.layers[i](x)
+        return x

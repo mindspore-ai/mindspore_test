@@ -38,6 +38,8 @@ class HSDPScheduler:
 
         self.requires_grad_sync = Parameter(Tensor(False), name="hsdp_requires_grad_sync", requires_grad=False)
         self.hsdp_state = HSDPState(cell, self.config)
+        self.forward_prefetch_cells = []
+        self.backward_prefetch_cells = []
 
         if self.use_cell_hook:
             self._register_cell_hooks()
@@ -110,6 +112,8 @@ class HSDPScheduler:
     def _hsdp_forward_pre_hook(self, cell, inputs):
         """forward pre hook to unsharded parameter for forward process."""
         self.hsdp_state.unshard()
+        for prefetch_cell in self.forward_prefetch_cells:
+            prefetch_cell.hsdp_scheduler.hsdp_state.unshard()
 
     def _hsdp_forward_hook(self, cell, inputs, outputs):
         """forward hook to shard parameter for saving memory."""
@@ -118,6 +122,8 @@ class HSDPScheduler:
     def _hsdp_backward_pre_hook(self, cell, grad_outputs):
         """backward pre hook to unsharded parameter for backward process."""
         self.hsdp_state.unshard()
+        for prefetch_cell in self.backward_prefetch_cells:
+            prefetch_cell.hsdp_scheduler.hsdp_state.unshard()
 
     def _hsdp_backward_hook(self, cell, grad_inputs, grad_outputs):
         """backward hook to shard parameter for optimizer process or saving memory."""
@@ -240,3 +246,11 @@ class HSDPScheduler:
         if self.requires_acc_grad:
             return backward_acc_grad_hook
         return backward_hook
+
+    def set_forward_prefetch_cells(self, hsdp_cell_list):
+        """set forward prefetch cells."""
+        self.forward_prefetch_cells = hsdp_cell_list
+
+    def set_backward_prefetch_cells(self, hsdp_cell_list):
+        """set backward prefetch cells."""
+        self.backward_prefetch_cells = hsdp_cell_list
