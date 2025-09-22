@@ -1193,8 +1193,10 @@ def jit(
             - ms_backend: Utilizes the built-in backend engine of MindSpore for hardware-related compilation
               optimization and execution, supporting multiple hardware forms such as Ascend, GPU, and CPU.
             - GE: Utilizes the GraphEngine, a graph compilation and execution engine within CANN,
-              for Ascend model compilation and execution. Note: This backend takes effect only in static graph mode
-              and can be executed only on Ascend hardware.
+              for Ascend model compilation and execution. Note: This backend only supports GRAPH Mode in Ascend,
+              only supports whole graph sinking or sub graph sinking in pipeline parallel, and does not support
+              dynamic shape scenes. In addition, this backend incurs additional compilation costs and is difficult to
+              debug and tune.
 
         **options (dict): A dictionary of options to pass to the compilation backend.
 
