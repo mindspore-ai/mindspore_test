@@ -85,7 +85,9 @@ def test_llama2_dp4mp4pp1op_recompute():
     attrs_check_pairs = {", recompute: Bool(1)": 207}
     check_graph(graph_path, validate_name, attrs_check_pairs)
     param_parallel_speed_up_check_pairs = {'last_grad_comm_compute_depend: Bool(1)': '39',
-                                           'grad_comm_dx_depend: Bool(1)': '1'}
+                                           'grad_comm_in_order_depend: Bool(1)': '38',
+                                           'dw_in_order_depend: Bool(1)': '38',
+                                           'grad_comm_next_dw_depend: Bool(1)': '38'}
     check_graph(graph_path, hwopt_after_inline_name, param_parallel_speed_up_check_pairs)
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
@@ -231,7 +233,9 @@ def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
     check_graph(graph_path[0], validate_name, attrs_check_pairs)
     param_parallel_speed_up_check_pairs = {'grad_comm_assign_add_depend: Bool(1)': '19',
                                            'last_grad_comm_compute_depend: Bool(1)': '19',
-                                           'grad_comm_dx_depend': '14'}
+                                           'grad_comm_in_order_depend: Bool(1)': '18',
+                                           'dw_in_order_depend: Bool(1)': '18',
+                                           'grad_comm_next_dw_depend: Bool(1)': '18'}
     check_graph(graph_path[0], hwopt_after_inline_name, param_parallel_speed_up_check_pairs)
 
     # stage1
