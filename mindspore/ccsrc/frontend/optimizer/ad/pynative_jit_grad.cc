@@ -22,6 +22,8 @@
 #include <utility>
 #include <algorithm>
 #include <set>
+#include <map>
+
 #include "pynative/utils/pynative_utils.h"
 #include "include/utils/primitive_utils.h"
 #include "include/utils/pynative/common_utils.h"
@@ -33,6 +35,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/optimizer/fallback_rewriter.h"
+#include "frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
@@ -293,19 +296,6 @@ AnfNodePtrList ProcessParam(const FuncGraphPtr &source_fg, const abstract::Abstr
   return param_list;
 }
 
-ValuePtr PyObjToValue(const py::object &obj, bool stub = false) {
-  ValuePtr converted_ret;
-  if (stub) {
-    converted_ret = parse::data_converter::PyDataToStubNode(obj);
-  } else {
-    converted_ret = parse::data_converter::PyDataToValue(obj);
-  }
-  if (converted_ret == nullptr) {
-    MS_LOG(EXCEPTION) << "Attribute convert error with type: " << ConvertPyObjToString(obj);
-  }
-  return converted_ret;
-}
-
 // Helper function to handle forward result
 py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr &forward_fg,
                                const AbstractBasePtr &origin_forward_output_abs,
@@ -335,8 +325,9 @@ py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr
       MS_LOG(EXCEPTION) << "Forward output is not valid for fg: " << forward_fg->ToString()
                         << " , output: " << py::str(py_forward_result);
     }
-    std::transform(ret_tuple.begin() + 1, ret_tuple.end(), std::back_inserter(grad_param->added_args),
-                   [](const auto &element) { return PyObjToValue(py::cast<py::object>(element)); });
+    std::transform(
+      ret_tuple.begin() + 1, ret_tuple.end(), std::back_inserter(grad_param->added_args),
+      [](const auto &element) { return parse::data_converter::PyObjToValue(py::cast<py::object>(element)); });
     return ret_tuple[kIndex0];
   }
 }
@@ -470,7 +461,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     py::object py_forward_result =
       HandleForwardResult(forward_result, forward_fg, origin_forward_output_abs, grad_param, need_reuse_forward_node);
     MS_LOG(DEBUG) << "Run forward graph get result: " << py::str(py_forward_result);
-    forward_output_value = PyObjToValue(py_forward_result);
+    forward_output_value = parse::data_converter::PyObjToValue(py_forward_result);
     grad_param->op_grad_info->out_value = forward_output_value;
   }
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "frontend/jit/pi/graph_guard/infer.h"
+
 #include <map>
 #include <string>
 #include <functional>
@@ -21,6 +22,10 @@
 #include <utility>
 #include <algorithm>
 #include <set>
+#include <unordered_map>
+#include <memory>
+#include <vector>
+
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "frontend/operator/primitive_py.h"
@@ -364,15 +369,15 @@ mindspore::ValuePtr ConvertArgByCastDtype(py::object arg, ops::OpInputArg op_arg
   mindspore::ValuePtr value = nullptr;
   parse::OpDefConvertFunc convert_func = parse::GetConverterByType(static_cast<int32_t>(op_arg.arg_dtype_));
   MS_EXCEPTION_IF_NULL(convert_func);
-  value = convert_func(arg);
+  value = parse::DoConvert(arg, op_arg.arg_dtype_, convert_func);
   if (value != nullptr) {
     return value;
   }
   if (!op_arg.cast_dtype_.empty()) {
     for (auto cast_dtype : op_arg.cast_dtype_) {
-      convert_func = parse::GetConverterByType(parse::CombineTypesForTypeCast(cast_dtype, op_arg.arg_dtype_));
+      convert_func = parse::GetConverterByType(cast_dtype, op_arg.arg_dtype_);
       MS_EXCEPTION_IF_NULL(convert_func);
-      auto val = convert_func(arg);
+      auto val = parse::DoConvert(arg, op_arg.arg_dtype_, convert_func);
       if (val != nullptr) {
         return val;
       }

@@ -37,7 +37,3 @@ if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
 endif()
 
 add_library(_mindspore_frontend_jit_ps_obj OBJECT ${_PIPELINE_SRC_FILES})
-
-if(Python3_NumPy_FOUND)
-target_include_directories(_mindspore_frontend_jit_ps_obj PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
-endif()

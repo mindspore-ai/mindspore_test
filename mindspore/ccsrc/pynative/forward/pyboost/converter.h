@@ -34,8 +34,21 @@ namespace pynative {
 using ConvertPair = std::pair<ops::OP_DTYPE, ops::OP_DTYPE>;
 struct ParserArgs;
 
-class CPythonTuple {};
-class CPythonList {};
+class CPythonTuple {
+ public:
+  using pybind_type = py::tuple;
+  static bool TypeCheck(PyObject *obj) { return PyTuple_Check(obj); }
+  static PyObject *GetItem(PyObject *obj, Py_ssize_t i) { return PyTuple_GetItem(obj, i); }
+  static Py_ssize_t GetSize(PyObject *obj) { return PyTuple_Size(obj); }
+};
+
+class CPythonList {
+ public:
+  using pybind_type = py::list;
+  static bool TypeCheck(PyObject *obj) { return PyList_Check(obj); }
+  static PyObject *GetItem(PyObject *obj, Py_ssize_t i) { return PyList_GetItem(obj, i); }
+  static Py_ssize_t GetSize(PyObject *obj) { return PyList_Size(obj); }
+};
 
 static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"int", ops::OP_DTYPE::DT_INT},
@@ -263,7 +276,9 @@ class PYNATIVE_EXPORT Converter {
   // basic type
   int64_t ToBasicInt(PyObject *python_args, size_t i);
   std::optional<int64_t> ToBasicIntOptional(PyObject *python_args, size_t i);
+  template <typename T>
   std::vector<int64_t> ToBasicIntVector(PyObject *python_args, size_t i);
+  template <typename T>
   std::optional<std::vector<int64_t>> ToBasicIntVectorOptional(PyObject *python_args, size_t i);
 
  private:

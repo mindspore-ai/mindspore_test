@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 #include "pynative/utils/pynative_utils.h"
+
+#include <string>
+#include <utility>
+#include <memory>
 #include <algorithm>
 #include <vector>
 #include <set>
@@ -48,6 +52,7 @@
 #include "mindspore/ccsrc/pynative/utils/pyboost/pyboost_utils.h"
 #include "pynative/backward/grad_utils.h"
 #include "include/utils/tensor_py.h"
+#include "mindspore/ccsrc/include/utils/pynative/py_parse.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pynative/utils/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -714,7 +719,7 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
   bool is_suppport_tensor_cast = std::any_of(op_arg.cast_dtype_.begin(), op_arg.cast_dtype_.end(),
                                              [](const auto &type) { return type == ops::DT_TENSOR; });
   if (is_suppport_tensor_cast) {
-    auto tensor = parse::ConvertTensorValue(op_inputs[idx]);
+    auto tensor = py_parse::ConvertTensorValue(op_inputs[idx]);
     auto PrintVectorFunc = [](const ShapeVector &shape) -> std::string {
       std::stringstream ss;
       ss << "[";
@@ -750,7 +755,7 @@ void PyParser::PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObje
                                              [](const auto &type) { return type == ops::DT_TENSOR; });
   if (is_suppport_tensor_cast) {
     PyObject *item = PyList_GetItem(op_inputs, idx);
-    auto tensor = parse::ConvertPyObjectTensorValue(item);
+    auto tensor = py_parse::ConvertPyObjectTensorValue(item);
     auto PrintVectorFunc = [](const ShapeVector &shape) -> std::string {
       std::stringstream ss;
       ss << "[";
@@ -806,7 +811,7 @@ inline ValuePtr ConvertBySignature(const py::object &obj, const FrontendOpRunInf
   }
 
   if (op_run_info->signatures[index].dtype != SignatureEnumDType::kDTypeEmptyDefaultValue) {
-    auto convert_func = parse::GetConverterByType(static_cast<int32_t>(ops::DT_NUMBER));
+    auto convert_func = py_parse::GetConverterByType(static_cast<int32_t>(ops::DT_NUMBER));
     MS_EXCEPTION_IF_NULL(convert_func);
     return convert_func(obj);
   }
@@ -832,7 +837,7 @@ void ParseOpInputByOpDef(const ops::OpDefPtr &op_def, const py::list &op_inputs,
     }
 
     ValuePtr value = nullptr;
-    parse::OpDefConvertFunc convert_func = parse::GetConverterByType(static_cast<int32_t>(op_arg.arg_dtype_));
+    py_parse::OpDefConvertFunc convert_func = py_parse::GetConverterByType(static_cast<int32_t>(op_arg.arg_dtype_));
     MS_EXCEPTION_IF_NULL(convert_func);
     value = convert_func(op_inputs[i]);
     if (value != nullptr) {
@@ -843,7 +848,7 @@ void ParseOpInputByOpDef(const ops::OpDefPtr &op_def, const py::list &op_inputs,
     // type cast has lower priority then signature cast
     if (!op_arg.cast_dtype_.empty()) {
       for (auto cast_dtype : op_arg.cast_dtype_) {
-        convert_func = parse::GetConverterByType(parse::CombineTypesForTypeCast(cast_dtype, op_arg.arg_dtype_));
+        convert_func = py_parse::GetConverterByType(py_parse::CombineTypesForTypeCast(cast_dtype, op_arg.arg_dtype_));
         MS_EXCEPTION_IF_NULL(convert_func);
         value = convert_func(op_inputs[i]);
         if (value != nullptr) {

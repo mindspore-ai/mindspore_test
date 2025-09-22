@@ -115,6 +115,10 @@
 "mindspore/mindspore/ops/kernel/cpu/eigen/random_poisson_cpu_kernel.cc"                          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/random_categorical_cpu_kernel.cc"                     "whitespace/indent"
 "mindspore/mindspore/ops/fallback/array_ops.cc"                                                  "whitespace/indent_namespace"
+"mindspore/mindspore/ccsrc/utils/pynative/py_parse.cc"                                               "runtime/int"
+"mindspore/mindspore/ccsrc/pynative/forward/pyboost/converter.cc"                           "whitespace/indent_namespace"
+"mindspore/mindspore/ccsrc/frontend/optimizer/ad/pynative_jit_grad.cc"                      "whitespace/indent_namespace"
+"mindspore/mindspore/ccsrc/frontend/optimizer/ad/pynative_jit_grad.cc"                      "whitespace/newline"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"
