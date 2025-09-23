@@ -88,46 +88,6 @@ class FuncRegister {
 static FuncRegister func_register;
 
 namespace {
-AnfNodePtr CreateMakeTupleNode(const KernelGraphPtr &tape, const ValueSequencePtr &tuple,
-                               const abstract::AbstractSequencePtr &abs_seq, const SpecialType &type) {
-  AnfNodePtrList args{NewValueNode(prim::kPrimMakeTuple)};
-  for (size_t i = 0; i < tuple->size(); ++i) {
-    AnfNodePtr special_like_value =
-      AutoGradUtil::BuildSpecialNode(tape, tuple->value()[i], abs_seq->elements()[i], type);
-    (void)args.emplace_back(special_like_value);
-  }
-  auto special_like_value = tape->FuncGraph::NewCNode(args);
-  special_like_value->set_abstract(abs_seq);
-  return special_like_value;
-}
-
-AnfNodePtr CreateMakeDictNode(const KernelGraphPtr &tape, const ValueDictionaryPtr &v_dict,
-                              const abstract::AbstractDictionaryPtr &abs_dict, const SpecialType &type) {
-  MS_EXCEPTION_IF_NULL(tape);
-  MS_EXCEPTION_IF_NULL(v_dict);
-  MS_EXCEPTION_IF_NULL(abs_dict);
-  AnfNodePtrList key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-  AnfNodePtrList value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-  abstract::AbstractBasePtrList local_key_abs_inputs;
-  abstract::AbstractBasePtrList local_value_abs_inputs;
-  for (size_t i = 0; i < v_dict->size(); ++i) {
-    (void)key_inputs.emplace_back(
-      PyNativeAlgo::Common::CreateValueNodeByValue(v_dict->value()[i].first, abs_dict->elements()[i].first));
-    (void)local_key_abs_inputs.emplace_back(abs_dict->elements()[i].first);
-    AnfNodePtr special_like_value =
-      AutoGradUtil::BuildSpecialNode(tape, v_dict->value()[i].second, abs_dict->elements()[i].second, type);
-    (void)value_inputs.emplace_back(special_like_value);
-    (void)local_value_abs_inputs.emplace_back(abs_dict->elements()[i].second);
-  }
-  auto local_key_node = tape->NewCNode(key_inputs);
-  local_key_node->set_abstract(std::make_shared<abstract::AbstractTuple>(local_key_abs_inputs));
-  auto local_value_node = tape->NewCNode(value_inputs);
-  local_value_node->set_abstract(std::make_shared<abstract::AbstractTuple>(local_value_abs_inputs));
-  auto dict_node = tape->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
-  dict_node->set_abstract(abs_dict);
-  return dict_node;
-}
-
 ValuePtr WrapCOOTensor(const ValuePtr &coo_out, const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(coo_out);
   auto coo_tensor = coo_out->cast<tensor::COOTensorPtr>();
@@ -157,17 +117,6 @@ ValuePtr WrapCSRTensor(const ValuePtr &csr_out, const ValuePtr &value) {
   auto indices_tensor = csr_tensor->GetIndices();
   auto shape_vector = csr_tensor->shape();
   return std::make_shared<tensor::CSRTensor>(indptr_tensor, indices_tensor, value_tensor, shape_vector);
-}
-
-ValueNodePtr GetSparseTensorShapeNode(const ShapeVector &shape) {
-  auto value_shape = NewValueNode(shape);
-  std::vector<abstract::AbstractBasePtr> abstract_shape;
-  (void)std::transform(
-    shape.begin(), shape.end(), std::back_inserter(abstract_shape),
-    [](auto shp) -> abstract::AbstractScalarPtr { return std::make_shared<abstract::AbstractScalar>(shp); });
-  auto abs_shape = std::make_shared<abstract::AbstractTuple>(abstract_shape);
-  value_shape->set_abstract(abs_shape);
-  return value_shape;
 }
 
 void ConvertSimpleInferInfoToAbstract(const OpGradInfoPtr &op_grad_info) {
@@ -574,30 +523,6 @@ bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
   return false;
 }
 
-bool AutoGradUtil::IsZerosLikeNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  auto cnode = node->cast<CNodePtr>();
-  if (IsPrimitiveCNode(cnode, prim::kPrimZerosLike)) {
-    return true;
-  }
-  if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple) || IsPrimitiveCNode(cnode, prim::kPrimMakeList)) {
-    return std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
-                       [](const auto &node) { return IsZerosLikeNode(node) == true; });
-  }
-  if (IsPrimitiveCNode(cnode, prim::kPrimMakeDict)) {
-    return IsZerosLikeNode(cnode->input(kIndex2));
-  }
-  return false;
-}
-
-ValuePtr AutoGradUtil::GetFakeZeroTensor() {
-  static ValuePtr fake_v = tensor::from_scalar(0);
-  return fake_v;
-}
-
 ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor::TensorPtr &grad,
                                              autograd::FuncBuilder *func_builder, const SpecialType &type) {
   MS_EXCEPTION_IF_NULL(value);
@@ -631,123 +556,6 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
   }
   MS_LOG(INFO) << "For value " << value->ToString() << ", the type is not tensor or scalar";
   return tensor::from_scalar(0);
-}
-
-AnfNodePtr AutoGradUtil::BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
-                                          const abstract::AbstractBasePtr &abs, const SpecialType &type) {
-  MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::Tensor>()) {
-    auto prim_node =
-      (type == SpecialType::kZerosLikeType ? NewValueNode(std::make_shared<Primitive>(*prim::kPrimZerosLike))
-                                           : NewValueNode(std::make_shared<Primitive>(*prim::kPrimOnesLike)));
-    auto value_node = PyNativeAlgo::Common::CreateValueNodeByValue(value, abs);
-    auto special_like_value = tape->FuncGraph::NewCNode({prim_node, value_node});
-    special_like_value->set_abstract(value_node->abstract());
-    return special_like_value;
-  }
-  if (value->isa<ValueSequence>()) {
-    auto tuple = value->cast<ValueSequencePtr>();
-    abstract::AbstractSequencePtr abs_seq;
-    if (abs == nullptr) {
-      abs_seq = CommonUtils::SetAbstractValueToAnyValue(value->ToAbstract())->cast<abstract::AbstractSequencePtr>();
-    } else {
-      abs_seq = abs->cast<abstract::AbstractSequencePtr>();
-    }
-    return CreateMakeTupleNode(tape, tuple, abs_seq, type);
-  }
-  if (value->isa<Scalar>()) {
-    auto fake_tensor = GetFakeZeroTensor();
-    return BuildSpecialNode(tape, fake_tensor, nullptr, type);
-  }
-  if (value->isa<tensor::CSRTensor>()) {
-    auto csr_tensor = value->cast<tensor::CSRTensorPtr>();
-    MS_EXCEPTION_IF_NULL(csr_tensor);
-    auto data = csr_tensor->GetValues();
-    return BuildSpecialNode(tape, data, nullptr, type);
-  }
-  if (value->isa<tensor::COOTensor>()) {
-    auto coo_tensor = value->cast<tensor::COOTensorPtr>();
-    MS_EXCEPTION_IF_NULL(coo_tensor);
-    auto data = coo_tensor->GetValues();
-    return BuildSpecialNode(tape, data, nullptr, type);
-  }
-  if (value->isa<ValueDictionary>()) {
-    auto v_dict = value->cast<ValueDictionaryPtr>();
-    abstract::AbstractDictionaryPtr abs_dict;
-    if (abs == nullptr) {
-      abs_dict = CommonUtils::SetAbstractValueToAnyValue(value->ToAbstract())->cast<abstract::AbstractDictionaryPtr>();
-    } else {
-      abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
-    }
-    return CreateMakeDictNode(tape, v_dict, abs_dict, type);
-  }
-  MS_LOG(INFO) << "For value " << value->ToString() << ", the type is not tensor or scalar";
-  return BuildSpecialNode(tape, GetFakeZeroTensor(), nullptr, type);
-}
-
-AnfNodePtr AutoGradUtil::BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
-                                               const AnfNodePtr &dout_value_node) {
-  MS_EXCEPTION_IF_NULL(tape);
-  MS_EXCEPTION_IF_NULL(sparse_value);
-  if (sparse_value->isa<tensor::CSRTensor>()) {
-    auto csr_tensor = sparse_value->cast<tensor::CSRTensorPtr>();
-    MS_EXCEPTION_IF_NULL(csr_tensor);
-    auto indptr_node = PyNativeAlgo::Common::CreateValueNodeByValue(csr_tensor->GetIndptr());
-    auto indices_node = PyNativeAlgo::Common::CreateValueNodeByValue(csr_tensor->GetIndices());
-    auto value_shape = GetSparseTensorShapeNode(csr_tensor->shape());
-    auto special_like_csr_node = tape->FuncGraph::NewCNode(
-      {NewValueNode(prim::kPrimMakeTuple), indptr_node, indices_node, dout_value_node, value_shape});
-    special_like_csr_node->set_abstract(sparse_value->ToAbstract()->Broaden());
-    return special_like_csr_node;
-  }
-  if (sparse_value->isa<tensor::COOTensor>()) {
-    auto coo_tensor = sparse_value->cast<tensor::COOTensorPtr>();
-    MS_EXCEPTION_IF_NULL(coo_tensor);
-    auto indices_node = PyNativeAlgo::Common::CreateValueNodeByValue(coo_tensor->GetIndices());
-    auto value_shape = GetSparseTensorShapeNode(coo_tensor->shape());
-    auto special_like_coo_node =
-      tape->FuncGraph::NewCNode({NewValueNode(prim::kPrimMakeTuple), indices_node, dout_value_node, value_shape});
-    special_like_coo_node->set_abstract(sparse_value->ToAbstract()->Broaden());
-    return special_like_coo_node;
-  }
-  MS_LOG(EXCEPTION) << "Get invalid sparse tensor";
-}
-
-void AutoGradUtil::SetGradInfoForInputs(
-  const ValuePtr &value, const BackwardNodePtr &node,
-  OrderedMap<tensor::TensorPtr, autograd::AutoGradMetaDataPtr> *param_meta_grad_info) {
-  if (value->isa<tensor::Tensor>()) {
-    const auto &input_tensor = value->cast<tensor::TensorPtr>();
-    const auto &auto_grad_meta_data = autograd::impl::GetAutogradMetaImpl(input_tensor);
-    MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
-    auto_grad_meta_data->set_grad_node(node);
-    (*param_meta_grad_info)[input_tensor] = auto_grad_meta_data;
-  } else if (value->isa<tensor::COOTensor>()) {
-    const auto &coo_tensor = value->cast<tensor::COOTensorPtr>();
-    const auto &indices_tensor = coo_tensor->GetIndices();
-    SetGradInfoForInputs(indices_tensor, node, param_meta_grad_info);
-  } else if (value->isa<tensor::CSRTensor>()) {
-    const auto &csr_tensor = value->cast<tensor::CSRTensorPtr>();
-    const auto &indices_tensor = csr_tensor->GetIndices();
-    SetGradInfoForInputs(indices_tensor, node, param_meta_grad_info);
-  }
-}
-
-// Create fake bprop
-void AutoGradUtil::BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs) {
-  auto prim = GetCNodePrimitive(cnode);
-  if (prim == nullptr) {
-    MS_LOG(EXCEPTION) << "Should be primitive, but: " << cnode->DebugString();
-  }
-  size_t dout_index = cnode->size() - 1;
-  const auto &dout = cnode->input(dout_index);
-  const auto &dout_cnode = dout->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(dout_cnode);
-  // Size is same as op_arg size
-  size_t input_size = cnode->size() - 2;
-  for (size_t i = 1; i < input_size; ++i) {
-    (void)outputs->emplace_back(dout_cnode);
-  }
 }
 
 namespace {

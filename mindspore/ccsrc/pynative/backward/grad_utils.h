@@ -105,24 +105,14 @@ struct AutoGradUtil {
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);
   static bool NeedGrad(const tensor::TensorPtr &input_tensor);
   static bool NeedGrad(const std::vector<ValuePtr> &input_values);
-  static bool IsZerosLikeNode(const AnfNodePtr &node);
-  static ValuePtr GetFakeZeroTensor();
   static ValuePtr BuildSpecialValueGrad(const ValuePtr &value, const tensor::TensorPtr &grad,
                                         autograd::FuncBuilder *func_builder, const SpecialType &type);
-  static AnfNodePtr BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
-                                     const abstract::AbstractBasePtr &abs, const SpecialType &type);
-  static AnfNodePtr BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
-                                          const AnfNodePtr &dout_value_node);
-  static void SetGradInfoForInputs(const ValuePtr &value, const BackwardNodePtr &node,
-                                   OrderedMap<tensor::TensorPtr, autograd::AutoGradMetaDataPtr> *param_meta_grad_info);
   static inline bool IsParam(InputType grad_type) {
     return grad_type == InputType::kParameter || grad_type == InputType::kInput;
   }
   static inline bool IsParamRequiresGrad(const tensor::TensorPtr &tensor) {
     return tensor->param_info() != nullptr && tensor->param_info()->requires_grad();
   }
-  // Create fake bprop
-  static void BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs);
   static CallBackFn CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
                                         const GraphCallCondition &graph_call_condition);
   static void CreateHighOrderGraph(const FuncGraphPtr &first_grad_fg, const VectorRef &input_args, const VectorRef &out,
