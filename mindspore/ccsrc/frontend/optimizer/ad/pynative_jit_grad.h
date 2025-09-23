@@ -100,6 +100,7 @@ FRONTEND_EXPORT void UpdateNextEdge(std::vector<pynative::autograd::Edge> *next_
                                     const VectorRef &args);
 FRONTEND_EXPORT std::pair<std::vector<bool>, int> CollectFilterMsg(const VectorRef &added_args,
                                                                    const FuncGraphPtr &func_graph);
+FRONTEND_EXPORT std::vector<bool> GetNeedGradIndexes(const VectorRef &args);
 }  // namespace ad
 }  // namespace mindspore
 
