@@ -286,10 +286,13 @@ class NPUProfilerAnalysis:
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
         activities = kwargs.get("activities", [])
         export_type = kwargs.get("export_type", [])
-        if ProfilerActivity.NPU.value in activities and ExportType.Db.value in export_type:
-            ProfilerPathManager().move_db_file()
-        if kwargs.get("data_simplification") and ProfilerActivity.NPU.value in kwargs.get("activities"):
-            ProfilerPathManager().simplify_data()
+        if ProfilerActivity.NPU.value in activities:
+            if ExportType.Db.value in export_type:
+                ProfilerPathManager().move_db_file()
+            else:
+                ProfilerPathManager().remove_db_file()
+            if kwargs.get("data_simplification"):
+                ProfilerPathManager().simplify_data()
 
     @classmethod
     def _construct_task_mgr(cls, **kwargs) -> TaskManager:
