@@ -15,7 +15,7 @@
 import numpy as np
 import mindspore as ms
 from mindspore import nn, Tensor, Parameter, ops
-from .util import Capture, capture, WrapNet, GradNetWrtX
+from tests.st.backend.ge_backend.ge_pass.util import Capture, capture, WrapNet, GradNetWrtX
 from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

@@ -14,9 +14,9 @@
 # ==============================================================================
 import numpy as np
 from tests.mark_utils import arg_mark
+from tests.st.backend.ms_backend.kbk_pass.util import Capture, capture
 import mindspore as ms
 from mindspore import nn, Tensor, Parameter, ops
-from .util import Capture, capture
 
 class AddRmsNormNet(nn.Cell):
     def __init__(self):
