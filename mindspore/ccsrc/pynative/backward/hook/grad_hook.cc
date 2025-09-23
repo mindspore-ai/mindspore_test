@@ -25,9 +25,9 @@
 
 namespace mindspore::pynative::autograd {
 namespace {
-class GradHookRegister {
+struct GradHookRegister {
  public:
-  GradHookRegister() { tensor::Tensor::InitializeGradImpl(std::make_unique<GradHook>()); }
+  GradHookRegister() noexcept { tensor::Tensor::InitializeGradImpl(std::make_unique<GradHook>()); }
 };
 [[maybe_unused]] GradHookRegister grad_hook_register;
 }  // namespace
