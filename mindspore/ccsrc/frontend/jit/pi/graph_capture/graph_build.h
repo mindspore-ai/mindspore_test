@@ -186,6 +186,11 @@ class GraphBuilder {
   // unpack dict items to build map inputs
   bool UnpackDict(ValueNode *map);
 
+  // unpack BUILD_CONST_KEY_MAP to stack in (key1, value1, key2, value2, ...) format
+  bool UnpackConstKeyMapToStack(ValueNode *map);
+  // unpack BUILD_CONST_KEY_MAP in (key1, value1, key2, value2, ...) format
+  std::vector<ValueNode *> UnpackConstKeyMap(ValueNode *map);
+
   // unpack object elements as LOAD_CONST
   std::vector<ValueNode *> UnpackConstObject(const py::object &);
 
