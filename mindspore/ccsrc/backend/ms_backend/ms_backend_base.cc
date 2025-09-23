@@ -21,6 +21,7 @@
 #include <vector>
 #include <queue>
 #include <regex>
+#include <unordered_map>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -1750,7 +1751,198 @@ FuncGraphPtr MSBackendBase::WrapPrimitives(const FuncGraphPtr &graph) {
 
   return graph;
 }
+BackendGraphId CompileSegment(const GraphSegmentPtr &segment, const AnfNodePtrList &inputs,
+                              const AnfNodePtrList &outputs, MSBackendBase *backend) {
+  MS_EXCEPTION_IF_NULL(segment);
+  MS_EXCEPTION_IF_NULL(backend);
+  MS_LOG(DEBUG) << "Compile segment";
+  auto func_graph = std::make_shared<FuncGraph>();
+  std::unordered_map<AnfNodePtr, AnfNodePtr> node_map;
+  for (const auto &input : inputs) {
+    MS_EXCEPTION_IF_NULL(input);
+    MS_EXCEPTION_IF_NULL(input->abstract());
+    if (HasAbstractMonad(input)) {
+      auto u = NewValueNode(kUMonad);
+      u->set_abstract(kUMonad->ToAbstract());
+      node_map[input] = u;
+      continue;
+    }
+    auto parameter = func_graph->add_parameter();
+    parameter->set_abstract(input->abstract()->Clone());
+    node_map[input] = parameter;
+  }
+  for (const auto &node : segment->nodes_) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!node->isa<CNode>()) {
+      MS_LOG(EXCEPTION) << "Invalid node:" << node->DebugString() << " in segment.";
+    }
+    const auto &cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    MS_EXCEPTION_IF_NULL(cnode->abstract());
+    const auto &prim = common::AnfAlgo::GetCNodePrimitive(cnode);
+    const auto &new_prim = std::make_shared<Primitive>(prim->name());
+    new_prim->SetAttrs(prim->attrs());
+    new_prim->EraseAttr("split_op");
+    AnfNodePtrList new_inputs{NewValueNode(new_prim)};
+    for (size_t i = 1; i < cnode->size(); ++i) {
+      MS_EXCEPTION_IF_NULL(cnode->input(i));
+      if (cnode->input(i)->isa<ValueNode>()) {
+        new_inputs.emplace_back(cnode->input(i));
+        continue;
+      }
+      const auto &iter = node_map.find(cnode->input(i));
+      if (iter == node_map.end()) {
+        MS_LOG(EXCEPTION) << "Failed to get input node:" << cnode->input(i)->DebugString();
+      }
+      new_inputs.emplace_back(iter->second);
+    }
+    const auto &new_cnode = func_graph->NewCNode(new_inputs);
+    new_cnode->set_abstract(cnode->abstract()->Clone());
+    new_cnode->set_attrs(cnode->attrs());
+    new_cnode->set_primal_attrs(cnode->primal_attrs());
+    new_cnode->CloneUserData(cnode);
+    new_cnode->set_scope(cnode->scope());
+    new_cnode->set_fullname_with_scope(cnode->fullname_with_scope());
+    node_map[cnode] = new_cnode;
+  }
+  AnfNodePtrList make_tuple_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimMakeTuple->name()))};
+  std::vector<abstract::AbstractBasePtr> make_tuple_abs_inputs;
+  std::vector<AnfNodePtr> output_monads;
+  for (const auto &output : outputs) {
+    MS_EXCEPTION_IF_NULL(output);
+    const auto &iter = node_map.find(output);
+    if (iter == node_map.end()) {
+      MS_LOG(EXCEPTION) << "Failed to get new node by:" << output->DebugString();
+    }
+    if (HasAbstractMonad(output)) {
+      output_monads.emplace_back(iter->second);
+      continue;
+    }
+    make_tuple_inputs.emplace_back(iter->second);
+    make_tuple_abs_inputs.emplace_back(iter->second->abstract());
+  }
+  const auto &make_tuple = func_graph->NewCNode(make_tuple_inputs);
+  make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(make_tuple_abs_inputs));
+  auto last_node = make_tuple;
+  for (const auto &output_monad : output_monads) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())),
+                                          last_node, output_monad};
+    auto depend_node = func_graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(last_node->abstract());
+    last_node = depend_node;
+  }
+  std::vector<AnfNodePtr> return_inputs{NewValueNode(prim::kPrimReturn), make_tuple};
+  auto return_node = func_graph->NewCNode(return_inputs);
+  func_graph->set_return(return_node);
+  auto manager = MakeManager({func_graph});
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->AddFuncGraph(func_graph);
+  func_graph->set_manager(manager);
+  DumpIR("my_func_graph", func_graph, true);
+  const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+  return backend->Build(func_graph, backend_jit_config);
+}
 
+std::vector<GraphFragmentPtr> MSBackendBase::Split(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto root_graph = WrapPrimitives(func_graph);
+  MS_EXCEPTION_IF_NULL(root_graph);
+  const auto &sub_graphs = root_graph->func_graphs_used_total();
+  if (!sub_graphs.empty()) {
+    MS_LOG(EXCEPTION) << "Not support graph split for multi-graph.";
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto backend_name = ms_context->backend_policy();
+  auto cut_list = compile::GetMSNonlinearOps();
+  // static auto split_prim = std::make_shared<Primitive>("SplitOp");
+  // cut_list.emplace_back(split_prim);
+  auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
+  MS_EXCEPTION_IF_NULL(graph_partition);
+  const auto &segments = graph_partition->Partition(root_graph);
+  MS_LOG(INFO) << "Segment size:" << segments.size();
+  if (segments.size() <= 1) {
+    MS_LOG(WARNING) << "No kernel in graph:" << func_graph->ToString() << ".";
+    return {};
+  }
+  std::vector<GraphFragmentPtr> fragments;
+  std::unordered_map<AnfNodePtr, std::pair<int, std::string>> output_nodes;
+  for (const auto &node : root_graph->parameters()) {
+    MS_EXCEPTION_IF_NULL(node);
+    const auto &parameter = node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter);
+    output_nodes[parameter] = std::make_pair(-1, parameter->name());
+  }
+  for (size_t i = 0; i < segments.size() - 1; ++i) {
+    FuncGraphPtr fg;
+    AnfNodePtrList inputs;
+    AnfNodePtrList outputs;
+    const auto &segment = segments[i];
+    MS_EXCEPTION_IF_NULL(segment);
+    std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
+    if (segment->nodes_.empty()) {
+      MS_LOG(EXCEPTION) << "Invalid segment index:" << i;
+    }
+    size_t output_index = 0;
+    for (const auto &output : outputs) {
+      if (HasAbstractMonad(output)) {
+        continue;
+      }
+      output_nodes[output] = std::make_pair(SizeToInt(i), std::to_string(output_index++));
+    }
+    MS_EXCEPTION_IF_NULL(segment->nodes_[0]);
+    bool is_graph = true;
+    std::string func_key = "";
+    const auto &cnode = segment->nodes_[0]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto primitive = common::AnfAlgo::GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(primitive);
+    if (primitive->HasAttr("split_op")) {
+      auto split_op_value = primitive->GetAttr("split_op");
+      MS_EXCEPTION_IF_NULL(split_op_value);
+      if (GetValue<bool>(split_op_value)) {
+        is_graph = false;
+        if (!primitive->HasAttr("func_id")) {
+          MS_LOG(EXCEPTION) << "Failed to get func_id by split op:" << cnode->DebugString();
+        }
+        auto func_key_value = primitive->GetAttr("func_id");
+        MS_EXCEPTION_IF_NULL(func_key_value);
+        func_key = GetValue<std::string>(func_key_value);
+      }
+    }
+
+    auto runner = [this, segment, inputs, outputs](GraphFragment *frag, const VectorRef &input_list,
+                                                   VectorRef *output_list) {
+      MS_EXCEPTION_IF_NULL(frag);
+      size_t input_size =
+        std::count_if(inputs.begin(), inputs.end(), [](const auto &node) { return !HasAbstractMonad(node); });
+      if (input_list.size() != input_size) {
+        MS_LOG(EXCEPTION) << "Invalid input size:" << input_list.size() << " need:" << input_size
+                          << " for fragment id:" << frag->id_;
+      }
+      if (frag->graph_id_ == UINT32_MAX) {
+        frag->graph_id_ = CompileSegment(segment, inputs, outputs, this);
+      }
+      MS_LOG(DEBUG) << "inputs :" << input_list.ToString();
+      Run(frag->graph_id_, input_list, output_list);
+      return kRunningSuccess;
+    };
+    std::vector<std::pair<int, std::string>> args_list;
+    for (const auto &input : inputs) {
+      MS_EXCEPTION_IF_NULL(input);
+      if (HasAbstractMonad(input)) {
+        continue;
+      }
+      const auto &iter = output_nodes.find(input);
+      if (iter == output_nodes.end()) {
+        MS_LOG(EXCEPTION) << "Failed to get input node:" << input->DebugString() << " for segment:" << i;
+      }
+      args_list.emplace_back(iter->second);
+    }
+    fragments.emplace_back(std::make_shared<GraphFragment>(i, is_graph, func_key, args_list, runner));
+  }
+  return fragments;
+}
 BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);

@@ -44,7 +44,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, TensorPy as Tensor
+    _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, TensorPy as Tensor, dump_func_graph, _GraphFragment_
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_in_auto_parallel_mode, \
     _is_parallel_mode
@@ -650,6 +650,19 @@ class _JitExecutor:
         )
         res = _convert_python_data(output)
         return True, res
+
+    def compile_frontend(self, *args, **kwargs):
+        """Only compile to the frontend graph."""
+        args_list = args
+        if self.obj is not None:
+            args_list = args_list[1:]
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+        phase = ""
+        _pynative_executor.set_jit_compile_phase(phase)
+        phase = self.compile(self.fn.__name__, *args_list, **kwargs)
+        _pynative_executor.set_jit_compile_phase(phase)
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+        return self._graph_executor.get_func_graph(phase), self._mutable_flags, phase, self.enable_tuple_broaden
 
     @_wrap_func
     def __call__(self, *args, **kwargs):
@@ -2346,6 +2359,191 @@ def flops_collection(phase='train'):
     """
     return _cell_graph_executor.flops_collection(phase)
 
+
+class _ScriptGraph:
+    """Store the graph compiled by the frontend compiler."""
+    def __init__(self, func_graph, func, origin_cell, mutable_flags, phase, enable_tuple_broaden):
+        self.func_graph = func_graph
+        self.func = func
+        self.origin_cell = origin_cell
+        self.mutable_flags = mutable_flags
+        self.phase = phase
+        self.enable_tuple_broaden = enable_tuple_broaden
+
+    def print(self):
+        """Print the MindIR of the frontend graph."""
+        graph_str = dump_func_graph(self.func_graph)
+        print(graph_str, flush=True)
+
+
+def _frontend_compile_ast(dynamic, jit_config, jit_graph_name=''):
+    """Return the wrapped function for ast mode jit."""
+    def wrap_func(func):
+        if hasattr(func, "construct") and isinstance(func, ms.nn.Cell):
+            # Bound the cell object to get the self arg.
+            return types.MethodType(_frontend_compile_ast(dynamic, jit_config,
+                                                          func._jit_graph_name)(func.construct.__func__), func)
+
+        if isinstance(func, types.MethodType):
+            return types.MethodType(_frontend_compile_ast(dynamic, jit_config)(func.__func__), func.__self__)
+
+        if not isinstance(func, types.FunctionType):
+            logger.warning(f"The func should be function, method or cell instance/class, but got {func}")
+            return func
+
+        hash_obj = int(time.time() * 1e9)
+
+        @wraps(func)
+        def staging_specialize(*args, **kwargs):
+            if os.getenv("MS_JIT") == '0':
+                return func(*args, **kwargs)
+
+            args, kwargs = _handle_func_args(func, *args, **kwargs)
+            process_obj = None
+            if args and not isinstance(args[0], PythonTensor) and hasattr(args[0], func.__name__):
+                process_obj = args[0]
+            # Handle auto mixed precision strategy.
+            if not hasattr(func, "amp_strategy"):
+                setattr(get_func(func), "amp_strategy", get_curr_amp_strategy())
+
+            jit_graph_name = ''
+            if hasattr(staging_specialize, "__jit_graph_name__"):
+                jit_graph_name = staging_specialize.__jit_graph_name__
+            jit_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config, dynamic, jit_graph_name)
+            func_graph, mutable_flags, phase, enable_tuple_broaden = jit_executor.compile_frontend(*args, **kwargs)
+            return _ScriptGraph(func_graph, func, process_obj, mutable_flags, phase, enable_tuple_broaden)
+
+        # `inspect.getfullargspec(func)` will get the specification of the decorated function by default. By set
+        # `__signature__` for the decorated function, `inspect.getfullargspec(func)` will get the specification of
+        # original `func`.
+        staging_specialize.__signature__ = inspect.signature(func)
+        setattr(staging_specialize, "__jit_graph_name__", jit_graph_name)
+        return staging_specialize
+
+    return wrap_func
+
+
+def _frontend_compile(function: Callable,
+                      *,
+                      dynamic: int = 0,
+                      fullgraph: bool = False):
+    """
+    Create a frontend MindSpore graph from a Python function by the ast capture mode.
+
+    Args:
+        function (Callable, optional): The Python function or Cell instance that will be compiled as a frontend graph.
+            Default: ``None``.
+
+    Keyword Args:
+        dynamic (int, optional): Whether dynamic shape compilation should be performed. Default: ``0``. The value range
+            is as follows:
+
+            - `0`: Do not perform dynamic shape compilation.
+            - `1`: Enable dynamic shape compilation and automatically detect shape changes.
+
+        fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
+            be compatible with all Python syntax in the function as much as possible. If True, we require that the
+            entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
+            not supported), then it will raise an exception. This currently only applies when capture_mode is ``ast``
+            or ``bytecode``. Default: ``False``.
+
+    Returns:
+        a :class:`_ScriptGraph` object.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> from mindspore.common.api import _frontend_compile
+        ...
+        >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+        >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+        ...
+        >>> def tensor_add(x, y):
+        ...     z = x + y
+        ...     return z
+        ...
+        >>> tensor_add_graph = _frontend_compile(tensor_add)(x, y)
+        >>> tensor_add_graph.print()
+        ...
+    """
+
+    dynamic = Validator.check_int_range(dynamic, 0, 1, Validator.INC_BOTH, "dynamic", "jit")
+    fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
+    jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
+    jit_config = JitConfig(jit_syntax_level=jit_syntax_level)
+    return _frontend_compile_ast(dynamic, jit_config)(function)
+
+
+class _GraphFragment(_GraphFragment_):
+    """
+    Represents the output by backend graph split.
+    """
+    def __init__(self, frag):
+        if frag is None or not isinstance(frag, _GraphFragment_):
+            raise TypeError(f"Expect input `frag` to be a _GraphFragment_, but got {type(frag)}")
+        _GraphFragment_.__init__(self, frag)
+
+    def __call__(self, *args):
+        return super().__call__(args)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def id(self):
+        return self.id_()
+
+    def is_graph(self):
+        return self.is_graph_()
+
+    def py_key(self):
+        return self.py_key_()
+
+    def args_list(self):
+        return self.args_list_()
+
+
+def _graph_split(script_graph):
+    """
+    Split the script_graph into several fragments according to the nodes with the split op attribute.
+
+    Args:
+        a :class:`_ScriptGraph` object.
+
+    Returns:
+        several :class:`_GraphFragment` object.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> from mindspore.common.api import _frontend_compile, _graph_split
+        ...
+        >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+        >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+        >>> add = ops.Add().add_prim_attr("split_op", True).add_prim_attr("func_id", "add_func")
+        ...
+        >>> def tensor_add(x, y):
+        ...     z1 = x + y
+        ...     z2 = add(z1, x)
+        ...     return z2
+        ...
+        >>> tensor_add_graph = _frontend_compile(tensor_add)(x, y)
+        >>> frags = _graph_split(tensor_add_graph)
+        >>> print(frags)
+        ...
+    """
+    outputs = JitExecutor_.get_instance().split_graph(script_graph.func_graph)
+    fragments = []
+    for arg in outputs:
+        fragments.append(_GraphFragment(arg))
+    return fragments
 
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()

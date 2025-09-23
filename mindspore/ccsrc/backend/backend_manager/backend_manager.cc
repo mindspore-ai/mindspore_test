@@ -15,6 +15,7 @@
  */
 
 #include "backend/backend_manager/backend_manager.h"
+#include <vector>
 #ifndef _WIN32
 #include <libgen.h>
 #endif
@@ -105,6 +106,13 @@ void BackendManager::Clear() {
 
   backend_creators_.clear();
   backend_load_handle_.clear();
+}
+
+std::vector<GraphFragmentPtr> BackendManager::Split(const FuncGraphPtr &func_graph, const std::string &backend_name) {
+  auto backend_type = GetBackendType(backend_name);
+  auto backend = GetOrCreateBackend(backend_type);
+  MS_EXCEPTION_IF_NULL(backend);
+  return backend->Split(func_graph);
 }
 
 std::pair<BackendType, BackendGraphId> BackendManager::Build(const FuncGraphPtr &func_graph,

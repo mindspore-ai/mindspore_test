@@ -44,6 +44,7 @@
 #include "include/backend/distributed/init.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/cluster/tcp_store.h"
+#include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "include/runtime/memory/mem_pool/mem_dynamic_allocator.h"
@@ -314,12 +315,27 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_max_call_depth", &GraphExecutorPy::set_max_call_depth, py::arg("max_call_depth") = py::int_(1000),
          "Get the running passes.");
 
+  (void)py::class_<mindspore::backend::GraphFragment, mindspore::backend::GraphFragmentPtr>(*m, "_GraphFragment_")
+    .def(py::init([](const py::object &graph_fragment) {
+           auto graph_fragment_ = graph_fragment.cast<mindspore::backend::GraphFragmentPtr>();
+           return std::make_shared<mindspore::backend::GraphFragment>(graph_fragment_);
+         }),
+         py::arg("input"))
+    .def("__call__", &mindspore::backend::GraphFragment::Run, "Executor run function.")
+    .def("__str__", &mindspore::backend::GraphFragment::ToString, "Executor run function.")
+    .def("id_", &mindspore::backend::GraphFragment::id, "Executor run function.")
+    .def("is_graph_", &mindspore::backend::GraphFragment::is_graph, "Executor run function.")
+    .def("py_key_", &mindspore::backend::GraphFragment::py_key, "Executor run function.")
+    .def("args_list_", &mindspore::backend::GraphFragment::args_list, "Executor run function.");
+
   MS_LOG(INFO) << "Start JitExecutorPy...";
   (void)py::class_<JitExecutorPy, std::shared_ptr<JitExecutorPy>>(m, "JitExecutor_")
     .def_static("get_instance", &JitExecutorPy::GetInstance, "Executor get_instance.")
     .def("__call__", &JitExecutorPy::Run, py::arg("args"), py::arg("phase") = py::str(""), "Executor run function.")
     .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
+    .def("get_func_graph", &JitExecutorPy::GetFuncGraph, py::arg("phase") = py::str(""), "Get graph pointer.")
+    .def("split_graph", &JitExecutorPy::SplitGraph, "Split graph.")
     .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
          py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")
     .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
@@ -346,6 +362,8 @@ PYBIND11_MODULE(_c_expression, m) {
          "Get graph proto string by specifying ir type.");
 
   (void)m.def("_run_jit_pipeline", &mindspore::pipeline::RunJitPipeline, "Whether to run the jit pipeline.");
+  (void)m.def("dump_func_graph", &mindspore::pipeline::DumpFuncGraph, py::arg("func_graph"),
+              "Get the dump string of a func_graph");
   (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
               "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
