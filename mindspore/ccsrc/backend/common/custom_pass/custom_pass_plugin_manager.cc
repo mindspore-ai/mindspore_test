@@ -99,7 +99,7 @@ bool CustomPassPluginManager::LoadPlugin(const std::string &plugin_path, const s
 
   // Check if plugin already exists
   if (plugins_.find(actual_plugin_name) != plugins_.end()) {
-    MS_LOG(INFO) << "Plugin " << actual_plugin_name << " already loaded, registering additional pass: " << pass_name;
+    MS_LOG(DEBUG) << "Plugin " << actual_plugin_name << " already loaded, registering additional pass: " << pass_name;
 
     // Clean up the duplicate plugin
     try {
@@ -252,8 +252,8 @@ void CustomPassPluginManager::RegisterPassesToOptimizer(std::shared_ptr<GraphOpt
   for (const auto &pass_exec : pass_execution_order_) {
     // Check device compatibility using the recorded device for this specific call
     if (pass_exec.device != "all" && pass_exec.device != device) {
-      MS_LOG(INFO) << "Skipping pass '" << pass_exec.pass_name << "' - device '" << pass_exec.device
-                   << "' incompatible with target device '" << device << "'";
+      MS_LOG(DEBUG) << "Skipping pass '" << pass_exec.pass_name << "' - device '" << pass_exec.device
+                    << "' incompatible with target device '" << device << "'";
       continue;
     }
 
@@ -281,7 +281,7 @@ void CustomPassPluginManager::RegisterPassesToOptimizer(std::shared_ptr<GraphOpt
   }
 
   if (ordered_pass_manager->Passes().empty()) {
-    MS_LOG(WARNING) << "No passes registered for device: " << device;
+    MS_LOG(INFO) << "No passes registered for device: " << device;
     return;
   }
 
@@ -335,7 +335,7 @@ std::vector<std::string> CustomPassPluginManager::GetLoadedPluginNames() const {
 bool CustomPassPluginManager::UnloadPluginInternal(const std::string &plugin_name) {
   auto plugin_iter = plugins_.find(plugin_name);
   if (plugin_iter == plugins_.end()) {
-    MS_LOG(WARNING) << "Plugin " << plugin_name << " not found during unload";
+    MS_LOG(DEBUG) << "Plugin " << plugin_name << " not found during unload";
     return false;
   }
 
@@ -344,8 +344,8 @@ bool CustomPassPluginManager::UnloadPluginInternal(const std::string &plugin_nam
 
     // Check if plugin is still in use by external code
     if (plugin_info->plugin && plugin_info->plugin.use_count() > 1) {
-      MS_LOG(WARNING) << "Plugin " << plugin_name << " is still in use (ref count: " << plugin_info->plugin.use_count()
-                      << "). Cannot unload safely.";
+      MS_LOG(DEBUG) << "Plugin " << plugin_name << " is still in use (ref count: " << plugin_info->plugin.use_count()
+                    << "). Cannot unload safely.";
       return false;
     }
     // Remove all pass registrations for this plugin first

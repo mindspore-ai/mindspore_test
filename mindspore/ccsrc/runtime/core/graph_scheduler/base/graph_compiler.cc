@@ -15,19 +15,21 @@
  */
 
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
-#include <numeric>
-#include <map>
-#include <utility>
 #include <algorithm>
+#include <cctype>
 #include <functional>
 #include <list>
+#include <map>
+#include <numeric>
 #include <regex>
+#include <utility>
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "ir/device_address.h"
 #include "include/common/utils/convert_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
+#include "backend/common/custom_pass/custom_pass_executor.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "ir/graph_utils.h"
@@ -509,10 +511,15 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   }
 
   opt::OptimizationWithoutBackend(kernel_graph);
+
+  // Execute custom passes
+  std::string device_target = GetDeviceNameByType(device_context->GetDeviceType());
+  std::transform(device_target.begin(), device_target.end(), device_target.begin(), ::tolower);
+  opt::CustomPassExecutor::ExecuteCustomPasses(kernel_graph, device_target);
+
   // Unify the MindIR, must be before of the kernel_graph optimization.
   auto kernel_executor = device_context->GetKernelExecutor();
   if (kernel_executor != nullptr) {
-    kernel_executor->AddCustomPass(kernel_graph);
     kernel_executor->AddMindIRPass(kernel_graph);
   }
   kernel_graph->SetInputNodes();

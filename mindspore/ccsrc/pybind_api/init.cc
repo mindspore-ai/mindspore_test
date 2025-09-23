@@ -59,7 +59,7 @@
 #include "include/common/amp/amp.h"
 #include "frontend/jit/trace/trace_recorder.h"
 #include "runtime/core/graph_executor/pre_launch/comm_execution_order_check.h"
-#include "backend/common/custom_pass/custom_pass_plugin.h"
+#include "pybind_api/graph/custom_pass_py.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif
@@ -193,6 +193,7 @@ void RegModule(py::module *m) {
   RegTFT(m);
   RegTensorDoc(m);
   RegReuseDataPtr(m);
+  mindspore::graph::RegCustomPass(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
@@ -851,35 +852,6 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("_bind_device_ctx", &mindspore::pipeline::BindDeviceCtx, "Bind device context to current thread");
   (void)m.def("swap_cache", &mindspore::pipeline::SwapCache, py::arg("host"), py::arg("device"),
               py::arg("block_mapping"), py::arg("is_device_to_host"), "Swap Cache for PageAttention.");
-
-  // Register custom pass plugin from Python
-  (void)m.def(
-    "register_custom_pass",
-    [](const std::string &pass_name, const std::string &plugin_so_path, const std::string &device,
-       const std::string &stage) -> bool {
-      using mindspore::opt::CustomPassPluginManager;
-      if (plugin_so_path.empty()) {
-        MS_LOG(ERROR) << "Plugin path is empty";
-        return false;
-      }
-      if (device.empty()) {
-        MS_LOG(ERROR) << "Device parameter is empty";
-        return false;
-      }
-      // Load plugin shared library with device and stage specification
-      bool loaded = CustomPassPluginManager::GetInstance().LoadPlugin(plugin_so_path, pass_name, device, stage);
-      if (!loaded) {
-        MS_LOG(ERROR) << "Failed to load custom pass plugin from: " << plugin_so_path << " for device: " << device;
-        return false;
-      }
-      // Log successful plugin loading
-      if (!pass_name.empty()) {
-        MS_LOG(INFO) << "Successfully loaded custom pass plugin: " << pass_name << " for device: " << device;
-      }
-      return true;
-    },
-    py::arg("pass_name"), py::arg("plugin_so_path"), py::arg("device"), py::arg("stage"),
-    "Register a custom optimization pass by loading plugin shared library for specific device");
 
   (void)py::class_<mindspore::runtime::Process, std::shared_ptr<mindspore::runtime::Process>>(m, "CommExecOrderChecker")
     .def_static("get_instance", &mindspore::runtime::Process::GetInstance, py::return_value_policy::reference,
