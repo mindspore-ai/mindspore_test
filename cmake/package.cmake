@@ -484,6 +484,11 @@ install(FILES ${CMAKE_SOURCE_DIR}/mindspore/include/custom_op_api.h
         DESTINATION ${INSTALL_BASE_DIR}/include/mindspore/ccsrc/ms_extension
         RENAME api.h
         COMPONENT mindspore)
+
+install(FILES ${CMAKE_SOURCE_DIR}/mindspore/include/custom_op_api.h
+        DESTINATION ${INSTALL_BASE_DIR}/include/mindspore/ccsrc/include
+        RENAME ms_extension.h
+        COMPONENT mindspore)
 ## third-party header files
 install(DIRECTORY ${pybind11_INC}/pybind11
     DESTINATION ${INSTALL_BASE_DIR}/include/third_party
