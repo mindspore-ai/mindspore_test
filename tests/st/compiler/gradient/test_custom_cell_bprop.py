@@ -866,7 +866,7 @@ def test_bprop_return_length_simple(bprop_return_len):
             return x * y
 
         def bprop(self, x, y, out, dout):
-            return (self.tensor,) * bprop_return_len
+            return (1.0,) * bprop_return_len
 
     net = Net()
     x = Tensor(3, mstype.float32)
@@ -900,12 +900,12 @@ def test_bprop_return_length_with_side_effect_and_param_lift(bprop_return_len):
             self.tensor = Tensor(3, mstype.float32)
 
         def construct(self, x, y):
-            print("This is a message testing for io side effect")
+            print("This is a message that tests for I/O side effect.")
             ops.assign(self.z, Tensor(3, ms.float32))
             return x * y * self.z
 
         def bprop(self, x, y, out, dout):
-            print("This is another message testing for io side effect")
+            print("This is another message that tests for I/O side effect.")
             return (self.tensor,) * bprop_return_len
 
     net = Net()
