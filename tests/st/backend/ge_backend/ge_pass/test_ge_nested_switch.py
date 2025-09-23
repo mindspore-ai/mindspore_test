@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from ge_test_utils import run_testcase
+from tests.st.backend.ge_backend.ge_test_utils import run_testcase
+from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b"],
+    plat_marks=["platform_ascend"],
     level_mark="level1",
     card_mark="onecard",
-    essential_mark="unessential",
+    essential_mark="essential",
 )
-def test_ge_nested_tuple():
+@test_utils.run_test_with_On
+def test_ge_nested_switch():
     """
-    Description: Test GE dynamic input.
-    Description: Support dynamic inputs.
+    Description: Test GE nested switch.
+    Description: Support nested switch.
     Expectation: The result match with expect.
     """
-    run_testcase("run_ge_dynamic_input", "test_ge_dynamic_input")
+    run_testcase("run_ge_nested_switch", "test_ge_nested_switch")

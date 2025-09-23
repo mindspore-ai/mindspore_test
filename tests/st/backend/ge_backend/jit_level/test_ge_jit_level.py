@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import tests.st.backend_ascend.ge.ge_test_utils as utils
+from tests.st.backend.ge_backend.ge_test_utils import run_testcase
 from tests.mark_utils import arg_mark
 
 
 @arg_mark(
-    plat_marks=["platform_ascend"],
+    plat_marks=["platform_ascend", "platform_ascend910b"],
     level_mark="level1",
     card_mark="onecard",
-    essential_mark="essential",
+    essential_mark="unessential",
 )
-def test_sparse_tensor():
+def test_ge_graph_mode_with_jit_level():
     """
-    Feature: sparse tensor
-    Description: test sparse tensor with ge backend
-    Expectation: success
+    Description: Graph Mode jit_level with GE.
+    Expectation: Run ge when jit_level.
     """
-    utils.run_testcase("run_sparse_tensor")
+    run_testcase("ge_graph_mode_jit_level")
