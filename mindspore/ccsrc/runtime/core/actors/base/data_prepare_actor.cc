@@ -733,8 +733,8 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 }
 
 void DataPrepareActor::RaiseARFError(const VectorRef &args) {
-  if (UCEException::GetInstance().enable_arf() && UCEException::GetInstance().is_reboot_node() && !args.empty()) {
-    MS_LOG(EXCEPTION) << "ARF FINISH !";
+  if (UCEException::GetInstance().is_reboot_node() && !UCEException::GetInstance().is_arf() && !args.empty()) {
+    MS_LOG(EXCEPTION) << "ARF FINISH , do next step repair weight.";
   }
 }
 

@@ -407,7 +407,6 @@ class TrainFaultTolerance(Callback):
             if "tft_g_one_flag" in key:
                 with mindspore.hal.StreamCtx(self.s1):
                     tft_g_one_flag = param.asnumpy()
-                self.s1.synchronize()
                 return int(tft_g_one_flag) == 1
         return False
 
