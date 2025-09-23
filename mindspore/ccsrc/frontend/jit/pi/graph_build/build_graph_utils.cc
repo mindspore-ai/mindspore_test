@@ -291,10 +291,11 @@ bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasa
 bool IsConvertToInterpretedObject(const py::object &obj) {
   // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
   // identify the function if need parse by ast
-  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsTensorOverloadMethod(obj);
+  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) ||
+         IsTensorOverloadMethod(obj);
 }
 
-ValuePtr ConvertPyObjToValue(const py::handle &handle) {
+ValuePtr ConvertPyObjToValue(const py::handle &handle, bool allow_interpreted_object) {
   MS_EXCEPTION_IF_NULL(handle.ptr());
   py::object obj = py::reinterpret_borrow<py::object>(handle);
   ValuePtr ret = nullptr;
@@ -305,7 +306,7 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
     if (py::list::check_(obj) || py::tuple::check_(obj) || pijit::IsCellList(obj)) {
       std::vector<ValuePtr> elements;
       for (const auto &i : obj) {
-        auto v = ConvertPyObjToValue(i);
+        auto v = ConvertPyObjToValue(i, allow_interpreted_object);
         if (v == nullptr) {
           return nullptr;
         }
@@ -320,8 +321,8 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
     if (py::dict::check_(obj)) {
       std::vector<std::pair<ValuePtr, ValuePtr>> elements;
       for (const auto &i : py::cast<py::dict>(obj)) {
-        auto k = ConvertPyObjToValue(i.first);
-        auto v = ConvertPyObjToValue(i.second);
+        auto k = ConvertPyObjToValue(i.first, allow_interpreted_object);
+        auto v = ConvertPyObjToValue(i.second, allow_interpreted_object);
         if (k == nullptr || v == nullptr) {
           return nullptr;
         }
@@ -329,7 +330,7 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
       }
       return std::make_shared<ValueDictionary>(elements);
     }
-    if (IsConvertToInterpretedObject(obj)) {
+    if (allow_interpreted_object && IsConvertToInterpretedObject(obj)) {
       return std::make_shared<parse::InterpretedObject>(obj);
     }
     if (parse::ConvertData(obj, &ret)) {
@@ -341,6 +342,8 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
   MS_LOG(INFO) << "Failed to convert python object." << py::str(handle);
   return nullptr;
 }
+
+ValuePtr ConvertPyCallableToValue(const py::handle &callable) { return ConvertPyObjToValue(callable, false); }
 
 void PrintConstantAbstract(const AbstractBasePtr &abstract) {
   if (abstract == nullptr) {
