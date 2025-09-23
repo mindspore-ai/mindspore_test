@@ -31,6 +31,7 @@ namespace tools {
 namespace {
 constexpr size_t kMaxPathNameLen = 256;
 constexpr size_t kMaxProcFileLen = 128;
+constexpr size_t kTftWaitSeconds = 2;
 }  // namespace
 bool TFTWaitSem::isEnable_ = false;
 TFTWaitSem &TFTWaitSem::GetInstance() {
@@ -52,7 +53,7 @@ void TFTWaitSem::Wait() {
       break;
     }
     MS_LOG(INFO) << "Semaphore for tft is not released, check it later.";
-    sleep(2);
+    sleep(kTftWaitSeconds);
   }
 }
 
@@ -83,7 +84,7 @@ void TFTWaitSem::RecordThreads(bool is_start) {
   struct dirent *entry;
   while ((entry = readdir(proc_dir)) != NULL) {
     if (entry->d_name[0] == '.') continue;
-    auto thread_id = atoi(entry->d_name);
+    auto thread_id = std::stoul(entry->d_name);
     if (is_start) {
       (void)tft_thread_ids_.insert(thread_id);
     } else {
