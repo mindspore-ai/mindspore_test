@@ -167,13 +167,12 @@
 /tests/st/high_availability/ @fary86
 /tests/st/hypercomplex/ @yangzhenzhang
 /tests/st/infer/ @liulili-huawei
-/tests/st/lccl/ @ZPaC
 /tests/st/mem_reuse/ @limingqi107
 /tests/st/mindscience/ @yi-zhang95
 /tests/st/mint/ @liangchenghui
 /tests/st/mix_precision/ @changzherui
-/tests/st/msrun/ @ZPaC
-/tests/st/nccl/ @ZPaC
+/tests/st/cluster/ @ZPaC
+/tests/st/collective_ops/ @ZPaC
 /tests/st/nn/ @changzherui
 /tests/st/nontask_sink/ @zhangyinxia
 /tests/st/numpy_native/ @yi-zhang95
