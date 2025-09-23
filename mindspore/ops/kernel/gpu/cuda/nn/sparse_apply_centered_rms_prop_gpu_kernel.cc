@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "kernel/gpu/cuda/nn/sparse_apply_centered_rms_prop_gpu_kernel.h"
 #include "mindspore/ops/infer/sparse_apply_centered_rms_prop.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "kernel/gpu/cuda/nn/sparse_apply_centered_rms_prop_gpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/gpu/cuda/sparse/csr_sparse_matrix_to_dense_gpu_kernel.h"
 #include <functional>
 #include <algorithm>
-#include "kernel/gpu/cuda/sparse/csr_sparse_matrix_to_dense_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "mindspore/ops/infer/csr_sparse_matrix_to_dense.h"
 
