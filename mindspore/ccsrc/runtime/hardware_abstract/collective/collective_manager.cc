@@ -974,7 +974,12 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     PROF_START(GenerateRootInfo);
     root_info = group->GenerateRootInfo(&root_info_size);
     PROF_END(GenerateRootInfo);
-    MS_EXCEPTION_IF_NULL(root_info);
+    if (root_info == nullptr) {
+      MS_LOG(EXCEPTION)
+        << "Root info pointer is nullptr. If you are using HCCL, there maybe port conflict in "
+           "communication collective library. Please execute 'export HCCL_IF_BASE_PORT=<new port>' to use "
+           "different port, or 'npu-smi info' to check if there's residual processes.";
+    }
 
     // Broadcast the device root information to all nodes on host side. CCOOL broadcasts inner comm
     // group's rootinfo within func 'GenerateRootInfo', do not need to broadcast outer comm group's rootinfo.
