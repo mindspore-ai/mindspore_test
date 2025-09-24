@@ -39,6 +39,8 @@
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 #include "utils/ms_exception.h"
+#include "tools/profiler/mstx/mstx_impl.h"
+#include "pybind11/pybind11.h"
 
 namespace mindspore {
 namespace distributed {
@@ -1079,6 +1081,17 @@ bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
     return true;
   }
 
+  // When the memory tool msleaks is enabled to capture memory call stacks, it needs to acquire the GIL.
+  // If the current thread already holds the GIL and is waiting for other threads, and another thread triggers call
+  // stack capture, the GIL must be temporarily released at this point to avoid a deadlock.
+  std::optional<py::gil_scoped_release> release;
+#ifdef SYSTEM_ENV_POSIX
+  if (profiler::MstxImpl::GetInstance().IsMsleaksEnable()) {
+    if (Py_IsInitialized() && PyGILState_Check()) {
+      release.emplace();
+    }
+  }
+#endif
   std::unique_lock<std::mutex> lock(task_queue_mutex_);
   // If the task is not submitted, throw exception.
   if (!std::any_of(task_list_.begin(), task_list_.end(),
