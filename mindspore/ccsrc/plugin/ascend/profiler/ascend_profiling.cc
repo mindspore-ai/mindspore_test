@@ -124,7 +124,7 @@ void AscendProfiler::InitAclConfig() {
   }
 
   if (config_.profileMemory || config_.hbmDdr) {
-    const char *hbmFreq = "100";
+    const char *hbmFreq = "50";
     aclError hbmRet = aclprofSetConfig(ACL_PROF_SYS_HARDWARE_MEM_FREQ, hbmFreq, strlen(hbmFreq));
     if (hbmRet != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_SYS_HARDWARE_MEM_FREQ. error_code : "
