@@ -15,8 +15,9 @@
 """pipeline stage"""
 from abc import ABC
 import mindspore as ms
-from mindspore import ops, Tensor, mint
-from mindspore.mint.distributed import isend, irecv, get_global_rank
+from mindspore import ops, Tensor, mint, Parameter
+from mindspore.mint.distributed import isend, irecv, get_global_rank, broadcast, all_reduce
+from mindspore.communication.management import create_group
 from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
 from ._utils import _RecvInfo
 
@@ -41,6 +42,39 @@ class TypeConverter:
         if isinstance(key, int):
             return TypeConverter._type_map.get(key, None)
         return TypeConverter._reverse_map.get(key, None)
+
+
+class SharedParameterInfo:
+    """
+    Used to specify information about shared parameter in pipeline parallel, including the parameter obj
+    and the stages between which they are shared.
+
+    Args:
+        parameter (Parameter): The shared parameter object.
+        shared_stage (list): The shared stage list.
+    """
+    def __init__(self, parameter, shared_stage):
+        if not isinstance(parameter, Parameter):
+            raise TypeError(f"Argument 'parameter' must be type of Parameter.")
+        if not isinstance(shared_stage, (list, tuple)):
+            raise TypeError(f"Argument 'shared_stage' must be list or tuple.")
+        self._shared_stage = shared_stage
+        self._parameter = parameter
+        self.group = None
+
+    @property
+    def parameter(self):
+        return self._parameter
+
+    @property
+    def shared_stage(self):
+        return self._shared_stage
+
+    def __repr__(self):
+        return f"Shared parameter name:({self.parameter.name}), shared stage:({self.shared_stage})"
+
+    def __str__(self):
+        return f"Shared parameter name:({self.parameter.name}), shared stage:({self.shared_stage})"
 
 
 class P2PInfo:
@@ -116,7 +150,7 @@ class PipelineStage(ABC):
         send_info(P2PInfo, optional): Specify Send information. Default ``None``.
     """
     def __init__(self, submodule: HSDPCell, stage_index: int, stage_num: int, group: str,
-                 has_backward=True, recv_info=None, send_info=None):
+                 has_backward=True, recv_info=None, send_info=None, shared_parameters=None):
         super().__init__()
         if not isinstance(submodule, HSDPCell):
             raise TypeError(f"Argument submodule must be of type HSDPCell.")
@@ -138,6 +172,8 @@ class PipelineStage(ABC):
         self.grad_recv_info = {}
         self.bwd_cache = {}
         self._microbatches_num = 0
+        self._shared_parameters = self._check_shared_parameters(shared_parameters)
+        self._sync_shared_parameters()
 
     def clear_cache(self):
         self.fwd_inputs_cache.clear()
@@ -154,6 +190,56 @@ class PipelineStage(ABC):
     def clear_states(self):
         self.args_recv_info.clear()
         self.grad_recv_info.clear()
+
+    def _check_shared_parameters(self, shared_parameters):
+        """check type for shared_parameters"""
+        if shared_parameters is None:
+            return shared_parameters
+
+        if isinstance(shared_parameters, SharedParameterInfo):
+            return [shared_parameters]
+
+        if isinstance(shared_parameters, (list, tuple)):
+            for shared_param in shared_parameters:
+                if not isinstance(shared_param, SharedParameterInfo):
+                    raise TypeError(f"The elements in shared_parameters must be of type SharedParameterInfo.")
+            return shared_parameters
+
+        raise TypeError(f"Argument 'shared_parameters' must be of type None, SharedParameterInfo, \
+                          list/tuple of SharedParameterInfo.")
+
+    def _sync_shared_parameters(self):
+        """sync shared parameters with Broadcast."""
+        if self._shared_parameters is None:
+            return
+        for shared_param_info in self._shared_parameters:
+            param = shared_param_info.parameter
+            shared_stage = shared_param_info.shared_stage
+            group, group_ranks = self._init_shared_group(shared_stage)
+            shared_param_info.group = group
+            broadcast(param, group_ranks[0], group)
+
+    def _init_shared_group(self, shared_stage):
+        """init group of shared parameter."""
+        group_ranks = []
+        for stage in sorted(shared_stage):
+            global_rank = get_global_rank(self.pp_group, stage)
+            group_ranks.append(global_rank)
+        group = "shared_group_" + str(group_ranks)
+        create_group(group, group_ranks)
+        return group, group_ranks
+
+    def sync_shared_parameters_grad(self):
+        """sync shared parameters' grad with AllReduce."""
+        if self._shared_parameters is None or not self._has_backward:
+            return
+        for shared_param_info in self._shared_parameters:
+            param = shared_param_info.parameter
+            if not param.requires_grad:
+                continue
+            grad = param.grad
+            group = shared_param_info.group
+            all_reduce(grad, group=group)
 
     def _check_p2p_info(self, p2p_info):
         """check type for send_info and recv_info"""

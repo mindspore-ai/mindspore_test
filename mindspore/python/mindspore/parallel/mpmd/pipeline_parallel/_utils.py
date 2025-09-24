@@ -86,15 +86,15 @@ class _MicroBatch(nn.Cell):
             for arg_idx, cur_arg in enumerate(args):
                 cur_arg_batch_dim = 0
                 if self.args_batch_dim and self.args_batch_dim[arg_idx] is not None:
-                    cur_arg_batch_dim = self.args_batch_dim[arg_idx]
+                    cur_arg_batch_dim = self.args_batch_dim[arg_idx].batch_dim
                 micro_arg = self.split_inputs_with_custom_shard(cur_arg, cur_arg_batch_dim, micro_idx)
                 micro_args.append(micro_arg)
             args_after_split.append(micro_args)
 
-            for key, cur_kwarg in kwargs:
+            for key, cur_kwarg in kwargs.items():
                 cur_kwarg_batch_dim = 0
                 if self.kwargs_batch_dim is not None:
-                    cur_kwarg_batch_dim = self.kwargs_batch_dim[key]
+                    cur_kwarg_batch_dim = self.kwargs_batch_dim[key].batch_dim
                 micro_kwarg = self.split_inputs(cur_kwarg, cur_kwarg_batch_dim, micro_idx)
                 micro_kwargs[key] = micro_kwarg
             kwargs_after_split.append(micro_kwargs)

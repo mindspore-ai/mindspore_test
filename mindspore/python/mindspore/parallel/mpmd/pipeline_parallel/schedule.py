@@ -164,6 +164,7 @@ class PipelineScheduleSingle(PipelineScheduleBase):
                     _ = self.stage.backward_one_chunk(micro_index)
             if cur_step.type == MetaStepType.BWD_SEND:
                 self.stage.exec_bwd_send_ops(micro_index)
+        self.stage.sync_shared_parameters_grad()
         return out_list, grad_out
 
     def run(self, *args, **kwargs):
