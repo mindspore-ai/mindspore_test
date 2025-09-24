@@ -44,7 +44,7 @@
                 self.param_a = Parameter(Tensor([1], ms.float32), name="name_a")
                 self.param_tuple = (self.param_a, self.param_a)
 
-        - **requires_grad** (bool) - 用于在 :func:`~.Cell.trainable_params()` 中过滤参数。如果是 ``False``，则不会被 :func:`~.Cell.trainable_params()` 返回。默认值： ``True`` 。
+        - **requires_grad** (bool) - 用于在 :func:`mindspore.nn.Cell.trainable_params()` 中过滤参数。如果是 ``False``，则不会被 :func:`mindspore.nn.Cell.trainable_params()` 返回。默认值： ``True`` 。
         - **layerwise_parallel** (bool) - 在数据/混合并行模式下， `layerwise_parallel` 配置为 ``True`` 时，参数广播和梯度聚合时会过滤掉该 `Parameter` 。默认值： ``False`` 。
         - **parallel_optimizer** (bool) - 用于在并行模式下，区分该参数是否进行优化器切分。仅在 :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp` 启用优化器并行时有效。默认值： ``True`` 。
         - **storage_format** (str) - 仅限Ascend，用于指定权重加载到设备的格式。默认不改变格式，可选值为： ``"FRACTAL_NZ"`` 、 ``"NC1HWC0"`` 、 ``"FRACTAL_Z"`` 等。默认值： ``""`` 。
