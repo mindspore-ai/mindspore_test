@@ -23,8 +23,8 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/non_zero.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/unstack_ext_view.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace kernel {
@@ -33,20 +33,19 @@ std::vector<tensor::TensorPtr> NonZeroExtAscendCustomize(const std::shared_ptr<O
                                                          const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "NonZeroExt call start";
   MS_EXCEPTION_IF_NULL(input_tensor);
+  kernel::pyboost::RequireGradGuard require_grad_guard(false);
   auto nonzero_op = CREATE_PYBOOST_OP(NonZero, device::DeviceType::kAscend);
-  auto unstack_op = CREATE_PYBOOST_OP(UnstackExtView, device::DeviceType::kAscend);
   TensorPtr output_tensor = nullptr;
   if (input_tensor->shape().size() == kDim0) {
     std::vector<int64_t> unsqueeze_shape;
     unsqueeze_shape.emplace_back(kIndex1);
-    auto reshape_op = CREATE_PYBOOST_OP(Reshape, device::DeviceType::kAscend);
-    auto expanded_input = reshape_op->Call(input_tensor, unsqueeze_shape);
+    auto expanded_input = reshape(input_tensor, unsqueeze_shape);
     output_tensor = nonzero_op->Call(expanded_input);
   } else {
     output_tensor = nonzero_op->Call(input_tensor);
   }
-  auto output_tuple = unstack_op->Call(output_tensor, 1);
-  op->set_outputs(unstack_op->outputs());
+  auto output_tuple = unstack_ext_view(output_tensor, 1);
+  op->set_outputs(output_tuple);
   MS_LOG(DEBUG) << "NonZeroExt call end";
   return output_tuple;
 }

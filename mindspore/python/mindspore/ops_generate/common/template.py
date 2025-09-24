@@ -258,11 +258,6 @@ PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template/pyboost_ascend_call_template.tpl'))
 
-PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR,
-                 f'./{K.MS_PYBOOST_BASE_PATH}/template/'
-                 'pyboost_view_template.tpl'))
-
 PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/template'
@@ -289,10 +284,6 @@ PYBOOST_GPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_call_template.tpl'))
 
-PYBOOST_GPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR,
-                 f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_view_template.tpl'))
-
 PYBOOST_GPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  './mindspore/ops/kernel/gpu/pyboost/template'
@@ -318,10 +309,6 @@ PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
 PYBOOST_CPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_call_template.tpl'))
-
-PYBOOST_CPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
-    os.path.join(K.WORK_DIR,
-                 f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_view_template.tpl'))
 
 PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(K.WORK_DIR,

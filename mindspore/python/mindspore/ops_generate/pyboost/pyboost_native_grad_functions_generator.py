@@ -45,7 +45,6 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
        PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE (Template): Template for generating the overall gradient functions file.
        native_function_multi_output_template (Template): Template for handling multiple output functions.
        native_function_single_output_template (str): Template for handling single output functions.
-       native_include_header_template (Template): Template for generating include headers for each operator.
        convert_template (Template): Template for converting argument values to native types.
     """
 
@@ -57,8 +56,6 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         self.native_view_function_output_template =\
             "const auto &output_value = runtime::ValueConverter::ToValue(outputs);\n"
         self.native_function_single_output_template = "const auto &output_value = op->outputs()[0];\n"
-        self.native_include_header_template = Template(
-            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n')
         self.convert_template = Template(
             "auto convert_$arg_name = runtime::ValueConverter::${convert_func}(ConvertNode2Value($arg_name));\n")
 
@@ -78,7 +75,6 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
             None
         """
         pyboost_func_str = ''
-        pyboost_func_include_headers_str = ''
         ops_inc_head_set = set()
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
@@ -106,13 +102,10 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
                                                                           output_expr=output_expr,
                                                                           operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
-            pyboost_func_include_headers_str += (
-                self.native_include_header_template.replace(operator_name=op_proto.op_name))
             ops_inc_head_set.add(
                 template.OP_DEF_INC_HEAD_TEMPLATE.replace(prefix_char=op_proto.op_class.name[0].lower()))
         native_grad_func_file = \
-            self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
-                                                                function_body=pyboost_func_str,
+            self.PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE.replace(function_body=pyboost_func_str,
                                                                 ops_inc=list(sorted(ops_inc_head_set)))
         save_file(os.path.join(work_path, K.PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH),
                   "pyboost_native_grad_functions.cc", native_grad_func_file)

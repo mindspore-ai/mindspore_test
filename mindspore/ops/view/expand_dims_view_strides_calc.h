@@ -23,7 +23,6 @@ namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList ExpandDimsViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                              const int64_t &dim);
-OPS_API TensorStorageInfoPtrList ExpandDimsViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

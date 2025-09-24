@@ -26,7 +26,7 @@ void SplitInputsCheck(const int64_t &output_num, const int64_t &axis, const std:
     return;
   }
 
-  if ((!IsDynamic(tensor_shape)) && (tensor_shape[axis] % output_num != 0)) {
+  if (tensor_shape[axis] % output_num != 0) {
     MS_EXCEPTION(ValueError) << "For 'Split', x_shape[" << axis << "] must be divisible by output_num = " << output_num
                              << ", but got " << tensor_shape[axis];
   }
@@ -71,16 +71,4 @@ TensorStorageInfoPtrList SplitBasicTypeCalc(const mindspore::tensor::TensorPtr &
   MS_EXCEPTION_IF_NULL(old_tensor_info);
   return SplitProcess(old_tensor_info, axis, output_num);
 }
-
-TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
-    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
-  }
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  auto axis = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto output_num = GetValue<int64_t>(inputs[kInputIndex2]);
-  return SplitBasicTypeCalc(input_tensor, axis, output_num);
-}
-
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Split, SplitCalc);
 }  // namespace mindspore::ops

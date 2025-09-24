@@ -27,7 +27,6 @@ OPS_API TensorStorageInfoPtrList SelectExtStridesCalc(const std::vector<int64_t>
                                                       const int64_t ori_dim, const int64_t ori_index);
 OPS_API TensorStorageInfoPtrList SelectExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                             const int64_t &dim, const int64_t &index);
-OPS_API TensorStorageInfoPtrList SelectExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

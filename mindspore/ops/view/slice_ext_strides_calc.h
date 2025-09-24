@@ -29,7 +29,6 @@ OPS_API TensorStorageInfoPtrList SliceExtStridesCalc(const std::vector<int64_t> 
 OPS_API TensorStorageInfoPtrList SliceExtBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                        const int64_t &dim, const int64_t &start, const int64_t &end,
                                                        const int64_t &step);
-OPS_API TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

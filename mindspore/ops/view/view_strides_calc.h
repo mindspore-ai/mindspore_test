@@ -27,7 +27,6 @@ OPS_API TensorStorageInfoPtrList ViewStridesCalc(const std::vector<int64_t> &cur
                                                  const std::vector<int64_t> &shape);
 OPS_API TensorStorageInfoPtrList ViewBasicTypeCalc(const tensor::TensorPtr &input_tensor,
                                                    const std::vector<int64_t> &shape);
-OPS_API TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

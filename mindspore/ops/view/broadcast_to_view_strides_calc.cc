@@ -26,10 +26,4 @@ TensorStorageInfoPtrList BroadcastToViewBasicTypeCalc(const mindspore::tensor::T
                                                       const std::vector<int64_t> &shape) {
   return BroadcastToBasicTypeCalc(input_tensor, shape);
 }
-
-TensorStorageInfoPtrList BroadcastToViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  return BroadcastToCalc(prim, inputs);
-}
-
-REG_VIEW_STRIDES_CALC_FUN(BroadcastToView, BroadcastToViewCalc);
 }  // namespace mindspore::ops

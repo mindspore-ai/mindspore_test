@@ -27,14 +27,4 @@ TensorStorageInfoPtrList ExpandAsBasicTypeCalc(const mindspore::tensor::TensorPt
   MS_EXCEPTION_IF_NULL(other);
   return BroadcastToBasicTypeCalc(input, other->shape());
 }
-
-TensorStorageInfoPtrList ExpandAsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto self_tensor = inputs[0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(self_tensor);
-  auto other_tensor = inputs[1]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(other_tensor);
-  return ExpandAsBasicTypeCalc(self_tensor, other_tensor);
-}
-
-REG_VIEW_STRIDES_CALC_FUN(ExpandAs, ExpandAsCalc);
 }  // namespace mindspore::ops

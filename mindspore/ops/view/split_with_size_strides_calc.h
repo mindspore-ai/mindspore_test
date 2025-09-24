@@ -27,8 +27,6 @@ OPS_API TensorStorageInfoPtrList SplitWithSizeStridesCalc(const std::vector<int6
                                                           const std::vector<int64_t> &split_size, const int64_t &dim);
 OPS_API TensorStorageInfoPtrList SplitWithSizeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                             const std::vector<int64_t> &split_size, const int64_t &dim);
-OPS_API TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
 }  // namespace ops
 }  // namespace mindspore
 

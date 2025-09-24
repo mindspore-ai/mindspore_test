@@ -20,7 +20,6 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/view.h"
 
 namespace mindspore {
 namespace kernel {

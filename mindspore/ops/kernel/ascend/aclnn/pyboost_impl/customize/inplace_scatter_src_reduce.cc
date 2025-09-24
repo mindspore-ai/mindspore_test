@@ -20,6 +20,7 @@
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
+#include "mindspore/ops/ops_utils/memory_overlap.h"
 
 namespace mindspore {
 namespace kernel {
@@ -48,7 +49,8 @@ tensor::TensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_ptr<O
       auto device_context = op->device_context();
       // Malloc for input tensors
       PyBoostUtils::MallocOpInputs(device_context, input_tensor, index_tensor, src_tensor);
-
+      // Check Memory Partial Overlap
+      CheckMemory({input_tensor, index_tensor, src_tensor}, {input_tensor});
       LAUNCH_ACLNN(aclnnInplaceScatter, device_context, op->stream_id(), input_tensor, dim_imm, index_tensor,
                    src_tensor, reduce_imm);
       MS_LOG(DEBUG) << "Run device task InplaceScatterSrcReduce end";

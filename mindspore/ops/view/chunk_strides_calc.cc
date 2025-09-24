@@ -78,19 +78,4 @@ TensorStorageInfoPtrList ChunkBasicTypeCalc(const mindspore::tensor::TensorPtr &
   MS_EXCEPTION_IF_NULL(input_tensor);
   return ChunkStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), chunks, dim);
 }
-
-TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
-    MS_LOG(EXCEPTION) << "For '" << prim->name()
-                      << ", first inputs must be a Tensor, but got: " << inputs[kInputIndex0]->ToString();
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto chunks = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  return ChunkBasicTypeCalc(input_tensor, chunks, dim);
-}
-
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Chunk, ChunkCalc);
 }  // namespace mindspore::ops

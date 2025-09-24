@@ -25,7 +25,7 @@ import common.gen_utils as gen_utils
 import common.template as template
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-from aclnn.gen_aclnn_implement import gen_aclnn_kernel
+from aclnn.gen_aclnn_implement import gen_aclnn_kernel, skip_aclnn_list
 from resources.resource_list import ResourceType
 
 
@@ -61,6 +61,10 @@ class AclnnKernelRegisterAutoCcGenerator(BaseGenerator):
         aclnn_reg_code = []
         for op_proto in op_protos:
             if not op_proto.op_dispatch or not op_proto.op_dispatch.enable:
+                continue
+            if op_proto.op_name in skip_aclnn_list:
+                logging.warning(
+                    "Operator {%s} has no aclnn interface, no aclnn kernel will be generated.", op_proto.op_name)
                 continue
             # KernelMod is provided by yaml, don't auto generate it.
             if op_proto.op_dispatch.ascend != 'default':
