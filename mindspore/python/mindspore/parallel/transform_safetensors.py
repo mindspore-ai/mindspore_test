@@ -698,6 +698,8 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             else:
                 if transform_param_dict:
                     if output_format == "safetensors":
+                        if meta_data and "remove_redundancy" in meta_data:
+                            meta_data["remove_redundancy"] = "False"
                         _save_file_atomically(transform_param_dict, save_file_name, metadata=meta_data)
                     else:
                         transform_param_dict = _load_and_transform(transform_param_dict, None, None,
