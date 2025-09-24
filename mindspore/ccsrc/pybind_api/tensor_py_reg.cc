@@ -281,6 +281,7 @@ extern int TensorPython_set_dtypeObj(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
   TypePtr dtype_object = py::cast<TypePtr>(value);
+  runtime::Pipeline::Get().WaitForward();
   obj->value.SetDtype(dtype_object);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
@@ -841,6 +842,7 @@ extern PyObject *TensorPython_set_dtype(PyObject *self, PyObject *args) {
   }
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(py_type));
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
+  runtime::Pipeline::Get().WaitForward();
   TypePtr result = tensor->value.SetDtype(type_ptr);
 
   return py::cast(result).release().ptr();
@@ -1050,6 +1052,7 @@ extern PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   TypePtr type_ptr = py::cast<TypePtr>(py::handle(type_ptr_obj));
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   auto tensorTmp = tensor->value.GetTensor();
+  runtime::Pipeline::Get().WaitForward();
   TensorPybind::SetDeviceAddress(tensorTmp, addr, shape, type_ptr);
 
   Py_RETURN_NONE;

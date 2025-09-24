@@ -1,0 +1,53 @@
+# Copyright 2024 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+import numpy as np
+import mindspore as ms
+from tests.mark_utils import arg_mark
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_multi_stream():
+    """
+    Feature: PyNative multi-stream
+    Description: Test PyNative multi-stream with memory reuse.
+    Expectation: run success
+    """
+
+    x_np = np.ones((1024, 1024)).astype(np.float32)
+    x = ms.Tensor.from_numpy(x_np)
+    s1 = ms.runtime.Stream()
+    for _ in range(100):
+        with ms.runtime.StreamCtx(s1):
+            y = x + 1
+            z = ms.mint.matmul(y, y)
+            event = s1.record_event()
+
+            # Free tensor memory
+            del y
+
+        # Execute on default stream.
+        # Memory reuse is prevented as different streams utilize separate memory pools.
+        empty = ms.mint.empty_like(x)
+        zeros = ms.mint.zeros_like(x)
+        empty.copy_(zeros)
+
+        cur_stream = ms.runtime.current_stream()
+        cur_stream.wait_event(event)
+
+        np.allclose(z.asnumpy(), np.matmul(x_np + 1, x_np + 1))

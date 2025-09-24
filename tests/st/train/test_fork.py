@@ -210,3 +210,43 @@ def test_fork_with_pynative_pipeline():
     p.start()
     assert q.get().asnumpy() == ops.log(ms.Tensor(2.0)).asnumpy()
     p.join()
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_fork_with_pynative_pipeline_unfinished():
+    """
+    Feature: Fork test
+    Description: Test multiprocessing with PyNative pipeline.
+    Expectation: No exception
+    """
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+
+    input_np = np.ones((1024,)).astype(np.float32)
+    addn = ops.AddN()
+
+    def my_child_process(q):
+        out = None
+        for _ in range(1000):
+            x = ms.Tensor(input_np)
+            out = ops.sin(x)
+            out = addn((out, x))
+
+        q.put(out)
+
+    mp.set_start_method("fork", force=True)
+
+    for _ in range(10):
+        x = ms.Tensor.from_numpy(input_np)
+        out = ops.sin(x)
+        addn((out, x))
+
+    q = mp.Queue()
+    p = mp.Process(target=my_child_process, args=(q,))
+    p.start()
+    out = q.get()
+    assert out.device == "CPU"
+    assert np.allclose(out.asnumpy(), np.sin(input_np) + input_np)
+    p.join()
