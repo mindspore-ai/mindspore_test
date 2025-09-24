@@ -1375,9 +1375,12 @@ class Cell(Cell_):
                                  f"and {len(args)}")
             # TODO: 支持kwargs
             new_args = []
-            for i, _ in enumerate(args):
+            for i, arg in enumerate(args):
+                if not isinstance(arg, Tensor) or arg is None:
+                    new_args.append(arg)
+                    continue
                 to_layout = self.in_layout[i]
-                new_args.append(args[i].redistribute(to_layout))
+                new_args.append(arg.redistribute(to_layout))
             args = new_args
         return args
 
@@ -1390,9 +1393,12 @@ class Cell(Cell_):
                 raise ValueError(f"The size of outputs and out_layout must be equal, but got {len(outputs)} and "
                                  f"{len(self.out_layout)}")
             new_outputs = []
-            for i, _ in enumerate(outputs):
+            for i, arg in enumerate(outputs):
+                if not isinstance(arg, Tensor) or arg is None:
+                    new_outputs.append(arg)
+                    continue
                 to_layout = self.out_layout[i]
-                new_outputs.append(outputs[i].redistribute(to_layout))
+                new_outputs.append(arg.redistribute(to_layout))
             return tuple(new_outputs)
         if len(self.out_layout) != 1:
             raise ValueError(f"The size of outputs and out_layout must be equal, but got 1 and "
