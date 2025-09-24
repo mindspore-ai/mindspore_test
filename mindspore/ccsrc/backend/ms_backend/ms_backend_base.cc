@@ -1855,8 +1855,6 @@ std::vector<GraphFragmentPtr> MSBackendBase::Split(const FuncGraphPtr &func_grap
   MS_EXCEPTION_IF_NULL(ms_context);
   auto backend_name = ms_context->backend_policy();
   auto cut_list = compile::GetMSNonlinearOps();
-  // static auto split_prim = std::make_shared<Primitive>("SplitOp");
-  // cut_list.emplace_back(split_prim);
   auto graph_partition = std::make_shared<GraphPartition>(cut_list, backend_name);
   MS_EXCEPTION_IF_NULL(graph_partition);
   const auto &segments = graph_partition->Partition(root_graph);
@@ -1914,8 +1912,8 @@ std::vector<GraphFragmentPtr> MSBackendBase::Split(const FuncGraphPtr &func_grap
     auto runner = [this, segment, inputs, outputs](GraphFragment *frag, const VectorRef &input_list,
                                                    VectorRef *output_list) {
       MS_EXCEPTION_IF_NULL(frag);
-      size_t input_size =
-        std::count_if(inputs.begin(), inputs.end(), [](const auto &node) { return !HasAbstractMonad(node); });
+      size_t input_size = IntToSize(
+        std::count_if(inputs.begin(), inputs.end(), [](const auto &node) { return !HasAbstractMonad(node); }));
       if (input_list.size() != input_size) {
         MS_LOG(EXCEPTION) << "Invalid input size:" << input_list.size() << " need:" << input_size
                           << " for fragment id:" << frag->id_;
