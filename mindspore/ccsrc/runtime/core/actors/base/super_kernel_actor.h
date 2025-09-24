@@ -300,6 +300,7 @@ class SuperKernelActor : public DebugAwareActor {
   HashMap<KernelRunner *, std::vector<DeviceEventPtr>> serial_launch_kernels_to_events_;
 
   bool enable_capture_graph_{false};
+  bool in_increment_{false};
   static bool already_allocate_trace_memory_;
 
   static size_t parallel_dispatch_num_;
