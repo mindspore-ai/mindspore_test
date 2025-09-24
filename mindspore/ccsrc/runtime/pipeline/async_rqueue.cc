@@ -98,7 +98,6 @@ void AsyncRQueue::WorkerLoop() {
   // cppcheck-suppress unreadVariable
   SignalGuard sig([](int, siginfo_t *, void *) {
     int this_pid = getpid();
-    MS_LOG(WARNING) << "Process " << this_pid << " receive KeyboardInterrupt signal.";
     (void)kill(this_pid, SIGTERM);
   });
 #endif
