@@ -42,7 +42,6 @@ def run_lenet_with_mem_tracker():
     set_device()
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     tracker_path = os.path.join(cur_dir, "test_replay_mem_tracker")
-    os.makedirs(tracker_path)
     os.environ['MS_ALLOC_CONF'] = "memory_tracker_path:%s,enable_vmm:false" % tracker_path
     lenet = LeNet()
     input_data = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)

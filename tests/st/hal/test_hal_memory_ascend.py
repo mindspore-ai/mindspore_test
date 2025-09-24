@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import re
+
 from mindspore import Tensor
 import mindspore.context as context
 import mindspore as ms
@@ -105,14 +107,28 @@ def test_memory_replay():
     Expectation: success.
     """
     mem_tracker_path = "test_replay_mem_tracker"
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    tracker_path = os.path.join(cur_dir, mem_tracker_path)
     try:
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        tracker_path = os.path.join(cur_dir, mem_tracker_path)
+        model_log = tracker_path + "/model.log"
+        if os.path.isdir(tracker_path):
+            shutil.rmtree(tracker_path)
+        os.makedirs(tracker_path)
         os.environ['MS_ALLOC_CONF'] = "enable_vmm:false"
-        cmd = "python hal_dryrun_case.py"
+        os.environ['MS_DEV_RUNTIME_CONF'] = "memory_statistics:True"
+        cmd = f"python hal_dryrun_case.py &> {model_log}"
         ret = os.system(cmd)
         assert ret == 0
-        ms.runtime.memory_replay(os.path.join(tracker_path, "memory_block.csv"))
+        model_memory_usage = extract_memory_usage(model_log)
+        assert model_memory_usage is not None
+
+        replay_log = tracker_path + "/replay.log"
+        os.system('python -c "import mindspore as ms;'
+                  f'ms.runtime.memory_replay(\'{os.path.join(tracker_path, "memory_block.csv")}\')" &> {replay_log}')
+        assert ret == 0
+        replay_memory_usage = extract_memory_usage(replay_log)
+        assert replay_memory_usage is not None
+        assert model_memory_usage == replay_memory_usage
     except Exception as e:
         remove_dir = ["kernel_meta", "offload", tracker_path]
         for d in remove_dir:
@@ -120,7 +136,15 @@ def test_memory_replay():
                 shutil.rmtree(d)
         raise e
 
-
+def extract_memory_usage(filename):
+    pattern = r'Actual peak memory usage \(with fragments\): (\d+)M'
+    with open(filename, 'r') as file:
+        for line in file:
+            match = re.search(pattern, line)
+            if match:
+                memory_usage = int(match.group(1))
+                return memory_usage
+        return None
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_huge_page_reserve_vmm():
     """
