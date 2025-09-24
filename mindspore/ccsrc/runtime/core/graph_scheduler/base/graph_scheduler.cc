@@ -430,11 +430,12 @@ void CheckInferPerformanceFeature(const GraphCompilerInfo &graph_compiler_info, 
     return;
   }
 
+  bool is_increment_graph = (graph_compiler_info.graph_phase_.find("increment") != std::string::npos);
   if (!EnableKbkSubGraphExecute()) {
     MS_LOG(WARNING) << "Executing the inference network without enabling KBK subgraph mode may not achieve optimal "
                        "performance, please check whether exist PyExecute kernel in graphs: "
                     << graph_compiler_info.name_;
-  } else {
+  } else if (is_increment_graph) {
     MS_EXCEPTION_IF_NULL(actor_set);
     for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
       MS_EXCEPTION_IF_NULL(super_kernel_actor);
@@ -456,7 +457,6 @@ void CheckInferPerformanceFeature(const GraphCompilerInfo &graph_compiler_info, 
     }
   }
 
-  bool is_increment_graph = (graph_compiler_info.graph_phase_.find("increment") != std::string::npos);
   if (!is_increment_graph) {
     return;
   }

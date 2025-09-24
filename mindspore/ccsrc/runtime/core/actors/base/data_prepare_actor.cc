@@ -438,25 +438,27 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
                << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
                << ", graph phase: " << graph_compiler_info_->graph_phase_;
   if (has_dynamic_shape_) {
-    ActorDispatcher::set_enable_static_shape(!isDyn);
     const auto &phase = graph_compiler_info_->graph_phase_;
     bool is_increment_graph = (phase.find("increment") != std::string::npos);
     if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
       GraphCaptureManager::GetInstance().SetIncrementGraph(is_increment_graph);
     }
-    if (enable_trace_memory_ && is_increment_graph) {
-      if (has_continuous_memory()) {
-        MS_LOG(EXCEPTION)
-          << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-      }
-      if (!ActorDispatcher::enable_static_shape()) {
-        ActorDispatcher::set_enable_trace_dynamic_memory(true);
-      } else {
-        ActorDispatcher::set_enable_use_trace_memory(true);
-        ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
-        if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
-          MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
-                       << ", graph phase: " << graph_compiler_info_->graph_phase_;
+    if (is_increment_graph) {
+      ActorDispatcher::set_enable_static_shape(!isDyn);
+      if (enable_trace_memory_) {
+        if (has_continuous_memory()) {
+          MS_LOG(EXCEPTION)
+            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+        }
+        if (!ActorDispatcher::enable_static_shape()) {
+          ActorDispatcher::set_enable_trace_dynamic_memory(true);
+        } else {
+          ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+          }
         }
       }
     }
@@ -822,23 +824,24 @@ void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> 
                  << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
                  << ", graph phase: " << graph_compiler_info_->graph_phase_;
     if (has_dynamic_shape_) {
-      ActorDispatcher::set_enable_static_shape(!isDyn);
-
       const auto &phase = graph_compiler_info_->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (enable_trace_memory_ && is_increment_graph) {
-        if (has_continuous_memory()) {
-          MS_LOG(EXCEPTION)
-            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-        }
-        if (!ActorDispatcher::enable_static_shape()) {
-          ActorDispatcher::set_enable_trace_dynamic_memory(true);
-        } else {
-          ActorDispatcher::set_enable_use_trace_memory(true);
-          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
-          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
-            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
-                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+      if (is_increment_graph) {
+        ActorDispatcher::set_enable_static_shape(!isDyn);
+        if (enable_trace_memory_) {
+          if (has_continuous_memory()) {
+            MS_LOG(EXCEPTION)
+              << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+          }
+          if (!ActorDispatcher::enable_static_shape()) {
+            ActorDispatcher::set_enable_trace_dynamic_memory(true);
+          } else {
+            ActorDispatcher::set_enable_use_trace_memory(true);
+            ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+            if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+              MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                           << ", graph phase: " << graph_compiler_info_->graph_phase_;
+            }
           }
         }
       }
