@@ -24,16 +24,27 @@ from tests.mark_utils import arg_mark
 def test_msrun():
     """
     Feature: 'msrun' launch utility.
-    Description: Launch distributed training job with dynamic cluster using msrun.
-    Expectation: All workers are successfully spawned and running training.
+    Description: 1. Launch distributed training job with dynamic cluster using msrun.
+                 2. Customize the IP and port on the host side, and enable the NSLB-DP feature.
+    Expectation: 1. All workers are successfully spawned and running training.
+                 2. The derived JobID and WorldRankID are as expected.
     """
-    ms.set_context(jit_level='O0')
-    return_code = os.system(
-        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
-        "--master_port=10969 --join=True "\
-        "test_msrun.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
-    )
+    master_ip = "127.0.0.1"
+    master_port = 10969
+    env_cmd = 'export ASCEND_SLOG_PRINT_TO_STDOUT=1'
+    msrun_cmd = f"msrun --worker_num=4 --local_worker_num=4 --master_addr={master_ip} --master_port={master_port} "\
+                "--join=True --log_dir=msrun_log test_msrun.py"
+    arg_cmd = "--device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
+    return_code = os.system(f"{env_cmd}; {msrun_cmd} {arg_cmd}")
     assert return_code == 0
+    # JobID derived from 127.0.0.1:10969 is 47113626976257.
+    expected_jobid = "47113626976257"
+    actual_jobid = subprocess.getoutput(r"grep -oP 'GetConfigJobID = \K\d+' ./msrun_log/worker_3.log")
+    assert actual_jobid == expected_jobid
+    # WorldRankID for worker_3 is 3.
+    expected_world_rank_id = "3"
+    actual_world_rank_id = subprocess.getoutput(r"grep -oP 'GetConfigWorldRankID = \K\d+' ./msrun_log/worker_3.log")
+    assert actual_world_rank_id == expected_world_rank_id
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
