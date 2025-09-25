@@ -618,6 +618,8 @@ class Parameter(Tensor_):
             tensor = initializer(init, shape=shape, dtype=dtype)
             x.set_data(tensor)
             x.init = tensor.init
+            if hasattr(self, '_layout'):
+                x.local_to_global(self.layout)
             x.local_to_global(self.layout)
         device = self._get_user_data("parameter_device")
         if device is not None:

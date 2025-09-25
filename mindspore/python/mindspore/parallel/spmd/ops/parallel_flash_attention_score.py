@@ -157,14 +157,13 @@ class ParallelFlashAttention(nn.Cell):
         # TODO: actual_seq_qlen/kv_len is tuple type, cannot be described by dtensor
         if self._in_layouts is None or self._out_layouts is None:
             raise ValueError(f"Please call the shard function first.")
-        if self._wrap_func is None:
-            _, head_num_split_num, _ = self._infer_split_dim_by_in_strategy()
-            input_args = (query, key, value, self._head_num // head_num_split_num, self._real_shift, self._drop_mask,
-                          self._padding_mask, attn_mask, self._prefix, self._actual_seq_qlen, self._actual_seq_kvlen,
-                          self._keep_prob, self._scalar_value, self._pre_tokens, self._next_tokens, self._inner_precise,
-                          self._input_layout, self._sparse_mode)
-            in_layout_with_non_tensor = self._insert_none_for_non_tensor_arg(self._input_layout, input_args)
-            self._wrap_func = custom_shard(flash_attention_score, self._out_layouts, in_layout_with_non_tensor)
+        _, head_num_split_num, _ = self._infer_split_dim_by_in_strategy()
+        input_args = (query, key, value, self._head_num // head_num_split_num, self._real_shift, self._drop_mask,
+                      self._padding_mask, attn_mask, self._prefix, self._actual_seq_qlen, self._actual_seq_kvlen,
+                      self._keep_prob, self._scalar_value, self._pre_tokens, self._next_tokens, self._inner_precise,
+                      self._input_layout, self._sparse_mode)
+        in_layout_with_non_tensor = self._insert_none_for_non_tensor_arg(self._input_layout, input_args)
+        self._wrap_func = custom_shard(flash_attention_score, self._out_layouts, in_layout_with_non_tensor)
         return self._wrap_func(*input_args)
 
     def shard(self, in_strategy, out_strategy):
