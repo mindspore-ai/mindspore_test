@@ -2972,7 +2972,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
   if (ms_context->CanDump(kIntroductory)) {
     for (const auto &iter : graphs_) {
       auto dump_name = std::string("loaded_") + iter.second->ToString() + ".ir";
-      DumpIR(dump_name, iter.second);
+      DumpIR(dump_name, iter.second, true);
     }
   }
 #endif
@@ -3098,7 +3098,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
   if (ms_context->CanDump(kIntroductory)) {
     for (const auto &iter : graphs_) {
       auto dump_name = std::string("loaded_") + iter.second->ToString() + ".ir";
-      DumpIR(dump_name, iter.second);
+      DumpIR(dump_name, iter.second, true);
     }
   }
 #endif

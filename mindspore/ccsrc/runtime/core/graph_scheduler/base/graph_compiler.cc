@@ -598,7 +598,7 @@ void UpdateAbstractForAkgParameter(const KernelGraphPtr &graph) {
           continue;
         }
         const auto &valuenode = kernel->input(i + 1)->cast<ValueNodePtr>();
-        if (valuenode == nullptr || valuenode->value() == nullptr || !valuenode->value()->isa<BoolImm>()) {
+        if (valuenode == nullptr || valuenode->value() == nullptr || !valuenode->value()->isa<Scalar>()) {
           MS_LOG(DEBUG) << "Invalid value node index:" << i;
           continue;
         }
