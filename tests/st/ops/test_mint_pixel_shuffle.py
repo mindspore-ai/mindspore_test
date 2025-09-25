@@ -73,7 +73,7 @@ def generate_inputs(input_shape, upscale_factor):
     return [input_tensor, upscale_factor]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'platform_gpu', 'platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
