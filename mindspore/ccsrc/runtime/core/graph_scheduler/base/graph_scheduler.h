@@ -231,7 +231,7 @@ class BACKEND_EXPORT GraphScheduler {
                                        const DeviceContext *device_context) const;
   // When the parameters of root graph are not in backend kernel graphs, need persist device tensor by this function.
   void PersistDeviceTensorForRootGraphControlNode(const GraphCompilerInfo &graph_compiler_info) const;
-
+  void PersistDeviceTensorForGraphOutput(const KernelGraphPtr &graph, device::DeviceType device_type) const;
   // Display the actor information of corresponding kernel graph.
   void DumpActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void DumpDeviceTensorStore(const GraphCompilerInfo &graph_compiler_info, std::ofstream &ofs) const;

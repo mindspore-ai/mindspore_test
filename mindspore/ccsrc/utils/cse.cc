@@ -196,7 +196,8 @@ void CSE::DoReplace(const FuncGraphManagerPtr &manager) {
       continue;
     }
     // We don't merge primitive cnodes with random effect.
-    MS_LOG(DEBUG) << "CSE replace, node:" << node->DebugString() << ", main:" << main->DebugString();
+    MS_LOG(DEBUG) << "CSE replace, node:" << node->DebugString() << " node addr:" << node.get()
+                  << ", main:" << main->DebugString() << " main addr:" << main.get();
     (void)manager->Replace(node, main);
   }
 }
