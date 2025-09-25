@@ -625,7 +625,7 @@ def check_inplace_ref_key_unchanged(save_graphs_path):
             shutil.rmtree(save_graphs_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_inplace_ref_key_unchanged_1():
     """
     Feature: Inplace tensor ref key unchanged.
@@ -650,7 +650,7 @@ def test_inplace_ref_key_unchanged_1():
     check_inplace_ref_key_unchanged(save_graphs_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_inplace_ref_key_unchanged_2():
     """
     Feature: Inplace tensor ref key unchanged.
@@ -673,7 +673,7 @@ def test_inplace_ref_key_unchanged_2():
     check_inplace_ref_key_unchanged(save_graphs_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_independent_func_with_inplace_op():
     """
     Feature: Independent func with inplace op

@@ -104,7 +104,7 @@ def test_jet_single_input_single_output_graph_mode(mode):
     assert np.allclose(out_primals.asnumpy(), expected_primals, atol=1.e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_jet_single_input_single_output_with_scalar_graph_mode(mode):
@@ -185,7 +185,7 @@ def test_derivative_multiple_input_single_output_graph_mode(mode):
     assert np.allclose(out_series.asnumpy(), expected_series, atol=1.e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_jet_construct_graph_mode(mode):

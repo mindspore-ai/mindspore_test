@@ -22,7 +22,7 @@ from tests.st.compiler.utils import match_array
 context.set_context(jit_config={"jit_level": "O0"})
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
 def test_tensor_select_ext_write():
     """
     Feature: Support tensor inplace.
@@ -48,7 +48,7 @@ def test_tensor_select_ext_write():
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
 def test_tensor_select_ext_read():
     """
     Feature: Support tensor inplace.

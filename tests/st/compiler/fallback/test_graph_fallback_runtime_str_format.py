@@ -59,7 +59,7 @@ def test_str_format_mutiple_input():
     assert foo(x) == "{} is {}".format("string", x + x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_fallback_str_format_input():
     """

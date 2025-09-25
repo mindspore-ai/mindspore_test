@@ -207,7 +207,7 @@ def read_file(save_path):
     return content
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_split_tensor_view_op():
     """
     Feature: View feature.
