@@ -85,6 +85,12 @@ class PYBOOST_API Tensor {
   std::string format() const;
 
   /**
+   * @brief [API] Set the format for the Tensor.
+   * @throws If the device address is nullptr, an exception is thrown.
+   */
+  void set_format(const std::string &format) const;
+
+  /**
    * @brief [API] Retrieves the shape of the Tensor.
    * @return A reference to the shape vector of the Tensor.
    * @throws If the Tensor is not defined, an exception is thrown.

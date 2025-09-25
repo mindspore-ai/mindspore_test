@@ -80,6 +80,16 @@ std::string Tensor::format() const {
   return device_address->format();
 }
 
+void Tensor::set_format(const std::string &format) const {
+  auto t = tensor();
+  MS_EXCEPTION_IF_NULL(t);
+  MS_EXCEPTION_IF_CHECK_FAIL(t->device_address(), "The device address of the Tensor is nullptr");
+  auto device_sync = t->device_address();
+  auto device_address = std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
+  device_address->set_format(format);
+}
+
 const ShapeVector &Tensor::shape() const {
   MS_EXCEPTION_IF_NULL(tensor());
   return tensor()->shape();
