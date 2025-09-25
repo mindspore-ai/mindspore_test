@@ -2405,7 +2405,81 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   MS_LOG(DEBUG) << "Get real node:" << node->DebugString();
   return node;
 }
-bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) { return false; }
+bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) {
+  // If the stride is negative, even the shape is the same for input and output, the value can be different.
+  // So in this case, we can't skip this operator.
+  auto has_neg_stride = [cnode](size_t strides_index) -> bool {
+    if (!cnode->input(strides_index)->isa<ValueNode>()) {
+      return true;
+    }
+    const auto strides_value_node = cnode->input(strides_index)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(strides_value_node);
+    auto value = strides_value_node->value();
+    MS_EXCEPTION_IF_NULL(value);
+
+    if (value->isa<ValueTuple>()) {
+      const auto &strides = GetValue<std::vector<int64_t>>(value);
+      return std::any_of(strides.begin(), strides.end(), [](int64_t stride) { return stride < 0; });
+    }
+    if (value->isa<tensor::Tensor>()) {
+      const auto &strides = mindspore::TensorValueToVector<int64_t>(value->cast<tensor::TensorPtr>());
+      return std::any_of(strides.begin(), strides.end(), [](int64_t stride) { return stride < 0; });
+    }
+    MS_LOG(EXCEPTION) << "Unsupported data type for StridedSlice value node.";
+  };
+
+  if (IsDynamicShape(cnode)) {
+    return false;
+  }
+  const ShapeVector inp_shape = GetPrevNodeOutputInferShape(cnode, 0);
+  const ShapeVector out_shape = GetOutputInferShape(cnode, 0);
+  if (inp_shape.size() != out_shape.size()) {
+    return false;
+  }
+  for (size_t idx = 0; idx < inp_shape.size(); ++idx) {
+    if (inp_shape[idx] != out_shape[idx]) {
+      return false;
+    }
+  }
+
+  constexpr size_t NO_ATTR_INP_NUM_AT_LEAST = 10;
+  constexpr size_t ATTR_NUM = 5;
+  ShapeVector attrs_val;
+  const auto inp_num = cnode->size();
+  // If the following masks are all inputs, the forward input number is 10 and the backward input number is 11.
+  if (inp_num >= NO_ATTR_INP_NUM_AT_LEAST) {
+    // when all masks are inputs, strides is the input before begin_mask
+    const auto strides_index = inp_num - kIndex6;
+    if (has_neg_stride(strides_index)) {
+      return false;
+    }
+    for (size_t mask_idx = inp_num - kIndex5; mask_idx < inp_num; ++mask_idx) {
+      if (cnode->input(mask_idx)->isa<ValueNode>()) {
+        auto value_node = cnode->input(mask_idx)->cast<ValueNodePtr>();
+        MS_EXCEPTION_IF_NULL(value_node);
+        attrs_val.emplace_back(GetValue<int64_t>(value_node->value()));
+      }
+    }
+  } else if (HasNodeAttr(kAttrBeginMask, cnode) && HasNodeAttr(kAttrEndMask, cnode) &&
+             HasNodeAttr(kAttrEllipsisMask, cnode) && HasNodeAttr(kAttrNewAxisMask, cnode) &&
+             HasNodeAttr(kAttrShrinkAxisMask, cnode)) {
+    // when all masks are attributes, strides is the last input in the cnode
+    const auto strides_index = inp_num - kIndex1;
+    if (has_neg_stride(strides_index)) {
+      return false;
+    }
+    auto begin_mask = GetNodeAttr<int64_t>(cnode, kAttrBeginMask);
+    auto end_mask = GetNodeAttr<int64_t>(cnode, kAttrEndMask);
+    auto ellipsis_mask = GetNodeAttr<int64_t>(cnode, kAttrEllipsisMask);
+    auto new_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrNewAxisMask);
+    auto shrink_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrShrinkAxisMask);
+    attrs_val = {begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
+  }
+  if (attrs_val.size() != ATTR_NUM) {
+    return false;
+  }
+  return std::all_of(attrs_val.begin(), attrs_val.end(), [](int64_t element) { return element == 0; });
+}
 
 namespace {
 // Read view tag from op yamls.
