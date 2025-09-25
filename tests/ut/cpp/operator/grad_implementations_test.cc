@@ -36,10 +36,10 @@ class TestGradImplementations : public UT::Common {
 };
 
 TEST_F(TestGradImplementations, DISABLED_TestGetAugmentedGraph) {
-  FuncGraphPtr fg = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr, false);
+  FuncGraphPtr fg = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr);
   ASSERT_TRUE(fg != nullptr);
 
-  auto fg1 = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr, false);
+  auto fg1 = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr);
 
   FuncGraphPairMapEquiv equiv_graph;
   NodeMapEquiv equiv_node;
