@@ -49,7 +49,7 @@ struct CaptureKernelInfo {
 using CaptureKernelInfoPtr = std::shared_ptr<CaptureKernelInfo>;
 using CaptureKernelInfoList = std::vector<CaptureKernelInfoPtr>;
 
-class BACKEND_EXPORT GraphCaptureManager {
+class GraphCaptureManager {
  public:
   static GraphCaptureManager &GetInstance() noexcept;
 

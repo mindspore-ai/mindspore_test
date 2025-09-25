@@ -1020,6 +1020,10 @@ bool MSBackendBase::CheckBackendInfoValid(nlohmann::json *data_json) {
   MS_LOG(INFO) << "Start check backend compile cache valid for funcgraph:" << func_graph->ToString();
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
   auto json_path = cache_path + kControlNodeJsonSuffix;
+  if (json_path.empty() || cache_path.empty()) {
+    MS_LOG(ERROR) << "Invalid json path, please check compile cache path.";
+    return false;
+  }
   MS_LOG(DEBUG) << "Json path: " << json_path;
   std::ifstream json_stream(json_path);
   if (!json_stream.is_open()) {
