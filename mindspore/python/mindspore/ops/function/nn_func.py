@@ -5232,7 +5232,7 @@ def margin_ranking_loss(input1, input2, target, margin=0.0, reduction='mean'):
     _check_is_tensor('target', target, "margin_ranking_loss")
     check_input_dtype('input1', input1, 'input2', input2, 'margin_ranking_loss')
     check_input_dtype('target', target, 'input1', input1, 'margin_ranking_loss')
-    x = maximum_(-target * (input1 - input2) + margin, 0)
+    x = ops.clamp(-target * (input1 - input2) + margin, min=0)
     return _get_loss(x, reduction, "margin_ranking_loss")
 
 
