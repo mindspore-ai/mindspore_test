@@ -95,7 +95,7 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 20
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
-from mindspore.ops.auto_generate.gen_ops_prim import conv1d_ext_op, conv1d_padding_op, speed_fusion_attention_op
+from mindspore.ops.auto_generate.gen_ops_prim import speed_fusion_attention_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
