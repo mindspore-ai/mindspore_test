@@ -288,8 +288,8 @@ def test_ops_with_sequence_of_any_input_2():
     assert ret == Tensor([1])
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_sequence_compare_with_operation():
     """
     Feature: Enable sequence operations with nested or irregular inputs.

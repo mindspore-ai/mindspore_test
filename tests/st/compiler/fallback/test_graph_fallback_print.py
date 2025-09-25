@@ -498,7 +498,7 @@ def test_print_joinedstr():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_print_param_value():
     """
     Feature: graph print parameter value.

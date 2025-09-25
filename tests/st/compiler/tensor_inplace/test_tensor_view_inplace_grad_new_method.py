@@ -130,7 +130,7 @@ def test_tensor_view_grad1():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad():
     """
     Feature: view inplace operation in grad.
@@ -153,8 +153,8 @@ def test_tensor_view_inplace_grad():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_view_and_inplace_grad_change_same_area1():
     """
     Feature: view inplace operation in grad.
@@ -181,8 +181,8 @@ def test_view_and_inplace_grad_change_same_area1():
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_view_and_inplace_grad_change_same_area2():
     """
     Feature: view inplace operation in grad.
@@ -207,8 +207,8 @@ def test_view_and_inplace_grad_change_same_area2():
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_view_and_inplace_grad_change_same_area3():
     """
     Feature: view inplace operation in grad.
@@ -233,7 +233,7 @@ def test_view_and_inplace_grad_change_same_area3():
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check1():
     """
     Feature: view inplace operation in grad.
@@ -258,7 +258,7 @@ def test_tensor_view_inplace_grad_check1():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check2():
     """
     Feature: view inplace operation in grad.
@@ -282,7 +282,7 @@ def test_tensor_view_inplace_grad_check2():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check3():
     """
     Feature: view inplace operation in grad.
@@ -309,7 +309,7 @@ def test_tensor_view_inplace_grad_check3():
     assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check5():
     """
     Feature: view inplace operation in grad.
@@ -370,7 +370,7 @@ def test_tensor_view_inplace_grad_check6():
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check7():
     """
     Feature: view inplace operation in grad.
@@ -397,7 +397,7 @@ def test_tensor_view_inplace_grad_check7():
     assert np.allclose(out_expect[1].asnumpy(), out_jit[1].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_check8():
     """
     Feature: view inplace operation in grad.
@@ -523,7 +523,7 @@ def test_setitem_simple_case3():
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_inplace_gradient():
     """
     Feature: Support tensor inplace view gradient.
@@ -595,7 +595,7 @@ def test_tensor_index_grad():
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_view_inplace_grad_with_tuple_output():
     """
     Feature: view inplace operation in grad.
@@ -879,7 +879,7 @@ def test_view_and_inplace_with_inplace_func_call():
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_inplace_grad_with_return_same_out():
     """
     Feature: inplace operation in grad.
