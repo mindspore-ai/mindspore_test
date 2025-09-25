@@ -21,6 +21,7 @@ from mindspore import Tensor, nn, context, Parameter, ParameterTuple, mint
 from mindspore import dtype as mstype
 from mindspore import ops
 from mindspore.ops import operations as P
+from mindspore.ops.functional import grad
 from mindspore.ops.auto_generate.gen_ops_def import inplace_add_ext_op
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
@@ -291,9 +292,9 @@ def test_tensor_inplace_scatter_grad():
     slf = Tensor([[2] * 4] * 3, dtype=ms.float32)
     value = np.random.rand() * 10
     index = Tensor(np.array([list(range(3)) + [2]] * 3, dtype=np.int64))  # slf[:, 3] is reserved
-    grad = Tensor(np.random.rand(3, 4), dtype=ms.float32)
-    grad_np = grad.asnumpy().copy().astype(np.float32)
-    grads = ScatterGrad(scatter_val_with_grad, grad)(slf, 1, index, value, 'none')
+    grad_value = Tensor(np.random.rand(3, 4), dtype=ms.float32)
+    grad_np = grad_value.asnumpy().copy().astype(np.float32)
+    grads = ScatterGrad(scatter_val_with_grad, grad_value)(slf, 1, index, value, 'none')
     # only self has grad
     grad_np[:, :3] = 0
     assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)
@@ -455,8 +456,8 @@ def test_inplace_gradjit_inplace_node_reuse():
     x = Tensor(3, dtype=mstype.int32)
     y = Tensor(2, dtype=mstype.int32)
     context.set_context(mode=1)
-    grad = ops.GradOperation()
-    graph_backward_res = grad(Net())(x, y)
+    grad_ops = ops.GradOperation()
+    graph_backward_res = grad_ops(Net())(x, y)
     assert graph_backward_res == 12
 
 
@@ -478,6 +479,41 @@ def test_inplace_gradjit_load_node_reuse():
     x = Tensor(3, dtype=mstype.int32)
     y = Tensor(2, dtype=mstype.int32)
     context.set_context(mode=1)
-    grad = ops.GradOperation()
-    graph_backward_res = grad(Net())(x, y)
+    grad_ops = ops.GradOperation()
+    graph_backward_res = grad_ops(Net())(x, y)
     assert graph_backward_res == 2
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_inplace_grad_tensor_move():
+    """
+    Feature: Support inplace grad in grad_jit
+    Description: Support inplace grad in grad_jit
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = ms.Parameter(Tensor(np.ones([10, 10, 10]), dtype=ms.float32), name='a')
+            self.relu = ops.ReLU()
+
+        def construct(self, x):
+            x = ops.abs(x)
+            x %= self.a
+            out = self.relu(x)
+            return x, out
+
+    ms.set_context(jit_config={"jit_level": "O2"})
+    x = 2 * np.ones([10, 10, 10]).astype(np.float32)
+    net = Net()
+    out = net(Tensor(x))
+    out_back = grad(net, 0, weights=net.a)(Tensor(x))
+
+    net.construct = ms.jit(net.construct)
+    out_jit = net(Tensor(x))
+    out_back_jit = grad(net, 0, weights=net.a)(Tensor(x))
+
+    assert np.allclose(out[0].asnumpy(), out_jit[0].asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out[1].asnumpy(), out_jit[1].asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out_back[0].asnumpy(), out_back_jit[0].asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out_back[1].asnumpy(), out_back_jit[1].asnumpy(), 0.0001, 0.0001)
