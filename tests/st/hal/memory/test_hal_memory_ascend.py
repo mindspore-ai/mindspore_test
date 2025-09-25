@@ -23,6 +23,8 @@ import shutil
 import os
 import numpy as np
 import acl
+import sys
+sys.path.append("..")
 from test_hal_util import run_cmd
 
 GB_TO_BYTE = 1024 << 20
