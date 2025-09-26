@@ -13,7 +13,7 @@ mindspore.Tensor.new_empty
     关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 用来描述所创建的Tensor的 `dtype` 。如果为 ``None`` ，那么将会使\
           用 `self` 的dtype。默认值： ``None`` 。
-        - **device** (string, 可选) - 指定Tensor使用的内存来源。PyNative模式下支持 ``"Ascend"`` 、 ``"npu"`` 、 ``"cpu"`` 和 ``"CPU"``。
+        - **device** (str, 可选) - 指定Tensor使用的内存来源。PyNative模式下支持 ``"Ascend"`` 、 ``"npu"`` 、 ``"cpu"`` 和 ``"CPU"``。
           图模式O0下支持 ``"Ascend"`` 和 ``"npu"``。如果为 ``None`` ，那么将会使用 :func:`mindspore.set_device` 设置的值。默认值 ``None`` 。
 
     返回：
