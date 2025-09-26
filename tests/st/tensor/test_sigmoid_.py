@@ -71,7 +71,10 @@ class TestModule():
         if self.out_grad_np is None:
             out = self.forward_mindspore_impl()
             sens = np.random.randn(*list(out.shape))
-            self.out_grad_np = sens.astype(dtype=out.dtype)
+            if isinstance(sens, float):
+                self.out_grad_np = sens
+            else:
+                self.out_grad_np = sens.astype(dtype=out.dtype)
         if self.ms_dtype == mstype.bfloat16:
             ms_output_grad = Tensor(self.out_grad_np, mstype.bfloat16)
         else:
@@ -149,7 +152,7 @@ def test_sigmoid__different_type(data_type, context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__bf16(context_mode):
     """
@@ -164,8 +167,8 @@ def test_sigmoid__bf16(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('shape', [
     (3,),
     (2, 3),
@@ -190,8 +193,8 @@ def test_sigmoid__different_dimensions(shape, context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__empty_tensor(context_mode):
     """
@@ -206,8 +209,8 @@ def test_sigmoid__empty_tensor(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__inf_nan(context_mode):
     """
@@ -222,8 +225,8 @@ def test_sigmoid__inf_nan(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__large_values(context_mode):
     """
@@ -238,8 +241,8 @@ def test_sigmoid__large_values(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__single_element(context_mode):
     """
@@ -254,8 +257,24 @@ def test_sigmoid__single_element(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_sigmoid__scalar_tensor(context_mode):
+    """
+    Feature: Tensor.sigmoid_ operators.
+    Description: test cases for sigmoid_ operator with scalar tensor (0-dimensional)
+    Expectation: the result match between MindSpore and PyTorch.
+    """
+    context.set_context(mode=context_mode, jit_level='O0', device_target='Ascend')
+    input_x = Tensor(np.array(5.0), mstype.float32)
+    module = TestModule(inputs=[input_x])
+    module.forward_cmp()
+    module.grad_cmp()
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__zero_values(context_mode):
     """
@@ -270,8 +289,8 @@ def test_sigmoid__zero_values(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__mathematical_properties(context_mode):
     """
@@ -286,8 +305,8 @@ def test_sigmoid__mathematical_properties(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__input_value_range_float(context_mode):
     """
@@ -303,7 +322,7 @@ def test_sigmoid__input_value_range_float(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__special_values(context_mode):
     """
@@ -318,8 +337,8 @@ def test_sigmoid__special_values(context_mode):
     module.grad_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sigmoid__input_not_tensor_raises(context_mode):
     """
