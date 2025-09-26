@@ -31,7 +31,7 @@ ring_attention_update:
             cur_softmax_max (Tensor): The max values from the second FlashAttention softmax computation. It has the same shape and dtype as `prev_softmax_max`.
             cur_softmax_sum (Tensor):The sum values from the second FlashAttention softmax computation. It has the same shape and dtype as `prev_softmax_max`.
             actual_seq_qlen (Tensor, optional): Cumulative sequence length, starting from 0. Required if `layout` is ``"TND"``. Does not take effect if `layout` is ``"SBH"``.
-                The tensor must be 1D and contain elements that strictly increase from 0 to T. Default: ``None``.
+                The tensor must be 1D and contain non-decreasing integer values starting from 0 to T. Default: ``None``.
             layout (str, optional): Indicates the input layout, currently support ``"TND"`` and ``"SBH"``. Default: ``"SBH"``.
 
         Returns:
