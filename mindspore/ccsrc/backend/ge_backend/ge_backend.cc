@@ -35,6 +35,7 @@
 #include "ir/device_address.h"
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
+#include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "utils/info.h"
 #include "utils/trace_info.h"
@@ -42,7 +43,6 @@
 #include "backend/ge_backend/dump/hook_debugger.h"
 #include "backend/ge_backend/dump/deprecated_env.h"
 #endif
-#include "tools/summary/summary.h"
 #include "include/common/utils/callbacks.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "backend/ge_backend/graph_ir/utils.h"
@@ -554,6 +554,9 @@ bool GEBackend::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
   static auto tensordump_callback =
     callback::CommonCallback::GetInstance().GetCallback<void, const std::string &, const std::vector<MbufDataItem> &>(
       kMbufTensorDumpCallback);
+  if (!tensordump_callback) {
+    MS_LOG(WARNING) << "Failed to get MbufTensorDumpCallback, summary function may not work.";
+  }
   device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
     tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
   if (device::ascend::TensorReportUtils::IsEnable()) {
@@ -633,8 +636,14 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
   }
 
   // Register a summary callback function, which is called in the final stages of summary.
-  debug::Summary::GetInstance().RegisterSummaryCallBackFunc();
-
+  constexpr char kRegisterSummaryCallBackFunc[] = "RegisterSummaryCallBackFunc";
+  static auto RegisterSummaryCallBackFunc_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void>(kRegisterSummaryCallBackFunc);
+  if (RegisterSummaryCallBackFunc_callback) {
+    RegisterSummaryCallBackFunc_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get RegisterSummaryCallBackFunc, summary function may not work.";
+  }
   // check if supported in ge_backend, and the compile_type
   auto compile_type = CheckGraph(func_graph);
   if (compile_type == CompileType::WholeGraph) {
@@ -1322,7 +1331,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
   }
   // clear every step
   weights_need_reprepare_.clear();
-  // GEBackend is only cerated once in new backend.
+  // GEBackend is only created once in new backend.
   is_weight_init_.clear();
 }
 

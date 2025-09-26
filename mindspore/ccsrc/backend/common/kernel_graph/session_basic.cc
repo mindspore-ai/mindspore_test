@@ -46,6 +46,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "utils/file_utils.h"
 #include "utils/trace_base.h"
+#include "utils/log_adapter.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "backend/common/kernel_graph/session_factory.h"
@@ -55,7 +56,7 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#include "mindspore/ccsrc/tools/summary/summary.h"
+#include "include/common/callback.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
@@ -123,17 +124,40 @@ ParameterPtr ConstructRunOpParameter(const std::shared_ptr<KernelGraph> &graph, 
 }
 }  // namespace
 
-void SessionBasic::RegisterSummaryCallBackFunc() { debug::Summary::GetInstance().RegisterSummaryCallBackFunc(); }
+void SessionBasic::RegisterSummaryCallBackFunc() {
+  constexpr char kRegisterSummaryCallBackFunc[] = "RegisterSummaryCallBackFunc";
+  static auto RegisterSummaryCallBackFunc_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void>(kRegisterSummaryCallBackFunc);
+  if (RegisterSummaryCallBackFunc_callback) {
+    RegisterSummaryCallBackFunc_callback();
+  } else {
+    MS_LOG(WARNING) << "Failed to get RegisterSummaryCallBackFunc, summary function may not work.";
+  }
+}
 
 void SessionBasic::RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Recurse set summary nodes for all graphs in graph: " << graph->graph_id() << " start";
-  debug::Summary::GetInstance().RecurseSetSummaryNodesForAllGraphs(graph);
+  constexpr char kRecurseSetSummaryNodesForAllGraphs[] = "RecurseSetSummaryNodesForAllGraphs";
+  static auto RecurseSetSummaryNodesForAllGraphs_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, KernelGraph *>(kRecurseSetSummaryNodesForAllGraphs);
+  if (RecurseSetSummaryNodesForAllGraphs_callback) {
+    RecurseSetSummaryNodesForAllGraphs_callback(graph);
+  } else {
+    MS_LOG(WARNING) << "Failed to get RecurseSetSummaryNodesForAllGraphs, summary function may not work.";
+  }
 }
 
 void SessionBasic::Summary(KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  debug::Summary::GetInstance().SummaryTensor(graph);
+  constexpr char kSummaryTensor[] = "SummaryTensor";
+  static auto SummaryTensor_callback =
+    callback::CommonCallback::GetInstance().GetCallback<void, KernelGraph *>(kSummaryTensor);
+  if (SummaryTensor_callback) {
+    SummaryTensor_callback(graph);
+  } else {
+    MS_LOG(WARNING) << "Failed to get SummaryTensor, summary function may not work.";
+  }
 }
 
 void SessionBasic::CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const {

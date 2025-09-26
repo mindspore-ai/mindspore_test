@@ -33,7 +33,7 @@
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
 
-namespace mindspore::debug {
+namespace mindspore::tools {
 constexpr int kSummaryGetItem = 2;
 
 namespace {
@@ -81,6 +81,10 @@ void Summary::RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph) {
   }
   graph->set_summary_nodes(summary);
   MS_LOG(INFO) << "The total summary nodes is: " << summary.size() << " for graph: " << graph->graph_id();
+}
+
+void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph) {
+  Summary::GetInstance().RecurseSetSummaryNodesForAllGraphs(graph);
 }
 
 void Summary::SummaryTensor(KernelGraph *graph) {
@@ -134,7 +138,11 @@ void Summary::SummaryTensor(KernelGraph *graph) {
   summary_callback_(0, params_list);
 }
 
+void SummaryTensor(KernelGraph *graph) { Summary::GetInstance().SummaryTensor(graph); }
+
 void Summary::RegisterSummaryCallBackFunc() { summary_callback_ = mindspore::callbacks::SummarySaveCallback; }
+
+void RegisterSummaryCallBackFunc() { Summary::GetInstance().RegisterSummaryCallBackFunc(); }
 
 void Summary::SetSummaryNodes(KernelGraph *graph) {
   MS_LOG(DEBUG) << "Update summary Start";
@@ -174,4 +182,4 @@ void Summary::SetSummaryNodes(KernelGraph *graph) {
   MS_LOG(DEBUG) << "Update summary end size: " << summary.size();
 }
 
-}  // namespace mindspore::debug
+}  // namespace mindspore::tools

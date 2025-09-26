@@ -19,7 +19,7 @@
 #include "tools/silent_detect/checksum/checksum_mgr.h"
 #include "tools/silent_detect/silent_detect_config_parser.h"
 #include "tools/tensor_dump/tensordump_utils.h"
-
+#include "tools/summary/summary.h"
 namespace mindspore {
 namespace tools {
 
@@ -34,6 +34,8 @@ REGISTER_COMMON_CALLBACK(DebugFinalize);
 REGISTER_COMMON_CALLBACK(MbufTensorDumpCallback);
 REGISTER_COMMON_CALLBACK(NeedEnableCheckSum);
 REGISTER_COMMON_CALLBACK(IsSilentDetectEnable);
-
+REGISTER_COMMON_CALLBACK(RecurseSetSummaryNodesForAllGraphs);
+REGISTER_COMMON_CALLBACK(SummaryTensor);
+REGISTER_COMMON_CALLBACK(RegisterSummaryCallBackFunc);
 }  // namespace tools
 }  // namespace mindspore

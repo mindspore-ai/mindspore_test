@@ -20,6 +20,7 @@
 #include <utility>
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
+#include "utils/log_adapter.h"
 #include "include/common/callback.h"
 #include "plugin/ascend/res_manager/mbuf_manager/tensorprint_utils.h"
 #include "plugin/ascend/profiler/parallel_strategy_profiling.h"
@@ -103,6 +104,9 @@ bool TdtManager::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
     static auto tensordump_callback =
       callback::CommonCallback::GetInstance().GetCallback<void, const std::string &, const std::vector<MbufDataItem> &>(
         kMbufTensorDumpCallback);
+    if (!tensordump_callback) {
+      MS_LOG(WARNING) << "Failed to get MbufTensorDumpCallback, tensor dump function may not work.";
+    }
     device::ascend::MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<device::ascend::MbufDataHandler>(
       tensordump_callback, device_id, kTensorDumpChannelName, kTensorDumpOpName));
     if (TensorReportUtils::IsEnable()) {

@@ -27,8 +27,7 @@ namespace callbacks {
 const char PYTHON_MOD_CALLBACK_MODULE[] = "mindspore.train.callback._callback";
 const char PYTHON_FUN_PROCESS_CHECKPOINT[] = "checkpoint_cb_for_save_op";
 const char PYTHON_FUN_PROCESS_SUMMARY[] = "summary_cb_for_save_op";
-const char kSummary[] = "Summary";
-const char kCheckPoint[] = "Save";
+
 const int ONE_SHAPE = 1;
 
 // Cache the summary callback data from ME session
