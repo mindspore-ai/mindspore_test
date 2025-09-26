@@ -43,88 +43,94 @@ def test_bind_core_auto():
     Description: Test runtime.set_cpu_affinity api which automatically bind thread core.
     Expectation: Core bound for module and threads.
     """
-    if _check_env_valid_cpu_resource():
-        os.environ['GLOG_v'] = str(1)
-        real_path = os.path.realpath(os.getcwd())
-        script = real_path + "/test_bind_core_auto.py"
-        output = real_path + "/auto.log"
-        assert os.path.exists(script)
-
-        cmd = (f"python {script} > {output} 2>&1")
-        os.system(cmd)
-
-        assert os.path.exists(output)
-        with open(output, "r") as f:
-            output_log = f.read()
-            print(output_log, flush=True)
-        assert "Module bind core policy generated:" in output_log
-    else:
+    if not _check_env_valid_cpu_resource():
         print("Skip this ST, as the environment is not suitable for thread bind core.")
+        return
+
+    os.environ['GLOG_v'] = str(1)
+    real_path = os.path.realpath(os.getcwd())
+    script = real_path + "/run_thread_bind_core.py"
+    output = real_path + "/thread_bind_core_auto.log"
+    assert os.path.exists(script)
+
+    cmd = (f"python {script} > {output} 2>&1")
+    os.system(cmd)
+
+    assert os.path.exists(output)
+    with open(output, "r") as f:
+        output_log = f.read()
+        print(output_log, flush=True)
+    assert "Module bind core policy generated: {'main':" in output_log
+    assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
+    assert re.search("Skip to bind thread core for 'pynative'", output_log)
+    assert re.search("Skip to bind thread core for 'runtime actor'", output_log)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_bind_core_manual():
     """
     Feature: Runtime set_cpu_affinity api.
-    Description: Test runtime.set_cpu_affinity api which manually bind thread core.
-    Expectation: Core bound for module and threads as input affinity_cpu_list and module_to_cpu_dict.
-    """
-    if _check_env_valid_cpu_resource():
-        os.environ['GLOG_v'] = str(1)
-        real_path = os.path.realpath(os.getcwd())
-        script = real_path + "/test_bind_core_manual.py"
-        output = real_path + "/manual.log"
-        assert os.path.exists(script)
-
-        cmd = (f"python {script} > {output} 2>&1")
-        os.system(cmd)
-
-        assert os.path.exists(output)
-        with open(output, "r") as f:
-            output_log = f.read()
-            print(output_log, flush=True)
-        manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
-                             "'minddata': [4, 5], 'runtime': [8, 9], 'pynative': [10, 21]}")
-        assert manual_policy_str in output_log
-        assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
-        assert re.search(r"This module: 1 is assigned a bind core list: .+?", output_log)
-        assert re.search(r"Success to bind core to .+? for thread \d+", output_log)
-        assert re.search(r"This module: 2 is assigned a bind core list: .+?", output_log)
-
-    else:
-        print("Skip this ST, as the environment is not suitable for thread bind core.")
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_bind_core_manual_dynamic_shape():
-    """
-    Feature: Runtime set_cpu_affinity api.
     Description: Test runtime.set_cpu_affinity api which manually bind thread core for dynamic shape.
     Expectation: Core bound for module and threads as input affinity_cpu_list and module_to_cpu_dict.
     """
-    if _check_env_valid_cpu_resource():
-        os.environ['GLOG_v'] = str(1)
-        real_path = os.path.realpath(os.getcwd())
-        script = real_path + "/test_bind_core_manual_dynamic_shape.py"
-        output = real_path + "/manual_dynamic_shape.log"
-        assert os.path.exists(script)
-
-        cmd = (f"python {script} > {output} 2>&1")
-        os.system(cmd)
-
-        assert os.path.exists(output)
-        with open(output, "r") as f:
-            output_log = f.read()
-            print(output_log, flush=True)
-        manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
-                             "'minddata': [4, 5], 'runtime': [8, 9], 'pynative': [10, 21]}")
-        assert manual_policy_str in output_log
-        assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
-        assert re.search(r"This module: 1 is assigned a bind core list: .+?", output_log)
-        assert re.search(r"Success to bind core to .+? for thread \d+", output_log)
-        assert re.search(r"This module: 2 is assigned a bind core list: .+?", output_log)
-    else:
+    if not _check_env_valid_cpu_resource():
         print("Skip this ST, as the environment is not suitable for thread bind core.")
+        return
+
+    os.environ['AFFINITY_CPU_LIST'] = '["0-10", "21-30"]'
+    os.environ['MODULE_TO_CPU_DICT'] = '{"main": [0, 1, 2, 3], "minddata": [4, 5], "other": [6, 7], \
+                                        "runtime": [8, 9], "pynative": [10, 11, 21, 100]}'
+
+    os.environ['GLOG_v'] = str(1)
+    real_path = os.path.realpath(os.getcwd())
+    script = real_path + "/run_thread_bind_core.py"
+    output = real_path + "/thread_bind_core_manual.log"
+    assert os.path.exists(script)
+
+    cmd = (f"python {script} > {output} 2>&1")
+    os.system(cmd)
+
+    assert os.path.exists(output)
+    with open(output, "r") as f:
+        output_log = f.read()
+        print(output_log, flush=True)
+    manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
+                         "'minddata': [4, 5], 'runtime': [8, 9], 'pynative': [10, 21]}")
+    assert manual_policy_str in output_log
+    assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
+    assert re.search(r"This module: 1 is assigned a bind core list: .+?", output_log)
+    assert re.search(r"Success to bind core to .+? for thread \d+", output_log)
+    assert re.search(r"This module: 2 is assigned a bind core list: .+?", output_log)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
+def test_bind_core_empty_module_assigned():
+    """
+    Feature: Runtime set_cpu_affinity api.
+    Description: Test runtime.set_cpu_affinity empty module_to_cpu_dict.
+    Expectation: Expected log in stdout.
+    """
+    if not _check_env_valid_cpu_resource():
+        print("Skip this ST, as the environment is not suitable for thread bind core.")
+        return
+
+    os.environ['MODULE_TO_CPU_DICT'] = '{}'
+
+    os.environ['GLOG_v'] = str(2)
+    real_path = os.path.realpath(os.getcwd())
+    script = real_path + "/run_thread_bind_core.py"
+    output = real_path + "/thread_bind_core_empty_module.log"
+    assert os.path.exists(script)
+
+    cmd = (f"python {script} > {output} 2>&1")
+    os.system(cmd)
+
+    assert os.path.exists(output)
+    with open(output, "r") as f:
+        output_log = f.read()
+        print(output_log, flush=True)
+    assert "Module bind core policy generated: {}" in output_log
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1',
@@ -145,7 +151,7 @@ def test_bind_core_manual_no_available_cpus():
           card_mark='onecard', essential_mark='essential')
 def test_bind_core_repeatly_call():
     """
-Feature: Runtime set_cpu_affinity api.
+    Feature: Runtime set_cpu_affinity api.
     Description: Test runtime.set_cpu_affinity api repeatedly called..
     Expectation: RuntimeError reported.
     """
