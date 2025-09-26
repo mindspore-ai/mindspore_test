@@ -132,10 +132,6 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
   HcclResult HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint32_t itemNum, HcclComm comm,
                                  aclrtStream stream) const;
 
-  // for enqueue op
-  HcclResult HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const;
-  HcclResult HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const;
-
   HcclResult HcclCommResume(HcclComm comm) const;
 
   HcclResult HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool *useBackup, uint32_t nRanks);
@@ -159,9 +155,6 @@ class ASCEND_RES_MANAGER_EXPORT HcclAdapter {
 
   bool InitHcclComm(std::string_view rank_id, std::string_view rank_file);
   bool FinalizeHcclComm();
-
-  bool InitHcclExec();
-  bool FinalizeHcclExec();
 
   static std::string GetHcclModeString(HcclMode hccl_mode);
   string DoGetHcomGroup(const string &original_group, const std::vector<uint32_t> &rank_ids) const;

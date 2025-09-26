@@ -16,6 +16,9 @@
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include <dlfcn.h>
 #include <map>
+#include <memory>
+#include <vector>
+#include <string>
 #include <algorithm>
 #include <sstream>
 #include "include/common/utils/utils.h"
@@ -186,10 +189,6 @@ void HcclAdapter::InitPlugin() {
   hccl_get_local_rank_size_ = DlsymFuncObj(HcomGetLocalRankSize, plugin_handle_);
   hccl_get_world_rank_by_group_rank_ = DlsymFuncObj(HcomGetWorldRankFromGroupRank, plugin_handle_);
   hccl_get_group_rank_by_world_rank_ = DlsymFuncObj(HcomGetGroupRankFromWorldRank, plugin_handle_);
-  hccl_exec_initialize_ = DlsymFuncObj(HcomExecInitialize, plugin_handle_);
-  hccl_exec_finalize_ = DlsymFuncObj(HcomExecFinalize, plugin_handle_);
-  hccl_exec_enqueue_op_ = DlsymFuncObj(HcomExecEnqueueOperation, plugin_handle_);
-  hccl_exec_enqueue_all_to_all_v_ = DlsymFuncObj(HcomExecEnqueueAllToAllV, plugin_handle_);
   launch_hccl_all_to_allv_ = DlsymFuncObj(HcclAlltoAllV, plugin_handle_);
   launch_hccl_all_to_allvc_ = DlsymAscendFuncObj(HcclAlltoAllVC, plugin_handle_);
   launch_hccl_reduce_scatterv_ = DlsymAscendFuncObj(HcclReduceScatterV, plugin_handle_);
@@ -232,10 +231,6 @@ void HcclAdapter::FinalizePlugin() {
   hccl_get_world_rank_by_group_rank_ = nullptr;
   hccl_get_group_rank_by_world_rank_ = nullptr;
   hccl_get_rank_size_ = nullptr;
-  hccl_exec_initialize_ = nullptr;
-  hccl_exec_finalize_ = nullptr;
-  hccl_exec_enqueue_op_ = nullptr;
-  hccl_exec_enqueue_all_to_all_v_ = nullptr;
   hccl_comm_working_dev_nic_set_ = nullptr;
   launch_hccl_all_to_allv_ = nullptr;
   launch_hccl_all_to_allvc_ = nullptr;
@@ -263,10 +258,6 @@ bool HcclAdapter::InitHccl(uint32_t device_id, std::string_view rank_id) {
     return true;
   }
   InitPlugin();
-  bool ret = InitHcclExec();
-  if (!ret) {
-    return false;
-  }
   init_flag_ = true;
   MS_LOG(INFO) << "Init hccl adapter success.";
   return true;
@@ -286,11 +277,6 @@ bool HcclAdapter::InitHccl(uint32_t device_id, std::string_view rank_id, std::st
   if (hccl_mode_ == HcclMode::kGraph) {
     auto options = GenHcclOptions(device_id, rank_id, rank_file);
     bool ret = InitKernelInfoStore(options);
-    if (!ret) {
-      return false;
-    }
-
-    ret = InitHcclExec();
     if (!ret) {
       return false;
     }
@@ -347,7 +333,6 @@ bool HcclAdapter::FinalizeHccl() {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
     return true;
   }
-  (void)FinalizeHcclExec();
   (void)FinalizeKernelInfoStore();
   (void)FinalizeHcclComm();
   if (hcom_destroy_ != nullptr) {
@@ -772,49 +757,6 @@ HcclResult HcclAdapter::HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks,
   }
   CHECK_SYMBOL_NULL(hccl_comm_working_dev_nic_set_);
   return hccl_comm_working_dev_nic_set_(comm, ranks, useBackup, nRanks);
-}
-
-bool HcclAdapter::InitHcclExec() {
-  MS_LOG(INFO) << "Start init hccl exec.";
-  MS_EXCEPTION_IF_NULL(hccl_exec_initialize_);
-  HcclResult hccl_ret = hccl_exec_initialize_();
-  if (hccl_ret == HCCL_E_PTR) {
-    MS_LOG(WARNING) << "Hccl comm is null, hcom executor initialize is not required";
-  } else if (hccl_ret == HCCL_SUCCESS) {
-    MS_LOG(INFO) << "Hcom DynamicKernel Initialize success";
-  } else {
-    MS_LOG(ERROR) << "Hcom DynamicKernel Initialize failed";
-    return false;
-  }
-  init_hccl_exec_ = true;
-  MS_LOG(INFO) << "InitHcclExec success";
-  return true;
-}
-
-bool HcclAdapter::FinalizeHcclExec() {
-  if (!init_hccl_exec_) {
-    return true;
-  }
-  MS_LOG(INFO) << "Start finalize hccl exec.";
-  MS_EXCEPTION_IF_NULL(hccl_exec_finalize_);
-  HcclResult hccl_ret = hccl_exec_finalize_();
-  if (hccl_ret != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "Hcom DynamicKernel Finalize failed";
-    return false;
-  }
-  init_hccl_exec_ = false;
-  MS_LOG(INFO) << "HcclExec destroy success";
-  return true;
-}
-
-HcclResult HcclAdapter::HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const {
-  CHECK_SYMBOL_NULL(hccl_exec_enqueue_op_);
-  return hccl_exec_enqueue_op_(op_info, callback);
-}
-
-HcclResult HcclAdapter::HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const {
-  CHECK_SYMBOL_NULL(hccl_exec_enqueue_all_to_all_v_);
-  return hccl_exec_enqueue_all_to_all_v_(params, callback);
 }
 
 bool HcclAdapter::UseHcclCM() const {

@@ -19,6 +19,10 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+#include <algorithm>
+#include <vector>
+#include <memory>
+#include <string>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
@@ -38,29 +42,6 @@
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
-namespace {
-static std::map<std::string, std::string> kMsOpNameToHcomHcclType = {
-  {mindspore::kAllReduceOpName, mindspore::kHcomOpTypeAllReduce},
-  {mindspore::kReduceOpName, mindspore::kHcomOpTypeReduce},
-  {mindspore::kCollectiveScatterOpName, mindspore::kHcomOpTypeScatter},
-  {mindspore::kCollectiveGatherOpName, mindspore::kHcomOpTypeGather},
-  {mindspore::kAllGatherOpName, mindspore::kHcomOpTypeAllGather},
-  {mindspore::kBroadcastOpName, mindspore::kHcomOpTypeBroadcast},
-  {mindspore::kSendOpName, mindspore::kHcomOpTypeSend},
-  {mindspore::kReceiveOpName, mindspore::kHcomOpTypeReceive},
-  {mindspore::kReduceScatterOpName, mindspore::kHcomOpTypeReduceScatter},
-  {mindspore::kBarrierOpName, mindspore::kHcomOpTypeBarrier},
-  {mindspore::kBatchISendIRecvOpName, mindspore::kHcomOpTypeBatchSendRecv},
-  {mindspore::kAlltoAllVOpName, mindspore::kHcomOpTypeAlltoAllV},
-};
-std::string MsOpNameToHcomOpType(const std::string &ms_op_type) {
-  auto iter = kMsOpNameToHcomHcclType.find(ms_op_type);
-  if (iter == kMsOpNameToHcomHcclType.end()) {
-    MS_LOG(EXCEPTION) << "Invalid MsOpType:" << ms_op_type;
-  }
-  return iter->second;
-}
-}  // namespace
 
 namespace mindspore {
 namespace kernel {
@@ -279,33 +260,6 @@ bool HcclKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
   if (hccl_data_type_list_.empty()) {
     MS_LOG(ERROR) << "Hccl data type list is empty.";
     return false;
-  }
-
-  MS_LOG(INFO) << "Start Execute: " << kernel_name_;
-  std::string hccl_type = MsOpNameToHcomOpType(kernel_name_);
-  HcclDataType data_type = hccl_data_type_list_[0];
-
-  ::HcomOperation op_info;
-  op_info.hcclType = hccl_type;
-  op_info.inputPtr = inputs[0]->device_ptr();
-  op_info.outputPtr = outputs[0]->device_ptr();
-  op_info.dataType = static_cast<HcclDataType>(data_type);
-  op_info.opType = static_cast<HcclReduceOp>(op_type_);
-  op_info.root = root_id_;
-  op_info.count = hccl_count_;
-
-  auto callback = [this](HcclResult status) {
-    if (status != HCCL_SUCCESS) {
-      MS_LOG(ERROR) << "HcomExcutorInitialize failed, ret:" << status;
-    }
-    std::lock_guard<std::mutex> lock(this->hccl_mutex_);
-    this->cond_.notify_all();
-    MS_LOG(INFO) << "Hccl callback success.";
-  };
-
-  auto hccl_ret = hccl::HcclAdapter::GetInstance().HcclExecEnqueueOp(op_info, callback);
-  if (hccl_ret != HCCL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Call EnqueueHcomOperation failed, node info: " << kernel_name_;
   }
 
   std::unique_lock<std::mutex> ulock(hccl_mutex_);
