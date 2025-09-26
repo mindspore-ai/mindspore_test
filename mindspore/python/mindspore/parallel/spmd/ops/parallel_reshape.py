@@ -86,6 +86,32 @@ class ReshapeDistributedOp(DistributedOp):
             merged_tensor_map.insert(0, -1)
         return merged_shape, merged_tensor_map
 
+
+    def _cal_output_layout_and_dst_shape(self, output_tensor_map, dst_shape, x_dict):
+        """
+        calculate output layout tensor map and local dst shape.
+        """
+        x_device_matrix = x_dict["device_matrix"]
+        output_map = []
+        local_dst_shape = []
+        for idx, map_id in enumerate(output_tensor_map):
+            if isinstance(map_id, tuple):
+                shard_size = 1
+                map_idx = []
+                for shard_id in map_id:
+                    map_idx.append(x_dict["alias_name"][-1 - shard_id])
+                    shard_size *= x_device_matrix[-1 - shard_id]
+                output_map.append(tuple(map_idx))
+                local_dst_shape.append(dst_shape[idx] // shard_size if dst_shape[idx] > 0 else -1)
+                continue
+            if map_id < 0:
+                output_map.append("None")
+                local_dst_shape.append(dst_shape[idx] if dst_shape[idx] > 0 else -1)
+            else:
+                output_map.append(x_dict["alias_name"][-1 - map_id])
+                local_dst_shape.append(dst_shape[idx] // x_device_matrix[-1 - map_id] if dst_shape[idx] > 0 else -1)
+        return output_map, local_dst_shape
+
     def infer_layout(self, input_layouts, extra_args):
         """
         Infer output layout for reshape operator.
@@ -127,7 +153,12 @@ class ReshapeDistributedOp(DistributedOp):
                 raise ValueError(f"Can not reshape {input_shape} to {dst_shape} with tensor map {x_map}")
             cur_size = cur_size // shape
             if cur_size == 1:
-                shard_size = x_device_matrix[-merge_tensor_map[cur_axis] - 1]
+                if isinstance(merge_tensor_map[cur_axis], tuple):
+                    shard_size = 1
+                    for axis in merge_tensor_map[cur_axis]:
+                        shard_size *= x_device_matrix[-axis - 1]
+                else:
+                    shard_size = x_device_matrix[-merge_tensor_map[cur_axis] - 1]
                 if shape < 0:
                     if not dynamic_can_shard:
                         raise ValueError(f"Can not reshape {input_shape} to {dst_shape} with tensor map {x_map}")
@@ -144,14 +175,6 @@ class ReshapeDistributedOp(DistributedOp):
             alias_name=x_layout.alias_name,
             rank_list=x_layout.rank_list
         )
-        output_map = []
-        local_dst_shape = []
-        for idx, map_id in enumerate(output_tensor_map):
-            if map_id < 0:
-                output_map.append("None")
-                local_dst_shape.append(dst_shape[idx] if dst_shape[idx] > 0 else -1)
-            else:
-                output_map.append(x_dict["alias_name"][-1 - map_id])
-                local_dst_shape.append(dst_shape[idx] // x_device_matrix[-1 - map_id] if dst_shape[idx] > 0 else -1)
+        output_map, local_dst_shape = self._cal_output_layout_and_dst_shape(output_tensor_map, dst_shape, x_dict)
         out_layout = output_layout(*output_map)
         return out_layout, local_dst_shape

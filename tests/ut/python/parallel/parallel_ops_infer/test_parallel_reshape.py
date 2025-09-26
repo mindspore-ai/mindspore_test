@@ -249,3 +249,28 @@ def test_reshape_layout_dynamic_shape4():
 
     with pytest.raises(ValueError):
         _, _ = op.infer_layout((x_layout,), (dst_shape, src_shape))
+
+
+def test_reshape_layout_axis_shard_twice():
+    """
+    Feature: Reshape split, merge, resize axes
+    Description: Reshape split, merge, resize axes
+    Expectation: Success
+    """
+    base_device_matrix = (2, 2, 2)
+    base_alias_name = ("dp", "mp", "cp")
+    base_rank_list = list(range(8))
+
+    x_layout = Layout(base_device_matrix, base_alias_name, base_rank_list)
+    x_layout = x_layout(("cp", "dp"), "None", "None", "mp", "None")
+    src_shape = (32, 6, 128, 28, 10)
+    dst_shape = (4, 8, 2, 384, 280)
+
+    output_layout, local_dst_shape = op.infer_layout((x_layout,), (dst_shape, src_shape))
+    expected_map = ((0, 2), -1, -1, -1, 1)  # Expected output tensor map
+    assert output_layout.tensor_map == expected_map, (f"Reshape do not change sharded axis failed. Expected  "
+                                                      f"expected_map {expected_map} bug got {output_layout.tensor_map}")
+    expected_local_dst_shape = [1, 8, 2, 384, 140]
+    assert local_dst_shape == expected_local_dst_shape, (f"Reshape do not change sharded axis failed. Expected"
+                                                         f" expected_local_dst_shape {expected_local_dst_shape} got"
+                                                         f" {local_dst_shape}")
