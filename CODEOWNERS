@@ -135,7 +135,7 @@
 /mindspore/python/mindspore/ops_generate/ @chujinjin
 /mindspore/python/mindspore/parallel/ @yangzhenzhang
 /mindspore/python/mindspore/parallel/cluster/ @ZPaC
-/mindspore/python/mindspore/profiler/ @DavidFFFan
+/mindspore/python/mindspore/profiler/ @tangmengcheng @changzherui
 /mindspore/python/mindspore/rewrite/ @changzherui
 /mindspore/python/mindspore/runtime/ @limingqi107
 /mindspore/python/mindspore/scipy/ @yi-zhang95
@@ -257,7 +257,7 @@
 /tests/ut/python/ops/ @liangchenghui
 /tests/ut/python/ops_generate/ @chujinjin
 /tests/ut/python/parallel/ @yangzhenzhang
-/tests/ut/python/profiler/ @DavidFFFan
+/tests/ut/python/profiler/ @tangmengcheng @changzherui
 /tests/ut/python/rewrite/ @changzherui
 /tests/ut/python/runtime/ @limingqi107
 /tests/ut/python/scipy/ @yi-zhang95
