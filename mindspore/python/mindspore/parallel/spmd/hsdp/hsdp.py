@@ -30,7 +30,8 @@ class HSDPCell:
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
     """
-    def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale):
+    def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale,
+                  reduce_dtype):
         """init hsdp scheduler."""
         from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler
         self.hsdp_scheduler = HSDPScheduler(cell,
@@ -38,7 +39,8 @@ class HSDPCell:
                                             threshold,
                                             optimizer_level,
                                             enable_grad_accumulation,
-                                            grad_scale)
+                                            grad_scale,
+                                            reduce_dtype)
 
     def set_requires_grad_sync(self, requires_grad_sync):
         r"""
@@ -97,7 +99,8 @@ def _extend_cell_with_hsdp_interface(cell):
         origin_class_to_extend_class[origin_class] = extend_class
     cell.__class__ = extend_class
 
-def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0):
+def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0,
+         reduce_dtype=None):
     r"""
         apply hybrid sharded data parallel.
 
@@ -127,6 +130,8 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
                   allgather communication to release the memory used by the forward pass allgather.
             enable_grad_accumulation (bool, optional): enable gradient accumulation.
             grad_scale (float, optional): gradient will scale with grad_scale.
+            reduce_dtype (float, optional): gradient reduce dtype. Default value is None, which means gradient
+                will be reduced with its origin dtype.
 
         Raises:
             ValueError: If the `cell` is not a cell.
@@ -135,6 +140,7 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             ValueError: If `optimizer_level` is not one of the [ ``level1``, ``level2``, ``level3`` ].
             ValueError: If `enable_grad_accumulation` is not bool.
             ValueError: If `grad_scale` is not float.
+            ValueError: If `reduce_dtype` is not mindspore.dtype.
         """
     from mindspore.nn.cell import Cell
     if not isinstance(cell, Cell):
@@ -150,6 +156,17 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
         raise ValueError(f"enable_grad_accumulation must be bool but got {enable_grad_accumulation}.")
     if not isinstance(grad_scale, float):
         raise ValueError(f"grad_scale must be float but got {grad_scale}.")
+    from mindspore._c_expression import typing
+    if reduce_dtype is not None and not isinstance(reduce_dtype, typing.Type):
+        raise ValueError(f"reduce_dtype must be mindspore.dtype but got {reduce_dtype}.")
     _extend_cell_with_hsdp_interface(cell)
-    cell.hsdp_init(cell, shard_size, threshold * 1024, optimizer_level, enable_grad_accumulation, grad_scale)
+    cell.hsdp_init(
+        cell,
+        shard_size,
+        threshold * 1024,
+        optimizer_level,
+        enable_grad_accumulation,
+        grad_scale,
+        reduce_dtype
+    )
     return cell

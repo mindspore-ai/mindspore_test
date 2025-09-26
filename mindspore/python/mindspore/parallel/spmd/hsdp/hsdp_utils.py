@@ -34,7 +34,7 @@ class OptimizerLevel(Enum):
 class HSDPConfig:
     """HSDP config"""
 
-    def __init__(self, shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook):
+    def __init__(self, shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook, reduce_dtype):
         """
             HSDP config init method
             Args:
@@ -43,9 +43,11 @@ class HSDPConfig:
                 requires_acc_grad: requires gradient accumulation.
                 shard_level: optimizer shard level.
                 use_cell_hook: use cell hook or param hook for hsdp implement.
+                reduce_dtype: set gradient reduce dtype.
         """
         self.shard_size = shard_size
         self.threshold = threshold
         self.requires_acc_grad = requires_acc_grad
         self.shard_level = shard_level
         self.use_cell_hook = use_cell_hook
+        self.reduce_dtype = reduce_dtype

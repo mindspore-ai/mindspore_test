@@ -14,6 +14,7 @@
 # ============================================================================
 from typing import Optional
 import mindspore as ms
+import mindspore.runtime as rt
 import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
 from mindspore import nn, ops
@@ -22,7 +23,7 @@ from mindspore.parallel import hsdp
 from hsdp_test_common import hsdp_network_ckpt_path
 from tests.mark_utils import arg_mark
 from tests.st.auto_parallel.spmd.common_net import SlimLeNet
-
+rt.launch_blocking()
 ms.set_seed(1)
 ms.set_deterministic(True)
 

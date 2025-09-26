@@ -270,7 +270,10 @@ class HSDPParam:
             self.fully_sharded = False
             self.param.init_data()
             if self.config.requires_acc_grad and self.param.requires_grad:
-                self.acc_grad = Parameter(initializer("zeros", self.param.local_shape, self.param.dtype),
+                acc_grad_type = self.param.dtype
+                if self.config.reduce_dtype is not None:
+                    acc_grad_type = self.config.reduce_dtype
+                self.acc_grad = Parameter(initializer("zeros", self.param.local_shape, acc_grad_type),
                                           name="acc_grad_"+self.param.name,
                                           requires_grad=False)
             self.param.acc_grad = self.acc_grad
@@ -283,7 +286,10 @@ class HSDPParam:
             acc_grad_shape = origin_param_shape
             if self.config.shard_level != OptimizerLevel.SHARD_OPT:
                 acc_grad_shape = self.sharded_param.shape
-            self.acc_grad = Parameter(initializer("zeros", acc_grad_shape, self.param.dtype),
+            acc_grad_type = self.param.dtype
+            if self.config.reduce_dtype is not None:
+                acc_grad_type = self.config.reduce_dtype
+            self.acc_grad = Parameter(initializer("zeros", acc_grad_shape, acc_grad_type),
                                       name="acc_grad_"+self.param.name,
                                       requires_grad=False)
         self.param.acc_grad = self.acc_grad

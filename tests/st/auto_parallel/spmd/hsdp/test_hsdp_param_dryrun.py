@@ -31,7 +31,8 @@ def get_hsdp_param(net):
     requires_acc_grad = True
     shard_level = OptimizerLevel.SHARD_OPT
     use_cell_hook = True
-    hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook)
+    reduce_dtype = None
+    hsdp_config = HSDPConfig(shard_size, threshold, requires_acc_grad, shard_level, use_cell_hook, reduce_dtype)
     hsdp_param = HSDPParam(net, net.weight.name, net.weight, hsdp_config)
     return hsdp_param
 
