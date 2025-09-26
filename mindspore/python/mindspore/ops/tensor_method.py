@@ -1040,6 +1040,7 @@ def deprecated_tensor_select(input, condition, y):
 def tensor_sigmoid(input):
     return sigmoid(input)
 
+
 def tensor_sigmoid_(input):
     return sigmoid_(input)
 
