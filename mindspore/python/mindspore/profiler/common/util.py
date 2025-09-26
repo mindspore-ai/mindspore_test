@@ -25,9 +25,14 @@ import re
 import shutil
 import stat
 
+from mindspore.communication.management import GlobalComm
+from mindspore.communication.management import get_local_rank
+from mindspore import context
 from mindspore import log as logger
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.exceptions.exceptions import ProfilerPathErrorException
+
+from mindspore.profiler.common.constant import DeviceTarget
 
 
 def no_exception_func(
@@ -443,6 +448,24 @@ def get_newest_file(file_list):
 
     newest_file_list.sort()
     return newest_file_list
+
+
+def get_device_id():
+    """
+    Get device ID.
+    """
+    device_id = str(context.get_context("device_id"))
+
+    if not device_id or not device_id.isdigit():
+        if GlobalComm.INITED and context.get_context("device_target") == DeviceTarget.NPU.value:
+            device_id = str(get_local_rank())
+        else:
+            device_id = os.getenv("DEVICE_ID")
+
+    if not device_id or not device_id.isdigit():
+        logger.warning("Fail to get DEVICE_ID, use 0 instead.")
+        device_id = "0"
+    return device_id
 
 
 class ProfilerPathManager:

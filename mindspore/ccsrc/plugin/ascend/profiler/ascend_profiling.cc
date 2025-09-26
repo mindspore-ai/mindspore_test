@@ -87,7 +87,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   }
 
   config_.frameworkDataPath = options["framework_path"];
-  config_.deviceId = options["device_id"];
+  config_.deviceId = device_id;
   config_.rankId = options["rank_id"];
   config_.profileMemory = options["profile_memory"];
   config_.l2Cache = options["l2_cache"];
