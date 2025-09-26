@@ -79,6 +79,7 @@
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "backend/common/somas/somas.h"
 #include "include/common/utils/pyobj_manager.h"
+#include "pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 void RecordExitStatus() { MS_LOG(INFO) << "Status record: system exit."; }
@@ -117,6 +118,7 @@ void ClearResPart1() {
   runtime::OpExecutor::GetInstance().WorkerJoin();
   runtime::RuntimePipeline::GetInstance().WorkerJoin();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
+  (void)kernel::pyboost::OpRunStatus::Get().GetLastOp();
   RecordExitStatus();
   runtime::GraphScheduler::GetInstance().Clear();
   MemTrackerInstanceClear();
