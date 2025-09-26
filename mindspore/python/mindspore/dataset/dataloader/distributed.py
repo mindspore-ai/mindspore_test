@@ -18,10 +18,11 @@ import math
 from collections.abc import Iterator
 from typing import Optional, TypeVar
 
+import numpy as np
+
 import mindspore as ms
-import mindspore.mint.distributed as dist
-from mindspore.dataset.dataloader.dataset import Dataset
-from mindspore.dataset.dataloader.sampler import Sampler
+from .dataset import Dataset
+from .sampler import Sampler
 
 
 __all__ = ["DistributedSampler"]
@@ -74,13 +75,13 @@ class DistributedSampler(Sampler[_T_co]):
         if not isinstance(drop_last, bool):
             raise TypeError(f"drop_last must be bool, but got: {type(drop_last).__name__}")
         if num_replicas is None:
-            if not dist.is_available():
+            if not ms.mint.distributed.is_available():
                 raise RuntimeError("MindSpore distributed feature is not available.")
-            num_replicas = dist.get_world_size()
+            num_replicas = ms.mint.distributed.get_world_size()
         if rank is None:
-            if not dist.is_available():
+            if not ms.mint.distributed.is_available():
                 raise RuntimeError("MindSpore distributed feature is not available.")
-            rank = dist.get_rank()
+            rank = ms.mint.distributed.get_rank()
         if num_replicas <= 0:
             raise ValueError(
                 f"Invalid num_replicas: {num_replicas}, num_replicas should be greater than 0."
@@ -105,10 +106,9 @@ class DistributedSampler(Sampler[_T_co]):
 
     def __iter__(self) -> Iterator[_T_co]:
         if self.shuffle:
-            g = ms.Generator()
-            g.manual_seed(self.seed + self.epoch)
+            g = np.random.default_rng(self.seed + self.epoch)
             # TODO: need to use mint operator on cpu backend
-            indices = ms.ops.randperm(len(self.dataset), seed=self.seed + self.epoch).tolist()
+            indices = g.permutation(len(self.dataset)).tolist()
         else:
             indices = list(range(len(self.dataset)))
 

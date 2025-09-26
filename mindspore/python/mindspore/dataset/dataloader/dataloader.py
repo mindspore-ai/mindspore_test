@@ -24,13 +24,13 @@ import queue
 import threading
 from typing import Any, AnyStr, Callable, Generic, Iterable, List, Mapping, overload, Protocol, Sequence, TypeVar, Union
 
+import numpy as np
 import numpy.typing as npt
 
 import mindspore as ms
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
 from mindspore.common import Tensor
-from mindspore.common.generator import Generator
 from .dataset import Dataset, IterableDataset
 from .sampler import BatchSampler, RandomSampler, Sampler, SequentialSampler, InfiniteSampler
 from ._utils import WORKER_TIME_OUT
@@ -121,8 +121,9 @@ class DataLoader(Generic[_T_co]):
         worker_init_fn (Union[Callable[[int], None], None], optional): The worker init function to use.
             Default: ``None`` , do nothing.
         multiprocessing_context (Union[multiprocessing.context.BaseContext, str, None], optional): The multiprocessing
-            context to use. Default: ``None`` , use :mod:`mindspore.multiprocessing`.
-        generator (Union[Generator, None], optional): The generator to use. Default: ``None`` , use default generator.
+            context to use. Default: ``None`` , use :mod:`mindspore.multiprocessing` .
+        generator (Union[numpy.random.Generator, None], optional): The generator to use. Default: ``None`` ,
+            use default generator.
 
     Keyword Args:
         prefetch_factor (Union[int, None], optional): The prefetch factor.
@@ -178,7 +179,7 @@ class DataLoader(Generic[_T_co]):
             timeout: float = 0.,
             worker_init_fn: Union[Callable[[int], None], None] = None,
             multiprocessing_context: Union[multiprocessing.context.BaseContext, str, None] = None,
-            generator: Union[Generator, None] = None,
+            generator: Union[np.random.Generator, None] = None,
             *,
             prefetch_factor: Union[int, None] = None,
             persistent_workers: bool = False,
@@ -233,8 +234,8 @@ class DataLoader(Generic[_T_co]):
         else:
             self.multiprocessing_context = ms.multiprocessing
 
-        if generator is not None and not isinstance(generator, ms.Generator):
-            raise TypeError(f"generator must be mindspore.Generator, but got: {type(generator).__name__}")
+        if generator is not None and not isinstance(generator, np.random.Generator):
+            raise TypeError(f"generator must be numpy.random.Generator, but got: {type(generator).__name__}")
 
         if prefetch_factor is not None:
             if not isinstance(prefetch_factor, int) or isinstance(prefetch_factor, bool):
@@ -256,7 +257,7 @@ class DataLoader(Generic[_T_co]):
         self.drop_last = drop_last
         self.num_workers = num_workers
         self.persistent_workers = persistent_workers
-        self.generator = generator
+        self.generator = generator if generator is not None else np.random.default_rng()
         self.collate_fn = collate_fn
         self.worker_init_fn = worker_init_fn
         self.pin_memory = pin_memory
@@ -401,10 +402,7 @@ class _MultiProcessIterator(_Iterator):
         self.prefetch_factor = dataloader.prefetch_factor
         self.timeout = dataloader.timeout
         self.in_order = dataloader.in_order
-        if dataloader.generator is not None:
-            self._base_seed = dataloader.generator.initial_seed()
-        else:
-            self._base_seed = ms.Generator().seed()
+        self._base_seed = int(dataloader.generator.integers(low=0, high=np.iinfo(np.int64).max + 1, dtype=np.int64))
 
         self._setup_multiprocessing()
 

@@ -23,7 +23,7 @@ from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
-import mindspore as ms
+from mindspore.common import float64, Tensor
 
 # S: bytes string type (bytes).
 # a: old version alias for bytes string type (same as S).
@@ -78,17 +78,17 @@ def default_convert(data: Any) -> Any:
     elem_type = type(data)
 
     # return if tensor
-    if isinstance(data, ms.Tensor):
+    if isinstance(data, Tensor):
         return data
 
     if isinstance(data, (np.number, np.bool_)):
-        return ms.Tensor(data)
+        return Tensor(data)
 
     # only convert numeric numpy, ignore str/obj numpy
     if isinstance(data, np.ndarray):
         if np_str_obj_array_pattern.search(data.dtype.str) is not None:
             return data
-        return ms.Tensor.from_numpy(data)
+        return Tensor.from_numpy(data)
 
     if isinstance(data, collections.abc.Mapping):
         try:
@@ -157,7 +157,7 @@ def collate(
 
     Keyword Args:
         collate_fn_map (Optional[dict[Union[type, tuple[type, ...]], Callable]]): Mapping from element type
-            to the corresponding collate function. Default: None.
+            to the corresponding collate function. Default: ``None`` .
 
     Returns:
         :py:class:`~typing.Any`, the collated data.
@@ -246,7 +246,7 @@ def collate_tensor_fn(
 ):
     """ Collate function for :class:`mindspore.Tensor`. """
 
-    return ms.Tensor(np.stack(batch, axis=0))
+    return Tensor(np.stack(batch, axis=0))
 
 
 def collate_numpy_array_fn(
@@ -260,7 +260,7 @@ def collate_numpy_array_fn(
     # array of string classes and object
     if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
         raise TypeError(DEFAULT_COLLATE_ERR_MSG_FORMAT.format(elem.dtype))
-    return collate([ms.Tensor.from_numpy(b) for b in batch], collate_fn_map=collate_fn_map)
+    return collate([Tensor.from_numpy(b) for b in batch], collate_fn_map=collate_fn_map)
 
 
 def collate_numpy_scalar_fn(
@@ -270,7 +270,7 @@ def collate_numpy_scalar_fn(
 ):
     """ Collate function for :class:`numpy.number`, :class:`numpy.bool_` and :class:`numpy.object_`. """
 
-    return ms.Tensor(batch)
+    return Tensor(batch)
 
 
 def collate_float_fn(
@@ -280,7 +280,7 @@ def collate_float_fn(
 ):
     """ Collate function for :class:`float`. """
 
-    return ms.Tensor(batch, dtype=ms.float64)
+    return Tensor(batch, dtype=float64)
 
 
 def collate_int_fn(
@@ -290,7 +290,7 @@ def collate_int_fn(
 ):
     """ Collate function for :class:`int`. """
 
-    return ms.Tensor(batch)
+    return Tensor(batch)
 
 
 def collate_str_fn(
@@ -304,7 +304,7 @@ def collate_str_fn(
 
 
 default_collate_fn_map: dict[Union[type, tuple[type, ...]], Callable] = {
-    ms.Tensor: collate_tensor_fn,
+    Tensor: collate_tensor_fn,
     np.ndarray: collate_numpy_array_fn,
     (np.bool_, np.number, np.object_): collate_numpy_scalar_fn,
     float: collate_float_fn,

@@ -30,10 +30,6 @@ def pin_worker_fn(in_queue, out_queue, device_id, pin_memory_done):
     Pin memory worker function.
     """
 
-    mindspore.device_context.cpu.op_tuning.threads_num(1)
-    device_target, device_id = mindspore.get_current_device()
-    mindspore.set_device(device_target, device_id)
-
     while not pin_memory_done.is_set():
         try:
             order_index, data = in_queue.get(WORKER_TIME_OUT)
