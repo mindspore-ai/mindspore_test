@@ -327,6 +327,7 @@ mindspore.Tensor
     mindspore.Tensor.shape
     mindspore.Tensor.short
     mindspore.Tensor.sigmoid
+    mindspore.Tensor.sigmoid_
     mindspore.Tensor.sign
     mindspore.Tensor.sign_
     mindspore.Tensor.signbit

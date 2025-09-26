@@ -239,6 +239,7 @@ from mindspore.ops.function.array_func import tensor_scatter_add
 from mindspore.ops.auto_generate import select, select_ext_view
 # 94 sigmoid
 from mindspore.ops.auto_generate import sigmoid
+from mindspore.ops.auto_generate import inplace_sigmoid as sigmoid_
 # 95 sin
 from mindspore.ops.auto_generate import sin
 # 96 size
@@ -1038,6 +1039,9 @@ def deprecated_tensor_select(input, condition, y):
 # 94 sigmoid
 def tensor_sigmoid(input):
     return sigmoid(input)
+
+def tensor_sigmoid_(input):
+    return sigmoid_(input)
 
 
 # 95 sin

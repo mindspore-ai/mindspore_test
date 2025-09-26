@@ -2382,6 +2382,13 @@ REG_BPROP_BUILDER("InplaceElu").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(alpha)};
 });
 
+REG_BPROP_BUILDER("InplaceSigmoid").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->SigmoidGrad(out, dout);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Sigmoid").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(i1);
   auto dout = ib->GetInput(i2);
