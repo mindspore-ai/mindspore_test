@@ -315,6 +315,7 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
                                                std::vector<CNodePtr> *exec_order,
                                                mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes) {
   constexpr int64_t kDefaultDelayNum = 1;
+  constexpr int64_t kDefaultDelayFactor = 3;
   if (IsPrimitiveCNode(kernel, prim::kPrimMoveTo) && common::AnfAlgo::GetMoveToDstStr(kernel) == kToCpu) {
     // Get pre_fetch size.
     int64_t pre_fetch = kDefaultDelayNum;
@@ -325,7 +326,7 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
     if (attr_iter != attrs.end()) {
       const auto &pre_fetch_value = attr_iter->second;
       if (pre_fetch_value->isa<Int64Imm>()) {
-        pre_fetch = GetValue<int64_t>(pre_fetch_value);
+        pre_fetch = GetValue<int64_t>(pre_fetch_value) * kDefaultDelayFactor;
       }
     }
     // Create send and recv kernels.
