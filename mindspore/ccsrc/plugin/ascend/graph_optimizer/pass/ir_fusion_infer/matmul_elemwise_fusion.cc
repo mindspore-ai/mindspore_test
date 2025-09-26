@@ -22,7 +22,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "kernel/ascend/atb/kernel_mod_impl/atb_kernel_build.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
@@ -128,14 +127,7 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   if (elemwise_type == bias_add_str) {
     elewise_input_num = kBinaryInputNum;
   } else {
-    const auto &kernel_graph = AnfAlgo::FetchKernelGraph(node.get());
-    MS_EXCEPTION_IF_NULL(kernel_graph);
-    if (!kernel::IsEnableAtb(kernel_graph, node)) {
-      elewise_input_num = kUnaryInputNum;
-    } else {
-      MS_LOG(INFO) << "FusedMatmulElemUnary is not supported with ATB.";
-      return nullptr;
-    }
+    elewise_input_num = kUnaryInputNum;
   }
 
   // create op
