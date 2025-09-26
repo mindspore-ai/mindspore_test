@@ -8211,6 +8211,10 @@ def kaiser_window(window_length, periodic=True, beta=12.0, *, dtype=None):
         [5.27734413e-05 2.15672745e-01 1.00000000e+00 2.15672745e-01
          5.27734413e-05]
     """
+    if not isinstance(periodic, bool):
+        raise TypeError(
+            f"For 'kaiser_window', 'periodic' must be a variable of Boolean type, but got {type(periodic)}"
+        )
     if not isinstance(window_length, int):
         raise TypeError(
             f"For 'kaiser_window', 'window_length' must be a non-negative integer, but got {type(window_length)}"
@@ -8221,10 +8225,6 @@ def kaiser_window(window_length, periodic=True, beta=12.0, *, dtype=None):
         )
     if window_length <= 1:
         return Tensor(np.ones(window_length))
-    if not isinstance(periodic, bool):
-        raise TypeError(
-            f"For 'kaiser_window', 'periodic' must be a variable of Boolean type, but got {type(periodic)}"
-        )
     if dtype is not None and dtype not in mstype.float_type:
         raise TypeError(f"For 'kaiser_window', 'dtype' must be floating point dtypes, but got {dtype}.")
     if periodic:
