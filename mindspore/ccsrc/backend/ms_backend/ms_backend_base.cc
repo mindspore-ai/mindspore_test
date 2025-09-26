@@ -55,6 +55,7 @@
 #include "runtime/core/graph_scheduler/base/graph_adapter.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
 #include "utils/ms_utils.h"
@@ -1024,10 +1025,15 @@ bool MSBackendBase::CheckBackendInfoValid(nlohmann::json *data_json) {
     MS_LOG(ERROR) << "Invalid json path, please check compile cache path.";
     return false;
   }
-  MS_LOG(DEBUG) << "Json path: " << json_path;
-  std::ifstream json_stream(json_path);
+  auto real_json_path = FileUtils::GetRealPath(json_path.c_str());
+  if (!real_json_path.has_value()) {
+    MS_LOG(ERROR) << "Failed to get real path: " << json_path;
+    return false;
+  }
+  MS_LOG(DEBUG) << "Json path: " << real_json_path.value();
+  std::ifstream json_stream(real_json_path.value());
   if (!json_stream.is_open()) {
-    MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache missed.";
+    MS_LOG(ERROR) << "Load json file: " << real_json_path.value() << " error, backend graph cache missed.";
     return false;
   }
   json_stream >> (*data_json);
