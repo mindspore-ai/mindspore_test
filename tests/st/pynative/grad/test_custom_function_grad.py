@@ -879,23 +879,27 @@ def test_custom_function_with_attr():
     grad_net(net.apply)(x, y)
 
 
-class CustomFunctionAutoReduceNet(_Function):
-    @staticmethod
-    def forward(ctx, x, y):
-        x2 = x + y
-        return x2
-
-    @staticmethod
-    def backward(ctx, *args):
-        return Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]]), Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
-
-
-def test_custom_function_auto_reduce():
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_reduce_same_shape():
     """
-    Feature: Custom autograd function.
+    Feature: Custom autograd function same shape.
     Description: Test auto reduce.
     Expectation: success.
     """
+    class CustomFunctionAutoReduceNet(_Function):
+        @staticmethod
+        def forward(ctx, x, y):
+            x2 = x + y
+            return x2
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]]), \
+                   Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
+
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
     net = CustomFunctionAutoReduceNet()
@@ -904,6 +908,64 @@ def test_custom_function_auto_reduce():
     assert np.allclose(grads[0].asnumpy(), np.array([4., 4., 4.], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1].asnumpy(), np.array([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]], dtype=np.float32),
                        0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_reduce_not_same_shape():
+    """
+    Feature: Custom autograd function no same shape.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    class CustomFunctionAutoReduceNet2(_Function):
+        @staticmethod
+        def forward(ctx, x, y):
+            x2 = x + y
+            return x2
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor(np.ones((1, 1, 24, 8828, 128)).astype('float32')), \
+                   Tensor(np.ones((1, 1, 24, 8828, 128)).astype('float32'))
+    x = Tensor(np.random.rand(1, 24, 8828, 128).astype('float32'))
+    y = Tensor(np.random.rand(1, 24, 8828, 128).astype('float32'))
+    net = CustomFunctionAutoReduceNet2()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net.apply)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.ones((1, 24, 8828, 128), dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.ones((1, 24, 8828, 128), dtype=np.float32),
+                       0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_auto_reduce_zero_shape():
+    """
+    Feature: Custom autograd function zero shape.
+    Description: Test auto reduce.
+    Expectation: success.
+    """
+    class CustomFunctionAutoReduceNet2(_Function):
+        @staticmethod
+        def forward(ctx, x, y):
+            x2 = x + y
+            return x2
+
+        @staticmethod
+        def backward(ctx, *args):
+            return Tensor(np.ones((1, 128)).astype('float32')), Tensor(np.ones((1, 128)).astype('float32'))
+    x = Tensor(1.)
+    y = Tensor(2.)
+    net = CustomFunctionAutoReduceNet2()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net.apply)(x, y)
+    assert np.allclose(grads[0].asnumpy(), np.array(128.), 0.00001, 0.00001)
+    assert np.allclose(grads[1].asnumpy(), np.array(128.), 0.00001, 0.00001)
 
 
 class CustomFunctionAutoCastNet(_Function):
