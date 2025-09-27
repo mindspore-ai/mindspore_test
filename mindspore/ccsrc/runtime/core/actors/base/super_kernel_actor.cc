@@ -1326,7 +1326,8 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     ParallelDispatchKernels(context);
   } else {
     bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
-                              ActorDispatcher::enable_static_shape();
+                              ActorDispatcher::enable_static_shape() &&
+                              !GraphCaptureManager::GetInstance().IsExceedMaxCaptureCount();
     bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph();
     GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
 
