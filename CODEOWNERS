@@ -152,6 +152,9 @@
 /tests/st/backend_ascend/ @limingqi107
 /tests/st/broadcast/ @yangzhenzhang
 /tests/st/compiler/ @ginfung
+/tests/st/custom/ops_custom/ @limingqi107
+/tests/st/custom/custom_op_builder/kernel_mod/ @limingqi107
+/tests/st/custom/custom_op_builder/pyboost/ @chujinjin
 /tests/st/container/ @changzherui
 /tests/st/cpu_data_parallel/ @ZPaC
 /tests/st/dataset/ @jonyguo
