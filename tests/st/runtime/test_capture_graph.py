@@ -183,7 +183,7 @@ def test_multi_graph_cache_with_num_limit_for_capture_graph():
     expected_capture_count = 2
     expected_replay_count = 10
 
-    os.environ["MS_DEV_RUNTIME_CONF"] = "max_capture_dynamic_shape_number:2"
+    os.environ["MS_DEV_RUNTIME_CONF"] = "graph_capture_max_number:2"
 
     command = 'export GLOG_v=1 && python run_capture_graph.py > capture_graph_num_limit.log 2>&1'
     os.system(command)
