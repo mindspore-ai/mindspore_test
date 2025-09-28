@@ -15,7 +15,6 @@
 import os
 
 from multiprocessing.pool import Pool
-from tests.mark_utils import arg_mark
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -43,7 +42,6 @@ class TestInferParallel:
         if not ascend_home_path:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
-    @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
     def test_base_cases(self):
         """
         Feature: Infer interface
