@@ -529,7 +529,7 @@ def test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0():
     in_layout2 = (layout("mp", "sp"),)
     net.network.network.relu.shard(in_layout2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/04_inline_*"
+    file = f"{ir_graph_path}/05_inline_*"
     para1_str = "= Shard(.*ShardSubNet_construct"
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -560,7 +560,7 @@ def test_cell_nested_shard_with_layout_be_set_and_propagate_1():
     in_layout2 = (layout("mp", "sp"),)
     net.network.network.shard(in_layout2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/04_inline_*"
+    file = f"{ir_graph_path}/05_inline_*"
     para1_str = "y) = Shard("
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -593,7 +593,7 @@ def test_cell_nested_shard_with_layout_be_set_and_propagate_2():
     out_strategy2 = ((4, 2),)
     net.network.network.shard(in_strategy2, out_strategy2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/04_inline_*"
+    file = f"{ir_graph_path}/05_inline_*"
     para1_str = "y) = Shard("
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -633,7 +633,7 @@ def test_cell_nested_and_repeated_shard_with_layout_be_set_and_propagate_3():
     net.network.network.shard(in_strategy4, out_strategy4)
 
     compile_net(net, x)
-    file = f"{ir_graph_path}/04_inline_*"
+    file = f"{ir_graph_path}/05_inline_*"
     para1_str = "y) = Shard("
     in_layout3_str = (
         '(((I64(2), I64(4), I64(1)), (I64(1), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'

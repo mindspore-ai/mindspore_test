@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -356,4 +356,15 @@ const ValuePtr kUMonad = std::make_shared<UMonad>();
 
 bool IOMonad::operator==(const Value &other) const { return other.isa<IOMonad>(); }
 const ValuePtr kIOMonad = std::make_shared<IOMonad>();
+
+bool Event::operator==(const Value &other) const {
+  if (other.isa<Event>()) {
+    auto &other_ = static_cast<const Event &>(other);
+    return *this == other_;
+  }
+  return false;
+}
+
+bool Event::operator==(const Event &other) const { return event_id_ == other.event_id_; }
+
 }  // namespace mindspore

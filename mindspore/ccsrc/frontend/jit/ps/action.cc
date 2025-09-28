@@ -60,6 +60,7 @@
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/jit/ps/static_analysis/async_eval_result.h"
 #include "frontend/jit/ps/static_analysis/program_specialize.h"
+#include "frontend/jit/ps/static_analysis/event_method.h"
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/remove_value_node_dup.h"
 #include "frontend/jit/ps/event_message_print.h"
@@ -1113,6 +1114,19 @@ bool SetMixedPrecisionAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool EventMethodAction(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  if (resource->manager() == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Event Method failed, manager is null";
+  }
+  auto func_graph = resource->func_graph();
+  if (func_graph == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Event Method failed, graph is null";
+  }
+  pipeline::EventMethod(func_graph);
+  return true;
+}
+
 bool AutoMonadAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->manager() == nullptr) {
@@ -2104,6 +2118,8 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Evaluate type and shape, and specialize.
   (void)actions.emplace_back(std::make_pair(kTypeInference, TypeInferenceAction));
 
+  (void)actions.emplace_back(std::make_pair(kEventMethod, EventMethodAction));
+
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
@@ -2227,6 +2243,7 @@ std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_gr
       (void)jit_passes.emplace_back(kBootstrap, BootstrapAction);
     }
     (void)jit_passes.emplace_back(kTypeInference, TypeInferenceAction);
+    (void)jit_passes.emplace_back(kEventMethod, EventMethodAction);
     (void)jit_passes.emplace_back(kAutoMonad, AutoMonadAction);
     (void)jit_passes.emplace_back(kGraphReusing, GraphReusingAction);
     (void)jit_passes.emplace_back(kPreAutoParallel, SetTrainingFlagPass);

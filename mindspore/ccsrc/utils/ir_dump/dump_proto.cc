@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ void CheckIfValidType(const TypePtr &type) {
   if (!(type->isa<Number>() || IsKindOfTensorType(type) || type->isa<Tuple>() || type->isa<TypeType>() ||
         type->isa<List>() || type->isa<TypeAny>() || type->isa<RefKeyType>() || type->isa<RefType>() ||
         type->isa<Function>() || type->isa<TypeNone>() || type->isa<String>() || type->isa<UndeterminedType>() ||
-        type->isa<SymbolicKeyType>() || type->isa<MonadType>() || type->isa<Dictionary>()) ||
+        type->isa<SymbolicKeyType>() || type->isa<MonadType>() || type->isa<Dictionary>() || type->isa<EventType>()) ||
       type->isa<Slice>()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Unknown type: " << type->type_name();
   }

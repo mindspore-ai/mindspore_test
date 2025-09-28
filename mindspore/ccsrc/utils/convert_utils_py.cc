@@ -540,7 +540,9 @@ static ValueNameToConverterVector value_name_to_converter = {
   // Monad
   {Monad::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::none(); }},
   // Ellipsis
-  {Ellipsis::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::ellipsis(); }}};
+  {Ellipsis::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::ellipsis(); }},
+  // Event
+  {Event::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::none(); }}};
 
 // When converting data to tensor, ValueToPyData will only return _c_expression Tensor,
 // but not python tensor. If python tensor is needed, call _convert_python_data to the output.

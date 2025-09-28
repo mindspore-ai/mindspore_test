@@ -4601,6 +4601,34 @@ AnfNodePtr Parser::ParseWithitem(const FunctionBlockPtr &block, const py::object
   return enter_node;
 }
 
+py::object Parser::GetMSJitStreamObj(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
+  py::object function_ast_node = python_adapter::GetPyObjAttr(context_expr_obj, "func");
+  auto arg_type =
+    AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, function_ast_node)));
+  if (arg_type == AST_SUB_TYPE_NAME) {
+    std::string name_id = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "id"));
+    MS_LOG(DEBUG) << "The name of call node is: " << name_id;
+    bool is_ms_jit_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_MS_JIT_STREAM_CTX, name_id).cast<bool>();
+    MS_LOG(DEBUG) << "is_ms_jit_stream_ctx: " << is_ms_jit_stream_ctx;
+    if (!is_ms_jit_stream_ctx) {
+      return py::none();
+    }
+    py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
+    MS_LOG(DEBUG) << "args: " << py::str(args);
+    if (args.size() != 1) {
+      MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
+    }
+    std::string stream_name = py::cast<std::string>(python_adapter::GetPyObjAttr(args[0], "id"));
+    MS_LOG(DEBUG) << "The stream_name: " << stream_name;
+    py::object stream_obj = ast_->CallParserObjMethod(PYTHON_MOD_GET_MS_JIT_STREAM_OBJ, stream_name);
+    MS_LOG(DEBUG) << "The stream_obj: " << py::str(stream_obj);
+    if (!stream_obj.is_none()) {
+      return stream_obj;
+    }
+  }
+  return py::none();
+}
+
 // with expression [as variable]:
 //      with-block
 FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::object &node) {
@@ -4617,6 +4645,53 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
     // with Sample() as sample:
     // mean context_expr is Sample(), sample is optional_vars
     py::object context_expr_obj = python_adapter::GetPyObjAttr(items_obj, "context_expr");
+
+    // Check if is MSJitStreamCtx, get the stream object(s1) form 'with statement'.
+    // with MyMsJitStreamCtx(s1):
+    auto stream_obj = GetMSJitStreamObj(block, context_expr_obj);
+    if (!py::isinstance<py::none>(stream_obj)) {
+      // Currently only support: with MsJitStreamCtx(s1)
+      if (items_objs.size() != 1) {
+        MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
+      }
+
+      FunctionBlockPtr body_block = MakeFunctionBlock();
+      block->Jump(body_block, {});
+      body_block->Mature();
+      py::object body_node = python_adapter::GetPyObjAttr(node, "body");
+      body_block = ParseStatements(body_block, body_node);
+      py::object stream_obj_id =
+        python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, stream_obj);
+      if (py::isinstance<py::none>(stream_obj_id)) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Get py obj failed";
+      }
+      auto id = stream_obj_id.cast<std::string>();
+      MS_LOG(DEBUG) << "The id of stream obj is: " << id;
+      static std::map<std::string, uint32_t> stream_map;
+      static int64_t stream_id = 0;
+      if (stream_map.find(id) == stream_map.end()) {
+        stream_map[id] = stream_id++;
+      }
+
+      FunctionBlockPtr after_block = MakeFunctionBlock();
+      after_block->Mature();
+      auto after_func = after_block->func_graph();
+      MS_EXCEPTION_IF_NULL(after_func);
+      after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+      after_func->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX_AFTER, MakeValue(static_cast<int64_t>(stream_id)));
+
+      auto body_func = body_block->func_graph();
+      MS_EXCEPTION_IF_NULL(body_func);
+      if (body_func->get_return() == nullptr) {
+        body_block->Jump(after_block, {});
+      }
+      MS_LOG(DEBUG) << "Set no_inline flag for body_func: " << body_func->ToString();
+      body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+      body_func->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX, MakeValue(static_cast<int64_t>(stream_id)));
+      body_func->set_attr(kFuncGraphFlagStreamId, MakeValue(static_cast<int64_t>(stream_id)));
+
+      return after_block;
+    }
     AnfNodePtr context_expr_node = ParseExprNode(block, context_expr_obj);
     context_expr_nodes.push(context_expr_node);
     auto enter_node = ParseWithitem(block, items_obj, context_expr_node);

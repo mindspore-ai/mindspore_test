@@ -1576,6 +1576,14 @@ class AutoMonadConverter {
     }
     auto attach_cnode = attach_node->cast<CNodePtr>();
     auto input = attach_cnode->input(1);
+    if (IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+      auto make_tuple = input->cast<CNodePtr>();
+      for (size_t i = 1; i < make_tuple->inputs().size(); ++i) {
+        if (IsNoEliminateNode(make_tuple->input(i)->cast<CNodePtr>())) {
+          return;
+        }
+      }
+    }
     // Do not eliminate the node which has no_eliminate flag.
     if (input->isa<CNode>() && IsNoEliminateNode(input->cast<CNodePtr>()) &&
         !CheckHasOtherUsers(input->cast<CNodePtr>())) {

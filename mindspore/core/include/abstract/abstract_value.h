@@ -1829,6 +1829,32 @@ class MS_CORE_API AbstractMapTensor final : public AbstractBase {
 };
 using AbstractMapTensorPtr = std::shared_ptr<AbstractMapTensor>;
 
+/// \brief Class AbstractEvent describes a event's type, shape and value.
+class MS_CORE_API AbstractEvent : public AbstractBase {
+ public:
+  /// \brief Constructor of AbstractEvent.
+  ///
+  /// \param[in] element_type The type of abstract event.
+  AbstractEvent(const ValuePtr &value, const TypePtr &element_type, uint32_t event_id);
+
+  /// \brief Destructor of AbstractEvent.
+  ~AbstractEvent() override = default;
+  MS_DECLARE_PARENT(AbstractEvent, AbstractBase)
+
+  TypePtr BuildType() const override;
+  AbstractBasePtr Clone() const override;
+  AbstractBasePtr Broaden() const override;
+  AbstractBasePtr Join(const AbstractBasePtr &other) override;
+  std::size_t hash() const override;
+  uint32_t event_id() const { return event_id_; }
+  void set_event_id(uint32_t event_id) { event_id_ = event_id; }
+
+ protected:
+  bool equal_to(const AbstractEvent &other) const;
+  uint32_t event_id_ = 0;
+};
+using AbstractEventPtr = std::shared_ptr<AbstractEvent>;
+
 // Define attribute value map
 using AttrValueMap = mindspore::HashMap<std::string, ValuePtr>;
 using AttrValueMapPtr = std::shared_ptr<AttrValueMap>;

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,8 @@ class Parser {
   FunctionBlockPtr ParseAssert(const FunctionBlockPtr &block, const py::object &node);
   // Process with statement.
   FunctionBlockPtr ParseWith(const FunctionBlockPtr &block, const py::object &node);
+
+  py::object GetMSJitStreamObj(const FunctionBlockPtr &block, const py::object &context_expr_obj);
 
   // Process withitem.
   AnfNodePtr ParseWithitem(const FunctionBlockPtr &block, const py::object &node, const AnfNodePtr &context_expr_node);

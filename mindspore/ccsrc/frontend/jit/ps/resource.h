@@ -58,6 +58,7 @@ const char kCombineLikeGraphs[] = "combine_like_graphs";
 const char kGraphReusing[] = "graph_reusing";
 const char kPreCConv[] = "pre_cconv";
 const char kTypeInference[] = "type_inference";
+const char kEventMethod[] = "event_method";
 const char kAutoMonad[] = "auto_monad";
 const char kInline[] = "inline";
 const char kAddAttr[] = "add_attr";
