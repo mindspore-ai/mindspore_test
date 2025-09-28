@@ -948,7 +948,7 @@ def adaptive_max_pool1d(input, output_size):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.random.randint(0, 10, [1, 3, 6]), mindspore.float32)
+        >>> input = Tensor(np.random.randint(0, 10, [1, 3, 6]), mindspore.float16)
         >>> output = ops.adaptive_max_pool1d(input, output_size=2)
         >>> print(output.shape)
         (1, 3, 2)
@@ -5573,8 +5573,8 @@ def ctc_loss(log_probs, targets, input_lengths, target_lengths, blank=0, reducti
         >>> print(loss)
         -2.2986124
         >>> print(log_alpha)
-        [[[0.3       0.3            -inf      -inf      -inf]
-          [1.2       1.8931472 1.2            -inf      -inf]]]
+        [[[0.3       0.3            -inf      -inf 1.8931472 1.2       0.   0.       ]
+          [0.        0.       0.        0.       0.        0.          0.   0.       ]]]
     """
     _check_ctc_loss_inputs(blank, reduction, zero_infinity, 'ctc_loss')
     ctc_loss_op = NN_OPS.CTCLossV2(blank=blank, reduction="none", zero_infinity=zero_infinity)
@@ -9109,14 +9109,14 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
         >>> weight = Parameter(np.random.randn(3, 3).astype(np.float32))
         >>> output = ops.embedding(input, weight, max_norm=0.4)
         >>> print(output)
-        [[[ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01]],
-         [[ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01]]]
+        [[[ 5.49015924  3.47811311 -1.89771220],
+          [ 2.09307984 -2.24846993  3.40124398],
+          [ 5.49015924  3.47811311 -1.89771220],
+          [ 5.49015924  3.47811311 -1.89771220]],
+         [[ 2.09307984 -2.24846993  3.40124398],
+          [ 2.09307984 -2.24846993  3.40124398],
+          [ 5.49015924  3.47811311 -1.89771220],
+          [ 2.09307984 -2.24846993  3.40124398]]]
     """
     return embedding_op(input, weight, padding_idx, max_norm, norm_type, scale_grad_by_freq)
 

@@ -4214,33 +4214,33 @@ def var_mean(input, axis=None, ddof=0, keepdims=False):
          Tensor(shape=[], dtype=Float32, value= 3.16667))
         >>>
         >>> # case 2: Compute the variance and mean along axis 0.
-        >>> output = mindspore.ops.var_mean(input, axis=0)
+        >>> mindspore.ops.var_mean(input, axis=0)
         (Tensor(shape=[4], dtype=Float32, value= [ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]),
          Tensor(shape=[4], dtype=Float32, value= [ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]))
         >>>
         >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
-        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True)
+        >>> mindspore.ops.var_mean(input, axis=0, keepdims=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 4: If ddof=1:
-        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=1)
+        >>> mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=1)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 5: If ddof=True, same as ddof=1:
-        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=True)
+        >>> mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=True)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 4.33333349e+00,  1.00000000e+00,  2.33333349e+00,  3.33333313e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 3.33333325e+00,  3.00000000e+00,  3.66666675e+00,  2.66666675e+00]]))
         >>>
         >>> # case 6: If ddof=False, same as ddof=0:
-        >>> output = mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=False)
+        >>> mindspore.ops.var_mean(input, axis=0, keepdims=True, ddof=False)
         (Tensor(shape=[1, 4], dtype=Float32, value=
          [[ 2.88888884e+00,  6.66666687e-01,  1.55555570e+00,  2.22222194e-01]]),
          Tensor(shape=[1, 4], dtype=Float32, value=
@@ -8445,18 +8445,19 @@ def matmul(input, other):
         >>> other = mindspore.ops.arange(20, dtype=mindspore.float32).reshape(4, 5)
         >>> output = mindspore.ops.matmul(input, other)
         >>> print(output)
-        [[[  70,   76,   82,   88,   94],
-          [ 190,  212,  234,  256,  278],
-          [ 310,  348,  386,  424,  462]],
-         [[ 430,  484,  538,  592,  646],
-          [ 550,  620,  690,  760,  830],
-          [ 670,  756,  842,  928, 1014]]]
+        [[[  70.   76.   82.   88.   94.]
+          [ 190.  212.  234.  256.  278.]
+          [ 310.  348.  386.  424.  462.]]
+         [[ 430.  484.  538.  592.  646.]
+          [ 550.  620.  690.  760.  830.]
+          [ 670.  756.  842.  928. 1014.]]]
         >>>
         >>> # case 2 : The rank of `input` is 1.
         >>> input = mindspore.ops.ones(([1, 2]))
         >>> other = mindspore.ops.ones(([2]))
-        >>> mindspore.ops.matmul(input, other)
-        Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00])
+        >>> output = mindspore.ops.matmul(input, other)
+        >>> print(output)
+        [2.]
     """
     return auto_generate.matmul_ext(input, other)
 
@@ -8548,14 +8549,14 @@ def bmm(input_x, mat2):
         >>> mat2 = mindspore.ops.arange(72, dtype=mindspore.float32).reshape(2, 4, 3, 3)
         >>> out = mindspore.ops.bmm(input_x, mat2)
         >>> print(out)
-        [[[[  15,   18,   21]],
-         [[ 150,  162,  174]],
-         [[ 447,  468,  489]],
-         [[ 906,  936,  966]]],
-         [[[1527, 1566, 1605]],
-         [[2310, 2358, 2406]],
-         [[3255, 3312, 3369]],
-         [[4362, 4428, 4494]]]]
+        [[[[  15.   18.   21.]]
+          [[ 150.  162.  174.]]
+          [[ 447.  468.  489.]]
+          [[ 906.  936.  966.]]]
+         [[[1527. 1566. 1605.]]
+          [[2310. 2358. 2406.]]
+          [[3255. 3312. 3369.]]
+          [[4362. 4428. 4494.]]]]
     """
     return batch_matmul_(input_x, mat2)
 

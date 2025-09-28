@@ -1948,10 +1948,10 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
         >>> # input1 and input2 have the same meaning.
         >>> output1 = ops.multinomial_ext(input1, 2)
         >>> output2 = ops.multinomial_ext(input2, 2)
-        >>> # print(output1)
-        >>> # [0 1]
-        >>> # print(output2)
-        >>> # [0 1]
+        >>> print(output1)
+        [0 1]
+        >>> print(output2)
+        [0 1]
         >>> print(len(output1))
         2
         >>> print(len(output2))
@@ -1959,8 +1959,8 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
         >>> # case 2: The output is random, and the length of the output is the same as num_sample.
         >>> # replacement is True.
         >>> output3 = ops.multinomial_ext(input1, 10, replacement=True)
-        >>> # print(output3)
-        >>> # [0 0 1 0 0 0 0 0 0 0]
+        >>> print(output3)
+        [0 0 1 0 0 0 0 0 0 0]
         >>> print(len(output3))
         10
         >>> # case 3: The output is random, and the length of the output is the same as num_sample.
@@ -1968,9 +1968,9 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
         >>> # rank is 2
         >>> input4 = Tensor([[90, 10, 0], [10, 90, 0]], mstype.float32)
         >>> output4 = ops.multinomial_ext(input4, 10, replacement=True)
-        >>> # print(output4)
-        >>> # [[0 0 0 0 0 0 0 0 1 0]
-        >>> #  [1 1 1 1 1 0 1 1 1 1]]
+        >>> print(output4)
+        [[0 0 0 0 0 0 0 0 1 0]
+         [1 1 1 1 1 0 1 1 1 1]]
     """
     if generator is None:
         generator = default_generator
