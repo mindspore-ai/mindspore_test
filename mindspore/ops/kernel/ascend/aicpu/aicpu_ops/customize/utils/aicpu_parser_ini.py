@@ -103,6 +103,7 @@ cust_op_lists = [
     "fftwithsize",
     "filldiagonal",
     "floordiv",
+    "resizebicubic",
     "fractionalmaxpool3dwithfixedksize",
     "fractionalmaxpool3dgradwithfixedksize",
     "fusedsparseadam",
