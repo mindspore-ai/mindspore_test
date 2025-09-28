@@ -992,6 +992,28 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   }
 }
 
+void CheckValidInputForParallelDispatch(const device::DeviceAddressPtr &tensor_address, const AnfNodePtr &node) {
+  // In parallel dispatch scenarios, asynchronous host-to-device copying requires the host address to be pinned memory;
+  // otherwise, it can lead to deadlock issues, as aclrtMemcpyAsync includes synchronous stream behavior.
+  if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+    MS_EXCEPTION_IF_NULL(tensor_address);
+    MS_EXCEPTION_IF_NULL(node);
+    bool has_pinned_allocator = (tensor_address->allocator() != nullptr) && (tensor_address->allocator()->IsPinned());
+    if (tensor_address->GetDeviceType() == device::DeviceType::kCPU && !has_pinned_allocator) {
+      std::string err_info =
+        std::string(
+          "In parallel dispatch(kernel group launch) scenarios, asynchronous host-to-device copying for network input "
+          "tensor requires the host address to be pinned memory. Please change the host memory allocation method for "
+          "the "
+          "input tensor in the Python layer to pinned memory for input node: ") +
+        node->DebugString();
+      // To prevent thread exceptions from being overwritten, always prints of the first ERROR log.
+      MS_LOG(ERROR) << err_info;
+      MS_LOG(EXCEPTION) << err_info;
+    }
+  }
+}
+
 void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
                                  const AnfNodePtr &node, bool is_first_user, size_t stream_id,
                                  bool *has_h2d_copy = nullptr) {
@@ -1020,6 +1042,7 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
                   << " from graph parameter store.";
     return;
   }
+  CheckValidInputForParallelDispatch(tensor->device_address(), node);
 
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device_tensor->GetDeviceType(), device_tensor->device_id()});
