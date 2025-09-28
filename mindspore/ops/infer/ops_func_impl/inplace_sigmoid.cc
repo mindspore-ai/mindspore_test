@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <vector>
 #include "infer/ops_func_impl/inplace_sigmoid.h"
+#include <vector>
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
