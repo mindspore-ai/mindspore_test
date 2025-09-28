@@ -39,9 +39,9 @@ TEST_F(PyBoostConverterTest, ToTensorTest1) {
 
   py::list list;
   list.append(tensor_py);
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto t = converter.ToTensor(list, kIndex0);
+  auto t = converter.ToTensor(list.ptr(), kIndex0);
   ASSERT_EQ(t, tensor::ConvertToTensor(tensor_py));
 }
 
@@ -55,10 +55,10 @@ TEST_F(PyBoostConverterTest, ToTensorTest3) {
   py::list list;
   list.append(x_obj);
   list.append(y_obj);
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto x_out = converter.ToTensor(list, kIndex0);
-  auto y_out = converter.ToTensor(list, kIndex1);
+  auto x_out = converter.ToTensor(list.ptr(), kIndex0);
+  auto y_out = converter.ToTensor(list.ptr(), kIndex1);
   ASSERT_NE(x_out, nullptr);
   ASSERT_NE(y_out, nullptr);
   ASSERT_EQ(y_out->isa<tensor::Tensor>(), true);
@@ -78,14 +78,14 @@ TEST_F(PyBoostConverterTest, ToTensorOptionalTest) {
   list.append(input);
   list.append(min);
   list.append(max);
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto min_out = converter.ToTensorOptional(list, kIndex1);
+  auto min_out = converter.ToTensorOptional(list.ptr(), kIndex1);
   ASSERT_EQ(min_out.has_value(), true);
   ASSERT_NE(min_out.value(), nullptr);
   ASSERT_EQ(min_out.value()->isa<tensor::Tensor>(), true);
 
-  auto max_out = converter.ToTensorOptional(list, kIndex2);
+  auto max_out = converter.ToTensorOptional(list.ptr(), kIndex2);
   ASSERT_EQ(max_out.has_value(), false);
 }
 
@@ -104,16 +104,16 @@ TEST_F(PyBoostConverterTest, ToIntOptionalTest1) {
   list.append(input);
   list.append(dim);
   list.append(keep_dim);
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto input_out = converter.ToTensor(list, kIndex0);
+  auto input_out = converter.ToTensor(list.ptr(), kIndex0);
   ASSERT_NE(input_out, nullptr);
   ASSERT_EQ(input_out->isa<tensor::Tensor>(), true);
 
-  auto dim_out = converter.ToIntOptional(list, kIndex1);
+  auto dim_out = converter.ToIntOptional(list.ptr(), kIndex1);
   ASSERT_EQ(dim_out.has_value(), false);
 
-  auto keep_dim_out = converter.ToBool(list, kIndex2);
+  auto keep_dim_out = converter.ToBool(list.ptr(), kIndex2);
   ASSERT_EQ(keep_dim_out->value(), true);
 }
 
@@ -132,13 +132,13 @@ TEST_F(PyBoostConverterTest, ToIntOptionalTest2) {
   list.append(input);
   list.append(dim);
   list.append(keep_dim);
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto dim_out = converter.ToIntOptional(list, kIndex1);
+  auto dim_out = converter.ToIntOptional(list.ptr(), kIndex1);
   ASSERT_EQ(dim_out.has_value(), true);
   ASSERT_EQ(dim_out.value()->value(), 1);
 
-  auto keep_dim_out = converter.ToBool(list, kIndex2);
+  auto keep_dim_out = converter.ToBool(list.ptr(), kIndex2);
   ASSERT_EQ(keep_dim_out->value(), false);
 }
 
@@ -151,9 +151,9 @@ TEST_F(PyBoostConverterTest, ToBoolOptionalTest1) {
 
   py::list list;
   list.append(py::none());
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto t = converter.ToBoolOptional(list, kIndex0);
+  auto t = converter.ToBoolOptional(list.ptr(), kIndex0);
   ASSERT_EQ(t.has_value(), false);
 }
 
@@ -166,9 +166,9 @@ TEST_F(PyBoostConverterTest, ToBoolOptionalTest2) {
 
   py::list list;
   list.append(py::bool_(true));
-  converter.Parse(list);
+  converter.Parse(list.ptr());
 
-  auto t = converter.ToBoolOptional(list, kIndex0);
+  auto t = converter.ToBoolOptional(list.ptr(), kIndex0);
   ASSERT_EQ(t.has_value(), true);
   ASSERT_EQ(t.value()->value(), true);
 }
