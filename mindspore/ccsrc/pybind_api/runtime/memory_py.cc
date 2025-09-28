@@ -44,7 +44,7 @@ device::DeviceResManager *GetResManager() {
 
 py::dict CreateEmptyMemoryStats() {
   py::dict memory_stats;
-  py::dict commom_mem_pool_stats;
+  py::dict common_mem_pool_stats;
   py::dict persistent_mem_pool_stats;
   memory_stats["total_reserved_memory"] = 0;
   memory_stats["total_allocated_memory"] = 0;
@@ -52,15 +52,15 @@ py::dict CreateEmptyMemoryStats() {
   memory_stats["total_eager_free_memory"] = 0;
   memory_stats["max_reserved_memory"] = 0;
   memory_stats["max_allocated_memory"] = 0;
-  commom_mem_pool_stats["block_unit_size"] = 0;
-  commom_mem_pool_stats["block_counts"] = 0;
-  commom_mem_pool_stats["blocks_info"] =
+  common_mem_pool_stats["block_unit_size"] = 0;
+  common_mem_pool_stats["block_counts"] = 0;
+  common_mem_pool_stats["blocks_info"] =
     std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>{};
   persistent_mem_pool_stats["block_counts"] = 0;
   persistent_mem_pool_stats["block_unit_size"] = 0;
   persistent_mem_pool_stats["blocks_info"] =
     std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>{};
-  memory_stats["commom_mem_pool_stats"] = commom_mem_pool_stats;
+  memory_stats["common_mem_pool_stats"] = common_mem_pool_stats;
   memory_stats["persistent_mem_pool_stats"] = persistent_mem_pool_stats;
   return memory_stats;
 }
@@ -75,7 +75,7 @@ py::dict MemoryStats(const std::string &device_target) {
 
   // Memory statistics result to be returned.
   py::dict memory_stats;
-  py::dict commom_mem_pool_stats;
+  py::dict common_mem_pool_stats;
   py::dict persistent_mem_pool_stats;
   // Peak memory statistics.
   // py::dict peak_mem_stats;
@@ -99,13 +99,13 @@ py::dict MemoryStats(const std::string &device_target) {
   memory_stats["total_eager_free_memory"] = total_eager_free_mem_size;
   memory_stats["max_reserved_memory"] = reserved_mem_peak_size;
   memory_stats["max_allocated_memory"] = used_mem_peak_size;
-  commom_mem_pool_stats["block_unit_size"] = block_unit_size_stats["common_mem_pool"];
-  commom_mem_pool_stats["block_counts"] = block_counts_stats["common_mem_pool"];
-  commom_mem_pool_stats["blocks_info"] = common_mem_blocks_info;
+  common_mem_pool_stats["block_unit_size"] = block_unit_size_stats["common_mem_pool"];
+  common_mem_pool_stats["block_counts"] = block_counts_stats["common_mem_pool"];
+  common_mem_pool_stats["blocks_info"] = common_mem_blocks_info;
   persistent_mem_pool_stats["block_counts"] = block_counts_stats["persistent_mem_pool"];
   persistent_mem_pool_stats["block_unit_size"] = block_unit_size_stats["persistent_mem_pool"];
   persistent_mem_pool_stats["blocks_info"] = persistent_mem_blocks_info;
-  memory_stats["commom_mem_pool_stats"] = commom_mem_pool_stats;
+  memory_stats["common_mem_pool_stats"] = common_mem_pool_stats;
   memory_stats["persistent_mem_pool_stats"] = persistent_mem_pool_stats;
   return memory_stats;
 }
