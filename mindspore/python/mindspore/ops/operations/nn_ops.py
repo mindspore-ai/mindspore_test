@@ -6868,8 +6868,8 @@ class CTCLossV2(Primitive):
         >>> print(neg_log_hood)
         [-2.2986124]
         >>> print(log_alpha)
-        [[[0.3       0.3            -inf      -inf      -inf]
-          [1.2       1.8931472 1.2            -inf      -inf]]]
+        [[[0.3       0.3            -inf      -inf 1.8931472 1.2       0.   0.       ]
+          [0.        0.       0.        0.       0.        0.          0.   0.       ]]]
     """
 
     @prim_attr_register

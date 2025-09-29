@@ -818,8 +818,10 @@ def get_white_list():
          <class 'mindspore.ops.operations.nn_ops.Conv2DTranspose'>,
          <class 'mindspore.ops.operations.nn_ops.Conv3DTranspose'>,
          <class 'mindspore.ops.operations.nn_ops.Conv2DBackpropInput'>,
-         <class 'mindspore.ops.operations.math_ops.MatMul'>, <class 'mindspore.ops.operations.math_ops.BatchMatMul'>,
-         <class 'mindspore.ops.operations.nn_ops.PReLU'>, <class 'mindspore.ops.operations.nn_ops.ReLU'>,
+         <class 'mindspore.ops.auto_generate.gen_ops_prim.MatMul'>,
+         <class 'mindspore.ops.auto_generate.gen_ops_prim.BatchMatMul'>,
+         <class 'mindspore.ops.auto_generate.gen_ops_prim.PReLU'>,
+         <class 'mindspore.ops.auto_generate.gen_ops_prim.ReLU'>,
          <class 'mindspore.ops.operations.math_ops.Ger'>]
     """
     white_list = AMP_WHITE_LIST.copy()
