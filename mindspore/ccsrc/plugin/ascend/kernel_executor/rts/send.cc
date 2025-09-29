@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <vector>
 
 #include "plugin/ascend/kernel_executor/rts/send.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
@@ -27,27 +28,38 @@ SendKernel::~SendKernel() {}
 
 bool SendKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto primitive = common::AnfAlgo::GetCNodePrimitive(anf_node);
   MS_EXCEPTION_IF_NULL(primitive);
-  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, anf_node->cast<CNodePtr>())) {
+  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode) && cnode->GetAttr(kAttrEventId) == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "SendKernel has no attr kAttrEventId";
   }
-  event_id_ = GetValue<uint32_t>(primitive->GetAttr(kAttrEventId));
 
-  if (common::AnfAlgo::HasNodeAttr(kAttrRecordEvent, anf_node->cast<CNodePtr>())) {
+  if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+    event_id_ = GetValue<uint32_t>(primitive->GetAttr(kAttrEventId));
+  }
+  if (common::AnfAlgo::HasNodeAttr(kAttrRecordEvent, cnode)) {
     event_ = reinterpret_cast<aclrtEvent>(GetValue<uintptr_t>(primitive->GetAttr(kAttrRecordEvent)));
   }
-  MS_LOG(INFO) << "send op event id:" << event_id_;
+  MS_LOG(INFO) << "StreamSend op event id:" << event_id_ << ", event ptr: " << event_;
+
+  std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
+  std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
+  Resize(input_kernel_tensors, output_kernel_tensors);
   return true;
 }
 
 bool SendKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
                         const std::vector<KernelTensor *> &, void *stream_ptr) {
-  MS_EXCEPTION_IF_NULL(event_);
+  if (event_ == nullptr) {
+    MS_LOG(INFO) << "Skip launching StreamSend.";
+    return true;
+  }
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtRecordEvent, event_, stream_ptr);
   if (status != ACL_SUCCESS) {
-    MS_LOG(ERROR) << "Send op aclrtRecordEvent failed!";
+    MS_LOG(ERROR) << "StreamSend op aclrtRecordEvent failed!";
     return false;
   }
   return true;
