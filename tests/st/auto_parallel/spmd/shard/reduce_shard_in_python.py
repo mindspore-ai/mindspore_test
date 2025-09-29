@@ -85,7 +85,7 @@ def test_sum_ext_dim_partial_model_parallel_1():
     x_layout = layout("None", ("dp", "cp"), "mp")
     x_local = global_to_local(x, x_layout)
 
-    parallel_net = SumExtNet(relu_strategy=(layout("None", ("None", "None"), "mp"),))
+    parallel_net = SumExtNet(relu_strategy=(layout("None", "None", "mp"),))
     parallel_output = parallel_net(x_local, dim=[0, 1], keepdim=True)
 
     # Validate
@@ -105,15 +105,15 @@ def test_mean_ext_partial_model_parallel_2():
 
     # Standalone
     standalone_net = MeanExtNet()
-    standalone_output = standalone_net(x, dim=None, keepdim=False)
+    standalone_output = standalone_net(x, dim=[0, 1], keepdim=False)
 
     # Parallel
     layout = Layout(base_device_matrix, base_alias_name)
     x_layout = layout("dp", "cp", "mp")
     x_local = global_to_local(x, x_layout)
 
-    parallel_net = MeanExtNet(relu_strategy=(layout(),))
-    parallel_output = parallel_net(x_local, dim=None, keepdim=False)
+    parallel_net = MeanExtNet(relu_strategy=(layout("mp",),))
+    parallel_output = parallel_net(x_local, dim=[0, 1], keepdim=False)
 
     # Validate
     parallel_output = local_to_global(parallel_output)

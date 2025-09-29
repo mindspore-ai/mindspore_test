@@ -16,9 +16,13 @@
 Distributed implementation for Reduce operator.
 """
 
+from typing import Sequence, Union, Tuple, List
+
 import mindspore as ms
 from mindspore.parallel import Layout
 from .parallel_ops import DistributedOp
+
+StrOrTuple = Union[str, Tuple["StrOrTuple", ...], List["StrOrTuple"]]
 
 
 class ReduceExtDistributedOpBase(DistributedOp):
@@ -115,19 +119,24 @@ class ReduceExtDistributedOpBase(DistributedOp):
         """Replace or drop dimensions depending on keepdim."""
         if not isinstance(dim, (tuple, list)):
             dim = [dim]
+        else:
+            dim = list(dim)
 
         rank = len(x_layout.alias_tensor_map)
-        for axis_id in dim:
-            if not isinstance(axis_id, int) or axis_id < 0 or axis_id >= rank:
-                raise ValueError(f"Invalid dim index: {axis_id}")
+        for i, axis_id in enumerate(dim):
+            if axis_id < 0:
+                dim[i] = rank + axis_id
+            if not isinstance(axis_id, int) or dim[i] >= rank or dim[i] < 0:
+                raise ValueError(f"Invalid reduce axis index {axis_id} at position {i}.")
 
         alias_tensor_map = x_layout.alias_tensor_map
-        reduce_alias = [alias_tensor_map[axis_id] for axis_id in dim]
+        reduce_alias = [alias_tensor_map[axis_id] for axis_id in dim if
+                        alias_tensor_map[axis_id] is not None and alias_tensor_map[axis_id] != "None"]
         reduce_alias = self._flatten_aliases(reduce_alias)
 
         if keepdim:
             return self._replace_keepdim(alias_tensor_map, reduce_alias)
-        return self._replace_dropdim(alias_tensor_map, reduce_alias)
+        return self._replace_dropdim(alias_tensor_map, reduce_alias, dim)
 
     def _flatten_aliases(self, reduce_alias):
         """Flatten reduce_alias into a list of atomic alias strings."""
@@ -151,12 +160,15 @@ class ReduceExtDistributedOpBase(DistributedOp):
                     new_alias_map.append("None")
                 else:
                     new_alias_map.append(alias)
+        new_alias_map = self._compact_tensor_map(new_alias_map)
         return reduce_alias, tuple(new_alias_map)
 
-    def _replace_dropdim(self, alias_tensor_map, reduce_alias):
+    def _replace_dropdim(self, alias_tensor_map, reduce_alias, dim):
         """Compress reduce dim."""
         new_alias_map = []
-        for alias in alias_tensor_map:
+        for i, alias in enumerate(alias_tensor_map):
+            if i in dim:
+                continue
             if isinstance(alias, (tuple, list)):
                 new_alias = tuple(item for item in alias if item not in reduce_alias)
                 if new_alias:
@@ -165,7 +177,23 @@ class ReduceExtDistributedOpBase(DistributedOp):
                 if alias in reduce_alias:
                     continue
                 new_alias_map.append(alias)
+        new_alias_map = self._compact_tensor_map(new_alias_map)
         return reduce_alias, tuple(new_alias_map)
+
+    def _compact_tensor_map(self, alias_map: Sequence[StrOrTuple]) -> Tuple[StrOrTuple, ...]:
+        """Extend tensor map of 'None'."""
+
+        def _compress(elem: StrOrTuple) -> StrOrTuple:
+            if isinstance(elem, (list, tuple)):
+                compressed = tuple(_compress(e) for e in elem)
+                if len(compressed) == 1:
+                    return compressed[0]
+                if all(x == 'None' for x in compressed):
+                    return 'None'
+                return compressed
+            return elem
+
+        return tuple(_compress(elem) for elem in alias_map)
 
     def _apply_partial(self, out_layout, alias):
         """Apply all partial to given alias (string, tuple, list)."""

@@ -245,3 +245,119 @@ def test_sum_ext_tuple_alias_dim_10(op_name):
         expected_map=(0,),
         extra_args=[(0, 1), False]
     )
+
+
+@pytest.mark.parametrize("op_name", ["SumExt", "MeanExt"])
+def test_sum_ext_tuple_alias_dim_11(op_name):
+    """
+    Feature: Tuple alias in one dim, keep dim 'none'.
+    Description: reduce dim=(0, 1) with alias ('dp','cp'), keepdim=True.
+    Expectation: tuple replaced by None.
+    """
+    device_matrix = (2, 2, 2)
+    alias_name = ("dp", "cp", "mp")
+    rank_list = list(range(8))
+
+    x_layout = Layout(device_matrix, alias_name, rank_list)
+    x_layout = x_layout("None", ("dp", "cp"), "None")
+
+    run_scenario(
+        op_name,
+        "11. Tuple alias in one dim, with 'None', keepdim=True.",
+        x_layout,
+        expected_map=(-1, -1, -1),
+        extra_args=[(0, 1), True]
+    )
+
+
+@pytest.mark.parametrize("op_name", ["SumExt", "MeanExt"])
+def test_sum_ext_tuple_alias_dim_12(op_name):
+    """
+    Feature: Tuple alias in one dim, keep other dim 'none'.
+    Description: reduce dim=(0, 1) with alias ('dp','cp'), keepdim=False.
+    Expectation: tuple replaced by None.
+    """
+    device_matrix = (2, 2, 2)
+    alias_name = ("dp", "cp", "mp")
+    rank_list = list(range(8))
+
+    x_layout = Layout(device_matrix, alias_name, rank_list)
+    x_layout = x_layout("None", ("dp", "cp"), "None")
+
+    run_scenario(
+        op_name,
+        "12. Tuple alias in one dim, with 'None', keepdim=False.",
+        x_layout,
+        expected_map=(-1,),
+        extra_args=[(0, 1), False]
+    )
+
+
+@pytest.mark.parametrize("op_name", ["SumExt", "MeanExt"])
+def test_sum_ext_tuple_alias_dim_13(op_name):
+    """
+    Feature: Tuple alias in one dim, reduce with negative dim.
+    Description: reduce dim=(0, 1) with alias ('dp','cp'), keepdim=True.
+    Expectation: tuple replaced by None.
+    """
+    device_matrix = (2, 2, 2)
+    alias_name = ("dp", "cp", "mp")
+    rank_list = list(range(8))
+
+    x_layout = Layout(device_matrix, alias_name, rank_list)
+    x_layout = x_layout("None", ("dp", "cp"), "None")
+
+    run_scenario(
+        op_name,
+        "13. Tuple alias in one dim, with 'None', keepdim=True, reduce with negative dim.",
+        x_layout,
+        expected_map=(-1, -1, -1),
+        extra_args=[(-3, -2), True]
+    )
+
+
+@pytest.mark.parametrize("op_name", ["SumExt", "MeanExt"])
+def test_sum_ext_tuple_alias_dim_14(op_name):
+    """
+    Feature: Tuple alias in one dim, reduce with negative dim.
+    Description: reduce dim=(0, 1) with alias ('dp','cp'), keepdim=False.
+    Expectation: tuple replaced by None.
+    """
+    device_matrix = (2, 2, 2)
+    alias_name = ("dp", "cp", "mp")
+    rank_list = list(range(8))
+
+    x_layout = Layout(device_matrix, alias_name, rank_list)
+    x_layout = x_layout("None", ("dp", "cp"), "None")
+
+    run_scenario(
+        op_name,
+        "14. Tuple alias in one dim, with 'None', keepdim=False, reduce with negative dim.",
+        x_layout,
+        expected_map=(-1,),
+        extra_args=[(-3, -2), False]
+    )
+
+
+@pytest.mark.parametrize("op_name", ["SumExt", "MeanExt"])
+def test_sum_ext_tuple_alias_dim_15(op_name):
+    """
+    Feature: Tuple alias in one dim.
+    Description: reduce dim=(0, 1) with alias ('dp','cp'), keepdim=False.
+    Expectation: raise ValueError.
+    """
+    device_matrix = (2, 2, 2)
+    alias_name = ("dp", "cp", "mp")
+    rank_list = list(range(8))
+
+    x_layout = Layout(device_matrix, alias_name, rank_list)
+    x_layout = x_layout("None", ("dp", "cp"), "None")
+
+    with pytest.raises(ValueError):
+        run_scenario(
+            op_name,
+            "15. Tuple alias in one dim, illegal reduce dim",
+            x_layout,
+            expected_map=(-1, -1),
+            extra_args=[(-4, -2), False]
+        )
