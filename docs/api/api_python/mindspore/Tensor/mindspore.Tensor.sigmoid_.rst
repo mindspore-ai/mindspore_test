@@ -5,7 +5,5 @@ mindspore.Tensor.sigmoid_
 
     :func:`mindspore.Tensor.sigmoid` 的in-place版本。
 
-    .. note::
+    .. warning::
         只支持 `Ascend` 。
-
-
