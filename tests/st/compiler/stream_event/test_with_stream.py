@@ -20,7 +20,7 @@ from mindspore import Tensor, ops
 from mindspore.runtime.ms_jit_stream_ctx import MsJitStream, MsJitStreamCtx
 from tests.mark_utils import arg_mark
 
-ms.set_context(mode=ms.GRAPH_MODE)
+ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
 
 
 class MyMsJitStreamCtx(MsJitStreamCtx):

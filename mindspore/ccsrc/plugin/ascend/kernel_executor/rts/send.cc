@@ -38,6 +38,10 @@ bool SendKernel::Init(const AnfNodePtr &anf_node) {
     event_ = reinterpret_cast<aclrtEvent>(GetValue<uintptr_t>(primitive->GetAttr(kAttrRecordEvent)));
   }
   MS_LOG(INFO) << "send op event id:" << event_id_;
+
+  std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
+  std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
+  Resize(input_kernel_tensors, output_kernel_tensors);
   return true;
 }
 
