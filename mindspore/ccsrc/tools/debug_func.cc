@@ -121,7 +121,7 @@ void DebugOnStepEnd(int total_running_count, std::vector<const DeviceContext *> 
     MS_EXCEPTION_IF_NULL(device_context);
     if ((sync_stream_device_contexts.count(device_context) == 0) &&
         (!device_context->device_res_manager_->SyncAllStreams())) {
-      MS_LOG(EXCEPTION) << "Sync stream failed:" + device_context->device_context_key().ToString();
+      MS_LOG(ERROR) << "Sync stream failed:" + device_context->device_context_key().ToString();
     }
     (void)sync_stream_device_contexts.insert(device_context);
   }
