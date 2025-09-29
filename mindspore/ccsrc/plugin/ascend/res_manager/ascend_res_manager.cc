@@ -1577,9 +1577,18 @@ int AscendResManager::ResetParams(const std::vector<tensor::TensorPtr> &params) 
                    << " tensor device address is nullptr, skip resetting.";
       continue;
     }
-    MS_LOG(INFO) << "Parameter " << index << "/" << params.size() << " size=" << tensor->Size();
-    auto ret = CALL_ASCEND_API(aclrtMemsetAsync, tensor->device_address()->GetMutablePtr(), tensor->Size(), 0,
-                               tensor->Size(), stream_ptr);
+    MS_LOG(INFO) << "Parameter " << index << "/" << params.size() << " size=" << tensor->Size()
+                 << " ptr: " << tensor->device_address()->GetMutablePtr()
+                 << ", type: " << tensor->device_address()->GetDeviceType();
+    auto ret = ACL_SUCCESS;
+    bool has_pinned_allocator =
+      tensor->device_address()->allocator() != nullptr && tensor->device_address()->allocator()->IsPinned();
+    if (tensor->device_address()->GetDeviceType() == device::DeviceType::kCPU && !has_pinned_allocator) {
+      ret = CALL_ASCEND_API(aclrtMemset, tensor->device_address()->GetMutablePtr(), tensor->Size(), 0, tensor->Size());
+    } else {
+      ret = CALL_ASCEND_API(aclrtMemsetAsync, tensor->device_address()->GetMutablePtr(), tensor->Size(), 0,
+                            tensor->Size(), stream_ptr);
+    }
     if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclrtMemsetAsync failed with return value " << ret << ".";
       return ret;
