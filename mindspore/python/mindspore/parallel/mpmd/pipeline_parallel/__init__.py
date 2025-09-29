@@ -13,6 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """Interfaces for pipeline parallel-related"""
-from .stage import PipelineStage, P2PInfo, SharedParameterInfo
+from .stage import PipelineStage, SharedParameterInfo
 from .schedule import Schedule1F1B, ScheduleGPipe
 from ._utils import BatchDimSpec

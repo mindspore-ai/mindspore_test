@@ -52,7 +52,9 @@ def _tensor_strategy(dev_mat, tensor_map):
 
 def _infer_slice_area_by_rank(dev_matrix, tensor_map, rank_id: int, full_shape: tuple): # -> tuple[tuple[int]]:
     """Return the range of each axis from full tensor for slice in current rank."""
-    _get_dev_num_alone_dim = lambda matrix, dim: dev_matrix[-dim - 1] if dim != -1 else 1
+    def _get_dev_num_alone_dim(dev_matrix, dim):
+        """_get_dev_num_alone_dim."""
+        return dev_matrix[-dim - 1] if dim != -1 else 1
 
     def _rank_id_to_dev_id_list(dev_matrix, rank_id):
         """Infer dev id list by rank_id and dev_matrix"""
@@ -117,6 +119,7 @@ def _infer_slice_shape_by_layout(global_shape, layout):
             if sub_axis_name != "None":
                 slice_shape[i] = slice_shape[i] // layout.mesh.get_device_num_along_axis(sub_axis_name)
     return slice_shape
+
 
 class _DistributedTensorInfo:
     """
@@ -197,7 +200,7 @@ class _DeviceMatrix:
         if not isinstance(alias_name, tuple):
             raise TypeError(f'alias_name must be tuple type, but got:{type(alias_name)}')
         if len(device_matrix) != len(alias_name):
-            raise ValueError(f'device_matrix length should be equal to alias_name length')
+            raise ValueError('device_matrix length should be equal to alias_name length')
         for in_ele in device_matrix:
             if not isinstance(in_ele, int):
                 raise TypeError(f'The element of device_matrix must be int type, but got:{type(in_ele)}')
@@ -205,9 +208,9 @@ class _DeviceMatrix:
             if not isinstance(in_ele, str):
                 raise TypeError(f'The element of alias_name must be str type, but got:{type(in_ele)}')
             if not in_ele:
-                raise ValueError(f"The element of alias_name can not be empty.")
+                raise ValueError("The element of alias_name can not be empty.")
             if in_ele == "None":
-                raise ValueError(f"The element of alias_name can not set 'None', because 'None' means no sharding.")
+                raise ValueError("The element of alias_name can not set 'None', because 'None' means no sharding.")
         if len(set(alias_name)) != len(alias_name):
             raise ValueError(f'Each element of alias_name {alias_name} should be different')
         inter_key = "interleaved_parallel"
@@ -366,7 +369,7 @@ class _DeviceMatrix:
         return tuple(global_shape)
 
     def get_comm_group_by_axis(self, axis, rank):
-        if (axis, rank) in self._group_map.keys():
+        if (axis, rank) in self._group_map:
             return self._group_map[(axis, rank)]
         rank_list = self.get_rank_list_along_axis(axis=axis)
         group = "-".join(str(x) for x in rank_list)
@@ -428,13 +431,14 @@ class _DeviceMatrix:
         map_key = (self.device_matrix, self.alias_name, rank_ids)
         return map_key
 
+
 _DEVICE_MESH_MAP = {}
+
 
 def _create_device_mesh(device_matrix: Tuple[int], alias_name: Tuple[str], rank_list: Tuple[int]):
     """
-   _create_device_mesh
+    create_device_mesh
     """
-    global _DEVICE_MESH_MAP
     rank_ids = (rank_list[0], rank_list[-1])
     map_key = hash((device_matrix, alias_name, rank_ids))
     if map_key not in _DEVICE_MESH_MAP:
@@ -544,14 +548,25 @@ class Layout:
                 "interleaved_parallel": interleaved_parallel, "alias_name": self._mesh.alias_name,
                 "rank_list": self._rank_list}
 
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.update_mesh()
+
     @property
     def mesh(self):
         return self._mesh
+
+    def update_mesh(self):
+        self._mesh = _create_device_mesh(self.device_matrix, self.alias_name, self.rank_list)
 
     @property
     def rank_list(self):
         """rank list"""
         return self._rank_list
+
+    @rank_list.setter
+    def rank_list(self, val):
+        self._rank_list = val
 
     @property
     def device_matrix(self):
@@ -590,7 +605,7 @@ class Layout:
         if op not in self._support_partial_op:
             raise ValueError(f"Partial op must be one of {self._support_partial_op}, but got {op}")
         if self.is_dev_axis_apply_shard(axis):
-            raise ValueError(f"Partial dim must be replicate.")
+            raise ValueError("Partial dim must be replicate.")
         self._partial[self._mesh.axis_index(axis)] = op
 
     def get_partial_by_dev_id(self, axis):
@@ -939,7 +954,7 @@ class Shard(Shard_):
                 self._check_tuple_strategy(stra)
         if len(strategy_set) != 1:
             raise TypeError(
-                f"For 'Shard', the strategy can only pass in consistent type for all dimensions.")
+                "For 'Shard', the strategy can only pass in consistent type for all dimensions.")
         return strategy_set.pop()
 
     def _extract_layout_value(self, layout, log_info):
@@ -958,7 +973,7 @@ class Shard(Shard_):
     def _check_tuple_strategy(self, dim_strategy):
         if not all(isinstance(x, int) for x in dim_strategy):
             raise TypeError(
-                f"The tuple strategy for each dimension should be tuple(int).")
+                "The tuple strategy for each dimension should be tuple(int).")
 
 
 def shard(fn, in_strategy, out_strategy=None, parameter_plan=None):

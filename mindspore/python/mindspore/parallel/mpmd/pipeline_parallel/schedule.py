@@ -131,7 +131,6 @@ class PipelineScheduleSingle(PipelineScheduleBase):
                          output_concat_dim=output_concat_dim,
                          scale_grads=scale_grads)
         self.stage = stage
-        self.stage.init_states(micro_batch_num)
         self.exec_order = {}
         self.construct_exec_order()
 
@@ -139,27 +138,23 @@ class PipelineScheduleSingle(PipelineScheduleBase):
     def construct_exec_order(self):
         raise NotImplementedError
 
-    def run_microbatches(self, args_mb, kwargs_mb):
+    def run_microbatches(self, arg_mbs, kwarg_mbs):
         out_list = []
         grad_out = None
         for cur_step in self.exec_order[self.stage.stage_index]:
             micro_index = cur_step.micro_index
             if cur_step.type == MetaStepType.FWD_RECV:
-                if micro_index == 0 and self.stage.recv_info is None:
-                    self.stage.communicate_p2p_info(self.micro_batch_num)
                 self.stage.exec_fwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.FWD:
-                out = self.stage.forward_one_chunk(micro_index, args_mb[micro_index], kwargs_mb[micro_index])
+                out = self.stage.forward_one_chunk(micro_index, arg_mbs[micro_index], kwarg_mbs[micro_index])
                 out_list.append(out)
             if cur_step.type == MetaStepType.FWD_SEND:
-                if micro_index == 0 and self.stage.send_info is None:
-                    self.stage.communicate_p2p_info(self.micro_batch_num, send_out=True)
                 self.stage.exec_fwd_send_ops(micro_index)
             if cur_step.type == MetaStepType.BWD_RECV:
                 self.stage.exec_bwd_recv_ops(micro_index)
             if cur_step.type == MetaStepType.BWD:
                 if micro_index == self.micro_batch_num - 1:
-                    grad_out = self.stage.backward_one_chunk(micro_index)
+                    grad_out = self.stage.backward_one_chunk(micro_index, True)
                 else:
                     _ = self.stage.backward_one_chunk(micro_index)
             if cur_step.type == MetaStepType.BWD_SEND:
