@@ -77,13 +77,13 @@ OUTPUT_MAP(ResizeArea) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(ResizeArea, kNameResizeArea, ADPT_DESC(ResizeArea))
 
 // ResizeBicubic
-INPUT_MAP(ResizeBicubic) = {{1, INPUT_DESC(images)}, {2, INPUT_DESC(size)}};
-ATTR_INPUT_MAP(ResizeBicubic) = {{"size", "size"}};
-INPUT_ATTR_MAP(ResizeBicubic) = {{3, ATTR_DESC(align_corners, AnyTraits<bool>())},
-                                 {4, ATTR_DESC(half_pixel_centers, AnyTraits<bool>())}};
-ATTR_MAP(ResizeBicubic) = EMPTY_ATTR_MAP;
-OUTPUT_MAP(ResizeBicubic) = {{0, OUTPUT_DESC(y)}};
-REG_ADPT_DESC(ResizeBicubic, kNameResizeBicubic, ADPT_DESC(ResizeBicubic))
+CUST_INPUT_MAP(ResizeBicubic) = {{1, INPUT_DESC(images)}, {2, INPUT_DESC(size)}};
+CUST_ATTR_INPUT_MAP(ResizeBicubic) = {{"size", "size"}};
+CUST_INPUT_ATTR_MAP(ResizeBicubic) = {{3, ATTR_DESC(align_corners, AnyTraits<bool>())},
+                                      {4, ATTR_DESC(half_pixel_centers, AnyTraits<bool>())}};
+CUST_ATTR_MAP(ResizeBicubic) = EMPTY_ATTR_MAP;
+CUST_OUTPUT_MAP(ResizeBicubic) = {{0, OUTPUT_DESC(y)}};
+REG_ADPT_DESC(ResizeBicubic, kNameResizeBicubic, CUST_ADPT_DESC(ResizeBicubic))
 
 // Reszie
 INPUT_MAP(Resize) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(roi)}, {3, INPUT_DESC(scales)}, {4, INPUT_DESC(sizes)}};
