@@ -121,7 +121,7 @@ class HSDPScheduler:
         """forward pre hook to unsharded parameter for forward process."""
         self.hsdp_state.unshard()
         for prefetch_cell in self.forward_prefetch_cells:
-            prefetch_cell.hsdp_scheduler.hsdp_state.unshard()
+            prefetch_cell.hsdp_scheduler.hsdp_state.prefetch()
 
     def _hsdp_forward_hook(self, cell, inputs, outputs):
         """forward hook to shard parameter for saving memory."""
@@ -131,7 +131,7 @@ class HSDPScheduler:
         """backward pre hook to unsharded parameter for backward process."""
         self.hsdp_state.unshard()
         for prefetch_cell in self.backward_prefetch_cells:
-            prefetch_cell.hsdp_scheduler.hsdp_state.unshard()
+            prefetch_cell.hsdp_scheduler.hsdp_state.prefetch()
 
     def _hsdp_backward_hook(self, cell, grad_inputs, grad_outputs):
         """backward hook to shard parameter for optimizer process or saving memory."""

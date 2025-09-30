@@ -17,7 +17,7 @@ import functools
 import mindspore.ops as ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-from mindspore.communication import get_rank, create_group, get_group_size
+from mindspore.communication import get_rank, get_group_size
 from mindspore.common.initializer import initializer
 from mindspore.common.dtype import type_size_in_bytes
 import mindspore.parallel.spmd.hsdp.hsdp_comm as comm
@@ -39,6 +39,8 @@ class HSDPParam:
         self.acc_grad = None
         self.sharded = False
         self.fully_sharded = True
+        self.prefetch_handle = None
+        self.prefetch_data = None
         self._init_rank_info()
         self._init_param_shard_size()
         self._init_param()
@@ -208,7 +210,7 @@ class HSDPParam:
         rank_list = self._get_op_rank_list()
         rank_list_str = "_".join([str(i) for i in rank_list])
         group_name = "hsdp_sharded_dp_group_" + rank_list_str
-        create_group(group_name, rank_list)
+        comm.create_group_if_needed(group_name, rank_list)
         return group_name
 
     def _create_unsharded_dp_group(self):
@@ -219,7 +221,7 @@ class HSDPParam:
         rank_list = self._get_dp_rank_list()
         rank_list_str = "_".join([str(i) for i in rank_list])
         group_name = "hsdp_unshared_dp_group_" + rank_list_str
-        create_group(group_name, rank_list)
+        comm.create_group_if_needed(group_name, rank_list)
         return group_name
 
     def _init_sharded_param(self):
@@ -265,7 +267,7 @@ class HSDPParam:
         """init hsdp parameter"""
         self.param.acc_grad = None
         param_size = functools.reduce(lambda x, y: x * y, self.param.local_shape, type_size_in_bytes(self.param.dtype))
-        if (self.shard_size == 1 or param_size < self.config.threshold):
+        if self.shard_size == 1 or param_size < self.config.threshold:
             self.sharded = False
             self.fully_sharded = False
             self.param.init_data()
@@ -304,9 +306,24 @@ class HSDPParam:
         """change parameter to sharded state"""
         self.param.set_data(self.sharded_param)
 
+    def prefetch_unsharded(self):
+        """prefetch unsharded param with async all gather"""
+        unshared_param_data, handle = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name,
+                                                                  async_op=True)
+        self.prefetch_data = unshared_param_data
+        self.prefetch_handle = handle
+
     def to_unsharded(self):
         """change parameter to unsharded state"""
-        unshared_param_data, _ = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name)
+        if self.prefetch_handle is not None:
+            self.prefetch_handle.wait()
+            self.sharded_param.set_data(self.param)
+            self.param.set_data(self.prefetch_data)
+            self.prefetch_handle = None
+            self.prefetch_data = None
+            return
+
+        unshared_param_data, _ = comm.all_gather_into_tensor(self.param, group=self.sharded_group_name, async_op=False)
         self.sharded_param.set_data(self.param)
         self.param.set_data(unshared_param_data)
 

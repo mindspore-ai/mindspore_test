@@ -14,26 +14,36 @@
 # ============================================================================
 """HSDP comm"""
 import mindspore.communication.comm_func as comm_func
+from mindspore.communication import create_group
 from mindspore import ops
 use_ops_interface = False
+EXISTING_GROUPS = set()
 
-def all_gather_into_tensor(data, group):
+def all_gather_into_tensor(data, group, async_op=False):
     """all_gather_into_tensor"""
     if use_ops_interface:
         output = ops.AllGather(group=group)(data)
         return output, output
-    return comm_func.all_gather_into_tensor(data, group=group)
+    return comm_func.all_gather_into_tensor(data, group=group, async_op=async_op)
 
-def all_reduce(data, group):
+def all_reduce(data, group, async_op=False):
     """all_reduce"""
     if use_ops_interface:
         output = ops.AllReduce(group=group)(data)
         return output, output
-    return comm_func.all_reduce(data, group=group)
+    return comm_func.all_reduce(data, group=group, async_op=async_op)
 
-def reduce_scatter_tensor(data, group):
+def reduce_scatter_tensor(data, group, async_op=False):
     """reduce_scatter_tensor"""
     if use_ops_interface:
         output = ops.ReduceScatter(group=group)(data)
         return output, output
-    return comm_func.reduce_scatter_tensor(data, group=group)
+    return comm_func.reduce_scatter_tensor(data, group=group, async_op=async_op)
+
+def create_group_if_needed(group, rank_ids, option=None):
+    """create_group"""
+    if group in EXISTING_GROUPS:
+        return
+
+    create_group(group, rank_ids, option)
+    EXISTING_GROUPS.add(group)

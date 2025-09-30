@@ -55,3 +55,10 @@ class HSDPState:
         for param in self.sharded_hsdp_params:
             param.to_unsharded()
         self.is_shard = False
+
+    def prefetch(self):
+        """prefetch unsharded parameters"""
+        if not self.is_shard:
+            return
+        for param in self.sharded_hsdp_params:
+            param.prefetch_unsharded()
