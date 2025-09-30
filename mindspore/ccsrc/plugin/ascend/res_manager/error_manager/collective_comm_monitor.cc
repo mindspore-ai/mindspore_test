@@ -29,10 +29,8 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
-// check exception in every 2s
-constexpr int64_t kQueryFrequency = 2000;
+// check exception in every 1s
 constexpr int64_t kMilSec = 1000;
-constexpr int64_t kSleepTime = 100;
 constexpr int64_t kInterval = 30;
 constexpr int kIndent = 2;
 
@@ -52,6 +50,7 @@ HcclWorkEvent::HcclWorkEvent(const CNodePtr &kernel, void *stream)
   group_name_ = common::AnfAlgo::GetNodeAttr<std::string>(kernel, kAttrGroup);
   start_event_.set_record_stream(stream);
   end_event_.set_record_stream(stream);
+  stop_record_ = false;
 }
 
 HcclWorkEvent &HcclWorkEvent::operator=(const HcclWorkEvent &other) {
@@ -66,17 +65,34 @@ HcclWorkEvent &HcclWorkEvent::operator=(const HcclWorkEvent &other) {
 }
 
 bool HcclWorkEvent::CheckAndSetEndStatus() {
-  if (end_event_.QueryEvent()) {
-    status_ = "end";
-    return true;
+  try {
+    if (stop_record_) {
+      return false;
+    }
+    if (end_event_.QueryEvent()) {
+      status_ = "end";
+      return true;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "Query event failed, stop record hcom op status. Error message: " << e.what();
+    stop_record_ = true;
   }
   return false;
 }
 
+bool HcclWorkEvent::CheckStopRecord() { return stop_record_; }
 bool HcclWorkEvent::CheckAndSetStartStatus() {
-  if (start_event_.QueryEvent()) {
-    status_ = "start";
-    return true;
+  try {
+    if (stop_record_) {
+      return false;
+    }
+    if (start_event_.QueryEvent()) {
+      status_ = "start";
+      return true;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "Query event failed, stop record hcom op status. Error message: " << e.what();
+    stop_record_ = true;
   }
   return false;
 }
@@ -142,18 +158,8 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
   if (it != handles_.end() && it->second != nullptr) {
     MS_LOG(INFO) << "Destroy hcom monitor thread by group name: " << name;
     it->second->Terminate();
-    int64_t count = 0;
-    const auto start_time = std::chrono::steady_clock::now();
-    const auto timeout = std::chrono::seconds(kInterval);
     while (!it->second->exit()) {
-      if (std::chrono::steady_clock::now() - start_time > timeout) {
-        MS_LOG(ERROR) << "Group:" << name << " failed to exit within 30s, stop wait.";
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(kSleepTime));
-      if (++count % kInterval == 0) {
-        MS_LOG(DEBUG) << "Wait exit, group name:" << name;
-      }
+      MS_LOG(DEBUG) << "Wait exit, group name:" << name;
     }
     handles_.erase(it);
     MS_LOG(INFO) << "Destroy hcom monitor thread by group name: " << name << " success";
@@ -212,8 +218,8 @@ void HcclWatchDogHandler::DoProcess() {
   std::string error_info;
   auto last_record_time = GetCurrentTime();
   while (!terminate_.load()) {
-    MS_LOG(DEBUG) << "Start check hcom monitor thread in every " << kQueryFrequency << "ms .";
-    std::this_thread::sleep_for(std::chrono::milliseconds(kQueryFrequency));
+    MS_LOG(DEBUG) << "Start check hcom monitor thread in every " << kMilSec << "ms .";
+    std::this_thread::sleep_for(std::chrono::milliseconds(kMilSec));
     error_info.clear();
     bool disable = false;
     if (CheckHcclEvents()) {
@@ -349,6 +355,9 @@ bool HcclWatchDogHandler::CheckHcclEvents() {
     if (it->get()->CheckAndSetStartStatus()) {
       current_event_ = *(*it);
       worker_event_updated_ = true;
+    }
+    if (it->get()->CheckStopRecord()) {
+      return false;
     }
     it++;
   }
