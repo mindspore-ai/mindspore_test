@@ -48,7 +48,7 @@ bool TcpNodeBase::ReConnectWithTimeout(const std::function<bool(void)> &func, co
       return success;
     }
   }
-  MS_LOG(EXCEPTION) << "The client socket has timed out after " << time_out << "ms while trying to connect to"
+  MS_LOG(EXCEPTION) << "The client socket has timed out after " << time_out << "ms while trying to connect to "
                     << address_id_;
 }
 
