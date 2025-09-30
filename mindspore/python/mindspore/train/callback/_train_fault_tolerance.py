@@ -28,7 +28,7 @@ from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post,
 from mindspore._c_expression import _rebuild_world_group, _rebuild_sub_group, _finalize_comm, _clean_rootinfo
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import _pre_launch_send_recv
-from mindspore._c_expression import send_recv, reset_params
+from mindspore._c_expression import send_recv, reset_params, direct_copy_to_host
 from mindspore._c_expression import _reg_snapshot_params, _reset_snapshot_state, _clear_snapshot_saving_flag
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
@@ -346,7 +346,6 @@ class TrainFaultTolerance(Callback):
 
         self.assign = mindspore.ops.Assign()
         self.g_one = Tensor([1], dtype=mstype.int32)
-        self.s1 = mindspore.hal.Stream()
         _tft_sem_enable()
         self._tft_register()
 
@@ -405,8 +404,7 @@ class TrainFaultTolerance(Callback):
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():
             if "tft_g_one_flag" in key:
-                with mindspore.hal.StreamCtx(self.s1):
-                    tft_g_one_flag = param.asnumpy()
+                tft_g_one_flag = direct_copy_to_host(param)
                 return int(tft_g_one_flag) == 1
         return False
 
