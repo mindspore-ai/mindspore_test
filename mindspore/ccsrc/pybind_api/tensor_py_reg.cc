@@ -369,7 +369,7 @@ extern int TensorPython_set_requires_grad(PyObject *self, PyObject *value, void 
   if (!PyBool_Check(value)) {
     PyErr_SetString(PyExc_TypeError, "The requires_grad property value must be a boolean.");
   }
-  obj->value.GetTensor()->set_requires_grad(value == Py_True);
+  obj->value.GetTensor()->set_requires_grad(PyObject_IsTrue(value) == 1);
   return 0;
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
@@ -1613,23 +1613,23 @@ static PyMethodDef Tensor_methods[] = {
   {"hooks", (PyCFunction)TensorPython_GetHooks, METH_VARARGS | METH_KEYWORDS, "get hooks."},
   {"storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
                                 Returns the tensor's storage, which is dtype-agnostic.
-                                Currently only supported on the Ascend platform.
+                                Supported on the CPU/GPU/Ascend platform.
 
                                 Returns:
                                     UntypedStorage, the underlying storage implementation.
 
                                 Raises:
-                                    RuntimeError: The storage of the tensor does not exist on Ascend.
+                                    RuntimeError: The storage of the tensor does not exist.
                                 )mydelimiter"},
   {"untyped_storage", (PyCFunction)TensorPython_Storage, METH_VARARGS | METH_KEYWORDS, R"mydelimiter(
                                 Returns the tensor's storage, which is dtype-agnostic.
-                                Currently only supported on the Ascend platform.
+                                Supported on the CPU/GPU/Ascend platform.
 
                                 Returns:
                                     UntypedStorage, the underlying storage implementation.
 
                                 Raises:
-                                    RuntimeError: The storage of the tensor does not exist on Ascend.
+                                    RuntimeError: The storage of the tensor does not exist.
                                 )mydelimiter"},
   {"_data_ptr", (PyCFunction)TensorPython_GetDataPtr, METH_VARARGS, "get Data ptr."},
   {"_need_contiguous", (PyCFunction)TensorPython_NeedContiguous, METH_VARARGS | METH_KEYWORDS, "need Contiguous."},

@@ -19,12 +19,15 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <vector>
+#include <utility>
 
 #include "mindspore/core/include/base/base_ref.h"
 #include "backend/backend_manager/visible.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
 #include "include/common/pynative/op_runner_info.h"
+#include "include/common/utils/python_adapter.h"
 
 namespace mindspore {
 namespace backend {
@@ -40,12 +43,98 @@ enum IRFormat {
   kAir = 0,
 };
 
+struct GraphFragment;
+namespace py = pybind11;
+using GraphFragmentPtr = std::shared_ptr<GraphFragment>;
+using FragmentRunFunc = std::function<RunningStatus(GraphFragment *frag, const VectorRef &inputs, VectorRef *outputs)>;
+using PyToValueConvertFunc = std::function<bool(const py::object &obj, ValuePtr *value)>;
+using ValueToPyConvertFunc = std::function<py::object(const BaseRef &value)>;
+
+struct GraphFragment {
+  GraphFragment() {}
+  GraphFragment(size_t id, bool is_graph, const std::string &key,
+                const std::vector<std::pair<int, std::string>> &args_list, FragmentRunFunc runner) {
+    id_ = id;
+    is_graph_ = is_graph;
+    key_ = key;
+    args_list_ = args_list;
+    runner_ = runner;
+  }
+  py::object id() { return py::int_(id_); }
+  py::object is_graph() { return py::bool_(is_graph_); }
+  py::object py_key() { return py::str(key_); }
+  py::object args_list() {
+    py::list args = py::list();
+    for (const auto &pair : args_list_) {
+      auto py_pair = py::tuple(2);
+      py_pair[0] = pair.first;
+      if (pair.first >= 0) {
+        py_pair[1] = std::atoi(pair.second.c_str());
+      } else {
+        py_pair[1] = pair.second;
+      }
+      args.append(py_pair);
+    }
+
+    return args;
+  }
+  explicit GraphFragment(const GraphFragmentPtr &frag) {
+    MS_EXCEPTION_IF_NULL(frag);
+    id_ = frag->id_;
+    is_graph_ = frag->is_graph_;
+    key_ = frag->key_;
+    args_list_ = frag->args_list_;
+    runner_ = frag->runner_;
+    py_to_value_converter_ = frag->py_to_value_converter_;
+    value_to_py_converter_ = frag->value_to_py_converter_;
+  }
+  py::object Run(const py::tuple &args) {
+    if (runner_ == nullptr || py_to_value_converter_ == nullptr || value_to_py_converter_ == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid run handler for graph fragment:" << id_;
+    }
+    if (!py::isinstance<py::tuple>(args)) {
+      MS_LOG(EXCEPTION) << "Invalid input args:" << args << " for fragment:" << id_;
+    }
+    ValuePtr inputs = nullptr;
+    py_to_value_converter_(args, &inputs);
+    MS_EXCEPTION_IF_NULL(inputs);
+    if (inputs == nullptr || !inputs->isa<ValueTuple>()) {
+      MS_LOG(EXCEPTION) << "Invalid inputs:" << (inputs == nullptr ? "null" : inputs->ToString())
+                        << " for args:" << args << " for fragment:" << id_;
+    }
+    VectorRef input_list;
+    const auto &tuple_inputs = inputs->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_inputs);
+    for_each(tuple_inputs->value().begin(), tuple_inputs->value().end(),
+             [&input_list](const ValuePtr &input) { input_list.emplace_back(input); });
+    VectorRef outputs;
+    runner_(this, input_list, &outputs);
+    return value_to_py_converter_(outputs[0]);
+  }
+  std::string ToString() {
+    std::stringstream buf;
+    buf << "fragment id:" << id_ << " is graph:" << is_graph_ << " key:" << key_ << " args:" << args_list();
+    return buf.str();
+  }
+  size_t id_{SIZE_MAX};
+  bool is_graph_{true};
+  std::string key_;
+  std::vector<std::pair<int, std::string>> args_list_;
+  FragmentRunFunc runner_{nullptr};
+  BackendGraphId graph_id_{UINT32_MAX};
+  PyToValueConvertFunc py_to_value_converter_{nullptr};
+  ValueToPyConvertFunc value_to_py_converter_{nullptr};
+};
 using IsPyBoostRegisteredFunc = std::function<bool(device::DeviceType device_target, const std::string &op_name)>;
 using RunPyBoostCallFunc = std::function<void(runtime::OpRunnerInfo *, VectorRef *)>;
 
 // The base class of all supported backend.
 class BACKEND_MANAGER_EXPORT BackendBase {
  public:
+  // The backend graph Build interface, the return value is the built graph id.
+  virtual std::vector<GraphFragmentPtr> Split(const FuncGraphPtr &func_graph) {
+    MS_LOG(EXCEPTION) << "Not support graph split.";
+  }
   // The backend graph Build interface, the return value is the built graph id.
   virtual BackendGraphId Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) = 0;
 

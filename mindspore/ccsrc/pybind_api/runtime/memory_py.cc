@@ -173,6 +173,7 @@ struct MemoryBlock {
   static constexpr size_t kStreamIdIdx = 3;
   static constexpr size_t kSizeIdx = 5;
   static constexpr size_t kActualPeakMemIdx = 7;
+  static constexpr size_t kTypeIdx = 10;
   static constexpr size_t kInvalidValue = 0;
 
   explicit MemoryBlock(const std::string &block_string) {
@@ -190,7 +191,7 @@ struct MemoryBlock {
     actual_peak_mem_ = Parse<size_t>(elements[kActualPeakMemIdx]);
     MS_EXCEPTION_IF_CHECK_FAIL(actual_peak_mem_ != kInvalidValue,
                                "Invalid actual_peak_mem_: " + elements[kActualPeakMemIdx]);
-    type_ = Parse<std::string>(elements[kIndex9]);
+    type_ = Parse<std::string>(elements[kTypeIdx]);
   }
 
   size_t start_time_stamp_;

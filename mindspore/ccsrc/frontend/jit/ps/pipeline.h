@@ -150,6 +150,7 @@ void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList 
 void CheckInterpretNodeLineInfos();
 void SetHookForArgAbstract(const ResourcePtr &resource, const py::object &arg, abstract::AbstractBasePtr abs);
 FRONTEND_EXPORT bool RunJitPipeline();
+FRONTEND_EXPORT std::string DumpFuncGraph(const py::object &obj);
 FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline
 }  // namespace mindspore

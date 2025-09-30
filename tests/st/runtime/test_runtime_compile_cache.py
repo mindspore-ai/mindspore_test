@@ -211,3 +211,14 @@ def test_resnet_infer_compile_cache():
     pypath = fpath + "/compiler/compile_cache/run_resnet_infer.py"
     run_twice_with_same_network(pypath, "./resnet_infer", "resnet_infer_first.txt",
                                 "resnet_infer_second.txt")
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_kernel_packet_compile_cache():
+    """
+    Feature: Support kernel packet compile cache in inference scenarios.
+    Description: Support kernel packet compile cache in inference scenarios.
+    Expectation: Run success.
+    """
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
+    pypath = fpath + "/runtime/run_kernel_packet.py"
+    run_twice_with_same_network(pypath, "./kernel_packet", "kernel_packet_first.txt", "kernel_packet_second.txt")

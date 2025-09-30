@@ -213,7 +213,7 @@ def test_scene3_case2():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scene3_case3():
     """
     Feature: Support tensor inplace view gradient.
@@ -510,7 +510,7 @@ def test_scene7_case3():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scene7_case4():
     """
     Feature: Support tensor inplace view gradient.
@@ -537,7 +537,7 @@ def test_scene7_case4():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scene7_case5():
     """
     Feature: Support tensor inplace view gradient.
@@ -565,7 +565,7 @@ def test_scene7_case5():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scene7_case6():
     """
     Feature: Support tensor inplace view gradient.

@@ -49,9 +49,11 @@ constexpr auto kGroupedMatmulName = "GroupedMatmul";
 constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
-constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
-constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
-constexpr auto kSingleTensor = 3;              // split_item mode
+constexpr auto kQuantLinearSparseBiasIdx = 5;   // primitive input weight deq_scale compress_idx bias
+constexpr auto kMatMulWeightIdx = 2;            // primitive input weight ...
+constexpr auto kSingleTensor = 3;               // split_item mode
+constexpr auto kMlaPreCacheModeNzAndQuant = 2;  // NZ format + Quant
+constexpr auto kMlaPreCacheModeNz = 3;          // NZ format
 constexpr SubModuleId kInternalSubModuleId = SubModuleId::SM_INTERNAL_KERNEL;
 
 static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogLevel> kLogLevelMap = {
@@ -86,19 +88,7 @@ static IndexTable GroupedMatmulV4NzIndicesGetter(const AnfNodePtr &node) {
 
 IndexTable MlaNzIndicesGetter(const AnfNodePtr &node) { return {{{}, {}}, {{2, 3}, {}}}; }
 IndexTable QbmmNzIndicesGetter(const AnfNodePtr &node) { return {{{1}, {}}, {{1}, {}}}; }
-IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) {
-  size_t mla_pre_input_num = common::AnfAlgo::GetInputTensorNum(node);
-  auto cache_mode_node = common::AnfAlgo::GetPrevNodeOutput(node, mla_pre_input_num - 1).first;
-  if (cache_mode_node->isa<ValueNode>()) {
-    auto cache_mode_value_node = cache_mode_node->cast<ValueNodePtr>();
-    auto cache_mode_value = GetValue<int64_t>(cache_mode_value_node->value());
-    MS_LOG(INFO) << "cache_mode is " << cache_mode_value;
-    if (cache_mode_value == 2 || cache_mode_value == 3) {
-      return {{{5, 16, 18, 25}, {}}, {{5, 16, 18, 25}, {}}};
-    }
-  }
-  return {{{5, 18}, {}}, {{5, 18}, {}}};
-}
+IndexTable MlaPreprocessNzIndicesGetter(const AnfNodePtr &node) { return {{{5, 18}, {}}, {{5, 18}, {}}}; }
 
 static std::unordered_map<std::string, GetNzIndicesFunc> kNzIndicesGetterMap = {
   {prim::kPrimGroupedMatmulV4->name(), GroupedMatmulV4NzIndicesGetter},
@@ -122,6 +112,7 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kPrimNameQMatmulSplitSiluFastgeluAddMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kPrimNameQMatmulSplitSiluMulOut1, {{{0, 1}, {}}, {{1}, {}}}},
   {kGroupedMatmulName, {{{1}, {}}, {{1}, {}}}},
+  {prim::kPrimGroupedMatmulV4->name(), {{{1}, {}}, {{1}, {}}}},
   {kMlaPreprocessName, {{{5, 18}, {}}, {{5, 18}, {}}}}};
 
 // unordered_map mean:
@@ -235,7 +226,9 @@ void GetMsTypesList(const CNodePtr &kernel, std::vector<TypeId> *ms_in_dtypes, s
 void UpdateNzFormatOpsList(const AnfNodePtr &node) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() &&
+  auto op_name = AnfUtils::GetCNodeName(node);
+  if ((AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() ||
+       AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmulV4->name()) &&
       common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, cnode)) {
     auto dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrDynInputSizes);
     if (!dyn_input_sizes.empty()) {
@@ -244,7 +237,7 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
       for (size_t i = weight_num; i < weight_num * CONST_2; ++i) {
         input_idx.emplace_back(i);
       }
-      kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
+      kNzFormatOpsList[op_name] = {{input_idx, {}}, {input_idx, {}}};
     }
   }
 }

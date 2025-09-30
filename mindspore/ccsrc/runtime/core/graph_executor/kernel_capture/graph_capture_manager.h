@@ -49,7 +49,7 @@ struct CaptureKernelInfo {
 using CaptureKernelInfoPtr = std::shared_ptr<CaptureKernelInfo>;
 using CaptureKernelInfoList = std::vector<CaptureKernelInfoPtr>;
 
-class BACKEND_EXPORT GraphCaptureManager {
+class GraphCaptureManager {
  public:
   static GraphCaptureManager &GetInstance() noexcept;
 
@@ -139,6 +139,8 @@ class BACKEND_EXPORT GraphCaptureManager {
   void InitFixedInputInfoForSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners);
 
   bool IsSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners, size_t kernel_index);
+
+  bool IsExceedMaxCaptureCount();
 
   void SetStreamId(size_t stream_id) {
     if (stream_id_ != 0) {

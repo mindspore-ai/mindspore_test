@@ -24,7 +24,7 @@ namespace mindspore {
 class CaptureGraph {
  public:
   virtual ~CaptureGraph() = default;
-  virtual void CaptureBegin(uint32_t stream_id) = 0;
+  virtual bool CaptureBegin(uint32_t stream_id) = 0;
   virtual void CaptureGetInfo(uint32_t stream_id) = 0;
   virtual void CaptureEnd(uint32_t stream_id) = 0;
   virtual void ExecuteCaptureGraph(uint32_t stream_id) = 0;

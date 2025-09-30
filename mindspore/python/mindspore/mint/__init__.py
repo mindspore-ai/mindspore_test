@@ -1539,7 +1539,7 @@ def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
         x2 (Tensor): Input tensor of shape :math:`(B, R, M)`, has the same dtype as `x1`.
         p (float, optional): P value for the p-norm distance to calculate between each
             vector pair, P >= 0. Default: ``2.0`` .
-        compute_mode (string, optional): Specify the cumpute mode. Setting this parameter currently has no effect.
+        compute_mode (str, optional): Specify the cumpute mode. Setting this parameter currently has no effect.
             Default: ``'use_mm_for_euclid_dist_if_necessary'`` .
 
     Returns:

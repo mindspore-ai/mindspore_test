@@ -87,9 +87,12 @@ struct MemBlockInfo {
         end_time_stamp(INT64_MAX),
         device_addr(nullptr),
         is_bind(false),
+        is_persistent(false),
+        is_small(false),
         stream_id(0),
         actual_peak_memory(0),
         size(0),
+        used_size(0),
         pool_name() {}
 };
 

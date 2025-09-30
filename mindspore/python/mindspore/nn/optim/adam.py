@@ -31,6 +31,7 @@ from mindspore.nn.optim.optimizer import opt_init_args_register
 from mindspore.common._decorator import deprecated
 
 _adam_opt = C.MultitypeFuncGraph("adam_opt")
+_fused_adam_weight_decay = C.MultitypeFuncGraph("fused_adam_weight_decay")
 _lazy_adam_opt = C.MultitypeFuncGraph("lazy_adam_opt")
 _scaler_one = Tensor(1, mstype.int32)
 _scaler_ten = Tensor(10, mstype.float32)
@@ -441,6 +442,19 @@ def _run_off_load_opt(opt, beta1_power, beta2_power, beta1, beta2, eps, lr, grad
     delat_param = opt(moment1, moment2, beta1_power, beta2_power, lr, beta1, beta2, eps, gradient)
     success = F.depend(success, F.assign_add(param, delat_param))
     return success
+
+
+@_fused_adam_weight_decay.register("Function", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor",
+                                   "Tensor", "Tensor", "Bool", "Bool")
+def _run_fused_adam_weight_decay_opt(opt, beta1, beta2, eps, lr, weight_decay, param, moment1, moment2, gradient,
+                                     decay_flags, optim_filter):
+    """Apply FusedAdamWeightDecay optimizer to the weight parameter using Tensor."""
+    if optim_filter:
+        if decay_flags:
+            opt(param, moment1, moment2, lr, beta1, beta2, eps, weight_decay, P.Cast()(gradient, F.dtype(param)))
+        else:
+            opt(param, moment1, moment2, lr, beta1, beta2, eps, 0.0, P.Cast()(gradient, F.dtype(param)))
+    return True
 
 
 def _check_param_value(beta1, beta2, eps, prim_name):
@@ -959,25 +973,46 @@ class AdamWeightDecay(Optimizer):
         self.eps = Tensor(np.array([eps]).astype(np.float32))
         self.moments1 = self._parameters.clone(prefix="adam_m", init='zeros')
         self.moments2 = self._parameters.clone(prefix="adam_v", init='zeros')
+        self.fused_opt = P.AdamWeightDecay()
+        self.use_fused_opt = True
 
     @jit(backend="ms_backend")
     def construct(self, gradients):
         weight_decay = self.get_weight_decay()
         lr = self.get_lr()
         self.assignadd(self.global_step, self.global_step_increase_tensor)
-        if self.is_group:
-            if self.is_group_lr:
-                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps),
-                                              lr, weight_decay, self._parameters, self.moments1,
-                                              self.moments2, gradients, self.decay_flags, self.optim_filter)
+        if self.use_fused_opt:
+            if self.is_group:
+                if self.is_group_lr:
+                    optim_result = self.hyper_map(
+                        F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps),
+                        lr, weight_decay, self._parameters, self.moments1,
+                        self.moments2, gradients, self.decay_flags, self.optim_filter)
+                else:
+                    optim_result = self.hyper_map(
+                        F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps, lr),
+                        weight_decay, self._parameters, self.moments1, self.moments2,
+                        gradients, self.decay_flags, self.optim_filter)
             else:
-                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr),
-                                              weight_decay, self._parameters, self.moments1, self.moments2,
-                                              gradients, self.decay_flags, self.optim_filter)
+                optim_result = self.hyper_map(
+                    F.partial(_fused_adam_weight_decay, self.fused_opt, self.beta1, self.beta2, self.eps, lr,
+                              weight_decay),
+                    self._parameters, self.moments1, self.moments2,
+                    gradients, self.decay_flags, self.optim_filter)
         else:
-            optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr, weight_decay),
-                                          self._parameters, self.moments1, self.moments2,
-                                          gradients, self.decay_flags, self.optim_filter)
+            if self.is_group:
+                if self.is_group_lr:
+                    optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps),
+                                                  lr, weight_decay, self._parameters, self.moments1,
+                                                  self.moments2, gradients, self.decay_flags, self.optim_filter)
+                else:
+                    optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr),
+                                                  weight_decay, self._parameters, self.moments1, self.moments2,
+                                                  gradients, self.decay_flags, self.optim_filter)
+            else:
+                optim_result = self.hyper_map(F.partial(_adam_opt, self.beta1, self.beta2, self.eps, lr, weight_decay),
+                                              self._parameters, self.moments1, self.moments2,
+                                              gradients, self.decay_flags, self.optim_filter)
         if self.use_parallel:
             self.broadcast_params(optim_result)
 

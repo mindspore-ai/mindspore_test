@@ -264,9 +264,9 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
     common::SetEnv("MS_FORMAT_MODE", format_mode.c_str());
   }
 
-  if (!UseSimulationApi()) {
-    device::ascend::LoadAscendApiSymbols();
-  } else {
+  device::ascend::LoadAscendApiSymbols();
+
+  if (UseSimulationApi()) {
     device::ascend::LoadSimulationApiSymbols();
   }
   ctx->set_ascend_soc_func(SetContextSocVersion);

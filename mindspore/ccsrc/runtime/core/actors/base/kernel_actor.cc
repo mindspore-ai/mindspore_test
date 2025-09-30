@@ -1009,7 +1009,7 @@ void KernelActor::SetMemInfoForRdr() {
 }
 
 void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t input_index,
-                                        OpContext<KernelTensor> *const context, bool inference_param) {
+                                        OpContext<KernelTensor> *const context, bool in_increment) {
   // The ignored input address that is not used in the kernel launch and no need copy.
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto device_tensor = kernel_tensor->device_address();
@@ -1034,9 +1034,9 @@ void KernelActor::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t in
       device_tensor->type_id() == real_input_info->type_id_) {
     return;
   }
-  if (inference_param) {
+  if (in_increment) {
     MS_LOG(EXCEPTION) << GetAID().Name()
-                      << " not support copy parameter input for parallel dispatch, input index: " << input_index;
+                      << " not support copy parameter input in increment infer graph, input index: " << input_index;
   }
   uint64_t start_time = 0;
   PROFILER_START(start_time);

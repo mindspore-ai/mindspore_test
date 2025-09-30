@@ -44,6 +44,23 @@ class EnvChecker(metaclass=ABCMeta):
     def check_version(self):
         pass
 
+    @staticmethod
+    def _concat_variable(env_name, env_value):
+        """concat value to the beginning of env specified by env_name"""
+        if not os.getenv(env_name, ""):
+            os.environ[env_name] = env_value
+        else:
+            paths = os.environ[env_name].split(':')
+            if paths and paths[0] == env_value:
+                return
+            if env_value not in paths:
+                os.environ[env_name] = env_value + ':' + os.environ[env_name]
+            else:
+                # move env_value to beginning
+                new_paths = [p for p in paths if p != env_value]
+                new_paths.insert(0, env_value)
+                os.environ[env_name] = ':'.join(new_paths)
+
 
 class CPUEnvChecker(EnvChecker):
     """CPU environment check."""
@@ -61,10 +78,7 @@ class CPUEnvChecker(EnvChecker):
         """set env for cpu"""
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "plugin/cpu")
-        if os.getenv('LD_LIBRARY_PATH'):
-            os.environ['LD_LIBRARY_PATH'] = akg_dir + ":" + os.environ['LD_LIBRARY_PATH']
-        else:
-            os.environ['LD_LIBRARY_PATH'] = akg_dir
+        EnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
 
 
 class GPUEnvChecker(EnvChecker):
@@ -142,10 +156,7 @@ class GPUEnvChecker(EnvChecker):
         v_str = str(v.major) + "." + str(v.minor)
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "gpu" + v_str)
-        if os.getenv('LD_LIBRARY_PATH'):
-            os.environ['LD_LIBRARY_PATH'] = akg_dir + ":" + os.environ['LD_LIBRARY_PATH']
-        else:
-            os.environ['LD_LIBRARY_PATH'] = akg_dir
+        EnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
         os.environ['CUDA_CACHE_MAXSIZE'] = "4000000000"
 
     def _get_bin_path(self, bin_name):
@@ -278,13 +289,6 @@ class AscendEnvChecker(EnvChecker):
         self.ascend_opp_kernel_path_check = "/opp_kernel"
         self.v = ""
 
-    @staticmethod
-    def _concat_variable(env_name, env_value):
-        if os.getenv(env_name) is None:
-            os.environ[env_name] = env_value
-        else:
-            os.environ[env_name] = env_value + ":" + os.environ[env_name]
-
     def check_custom_version(self):
         """custom op version check"""
 
@@ -384,7 +388,7 @@ class AscendEnvChecker(EnvChecker):
         os.environ['IGNORE_INFER_ERROR'] = "1"
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "ascend")
-        AscendEnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
+        EnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
 
         self._check_env()
 

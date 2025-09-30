@@ -2379,6 +2379,13 @@ REG_BPROP_BUILDER("InplaceElu").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(alpha)};
 });
 
+REG_BPROP_BUILDER("InplaceSigmoid").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->SigmoidGrad(out, dout);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Sigmoid").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(i1);
   auto dout = ib->GetInput(i2);
@@ -2584,10 +2591,13 @@ REG_BPROP_BUILDER("BatchNormExt").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYF
   auto d_weight = ib->TupleGetItem(result, 1);
   auto d_bias = ib->TupleGetItem(result, 2);
 
-  if (ib->GetDtype(d_weight) != ib->GetDtype(weight)) {
+  bool weight_type_none = ib->GetDtype(weight)->isa<TypeNone>();
+  bool bias_type_none = ib->GetDtype(bias)->isa<TypeNone>();
+
+  if (!weight_type_none && weight->need_compute_grad_out() && ib->GetDtype(d_weight) != ib->GetDtype(weight)) {
     d_weight = ib->Cast(d_weight, ib->GetDtype(weight));
   }
-  if (ib->GetDtype(d_bias) != ib->GetDtype(bias)) {
+  if (!bias_type_none && bias->need_compute_grad_out() && ib->GetDtype(d_bias) != ib->GetDtype(bias)) {
     d_bias = ib->Cast(d_bias, ib->GetDtype(bias));
   }
   return {d_x,

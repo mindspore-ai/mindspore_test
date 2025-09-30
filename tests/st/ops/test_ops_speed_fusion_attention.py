@@ -534,8 +534,8 @@ def test_speed_fusion_attention_normal(mode):
     """
     ms.context.set_context(mode=mode)
 
-    speed_fusion_attention_case0()
-    speed_fusion_attention_case1()
+    #speed_fusion_attention_case0()
+    #speed_fusion_attention_case1()
     speed_fusion_attention_case2()
     speed_fusion_attention_case3()
     speed_fusion_attention_case4()

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -130,6 +131,8 @@ def run_multi_graph_save():
             expected = expected_output(i)
             assert np.allclose(output_np, expected), \
                 f"Output {output_np} does not match expected {expected} at step {i}"
+    command = 'unset MS_DEV_RUNTIME_CONF'
+    os.system(command)
 
 if __name__ == "__main__":
     run_multi_graph_save()

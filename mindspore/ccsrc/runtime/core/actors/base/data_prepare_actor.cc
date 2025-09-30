@@ -438,25 +438,27 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
                << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
                << ", graph phase: " << graph_compiler_info_->graph_phase_;
   if (has_dynamic_shape_) {
-    ActorDispatcher::set_enable_static_shape(!isDyn);
     const auto &phase = graph_compiler_info_->graph_phase_;
     bool is_increment_graph = (phase.find("increment") != std::string::npos);
     if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
       GraphCaptureManager::GetInstance().SetIncrementGraph(is_increment_graph);
     }
-    if (enable_trace_memory_ && is_increment_graph) {
-      if (has_continuous_memory()) {
-        MS_LOG(EXCEPTION)
-          << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-      }
-      if (!ActorDispatcher::enable_static_shape()) {
-        ActorDispatcher::set_enable_trace_dynamic_memory(true);
-      } else {
-        ActorDispatcher::set_enable_use_trace_memory(true);
-        ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
-        if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
-          MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
-                       << ", graph phase: " << graph_compiler_info_->graph_phase_;
+    if (is_increment_graph) {
+      ActorDispatcher::set_enable_static_shape(!isDyn);
+      if (enable_trace_memory_) {
+        if (has_continuous_memory()) {
+          MS_LOG(EXCEPTION)
+            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+        }
+        if (!ActorDispatcher::enable_static_shape()) {
+          ActorDispatcher::set_enable_trace_dynamic_memory(true);
+        } else {
+          ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+          }
         }
       }
     }
@@ -733,8 +735,8 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 }
 
 void DataPrepareActor::RaiseARFError(const VectorRef &args) {
-  if (UCEException::GetInstance().enable_arf() && UCEException::GetInstance().is_reboot_node() && !args.empty()) {
-    MS_LOG(EXCEPTION) << "ARF FINISH !";
+  if (UCEException::GetInstance().is_reboot_node() && !UCEException::GetInstance().is_arf() && !args.empty()) {
+    MS_LOG(EXCEPTION) << "ARF FINISH , do next step repair weight.";
   }
 }
 
@@ -822,23 +824,24 @@ void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> 
                  << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
                  << ", graph phase: " << graph_compiler_info_->graph_phase_;
     if (has_dynamic_shape_) {
-      ActorDispatcher::set_enable_static_shape(!isDyn);
-
       const auto &phase = graph_compiler_info_->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (enable_trace_memory_ && is_increment_graph) {
-        if (has_continuous_memory()) {
-          MS_LOG(EXCEPTION)
-            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-        }
-        if (!ActorDispatcher::enable_static_shape()) {
-          ActorDispatcher::set_enable_trace_dynamic_memory(true);
-        } else {
-          ActorDispatcher::set_enable_use_trace_memory(true);
-          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
-          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
-            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
-                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+      if (is_increment_graph) {
+        ActorDispatcher::set_enable_static_shape(!isDyn);
+        if (enable_trace_memory_) {
+          if (has_continuous_memory()) {
+            MS_LOG(EXCEPTION)
+              << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+          }
+          if (!ActorDispatcher::enable_static_shape()) {
+            ActorDispatcher::set_enable_trace_dynamic_memory(true);
+          } else {
+            ActorDispatcher::set_enable_use_trace_memory(true);
+            ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+            if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+              MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                           << ", graph phase: " << graph_compiler_info_->graph_phase_;
+            }
           }
         }
       }
@@ -1211,7 +1214,8 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
     // In UCE scenario, the constants value in device may be corrupted, so here restore from host backup values
     node_value = tools::ErrorHandler::GetInstance().GetConstant(node);
   }
-  MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " front node:" << front_node->DebugString();
+  MS_LOG(DEBUG) << "Prepare data for value node:" << node->DebugString() << " node addr:" << node.get()
+                << " front node:" << front_node->DebugString() << " front node addr:" << front_node.get();
   if (node_value->isa<tensor::Tensor>()) {
     PrepareDataForValueNodeTensor(node, node_value, front_node, device_context, context);
   } else if (node_value->isa<ValueSequence>() || node_value->isa<Scalar>()) {
@@ -1233,15 +1237,20 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
   const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
+  MS_LOG(DEBUG) << "Front node: " << front_node->DebugString() << ", node addr: " << front_node.get()
+                << ", kernel tensor num is: " << kernel_tensors.size();
   for (auto &another_kernel_tensor : kernel_tensors) {
     if (another_kernel_tensor == nullptr) {
+      MS_LOG(DEBUG) << "Current kernel tensor is null.";
       continue;
     }
     auto &another_device_tensor = another_kernel_tensor->device_address();
     if (another_device_tensor == host_tensor_address) {
+      MS_LOG(DEBUG) << "Current kernel tensor: " << another_kernel_tensor->ToString() << " is continued.";
       continue;
     }
     MS_EXCEPTION_IF_NULL(another_device_tensor);
+    MS_LOG(DEBUG) << "Current kernel tensor: " << another_kernel_tensor->ToString();
     auto another_device_name = another_device_tensor->GetDeviceType();
     const auto &another_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {another_device_name, device_context->device_context_key().device_id_});

@@ -76,7 +76,7 @@ def test_host_bound_for_parallel_dispatch():
     Expectation: The program execute and exit normally.
     """
     ms.runtime.set_kernel_launch_group()
-    input_data = Tensor(np.zeros((2, 3)).astype(np.float32))
+    input_data = Tensor(np.zeros((2, 3)).astype(np.float32)).pin_memory()
     dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
 
     net = Net()

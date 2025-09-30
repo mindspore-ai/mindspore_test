@@ -52,6 +52,7 @@ const char kRuntimeInputOptimize[] = "input_optimize";
 const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 const char kRuntimeGraphOrder[] = "graph_order";
 const char kRuntimeSyncStreamOnDemand[] = "sync_stream_on_demand";
+const char kRuntimeMaxCaptureDynamicShapeNumber[] = "max_capture_dynamic_shape_number";
 // Runtime debug config.
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";

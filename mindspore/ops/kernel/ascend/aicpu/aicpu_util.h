@@ -225,7 +225,6 @@ constexpr auto kAdaptiveMaxPool3D = "AdaptiveMaxPool3D";
 constexpr auto kRandpermV2 = "RandpermV2";
 constexpr auto kSmoothL1Loss = "SmoothL1Loss";
 constexpr auto kSmoothL1LossGrad = "SmoothL1LossGrad";
-constexpr auto kSparseCross = "SparseCross";
 constexpr auto kChannelShuffle = "ChannelShuffle";
 constexpr auto kQuantDTypeCast = "QuantDTypeCast";
 constexpr auto kFSEDecode = "FSEDecode";
@@ -362,7 +361,6 @@ const std::set<std::string> kCpuKernelBaseOps{kDropoutGenMaskOpName,
                                               kCast,
                                               kGamma};
 const std::set<std::string> kDynamicInputOps{kRaggedTensorToTensor,
-                                             kSparseCross,
                                              kRaggedTensorToSparse,
                                              kPrint,
                                              kPack,

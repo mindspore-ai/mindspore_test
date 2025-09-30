@@ -196,6 +196,15 @@ if(NOT WIN32)
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::ssl mindspore::crypto)
 endif()
 
+if(ENABLE_DEBUGGER)
+    # debugger: link grpc
+    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+        target_link_libraries(mindspore_backend_common PRIVATE mindspore::grpc++)
+    else()
+        target_link_libraries(mindspore_backend_common PRIVATE -Wl,--no-as-needed mindspore::grpc++)
+    endif()
+endif()
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_backend_common PRIVATE mindspore::pybind11_module)
 elseif(ENABLE_CPU AND NOT WIN32)

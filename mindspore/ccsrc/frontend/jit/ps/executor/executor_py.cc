@@ -281,6 +281,8 @@ py::object ExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tup
 void ExecutorPy::ClearCompileArgumentsResource() {
   // Clear global converted args saved in GenerateArgumentsKey.
   ClearCurConvertInput();
+  // Clear real arguments to avoid memory usage.
+  real_arguments_.clear();
 }
 
 void ExecutorPy::ClearCurConvertInput() { cur_convert_input_.clear(); }

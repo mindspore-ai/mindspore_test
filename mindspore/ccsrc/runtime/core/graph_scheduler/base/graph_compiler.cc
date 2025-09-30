@@ -15,19 +15,21 @@
  */
 
 #include "runtime/core/graph_scheduler/base/graph_compiler.h"
-#include <numeric>
-#include <map>
-#include <utility>
 #include <algorithm>
+#include <cctype>
 #include <functional>
 #include <list>
+#include <map>
+#include <numeric>
 #include <regex>
+#include <utility>
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "ir/device_address.h"
 #include "include/common/utils/convert_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
+#include "backend/common/custom_pass/custom_pass_executor.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "ir/graph_utils.h"
@@ -509,10 +511,15 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   }
 
   opt::OptimizationWithoutBackend(kernel_graph);
+
+  // Execute custom passes
+  std::string device_target = GetDeviceNameByType(device_context->GetDeviceType());
+  std::transform(device_target.begin(), device_target.end(), device_target.begin(), ::tolower);
+  opt::CustomPassExecutor::ExecuteCustomPasses(kernel_graph, device_target);
+
   // Unify the MindIR, must be before of the kernel_graph optimization.
   auto kernel_executor = device_context->GetKernelExecutor();
   if (kernel_executor != nullptr) {
-    kernel_executor->AddCustomPass(kernel_graph);
     kernel_executor->AddMindIRPass(kernel_graph);
   }
   kernel_graph->SetInputNodes();
@@ -591,7 +598,7 @@ void UpdateAbstractForAkgParameter(const KernelGraphPtr &graph) {
           continue;
         }
         const auto &valuenode = kernel->input(i + 1)->cast<ValueNodePtr>();
-        if (valuenode == nullptr || valuenode->value() == nullptr || !valuenode->value()->isa<BoolImm>()) {
+        if (valuenode == nullptr || valuenode->value() == nullptr || !valuenode->value()->isa<Scalar>()) {
           MS_LOG(DEBUG) << "Invalid value node index:" << i;
           continue;
         }
@@ -679,17 +686,15 @@ void SetRefInfoForKernelGraph(const KernelGraphPtr &graph) {
     auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
     MS_EXCEPTION_IF_NULL(kernel_info);
     static auto op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
-    if (op_plugin_path != nullptr) {
-      if (op_def->is_graph_view_) {
-        auto build_info = kernel_info->select_kernel_build_info();
-        if (build_info != nullptr) {
-          const auto output_size = build_info->GetOutputNum();
-          for (size_t i = 0; i < output_size; ++i) {
-            kernel_info->AddRefMap(i, 0);
-          }
-          MS_LOG(DEBUG) << "Add ref pair: " << output_size
-                        << " output to the first input for kernel: " << kernel->fullname_with_scope();
+    if (op_plugin_path != nullptr && op_def->is_graph_view_) {
+      auto build_info = kernel_info->select_kernel_build_info();
+      if (build_info != nullptr) {
+        const auto output_size = build_info->GetOutputNum();
+        for (size_t i = 0; i < output_size; ++i) {
+          kernel_info->AddRefMap(i, 0);
         }
+        MS_LOG(DEBUG) << "Add ref pair: " << output_size
+                      << " output to the first input for kernel: " << kernel->fullname_with_scope();
       }
     }
     for (size_t i = 0; i < op_def->returns_.size(); ++i) {

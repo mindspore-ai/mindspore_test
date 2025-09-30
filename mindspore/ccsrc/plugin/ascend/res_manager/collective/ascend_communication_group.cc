@@ -107,7 +107,9 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   distributed::collective::CollectiveManager::instance()->CacheInitedGroups(name_);
-  if (group_rank == 0) {
+  // If communication is obtained directly via the external hcom (InitByHcclComm), which does not depend on the
+  // synchronization of HCCL, the uniqueID will not be cleared.
+  if (group_rank == 0 && hccl_config_.find("hccl_comm") == hccl_config_.end()) {
     distributed::collective::CollectiveManager::instance()->ClearUniqueID(name_);
   }
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);

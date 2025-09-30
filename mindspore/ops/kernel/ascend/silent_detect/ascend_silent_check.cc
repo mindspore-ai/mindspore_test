@@ -154,6 +154,11 @@ std::vector<float> parse_thresh(const std::string &env_var, const std::string &d
 int GetNpuAsdDetectValue() {
   static auto npu_asd_detect_value = []() -> int {
     auto var_val = common::GetEnv(kNpuAsdEnable);
+    if (!var_val.empty()) {
+      MS_LOG(WARNING) << "Environment variable '" << kNpuAsdEnable
+                      << "' and its associated functionality are deprecated and will be removed in a future version. "
+                         "Please use 'MS_NPU_ASD_CONFIG' instead.";
+    }
     if (var_val.size() != 1 || var_val[0] < '0' || var_val[0] > '3') {
       if (!var_val.empty()) {
         MS_LOG(WARNING) << "Valid values of " << kNpuAsdEnable << " are 0, 1, 2 and 3, but got " << var_val << ".";

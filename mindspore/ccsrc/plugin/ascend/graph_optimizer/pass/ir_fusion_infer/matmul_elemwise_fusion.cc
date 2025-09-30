@@ -127,8 +127,7 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   if (elemwise_type == bias_add_str) {
     elewise_input_num = kBinaryInputNum;
   } else {
-    MS_LOG(INFO) << "FusedMatmulElemUnary is not supported now.";
-    return nullptr;
+    elewise_input_num = kUnaryInputNum;
   }
 
   // create op

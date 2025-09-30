@@ -162,18 +162,22 @@ abstract::TupleShapePtr CTCLossV2InferShape(const PrimitivePtr &primitive,
   int64_t C = log_probs_shape[kIndex2];
   int64_t S = targets_shape[kIndex1];
 
-  int64_t max_target_lengths_value = INT64_MIN;
-  CalcMaxTargetLengthsValue(&max_target_lengths_value, input_args[kIndex3]);
-
-  int64_t padded_S = (S == abstract::Shape::kShapeDimAny || max_target_lengths_value == INT64_MIN)
-                       ? abstract::Shape::kShapeDimAny
-                       : (kMulti * max_target_lengths_value + 1);
-
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && padded_S > 0) {
-    padded_S = (padded_S + kAlignSize - 1) / kAlignSize * kAlignSize;
+  int64_t padded_S = 0;
+  if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
+    int64_t max_target_lengths_value = INT64_MIN;
+    CalcMaxTargetLengthsValue(&max_target_lengths_value, input_args[kIndex3]);
+    padded_S = (S == abstract::Shape::kShapeDimAny || max_target_lengths_value == INT64_MIN)
+                 ? abstract::Shape::kShapeDimAny
+                 : (kMulti * max_target_lengths_value + 1);
+    if (padded_S > 0) {
+      padded_S = (padded_S + kAlignSize - 1) / kAlignSize * kAlignSize;
+    }
+  } else {
+    padded_S = (S == abstract::Shape::kShapeDimAny) ? abstract::Shape::kShapeDimAny : (kMulti * S + 1);
   }
+
   abstract::ShapePtr neg_log_shape = std::make_shared<abstract::Shape>(std::vector<int64_t>{N});
   abstract::ShapePtr log_alpha_shape = std::make_shared<abstract::Shape>(
     std::vector<int64_t>{N, T, padded_S <= 0 ? abstract::Shape::kShapeDimAny : padded_S});

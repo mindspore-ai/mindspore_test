@@ -57,7 +57,6 @@ AddAttrToNodeImplRegistry::AddAttrToNodeImplRegistry() {
   Register(prim::kPrimResizeV2->name(), ResizeV2FusionProcess);
   Register(prim::kPrimSqueeze->name(), SqueezeAxis);
   Register(prim::kPrimSparseConcat->name(), SparseConcatFusionProcess);
-  Register(prim::kPrimSparseCross->name(), SparseCrossFusionProcess);
   Register(prim::kPrimSparseTensorDenseMatmul->name(), SparseTensorDenseMatMulFusionProcess);
   Register(prim::kPrimSplit->name(), SplitFusionProcess);
   Register(prim::kPrimStandardNormal->name(), StandardNormalFusionProcess);

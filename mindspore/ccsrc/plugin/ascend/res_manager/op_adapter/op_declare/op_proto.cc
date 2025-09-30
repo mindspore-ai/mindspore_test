@@ -306,12 +306,6 @@ bool OpProto::IsAttrOptionalTypeByName(const std::string &name) const {
   if (iter != attr_optional_flags_.end()) {
     return iter->second;
   }
-  // The attribute of the ES ops is not on the prototype and will not be verified.
-  // 71016 加入，如果上面的表格算子删除完毕 需要删掉下面的if语句
-  // if (emdedding_service_ops.find(name_) != emdedding_service_ops.end() &&
-  //     (name.find_first_of("_") == 0 || name == "num" || name == "table_actual_size")) {
-  //   return true;
-  // }
   // NOTE: delete the if statement when CANN supporting OutfeedEnqueueOpV2 second stage wait
   if (name_ == "OutfeedEnqueueOpV2") {
     return true;

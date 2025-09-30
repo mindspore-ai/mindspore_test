@@ -39,6 +39,8 @@
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "runtime/hardware_abstract/collective/dummy_collective_communication_lib.h"
 #include "utils/ms_exception.h"
+#include "tools/profiler/mstx/mstx_impl.h"
+#include "pybind11/pybind11.h"
 
 namespace mindspore {
 namespace distributed {
@@ -974,7 +976,12 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     PROF_START(GenerateRootInfo);
     root_info = group->GenerateRootInfo(&root_info_size);
     PROF_END(GenerateRootInfo);
-    MS_EXCEPTION_IF_NULL(root_info);
+    if (root_info == nullptr) {
+      MS_LOG(EXCEPTION)
+        << "Root info pointer is nullptr. If you are using HCCL, there maybe port conflict in "
+           "communication collective library. Please execute 'export HCCL_IF_BASE_PORT=<new port>' to use "
+           "different port, or 'npu-smi info' to check if there's residual processes.";
+    }
 
     // Broadcast the device root information to all nodes on host side. CCOOL broadcasts inner comm
     // group's rootinfo within func 'GenerateRootInfo', do not need to broadcast outer comm group's rootinfo.
@@ -1079,6 +1086,17 @@ bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
     return true;
   }
 
+  // When the memory tool msleaks is enabled to capture memory call stacks, it needs to acquire the GIL.
+  // If the current thread already holds the GIL and is waiting for other threads, and another thread triggers call
+  // stack capture, the GIL must be temporarily released at this point to avoid a deadlock.
+  std::optional<py::gil_scoped_release> release;
+#ifdef SYSTEM_ENV_POSIX
+  if (profiler::MstxImpl::GetInstance().IsMsleaksEnable()) {
+    if (Py_IsInitialized() && PyGILState_Check()) {
+      release.emplace();
+    }
+  }
+#endif
   std::unique_lock<std::mutex> lock(task_queue_mutex_);
   // If the task is not submitted, throw exception.
   if (!std::any_of(task_list_.begin(), task_list_.end(),

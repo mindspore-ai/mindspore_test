@@ -950,9 +950,7 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
     auto device_address = std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
-    auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->SetData(data);
+    device_sync_->set_ptr(data);
   }
 }
 

@@ -84,32 +84,6 @@ FrontendOpRunInfoPtr GetOpRunInfo(const py::args &args, const std::string &graph
   return op_run_info;
 }
 
-size_t GetTensorNumFromAbstract(const abstract::AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(abs);
-  if (abs->isa<abstract::AbstractTensor>()) {
-    // Is a tensor
-    constexpr size_t kTensorOutputNum = 1;
-    return kTensorOutputNum;
-  }
-  if (abs->isa<abstract::AbstractSequence>()) {
-    const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>()->elements();
-    return std::accumulate(abs_seq.begin(), abs_seq.end(), 0, [](size_t out_num, const abstract::AbstractBasePtr &abs) {
-      return out_num + GetTensorNumFromAbstract(abs);
-    });
-  }
-  if (abs->isa<abstract::AbstractCSRTensor>()) {
-    // Currently, CSRTensor only supports 2-D matrix (shape has 2 values). 5 outputs = 3 Tensors + 2 shape values.
-    constexpr size_t kCSRTensorOutputNum = 5;
-    return kCSRTensorOutputNum;
-  }
-  if (abs->isa<abstract::AbstractCOOTensor>()) {
-    // Currently, COOTensor only supports 2-D matrix (shape has 2 values). 4 outputs = 2 Tensors + 2 shape values.
-    constexpr size_t kCOOTensorOutputNum = 4;
-    return kCOOTensorOutputNum;
-  }
-  return 0;
-}
-
 bool IsGraphDynamic(const FuncGraphPtr &func_graph) {
   for (const auto &param : func_graph->parameters()) {
     if (param->isa<Parameter>() && !param->cast<ParameterPtr>()->has_default()) {

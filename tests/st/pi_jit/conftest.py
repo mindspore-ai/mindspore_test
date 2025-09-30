@@ -86,6 +86,7 @@ def _run_in_subprocess_if_decorated(request):
             stderr=subprocess.STDOUT,
             text=True,
             encoding='utf-8',
+            cwd=str(request.config.rootdir),
         )
     except subprocess.TimeoutExpired as e:
         print(f"\n--- Subprocess output for {request.node.nodeid} ---\n")

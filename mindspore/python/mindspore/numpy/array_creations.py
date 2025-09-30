@@ -2622,7 +2622,7 @@ def pad(arr, pad_width, mode="constant", stat_length=None, constant_values=0,
             unique pad widths for each axis. ``((before, after),)`` yields same
             before and after pad for each axis. ``(pad,)`` or int is a shortcut
             for ``before = after = pad width`` for all axes.
-        mode (string, optional):
+        mode (str, optional):
             One of the following string values:
 
             - constant (default): Pads with a constant value.

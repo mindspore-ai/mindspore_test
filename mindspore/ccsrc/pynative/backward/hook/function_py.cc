@@ -321,36 +321,36 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   py::tuple output_ret(num_output);
   MS_LOG(DEBUG) << "Output info, modified: " << modified << ", num_output: " << num_output;
   for (size_t i = 0; i < num_output; ++i) {
-    if (flatten_outputs[i]->isa<tensor::Tensor>()) {
-      auto tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
-      bool is_diff = non_diff_tensors.count(tensor) == 0 && need_do_grad;
-      bool is_same_as_input = input_tensor_set.count(tensor) > 0;
-      bool is_dirty_tensor = dirty_tensor_set.count(tensor) > 0;
-      if (!is_diff) {
-        if (!tensor->requires_grad()) {
-          if (is_same_as_input && !is_dirty_tensor) {
-            tensor = ViewAsSelfWithNoGrad(tensor);
-            flatten_outputs[i] = tensor;
-          }
-        } else if (is_same_as_input) {
-          tensor = std::make_shared<Tensor>(*tensor);
-          tensor->set_auto_grad_meta_data(nullptr);
-          flatten_outputs[i] = tensor;
-        } else if (impl::GetViewAutogradMetaImpl(tensor) == nullptr) {
-          tensor->set_auto_grad_meta_data(nullptr);
-        }
-        output_ret[i] = CValueToPybindObj(tensor);
-      } else {
-        if (is_same_as_input && !is_dirty_tensor) {
-          tensor = ViewAsSelfWithNoGrad(tensor);
-          flatten_outputs[i] = tensor;
-        }
-        AutoGradUtil::SetValueGradInfo(tensor, InputType::kOpOutput);
-        output_ret[i] = CValueToPybindObj(tensor);
-      }
-    } else {
+    if (!flatten_outputs[i]->isa<tensor::Tensor>()) {
       output_ret[i] = py::cast<py::tuple>(outputs)[i];
+      continue;
     }
+    auto tensor = flatten_outputs[i]->cast<tensor::TensorPtr>();
+    bool is_diff = non_diff_tensors.count(tensor) == 0 && need_do_grad;
+    bool is_same_as_input = input_tensor_set.count(tensor) > 0;
+    bool is_dirty_tensor = dirty_tensor_set.count(tensor) > 0;
+    if (is_diff) {
+      if (is_same_as_input && !is_dirty_tensor) {
+        tensor = ViewAsSelfWithNoGrad(tensor);
+        flatten_outputs[i] = tensor;
+      }
+      AutoGradUtil::SetValueGradInfo(tensor, InputType::kOpOutput);
+      output_ret[i] = CValueToPybindObj(tensor);
+      continue;
+    }
+    if (!tensor->requires_grad()) {
+      if (is_same_as_input && !is_dirty_tensor) {
+        tensor = ViewAsSelfWithNoGrad(tensor);
+        flatten_outputs[i] = tensor;
+      }
+    } else if (is_same_as_input) {
+      tensor = std::make_shared<Tensor>(*tensor);
+      tensor->set_auto_grad_meta_data(nullptr);
+      flatten_outputs[i] = tensor;
+    } else if (impl::GetViewAutogradMetaImpl(tensor) == nullptr) {
+      tensor->set_auto_grad_meta_data(nullptr);
+    }
+    output_ret[i] = CValueToPybindObj(tensor);
   }
   if (!need_do_grad) {
     MS_LOG(DEBUG) << "no need to do grad.";

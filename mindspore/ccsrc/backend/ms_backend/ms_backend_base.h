@@ -57,6 +57,8 @@ class MSBackendBase : public BackendBase {
   virtual ~MSBackendBase() = default;
 
   // The backend graph Build interface, the return value is the built graph id.
+  std::vector<GraphFragmentPtr> Split(const FuncGraphPtr &func_graph) override;
+  // The backend graph Build interface, the return value is the built graph id.
   BackendGraphId Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) override;
 
   // The backend graph Run interface by the graph_id which are generated through the graph Build interface above.

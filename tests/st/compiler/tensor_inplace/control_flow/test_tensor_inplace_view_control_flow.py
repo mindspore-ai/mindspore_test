@@ -25,7 +25,7 @@ from tests.mark_utils import arg_mark
 ms.context.set_context(jit_config={"jit_level": "O0"})
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_view_in_control_flow1():
     """
     Feature: view operation in control flow.
@@ -725,7 +725,7 @@ def test_tensor_view_inplace_grad_new_method_view():
     assert (out_expect.asnumpy() == out_jit.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_virtual_view_case1():
     """
     Feature: Support tensor inplace view gradient.
@@ -835,7 +835,7 @@ def test_virtual_view_case4():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_virtual_view_case5():
     """
     Feature: Support tensor inplace view gradient.
@@ -865,7 +865,7 @@ def test_virtual_view_case5():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_virtual_view_case6():
     """
     Feature: Support tensor inplace view gradient.
@@ -937,7 +937,7 @@ def test_virtual_view_case7():
     assert (out_expect[1].asnumpy() == out_jit[1].asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_virtual_view_case8():
     """
     Feature: view operation in control flow.

@@ -124,6 +124,7 @@ from mindspore.ops.auto_generate import inplace_silu
 
 # 49
 from mindspore.ops.functional import sigmoid
+from mindspore.ops.functional import inplace_sigmoid as sigmoid_
 # 50
 
 # 51
@@ -1158,6 +1159,7 @@ __all__ = [
 
     # 49
     'sigmoid',
+    'sigmoid_',
     # 50
 
     # 51

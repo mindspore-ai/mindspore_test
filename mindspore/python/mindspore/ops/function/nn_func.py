@@ -42,7 +42,7 @@ from mindspore.ops.operations.nn_ops import TripletMarginLoss
 from mindspore.ops.operations._sequence_ops import TupleToTensor, TensorToTuple, ListToTensor
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
-    softmax_impl, swiglu, logsigmoid_op, kl_div_op, divs_op, l1_loss_ext
+    softmax_impl, swiglu, logsigmoid_op, kl_div_op, divs_op, l1_loss_ext, inplace_sigmoid
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
     mse_loss_ext
@@ -95,7 +95,7 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 20
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
-from mindspore.ops.auto_generate.gen_ops_prim import conv1d_ext_op, conv1d_padding_op, speed_fusion_attention_op
+from mindspore.ops.auto_generate.gen_ops_prim import speed_fusion_attention_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
@@ -948,7 +948,7 @@ def adaptive_max_pool1d(input, output_size):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.random.randint(0, 10, [1, 3, 6]), mindspore.float32)
+        >>> input = Tensor(np.random.randint(0, 10, [1, 3, 6]), mindspore.float16)
         >>> output = ops.adaptive_max_pool1d(input, output_size=2)
         >>> print(output.shape)
         (1, 3, 2)
@@ -5232,7 +5232,7 @@ def margin_ranking_loss(input1, input2, target, margin=0.0, reduction='mean'):
     _check_is_tensor('target', target, "margin_ranking_loss")
     check_input_dtype('input1', input1, 'input2', input2, 'margin_ranking_loss')
     check_input_dtype('target', target, 'input1', input1, 'margin_ranking_loss')
-    x = maximum_(-target * (input1 - input2) + margin, 0)
+    x = ops.clamp(-target * (input1 - input2) + margin, min=0)
     return _get_loss(x, reduction, "margin_ranking_loss")
 
 
@@ -5573,8 +5573,8 @@ def ctc_loss(log_probs, targets, input_lengths, target_lengths, blank=0, reducti
         >>> print(loss)
         -2.2986124
         >>> print(log_alpha)
-        [[[0.3       0.3            -inf      -inf      -inf]
-          [1.2       1.8931472 1.2            -inf      -inf]]]
+        [[[0.3       0.3            -inf      -inf 1.8931472 1.2       0.   0.       ]
+          [0.        0.       0.        0.       0.        0.          0.   0.       ]]]
     """
     _check_ctc_loss_inputs(blank, reduction, zero_infinity, 'ctc_loss')
     ctc_loss_op = NN_OPS.CTCLossV2(blank=blank, reduction="none", zero_infinity=zero_infinity)
@@ -9109,14 +9109,14 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
         >>> weight = Parameter(np.random.randn(3, 3).astype(np.float32))
         >>> output = ops.embedding(input, weight, max_norm=0.4)
         >>> print(output)
-        [[[ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01]],
-         [[ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01],
-          [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
-          [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01]]]
+        [[[ 5.49015924  3.47811311 -1.89771220],
+          [ 2.09307984 -2.24846993  3.40124398],
+          [ 5.49015924  3.47811311 -1.89771220],
+          [ 5.49015924  3.47811311 -1.89771220]],
+         [[ 2.09307984 -2.24846993  3.40124398],
+          [ 2.09307984 -2.24846993  3.40124398],
+          [ 5.49015924  3.47811311 -1.89771220],
+          [ 2.09307984 -2.24846993  3.40124398]]]
     """
     return embedding_op(input, weight, padding_idx, max_norm, norm_type, scale_grad_by_freq)
 
@@ -9410,6 +9410,7 @@ __all__ = [
     'conv2d',
     'conv_transpose2d',
     'sigmoid',
+    'inplace_sigmoid',
     'soft_margin_loss',
     'logsigmoid',
     'relu',

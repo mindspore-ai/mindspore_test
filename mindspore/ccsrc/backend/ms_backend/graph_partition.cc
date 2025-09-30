@@ -811,6 +811,14 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
     }
     auto node_prim = GetValueNode<PrimitivePtr>(fn);
     MS_EXCEPTION_IF_NULL(node_prim);
+    if (node_prim->HasAttr("split_op")) {
+      auto split_op_value = node_prim->GetAttr("split_op");
+      MS_EXCEPTION_IF_NULL(split_op_value);
+      if (GetValue<bool>(split_op_value)) {
+        MS_LOG(INFO) << "Split op:" << node->DebugString();
+        return true;
+      }
+    }
     for (auto &prim : cut_list_) {
       MS_EXCEPTION_IF_NULL(prim);
       if (prim->name() == node_prim->name()) {

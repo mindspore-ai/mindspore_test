@@ -30,6 +30,7 @@
 #include "utils/phase.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "backend/backend_manager/backend_manager.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -123,6 +124,25 @@ void DoOptimize(const ResourcePtr &resource, bool build_top_graph = true) {
   Optimize(resource, jit_passes);
 }
 }  // namespace
+
+py::tuple JitExecutorPy::SplitGraph(const py::object &func_graph_obj) {
+  auto func_graph = func_graph_obj.cast<FuncGraphPtr>();
+  if (func_graph == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "SplitGraph args error";
+  }
+  const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+  auto py_to_value_converter = [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); };
+  auto value_to_py_converter = [](const BaseRef &value) { return BaseRefToPyDataWithUserData(value, nullptr); };
+  auto fragments = backend::BackendManager::GetInstance().Split(func_graph, backend_jit_config.backend);
+  auto py_ret = py::tuple(fragments.size());
+  for (size_t i = 0; i < fragments.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(fragments[i]);
+    fragments[i]->py_to_value_converter_ = py_to_value_converter;
+    fragments[i]->value_to_py_converter_ = value_to_py_converter;
+    py_ret[i] = *(fragments[i]);
+  }
+  return py_ret;
+}
 
 bool JitExecutorPy::SetSource(const py::object &source) {
   // Check if the function or net is valid.

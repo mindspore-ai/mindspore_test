@@ -208,7 +208,10 @@ class Parameter(Tensor_):
                 self.param_a = Parameter(Tensor([1], ms.float32), name="name_a")
                 self.param_tuple = (self.param_a, self.param_a)
 
-        requires_grad (bool): True if the parameter requires gradient. Default: ``True`` .
+        requires_grad (bool): It is Used to filter parameters in :func:`mindspore.nn.Cell.trainable_params()`.
+            If it is ``False``, the filter parameters will not be returned in
+            :func:`mindspore.nn.Cell.trainable_params()`.
+            Default: ``True`` .
         layerwise_parallel (bool): When `layerwise_parallel` is true in data/hybrid parallel mode,
             broadcast and gradients communication would not be applied to the `Parameter`. Default: ``False`` .
         parallel_optimizer (bool): It is used to filter the weight shard operation in parallel mode. It works only when

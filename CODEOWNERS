@@ -42,6 +42,7 @@
 /mindspore/ccsrc/pybind_api/ @chujinjin
 /mindspore/ccsrc/pybind_api/ir/ @ginfung
 /mindspore/ccsrc/pybind_api/ir/tensor @chujinjin
+/mindspore/ccsrc/pybind_api/graph @limingqi107
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
 /mindspore/ccsrc/pybind_api/tools/ @fary86
 /mindspore/ccsrc/pybind_api/tools/data_dump_py.cc @DavidFFFan
@@ -114,6 +115,7 @@
 /mindspore/python/mindspore/custom_compiler/ @yuchaojie
 /mindspore/python/mindspore/dataset/ @jonyguo
 /mindspore/python/mindspore/device_context/ @limingqi107
+/mindspore/python/mindspore/graph/ @limingqi107
 /mindspore/python/mindspore/hal/ @limingqi107
 /mindspore/python/mindspore/mindrecord/ @jonyguo
 /mindspore/python/mindspore/mint/ @liangchenghui
@@ -133,7 +135,7 @@
 /mindspore/python/mindspore/ops_generate/ @chujinjin
 /mindspore/python/mindspore/parallel/ @yangzhenzhang
 /mindspore/python/mindspore/parallel/cluster/ @ZPaC
-/mindspore/python/mindspore/profiler/ @DavidFFFan
+/mindspore/python/mindspore/profiler/ @tangmengcheng @changzherui
 /mindspore/python/mindspore/rewrite/ @changzherui
 /mindspore/python/mindspore/runtime/ @limingqi107
 /mindspore/python/mindspore/scipy/ @yi-zhang95
@@ -167,13 +169,12 @@
 /tests/st/high_availability/ @fary86
 /tests/st/hypercomplex/ @yangzhenzhang
 /tests/st/infer/ @liulili-huawei
-/tests/st/lccl/ @ZPaC
 /tests/st/mem_reuse/ @limingqi107
 /tests/st/mindscience/ @yi-zhang95
 /tests/st/mint/ @liangchenghui
 /tests/st/mix_precision/ @changzherui
-/tests/st/msrun/ @ZPaC
-/tests/st/nccl/ @ZPaC
+/tests/st/cluster/ @ZPaC
+/tests/st/collective_ops/ @ZPaC
 /tests/st/nn/ @changzherui
 /tests/st/nontask_sink/ @zhangyinxia
 /tests/st/numpy_native/ @yi-zhang95
@@ -256,7 +257,7 @@
 /tests/ut/python/ops/ @liangchenghui
 /tests/ut/python/ops_generate/ @chujinjin
 /tests/ut/python/parallel/ @yangzhenzhang
-/tests/ut/python/profiler/ @DavidFFFan
+/tests/ut/python/profiler/ @tangmengcheng @changzherui
 /tests/ut/python/rewrite/ @changzherui
 /tests/ut/python/runtime/ @limingqi107
 /tests/ut/python/scipy/ @yi-zhang95

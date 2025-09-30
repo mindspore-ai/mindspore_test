@@ -780,7 +780,7 @@ void SuperKernelActor::FetchParameterInput(const KernelRunnerPtr &kernel_actor, 
       HandleFirstUserInputMemoryFree(kernel_actor, kernel_input_index);
     }
     kernel_actor->CopyInputDeviceTensor(kernel_actor->input_kernel_tensors_[kernel_input_index], kernel_input_index,
-                                        context, enable_infer_boost_);
+                                        context, in_increment_);
   }
 }
 
@@ -831,7 +831,7 @@ bool SuperKernelActor::FetchMsgInputAndConstValueForKernel(KernelRunner *kernel_
                     << " graph:" << graph_->ToString();
       kernel_actor->SetInputDeviceTensor(input_kernel_tensors_[item.second], item.first);
       kernel_actor->memory_free_list_[item.first] = input_kernel_tensors_[item.second];
-      kernel_actor->CopyInputDeviceTensor(input_kernel_tensors_[item.second], item.first, context, enable_infer_boost_);
+      kernel_actor->CopyInputDeviceTensor(input_kernel_tensors_[item.second], item.first, context, in_increment_);
     }
   }
   // 2. Prepare const value.
@@ -1326,7 +1326,8 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     ParallelDispatchKernels(context);
   } else {
     bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
-                              ActorDispatcher::enable_static_shape();
+                              ActorDispatcher::enable_static_shape() &&
+                              !GraphCaptureManager::GetInstance().IsExceedMaxCaptureCount();
     bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph();
     GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
 
@@ -2703,6 +2704,7 @@ void SuperKernelActor::RecordKernelActorWeight() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   enable_infer_boost_ = ms_context->IsEnableInferBoost();
+  in_increment_ = enable_infer_boost_ && (graph_phase_.find("increment") != std::string::npos);
   if (!EnableInputOptimize() || !enable_infer_boost_) {
     return;
   }

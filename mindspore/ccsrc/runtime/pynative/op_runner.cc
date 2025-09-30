@@ -1031,7 +1031,6 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
       input_tensor->set_device_address(new_device_address);
     } else {
       MS_LOG(DEBUG) << "Input device type is same, set tensor device address to ir input.";
-      input_tensor->set_implicit_copy_address(nullptr);
       input_edge->kernel_tensor_->set_device_address(device_address);
     }
 

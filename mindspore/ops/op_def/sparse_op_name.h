@@ -20,7 +20,6 @@ namespace mindspore {
 // Sparse ops
 constexpr auto kSparseFillEmptyRowsGradOpName = "SparseFillEmptyRowsGrad";
 constexpr auto kSparseSparseMinimumOpName = "SparseSparseMinimum";
-constexpr auto kSparseCrossOpName = "SparseCross";
 constexpr auto kRaggedTensorToTensorOpName = "RaggedTensorToTensor";
 constexpr auto kSparseTensorDenseMatmulOpName = "SparseTensorDenseMatmul";
 constexpr auto kSparseFillEmptyRowsOpName = "SparseFillEmptyRows";

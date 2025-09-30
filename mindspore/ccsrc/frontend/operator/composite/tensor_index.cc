@@ -448,7 +448,7 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
       if (!CheckTypeIsInstance<TypeId>(
             tensor_abs->element()->BuildType()->type_id(),
             {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool})) {
-        MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got"
+        MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got "
                                  << tensor_abs->element()->BuildType();
       }
       auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
