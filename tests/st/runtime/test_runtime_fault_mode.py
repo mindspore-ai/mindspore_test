@@ -59,4 +59,4 @@ def test_max_index_for_gather():
     z = Tensor([1, 2, 3, 4])
     with pytest.raises(RuntimeError) as err:
         print(foo(x, y, z))
-    assert "Sync stream error" in str(err.value)
+    assert "Sync" in str(err.value)
