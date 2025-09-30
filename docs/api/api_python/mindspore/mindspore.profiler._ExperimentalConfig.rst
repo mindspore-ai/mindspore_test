@@ -35,7 +35,7 @@ mindspore.profiler._ExperimentalConfig
         - **sys_io** (bool, 可选) - （仅限Ascend）是否收集NIC和RoCE数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **sys_interconnection** (bool, 可选) - （仅限Ascend）是否收集系统互连数据，包括集合通信带宽数据（HCCS）、PCIe数据以及片间传输带宽信息，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **host_sys** (list, 可选) - 表示采集host侧系统类调用类、存储类、cpu占用率数据。默认值： ``[]`` ，表示不采集host侧系统类数据。需要将 :class:`mindspore.profiler.profile` 中的 `start_profile` 参数设置为 ``False``。
-          在采集DISK或OSRT数据时，需要提前安装好iotop、perf、ltrace三方工具，详细步骤请参考 `安装三方工具 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0136.html>`_ ；
+          当前只有**root用户**支持采集DISK或OSRT数据，且需要提前安装好iotop、perf、ltrace三方工具，详细步骤请参考 `安装三方工具 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0136.html>`_ ；
           安装三方工具成功后，需要配置用户权限，详细步骤请参考 `配置用户权限 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.html>`_ ，
           注意在配置用户权限的第3步中，需要将msprof_data_collection.sh脚本中的内容替换为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_ 。
 
