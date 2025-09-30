@@ -1273,7 +1273,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                         << " parameter store device type:"
                         << graph_parameter_store->GetParameterDeviceType(outer_index, inner_index);
     }
-    PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id);
+    PrepareParameterWithCopy(parameter_index, tensor, from_aid, is_first_user, stream_id, has_h2d_copy);
     return;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);

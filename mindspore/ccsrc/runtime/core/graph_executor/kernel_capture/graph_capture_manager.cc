@@ -170,8 +170,8 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
         MS_LOG(EXCEPTION)
           << "Capture graph failed, most likely because the number of subgraphs you captured exceeded the "
              "hardware limit. Currently captured shape count: "
-          << capture_graphs_.size() - 1
-          << ", Please set export MS_DEV_RUNTIME_CONF='max_capture_dynamic_shape_number:" << capture_graphs_.size() - 1
+          << (capture_graphs_.size() - 1)
+          << ", Please set export MS_DEV_RUNTIME_CONF='graph_capture_max_number:" << (capture_graphs_.size() - 1)
           << " to control the maximum number of captured shapes.";
       }
       MS_LOG(DEBUG) << "Begin captrue graph, executor index: " << i << ", range[" << start << ", " << end << "].";
@@ -421,7 +421,9 @@ bool GraphCaptureManager::IsSingleOp(const std::vector<KernelRunnerPtr> &kernel_
 }
 
 bool IsPositiveInteger(const std::string &str) {
-  if (str.empty()) return false;
+  if (str.empty()) {
+    return false;
+  }
   for (char c : str) {
     if (!std::isdigit(c)) return false;
   }
@@ -429,21 +431,20 @@ bool IsPositiveInteger(const std::string &str) {
 }
 
 bool GraphCaptureManager::IsExceedMaxCaptureCount() {
-  auto max_capture_dynamic_shape_number = runtime::GetRuntimeConfigValue(runtime::kRuntimeMaxCaptureDynamicShapeNumber);
-  if (max_capture_dynamic_shape_number.empty()) {
-    MS_LOG(INFO)
-      << "Get max capture count failed, max capture count config is empty, max_capture_dynamic_shape_number: "
-      << max_capture_dynamic_shape_number;
+  auto graph_capture_max_number = runtime::GetRuntimeConfigValue(runtime::kRuntimeGraphCaptureMaxNumber);
+  if (graph_capture_max_number.empty()) {
+    MS_LOG(INFO) << "Get max capture count failed, max capture count config is empty, graph_capture_max_number: "
+                 << graph_capture_max_number;
     return false;
   }
-  if (!IsPositiveInteger(max_capture_dynamic_shape_number)) {
+  if (!IsPositiveInteger(graph_capture_max_number)) {
     MS_EXCEPTION(RuntimeError)
-      << "Max capture dynamic shape number config is not a positive integer, max_capture_dynamic_shape_number: "
-      << max_capture_dynamic_shape_number;
+      << "Max capture dynamic shape number config is not a positive integer, graph_capture_max_number: "
+      << graph_capture_max_number;
   }
-  size_t max_count = std::stoul(max_capture_dynamic_shape_number);
+  size_t max_count = std::stoul(graph_capture_max_number);
   MS_LOG(INFO) << "Max capture count is " << max_count << ", current capture graph count is "
-               << capture_graphs_.size() - 1;
+               << (capture_graphs_.size() - 1);
   return capture_graphs_.size() >= max_count;
 }
 
