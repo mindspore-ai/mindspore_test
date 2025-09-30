@@ -674,6 +674,9 @@ extern PyObject *TensorPython_pin_memory(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   TensorPy &value = tensor->value;
+  if (TensorPybind::IsPinned(value)) {
+    return self;
+  }
   return tensor::PackTensor(TensorPybind::MakePinMemoryTensor(value));
   HANDLE_MS_EXCEPTION_END
 }
@@ -682,22 +685,10 @@ extern PyObject *TensorPython_is_pinned(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   TensorPy &tensor_py = tensor->value;
-  const auto &base_tensor = tensor_py.GetTensor();
-  if (base_tensor->device_address() == nullptr) {
-    MS_LOG(INFO) << "TensorPython_is_pinned device_address is nullptr.";
-    Py_RETURN_FALSE;
-  }
-  const auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
-  const auto allocator = device_address->allocator();
-  if (device_address->allocator() == nullptr) {
-    MS_LOG(INFO) << "TensorPython_is_pinned allocator is nullptr.";
-    Py_RETURN_FALSE;
-  }
-  if (allocator->IsPinned()) {
+  if (TensorPybind::IsPinned(tensor_py)) {
     Py_RETURN_TRUE;
-  } else {
-    Py_RETURN_FALSE;
   }
+  Py_RETURN_FALSE;
   HANDLE_MS_EXCEPTION_END
 }
 
