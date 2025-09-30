@@ -2,6 +2,66 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.7.1 Release Notes
+
+### Major Features and Improvements
+
+#### Dataset
+
+- [STABLE] The parallel acceleration capability of the `.map` operation and `.batch` operation in the dataset has been restructured. The original data transfer logic of `c++ thread(with GIL) -> python process pool -> worker[i]` has been optimized to `c++ thread -> msg & shm -> worker[i]`, reducing the data transfer chain and eliminating the dependency on the GIL lock, which significantly improves the efficiency of custom data processing.
+
+#### Parallel
+
+- [STABLE] In static graph mode, the `AlltoAllVC` forward and reverse operators are supported. Users can use this operator through the [mindspore.ops.AlltoAllVC](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.AlltoAllVC.html) interface. In dynamic graph mode, the [mindspore.communication.comm_func.all_to_all_v_c](https://www.mindspore.cn/docs/en/master/api_python/communication/mindspore.communication.comm_func.all_to_all_v_c.html) communication interface is supported. Users can use this operator through this interface.
+- [STABLE] In dynamic graph mode, supports `TCPStore` function, supports the communication class [mindspore.mint.distributed.TCPStore](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.TCPStore.html), users can use the `TCPStore` function through this class.
+- [STABLE] The [mindspore.communication.create_group](https://www.mindspore.cn/docs/en/master/api_python/communication/mindspore.communication.create_group.html) interface now supports the `hccl_comm` parameter, allowing the reuse of externally created communication groups. Users can create communication groups through other means and pass them to MindSpore for network construction.
+- [BETA] The [mindspore.mint.distributed.init_process_group](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.init_process_group.html) interface supports `init_method` or `store` parameters. Users can use this interface to initialize communication in a way that does not depend on the scheduler process.
+
+#### Ascend
+
+- [BETA] Operator automatic fusion is supported in PyNative asynchronous execution mode. Users can enable it by setting the environment variable: `export MS_DEV_PYNATIVE_FUSION_FLAGS="--opt_level=1"`.
+- [BETA] The static graph now supports custom operator integration via the CustomOpBuilder method, and exposes the MS_CUSTOM_OPS_REGISTER macro for registering custom operator function classes.
+- [BETA] Dynamic graph mode supports the use of custom memory pools via [mindspore.runtime.use_mem_pool](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.use_mem_pool.html) to implement custom memory allocation within the context.
+
+#### PyNative
+
+- [STABLE] The [mindspore.mint.empty_like](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.empty_like.html) and [mindspore.mint.empty](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.empty.html) functions support the `pin_memory` parameter. If users set the `pin_memory` parameter to `True`, the returned Tensor will be allocated on pinned memory. Works only for CPU Tensors.
+- [STABLE] View operator performance optimization. By streamlining execution workflows and refining critical implementations, we have significantly enhanced the execution efficiency of View operators in eager mode.
+- [STABLE] The [mindspore.Tensor.to](https://www.mindspore.cn/docs/en/master/api_python/mindspore/Tensor/mindspore.Tensor.to.html) interface is extended to support copying Tensor data between devices.
+- [STABLE] Tensor storage supports CPU, GPU, and Ascend. Before 2.7.1, Tensor storage only supported Ascend hardware.
+
+#### Tools
+
+- [STABLE] The static graph supports the joint detection scheme for feature values. Users can enable this feature by configuring the environment variable MS_NPU_ASD_CONFIG.
+- [STABLE] HCCS link fault detection is supported. The [stress_detect](https://www.mindspore.cn/docs/en/master/api_python/mindspore.utils.html#mindspore.utils.stress_detect) interface now includes an HCCS detection type.
+
+### API Change
+
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API provides some new functional and Tensor interfaces. Most of the mint interfaces are currently still experimental interfaces. They perform better than ops interfaces in `jit_level="O0"/"O1"` and pynative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+
+  | mindspore.mint      |
+  | :------------------ |
+  | mindspore.mint.real |
+  | mindspore.mint.imag |
+
+  | mindspore.Tensor                 |
+  | -------------------------------- |
+  | mindspore.Tensor.sign_           |
+  | mindspore.Tensor.masked_scatter_ |
+  | mindspore.Tensor.index_copy_     |
+  | mindspore.Tensor.index_fill_     |
+  | mindspore.Tensor.sigmoid_        |
+
+- [STABLE] [mindspore.mint.nn.functional.conv1d](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.functional.conv1d.html) and [mindspore.mint.nn.Conv1d](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.Conv1d.html) interfaces have transitioned from demo to stable.
+- [STABLE] [mindspore.mint.stack](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.stack.html) and [mindspore.mint.concat](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.concat.html) interfaces now support Tensor inputs of different data types.
+- [BETA] The [mindspore.ops.Morph](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.Morph.html) operator primitive now supports custom backward propagation functions (bprop), allowing users to define corresponding gradient computation logic for the custom forward function.
+- [BETA] [mindspore.recompute](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.recompute.html) supports being used in static graph, user can call the api in the function which is decorated by @jit.
+- [BETA] [mindspore.enable_dynamic](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.enable_dynamic.html) supports symbolic deduction, meaning that the input shapes are allowed to use [mindspore.Symbol](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Symbol.html).
+
+### Contributors
+
+Bellatan,caifubi,chaijinwei,changzherui,chengbin,chujinjin,DavidFFFan,DeshiChen,Dring,ehaleva,fary86,gaoyong10,guangpengz,GuoZhibin,guozhijian,haozhang,hedongdong,Henry Shi,hhz886,huangbingjian,huangzhuo,huangziling,huda,Huilan Li,huoxinyou,jiangshanfeng,jiaorui,jiaxueyu,jizewei,kairui_kou,kingxian,kisnwang,leida,liangchenghui,lichen,limingqi107,Linhai,LiNuohang,linux,liubuyu,liudongxu,liuluobin,liuyanwei,lizhitong,looop5,luochao60,machenggui,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,mengyuanli,Metaqiang,NaCN,nepdada,panzhihui,Qiao_Fu,qiuleilei,qqqhhhbbb,qujianwei,shaoshengqi,shen_haochen,shenwei41,shuqian0,tanghuikang,uuhuu,wang_ziqi,wangjialin,wujueying,XianglongZeng,Xiaoda,xiaopeng,xiaotianci,xiaoyao,XinDu,xuzhen,yanghaoran,yao_yf,yefeng,yide12,yiguangzheng,YijieChen,yuanqi,yuchaojie,YuJianfeng,YukioZzz,yuliangbin,yyyyrf,zhangbuxue,zhangdanyang,zhanghanLeo,zhangyinxia,ZhangZGC,zhanzhan,zhaochenjie,zhengzuohe,zhunaipan,ZPaC,zyli2020,范吉斌,龚昊宇,胡彬,宦晓玲,李栋,李良灿,李林杰,刘崇鸣,刘飞扬,刘力力,刘子涵,宋佳琪,孙昊辰,王泓皓,王振邦,俞涵,张栩浩,张学同,周一航
+
 ## MindSpore 2.7.0 Release Notes
 
 ### Major Features and Improvements
@@ -150,7 +210,7 @@ MindInsight will no longer update or release new versions after version 2.3，an
   | cell.register_load_state_dict_post_hook |
   | cell.load_state_dict                    |
 
-- [STABLE] [minspore.nn.cell](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html) added the function to view/register model's buffer. New interfaces are as follows:
+- [STABLE] [minspore.nn.cell](https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html) added the function to view/register model's buffer. New interfaces are as follows:
 
   | mindspore.nn.Cell    |
   | -------------------- |
