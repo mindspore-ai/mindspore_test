@@ -84,7 +84,8 @@ class _ExperimentalConfig:
             HCCS data, PCIe data, and Stars Chip Trans. Default: ``False``.
         host_sys (list, optional): Collect the data of system call classes on the host side.
             Default: ``[]``, indicating that system class data on the host side is not collected.
-            You need to set `start_profile` of :class:`mindspore.profiler.profile` to ``False``.When collecting DISK or
+            You need to set `start_profile` of :class:`mindspore.profiler.profile` to ``False``.Currently, only
+            the **root user** supports collecting DISK or OSRT data, when collecting DISK or
             OSRT data, it is necessary to install the iotop, perf, and ltrace third-party tools in advance.
             For detailed steps, please refer to `Installing Third-party Tools
             <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0136.
