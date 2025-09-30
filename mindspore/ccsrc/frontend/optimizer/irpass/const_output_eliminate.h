@@ -144,7 +144,6 @@ class ConstOutputEliminater : public AnfVisitor {
         if (!dim_zero) {
           return false;
         }
-
         continue;
       }
 
@@ -173,7 +172,14 @@ class ConstOutputEliminater : public AnfVisitor {
       }
     }
 
-    return true;
+    // If only one zero, no need to eliminate
+    constexpr size_t kTwoElements = 2;
+    constexpr size_t kOneElement = 1;
+    if (grad_mode_) {
+      return tuple->elements().size() > kTwoElements;
+    } else {
+      return tuple->elements().size() > kOneElement;
+    }
   }
 
   bool IsEliminate(const AnfNodePtr &node) {
