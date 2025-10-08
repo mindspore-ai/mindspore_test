@@ -29,7 +29,7 @@ typedef void (*UnInitCacheThreadLocal)();
 typedef void (*SetHashKey)(uint64_t);
 typedef bool (*CanUseCache)(const char *);
 
-constexpr int g_hash_buf_size = 8192;
+constexpr int g_hash_buf_size = 16384;
 constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
 extern BACKEND_EXPORT thread_local char g_hash_buf[g_hash_buf_size];
 extern BACKEND_EXPORT thread_local int g_hash_offset;
