@@ -276,13 +276,6 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \return A TensorPy.
   static const TensorPyPtr InitTensorPy(const py::dict &input);
 
-  /// \brief  Create TensorPy from a numpy array without copy.
-  ///
-  /// \param[in] input [py::array] Data value of the tensorpy.
-  ///
-  /// \return This pointer address of TensorPy.
-  static TensorPyPtr MakeTensorOfNumpy(const py::array &input);
-
   /// \brief Convert python object to Tensor.
   ///
   /// \param[in] bytes_obj [py::bytes] Python object.
@@ -292,44 +285,10 @@ class FRONTEND_EXPORT TensorPyImpl {
   /// \return A created TensorPy.
   static TensorPyPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims, const TypePtr &type_ptr);
 
-  /// \brief Release device address of graph output tensor by TensorPy.
-  ///
-  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
-  /// \param[in] release [bool] Is release device address of graph output tensor.
-  static void SetOffload(const TensorPyPtr &tensorpy, bool release);
-
-  /// \brief Load device address of graph input tensor by TensorPy.
-  ///
-  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
-  static void SetLoad(const TensorPyPtr &tensorpy);
-
-  /// \brief Get Tensor data pointer for c++ type, and put it to py::bytes.
-  ///
-  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
-  ///
-  /// \return The pointer in the object.
-  static py::bytes GetBytes(const TensorPyPtr &tensorpy);
-
-  /// \brief Convert asynchronous Tensor into numpy data.
-  ///
-  /// \param[in] tensorpy [TensorPyPtr] The TensorPy.
-  ///
-  /// \return The numpy data.
-  static py::array SyncAsNumpy(const TensorPyPtr &tensorpy);
-  static void FlushFromCache(const TensorPyPtr &tensorpy);
   static TensorPyPtr FromDLPack(const py::object &dlpack_capsule);
   static py::object ToDLPack(const py::object &tensor);
-  static TensorPyPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
-  static void SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
-                               const TypePtr type_ptr);
-  static void SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value);
-  static const py::object GetUserData(const TensorPyPtr &tensorpy, const py::str &key);
-  static py::object ToList(const TensorPyPtr &tensorpy);
   static py::object Item(const TensorPyPtr &tensorpy);
-  static uint64_t RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook);
   static void RemoveTensorBackwardHook(uint64_t handle_id);
-  static py::list GetHooks(const TensorPyPtr &tensorpy);
-  static uintptr_t DataPtr(const TensorPyPtr &tensorpy);
   static ShapeVector GetShapeFromTuple(const py::tuple &tuple);
 
  private:
