@@ -37,7 +37,6 @@ constexpr inline static auto kEnv = "python";
 // The TAG as prefix of real command from remote.
 constexpr inline static auto kTag = "[~]";
 RUNTIME_HARDWARE_EXPORT std::string GetPyExe();
-RUNTIME_HARDWARE_EXPORT std::string GetCmdResult();
 
 class RUNTIME_HARDWARE_EXPORT KernelBuildClient {
  public:

@@ -71,17 +71,6 @@ size_t GetOutputNum(const AnfNodePtr &node) {
   return 1;
 }
 
-int CalDiagOffset(int diag_index, int max_diag_len, int inner_rows, int inner_cols,
-                  const std::pair<MatrixDiag::Alignment, MatrixDiag::Alignment> &alignment) {
-  bool right_align_super_diagonal = (alignment.first == MatrixDiag::RIGHT);
-  bool right_align_sub_diagonal = (alignment.second == MatrixDiag::RIGHT);
-  const bool right_align =
-    (diag_index >= 0 && right_align_super_diagonal) || (diag_index <= 0 && right_align_sub_diagonal);
-  const int diag_len = std::min(inner_rows + std::min(0, diag_index), inner_cols - std::max(0, diag_index));
-  const int offset = (right_align) ? (max_diag_len - diag_len) : 0;
-  return offset;
-}
-
 TypeId DtypeToTypeId(const std::string &dtypes) {
   if (dtypes == "float") {
     return TypeId::kNumberTypeFloat32;
@@ -90,20 +79,6 @@ TypeId DtypeToTypeId(const std::string &dtypes) {
     return TypeId::kMetaTypeNone;
   }
   return StringToTypeId(dtypes);
-}
-
-std::string Dtype2ShortType(const std::string &dtype) {
-  static const std::unordered_map<std::string, std::string> dtype_shortdtype_map = {
-    {"float16", "f16"}, {"float32", "f32"}, {"float64", "f64"},  {"int8", "i8"},    {"int16", "i16"},
-    {"int32", "i32"},   {"int64", "i64"},   {"uint8", "u8"},     {"uint16", "u16"}, {"uint32", "u32"},
-    {"uint64", "u64"},  {"bool", "bool"},   {"bfloat16", "bf16"}};
-
-  auto iter = dtype_shortdtype_map.find(dtype);
-  if (iter != dtype_shortdtype_map.end()) {
-    return iter->second;
-  } else {
-    MS_EXCEPTION(ArgumentError) << "Illegal input dtype:" << dtype;
-  }
 }
 
 size_t GetDtypeNbyte(const std::string &dtype) {
@@ -544,23 +519,6 @@ std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKer
   }
 
   return std::make_pair(input_data_types, output_data_types);
-}
-
-bool IsFoldKernelBuildInfo(const KernelBuildInfoPtr &kernel_build_info) {
-  MS_EXCEPTION_IF_NULL(kernel_build_info);
-  auto inputs_object_type = kernel_build_info->GetAllInputKernelObjectTypes();
-  if (std::find(inputs_object_type.begin(), inputs_object_type.end(), KernelObjectType::TUPLE) !=
-      inputs_object_type.end()) {
-    return true;
-  }
-
-  auto outputs_object_type = kernel_build_info->GetAllOutputKernelObjectTypes();
-  if (std::find(outputs_object_type.begin(), outputs_object_type.end(), KernelObjectType::TUPLE) !=
-      outputs_object_type.end()) {
-    return true;
-  }
-
-  return false;
 }
 
 KernelAttr GetKernelAttrFromBuildInfo(const KernelBuildInfoPtr &build_info) {

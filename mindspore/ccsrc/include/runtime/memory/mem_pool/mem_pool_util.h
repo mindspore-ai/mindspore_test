@@ -44,7 +44,7 @@ enum class MemType : int {
   kOther
 };
 
-class BACKEND_EXPORT Lock {
+class Lock {
  public:
   inline void lock() {
     while (locked.test_and_set(std::memory_order_acquire)) {
@@ -56,7 +56,7 @@ class BACKEND_EXPORT Lock {
   std::atomic_flag locked = ATOMIC_FLAG_INIT;
 };
 
-class BACKEND_EXPORT LockGuard {
+class LockGuard {
  public:
   explicit LockGuard(const Lock &lock) : lock_(const_cast<Lock *>(&lock)) { lock_->lock(); }
   ~LockGuard() { lock_->unlock(); }

@@ -28,7 +28,6 @@
 #include "pynative/forward/pyboost/do_pyboost_cast.h"
 #include "pynative/forward/op_graph/do_infer.h"
 #include "ir/cell.h"
-#include "runtime/pipeline/async_hqueue.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
 #include "backend/ms_backend/op_backend.h"

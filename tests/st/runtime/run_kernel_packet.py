@@ -33,8 +33,8 @@ def run_simple_reshape_net():
     net.set_inputs(Tensor(shape=[None, None], dtype=ms.float32))
     x = Tensor(np.ones([10, 2]).astype(np.float32))
     output = net(x)
-    print("AAA", output, "BBB")
-    print("AAA", output.asnumpy().shape, "BBB")
+    print("COMPILE", output, "CACHE")
+    print("COMPILE", output.asnumpy().shape, "CACHE")
 
 
 if __name__ == "__main__":

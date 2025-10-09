@@ -77,6 +77,11 @@ def check_hash_file(cache_path, first_run_hash):
 
 
 def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second):
+    if "runtime" in file_name:
+        current_match_output = re.compile(r'COMPILE(.*?)CACHE', re.S)
+    else:
+        current_match_output = match_output
+
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
@@ -117,7 +122,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert "Status record: end compile function graph:" in data_first
 
     # Take out the result of the first run
-    match_output_first = re.findall(match_output, data_first)
+    match_output_first = re.findall(current_match_output, data_first)
     assert len(match_output_first) == 2
     nums_first = re.findall(match_num, match_output_first[0])
     array_first = np.array([float(x) for x in nums_first])
@@ -146,7 +151,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert data_second.count("[PROF]Load_backend_compile_cache") == 2
 
     # Take out the result of the second run
-    match_output_second = re.findall(match_output, data_second)
+    match_output_second = re.findall(current_match_output, data_second)
     assert len(match_output_second) == 2
     nums_second = re.findall(match_num, match_output_second[0])
     array_second = np.array([float(x) for x in nums_second])
