@@ -122,3 +122,52 @@ def test_global_aclnn_cache_pyboost():
     assert int(ret_miss.strip()) == 2
     os.system("rm -rf log_cache_pyboost.txt")
     del os.environ["VLOG_v"]
+
+def test_aclnn_cache_with_multi_input_1():
+    """
+    Feature: aclnn cache with 400 input
+    Description: aclnn cache with 400 input
+    Expectation: aclnn cache is failed
+    """
+    x_list = []
+    for _ in range(400):
+        x = np.random.uniform(-1, 1, (1000))
+        x_list.append(mindspore.Tensor(x, mindspore.float32))
+    x_list = tuple(x_list)
+    for _ in range(5):
+        mint.cat([x.view(-1).contiguous() for x in x_list], dim=0)
+
+def test_aclnn_cache_with_multi_input_2():
+    """
+    Feature: aclnn cache with 1000 input
+    Description: aclnn cache with 1000 input
+    Expectation: aclnn cache is failed
+    """
+    x_list = []
+    for _ in range(1000):
+        x = np.random.uniform(-1, 1, (1000))
+        x_list.append(mindspore.Tensor(x, mindspore.float32))
+    x_list = tuple(x_list)
+    for _ in range(5):
+        mint.cat([x.view(-1).contiguous() for x in x_list], dim=0)
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_aclnn_cache_with_multi_input():
+    """
+    Feature: aclnn cache with multi input
+    Description: aclnn cache with multi input
+    Expectation: aclnn cache is failed
+    """
+    # 400 inputs is supported, hash id is not 0 and cache is available
+    os.system("pytest -sv test_aclnn_cache.py::test_aclnn_cache_with_multi_input_1 > log_cache_multi_input_1.txt 2>&1")
+    ret_miss = os.popen("grep -i 'aclnnCat cache is available, but hash id is 0, do not use cache.' \
+                         log_cache_multi_input_1.txt | wc -l").read()
+    assert int(ret_miss.strip()) == 0
+    os.system("rm -rf log_cache_multi_input_1.txt")
+
+    # 1000 inputs is not supported, cache is available but hash id is 0
+    os.system("pytest -sv test_aclnn_cache.py::test_aclnn_cache_with_multi_input_2 > log_cache_multi_input_2.txt 2>&1")
+    ret_miss = os.popen("grep -i 'aclnnCat cache is available, but hash id is 0, do not use cache.' \
+                         log_cache_multi_input_2.txt | wc -l").read()
+    assert int(ret_miss.strip()) == 5
+    os.system("rm -rf log_cache_multi_input_2.txt")

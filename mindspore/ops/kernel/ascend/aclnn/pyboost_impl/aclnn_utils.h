@@ -82,7 +82,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                                  \
   [](const std::string &api_str, const auto &... args) -> auto {                                                  \
     std::unique_lock<std::mutex> lock(mutex_);                                                                    \
-    if (capacity_ == 0) {                                                                                         \
+    if (MS_UNLIKELY(capacity_ == 0)) {                                                                            \
       auto [ws_size, executor, cache, release_func] = GEN_EXECUTOR(api_str, args...);                             \
       std::function<void()> update_func = nullptr;                                                                \
       return std::make_tuple(ws_size, executor, cache, release_func, update_func);                                \
@@ -106,7 +106,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       MS_VLOG(mindspore::VLogLevel::VL_ACLNN_OP) << "Api " << api_str << " miss cache, with hash id:" << hash_id; \
       auto [ws_size, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(api_str, args...);                    \
       auto update_func = std::function<void()>(nullptr);                                                          \
-      if (hash_id != 0 && !fail_cache) {                                                                          \
+      if (MS_LIKELY(hash_id != 0 && !fail_cache)) {                                                               \
         hash_cache_.emplace_front(hash_id, executor, cache, ws_size);                                             \
         hash_map_[hash_id] = hash_cache_.begin();                                                                 \
         if (hash_cache_.size() > capacity_) {                                                                     \
@@ -118,9 +118,18 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
         }                                                                                                         \
         auto release_func = std::function<void()>(nullptr);                                                       \
         return std::make_tuple(ws_size, executor, cache, release_func, update_func);                              \
-      } else {                                                                                                    \
+      } else if (MS_UNLIKELY(fail_cache)) {                                                                       \
         std::function<void()> release_func = [cache]() -> void {                                                  \
           cache(mindspore::device::ascend::ProcessCacheType::kReleaseParams, std::vector<std::vector<void *>>{}); \
+        };                                                                                                        \
+        return std::make_tuple(ws_size, executor, cache, release_func, update_func);                              \
+      } else {                                                                                                    \
+        MS_LOG(WARNING) << api_str << " cache is available, but hash id is 0, do not use cache.";                 \
+        MS_VLOG(mindspore::VLogLevel::VL_ACLNN_OP)                                                                \
+          << api_str << " cache is available, but hash id is 0, do not use cache.";                               \
+        std::function<void()> release_func = [cache]() -> void {                                                  \
+          cache(mindspore::device::ascend::ProcessCacheType::kReleaseParamsAndExecutor,                           \
+                std::vector<std::vector<void *>>{});                                                              \
         };                                                                                                        \
         return std::make_tuple(ws_size, executor, cache, release_func, update_func);                              \
       }                                                                                                           \
