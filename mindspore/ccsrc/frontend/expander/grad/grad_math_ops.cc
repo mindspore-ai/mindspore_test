@@ -6210,5 +6210,72 @@ REG_BPROP_BUILDER("NsaCompress").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
           ib->OutZeros(actual_seq_len)};
 });
 
+REG_BPROP_BUILDER("NsaCompressAttention").SetUnusedInputs({i5, i6, i7, i8, i9, i13}).SetBody(BODYFUNC(ib) {
+  auto query = ib->GetInput(i0);
+  auto key = ib->GetInput(i1);
+  auto value = ib->GetInput(i2);
+  auto scale_value = ib->GetInput(i3);
+  auto head_num = ib->GetInput(i4);
+  auto atten_mask = ib->GetInput(i10);
+  auto actual_seq_qlen = ib->GetInput(i11);
+  auto actual_cmp_seq_kvlen = ib->GetInput(i12);
+
+  // Forward output: [attention_out, topk_indices_out, softmax_max_out, softmax_sum_out]
+  auto forward_output = ib->GetInput(i14);
+  auto attention_out = ib->TupleGetItem(forward_output, 0);
+  auto softmax_max_out = ib->TupleGetItem(forward_output, 2);
+  auto softmax_sum_out = ib->TupleGetItem(forward_output, 3);
+
+  auto dout = ib->GetInput(i15);
+  auto grad_output = ib->TupleGetItem(dout, 0);
+
+  // Call FlashAttentionScoreGrad for backward computation
+  auto grad_out = ib->Emit("FlashAttentionScoreGrad", {
+                                                        query,
+                                                        key,
+                                                        value,
+                                                        grad_output,
+                                                        ib->EmitValue(kNone),
+                                                        ib->EmitValue(kNone),
+                                                        ib->EmitValue(kNone),
+                                                        atten_mask,
+                                                        softmax_max_out,
+                                                        softmax_sum_out,
+                                                        ib->EmitValue(kNone),
+                                                        attention_out,
+                                                        ib->EmitValue(kNone),
+                                                        actual_seq_qlen,
+                                                        actual_cmp_seq_kvlen,
+                                                        head_num,
+                                                        ib->Value<float>(1.0),
+                                                        scale_value,
+                                                        ib->Value<int64_t>(2147483647),
+                                                        ib->Value<int64_t>(2147483647),
+                                                        ib->Value<int64_t>(0),
+                                                        ib->Value<int64_t>(4),  // TND layout
+                                                        ib->Value<int64_t>(1)   // sparse_mode
+                                                      });
+
+  auto grad_query = ib->TupleGetItem(grad_out, 0);
+  auto grad_key = ib->TupleGetItem(grad_out, 1);
+  auto grad_value = ib->TupleGetItem(grad_out, 2);
+  auto grad_pse = ib->TupleGetItem(grad_out, 3);
+
+  return {grad_query,
+          grad_key,
+          grad_value,
+          ib->OutZeros(scale_value),
+          ib->OutZeros(head_num),
+          ib->OutZeros(ib->GetInput(i5)),
+          ib->OutZeros(ib->GetInput(i6)),
+          ib->OutZeros(ib->GetInput(i7)),
+          ib->OutZeros(ib->GetInput(i8)),
+          ib->OutZeros(ib->GetInput(i9)),
+          ib->OutZeros(atten_mask),
+          ib->OutZeros(actual_seq_qlen),
+          ib->OutZeros(actual_cmp_seq_kvlen),
+          ib->OutZeros(ib->GetInput(i13))};
+});
+
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

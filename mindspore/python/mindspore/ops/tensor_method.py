@@ -1253,7 +1253,7 @@ def deprecated_tensor_unique(input, sorted=True, return_inverse=False, return_co
     """
     if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
         raise ValueError(
-            f"For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
+            "For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
     if dim is None:
         y, inverse_, counts = unique2_(
             input, sorted, return_inverse, return_counts)
@@ -1636,7 +1636,7 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
 
 # 543
 def tensor_put_(input, index, source, accumulate=False):
-    raise RuntimeError(f"There is no branch to go function tensor_put_!")
+    raise RuntimeError("There is no branch to go function tensor_put_!")
 
 
 # 790
@@ -2015,3 +2015,8 @@ def tensor_imag(input):
 def _tensor_nsa_compress(input, weight, compress_block_size, compress_stride, *, actual_seq_len=None):
     """Placeholder for unsupported devices: nsa_compress."""
     raise RuntimeError("'nsa_compress' is only supported on Ascend.")
+
+
+def _tensor_nsa_compress_attention(*args, **kwargs):
+    """Placeholder for unsupported devices: nsa_compress_attention."""
+    raise RuntimeError("'nsa_compress_attention' is not supported on this device.")
