@@ -47,7 +47,7 @@ void PreprocessForEventMethod(const FuncGraphPtr &func_graph) {
       MS_EXCEPTION_IF_NULL(event_value);
       auto event_id = event_value->value();
       event_method_nodes[event_id].emplace_back(cnode);
-      common::AnfAlgo::SetNodeAttr(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)), cnode);
+      common::AnfAlgo::SetNodeAttrSafely(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)), cnode);
     }
   }
   for (auto &fg : func_graph->func_graphs_used_total()) {
