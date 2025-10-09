@@ -16,6 +16,7 @@
 """Define pijit context."""
 
 import inspect
+import sys
 import types
 import functools
 import importlib.util
@@ -24,6 +25,9 @@ from mindspore import log as logger
 from mindspore.common.jit_config import JitConfig
 from mindspore._c_expression import PreJit
 from mindspore._c_expression import GraphExecutor_, jit_mode_pi_enable, jit_mode_pi_disable, pi_jit_set_context
+
+_PY312_OR_LATER = sys.version_info >= (3, 12)
+_PY_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
 def _update_graph_executor_config(jit_config):
@@ -83,12 +87,18 @@ class PIJitCaptureContext:
 
     def _wrapper(self):
         """
-        pijit wrapper of fn.
+        Create and return the JIT wrapper for the original function.
         """
         def _fn(*args, **kwds):
+            if _PY312_OR_LATER:
+                raise Unsupported(
+                    '@jit(capture_mode="bytecode") does not support Python 3.12+. '
+                    f"Current Python version: {_PY_VERSION}"
+                )
             PreJit(args, kwds)
             disable_pijit = self.config.get('_disable_pijit', None)
             if disable_pijit is not None and disable_pijit(args, kwds):
+                # JIT is disabled for these inputs, call original function
                 return self.fn(*args, **kwds)
             with self:
                 self.ret = self.fn(*args, **kwds)

@@ -263,7 +263,9 @@ def test_fallback_float_with_input_float():
 
     with pytest.raises(TypeError) as ex:
         foo()
-    assert "float() argument must be a string or a number" in str(ex.value)
+    # In python 3.7-3.9, the error message is "float() argument must be a string or a number"
+    # In python 3.10+, the error message is "float() argument must be a string or a real number"
+    assert "float() argument must be a string or a" in str(ex.value)
 
 
 def test_fallback_float_with_input_string():
