@@ -1238,7 +1238,8 @@ Status FlashAttentionScoreInfo::ReplaceActualSeqLenForSplitSeqInTnd(const CNodeP
 
   // new_actual_seq_kvlen = actual_seq_kvlen - (ReLU(actual_seq_qlen - offset) - new_actual_seq_qlen)
   auto relu_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimReLU), qlen_offset_sub_cnode});
-  auto kvlen_offset_sub_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_qlen_node, relu_cnode});
+  auto kvlen_offset_sub_cnode =
+    func_graph->NewCNode({NewValueNode(prim::kPrimSub), relu_cnode, new_actual_seq_qlen_cnode});
   auto tmp_new_actual_seq_kvlen_cnode =
     func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_kvlen_node, kvlen_offset_sub_cnode});
 
