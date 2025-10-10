@@ -30,7 +30,13 @@ def test_tensor_pin_memory():
     """
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     x = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
+    assert not x.is_pinned()
     net = Net()
     y = net(x)
     assert y.is_pinned()
     np.allclose(y, x, rtol=1e-5, equal_nan=True)
+
+    # tensor y is on pinned memory, then z is also on pinned memory, and is same with y
+    z = net(y)
+    assert z.is_pinned()
+    assert z.storage().data_ptr() == y.storage().data_ptr()

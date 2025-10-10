@@ -139,6 +139,8 @@ class FRONTEND_EXPORT TensorPybind {
   /// \param[in] input [py::array] Data value of the tensor.
   static TensorPtr MakeTensorOfNumpy(const py::array &input);
 
+  static bool IsPinned(const TensorPy &tensor);
+
   static TensorPtr MakePinMemoryTensor(const TensorPy &tensor);
 
   static py::bytes GetBytes(const Tensor &tensor);

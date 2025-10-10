@@ -348,6 +348,24 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   return std::make_shared<Tensor>(dtype, shape, device_address);
 }
 
+bool TensorPybind::IsPinned(const tensor::TensorPy &tensor) {
+  const auto &base_tensor = tensor.GetTensor();
+  if (base_tensor->device_address() == nullptr) {
+    MS_LOG(INFO) << "In IsPinned function. device_address is nullptr.";
+    return false;
+  }
+  const auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(base_tensor->device_address());
+  const auto allocator = device_address->allocator();
+  if (device_address->allocator() == nullptr) {
+    MS_LOG(INFO) << "In IsPinned function. allocator is nullptr.";
+    return false;
+  }
+  if (allocator->IsPinned()) {
+    return true;
+  }
+  return false;
+}
+
 TensorPtr TensorPybind::MakePinMemoryTensor(const tensor::TensorPy &tensor) {
   const auto &base_tensor = tensor.GetTensor();
   const auto &shape = base_tensor->shape();
