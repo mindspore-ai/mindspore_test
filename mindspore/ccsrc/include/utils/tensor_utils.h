@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_UTILS_H_
 #define MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_UTILS_H_
 
+#include <algorithm>
+#include <iterator>
 #include <tuple>
 #include <vector>
 #include "ir/tensor.h"
@@ -54,6 +56,16 @@ auto MakeTuple() {
   return MakeTupleImpl<T, N, Flag>(std::make_index_sequence<N>{});
 }
 
+template <bool Flag>
+std::vector<TensorWrapper> MakeVector(size_t num) {
+  std::vector<TensorWrapper> py_output;
+  py_output.reserve(num);
+  for (size_t i = 0; i < num; ++i) {
+    py_output.emplace_back(Flag);
+  }
+  return py_output;
+}
+
 // Helper function to apply a transformation to each element of the tuple
 template <typename Tuple, size_t... Indices>
 void TransformTupleImpl(PyObject *py_tuple, const Tuple &tuple, std::index_sequence<Indices...>) {
@@ -77,6 +89,8 @@ auto TransformOutput(const Tuple &tuple) {
   }
 }
 
+COMMON_EXPORT PyObject *TransformVectorOutput(const std::vector<TensorWrapper> &py_output);
+
 template <typename Tuple>
 PyObject *TransformOutput(const Tuple &tuple, PyObject *comm_handle) {
   constexpr size_t tuple_size = std::tuple_size_v<Tuple>;
@@ -98,6 +112,8 @@ auto TransformPromise(const Tuple &tuple) {
   return TransformPromiseImpl(tuple, std::make_index_sequence<tuple_size>{});
 }
 
+COMMON_EXPORT std::vector<stub::StubNodePtr> TransformVectorPromise(const std::vector<TensorWrapper> &py_output);
+
 COMMON_EXPORT void SetPromise(const std::tuple<stub::StubNodePtr> &promises, const TensorPtr &tensor);
 
 // Helper function to set values using a compile-time loop
@@ -116,6 +132,8 @@ void SetPromise(const std::tuple<T1...> &t1, const std::tuple<T2...> &t2) {
   // Call the implementation with an index sequence
   SetPromiseImpl(t1, t2, std::index_sequence_for<T1...>{});
 }
+
+COMMON_EXPORT void SetPromise(const std::vector<stub::StubNodePtr> &t1, const std::vector<TensorPtr> &t2);
 
 COMMON_EXPORT void FlattenOutputs(const ValuePtr &value, std::vector<TensorPtr> *outputs);
 
@@ -155,13 +173,14 @@ void SetException(const std::tuple<T1...> &t1) {
   SetExceptionImpl(t1, std::index_sequence_for<T1...>{});
 }
 
+COMMON_EXPORT void SetException(const std::vector<stub::StubNodePtr> &t1);
+
 template <typename T>
 inline T GetTensorData(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto cpu_tensor = tensor->cpu();
   return *(static_cast<T *>(cpu_tensor->data_c()));
 }
-
 }  // namespace tensor
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_TENSOR_UTILS_H_

@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "view/chunk_strides_calc.h"
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <vector>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "view/chunk_strides_calc.h"
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
@@ -26,19 +28,17 @@ TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
                                           const TensorStorageInfoPtr &storage_info, const int64_t &chunks,
                                           const int64_t &dim) {
   const auto ndim = old_shape.size();
-  if (ndim == 0) {
-    MS_LOG(EXCEPTION) << "For 'Chunk', rank should > 0, but get " << ndim;
-  }
-  auto [ori_shape, ori_strides, old_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
+  MS_CHECK_VALUE(ndim > 0, "For 'Chunk', input's rank should be greater than 0, but got " + std::to_string(ndim));
+  MS_CHECK_VALUE(chunks > 0, "For 'Chunk', chunks should be greater than 0, but got " + std::to_string(chunks));
+
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
   int64_t dim_size = old_shape[wrap_dim];
   int64_t split_size = (dim_size + chunks - 1) / chunks;
-
   if (MS_UNLIKELY(dim_size == 0)) {
     if (split_size == 0) {
       TensorStorageInfoPtr new_storage_info{storage_info};
       if (storage_info == nullptr) {
-        new_storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, old_shape, old_strides,
+        new_storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, 0, old_shape, old_strides,
                                                                IsContiguous(old_shape, old_strides));
       }
       std::vector<TensorStorageInfoPtr> storage_info_list(chunks, new_storage_info);
@@ -47,6 +47,7 @@ TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &old_shape,
     MS_EXCEPTION(ValueError) << "For 'Chunk', output_num must be positive, but got 0.";
   }
 
+  auto [ori_shape, ori_strides, old_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
   // Calculate the number of sub tensors after segmentation
   auto num_splits = std::max<int64_t>((dim_size + split_size - 1) / split_size, 1);
   auto last_split_size = split_size - (split_size * num_splits - dim_size);

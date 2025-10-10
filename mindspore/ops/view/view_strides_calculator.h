@@ -21,7 +21,10 @@
 #include <vector>
 #include <optional>
 #include <utility>
+#include <functional>
 #include <tuple>
+#include <unordered_map>
+#include <any>
 
 #include "ir/tensor.h"
 #include "utils/hash_map.h"

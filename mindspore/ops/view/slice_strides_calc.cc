@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "view/slice_strides_calc.h"
 #include <memory>
+#include <vector>
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "view/slice_strides_calc.h"
 
 namespace {
 constexpr size_t kSliceInputsNum = 3;
