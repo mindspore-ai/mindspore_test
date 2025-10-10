@@ -19,6 +19,8 @@ Callback
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.train.AdaptiveCheckpointConfig
+    mindspore.train.AdaptiveModelCheckpoint
     mindspore.train.BackupAndRestore
     mindspore.train.Callback
     mindspore.train.CheckpointConfig

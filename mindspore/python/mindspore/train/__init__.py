@@ -30,7 +30,8 @@ from mindspore.train.serialization import save_checkpoint, load_checkpoint, load
     build_searched_strategy, merge_sliced_parameter, load_distributed_checkpoint, restore_group_info_list
 from mindspore.train.callback import Callback, LossMonitor, TimeMonitor, ModelCheckpoint, SummaryCollector, \
     CheckpointConfig, RunContext, LearningRateScheduler, SummaryLandscape, FlopsUtilizationCollector, \
-    History, LambdaCallback, ReduceLROnPlateau, EarlyStopping, OnRequestExit, BackupAndRestore, TrainFaultTolerance
+    History, LambdaCallback, ReduceLROnPlateau, EarlyStopping, OnRequestExit, BackupAndRestore, TrainFaultTolerance, \
+    AdaptiveCheckpointConfig, AdaptiveModelCheckpoint
 from mindspore.train.summary import SummaryRecord
 from mindspore.train.train_thor import ConvertNetUtils, ConvertModelUtils
 from mindspore.train.metrics import *
