@@ -235,9 +235,15 @@ class FuseMatMul : public FusePattern {
       if (a->size() == 1 && a->dom()->op() == kReshapeOpName) {
         continue;
       }
-      bool fuse_flag = (dom->dom()->op() == kMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
-                       (dom->dom()->op() == kBatchMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
-                       (dom->dom()->op() == ops::kNameGroupedMatmul && a->pattern() < NodePattern::BROADCAST);
+
+      bool fuse_flag = (dom->dom()->op() == kMatMulOpName || dom->dom()->op() == kBatchMatMulOpName ||
+                        dom->dom()->op() == ops::kNameGroupedMatmul);
+      if (std::any_of(a->ops().begin(), a->ops().end(),
+                      [](const PrimOpPtr &op) { return op->op() == kReshapeOpName; })) {
+        fuse_flag = fuse_flag && (a->pattern() < NodePattern::BROADCAST);
+      } else {
+        fuse_flag = fuse_flag && (a->pattern() <= NodePattern::BROADCAST);
+      }
       if (fuse_flag && !HasCircle(dom, a) && IsSameShapeSize(matmul_output_size, a->area_outputs())) {
         (void)fused_areas_.emplace_back(a);
         current_size += a->area_outputs().size();

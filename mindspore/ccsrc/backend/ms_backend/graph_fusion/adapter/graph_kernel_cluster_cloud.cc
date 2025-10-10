@@ -180,6 +180,7 @@ class DvmSupportChecker {
     check_func_["Transpose"] = {transpose_op_check, input_check_all};
     // collective comm op
     check_func_["AllReduce"] = {collective_comm_op_check};
+    check_func_["Reshape"] = {DvmSupportChecker::DvmReshapeSupported};
   }
 
   static TypeId GetNodeOutputType(const AnfNodePtr &node) {
@@ -366,6 +367,22 @@ class DvmSupportChecker {
     return dvm_float_types.find(node_output_type) != dvm_float_types.end();
   }
 
+  static bool DvmCubeReshapeSupported(const AnfNodePtr &reshape_node) {
+    auto node = reshape_node->cast<CNodePtr>()->input(kIndex1);
+    AnfNodePtr cube_op = nullptr;
+    if (IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul)) {
+      cube_op = node;
+    } else if (IsPrimitiveCNode(node, prim::kPrimTupleGetItem)) {
+      auto cnode = node->cast<CNodePtr>()->input(kIndex1);
+      if (IsPrimitiveCNode(cnode, prim::kPrimGroupedMatmul)) {
+        cube_op = cnode;
+      }
+    }
+    return cube_op && StaticShapeCluster::CanClusterableOp(cube_op, StaticShapeCluster::GetClusterOps());
+  }
+
+  static bool DvmReshapeSupported(const AnfNodePtr &node) { return DvmSupportChecker::DvmCubeReshapeSupported(node); }
+
   static bool DvmSelectSupported(const AnfNodePtr &node) {
     auto node_output_type = GetNodeOutputType(node);
     auto cb = Callback::Instance();
@@ -505,7 +522,7 @@ const std::vector<OpWithLevel> clusterable_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimLogicalOr},    {kAscendDevice, OpLevel_0, prim::kPrimLogicalNot},
   {kAscendDevice, OpLevel_0, prim::kPrimSelect},       {kAscendDevice, OpLevel_0, prim::kPrimAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimReduceSum},    {kAscendDevice, OpLevel_0, prim::kPrimIsFinite},
-  {kAscendDevice, OpLevel_2, prim::kPrimReshape},      {kAscendDevice, OpLevel_0, prim::kPrimTranspose},
+  {kAscendDevice, OpLevel_1, prim::kPrimReshape},      {kAscendDevice, OpLevel_0, prim::kPrimTranspose},
   {kAscendDevice, OpLevel_0, prim::kPrimFloor},        {kAscendDevice, OpLevel_0, prim::kPrimCeil},
   {kAscendDevice, OpLevel_0, prim::kPrimTrunc},        {kAscendDevice, OpLevel_1, prim::kPrimMatMul},
   {kAscendDevice, OpLevel_1, prim::kPrimBatchMatMul},  {kAscendDevice, OpLevel_1, prim::kPrimGroupedMatmul},
