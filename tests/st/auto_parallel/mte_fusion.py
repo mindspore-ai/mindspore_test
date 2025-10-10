@@ -86,7 +86,7 @@ def test_all_gather_matmul_forward():
     '''
     os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
     D.init()
     seq_len, hidden_size = 4096, 12288
@@ -117,7 +117,7 @@ def test_matmul_reduce_scatter_forward():
     '''
     os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
     D.init()
     seq_len, hidden_size = 4096, 12288
@@ -147,7 +147,7 @@ def test_ms_disable_lccl_kernels_list():
     os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = './graph_lccl_kernels_list'
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'graph_build'
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
     context.set_context(compute_communicate_fusion_level=3)
     D.init()
