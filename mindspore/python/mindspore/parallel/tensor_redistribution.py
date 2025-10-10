@@ -213,16 +213,18 @@ class TensorRedistribution:
             local_x = self._construct_op_operator[op[0]](local_x, *op[1])
         return local_x
 
-    def redistribution(self, x, to_layout):
+    def redistribution(self, input_x, to_layout):
         """ tensor redistribution """
-        if x.layout.is_partial():
+        x_layout = input_x.layout
+        x = input_x
+        if input_x.layout.is_partial():
             # Solve partial status first
-            if x.layout.device_matrix == to_layout.device_matrix:
-                x = self.reduce_partial(x, to_layout)
+            if input_x.layout.device_matrix == to_layout.device_matrix:
+                x = self.reduce_partial(input_x, to_layout)
             else:
                 logger.info(f"The dev_matrix is change between from_layout and to_layout, and thers is partial status "
                             f"in from_layout, will be apply AllReduce op to resolve partial before redistribute.")
-                x = self.reduce_partial(x, x.layout)
+                x = self.reduce_partial(input_x, x_layout)
 
         from_layout = x.layout
         if not self.is_init:
@@ -239,6 +241,7 @@ class TensorRedistribution:
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
             x = x.local_to_global(to_layout)
+            input_x.local_to_global(x_layout)
             return x
 
         full_shape = x.shape
@@ -249,6 +252,7 @@ class TensorRedistribution:
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
             x = x.local_to_global(to_layout)
+            input_x.local_to_global(x_layout)
             return x
 
         if self._apply_eazy_redistribute(from_layout, to_layout):
@@ -261,6 +265,7 @@ class TensorRedistribution:
             for transform_operator in transform_operator_list:
                 x = self._construct_op_operator[transform_operator[0]](x, *transform_operator[1])
         x = x.local_to_global(to_layout)
+        input_x.local_to_global(x_layout)
         return x
 
     def _infer_transform_operator_list(self, from_layout, to_layout, from_full_shape, key):
@@ -297,9 +302,10 @@ class TensorRedistribution:
         logger.warning(f"Do ReduceScatter-{op} along dev {dev_dim} at axis {axis}. group: {group}")
         return output_tensor
 
-    def reduce_partial(self, x, to_layout):
+    def reduce_partial(self, input_x, to_layout):
         """Reduce partial status."""
-        from_layout = x.layout
+        from_layout = input_x.layout
+        x = input_x
         if from_layout is None or not from_layout.is_partial:
             return x
 
@@ -358,6 +364,7 @@ class TensorRedistribution:
         output_layout = from_layout(*output_alias_tensor_map)
         output_layout.reset_partial()
         x.local_to_global(output_layout)
+        input_x.local_to_global(from_layout)
         return x
 
 

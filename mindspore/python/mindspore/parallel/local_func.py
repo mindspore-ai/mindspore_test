@@ -24,7 +24,7 @@ def custom_shard(
         func: Callable,
         out_layouts: Tuple[Layout, ...],
         in_layouts: Optional[Tuple[Optional[Layout], ...]] = None,
-        redistribute_inputs: bool = False,
+        redistribute_inputs: bool = True,
 ) -> Callable:
     """
     Wraps a function to handle distributed tensor conversions.

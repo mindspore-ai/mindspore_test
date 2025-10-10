@@ -31,12 +31,14 @@ class SimpleModel(nn.Cell):
         super().__init__()
         self.weight = ms.Parameter(initializer("ones", [input_size, output_size], ms.float32), name='weight')
         self.relu = ms.mint.nn.ReLU()
+        self.mlp = MLP(output_size, output_size)
 
     def construct(self, x):
-        x = ms.mint.matmul(x, self.weight)
-        x = self.relu(x)
-        x = ms.mint.sum(x)
-        return x
+        mlp_x = ms.mint.matmul(x, self.weight)
+        activation = self.relu(mlp_x)
+        extra_loss = ms.mint.sum(mlp_x)
+        out = self.mlp(mlp_x, activation=activation, extra_loss=extra_loss)
+        return out
 
 
 def local_func(x, w, group):
@@ -44,6 +46,22 @@ def local_func(x, w, group):
     x, _ = comm.comm_func.all_reduce(x, "sum", group)
     return x
 
+class MLP(nn.Cell):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.weight = ms.Parameter(initializer("ones", [input_size, output_size], ms.float32), name='mlp_weight')
+        self.relu = ms.mint.nn.ReLU()
+
+
+    def construct(self, x, activation=None, extra_loss=0.0):
+        x = ms.mint.matmul(x, self.weight)
+        x = self.relu(x)
+        if activation is not None:
+            x = x + activation
+        x = ms.mint.sum(x)
+        x = x.reduce_partial()
+        x = x + extra_loss
+        return x
 
 class ParallelModel(nn.Cell):
     def __init__(self, input_size, output_size, out_layouts, in_layouts):
@@ -52,12 +70,15 @@ class ParallelModel(nn.Cell):
         self.relu = ms.mint.nn.ReLU()
         self.wrap = custom_shard(func=local_func, out_layouts=out_layouts, in_layouts=in_layouts)
         self.group = in_layouts[0].get_comm_group_by_axis("mp", comm.get_rank())
+        self.mlp = MLP(output_size, output_size)
 
     def construct(self, x):
         x = self.wrap(x, self.weight, self.group)
-        x = self.relu(x)
-        x = ms.mint.sum(x)
-        return x
+        activation = self.relu(x)
+        extra_loss = ms.mint.sum(x)
+        out = self.mlp(x, activation=activation, extra_loss=extra_loss)
+        assert x.layout is not None
+        return out
 
 
 def create_dtensor(data, layout):
@@ -108,6 +129,9 @@ def base_case(dp, mp, hsdp_shard_size):
     layout = Layout((dp, mp), ("dp", "mp"))
     x_layout = layout("dp", "mp")
     w_layout = layout("mp", "None")
+    mlp_x_layout = layout("None", "None")
+    mlp_w_layout = layout("None", "mp")
+    mlp_activation_layout = layout("None", "mp")
     out_layout = layout()
     custom_in_layouts = (x_layout, w_layout, None)
     custom_out_layouts = (layout("dp", "None"),)
@@ -119,6 +143,9 @@ def base_case(dp, mp, hsdp_shard_size):
 
     # step 2: shard
     model.shard(in_strategy=(x_layout,), out_strategy=(out_layout,), parameter_plan={"weight": w_layout})
+    model.mlp.shard(in_strategy=(mlp_x_layout,),
+                    optional_in_strategy={"activation": mlp_activation_layout, "extra_loss": layout()},
+                    parameter_plan={"mlp.weight": mlp_w_layout})
     model.relu.shard(in_strategy=relu_strategy[0], out_strategy=relu_strategy[1])
 
     # step 3: hsdp
