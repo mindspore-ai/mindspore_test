@@ -87,7 +87,7 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
     auto need_mark = (stream_id != -1) && CheckNeedMark(cnode, stream_id);
     if (need_mark) {
       MS_LOG(DEBUG) << "The cnode need mark: " << cnode->DebugString() << " need_mark:" << need_mark;
-      cnode->AddAttr("stream_name", MakeValue(static_cast<int64_t>(stream_id)));
+      cnode->AddAttr("stream_id", MakeValue(static_cast<int64_t>(stream_id)));
     } else {
       MS_LOG(DEBUG) << "The cnode do not need mark: " << cnode->DebugString() << " need_mark:" << need_mark;
     }

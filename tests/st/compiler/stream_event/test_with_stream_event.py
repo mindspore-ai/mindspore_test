@@ -159,3 +159,36 @@ def test_with_event_record_multi_events():
     net = WithEventNet()
     out = net(x)
     print("out:", out)
+
+
+@pytest.mark.skip(reason='Not support yet')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_event_wait_before_record():
+    """
+    Feature: Support event and with stream in graph mode.
+    Description: Support event and with stream in graph mode.
+    Expectation: Run success.
+    """
+
+    class WithEventNet(nn.Cell):
+        def __init__(self):
+            super(WithEventNet, self).__init__()
+            self.depend = ops.Depend()
+
+        def construct(self, x):
+            event = ms.runtime.Event()
+            y = x * 2
+            event = self.depend(event, y)
+            event.wait()
+            x = self.depend(x, event)
+            z = a + b + x
+            event = self.depend(event, z)
+            event.record()
+            z = self.depend(z, event)
+            z = z + 1
+            return y + z
+
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    net = WithEventNet()
+    out = net(x)
+    print("out:", out)

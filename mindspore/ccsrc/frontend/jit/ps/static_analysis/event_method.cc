@@ -26,9 +26,8 @@
 
 namespace mindspore {
 namespace pipeline {
-mindspore::HashMap<uint32_t, std::vector<AnfNodePtr>> event_method_nodes;
-
-void PreprocessForEventMethod(const FuncGraphPtr &func_graph) {
+using EventMap = mindspore::HashMap<uint32_t, std::vector<AnfNodePtr>>;
+void PreprocessForEventMethod(const FuncGraphPtr &func_graph, EventMap *event_method_nodes) {
   if (func_graph->has_flag("PROCESS_EVENT")) {
     return;
   }
@@ -46,33 +45,20 @@ void PreprocessForEventMethod(const FuncGraphPtr &func_graph) {
       auto event_value = GetValueNode<EventPtr>(input);
       MS_EXCEPTION_IF_NULL(event_value);
       auto event_id = event_value->value();
-      event_method_nodes[event_id].emplace_back(cnode);
+      (*event_method_nodes)[event_id].emplace_back(cnode);
       common::AnfAlgo::SetNodeAttrSafely(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)), cnode);
     }
   }
   for (auto &fg : func_graph->func_graphs_used_total()) {
-    PreprocessForEventMethod(fg);
+    PreprocessForEventMethod(fg, event_method_nodes);
   }
 }
 
-void CheckAndReplace(const FuncGraphPtr &func_graph) {
+void CheckAndReplace(const FuncGraphPtr &func_graph, const EventMap &event_method_nodes) {
   for (auto iter : event_method_nodes) {
     auto event_id = iter.first;
     MS_LOG(DEBUG) << "The id of event: " << event_id;
     auto cur_event_method_nodes = iter.second;
-    if (cur_event_method_nodes.size() % 2 != 0) {
-      MS_LOG(EXCEPTION) << "Incorrect use of event, the id of event: " << event_id;
-    }
-    // Check: record, wait is true; wait, record is wrong.
-    for (size_t i = 0; i < cur_event_method_nodes.size(); ++i) {
-      auto event_node = cur_event_method_nodes[i];
-      if ((i % 2 == 0 && !IsPrimitiveCNode(event_node, prim::kPrimStreamSend)) ||
-          (i % 2 == 1 && !IsPrimitiveCNode(event_node, prim::kPrimStreamRecv))) {
-        MS_LOG(EXCEPTION) << "Incorrect use of event, the id of event: " << event_id
-                          << "the event node:" << event_node->DebugString()
-                          << ", location:" << trace::GetDebugInfoStr(event_node->debug_info());
-      }
-    }
     // %0 = StreamSendInner(event1)
     // %1 = StreamRecvInner(event1)
     // After Replace
@@ -102,8 +88,9 @@ void ClearEventFuncFlag(const FuncGraphPtr &func_graph) {
 void EventMethod(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(func_graph->manager());
-  PreprocessForEventMethod(func_graph);
-  CheckAndReplace(func_graph);
+  EventMap event_method_nodes;
+  PreprocessForEventMethod(func_graph, &event_method_nodes);
+  CheckAndReplace(func_graph, event_method_nodes);
   ClearEventFuncFlag(func_graph);
 }
 }  // namespace pipeline
