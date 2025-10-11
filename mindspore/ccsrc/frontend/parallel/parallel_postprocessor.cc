@@ -416,6 +416,9 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
           auto tensor_to_tuple_cnode =
             fa_cnode->func_graph()->NewCNode({NewValueNode(prim::kPrimTensorToTuple), input});
           manager->SetEdge(fa_cnode, index + 1, tensor_to_tuple_cnode);
+          auto prim = GetCNodePrimitive(tensor_to_tuple_cnode);
+          MS_EXCEPTION_IF_NULL(prim);
+          prim->AddAttr(kAttrRecompute, MakeValue(true));
           MS_LOG(DEBUG) << "Insert TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is " << index + 1;
         }
       }
