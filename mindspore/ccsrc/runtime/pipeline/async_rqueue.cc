@@ -53,7 +53,7 @@ void AsyncRQueue::BindCoreForThread() {
     // Bind core for pynative pipeline thread.
     const auto &core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kPYNATIVE);
     if (core_list.empty()) {
-      MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Pynative threads.";
+      MS_LOG(WARNING) << "Skip to bind thread core for 'pynative' as no available core assigned.";
     } else {
       if (const auto it = thread_to_core_idx.find(name_); it != thread_to_core_idx.end()) {
         bind_core_manager.bind_thread_core({core_list[it->second]});
@@ -83,7 +83,7 @@ void AsyncRQueue::BindCoreForThread() {
 
     const auto &batch_launch_core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kBATCHLAUNCH);
     if (batch_launch_core_list.empty()) {
-      MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to batch launch threads.";
+      MS_LOG(WARNING) << "Skip to bind thread core for 'batch launch' as no available core assigned.";
     } else {
       auto bind_code_index = iter->second;
       std::vector<int> cpu_list = {batch_launch_core_list[bind_code_index]};
