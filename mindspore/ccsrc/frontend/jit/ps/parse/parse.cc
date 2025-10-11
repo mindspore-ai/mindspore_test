@@ -918,11 +918,43 @@ FunctionBlockPtr Parser::ParseLambdaFunction(const py::object &node, const Funct
   return func_block;
 }
 
+void Parser::SetCurrentStreamId(const int64_t stream_id) {
+  if (stream_id < 0) {
+    MS_LOG(ERROR) << "Invalid stream_id: " << stream_id << ", must be non-negative.";
+    return;
+  }
+  stream_ids_.push(stream_id);
+  MS_LOG(DEBUG) << "SetCurrentStreamId stream_id: " << stream_id << ", stack size: " << stream_ids_.size();
+}
+
+void Parser::ClearCurrentStreamId() {
+  if (stream_ids_.empty()) {
+    MS_LOG(ERROR) << "ClearCurrentStreamId failed";
+    return;
+  }
+  MS_LOG(DEBUG) << "ClearCurrentStreamName stream_id: " << stream_ids_.top()
+                << ", stack size: " << (stream_ids_.size() - 1);
+  stream_ids_.pop();
+}
+
+void Parser::TagSubgraphWithStream(const FuncGraphPtr &subgraph) {
+  if (subgraph == nullptr || stream_ids_.empty()) {
+    MS_LOG(ERROR) << "TagSubgraphWithStream failed";
+    return;
+  }
+  auto stream_id = stream_ids_.top();
+  subgraph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  subgraph->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX, MakeValue(stream_id));
+  subgraph->set_attr(kFuncGraphFlagStreamId, MakeValue(stream_id));
+  MS_LOG(DEBUG) << "TagSubgraphWithStream stream_id: " << stream_id << ", subgraph: " << subgraph->ToString();
+}
+
 FunctionBlockPtr Parser::ParseStatements(const FunctionBlockPtr &block, const py::object &nodes) {
   auto node_list = py::cast<py::list>(nodes);
   size_t count = py::len(node_list);
   MS_LOG(DEBUG) << "The nodes count is " << count;
   auto sub_block = block;
+  bool in_stream_context = !stream_ids_.empty();
   for (size_t i = 0; i < count; ++i) {
     MS_LOG(DEBUG) << "Start parse statement[" << i << "]: " << py::str(node_list[i])
                   << ", block: " << sub_block->ToString();
@@ -932,6 +964,9 @@ FunctionBlockPtr Parser::ParseStatements(const FunctionBlockPtr &block, const py
     auto next_block = ParseStatement(sub_block, node);
     MS_EXCEPTION_IF_NULL(next_block);
     MS_EXCEPTION_IF_NULL(next_block->func_graph());
+    if (in_stream_context && next_block != sub_block) {
+      TagSubgraphWithStream(next_block->func_graph());
+    }
     // Propagate flag of return statement back;
     if (sub_block != block && sub_block->is_return_statement_inside()) {
       MS_LOG(DEBUG) << "Sub block: " << sub_block->ToString()
@@ -4652,11 +4687,6 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
         MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
       }
 
-      FunctionBlockPtr body_block = MakeFunctionBlock();
-      block->Jump(body_block, {});
-      body_block->Mature();
-      py::object body_node = python_adapter::GetPyObjAttr(node, "body");
-      body_block = ParseStatements(body_block, body_node);
       py::object stream_obj_id =
         python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, stream_obj);
       if (py::isinstance<py::none>(stream_obj_id)) {
@@ -4665,28 +4695,34 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       auto id = stream_obj_id.cast<std::string>();
       MS_LOG(DEBUG) << "The id of stream obj is: " << id;
       static std::map<std::string, uint32_t> stream_map;
-      static int64_t stream_id = 0;
       if (stream_map.find(id) == stream_map.end()) {
+        static int64_t stream_id = 1;
         stream_map[id] = stream_id++;
       }
+      SetCurrentStreamId(stream_map[id]);
+
+      FunctionBlockPtr body_block = MakeFunctionBlock();
+      MS_EXCEPTION_IF_NULL(body_block);
+      auto body_func_graph = body_block->func_graph();
+      MS_EXCEPTION_IF_NULL(body_func_graph);
+      TagSubgraphWithStream(body_func_graph);
+      block->Jump(body_block, {});
+      body_block->Mature();
+      py::object body_node = python_adapter::GetPyObjAttr(node, "body");
+      body_block = ParseStatements(body_block, body_node);
+      ClearCurrentStreamId();
 
       FunctionBlockPtr after_block = MakeFunctionBlock();
       after_block->Mature();
       auto after_func = after_block->func_graph();
       MS_EXCEPTION_IF_NULL(after_func);
       after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      after_func->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX_AFTER, MakeValue(static_cast<int64_t>(stream_id)));
 
       auto body_func = body_block->func_graph();
       MS_EXCEPTION_IF_NULL(body_func);
       if (body_func->get_return() == nullptr) {
         body_block->Jump(after_block, {});
       }
-      MS_LOG(DEBUG) << "Set no_inline flag for body_func: " << body_func->ToString();
-      body_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      body_func->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX, MakeValue(static_cast<int64_t>(stream_id)));
-      body_func->set_attr(kFuncGraphFlagStreamId, MakeValue(static_cast<int64_t>(stream_id)));
-
       return after_block;
     }
     AnfNodePtr context_expr_node = ParseExprNode(block, context_expr_obj);
