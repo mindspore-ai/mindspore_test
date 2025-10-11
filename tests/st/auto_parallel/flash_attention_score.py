@@ -159,7 +159,6 @@ def test_flash_attention_score_tnd():
     context.set_context(mode=mode)
     init()
     B, N, S, D = 1, 8, 1024, 128
-    sample_num = 4
     dp = 1
     mp = 2
     sp = 4
@@ -167,8 +166,8 @@ def test_flash_attention_score_tnd():
     sparse_mode = 3
     query, key, value, _, _, _ = generate_inputs(B, N, N, S, S, D, input_layout, dtype)
     real_shift = None
-    actual_seq_qlen = Tensor(tuple(range(S // sample_num, S + 1, S // sample_num)), mstype.int64)
-    actual_seq_kvlen = Tensor(tuple(range(S // sample_num, S + 1, S // sample_num)), mstype.int64)
+    actual_seq_qlen = Tensor([145, 301, 488, 560, 890, 1024, 1024], mstype.int64)
+    actual_seq_kvlen = Tensor([145, 301, 488, 560, 890, 1024, 1024], mstype.int64)
 
     attn_mask = Tensor(np.triu(np.ones((2048, 2048), np.uint8), 1))
 
