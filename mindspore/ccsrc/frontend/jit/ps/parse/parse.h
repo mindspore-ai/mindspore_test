@@ -437,6 +437,11 @@ class Parser {
   ParseStatusCode errcode_;
   py::object list_pop_target_obj_;
 
+  std::stack<int64_t> stream_ids_;
+  void SetCurrentStreamId(const int64_t stream_id);
+  void ClearCurrentStreamId();
+  void TagSubgraphWithStream(const FuncGraphPtr &subgraph);
+
   // Hold all reference for FunctionBlock in this round of parsing,
   // so in FunctionBlock class we can use FunctionBlock* in member
   // pre_blocks_ and jumps_ to break reference cycle.

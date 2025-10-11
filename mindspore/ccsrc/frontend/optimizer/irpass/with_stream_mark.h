@@ -32,16 +32,6 @@ int64_t GetStreamIdFuncGraphWithStreamCtx(const FuncGraphPtr &func_graph) {
   return -1;
 }
 
-int64_t GetStreamIdFuncGraphWithStreamCtxAfter(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto value = func_graph->get_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX_AFTER);
-  if (value != nullptr && value->isa<Int64Imm>()) {
-    const auto &stream_id = GetValue<int64_t>(value);
-    return stream_id;
-  }
-  return -1;
-}
-
 bool CheckNeedMark(const CNodePtr &cnode, int64_t stream_id) {
   if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
     auto need_check_node = cnode->input(1);
@@ -56,14 +46,6 @@ bool CheckNeedMark(const CNodePtr &cnode, int64_t stream_id) {
       return false;
     }
     return CheckNeedMark(need_check_node->cast<CNodePtr>(), stream_id);
-  }
-  auto func_caller = GetValueNode<FuncGraphPtr>(cnode->input(0));
-  if (func_caller != nullptr) {
-    auto cur_node_stream_id = GetStreamIdFuncGraphWithStreamCtxAfter(func_caller);
-    if (cur_node_stream_id != -1 && cur_node_stream_id == stream_id) {
-      MS_LOG(DEBUG) << "Do not mark";
-      return false;
-    }
   }
   return true;
 }
@@ -96,12 +78,6 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   auto all_func_graphs = root->func_graphs_used_total();
   for (auto &fg : all_func_graphs) {
     MS_EXCEPTION_IF_NULL(fg);
-    bool is_with_stream_after_func = (GetStreamIdFuncGraphWithStreamCtxAfter(fg) != -1);
-    if (is_with_stream_after_func) {
-      MS_LOG(DEBUG) << "is_with_stream_after_func fg: " << fg->ToString();
-      fg->erase_flag(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX_AFTER);
-      fg->erase_flag(FUNC_GRAPH_FLAG_NO_INLINE);
-    }
     bool is_with_stream_func = (GetStreamIdFuncGraphWithStreamCtx(fg) != -1);
     MS_LOG(DEBUG) << "is_with_stream_func: " << is_with_stream_func;
     if (is_with_stream_func) {

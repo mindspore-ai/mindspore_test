@@ -61,8 +61,6 @@ const char kFuncGraphFlagMetaFuncGraphBprop[] = "meta_fg_bprop";
 const char kFuncGraphFlagAddedForwardU[] = "added_forward_u";
 
 const char FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX[] = "no_inline_with_stream_ctx";
-const char FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX_AFTER[] = "no_inline_with_stream_ctx_after";
-
 const char kFuncGraphFlagStreamId[] = "stream_id";
 }  // namespace mindspore
 
