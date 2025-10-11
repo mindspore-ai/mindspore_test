@@ -25,7 +25,14 @@ body:
       描述与其他模块存在的可能关联性，以方便补充对应的场景验证.
 - type: textarea
   attributes:
-    label: 其他信息（测试验证设计等）
+    label: 测试计划与设计
+    description: >
+      详细描述如何开展测试验证，以保证该特性的能力得到充分的验证，包括到不限于功能、性能、可靠性、安全等.
+  validations:
+    required: true      
+- type: textarea
+  attributes:
+    label: 其他信息
     description: >
       添加例如辅助信息、测试验证场景等内容.
 - type: markdown
