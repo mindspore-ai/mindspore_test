@@ -675,6 +675,7 @@ extern PyObject *TensorPython_pin_memory(PyObject *self, PyObject *args) {
   PyType<TensorPy> *tensor = reinterpret_cast<PyType<TensorPy> *>(self);
   TensorPy &value = tensor->value;
   if (TensorPybind::IsPinned(value)) {
+    Py_INCREF(self);
     return self;
   }
   return tensor::PackTensor(TensorPybind::MakePinMemoryTensor(value));
