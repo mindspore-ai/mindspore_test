@@ -615,7 +615,7 @@ tensor::TensorPtr MSANFModelParser::GenerateTensorPtrFromTensorProto(const mind_
   tensor::TensorPtr tensor = nullptr;
   if (!attr_tensor.has_compression_type() ||
       attr_tensor.compression_type() == mind_ir::TensorProto_CompressionType_NO_COMPRESSION) {
-    tensor = tensor::from_spec(kDefaultValueSwitchMap[attr_tensor_type], shape, device::DeviceType::kCPU);
+    tensor = tensor::from_spec_fast(kDefaultValueSwitchMap[attr_tensor_type], shape, device::DeviceType::kCPU);
   } else {
     auto compression_type = static_cast<TensorCompressionType>(static_cast<int>(attr_tensor.compression_type()));
     size_t data_size = 0;
@@ -1487,7 +1487,7 @@ bool MSANFModelParser::ObtainValueNodeInTupleTensorForm(const std::string &value
     tensor::TensorPtr tensor_info = nullptr;
     if (!attr_tensor.has_compression_type() ||
         attr_tensor.compression_type() == mind_ir::TensorProto_CompressionType_NO_COMPRESSION) {
-      tensor_info = tensor::from_spec(kDefaultValueSwitchMap[attr_tensor_type], shape, device::DeviceType::kCPU);
+      tensor_info = tensor::from_spec_fast(kDefaultValueSwitchMap[attr_tensor_type], shape, device::DeviceType::kCPU);
     } else {
       auto compression_type = static_cast<TensorCompressionType>(static_cast<int>(attr_tensor.compression_type()));
       size_t data_size = 0;
