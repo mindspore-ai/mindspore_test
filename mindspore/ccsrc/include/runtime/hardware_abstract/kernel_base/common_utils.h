@@ -56,7 +56,7 @@ struct KernelMetaInfo {
 };
 using KernelMetaPtr = std::shared_ptr<KernelMetaInfo>;
 
-class RUNTIME_HARDWARE_EXPORT MatrixInfo {
+class MatrixInfo {
  public:
   explicit MatrixInfo(size_t max_index, const ShapeVector &matrix_shapes)
       : max_index_(max_index), shapes_(matrix_shapes) {
@@ -103,10 +103,7 @@ class RUNTIME_HARDWARE_EXPORT MatrixInfo {
   std::vector<size_t> current_indexes_;
 };
 using MatrixInfoPtr = std::shared_ptr<MatrixInfo>;
-RUNTIME_HARDWARE_EXPORT int CalDiagOffset(int diag_index, int max_diag_len, int inner_rows, int inner_cols,
-                                          const std::pair<MatrixDiag::Alignment, MatrixDiag::Alignment> &alignment);
 RUNTIME_HARDWARE_EXPORT TypeId DtypeToTypeId(const std::string &dtypes);
-RUNTIME_HARDWARE_EXPORT std::string Dtype2ShortType(const std::string &dtype);
 RUNTIME_HARDWARE_EXPORT size_t GetDtypeNbyte(const std::string &dtype);
 RUNTIME_HARDWARE_EXPORT bool IsSameShape(const ShapeVector &shape_a, const ShapeVector &shape_b);
 RUNTIME_HARDWARE_EXPORT bool CheckShapesSame(const ShapeArray &shape_array);
@@ -215,7 +212,6 @@ RUNTIME_HARDWARE_EXPORT std::pair<bool, size_t> MatchKernelAttr(const KernelAttr
 RUNTIME_HARDWARE_EXPORT std::pair<bool, size_t> MatchKernelAttrStrict(const KernelAttr &kernel_attr,
                                                                       const std::vector<KernelAttr> &kernel_attr_list);
 RUNTIME_HARDWARE_EXPORT KernelAttr GetKernelAttrFromBuildInfo(const KernelBuildInfoPtr &build_info);
-RUNTIME_HARDWARE_EXPORT bool IsFoldKernelBuildInfo(const KernelBuildInfoPtr &kernel_build_info);
 RUNTIME_HARDWARE_EXPORT KernelAttr GetKernelAttrFromTensors(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &outputs);
 // Synchronize the output and input reference map between two kernel attrs.

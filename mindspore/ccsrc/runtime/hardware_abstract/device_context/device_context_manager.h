@@ -105,7 +105,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextManager {
   std::map<DeviceType, MultiStreamControllerPtr> multi_stream_controllers_;
 };
 
-class RUNTIME_HARDWARE_EXPORT DeviceContextRegister {
+class DeviceContextRegister {
  public:
   DeviceContextRegister(const std::string &device_name, DeviceContextCreator &&runtime_creator) {
     DeviceContextManager::GetInstance().Register(device_name, std::move(runtime_creator));
@@ -119,7 +119,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceContextRegister {
       return std::make_shared<DEVICE_CONTEXT_CLASS>(device_context_key); \
     })
 
-class RUNTIME_HARDWARE_EXPORT StatelessFuncCbRegister {
+class StatelessFuncCbRegister {
  public:
   StatelessFuncCbRegister(const std::string &device_name, const RegisterStatelessFuncCb &func) {
     DeviceContextManager::GetInstance().SetRegisterDeviceStatelessFuncCb(device_name, func);

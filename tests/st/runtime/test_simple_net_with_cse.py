@@ -21,7 +21,7 @@ from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_resnet_infer_compile_cache():
+def test_simple_net_with_cse():
     """
     Feature: Support init internal parameter of valuenode for CSE scenarios.
     Description: Support init internal parameter of valuenode for CSE scenarios.

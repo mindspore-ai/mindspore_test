@@ -51,7 +51,7 @@ struct RUNTIME_HARDWARE_EXPORT NodeBase {
 };
 using NodeBaseList = std::vector<NodeBase>;
 
-struct RUNTIME_HARDWARE_EXPORT ExtraInfo {
+struct ExtraInfo {
   DAttrs cnode_attrs_;
 };
 

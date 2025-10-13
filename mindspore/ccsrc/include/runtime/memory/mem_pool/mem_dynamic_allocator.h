@@ -43,7 +43,7 @@
 
 namespace mindspore {
 namespace device {
-struct BACKEND_EXPORT DynamicMemBuf : public EventBase {
+struct DynamicMemBuf : public EventBase {
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id)
       : device_addr_(addr), status_(status), size_(size), stream_id_(stream_id) {}
   DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id,
@@ -68,7 +68,7 @@ struct BACKEND_EXPORT DynamicMemBuf : public EventBase {
   memory::mem_pool::MemType mem_type_{memory::mem_pool::MemType::kOther};
 };
 
-class BACKEND_EXPORT DynamicMemBlock {
+class DynamicMemBlock {
  public:
   DynamicMemBlock(DeviceMemPtr addr_base, size_t size, const uint32_t stream_id)
       : device_addr_base_(addr_base), mem_block_size_(size), stream_id_(stream_id) {}
@@ -129,7 +129,7 @@ struct BACKEND_EXPORT DeviceState {
   size_t iter_total_mem_peak_size_{0};
 };
 
-struct BACKEND_EXPORT MemStatusManager {
+struct MemStatusManager {
   bool Empty() const { return mem_block_list_.empty(); }
 
   void AddMemBlock(const DynamicMemBlockPtr &mem_block, uint32_t stream_id);

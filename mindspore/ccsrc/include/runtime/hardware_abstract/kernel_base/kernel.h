@@ -276,8 +276,6 @@ inline T *GetDeviceAddress(const std::vector<KernelTensor *> &addr_list, size_t 
 
 RUNTIME_HARDWARE_EXPORT std::vector<std::vector<int64_t>> GetShapes(const std::vector<KernelTensor *> &tensors);
 
-RUNTIME_HARDWARE_EXPORT void ConvertLaunchInfoToAddr(const KernelLaunchInfo &launch_info, KernelLaunchAddr *mem_info);
-
 template <typename T>
 inline bool CheckNullInput(const std::vector<T> &input_shape) {
   // If input_shape.size() == 0, it means a scalar input; If input_shape.size() != 0 and input_shape contains 0,
