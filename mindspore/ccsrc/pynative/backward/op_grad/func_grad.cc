@@ -924,19 +924,18 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
   // The flag of need compute grad should set after pruning graph, because we know whether input of network
   // need grad in grad interface.
   MS_EXCEPTION_IF_CHECK_FAIL(saved_output_ != nullptr, kCallBackwradTwiceErr);
-  int32_t index = -1;
+  int32_t index = 0;
   for (size_t i = 0; i < node_inputs_.size() - kSizeTwo; ++i) {
     auto value = node_inputs_[i]->Value();
     auto func_node = std::dynamic_pointer_cast<expander::FuncNode>(node_inputs_[i]);
     MS_EXCEPTION_IF_NULL(func_node);
-    if (MS_UNLIKELY(index + 1 >= static_cast<int32_t>(next_edges().size()))) {
+    if (MS_UNLIKELY(index >= static_cast<int32_t>(next_edges().size()))) {
       MS_LOG(EXCEPTION) << "Index should be less than next edges size, but got " << index + 1 << " vs "
                         << next_edges().size();
     }
     bool is_need_grad = false;
     if (!value->isa<ValueSequence>()) {
-      index++;
-      is_need_grad = impl::CurrentAutoDiffEngine()->IsInExecGraph(next_edges()[index].grad_node);
+      is_need_grad = impl::CurrentAutoDiffEngine()->IsInExecGraph(next_edges()[index++].grad_node);
     } else {
       auto seq = value->cast<ValueSequencePtr>();
       if (!seq->value().empty() && seq->value()[0]->isa<tensor::Tensor>()) {
@@ -946,8 +945,7 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
           std::any_of(next_edges().begin() + begin_index, next_edges().begin() + index,
                       [](const auto &edge) { return impl::CurrentAutoDiffEngine()->IsInExecGraph(edge.grad_node); });
       } else {
-        index++;
-        is_need_grad = next_edges()[index].is_defined();
+        is_need_grad = next_edges()[index++].is_defined();
       }
     }
     func_node->set_need_compute_grad_out(is_need_grad);
