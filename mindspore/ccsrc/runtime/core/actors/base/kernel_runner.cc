@@ -1700,9 +1700,9 @@ void KernelRunner::ProcessMultiStreamBeforeKernelLaunch(OpContext<KernelTensor> 
       continue;
     }
     if (input_kernel_tensor->task_id_on_stream() == nullptr) {
+      input_kernel_tensor->set_task_id_on_stream(task_id_on_stream_);
       MS_LOG(DEBUG) << "Input_kernel_tensor : " << input_kernel_tensor
-                    << " task id on stream is nullptr, will skip multi stream process.";
-      continue;
+                    << " task id on stream is nullptr, set task id for it.";
     }
     if (input_kernel_tensor->managed_by_somas()) {
       MS_LOG(DEBUG) << "Input_kernel_tensor : " << input_kernel_tensor << " is managed by somas.";
