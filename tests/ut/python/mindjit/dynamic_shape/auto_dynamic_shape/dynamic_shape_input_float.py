@@ -13,27 +13,16 @@
 # limitations under the License.
 # ============================================================================
 
-from mindspore import nn, Tensor, jit
-from mindspore import dtype as mstype
 import numpy as np
+from mindspore import Tensor, jit
+from mindspore import dtype as mstype
 
 
-class DynamicShapeNet3(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.num = 2
+@jit(dynamic=1)
+def func(x, y):
+    return x + 2, y
 
-    @jit(dynamic=1)
-    def construct(self, x, y):
-        return x + self.num, y
-
-x1 = Tensor(np.random.rand(2, 3), mstype.float32)
-x2 = Tensor(np.random.rand(2, 4), mstype.float32)
-x3 = Tensor(np.random.rand(2, 5), mstype.float32)
-x4 = Tensor(np.random.rand(2, 6), mstype.float32)
-
-net = DynamicShapeNet3()
-output1 = net(x1, 1.0)
-output2 = net(x2, 1.0)
-output3 = net(x3, 1.0)
-output4 = net(x4, 1.0)
+func(Tensor(np.random.rand(2, 3), mstype.float32), 1.0)
+func(Tensor(np.random.rand(2, 4), mstype.float32), 1.0)
+func(Tensor(np.random.rand(2, 5), mstype.float32), 1.0)
+func(Tensor(np.random.rand(2, 6), mstype.float32), 1.0)

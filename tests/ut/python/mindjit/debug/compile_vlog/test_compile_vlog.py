@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 
 import os
 import subprocess
-from tests.mark_utils import arg_mark
 
 
 def generate_vlog(file_name, vlog_file_name):
@@ -24,7 +23,8 @@ def generate_vlog(file_name, vlog_file_name):
         os.remove(vlog_file_name)
     assert not os.path.exists(vlog_file_name)
 
-    cmd = f"VLOG_v=1 python " + file_name + " > " + vlog_file_name + " 2>&1"
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    cmd = f"VLOG_v=1 python " + dirname + "/" + file_name + " > " + vlog_file_name + " 2>&1"
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(vlog_file_name)
     with open(vlog_file_name, "r") as v_file:
@@ -37,7 +37,6 @@ def generate_vlog(file_name, vlog_file_name):
     os.remove(vlog_file_name)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_vlog():
     """
     Feature: Add vlog printing logs.

@@ -21,7 +21,6 @@ import mindspore as ms
 from mindspore import ops, Tensor, Symbol, enable_dynamic
 from mindspore.ops import functional as F
 from mindspore.common.api import jit
-from tests.mark_utils import arg_mark
 
 
 def check_ir_symbolic_shape(dir_path, target_str, expect_num):
@@ -45,7 +44,6 @@ def check_ir_symbolic_shape(dir_path, target_str, expect_num):
     shutil.rmtree(dir_path)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_enable_dynamic_symbolic_shape_inputs():
     """
     Feature: Dynamic shape with symbolic info
@@ -78,11 +76,22 @@ def test_enable_dynamic_symbolic_shape_inputs():
         add_func(x, x)  # s1.divisor = 3, but x.shape[1] == 5
     assert "The 2th shape value of 1th actual input args must be match the 'divisor'" in str(e3.value)
 
+    dir_path = 'ir_enable_dynamic_symbolic_shape_inputs'
+    os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
+    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir_path
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Directory '{dir_path}' has been deleted.")
+
     x = Tensor(np.ones((1, 3, 3), np.float32))
-    assert add_func(x, x).shape == (1, 3, 3)
+    add_func(x, x)
+    check_ir_symbolic_shape(dir_path, '-> (S', 1)
+    os.unsetenv('MS_DEV_SAVE_GRAPHS')
+    os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_enable_dynamic_symbolic_shape_grad():
     """
     Feature: Dynamic shape with symbolic info
@@ -94,34 +103,32 @@ def test_enable_dynamic_symbolic_shape_grad():
     os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
     os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir_path
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Directory '{dir_path}' has been deleted.")
 
     s1 = Symbol(max=10, unique=True)
     s2 = Symbol(min=2, unique=True)
     x_dyn = Tensor(shape=[1, s1, s1], dtype=ms.float32)
     y_dyn = Tensor(shape=[2, s2, s2], dtype=ms.float32)
 
-    @enable_dynamic(x=x_dyn, y=y_dyn)
-    @jit
     def add_func(x, y):
         return F.tensor_add(x, y)
 
+    @enable_dynamic(x=x_dyn, y=y_dyn)
+    @jit
     def grad_add_func(foo, x, y):
-        return ops.grad(foo)(x, y)
-
-    if os.path.isdir(dir_path):
-        shutil.rmtree(dir_path)
-        print(f"Directory '{dir_path}' has been deleted.")
+        return ops.grad(foo)(x, y) # pylint: disable=not-callable
 
     x = Tensor(np.ones((1, 8, 8), np.float32))
     y = Tensor(np.ones((2, 8, 8), np.float32))
-    assert grad_add_func(add_func, x, y).shape == (1, 8, 8)
+    grad_add_func(add_func, x, y)
     check_ir_symbolic_shape(dir_path, target_str, 1)
     os.unsetenv('MS_DEV_SAVE_GRAPHS')
     os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
     os.unsetenv('MS_DEV_DUMP_IR_PASSES')
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_enable_auto_dynamic_symbolic_shape():
     """
     Feature: Dynamic shape with symbolic info
@@ -133,6 +140,9 @@ def test_enable_auto_dynamic_symbolic_shape():
     os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
     os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir_path
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+        print(f"Directory '{dir_path}' has been deleted.")
 
     s1 = Symbol(min=2, unique=True)
     x_dyn = Tensor(shape=[2, s1], dtype=ms.float32)
@@ -142,9 +152,6 @@ def test_enable_auto_dynamic_symbolic_shape():
     def func(x, y):
         return x + 1, y + 1
 
-    if os.path.isdir(dir_path):
-        shutil.rmtree(dir_path)
-        print(f"Directory '{dir_path}' has been deleted.")
 
     x1 = Tensor(np.random.randn(2, 2), ms.float32)
     x2 = Tensor(np.random.randn(2, 3), ms.float32)

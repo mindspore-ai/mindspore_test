@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
 import os
 import subprocess
-from tests.mark_utils import arg_mark
 
 
-def generate_dyn(file_name, func_name, dyn_file_name):
+def generate_dyn(file_name, dyn_file_name):
     if os.path.exists(dyn_file_name):
         os.remove(dyn_file_name)
     assert not os.path.exists(dyn_file_name)
 
-    cmd = f"VLOG_v=1 python " + file_name + " " + func_name + " > " + dyn_file_name + " 2>&1"
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    cmd = f"VLOG_v=1 python " + dirname + "/" + file_name + " > " + dyn_file_name + " 2>&1"
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(dyn_file_name)
     with open(dyn_file_name, "r") as v_file:
@@ -30,24 +31,33 @@ def generate_dyn(file_name, func_name, dyn_file_name):
 
     assert data.count("Start compiling") == 3
     assert data.count("End compiling") == 3
+
+    # Clean files
     os.remove(dyn_file_name)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_arguments_1():
+def test_dynamic_shape_with_input_tensor():
     """
-    Features: Dynamic shape.
-    Description: Test enable_dynamic and auto dynamic.
-    Expectation: No exception.
+    Feature: Add dynamic shape feature.
+    Description: The static shape is automatically converted to a dynamic shape.
+    Expectation: The compile number is 3.
     """
-    generate_dyn("run_enable_auto_dynamic.py", "fn1", "enable_auto_dynamic_shape_fn1.log")
+    generate_dyn("dynamic_shape_input_tensor.py", "dynamic_shape_vlog1.log")
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_arguments_2():
+def test_dynamic_shape_with_input_tuple_tensor():
     """
-    Features: Dynamic shape.
-    Description: Test enable_dynamic and auto dynamic.
-    Expectation: No exception.
+    Feature: Add dynamic shape feature.
+    Description: The static shape is automatically converted to a dynamic shape.
+    Expectation: The compile number is 3.
     """
-    generate_dyn("run_enable_auto_dynamic.py", "fn2", "enable_auto_dynamic_shape_fn2.log")
+    generate_dyn("dynamic_shape_input_tuple_tensor.py", "dynamic_shape_vlog2.log")
+
+
+def test_dynamic_shape_with_input_float_tensor():
+    """
+    Feature: Add dynamic shape feature.
+    Description: The static shape is automatically converted to a dynamic shape.
+    Expectation: The compile number is 3.
+    """
+    generate_dyn("dynamic_shape_input_float.py", "dynamic_shape_vlog3.log")
