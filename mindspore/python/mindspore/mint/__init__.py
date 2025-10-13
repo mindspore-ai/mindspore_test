@@ -1327,8 +1327,6 @@ def swapaxes(input, axis0, axis1):
     Alias for :func:`mindspore.mint.transpose` . The `input` corresponds to the `input` in the reference interface,
     and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
 
-    For more details, see :func:`mindspore.mint.transpose` .
-
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
@@ -1441,8 +1439,6 @@ def zeros(size, *, dtype=None):
 def fix(input):
     """
     Alias for :func:`mindspore.mint.trunc` .
-
-    For more details, see :func:`mindspore.mint.trunc` .
 
     Supported Platforms:
         ``Ascend``
