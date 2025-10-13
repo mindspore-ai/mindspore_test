@@ -63,6 +63,7 @@
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/transpose_batch_matmul_transpose_fusion.h"
+#include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/transpose_ext_matmul_ext_transpose_fusion.h"
 #include "backend/common/pass/other/avg_pool_grad_for_ge.h"
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "plugin/ascend/graph_optimizer/pass/ir_fusion_infer/shape_reshape_fusion.h"
@@ -200,6 +201,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::TransposeBatchMatmulTranspose>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::TransposeExtMatmulExtTranspose>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MoeInitRoutingDynQuantV2Fusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatmulSplitFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::MatmulAddExtSplitFusion>(), infer_boost);
