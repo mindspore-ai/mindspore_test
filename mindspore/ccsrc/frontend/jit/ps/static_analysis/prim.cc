@@ -22,9 +22,11 @@
 #include <limits>
 #include <map>
 #include <mutex>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "abstract/ops/primitive_infer_map.h"
 #include "frontend/operator/cc_implementations.h"
@@ -179,12 +181,40 @@ AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   return ref_abs;
 }
 
+void AddRefKeyForSequenceArgs(const AbstractBasePtr &input_arg) {
+  const auto &eles = input_arg->cast<AbstractSequencePtr>()->elements();
+  AbstractBasePtrList new_eles;
+  for (const auto &ele : eles) {
+    AbstractBasePtr ele_ref_tensor = ele;
+    if (!ele->isa<AbstractRefTensor>()) {
+      ele_ref_tensor = ConvertTensorToRef(ele);
+      if (ele_ref_tensor->isa<abstract::AbstractRefTensor>()) {
+        ele_ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
+        ele_ref_tensor = ele_ref_tensor->Broaden();
+      }
+      ele->set_inplace_abstract(ele_ref_tensor);
+    } else {
+      ele_ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
+    }
+    new_eles.push_back(ele_ref_tensor);
+  }
+  if (input_arg->isa<abstract::AbstractTuple>()) {
+    auto new_seq = std::make_shared<abstract::AbstractTuple>(new_eles);
+    input_arg->set_inplace_abstract(new_seq);
+    return;
+  }
+  auto new_seq = std::make_shared<abstract::AbstractList>(new_eles);
+  input_arg->set_inplace_abstract(new_seq);
+}
+
 AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args,
                                  const std::vector<size_t> &rw_write_indexes,
                                  const std::vector<int64_t> &inplace_indexes) {
   // Convert input tensor to ref if this tensor is rw_write.
   for (const auto &index : rw_write_indexes) {
-    if (!input_args[index]->isa<AbstractRefTensor>()) {
+    if (input_args[index]->isa<AbstractSequence>()) {
+      AddRefKeyForSequenceArgs(input_args[index]);
+    } else if (!input_args[index]->isa<AbstractRefTensor>()) {
       auto ref_tensor = ConvertTensorToRef(input_args[index]);
       if (ref_tensor->isa<abstract::AbstractRefTensor>()) {
         ref_tensor->cast<abstract::AbstractRefPtr>()->set_is_inplace(true);
@@ -2365,7 +2395,7 @@ AnfNodePtr HandleShardForPrimitive(const PrimitivePtr &prim, const prim::MetaImp
                 << "` and out_strategy `" << out_strategy->ToString() << "`.";
   return fg->NewCNodeInOrder({NewValueNode(prim::kPrimShard), NewValueNode(meta_op), NewValueNode(in_strategy),
                               NewValueNode(out_strategy), NewValueNode(MakeValue(kAscendDevice)),
-                              NewValueNode(MakeValue(int64_t(0)))});
+                              NewValueNode(MakeValue(static_cast<int64_t>(0)))});
 }
 }  // namespace
 
