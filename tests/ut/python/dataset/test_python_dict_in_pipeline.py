@@ -112,7 +112,7 @@ def test_dict_generator(my_iterator, output_numpy):
         else:  # tensor
             assert isinstance(data["integer"], Tensor)
             assert isinstance(data["boolean"], Tensor)
-            assert isinstance(data["string"], Tensor)
+            assert isinstance(data["string"], np.ndarray)
             assert isinstance(data["tuple"], tuple)
             assert isinstance(data["tuple"][0], Tensor)
 
@@ -542,7 +542,7 @@ def test_dict_generator_mixed(my_iterator, output_numpy):
                 assert isinstance(data[0]["integer"], Tensor)
                 assert isinstance(data[1], Tensor)
                 assert isinstance(data[2], Tensor)
-                assert isinstance(data[3], Tensor)
+                assert isinstance(data[3], np.ndarray)
         else:  # dict iterator
             if output_numpy:
                 assert isinstance(data["col1"], dict)
@@ -568,7 +568,7 @@ def test_dict_generator_mixed(my_iterator, output_numpy):
                 assert isinstance(data["col1"]["tuple"][0], Tensor)
                 assert isinstance(data["col2"], Tensor)
                 assert isinstance(data["col3"], Tensor)
-                assert isinstance(data["col4"], Tensor)
+                assert isinstance(data["col4"], np.ndarray)
     assert count == 15
 
 
