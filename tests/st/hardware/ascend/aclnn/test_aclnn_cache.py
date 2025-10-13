@@ -13,11 +13,14 @@
 # limitations under the License.
 # ============================================================================
 import os
+import time
+import multiprocessing
+import psutil
 from tests.mark_utils import arg_mark
 
 import numpy as np
 import mindspore
-from mindspore import mint, context
+from mindspore import mint, context, mutable
 from mindspore.nn import Cell
 
 
@@ -171,3 +174,112 @@ def test_aclnn_cache_with_multi_input():
                          log_cache_multi_input_2.txt | wc -l").read()
     assert int(ret_miss.strip()) == 5
     os.system("rm -rf log_cache_multi_input_2.txt")
+
+
+class SimpleNet1(Cell):
+    def __init__(self):
+        super(SimpleNet1, self).__init__()
+        self.op1 = mint.sin
+        self.op2 = mint.nonzero
+        self.op3 = mint.cos
+
+    def construct(self, x):
+        out = x
+        for _ in range(mutable(100)):
+            x += x
+            x = self.op2(x)
+            out = self.op1(x)
+            out = self.op3(out)
+        return out
+
+def extract_memory_values(text):
+    return float(text.split("memory usage:")[1].split()[0])
+
+def memory_monitor(pid, interval=0.1):
+    # monitor the host memory usage of main process
+    try:
+        while True:
+            mem = psutil.Process(pid).memory_info().rss / 1024 / 1024
+            print(f"memory usage: {mem} MB", flush=True)
+            time.sleep(interval)
+    except psutil.NoSuchProcess:
+        print("Memory monitor stopped.")
+
+def test_aclnn_cache_memory_kbk():
+    """
+    Feature: aclnn cache host memory
+    Description: test aclnn cache host memory
+    Expectation: aclnn cache host memory leak
+    """
+    os.environ['MS_DEV_RUNTIME_CONF'] = "aclnn_cache_queue_length:1"
+    context.set_context(mode=mindspore.GRAPH_MODE, device_target="Ascend", jit_level="O0")
+    net = SimpleNet1()
+    pid = os.getpid()
+    monitor_proc = multiprocessing.Process(target=memory_monitor, args=(pid, 15))
+    monitor_proc.daemon = True
+    monitor_proc.start()
+    random_array = np.random.rand(10, 1500, 64)
+    x = mindspore.Tensor(random_array.astype(np.float32))
+    net(x)
+    del os.environ["MS_DEV_RUNTIME_CONF"]
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_aclnn_cache_host_memory_kbk():
+    """
+    Feature: aclnn cache host memory
+    Description: test aclnn cache host memory
+    Expectation: aclnn cache host memory leak
+    """
+    os.system("pytest -sv test_aclnn_cache.py::test_aclnn_cache_memory_kbk > log_cache_memory_kbk.txt 2>&1")
+    memory_usage_last1 = os.popen("grep 'memory usage: ' log_cache_memory_kbk.txt | tail -n 1").read()
+    memory_usage_last2 = os.popen("grep 'memory usage: ' log_cache_memory_kbk.txt | tail -n 2 | head -n 1").read()
+    last1, last2 = extract_memory_values(memory_usage_last1), extract_memory_values(memory_usage_last2)
+    diff_percent = abs(last1 - last2) / last1
+    # the 900th step and 1000th step memory usage change should be less than 0.1% in kbk
+    assert diff_percent <= 0.001
+    os.system("rm -rf log_cache_memory_kbk.txt")
+
+class SimpleNet2(Cell):
+    def __init__(self):
+        super(SimpleNet2, self).__init__()
+        self.op = mint.cat
+
+    def construct(self, x):
+        out = self.op([x, x, x, x, x, x], dim=0)
+        return out
+
+def test_aclnn_cache_memory_pyboost():
+    """
+    Feature: aclnn cache host memory
+    Description: test aclnn cache host memory
+    Expectation: aclnn cache host memory leak
+    """
+    context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+    net = SimpleNet2()
+    for i in range(1000):
+        dim1 = np.random.randint(1, 11)
+        dim2 = np.random.randint(1000, 2000)
+        dim3 = np.random.randint(20, 80)
+        random_array = np.random.rand(dim1, dim2, dim3)
+        x = mindspore.Tensor(random_array.astype(np.float32))
+        net(x)
+        if i % 100 == 0:
+            print(f'step {i}, memory usage: {psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2} MB')
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_aclnn_cache_host_memory_pyboost():
+    """
+    Feature: aclnn cache host memory
+    Description: test aclnn cache host memory
+    Expectation: aclnn cache host memory leak
+    """
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:100"
+    os.system("pytest -sv test_aclnn_cache.py::test_aclnn_cache_memory_pyboost > log_cache_memory_pyboost.txt 2>&1")
+    memory_usage_last1 = os.popen("grep 'memory usage:' log_cache_memory_pyboost.txt | tail -n 1").read()
+    memory_usage_last2 = os.popen("grep 'memory usage:' log_cache_memory_pyboost.txt | tail -n 2 | head -n 1").read()
+    last1, last2 = extract_memory_values(memory_usage_last1), extract_memory_values(memory_usage_last2)
+    diff_percent = abs(last1 - last2) / last1
+    # the 900th step and 1000th step memory usage change should be less than 0.1% in pyboost
+    assert diff_percent <= 0.001
+    os.system("rm -rf log_cache_memory_pyboost.txt")
+    del os.environ["MS_DEV_RUNTIME_CONF"]
