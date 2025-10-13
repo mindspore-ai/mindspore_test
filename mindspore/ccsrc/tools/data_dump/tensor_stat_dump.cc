@@ -45,25 +45,6 @@ TensorStatDump::TensorStatDump(const std::string &op_type, const std::string &op
   }
 }
 
-bool TensorStatDump::OpenStatisticsFile(const std::string &dump_path) {
-  std::string filename = dump_path + "/" + kCsvFileName;
-  // try to open file
-  CsvWriter &csv = CsvWriter::GetInstance();
-  const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
-  int retry = 2;
-  while (retry > 0) {
-    if (csv.OpenFile(filename, csv_header)) {
-      break;
-    }
-    retry--;
-  }
-  if (retry == 0) {
-    MS_LOG(WARNING) << "Open statistic dump file failed, skipping current statistics";
-    return false;
-  }
-  return true;
-}
-
 bool TensorStatDump::DumpTensorStatsToFile(const std::string &original_kernel_name, const std::string &dump_path,
                                            const Debugger *debugger) {
   // get tensor data using debugger

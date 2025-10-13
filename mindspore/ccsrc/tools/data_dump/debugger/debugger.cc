@@ -456,16 +456,6 @@ GraphProto Debugger::GetGraphProto(const KernelGraphPtr &graph_ptr) const {
   return model.graph();
 }
 
-void AddTensorProtoInfo(TensorProto *tensor_item, const TensorProto &tensor) {
-  tensor_item->set_node_name(tensor.node_name());
-  tensor_item->set_slot(tensor.slot());
-  tensor_item->set_iter(tensor.iter());
-  tensor_item->set_truncate(tensor.truncate());
-  tensor_item->clear_tensor_content();
-  tensor_item->clear_data_type();
-  tensor_item->clear_dims();
-}
-
 std::shared_ptr<TensorData> Debugger::GetTensor(const std::string &tensor_name) const {
   return debug_services_->GetTensor(tensor_name);
 }
@@ -550,60 +540,6 @@ void Debugger::LoadSingleParameterMindRT(const AnfNodePtr &node) {
   if (!ret) {
     MS_LOG(ERROR) << "LoadMemToHost:"
                   << ", tensor_name:" << tensor_name << ", host_format:" << format << ".!";
-  }
-}
-
-/*
- * Feature group: Dump, Online debugger.
- * Target device group: Ascend, GPU.
- * Runtime category: Old runtime, MindRT.
- * Description: Load all the parameters and value nodes for the last loaded graph.
- */
-void Debugger::LoadParametersAndConst() {
-  if (!CheckDebuggerDumpEnabled()) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(graph_ptr_);
-  // load parameters
-  MS_VLOG(VL_DUMP) << "Start to load Parameters for graph " << graph_ptr_->graph_id() << ".";
-  auto root_graph_id = graph_ptr_->root_graph_id();
-  const auto &parameters = graph_ptr_->inputs();
-  for (auto &item : parameters) {
-    LoadSingleAnfnode(item, kParameterOutputIndex, root_graph_id);
-  }
-  // load value nodes
-  // get all constant values from the graph
-  MS_VLOG(VL_DUMP) << "Start to load value nodes for graph " << graph_ptr_->graph_id() << ".";
-  const auto value_nodes = graph_ptr_->graph_value_nodes();
-  for (auto &item : value_nodes) {
-    LoadSingleAnfnode(item, kValueNodeOutputIndex, root_graph_id);
-  }
-}
-
-/*
- * Feature group: Dump, Online debugger.
- * Target device group: Ascend, GPU.
- * Runtime category: Old runtime, MindRT.
- * Description: Load all the parameters and value nodes for the given graph.
- */
-void Debugger::LoadParametersAndConst(const KernelGraphPtr &graph) {
-  if (!CheckDebuggerDumpEnabled()) {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(graph);
-  // load parameters
-  MS_VLOG(VL_DUMP) << "Start to load Parameters for graph " << graph->graph_id() << ".";
-  auto root_graph_id = graph->root_graph_id();
-  const auto &parameters = graph->inputs();
-  for (auto &item : parameters) {
-    LoadSingleAnfnode(item, kParameterOutputIndex, root_graph_id);
-  }
-  // load value nodes
-  // get all constant values from the graph
-  MS_VLOG(VL_DUMP) << "Start to load value nodes for graph " << graph->graph_id() << ".";
-  const auto value_nodes = graph->graph_value_nodes();
-  for (auto &item : value_nodes) {
-    LoadSingleAnfnode(item, kValueNodeOutputIndex, root_graph_id);
   }
 }
 

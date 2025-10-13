@@ -98,10 +98,6 @@ class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debug
   // check if any feature that uses the debugger backend is enabled
   bool DebuggerBackendEnabled() const;
 
-  void LoadParametersAndConst();
-
-  void LoadParametersAndConst(const KernelGraphPtr &graph);
-
   void LoadParametersAllGraphs();
 
   void LoadConstsForGraph(const KernelGraphPtr &graph);

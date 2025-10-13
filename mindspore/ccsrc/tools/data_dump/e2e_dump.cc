@@ -98,26 +98,6 @@ void E2eDump::DumpMemFromTensorLoaderToFile(const Debugger *debugger, const std:
 #endif
 }
 
-void E2eDump::DumpOutput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  if (!dump_json_parser.OutputNeedDump()) {
-    return;
-  }
-  MS_VLOG(VL_DUMP) << "Start e2e dump output";
-  bool trans_flag = dump_json_parser.trans_flag();
-  const auto &apply_kernels = graph->execution_order();
-  for (const auto &node : apply_kernels) {
-    MS_EXCEPTION_IF_NULL(node);
-    std::string kernel_name = GetKernelNodeName(node);
-    if (!dump_json_parser.NeedDump(kernel_name)) {
-      continue;
-    }
-    DumpJsonParser::GetInstance().MatchKernel(kernel_name);
-    DumpOutputImpl(node, trans_flag, dump_path, &kernel_name, debugger);
-  }
-}
-
 void E2eDump::DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
                                    const DeviceContext *device_context) {
   auto &dump_json_parser = DumpJsonParser::GetInstance();
@@ -182,26 +162,6 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
       TensorStatDump stat_dump(op_type, stat_op_name, task_id, stream_id, timestamp, false, j, j);
       (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
-  }
-}
-
-void E2eDump::DumpInput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  if (!dump_json_parser.InputNeedDump()) {
-    return;
-  }
-  MS_VLOG(VL_DUMP) << "Start e2e dump input";
-  bool trans_flag = dump_json_parser.trans_flag();
-  const auto &apply_kernels = graph->execution_order();
-  for (const auto &node : apply_kernels) {
-    MS_EXCEPTION_IF_NULL(node);
-    std::string kernel_name = GetKernelNodeName(node);
-    if (!dump_json_parser.NeedDump(kernel_name)) {
-      continue;
-    }
-    DumpJsonParser::GetInstance().MatchKernel(kernel_name);
-    DumpInputImpl(node, trans_flag, dump_path, &kernel_name, debugger);
   }
 }
 
@@ -545,36 +505,6 @@ void E2eDump::DumpConstantData(const session::KernelGraph *graph, const std::str
 /*
  * Feature group: Dump.
  * Target device group: Ascend, GPU.
- * Runtime category: Old runtime.
- * Description: This function is for updating dump iteration for GPU and ascend old runtime.
- */
-void E2eDump::UpdateIterOldRTDump(const session::KernelGraph *graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  uint32_t graph_id = graph->graph_id();
-  if (IsDeviceTargetGPU()) {
-    if (starting_graph_id == INT32_MAX) {
-      starting_graph_id = graph_id;
-    } else if (starting_graph_id == graph_id && !MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-      // Update dump iter for mindrt runtime is done using UpdateIterGPUDump().
-      // Update dump iter for GPU old runtime.
-      dump_json_parser.UpdateDumpIter();
-    }
-    return;
-  }
-  // If device target is Ascend
-  if (graph->IsDatasetGraph()) {
-    MS_VLOG(VL_DUMP) << "No need to update iteration for dataset graph.";
-    return;
-  }
-
-  // In multi network scripts, dump iter is equal to the number of networks that have been executed so far.
-  dump_json_parser.UpdateDumpIter();
-}
-
-/*
- * Feature group: Dump.
- * Target device group: Ascend, GPU.
  * Runtime category: MindRT.
  * Description: This function is for updating dump iteration for GPU and ascend MindRT dump. Please note that dump with
  * dataset_sink_mode = True is not supported for GPU.
@@ -664,50 +594,6 @@ void E2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
   }
   fout.close();
   ChangeFileMode(file_name, S_IRUSR);
-}
-
-/*
- * Feature group: Dump.
- * Target device group: Ascend, GPU.
- * Runtime category: Old runtime, MindRT.
- * Description: This function is for dumping the whole graph. It is used for old runtime in GPU and Ascend and
- * super-kernel mindRT in Ascend.
- */
-void E2eDump::DumpData(const session::KernelGraph *graph, uint32_t rank_id, const Debugger *debugger) {
-  MS_EXCEPTION_IF_NULL(graph);
-  bool success = false;
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  uint32_t graph_id = graph->graph_id();
-  if (!dump_json_parser.e2e_dump_enabled()) {
-    return;
-  }
-
-  if (dump_json_parser.GetIterDumpFlag()) {
-    MS_VLOG(VL_DUMP) << "Start e2e dump. Current iteration is " << dump_json_parser.cur_dump_iter();
-    MS_VLOG(VL_DUMP) << "Current graph id is " << graph_id;
-    std::string dump_path = GenerateDumpPath(graph_id, rank_id);
-    if (dump_json_parser.IsStatisticDump()) {
-      (void)TensorStatDump::OpenStatisticsFile(dump_path);
-    }
-    DumpInput(graph, dump_path, debugger);
-    DumpOutput(graph, dump_path, debugger);
-    if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-      // Dump parameters for old runtime. For mindRT it is done in PostExecuteGraphDebugger.
-      DumpParameters(graph, dump_path, debugger);
-      // DumpConstantData for GPU old runtime.
-      DumpConstantData(graph, rank_id, debugger);
-    }
-    if (dump_json_parser.IsStatisticDump()) {
-      CsvWriter::GetInstance().CloseFile();
-    }
-    success = true;
-  }
-
-  if (success) {
-    MS_LOG(DEBUG) << "E2eDump Dump Data completed!";
-  } else {
-    MS_LOG(DEBUG) << "E2eDump Dump has not occurred!";
-  }
 }
 
 /*
