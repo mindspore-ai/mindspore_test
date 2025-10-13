@@ -208,7 +208,7 @@ tensor::TensorPtr TensorMeta::ReduceGrad(const tensor::TensorPtr &grad) const {
     (void)reduce_axis.emplace_back(std::make_shared<Int64Imm>(i));
   }
   for (size_t i = expanded_axis; i < grad_size; ++i) {
-    if (shape()[i] != grad->shape()[i] && shape()[i] == 1) {
+    if (grad->shape()[i] != 1 && shape()[i - expanded_axis] == 1) {
       (void)reduce_axis.emplace_back(std::make_shared<Int64Imm>(i));
     }
   }

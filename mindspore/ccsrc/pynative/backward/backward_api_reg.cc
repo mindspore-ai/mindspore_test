@@ -84,7 +84,7 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
       MS_LOG(EXCEPTION)
         << "One of the input Tensor's grad is None. Set allow_unused=True if this behavior meets expectations.";
     }
-    py_grads[i] = tensor::PackTensor(tensor);
+    py_grads[i] = tensor::PackTensorToPyObject(tensor);
   }
   return std::move(py_grads);
 }
