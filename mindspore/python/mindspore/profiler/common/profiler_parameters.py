@@ -13,7 +13,6 @@
 # limitations under the License.
 # ===========================================================================
 """ProfilerParameters"""
-import os
 import warnings
 from typing import Dict, Optional, Callable, Any
 
@@ -333,20 +332,6 @@ class ProfilerParameters:
                 f"For Profiler, 'host_sys' value is Invalid, reset to {default_value}."
             )
             return default_value
-        is_root = os.geteuid() == 0
-        if not is_root and HostSystem.DISK in host_sys:
-            logger.warning(
-                "Non-root users do not support disk data acquisition, "
-                "please use the root user for collection."
-            )
-            host_sys.remove(HostSystem.DISK)
-
-        if not is_root and HostSystem.OSRT in host_sys:
-            logger.warning(
-                "Non-root users do not support osrt data acquisition, "
-                "please use the root user for collection."
-            )
-            host_sys.remove(HostSystem.OSRT)
 
         return set(host_sys)
 
