@@ -167,8 +167,12 @@ class ExtensionBuilder:
         try:
             subprocess.check_output('ninja --version'.split())
         except Exception as e:
-            logger.error("Ninja is required to load C++ extensions")
-            raise RuntimeError("Ninja is required to load C++ extensions") from e
+            msg = (
+                "Ninja is required to load C++ extensions. "
+                "You can install it with: pip install ninja"
+            )
+            logger.error(msg)
+            raise RuntimeError(msg) from e
 
     def _write_ninja_file_and_build_library(self, module_name, sources, cflags, ldflags, include_paths):
         """Write ninja file and build library."""
