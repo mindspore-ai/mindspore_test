@@ -300,7 +300,6 @@ class TensorIndex final {
                                      const py::object &py_index, std::vector<int64_t> *data_transfer_types,
                                      std::vector<py::object> *data_transfer_args, const TypePtr &data_type);
   static py::object GetItemByBool(const ValuePtr &data_value, const ShapeVector &data_shape, bool index);
-  static py::object GetItemByNumber(const ShapeVector &data_shape, int64_t index);
   static py::object GetItemByNumberWithView(const ValuePtr &data_value, const ShapeVector &data_shape, int64_t index);
   static py::object GetItemBySlice(const ValuePtr &data_value, const ShapeVector &data_shape,
                                    const TensorIndex &py_index);
@@ -308,8 +307,6 @@ class TensorIndex final {
                                             const ShapeVector &data_shape);
   static py::object GetItemIndexInfo(const py::object &data, const py::object &index, const py::bool_ &is_ascend);
 
-  static py::object SetItemByNumber(const ShapeVector &data_shape, const TypePtr &data_type, bool is_parameter,
-                                    const TensorIndex &tensor_index, const TensorIndexType &py_value_type);
   static py::object SetItemByNumberWithView(const ShapeVector &data_shape, const TypePtr &data_type, bool is_parameter,
                                             const TensorIndex &tensor_index, const TensorIndexType &py_value_type,
                                             const ValuePtr &data_value);
@@ -528,7 +525,6 @@ class TensorIndex final {
   // "mindspore/python/mindspore/ops/composite/multitype_ops/_compile_utils.py"
   // Convert list indices to array or list indices based on its contents.
   static TensorIndex FormatList(const TensorIndex &tensor_index, int64_t length);
-  static TensorPtr IntToTensor(int64_t i, const ShapeVector &shape);
   static py::object GenerateIndicesFromTupleOfTensor(const ShapeVector &data_shape,
                                                      const std::vector<TensorIndex> &tuple_index,
                                                      ShapeVector *output_index_shape, py::object *data_transfer_arg);

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test case of tensor index setitem"""
 
 import os
 import numpy as np
@@ -52,9 +53,256 @@ def is_index_need_skip(index, skip_list):
 
     return False
 
+def previous_setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
+    """previous setitem run and check"""
+    if capture_mode is None:
+        def func(ms_x, index, value):
+            ms_x[index] = value
+            return ms_x
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def func(ms_x, index, value):
+            ms_x[index] = value
+            return ms_x
+
+    ms_output = func(x, index, value)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(func, x, index, value)
+
+    assert np.allclose(np_expected, ms_output.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                          f"expected:{np_expected} {np_expected.shape}, " \
+                                                          f"ms_output:{ms_output} {ms_output.shape}"
+
+@arg_mark(
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('capture_mode', [None])
+def test_previous_setitem_level0(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem
+    Expectation: success
+    """
+
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+
+    # Basic index
+    basic_indices = [0, slice(0, 1), True, None, ..., (0, 2, ...), [0, 1]]
+    for index in basic_indices:
+        np_x = np.arange(2*3*4).reshape(2, 3, 4)
+        ms_x = Tensor(np_x)
+        value = -1
+        np_x[index] = value
+        previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    #Basic index with bool value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = slice(0, 1)
+    value = False
+    np_x[index] = value
+    previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    #Basic index with bool value
+    np_x = np.array([False, True])
+    ms_x = Tensor(np_x)
+    index = 0
+    value = True
+    np_x[index] = value
+    previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Basic index with float value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = [0, 1]
+    value = -1.0
+    np_x[index] = value
+    previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+@arg_mark(
+    plat_marks=['cpu_linux'],
+    level_mark='level1',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('capture_mode', [None])
+def test_previous_setitem_level1(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem
+    Expectation: success
+    """
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+
+    # Tensor index which shape.size() == 1
+    index = Tensor([1])
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    np_expected = np.array([[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                            [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
+    value = -1
+    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+    # Tensor index with bool
+    index = Tensor([[True], [True]])
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
+    value = -1
+    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+    # Slice index with value is list
+    index = slice(0, 2)
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
+    value = [-1]
+    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+    # Slice index with invalid start stop and step
+    index = slice(0, 2, -1)
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    value = -1
+    previous_setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Int index which source tensor.shape = (1.) and value type is tensor
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor([3])
+    np_expected = np.array([4])
+    value = Tensor([4])
+    previous_setitem_check_indexing(ms_x, 0, value, np_expected, capture_mode)
+
+    # Tuple index can use tensor inner
+    index = [0, slice(None, None, 1), slice(None, None, 1)]
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
+    value = -1
+    previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+
+
+@arg_mark(
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('mode, capture_mode', [(ms.GRAPH_MODE, 'bytecode'),
+                                                (ms.PYNATIVE_MODE, 'ast')])
+def test_previous_setitem_exception_index_error(mode, capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem exception
+    Expectation: success
+    """
+
+    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+    ms_x = Tensor(np_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_tensor_index_with_float(x):
+        x[(Tensor(1.4), 1)] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(IndexError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[(Tensor(1.4), 1)] = -1
+        else:
+            _ = func_tensor_index_with_float(ms_x)
+
+
+@arg_mark(
+    plat_marks=['cpu_windows', 'cpu_macos'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('mode, capture_mode', [(ms.GRAPH_MODE, 'bytecode'),
+                                                (ms.PYNATIVE_MODE, 'ast')])
+def test_previous_setitem_exception_index_error_without_centos(mode, capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem exception
+    Expectation: success
+    """
+
+    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_list_index_dim_out_data_dim(x):
+        x[[0, 2]] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(IndexError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[[0, 2]] = -1
+        else:
+            _ = func_list_index_dim_out_data_dim(ms_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_tuple_index_dim_out_data_dim(x):
+        x[([0, 2])] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(IndexError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[([0, 2])] = -1
+        else:
+            _ = func_tuple_index_dim_out_data_dim(ms_x)
+
+@arg_mark(
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('mode, capture_mode', [(ms.GRAPH_MODE, 'bytecode'),
+                                                (ms.PYNATIVE_MODE, 'ast')])
+def test_previous_setitem_exception_type_error(mode, capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem exception
+    Expectation: success
+    """
+
+    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+    ms_x = Tensor(np_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_not_support_type_as_value(x):
+        x[0] = slice(0, 1)
+        return x
+    with pytest.raises(TypeError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0] = slice(0, 1)
+        else:
+            _ = func_not_support_type_as_value(ms_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_scalar_tensor(x):
+        x[[0]] = -1
+        return x
+    ms_x = Tensor(1)
+    with pytest.raises(TypeError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[[0]] = -1
+        else:
+            _ = func_scalar_tensor(ms_x)
+
 
 def setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
-    """getitem run and check"""
+    """setitem run and check"""
     if capture_mode is None:
         def func(ms_x, index, value):
             ms_x[index] = value
@@ -94,6 +342,22 @@ def test_setitem(capture_mode):
         value = -1
         np_x[index] = value
         setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    #Basic index with bool value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = slice(0, 1)
+    value = False
+    np_x[index] = value
+    setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    #Basic index with bool value
+    np_x = np.array([False, True])
+    ms_x = Tensor(np_x)
+    index = 0
+    value = True
+    np_x[index] = value
+    setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
 
     # Basic index with float value
     np_x = np.arange(2*3*4).reshape(2, 3, 4)
@@ -200,6 +464,40 @@ def test_setitem(capture_mode):
         setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
 
 
+def setitem_check_indexing_without_jit(x, index, value, np_expected, capture_mode=None):
+    """setitem run and check"""
+    def func(ms_x, index, value):
+        ms_x[index] = value
+        return ms_x
+    ms_output = func(x, index, value)
+    assert np.allclose(np_expected, ms_output.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                          f"expected:{np_expected} {np_expected.shape}, " \
+                                                          f"ms_output:{ms_output} {ms_output.shape}"
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None])
+def test_slice_tensor_index_setitem_without_jit(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem
+    Expectation: success
+    """
+    # Slice Tensor index with value
+    basic_type = [ms.int8, ms.uint8, ms.int16, ms.uint16, ms.int, ms.int32, ms.uint32, ms.int64, ms.uint64, ms.float16,
+                  ms.float, ms.float32, ms.double, ms.float64, ms.bfloat16]
+    np_expected = np.array([[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                            [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]]])
+    for dtype in basic_type:
+        np_x = np.arange(2*3*4).reshape(2, 3, 4)
+        ms_x = Tensor(np_x)
+        start = Tensor(1, dtype=dtype)
+        end = Tensor(2, dtype=dtype)
+        step = Tensor(1, dtype=dtype)
+        slice_index = slice(start, end, step)
+        value = -1
+        setitem_check_indexing_without_jit(ms_x, slice_index, value, np_expected, capture_mode)
+
+
 def setitem_check_iadd_indexing(x, index, value, np_expected, capture_mode=None):
     """getitem run and check"""
     if capture_mode is None:
@@ -301,7 +599,7 @@ def test_setitem_with_iadd(capture_mode):
 
 
 class NetSetitem(nn.Cell):
-
+    """test setitem use net"""
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -314,7 +612,7 @@ class NetSetitem(nn.Cell):
 
 
 def setitem_check_grad(x, index, value, np_expected, capture_mode=None):
-    """getitem run and check"""
+    """setitem run and check"""
     if capture_mode is None:
         def grad_func(net, x):
             return ms.grad(net)(x)
@@ -366,6 +664,14 @@ def test_setitem_grad(capture_mode):
         ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
         value = -1
         setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    #Basic index with bool value
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    index = slice(0, 1)
+    value = False
+    np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                            [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]])
+    setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
 
     # Basic index with float value
     ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
@@ -462,7 +768,7 @@ def test_setitem_grad(capture_mode):
 
 
 class NetSetitemIadd(nn.Cell):
-
+    """test setitem use self-add net"""
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -553,7 +859,7 @@ def test_setitem_grad_with_iadd(capture_mode, index):
 
 
 class NetSetitemImul(nn.Cell):
-
+    """test setitem use self-mul net"""
     def __init__(self, index, value):
         super().__init__()
         self.index = index
@@ -622,7 +928,9 @@ def test_setitem_exception(mode, capture_mode):
     ms_x = Tensor(np_x)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func1(x): x[2, 0, 0] = -1; return x
+    def func1(x):
+        x[2, 0, 0] = -1
+        return x
     with pytest.raises(IndexError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[2, 0, 0] = -1
@@ -631,7 +939,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "is out of bounds" in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func2(x): x[0, 0, 0, 0] = -1; return x
+    def func2(x):
+        x[0, 0, 0, 0] = -1
+        return x
     with pytest.raises(IndexError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0, 0, 0, 0] = -1
@@ -640,7 +950,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "too many indices" in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func3(x): x[0, 't'] = -1; return x
+    def func3(x):
+        x[0, 't'] = -1
+        return x
     with pytest.raises(IndexError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0, 't'] = -1
@@ -649,7 +961,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "Invalid tensor index type" in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func4(x): x[0:3:-1] = -1; return x
+    def func4(x):
+        x[0:3:-1] = -1
+        return x
     with pytest.raises(ValueError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0:3:-1] = -1
@@ -658,7 +972,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "slice step must be positive" in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func5(x): x[0] = (1, 2, 3); return x
+    def func5(x):
+        x[0] = (1, 2, 3)
+        return x
     with pytest.raises(TypeError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0] = (1, 2, 3)
@@ -667,7 +983,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func6(x): x[0] = [1, 2, 3]; return x
+    def func6(x):
+        x[0] = [1, 2, 3]
+        return x
     with pytest.raises(TypeError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0] = [1, 2, 3]
@@ -676,7 +994,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func7(x): x[0] = -1; return x
+    def func7(x):
+        x[0] = -1
+        return x
     ms_x = Tensor(0)
     with pytest.raises(TypeError) as exc:
         if mode == ms.PYNATIVE_MODE:
@@ -686,7 +1006,9 @@ def test_setitem_exception(mode, capture_mode):
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
     @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
-    def func8(x): ms_x[0:1] = -1; return ms_x
+    def func8(x):
+        x[0:1] = -1
+        return x
     with pytest.raises(TypeError) as exc:
         if mode == ms.PYNATIVE_MODE:
             ms_x[0:1] = -1
@@ -694,6 +1016,56 @@ def test_setitem_exception(mode, capture_mode):
             _ = func8(ms_x)
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func9(x):
+        x[Tensor(1.4), :, : ] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[Tensor(1.4), :, : ] = -1
+        else:
+            _ = func9(ms_x)
+    assert "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors" in str(exc.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode, capture_mode', [(ms.GRAPH_MODE, 'bytecode'),
+                                                (ms.PYNATIVE_MODE, 'ast')])
+def test_setitem_exception_without_jit_ast(mode, capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem exception
+    Expectation: success
+    """
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_tensor_as_slice_index_dim_out_1(x):
+        s = Tensor([0, 1])
+        index = slice(s, s, s)
+        x[index] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(ValueError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[Tensor([0, 1]):1:1] = -1
+        else:
+            _ = func_tensor_as_slice_index_dim_out_1(ms_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_tensor_as_slice_index_with_unsupport_type(x):
+        s = Tensor(3 + 4j, dtype=ms.complex64)
+        index = slice(s, s, s)
+        x[index] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(TypeError):
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[Tensor(3 + 4j, dtype=ms.complex64):1:1] = -1
+        else:
+            _ = func_tensor_as_slice_index_with_unsupport_type(ms_x)
 
 class IndexDynamicShapeNet(nn.Cell):
     def construct(self, x, index, value):

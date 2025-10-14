@@ -40,7 +40,7 @@
 /mindspore/ccsrc/plugin/gpu/res_manager/event_manager/ @ZPaC
 /mindspore/ccsrc/pybind_api/ @chujinjin
 /mindspore/ccsrc/pybind_api/ir/ @ginfung
-/mindspore/ccsrc/pybind_api/ir/tensor @chujinjin
+/mindspore/ccsrc/pybind_api/ir/tensor/ @chujinjin
 /mindspore/ccsrc/pybind_api/graph @limingqi107
 /mindspore/ccsrc/pybind_api/runtime/ @limingqi107
 /mindspore/ccsrc/pybind_api/tools/ @fary86
