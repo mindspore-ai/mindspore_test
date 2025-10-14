@@ -21,7 +21,6 @@
 
 namespace mindspore::device::ascend {
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateContext, aclError, aclrtContext *, int32_t)
-ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEvent, aclError, aclrtEvent *)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEventWithFlag, aclError, aclrtEvent *, uint32_t)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEventExWithFlag, aclError, aclrtEvent *, uint32_t)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateStream, aclError, aclrtStream *)

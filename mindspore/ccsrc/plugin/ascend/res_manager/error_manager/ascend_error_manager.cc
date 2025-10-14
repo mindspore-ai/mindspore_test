@@ -15,6 +15,8 @@
  */
 
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
+
+#include <memory>
 #include <mutex>
 #include <vector>
 #include "include/utils/anfalgo.h"
@@ -46,7 +48,7 @@ AscendSnapshotMgrPtr AscendSnapshotMgr::GetInstance() {
   static std::mutex mtx;
   std::lock_guard<std::mutex> gurad(mtx);
   if (ptr_inst->async_copy_event_ == nullptr) {
-    if (CALL_ASCEND_API(aclrtCreateEvent, &ptr_inst->async_copy_event_) != ACL_SUCCESS) {
+    if (CALL_ASCEND_API(aclrtCreateEventExWithFlag, &ptr_inst->async_copy_event_, ACL_EVENT_SYNC) != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Create async event failed";
     }
   }
@@ -71,13 +73,6 @@ void AscendSnapshotMgr::RecordEvent(aclrtStream stream) {
   aclError ret = CALL_ASCEND_API(aclrtRecordEvent, async_copy_event_, stream);
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Call aclrtRecordEvent failed, error code is " << ret;
-  }
-}
-
-void AscendSnapshotMgr::ResetEvent(aclrtStream stream) {
-  aclError ret = CALL_ASCEND_API(aclrtResetEvent, async_copy_event_, stream);
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Call aclrtResetEvent failed, error code is " << ret;
   }
 }
 

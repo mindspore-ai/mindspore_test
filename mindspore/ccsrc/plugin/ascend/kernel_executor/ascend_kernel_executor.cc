@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 #include "plugin/ascend/kernel_executor/ascend_kernel_executor.h"
-#include <string>
-#include <utility>
+
 #include <algorithm>
 #include <deque>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
 #include "include/utils/parallel_context.h"
@@ -1354,7 +1362,6 @@ bool AscendKernelExecutor::SilentCheckAndPreSaveWeight(const CNodePtr &kernel, K
   bool is_opt_start_kernel = (opt_start_type != OptStartType::OPT_START_TYPE_NONE);
   if (MS_UNLIKELY(is_opt_start_kernel && tools::ascend::AscendSnapshotMgr::GetInstance()->IsSavingSnapshot())) {
     tools::ascend::AscendSnapshotMgr::GetInstance()->StreamWaitEvent(stream);
-    tools::ascend::AscendSnapshotMgr::GetInstance()->ResetEvent(stream);
   }
   if (opt_start_type == OptStartType::OPT_START_TYPE_SNAPSHOT) {
     // skip execute TensorReport op with attribute "snapshot", it is just used as a tag

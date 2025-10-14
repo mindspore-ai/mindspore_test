@@ -38,7 +38,7 @@ namespace device {
 namespace ascend {
 class ASCEND_RES_MANAGER_EXPORT HcclWorkEvent {
  public:
-  HcclWorkEvent() = default;
+  HcclWorkEvent() : start_event_(ACL_EVENT_CAPTURE_STREAM_PROGRESS), end_event_(ACL_EVENT_CAPTURE_STREAM_PROGRESS) {}
   ~HcclWorkEvent() = default;
   HcclWorkEvent(const CNodePtr &kernel, void *stream);
   HcclWorkEvent &operator=(const HcclWorkEvent &other);
