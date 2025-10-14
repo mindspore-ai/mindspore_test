@@ -1020,8 +1020,6 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   MS_EXCEPTION_IF_CHECK_FAIL(func_graph_ != nullptr, kCallBackwradTwiceErr);
-  const auto &need_grad_indexes = ad::GetNeedGradIndexes(args_);
-  mindspore::ad::CheckBpropGraphHasInvalidDout(cache_key_, need_grad_indexes);
   const auto &new_args_and_graph = ad::FilterGraph(args_, added_args_, func_graph_, cache_key_, &next_edges_);
   func_graph_ = new_args_and_graph.first;
   added_args_ = new_args_and_graph.second;

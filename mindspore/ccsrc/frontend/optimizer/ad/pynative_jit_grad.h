@@ -70,7 +70,6 @@ class BpropGenerator {
 using BpropGeneratorPtr = std::shared_ptr<BpropGenerator>;
 
 FRONTEND_EXPORT std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param);
-FRONTEND_EXPORT void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads);
 FRONTEND_EXPORT void ClearGradCache();
 FRONTEND_EXPORT std::pair<FuncGraphPtr, FuncGraphPtr> GetGradAndForwardGraph(const std::string &key);
 FRONTEND_EXPORT void StoreOriginGradGraph(const std::string &key, const FuncGraphPtr &fg);

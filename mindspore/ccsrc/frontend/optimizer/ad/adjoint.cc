@@ -24,9 +24,8 @@
 
 namespace mindspore {
 namespace ad {
-Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace,
-                 bool is_grad_by_j)
-    : primal_(primal), caller_(caller), dout_(nullptr), is_view_inplace_(is_view_inplace), is_grad_by_j_(is_grad_by_j) {
+Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_grad_by_j)
+    : primal_(primal), caller_(caller), dout_(nullptr), is_grad_by_j_(is_grad_by_j) {
   if (k != nullptr) {
     k_ = k;
     MS_LOG(DEBUG) << "Add adjoint for " << primal->ToString() << " " << k_->ToString();
@@ -37,14 +36,7 @@ Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphP
     k_ = NewValueNode(k_hole);
     MS_LOG(DEBUG) << "Add hole for " << primal->ToString() << " " << k_->ToString();
   }
-
-  if (!is_view_inplace_) {
-    dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
-  } else {
-    auto dout = caller_->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
-    auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
-    dout_hole_ = caller_->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout});
-  }
+  dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
   RegisterKUser(dout_hole_->cast<CNodePtr>(), 1);
 }
 
@@ -81,13 +73,8 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
   if (dout_ != nullptr) {
     MS_LOG(DEBUG) << "Update dout " << dout_->ToString() << " with dout_factor " << dout_factor->ToString();
     ScopeGuard scope_guard(std::make_shared<Scope>("Gradients/" + primal()->scope()->name()));
-    if (is_view_inplace_) {
-      auto accumulate_dout = std::make_shared<prim::AccumulateDout>("_accumulate_dout");
-      dout_ = caller_->NewCNodeInOrder({NewValueNode(accumulate_dout), dout_, dout_factor});
-    } else {
-      auto add = prim::GetPythonOps("hyper_add");
-      dout_ = caller_->NewCNodeInOrder({NewValueNode(add), dout_, dout_factor});
-    }
+    auto add = prim::GetPythonOps("hyper_add");
+    dout_ = caller_->NewCNodeInOrder({NewValueNode(add), dout_, dout_factor});
     return;
   }
   dout_ = dout_factor;
