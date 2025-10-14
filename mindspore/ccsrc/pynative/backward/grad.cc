@@ -718,7 +718,10 @@ std::vector<tensor::TensorPtr> GradExecutor::GetWeightsArgs(const py::object &we
       const auto value = parse::data_converter::PyObjToValue(weights);
       auto tensor = value->cast<tensor::TensorPtr>();
       (void)w_args.emplace_back(tensor);
-      MS_EXCEPTION_IF_NULL(tensor);
+      if (tensor == nullptr) {
+        MS_EXCEPTION(TypeError) << "The weights you provided is expected to be a tensor, or a list or tuple. but got "
+                                << value->ToString();
+      }
       *weight_param_is_tuple = false;
     } else {
       MS_LOG(DEBUG) << "Need collect default weight from forward record";
