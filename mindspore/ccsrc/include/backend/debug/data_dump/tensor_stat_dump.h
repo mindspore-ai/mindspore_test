@@ -31,8 +31,6 @@ class TensorData;
 
 class BACKEND_COMMON_EXPORT TensorStatDump {
  public:
-  static bool OpenStatisticsFile(const std::string &dump_path);
-
   TensorStatDump(const std::string &op_type, const std::string &op_name, uint32_t task_id, uint32_t stream_id,
                  uint64_t timestamp, bool input, size_t slot, size_t tensor_loader_slot_);
   bool DumpTensorStatsToFile(const std::string &dump_path, const std::shared_ptr<TensorData> data);

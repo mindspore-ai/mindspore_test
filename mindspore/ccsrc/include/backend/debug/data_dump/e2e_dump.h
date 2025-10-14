@@ -45,11 +45,7 @@ class BACKEND_COMMON_EXPORT E2eDump {
   ~E2eDump() = default;
   static void UpdateIterMindRTDump();
 
-  static void UpdateIterOldRTDump(const session::KernelGraph *graph);
-
   static void DumpRunIter(const KernelGraphPtr &graph_ptr, uint32_t rank_id = 0);
-
-  static void DumpData(const session::KernelGraph *graph, uint32_t rank_id, const Debugger *debugger = nullptr);
 
   static void DumpConstantData(const session::KernelGraph *graph, const std::string &cst_dump_path,
                                const Debugger *debugger = nullptr);
@@ -82,12 +78,8 @@ class BACKEND_COMMON_EXPORT E2eDump {
   static bool IsMindRTKernelByKernel();
 
  private:
-  static void DumpOutput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger);
-
   static void DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
                                    const DeviceContext *device_context = nullptr);
-
-  static void DumpInput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger);
 
   static void DumpInputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
                                   const DeviceContext *device_context = nullptr);
