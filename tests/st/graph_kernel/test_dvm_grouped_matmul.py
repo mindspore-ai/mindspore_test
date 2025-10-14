@@ -35,17 +35,21 @@ class GroupedMatmulNetGroupType2(nn.Cell):
     def __init__(self):
         super().__init__()
         self.gmm = GroupedMatmul(split_item=3, group_type=2)
+        self.reshape = ops.Reshape()
 
     def construct(self, x, weight, group_list):
         x = mint.transpose(x, -1, -2)
         out = self.gmm([x], [weight], None, None, None, None, None, group_list)
-        return [ops.cast(out[0], ms.float32) + 2]
+        out_shape = out[0].shape
+        new_shape = (out_shape[0], out_shape[2]*out_shape[1])
+        res = self.reshape(out[0], new_shape)
+        return [ops.cast(res, ms.float32) + 2]
 
 
 def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
     if enable_graph_kernel:
         context.set_context(jit_config={"jit_level": "O1"})
-        context.set_context(graph_kernel_flags="--enable_cluster_ops=GroupedMatmul")
+        context.set_context(graph_kernel_flags="--enable_cluster_ops=GroupedMatmul,Reshape")
     else:
         context.set_context(jit_config={"jit_level": "O0"})
     net_obj = net()
