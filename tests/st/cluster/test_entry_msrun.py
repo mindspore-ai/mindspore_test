@@ -374,3 +374,14 @@ def test_msrun_msn_dump_cgn_metadata():
     assert "node_id" in json_data[0]["device"][0]
     assert "rank_id" in json_data[0]["device"][0]
     assert "role" in json_data[0]["device"][0]
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+def test_mp_cluster():
+    """
+    Feature: initialize cluster with multiprocssing module.
+    Description: initialize cluster with multiprocssing module.
+    Expectation: All workers are successfully spawned and running communication op.
+    """
+    return_code = os.system("python test_mp_cluster.py")
+    assert return_code == 0
