@@ -27,7 +27,6 @@ OPS_API TensorStorageInfoPtrList TransposeStridesCalc(const std::vector<int64_t>
                                                       const std::vector<int64_t> &dims);
 OPS_API TensorStorageInfoPtrList TransposeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                         const std::vector<int64_t> &dims);
-OPS_API TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

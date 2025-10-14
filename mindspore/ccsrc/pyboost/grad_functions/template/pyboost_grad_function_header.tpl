@@ -24,7 +24,6 @@
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
-${include_op_header}
 
 namespace mindspore::runtime {
 namespace {

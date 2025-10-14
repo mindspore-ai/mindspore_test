@@ -23,7 +23,6 @@ namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList TransposeViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                             const std::vector<int64_t> &dims);
-OPS_API TensorStorageInfoPtrList TransposeViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_VIEW_STRIDES_CALC_H

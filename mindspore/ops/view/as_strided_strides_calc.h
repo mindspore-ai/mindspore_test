@@ -25,8 +25,6 @@ OPS_API TensorStorageInfoPtrList AsStridedBasicTypeCalc(const mindspore::tensor:
                                                         const std::vector<int64_t> &size,
                                                         const std::vector<int64_t> &stride,
                                                         const int64_t &storage_offset);
-OPS_API TensorStorageInfoPtrList AsStridedCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
 }  // namespace ops
 }  // namespace mindspore
 

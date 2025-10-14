@@ -24,8 +24,6 @@ namespace ops {
 OPS_API TensorStorageInfoPtrList SliceBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                     const std::vector<int64_t> &begin,
                                                     const std::vector<int64_t> &size);
-OPS_API TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
 }  // namespace ops
 }  // namespace mindspore
 

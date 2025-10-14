@@ -28,8 +28,6 @@ OPS_API TensorStorageInfoPtrList ChunkStridesCalc(const std::vector<int64_t> &ol
 
 OPS_API TensorStorageInfoPtrList ChunkBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                     const int64_t &chunks, const int64_t &dim);
-OPS_API TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
 }  // namespace ops
 }  // namespace mindspore
 

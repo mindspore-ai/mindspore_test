@@ -11,5 +11,3 @@ real_view:
       disable: True
     dispatch:
         enable: True
-        GPU: None
-        CPU: None

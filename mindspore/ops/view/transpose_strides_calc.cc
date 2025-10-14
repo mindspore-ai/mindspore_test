@@ -61,16 +61,4 @@ TensorStorageInfoPtrList TransposeBasicTypeCalc(const mindspore::tensor::TensorP
                                           dims.size(), " and ", x_rank, "!"));
   return TransposeStridesCalc(x_shape, input_tensor->stride(), input_tensor->storage_info(), dims);
 }
-
-TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
-    return {};
-  }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);
-  auto new_storage_info = TransposeBasicTypeCalc(tensor, dims);
-  return {new_storage_info};
-}
-
-REG_VIEW_STRIDES_CALC_FUN(Transpose, TransposeCalc);
 }  // namespace mindspore::ops

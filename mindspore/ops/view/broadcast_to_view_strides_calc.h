@@ -23,7 +23,6 @@ namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList BroadcastToViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                               const std::vector<int64_t> &shape);
-OPS_API TensorStorageInfoPtrList BroadcastToViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

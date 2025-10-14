@@ -29,7 +29,6 @@
 #include "ir/dtype/tensor_type.h"
 #include "mindspore/ccsrc/include/common/pynative/abstract_converter.h"
 ${ops_inc}
-${include_op_header}
 
 namespace mindspore {
 namespace pynative {

@@ -24,7 +24,6 @@ namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList SqueezeBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                       const std::vector<int64_t> &axis);
-OPS_API TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_VIEW_SQUEEZE_STRIDES_CALC_H_

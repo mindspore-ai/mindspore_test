@@ -27,8 +27,6 @@ OPS_API TensorStorageInfoPtr ReshapeStridesCalc(const std::vector<int64_t> &cur_
                                                 const std::vector<int64_t> &proposed_shape);
 OPS_API TensorStorageInfoPtr ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
                                                   const std::vector<int64_t> &proposed_shape);
-OPS_API TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
 }  // namespace ops
 }  // namespace mindspore
 

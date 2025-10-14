@@ -149,19 +149,4 @@ TensorStorageInfoPtr ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
   return ReshapeStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(),
                             proposed_shape);
 }
-
-TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto proposed_shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  auto new_storage_info = ReshapeBasicTypeCalc(input_tensor, proposed_shape);
-  TensorStorageInfoPtrList storage_info_list;
-  if (new_storage_info) {
-    storage_info_list.push_back(std::move(new_storage_info));
-  }
-  return storage_info_list;
-}
-
-REG_VIEW_STRIDES_CALC_FUN(Reshape, ReshapeCalc);
-
 }  // namespace mindspore::ops

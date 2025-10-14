@@ -91,6 +91,8 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
                 print(op_proto.op_name)
             if op_proto.op_dispatch is None:
                 continue
+            if op_proto.op_view:
+                continue
             op_parser = OpTemplateParser(op_proto)
             op_name_str = op_proto.op_class.name
             if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
@@ -155,6 +157,8 @@ class PyboostOpHeaderGenerator(BaseGenerator):
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
+                continue
+            if op_proto.op_view:
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
@@ -419,19 +423,16 @@ class PyboostViewOpCppGenerator:
             ValueError: If the device is not supported.
         """
         if device == 'ascend':
-            PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_ASCEND_VIEW_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/aclnn/pyboost_impl/auto_generate/"
             self.device_reg_str = "Ascend"
         elif device == 'cpu':
-            PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_CPU_VIEW_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_HEADER_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
             self.device_reg_str = "CPU"
         elif device == 'gpu':
-            PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_GPU_VIEW_CALL_TEMPLATE
             PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_HEADER_TEMPLATE
             PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
@@ -446,61 +447,6 @@ class PyboostViewOpCppGenerator:
         self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
         self.gen_path = gen_path
         self.device = device
-
-    def generate_view_op_cpp_code(self, op_protos, merge_op_header, merge_op_function, ascend_merge_op_inc):
-        """
-        Generate C++ code for view operations in PyBoost.
-
-        This method processes a list of operation prototypes (`op_protos`) and generates C++ code
-        for view operations where `op_view` is set to `True` and the dispatch setting for the target
-        device is `'default'`.
-
-        Args:
-            op_protos (list): A list of operation prototypes to process. Each prototype includes
-                              metadata such as dispatch settings, arguments, and view-specific attributes.
-            merge_op_header (list): A list to store the generated C++ header code for view operations.
-            merge_op_function (list): A list to store the generated C++ source code for view operations.
-        """
-        for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
-                continue
-            if getattr(op_proto.op_dispatch, self.device) != 'default':
-                continue
-            if getattr(op_proto.op_dispatch, self.device) == 'None':
-                continue
-            if not op_proto.op_view or not op_proto.bprop_expander:
-                continue
-
-            op_parser = OpTemplateParser(op_proto)
-            call_args_tensor = op_parser.get_call_args_tensor()
-            call_args = OpTemplateParser.parse_original_call_args(op_proto.op_args)
-            if op_proto.op_view and not check_no_basic_int_type(op_proto.op_args):
-                call_args_with_type = op_parser.parse_call_args_with_types(True)
-            else:
-                call_args_with_type = op_parser.parse_call_args_with_types()
-            storage_calc_str = op_proto.op_class.name
-            _, call_func_outputs = op_parser.generate_pyboost_outputs()
-            call_impl = self.PYBOOST_VIEW_CALL_TEMPLATE.replace(op_name=op_proto.op_class.name,
-                                                                storage_calc=storage_calc_str,
-                                                                call_args=call_args,
-                                                                call_tensors=call_args_tensor,
-                                                                return_values=call_func_outputs,
-                                                                input=call_args[0])
-            customize_include = f'#include "{K.MS_OPS_VIEW_PATH}/{op_proto.op_name}_strides_calc.h"\n'
-            cpp_func_return = _generate_cpp_func_return(op_proto)
-            merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=op_proto.op_name,
-                                                                                  customize_include=customize_include))
-            op_register = self.PYBOOST_REG_OP_TEMPLATE.replace(op_name=op_proto.op_class.name,
-                                                               device=self.device_reg_str,
-                                                               register_custom_kernel="")
-            merge_op_function.append(
-                self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_proto.op_class.name,
-                                                               call_args_with_type=call_args_with_type,
-                                                               return_type=cpp_func_return,
-                                                               call_impl=call_impl,
-                                                               op_register=op_register,
-                                                               device=self.device_reg_str))
-            ascend_merge_op_inc.append(op_proto.op_class.name)
 
 
 class AclnnOpCppCodeGenerator:
@@ -914,16 +860,13 @@ class PyboostOpFunctionGenerator(BaseGenerator):
 
     def __init__(self):
         self.ascend_op_cpp_generator = PyboostOpCppGenerator('ascend')
-        self.ascend_view_op_cpp_generator = PyboostViewOpCppGenerator('ascend')
         self.ascend_aclnn_cpp_generator = AclnnOpCppCodeGenerator('ascend')
         self.ascend_internal_op_cpp_generator = InternalOpCppCodeGenerator('ascend')
 
         self.cpu_op_cpp_generator = PyboostOpCppGenerator('cpu')
-        self.cpu_view_op_cpp_generator = PyboostViewOpCppGenerator('cpu')
         self.cpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('cpu')
 
         self.gpu_op_cpp_generator = PyboostOpCppGenerator('gpu')
-        self.gpu_view_op_cpp_generator = PyboostViewOpCppGenerator('gpu')
         self.gpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('gpu')
 
         self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
@@ -975,9 +918,6 @@ class PyboostOpFunctionGenerator(BaseGenerator):
                                                                     ascend_merge_op_function, ascend_merge_op_inc,
                                                                     hccl_merge_op_header, hccl_merge_op_function,
                                                                     ascend_merge_op_hccl_inc)
-        self.ascend_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, ascend_merge_op_header,
-                                                                    ascend_merge_op_function,
-                                                                    ascend_merge_op_inc)
         self.ascend_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, ascend_merge_op_header,
                                                                    ascend_merge_op_function,
                                                                    ascend_merge_op_inc)
@@ -1028,8 +968,6 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         cpu_merge_op_inc = []
         self.cpu_op_cpp_generator.generate_customize_op_cpp_code(
             op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
-        self.cpu_view_op_cpp_generator.generate_view_op_cpp_code(
-            op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
         self.cpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(
             op_protos, cpu_merge_op_header, cpu_merge_op_function, cpu_merge_op_inc)
         cpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(
@@ -1067,8 +1005,6 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         gpu_merge_op_function = []
         gpu_merge_op_inc = []
         self.gpu_op_cpp_generator.generate_customize_op_cpp_code(
-            op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
-        self.gpu_view_op_cpp_generator.generate_view_op_cpp_code(
             op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
         self.gpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(
             op_protos, gpu_merge_op_header, gpu_merge_op_function, gpu_merge_op_inc)
@@ -1246,6 +1182,8 @@ class PyboostOpRegisterCppCodeGenerator:
         all_functional_names = []
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
+                continue
+            if op_proto.op_view:
                 continue
             op_name_str = op_proto.op_class.name
             if getattr(op_proto.op_dispatch, 'internal_op_ascend') != 'None':

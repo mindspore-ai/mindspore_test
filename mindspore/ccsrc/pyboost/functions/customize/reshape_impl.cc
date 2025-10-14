@@ -16,9 +16,9 @@
 
 #include "mindspore/ccsrc/pyboost/functions/customize/view_impl.h"
 #include "mindspore/ops/view/reshape_strides_calc.h"
-#include "mindspore/ccsrc/pyboost/auto_generate/view.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/core/include/utils/stream_guard.h"
+#include "mindspore/ccsrc/runtime/pynative/op_runner.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_reg.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
@@ -32,7 +32,7 @@ mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &in
   const auto &device_target = GetDeviceTarget();
   if (MS_LIKELY(storage_info)) {
     OpRunStatus::Get().HeterBarrier(device_target);
-    MS_LOG(DEBUG) << "View contiguous Reshape Call start";
+    MS_LOG(DEBUG) << "View Reshape Call start";
     tensor::TensorPtrList outputs;
     // device info
     const auto &device_context = runtime::OpRunner::GetDeviceContext(device_target);
@@ -48,15 +48,20 @@ mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &in
       MS_LOG(DEBUG) << "View device task Reshape end";
     }));
     reshape_grad_func(outputs[0], input, shape);
-    MS_LOG(DEBUG) << "View contiguous Reshape Call end";
+    MS_LOG(DEBUG) << "View Reshape Call end";
     return outputs[0];
   }
 
+  MS_LOG(DEBUG) << "View Contiguous + View Call start";
   const auto contig_tensor = contiguous(input);
-  const auto view_op = CREATE_PYBOOST_OP(View, device_target);
-  auto output = view_op->Call(contig_tensor, shape);
+  auto output = [&contig_tensor, &shape]() {
+    kernel::pyboost::RequireGradGuard require_grad_guard(false);
+    auto output = view(contig_tensor, shape);
+    return output;
+  }();
   IsSafeViewGuard safe_view_guard(false);
   reshape_grad_func(output, contig_tensor, shape);
+  MS_LOG(DEBUG) << "View Contiguous + View Call end";
   return output;
 }
 }  // namespace mindspore::kernel::pyboost

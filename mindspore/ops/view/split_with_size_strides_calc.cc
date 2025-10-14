@@ -23,13 +23,16 @@
 
 namespace mindspore::ops {
 namespace {
-inline static void SplitSizeInputsCheck(const int64_t &output_num, const int64_t &axis,
+inline static void SplitSizeInputsCheck(const std::vector<int64_t> &split_size, const int64_t &axis,
                                         const std::vector<int64_t> &tensor_shape) {
-  if (output_num != tensor_shape[axis]) {
-    MS_EXCEPTION(ValueError) << "For 'SplitWithSize', output_num must be equal with dimIndex, but got " << output_num
-                             << ".";
-    return;
-  }
+  MS_CHECK_VALUE(split_size.size() > 0,
+                 CheckAndConvertUtils::FormatCommMsg("For SplitWithSize, the size of split_size should > 0, but got",
+                                                     split_size.size()));
+  int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
+  MS_CHECK_VALUE(sum_split_size == tensor_shape[axis],
+                 CheckAndConvertUtils::FormatCommMsg("For 'SplitWithSize',  the sum of split_size should be equal to ",
+                                                     tensor_shape[axis], "(input.shape[", axis,
+                                                     "]), but got split_sizes: ", split_size));
 }
 }  // namespace
 
@@ -43,11 +46,7 @@ TensorStorageInfoPtrList SplitWithSizeStridesCalc(const std::vector<int64_t> &cu
   MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCommMsg("For SplitWithSize, rank should > 0, but got", rank));
   const auto ndim = cur_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
-  int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
-  MS_CHECK_VALUE(split_size.size() > 0,
-                 CheckAndConvertUtils::FormatCommMsg("For SplitWithSize, the size of split_size should > 0, but got",
-                                                     split_size.size()));
-  SplitSizeInputsCheck(sum_split_size, wrap_dim, cur_shape);
+  SplitSizeInputsCheck(split_size, wrap_dim, cur_shape);
 
   std::vector<TensorStorageInfoPtr> storage_info_list;
   storage_info_list.reserve(split_size.size());
@@ -78,18 +77,4 @@ TensorStorageInfoPtrList SplitWithSizeBasicTypeCalc(const mindspore::tensor::Ten
   return SplitWithSizeStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(),
                                   split_size, dim);
 }
-
-TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
-    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto split_size = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  return SplitWithSizeBasicTypeCalc(input_tensor, split_size, dim);
-}
-
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(SplitWithSize, SplitWithSizeCalc);
 }  // namespace mindspore::ops

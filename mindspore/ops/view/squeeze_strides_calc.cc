@@ -71,17 +71,4 @@ TensorStorageInfoPtrList SqueezeBasicTypeCalc(const mindspore::tensor::TensorPtr
 
   return newStorageInfoList;
 }
-
-TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::Tensor>() ||
-      !inputs[1]->isa<ValueSequence>()) {
-    return {};
-  }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor);
-  const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
-  return SqueezeBasicTypeCalc(tensor, axis);
-}
-
-REG_VIEW_STRIDES_CALC_FUN(Squeeze, SqueezeCalc);
 }  // namespace mindspore::ops

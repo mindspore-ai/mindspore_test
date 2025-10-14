@@ -77,18 +77,4 @@ TensorStorageInfoPtrList SliceExtBasicTypeCalc(const mindspore::tensor::TensorPt
   return SliceExtStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim, start,
                              end, step);
 }
-
-TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-
-  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto start = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto end = GetValue<int64_t>(inputs[kInputIndex3]);
-  auto step = GetValue<int64_t>(inputs[kInputIndex4]);
-
-  return SliceExtBasicTypeCalc(input_tensor, dim, start, end, step);
-}
-
-REG_VIEW_STRIDES_CALC_FUN(SliceExt, SliceExtCalc);
 }  // namespace mindspore::ops

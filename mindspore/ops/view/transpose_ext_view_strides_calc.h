@@ -27,7 +27,6 @@ OPS_API TensorStorageInfoPtrList TransposeExtViewStridesCalc(const std::vector<i
                                                              const int64_t &dim0, const int64_t &dim1);
 OPS_API TensorStorageInfoPtrList TransposeExtViewBasicTypeCalc(const mindspore::tensor::TensorPtr &input_tensor,
                                                                const int64_t &dim0, const int64_t &dim1);
-OPS_API TensorStorageInfoPtrList TransposeExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 }  // namespace ops
 }  // namespace mindspore
 

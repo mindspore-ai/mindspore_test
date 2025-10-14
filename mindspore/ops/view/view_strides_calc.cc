@@ -38,11 +38,4 @@ TensorStorageInfoPtrList ViewBasicTypeCalc(const tensor::TensorPtr &input_tensor
   MS_EXCEPTION_IF_NULL(input_tensor);
   return ViewStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), shape);
 }
-
-TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  return ViewBasicTypeCalc(input_tensor, shape);
-}
 }  // namespace mindspore::ops

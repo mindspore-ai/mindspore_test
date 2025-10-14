@@ -25,6 +25,7 @@
 #include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "mindspore/ops/ops_utils/memory_overlap.h"
 
 namespace mindspore {
 namespace kernel {
@@ -73,7 +74,8 @@ tensor::TensorPtr InplaceCopyD2D(const std::shared_ptr<OpRunner> &op, const Tens
     auto device_context = op->device_context();
     // Malloc for input tensors
     PyBoostUtils::MallocOpInputs(device_context, dst, src);
-
+    // Check Memory Partial Overlap
+    CheckMemory({src}, {dst});
     // Inplace output need be front
     LAUNCH_ACLNN(aclnnInplaceCopy, device_context, op->stream_id(), dst, src);
     MS_LOG(DEBUG) << "Launch InplaceCopy D2D end";

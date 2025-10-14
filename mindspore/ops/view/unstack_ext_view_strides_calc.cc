@@ -30,11 +30,4 @@ TensorStorageInfoPtrList UnstackExtViewBasicTypeCalc(const tensor::TensorPtr &x_
                                                  std::to_string(storage_info_list.size()));
   return storage_info_list;
 }
-
-TensorStorageInfoPtrList UnstackExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  return UnstackCalc(prim, inputs);
-}
-
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(UnstackExtView, UnstackExtViewCalc);
-
 }  // namespace mindspore::ops

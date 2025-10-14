@@ -41,15 +41,4 @@ TensorStorageInfoPtrList NarrowBasicTypeCalc(const mindspore::tensor::TensorPtr 
                    ") exceeds dimension size (" + std::to_string(dim_value) + ").");
   return SliceExtBasicTypeCalc(input_tensor, dim, new_start, new_start + length, 1);
 }
-
-TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto start = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto length = GetValue<int64_t>(inputs[kInputIndex3]);
-  return NarrowBasicTypeCalc(input_tensor, dim, start, length);
-}
-
-REG_VIEW_STRIDES_CALC_FUN(Narrow, NarrowCalc);
 }  // namespace mindspore::ops

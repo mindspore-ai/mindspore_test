@@ -57,19 +57,4 @@ TensorStorageInfoPtrList TransposeExtViewBasicTypeCalc(const mindspore::tensor::
   return TransposeExtViewStridesCalc(input_tensor->shape(), input_tensor->stride(), input_tensor->storage_info(), dim0,
                                      dim1);
 }
-
-TensorStorageInfoPtrList TransposeExtViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  constexpr size_t kTransposeExtCalcInputsNum = 3;
-  if (CheckInputsNull(inputs, kTransposeExtCalcInputsNum) || !inputs[kIndex0]->isa<tensor::Tensor>() ||
-      !inputs[kIndex1]->isa<IntegerImm>() || !inputs[kIndex2]->isa<IntegerImm>()) {
-    return {};
-  }
-  auto tensor = inputs[kIndex0]->cast<tensor::TensorPtr>();
-  auto dim0 = GetValue<int64_t>(inputs[kIndex1]);
-  auto dim1 = GetValue<int64_t>(inputs[kIndex2]);
-  auto new_storage_info = TransposeExtViewBasicTypeCalc(tensor, dim0, dim1);
-  return {new_storage_info};
-}
-
-REG_VIEW_STRIDES_CALC_FUN(TransposeExtView, TransposeExtViewCalc);
 }  // namespace mindspore::ops
