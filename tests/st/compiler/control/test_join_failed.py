@@ -233,6 +233,27 @@ def test_type_join_error_msg():
     assert "if input_x > 1:" in error_info
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_type_join_difftype():
+    """
+    Feature: Control flow with different type in two branches.
+    Description: Type Float32 cannot join with Type: Int32.
+    Expectation: Catch exception, no core dump.
+    """
+    @jit
+    def func(x, y, input1, input2):
+        if x > y:
+            out = input1 + input1
+        else:
+            out = input2 + input2
+        return out
+
+    with pytest.raises(TypeError) as exec_info:
+        func(Tensor(1), Tensor(0), Tensor(1, ms.float32), ms.Tensor(1, ms.int32))
+    error_info = str(exec_info.value)
+    assert "Cannot join the return values of different branches" in error_info
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_type_join_mstype():
     """
