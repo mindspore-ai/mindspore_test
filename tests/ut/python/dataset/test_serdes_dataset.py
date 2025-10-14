@@ -24,8 +24,8 @@ import numpy as np
 
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
-import mindspore.dataset.transforms as transforms
-import mindspore.dataset.vision as vision
+from mindspore.dataset import transforms
+from mindspore.dataset import vision
 from mindspore import log as logger
 from mindspore.dataset.vision import Border, Inter
 from util import config_get_set_num_parallel_workers, config_get_set_seed
@@ -99,7 +99,7 @@ def test_serdes_imagefolder_dataset(cleanup_tmp_file):
         np.testing.assert_array_equal(item3['label'], item4['label'])
         num_samples += 1
 
-    logger.info("Number of data in data1: {}".format(num_samples))
+    logger.info(f"Number of data in data1: {num_samples}")
     assert num_samples == 11
 
     # Restore configuration
@@ -146,7 +146,7 @@ def test_serdes_mnist_dataset(cleanup_tmp_file):
         np.testing.assert_array_equal(data1['label'], data3['label'])
         num += 1
 
-    logger.info("mnist total num samples is {}".format(str(num)))
+    logger.info(f"mnist total num samples is {num}")
     assert num == 10
 
     # Restore configuration
@@ -287,6 +287,78 @@ def test_serdes_voc_dataset(cleanup_tmp_file):
     # Restore configuration
     ds.config.set_seed(original_seed)
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
+
+
+@pytest.mark.parametrize("cleanup_tmp_file", ["kitti_dataset*.json"], indirect=True)
+def test_serdes_kitti_dataset(cleanup_tmp_file):
+    """
+    Feature: Dataset serialization and deserialization.
+    Description: Test serializing and deserializing KittiDataset.
+    Expectation: The samples in the original dataset and the deserialized one are the same.
+    """
+    dataset_dir = "../data/dataset/testKITTI"
+    dataset = ds.KITTIDataset(dataset_dir, decode=True, shuffle=False, num_shards=1, shard_id=0)
+    deserilized_dataset = util_check_serialize_deserialize_file(dataset, "kitti_dataset")
+
+    # Iterate and compare the data in the original dataset against the deserialized one.
+    for sample1, sample2 in zip(dataset.create_tuple_iterator(num_epochs=1, output_numpy=True),
+                                deserilized_dataset.create_tuple_iterator(num_epochs=1, output_numpy=True)):
+        for column1, column2 in zip(sample1, sample2):
+            np.testing.assert_array_equal(column1, column2)
+
+
+@pytest.mark.parametrize("cleanup_tmp_file", ["lj_speech_dataset*.json"], indirect=True)
+def test_serdes_lj_speech_dataset(cleanup_tmp_file):
+    """
+    Feature: Dataset serialization and deserialization.
+    Description: Test serializing and deserializing LJSpeechDataset.
+    Expectation: The samples in the original dataset and the deserialized one are the same.
+    """
+    dataset_dir = "../data/dataset/testLJSpeechData"
+    dataset = ds.LJSpeechDataset(dataset_dir, shuffle=False, num_shards=1, shard_id=0)
+    deserilized_dataset = util_check_serialize_deserialize_file(dataset, "lj_speech_dataset")
+
+    # Iterate and compare the data in the original dataset against the deserialized one.
+    for sample1, sample2 in zip(dataset.create_tuple_iterator(num_epochs=1, output_numpy=True),
+                                deserilized_dataset.create_tuple_iterator(num_epochs=1, output_numpy=True)):
+        for column1, column2 in zip(sample1, sample2):
+            np.testing.assert_array_equal(column1, column2)
+
+
+@pytest.mark.parametrize("cleanup_tmp_file", ["sst2_dataset*.json"], indirect=True)
+def test_serdes_sst2_dataset(cleanup_tmp_file):
+    """
+    Feature: Dataset serialization and deserialization.
+    Description: Test serializing and deserializing SST2Dataset.
+    Expectation: The samples in the original dataset and the deserialized one are the same.
+    """
+    dataset_dir = "../data/dataset/testSST2"
+    dataset = ds.SST2Dataset(dataset_dir, shuffle=False, num_shards=1, shard_id=0)
+    deserilized_dataset = util_check_serialize_deserialize_file(dataset, "sst2_dataset")
+
+    # Iterate and compare the data in the original dataset against the deserialized one.
+    for sample1, sample2 in zip(dataset.create_tuple_iterator(num_epochs=1, output_numpy=True),
+                                deserilized_dataset.create_tuple_iterator(num_epochs=1, output_numpy=True)):
+        for column1, column2 in zip(sample1, sample2):
+            np.testing.assert_array_equal(column1, column2)
+
+
+@pytest.mark.parametrize("cleanup_tmp_file", ["wiki_text_dataset*.json"], indirect=True)
+def test_serdes_wiki_text_dataset(cleanup_tmp_file):
+    """
+    Feature: Dataset serialization and deserialization.
+    Description: Test serializing and deserializing WikiTextDataset.
+    Expectation: The samples in the original dataset and the deserialized one are the same.
+    """
+    dataset_dir = "../data/dataset/testWikiText"
+    dataset = ds.WikiTextDataset(dataset_dir, shuffle=False, num_shards=1, shard_id=0)
+    deserilized_dataset = util_check_serialize_deserialize_file(dataset, "wiki_text_dataset")
+
+    # Iterate and compare the data in the original dataset against the deserialized one.
+    for sample1, sample2 in zip(dataset.create_tuple_iterator(num_epochs=1, output_numpy=True),
+                                deserilized_dataset.create_tuple_iterator(num_epochs=1, output_numpy=True)):
+        for column1, column2 in zip(sample1, sample2):
+            np.testing.assert_array_equal(column1, column2)
 
 
 @pytest.mark.parametrize("cleanup_tmp_file", ["zip_dataset_pipeline*.json"], indirect=True)
@@ -1024,7 +1096,7 @@ def test_serdes_different_callable_object():
         return x
 
     # lambda function
-    fun2 = lambda x: x + 1
+    fun2 = lambda x: x + 1  # pylint: disable=unnecessary-lambda-assignment
 
     # callable class
     class Fun3:
@@ -1089,7 +1161,7 @@ def util_check_serialize_deserialize_file(data_orig, filename):
 def validate_jsonfile(filepath):
     try:
         file_exist = os.path.exists(filepath)
-        with open(filepath, 'r') as jfile:
+        with open(filepath, 'r', encoding='utf-8') as jfile:
             loaded_json = json.load(jfile)
     except IOError:
         return False
@@ -1103,6 +1175,10 @@ if __name__ == '__main__':
     test_serdes_celeba_dataset(cleanup_tmp_file)
     test_serdes_csv_dataset(cleanup_tmp_file)
     test_serdes_voc_dataset(cleanup_tmp_file)
+    test_serdes_kitti_dataset(cleanup_tmp_file)
+    test_serdes_lj_speech_dataset(cleanup_tmp_file)
+    test_serdes_sst2_dataset(cleanup_tmp_file)
+    test_serdes_wiki_text_dataset(cleanup_tmp_file)
     test_serdes_zip_dataset(cleanup_tmp_file)
     test_serdes_random_crop()
     test_serdes_pyop_fill_value_parm()
@@ -1119,6 +1195,7 @@ if __name__ == '__main__':
     test_serdes_uniform_augment(cleanup_tmp_file)
     test_serdes_complex1_pipeline(cleanup_tmp_file)
     test_serdes_fill(cleanup_tmp_file)
-    test_serdes_not_implemented_op_exception(cleanup_tmp_file)
-    test_serdes_exception()
     test_serdes_padded_batch(cleanup_tmp_file)
+    test_serdes_exception()
+    test_serdes_not_implemented_op_exception(cleanup_tmp_file)
+    test_serdes_different_callable_object()
