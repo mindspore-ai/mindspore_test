@@ -292,5 +292,69 @@ def test_CustomOpBuilder_exception_3():
             assert "neither in func_module nor in so_module" in str(e)
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_aclnn_batch_norm():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    ms.set_context(save_graphs=False, save_graphs_path="./graphs")
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        my_ops = CustomOpBuilder("aclnn_op_1",
+                                 ["kernel_impl/batch_norm.cpp",
+                                  "kernel_impl/module.cpp"],
+                                 backend="Ascend", op_def=["ops_yaml/batch_norm.yaml"],
+                                 build_dir=tmpdirname).load()
+
+        @ms.jit()
+        def func(x, scale, bias, mean, variance):
+            return my_ops.batch_norm(x, scale, bias, mean, variance, False, 0.1, 1e-5)
+
+        x = ms.Tensor((3 * np.ones(16)).reshape(2, 2, 1, 4).astype(np.float32))
+        scale = ms.Tensor(np.ones(2).astype(np.float32))
+        bias = ms.Tensor(np.ones(2).astype(np.float32))
+        mean = ms.Tensor(np.ones(2).astype(np.float32))
+        variance = ms.Tensor(np.ones(2).astype(np.float32))
+
+        expect = np.array([2.99999]).repeat(16, axis=0).astype(np.float32).reshape((2, 2, 1, 4))
+        output = func(x, scale, bias, mean, variance)[0]
+        assert np.allclose(output.asnumpy(), expect, 1e-3, 1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_aclnn_inplace_add():
+    """
+    Feature: CustomOpBuilder.
+    Description: Custom aclnn op.
+    Expectation: success.
+    """
+
+    ms.set_device("Ascend")
+    ms.set_context(save_graphs=False, save_graphs_path="./graphs")
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        my_ops = CustomOpBuilder("aclnn_op_2",
+                                 ["kernel_impl/inplace_add.cpp",
+                                  "kernel_impl/module.cpp"],
+                                 backend="Ascend", op_def=["ops_yaml/inplace_add.yaml"],
+                                 build_dir=tmpdirname).load()
+
+        @ms.jit()
+        def func(x, y):
+            return my_ops.inplace_add(x, y)
+
+        x = np.array([1, 2, 3], dtype=np.float16)
+        y = np.array([4, 5, 6], dtype=np.float16)
+        input_x = ms.Tensor(x)
+        input_y = ms.Tensor(y)
+        func(input_x, input_y)
+        expect = x + y
+        assert np.allclose(input_x.asnumpy(), expect, 1e-3, 1e-3)
+
+
 if __name__ == "__main__":
     test_custom_single_operator()

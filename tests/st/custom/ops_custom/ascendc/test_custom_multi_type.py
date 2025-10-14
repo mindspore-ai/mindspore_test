@@ -35,6 +35,46 @@ def generate_expect_forward_output(x, dim=None, keepdim=False):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_add(context_mode):
+    """
+    Feature: custom op multi type.
+    Description: test function add forward.
+    Expectation: expect correct result.
+    """
+
+    class CustomNet(Cell):
+        def __init__(self):
+            super(CustomNet, self).__init__()
+            aclnn_reg_info = CustomRegOp("aclnnAdd") \
+                .input(0, "self", "required") \
+                .input(1, "other", "required") \
+                .attr("alpha", "required", "int") \
+                .output(0, "out", "required") \
+                .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+                .target("Ascend") \
+                .get_op_info()
+
+            self.custom_add = ops.Custom("aclnnAdd",
+                                         lambda self, other, alpha: self, lambda self, other, alpha: self,
+                                         func_type="aot", bprop=None,
+                                         reg_info=aclnn_reg_info)
+
+        def construct(self, x, y):
+            res = self.custom_add(x, y, 1)
+            return res
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = generate_random_input((2, 3, 4), np.float32)
+    y = generate_random_input((2, 3, 4), np.float32)
+    net = CustomNet()
+    output = net(ms.Tensor(x), ms.Tensor(y))
+    expect = x + y
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
 def test_custom_argmin(context_mode):
     """
     Feature: custom op multi type.
@@ -225,7 +265,6 @@ def test_custom_batch_norm_double_aclnn(context_mode):
     net = CustomNet("aclnnBatchNorm")
     output = net(x, scale, bias, mean, variance)[0]
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
-
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')

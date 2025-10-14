@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import mindspore as ms
 from mindspore import nn, ops, Tensor, context
@@ -7,12 +6,27 @@ import mindspore.common.dtype as mstype
 from mindspore.ops.composite import GradOperation
 import pytest
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def msda_forward_func(value, shape, offset, locations, weight):
+    return ops.multi_scale_deformable_attn_function(value, shape, offset, locations, weight)
+
+
+@test_utils.run_with_cell
+def msda_backward_func(value, shape, offset, locations, weight):
+    return ms.grad(msda_forward_func, (0, 3, 4))(value, shape, offset, locations, weight)
 
 
 class MultiScaleDeformableAttnFunc(nn.Cell):
     def __init__(self, out_shape=None, out_dtype=None):
         super().__init__()
-        custom_msda_ref_info = CustomRegOp("aclnnMultiScaleDeformableAttn") \
+        custom_msda_ref_info = CustomRegOp("aclnnMultiScaleDeformableAttnFunction") \
             .input(0, "value", "required") \
             .input(1, "value_spatial_shapes", "required") \
             .input(2, "value_level_start_index", "required") \
@@ -28,7 +42,7 @@ class MultiScaleDeformableAttnFunc(nn.Cell):
             .target("Ascend") \
             .get_op_info()
 
-        custom_msda_bprop_ref_info = CustomRegOp("aclnnMultiScaleDeformableAttnGrad") \
+        custom_msda_bprop_ref_info = CustomRegOp("aclnnMultiScaleDeformableAttentionGrad") \
             .input(0, "value", "required") \
             .input(1, "spatial_shapes", "required") \
             .input(2, "level_start_index", "required") \
@@ -83,28 +97,20 @@ class MultiScaleDeformableAttnFunc(nn.Cell):
 
 class TestMultiOutput():
     def setup_method(self):
-        self.input_data_path = "/home/jiaorui/custom-multi-output/msdaData/msdaData"
-        self.expect_data_path = "/home/jiaorui/custom-multi-output/baseline-result"
-        self.value = Tensor(np.load(os.path.join(self.input_data_path, "value.npy"))).astype(ms.float32)
-        self.shapes = Tensor(np.load(os.path.join(self.input_data_path, "spatial_shapes.npy"))).astype(ms.int32)
-        self.level_start_index = Tensor(
-            np.load(os.path.join(self.input_data_path, "level_start_index.npy"))).astype(ms.int32)
-        self.sampling_locations = Tensor(
-            np.load(os.path.join(self.input_data_path, "sampling_locations.npy"))).astype(ms.float32)
-        self.attention_weights = Tensor(
-            np.load(os.path.join(self.input_data_path, "attention_weights.npy"))).astype(ms.float32)
+        self.value = Tensor(generate_random_input((1, 10000, 4, 32), np.float32))
+        self.shapes = Tensor(np.array([[1, 2]], dtype=np.int64))
+        self.level_start_index = Tensor(np.array([1], dtype=np.int64))
+        self.sampling_locations = Tensor(generate_random_input((1, 32, 4, 1, 8, 2), np.float32))
+        self.attention_weights = Tensor(generate_random_input((1, 32, 4, 1, 8), np.float32))
 
     def compare_out(self, grad_value, grad_sampling_loc, grad_attn_weight):
-        base_grad_value = np.load(os.path.join(self.expect_data_path, "grad_value.npy"))
-        assert np.allclose(grad_value.asnumpy(), base_grad_value)
+        output = msda_backward_func(self.value, self.shapes, self.level_start_index, self.sampling_locations,
+                                    self.attention_weights)
+        assert np.allclose(grad_value.asnumpy(), output[0].asnumpy())
+        assert np.allclose(grad_sampling_loc.asnumpy(), output[1].asnumpy())
+        assert np.allclose(grad_attn_weight.asnumpy(), output[2].asnumpy())
 
-        base_grad_samling_loc = np.load(os.path.join(self.expect_data_path, "grad_sampling_loc.npy"))
-        assert np.allclose(grad_sampling_loc.asnumpy(), base_grad_samling_loc)
-
-        base_grad_attn_weight = np.load(os.path.join(self.expect_data_path, "grad_attn_weight.npy"))
-        assert np.allclose(grad_attn_weight.asnumpy(), base_grad_attn_weight)
-
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
     def test_cpp_infer_shape_type(self, context_mode):
         """
@@ -113,13 +119,14 @@ class TestMultiOutput():
         Expectation: the result match with numpy result
         """
         context.set_context(mode=context_mode)
+        ms.context.set_context(deterministic="ON")
         msda_net = MultiScaleDeformableAttnFunc()
         grad = GradOperation(get_all=True, sens_param=False)(msda_net)
         grad_value, _, _, grad_sampling_loc, grad_attn_weight = grad(
             self.value, self.shapes, self.level_start_index, self.sampling_locations, self.attention_weights)
         self.compare_out(grad_value, grad_sampling_loc, grad_attn_weight)
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
     def test_python_infer_shape_type(self, context_mode):
         """
@@ -128,6 +135,7 @@ class TestMultiOutput():
         Expectation: the result match with numpy result
         """
         context.set_context(mode=context_mode)
+        ms.context.set_context(deterministic="ON")
         msda_net = MultiScaleDeformableAttnFunc(out_shape=lambda v_s, vss_s, vlsi_s, sl_s, aw_s, go_s: [v_s,
                                                                                                         sl_s,
                                                                                                         [sl_s[0],
@@ -141,7 +149,7 @@ class TestMultiOutput():
             self.value, self.shapes, self.level_start_index, self.sampling_locations, self.attention_weights)
         self.compare_out(grad_value, grad_sampling_loc, grad_attn_weight)
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
     def test_cpp_infer_shape_python_infer_type(self, context_mode):
         """
@@ -150,13 +158,14 @@ class TestMultiOutput():
         Expectation: the result match with numpy result
         """
         context.set_context(mode=context_mode)
+        ms.context.set_context(deterministic="ON")
         msda_net = MultiScaleDeformableAttnFunc(None, [mstype.float32, mstype.float32, mstype.float32])
         grad = GradOperation(get_all=True, sens_param=False)(msda_net)
         grad_value, _, _, grad_sampling_loc, grad_attn_weight = grad(
             self.value, self.shapes, self.level_start_index, self.sampling_locations, self.attention_weights)
         self.compare_out(grad_value, grad_sampling_loc, grad_attn_weight)
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
     def test_python_infer_shape_cpp_infer_type(self, context_mode):
         """
@@ -165,6 +174,7 @@ class TestMultiOutput():
         Expectation: the result match with numpy result
         """
         context.set_context(mode=context_mode)
+        ms.context.set_context(deterministic="ON")
         msda_net = MultiScaleDeformableAttnFunc(out_shape=lambda v_s, vss_s, vlsi_s, sl_s, aw_s, go_s: [v_s,
                                                                                                         sl_s,
                                                                                                         [sl_s[0],

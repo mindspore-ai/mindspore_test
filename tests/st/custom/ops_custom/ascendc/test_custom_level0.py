@@ -17,6 +17,7 @@ import pytest
 import os
 import shutil
 import tempfile
+import json
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore as ms
@@ -26,6 +27,8 @@ import mindspore.ops as ops
 from mindspore.ops import DataType, CustomRegOp
 from mindspore.ops import operations as P
 import mindspore.common.dtype as mstype
+from mindspore import Profiler
+from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics
 
 
 class CustomNet(Cell):
@@ -121,6 +124,7 @@ def compiler_cache():
     shutil.rmtree(temp_dir, ignore_errors=True)
     os.environ.pop("MS_COMPILER_CACHE_PATH", None)
     print(f"[TEARDOWN] Removed temp dir and unset MS_COMPILER_CACHE_PATH")
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -260,3 +264,93 @@ def test_custom_mul_aclop(context_mode):
     expect_out = (x + y) * y - z
     out = net(Tensor(x), Tensor(y), Tensor(z))
     assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_mul_dump(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for dump
+    Expectation: the result match with numpy result
+    """
+
+    def validate_dump_files(dump_path):
+
+        if not os.path.isdir(dump_path):
+            raise AssertionError(f"Dump directory not found: {dump_path}")
+
+        files = [f for f in os.listdir(dump_path) if f.endswith(".npy")]
+        if not files:
+            raise AssertionError("No dump .npy files found.")
+
+        assert len(files) == 9
+        for f in files:
+            filepath = os.path.join(dump_path, f)
+            if os.path.getsize(filepath) == 0:
+                raise AssertionError(f"Empty dump file: {filepath}")
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+        dump_config_path = os.path.join(tmp_dir, 'custom_dump_config.json')
+        dump_config = {
+            "common_dump_settings": {
+                "op_debug_mode": 0,
+                "dump_mode": 0,
+                "path": tmp_dir,
+                "net_name": "Custom",
+                "iteration": "0",
+                "saved_data": "tensor",
+                "input_output": 0,
+                "kernels": [],
+                "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
+                "statistic_category": ["max", "min", "l2norm"]
+
+            },
+            "e2e_dump_settings": {
+                "enable": True,
+                "trans_flag": True,
+                "stat_calc_mode": "host"
+            }
+        }
+
+        with open(dump_config_path, 'w') as f:
+            json.dump(dump_config, f, indent=2)
+
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+
+        x = np.ones([8, 2048]).astype(np.float16)
+        y = np.ones([8, 2048]).astype(np.float16)
+        z = np.random.rand(8, 2048).astype(np.float16)
+        net = CustomNet("aclnnMul", lambda x, _: x, None)
+        expect_out = (x + y) * y - z
+        out = net(Tensor(x), Tensor(y), Tensor(z))
+        assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+        validate_dump_files(os.path.join(tmp_dir, "rank_0", "Custom", "0", "0"))
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_mul_profiler(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for profiling
+    Expectation: the result match with numpy result
+    """
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+        profiler = Profiler(profiler_level=ProfilerLevel.Level0,
+                            activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+                            aic_metrics=AicoreMetrics.AiCoreNone, output_path=tmp_dir)
+        x = np.ones([8, 2048]).astype(np.float16)
+        y = np.ones([8, 2048]).astype(np.float16)
+        z = np.random.rand(8, 2048).astype(np.float16)
+        net = CustomNet("aclnnMul", lambda x, _: x, None)
+        expect_out = (x + y) * y - z
+        out = net(Tensor(x), Tensor(y), Tensor(z))
+        profiler.analyse()
+        assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
