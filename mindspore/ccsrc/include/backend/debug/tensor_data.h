@@ -99,9 +99,7 @@ typedef enum DbgDataType : unsigned int {
   DT_INT4 = 48,
 
   // slice type
-  DT_SLICE = 49,
-
-  DT_UINT1 = 50  // uint1
+  DT_SLICE = 49
 } DbgDataType;
 
 class TensorData {
@@ -216,7 +214,7 @@ class TensorData {
       {DT_BOOL, "bool"},         {DT_INT8, "int8"},       {DT_INT16, "int16"},     {DT_INT32, "int32"},
       {DT_INT64, "int64"},       {DT_UINT8, "uint8"},     {DT_UINT16, "uint16"},   {DT_UINT32, "uint32"},
       {DT_UINT64, "uint64"},     {DT_FLOAT16, "float16"}, {DT_FLOAT32, "float32"}, {DT_FLOAT64, "float64"},
-      {DT_BFLOAT16, "bfloat16"}, {DT_INT4, "int4"},       {DT_UINT1, "uint1"}};
+      {DT_BFLOAT16, "bfloat16"}, {DT_INT4, "int4"}};
     auto iter_type = kDbgDataTypeToStringMap.find(data_type_);
     if (iter_type == kDbgDataTypeToStringMap.end()) {
       return std::string();
@@ -412,9 +410,6 @@ class TensorData {
     } else if (type_name_lower == "") {
       this->data_type_ = DbgDataType::DT_UNDEFINED;
       this->data_type_size_ = 0;
-    } else if (type_name_lower == "uint1") {
-      this->data_type_ = DbgDataType::DT_UINT1;
-      this->data_type_size_ = sizeof(uint8_t) / kUint1NumPerByte;
     } else {
       if (!ConvertNpyStringToDbgType(type_name_lower)) {
         MS_LOG(EXCEPTION) << "Unexpected type name: " << type_name;

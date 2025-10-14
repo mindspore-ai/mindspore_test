@@ -456,23 +456,6 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
   }
 }
 
-void E2eDump::DumpParameters(const session::KernelGraph *graph, const std::string &dump_path,
-                             const Debugger *debugger) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  if (!dump_json_parser.OutputNeedDump()) {
-    return;
-  }
-  MS_VLOG(VL_DUMP) << "Start e2e dump parameters";
-  bool trans_flag = dump_json_parser.trans_flag();
-
-  // dump parameters
-  const auto &parameters = graph->inputs();
-  for (auto &item : parameters) {
-    DumpSingleAnfNode(item, kParameterOutputIndex, dump_path, trans_flag, debugger);
-  }
-}
-
 void E2eDump::DumpConstantData(const session::KernelGraph *graph, uint32_t rank_id, const Debugger *debugger) {
   MS_EXCEPTION_IF_NULL(graph);
   auto &dump_json_parser = DumpJsonParser::GetInstance();
