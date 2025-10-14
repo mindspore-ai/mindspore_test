@@ -39,6 +39,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
+#include "include/runtime/utils/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -1552,7 +1553,9 @@ void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node
 void DataPrepareActor::PreprocessBeforePrepareData() const {
   // Try to defrag memory.
   auto defrag_memory_step_freq = GetDefragMemoryStepFreq();
-  if (++execution_count_ % defrag_memory_step_freq == 0) {
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+  if (!runtime_conf_instance->GetEnableKernelLaunchCapture() && ++execution_count_ % defrag_memory_step_freq == 0) {
     std::set<const DeviceContext *> defrag_memory_contexts;
     for (auto &device_context : graph_compiler_info_->device_contexts_) {
       MS_EXCEPTION_IF_NULL(device_context);
