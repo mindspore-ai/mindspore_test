@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PYBIND_API_STORAGE_PY_H
-#define MINDSPORE_CCSRC_PYBIND_API_STORAGE_PY_H
+#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_PY_H
+#define MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_PY_H
 
 #include <Python.h>
 #include "pybind11/pybind11.h"
-#include "pybind_api/storage.h"
+#include "pybind_api/ir/tensor/storage/storage.h"
 
 namespace mindspore {
 
@@ -33,4 +33,4 @@ inline const Storage &StoragePy_Unpack(PyObject *obj) { return StoragePy_Unpack(
 
 PyObject *CreateStorageObj(const Storage &storage);
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PYBIND_API_STORAGE_PY_H
+#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_PY_H

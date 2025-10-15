@@ -16,7 +16,7 @@
 
 #include <utility>
 #include <vector>
-#include "pybind_api/storage_py.h"
+#include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "include/common/utils/exception.h"
 #include "include/common/pybind_api/api_register.h"
 

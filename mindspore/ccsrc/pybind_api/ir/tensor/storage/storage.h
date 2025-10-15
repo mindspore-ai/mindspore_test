@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
-#define MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
+#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_H
+#define MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_H
 
-#include "pybind_api/storage_base.h"
+#include "pybind_api/ir/tensor/storage/storage_base.h"
 #include <string>
 #include <memory>
 #include <unordered_map>
@@ -41,4 +41,4 @@ class Storage {
   StorageBasePtr storage_base_;
 };
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_H
+#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_H

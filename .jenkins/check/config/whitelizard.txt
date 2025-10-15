@@ -191,7 +191,7 @@ mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_transfer.cc:min
 mindspore/mindspore/ccsrc/frontend/parallel/graph_util/graph_utils.cc:mindspore::parallel::ReplaceOpInput
 mindspore/mindspore/python/mindspore/ops/_utils/utils.py:get_broadcast_shape
 mindspore/mindspore/ccsrc/pybind_api/ir/dtype_py.cc:mindspore::RegTyping
-mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc:mindspore::tensor::RegTensorPyFunction
+mindspore/mindspore/ccsrc/pybind_api/ir/tensor/tensor_py_reg.cc:mindspore::tensor::RegTensorPyFunction
 mindspore/mindspore/ops/kernel/cpu/native/eltwise_grad_cpu_kernel.cc:mindspore::kernel::EltWiseGradCpuTypeFunc<T>::InitFunc
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
 mindspore/mindspore/python/mindspore/common/api.py:_convert_python_data

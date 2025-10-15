@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
-#define MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
+#ifndef MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_BASE_H
+#define MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_BASE_H
 
 #include <string>
 #include <memory>
@@ -42,4 +42,4 @@ class StorageBase {
 };
 using StorageBasePtr = std::shared_ptr<StorageBase>;
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_FRONTEND_IR_STORAGE_BASE_H
+#endif  // MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_STORAGE_STORAGE_BASE_H
