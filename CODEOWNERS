@@ -11,6 +11,7 @@
 
 # The maintainers of mindspore/ccsrc.
 /mindspore/ccsrc/backend/ @limingqi107
+/mindspore/ccsrc/backend/ge_backend/dump/ @DavidFFFan
 /mindspore/ccsrc/backend/ms_backend/graph_fusion/ @gaoxiong1
 /mindspore/ccsrc/cluster/ @ZPaC
 /mindspore/ccsrc/cmake/ @nicholas_yhr
@@ -25,7 +26,9 @@
 /mindspore/ccsrc/include/utils/expander @gaoxiong1
 /mindspore/ccsrc/minddata/ @jonyguo
 /mindspore/ccsrc/plugin/ @limingqi107
+/mindspore/ccsrc/plugin/ascend/graph_optimizer/gpto/ @zhangzhen
 /mindspore/ccsrc/plugin/ascend/graph_optimizer/pass/ir_fusion_infer/ @liulili-huawei
+/mindspore/ccsrc/plugin/ascend/profiler/ @tangmengcheng
 /mindspore/ccsrc/plugin/ascend/res_manager/error_manager/ @fary86
 /mindspore/ccsrc/plugin/ascend/res_manager/mbuf_manager/tensorprint_utils.* @fary86
 /mindspore/ccsrc/plugin/ascend/res_manager/mbuf_manager/tensorreport_utils.* @fary86
@@ -33,8 +36,10 @@
 /mindspore/ccsrc/plugin/ascend/res_manager/stream_manager/ @ZPaC
 /mindspore/ccsrc/plugin/ascend/res_manager/mem_manager/ @ZPaC
 /mindspore/ccsrc/plugin/ascend/res_manager/event/ @ZPaC
+/mindspore/ccsrc/plugin/ascend/stress_detect/ @fary86
 /mindspore/ccsrc/plugin/cpu/res_manager/collective/ @ZPaC
 /mindspore/ccsrc/plugin/cpu/res_manager/mem_manager/ @ZPaC
+/mindspore/ccsrc/plugin/cpu/profiler/ @tangmengcheng
 /mindspore/ccsrc/plugin/gpu/res_manager/collective/ @ZPaC
 /mindspore/ccsrc/plugin/gpu/res_manager/mem_manager/ @ZPaC
 /mindspore/ccsrc/plugin/gpu/res_manager/event_manager/ @ZPaC
