@@ -14,9 +14,15 @@
 # ============================================================================
 """Dynamic Monitor proxy"""
 import os
+from enum import Enum
 from mindspore import log as logger
 from mindspore.profiler.common.constant import DynoMode
 from mindspore.communication import get_rank
+
+
+class ProfilerStatus(Enum):
+    STOP = 0
+    START = 1
 
 
 class DynamicProfilerUtils:
