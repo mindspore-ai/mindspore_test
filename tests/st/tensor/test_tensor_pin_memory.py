@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import Tensor
@@ -22,13 +23,14 @@ class Net(ms.nn.Cell):
         return x.pin_memory()
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_tensor_pin_memory():
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+def test_tensor_pin_memory(mode):
     """
     Feature: copy tensor to pin memory.
     Description: test tensor.pin_memory() with a cpu tensor.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    ms.context.set_context(mode=mode)
     x = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
     assert not x.is_pinned()
     net = Net()
@@ -40,3 +42,10 @@ def test_tensor_pin_memory():
     z = net(y)
     assert z.is_pinned()
     assert z.storage().data_ptr() == y.storage().data_ptr()
+
+    with pytest.raises(RuntimeError):
+        x_npu = x.move_to('Ascend')
+        net(x_npu)
+
+    x_share_mem = x._shared_host_memory_with_device_() # pylint: disable=W0212
+    assert not x_share_mem.is_pinned()

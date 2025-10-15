@@ -54,6 +54,7 @@ if [ $# -gt 0 ]; then
   ./ut_SYMBOL_ENGINE_tests --gtest_filter=$1
   ./ut_GRAPH_KERNEL_tests --gtest_filter=$1
   ./ut_INTERNAL_KERNEL_tests --gtest_filter=$1
+  ./ut_PYNATIVE_tests --gtest_filter=$1
   exit 0
 fi
 
