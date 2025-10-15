@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1014,6 +1014,9 @@ def adaptive_max_pool1d(input, output_size, return_indices=False):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        Atlas training series products do not support backward propagation.
 
     Args:
         input (Tensor): The input of adaptive_max_pool1d, which is a 2D or 3D tensor,

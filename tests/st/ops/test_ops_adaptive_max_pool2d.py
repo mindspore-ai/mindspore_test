@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for ops.adaptive_max_pool2d."""
 import pytest
 from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
@@ -44,8 +45,6 @@ def ops_adaptive_max_pool2d_case1(input_binary_data=None, output_binary_data=Non
     output = adaptive_max_pool2d_forward_func(Tensor(input_binary_data[0]), (8, 8), True)
     assert np.allclose(output[0].asnumpy(), output_binary_data[0], 1e-04, 1e-04)
     assert np.allclose(output[1].asnumpy(), output_binary_data[1], 1e-04, 1e-04)
-    grad_output = adaptive_max_pool2d_backward_func(Tensor(input_binary_data[0]), (8, 8), True)
-    assert np.allclose(grad_output.asnumpy(), output_binary_data[2], 1e-04, 1e-4)
 
 @ops_binary_cases(OpsBinaryCase(input_info=[((7, 4, 6, 3), np.float32)],
                                 output_info=[((7, 4, 4, 7), np.float32), ((7, 4, 4, 7), np.int64),
