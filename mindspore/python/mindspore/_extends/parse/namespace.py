@@ -59,9 +59,11 @@ class ModuleNamespace(Namespace):
         name (str): Valid module name, it can be imported.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, need_add_builtins=True):
         mod_dict = vars(__import__(name, fromlist=['_']))
-        builtins_dict = vars(builtins)
+        builtins_dict = {}
+        if need_add_builtins:
+            builtins_dict = vars(builtins)
         super().__init__(name, mod_dict, builtins_dict)
 
     def __getstate__(self):

@@ -1520,7 +1520,10 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     constexpr auto max_args_len = 3;
     bool has_default = (args_abs_list.size() == max_args_len);
     if (!has_default) {
-      MS_EXCEPTION(AttributeError) << data << " object has no attribute " << symbol->symbol();
+      MS_EXCEPTION_IF_NULL(name_space);
+      MS_EXCEPTION_IF_NULL(symbol);
+      MS_EXCEPTION(AttributeError) << py::str(name_space->name()) << " object has no attribute '" << symbol->symbol()
+                                   << "'";
     }
     auto out_cnode = out_node->cast_ptr<CNode>();
     MS_EXCEPTION_IF_NULL(out_cnode);

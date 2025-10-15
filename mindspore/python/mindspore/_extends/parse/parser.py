@@ -524,7 +524,11 @@ def get_module_namespace(obj):
     logger.debug("get module namespace, module: %r", obj)
     mod_namespace = None
     if isinstance(obj, types.ModuleType):
-        mod_namespace = ModuleNamespace(obj.__name__)
+        # When the obj is mindspore.ops, do not add built-in functions to avoid incorrect matches.
+        if obj.__name__ == "mindspore.ops":
+            mod_namespace = ModuleNamespace(obj.__name__, False)
+        else:
+            mod_namespace = ModuleNamespace(obj.__name__)
     else:
         logger.warning("Module(%r) is invalid, get namespace failure!", obj)
     return mod_namespace
