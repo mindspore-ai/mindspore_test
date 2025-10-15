@@ -16,15 +16,14 @@
 test compile cache with control flow.
 """
 import numpy as np
-from mindspore import context
-from mindspore import Tensor, Parameter, ops, lazy_inline, nn
+from mindspore import Tensor, Parameter, ops, lazy_inline, nn, context, jit
 from mindspore.nn import Cell
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 
 grad_all = C.GradOperation(get_all=True)
 
-
+@jit
 class SubNet(Cell):
     """
     SubNet: layer_norm with @lazy_inline
@@ -48,6 +47,7 @@ class SubNet(Cell):
         return output
 
 
+@jit
 class SingleIfNet(nn.Cell):
     """
     SingleIfNet
@@ -88,6 +88,7 @@ class SingleIfNet(nn.Cell):
         return b
 
 
+@jit
 class GradNet(nn.Cell):
     def __init__(self, net):
         super().__init__()
@@ -98,8 +99,6 @@ class GradNet(nn.Cell):
 
 
 if __name__ == "__main__":
-    # graph mode
-    context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_level='O0')
 
     input_x = Tensor(2, mstype.int32)

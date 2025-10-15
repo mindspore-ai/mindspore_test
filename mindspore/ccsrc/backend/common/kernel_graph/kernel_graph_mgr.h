@@ -114,7 +114,7 @@ class BACKEND_COMMON_EXPORT KernelGraphMgr {
   void ClearPartialParameterMap() { partial_parameters_map_.clear(); }
 
   mindspore::HashMap<FuncGraph *, KernelGraphPtr> GetFrontBackendGraphMap() const { return front_backend_graph_map_; }
-  void CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs);
+  bool CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs);
   // do inline
   static AnfNodePtr DoInline(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
                              const AnfNodePtrList &func_graph_args, const CNodePtr &call_node,

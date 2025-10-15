@@ -16,11 +16,12 @@
 test compile cache with simple net
 """
 import numpy as np
-from mindspore import context, nn, Tensor, Parameter
+from mindspore import context, nn, Tensor, Parameter, jit
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 
 
+@jit(backend="ms_backend")
 class NetWithWeights(nn.Cell):
     """
     NetWithWeights
@@ -52,8 +53,7 @@ class NetWithWeights(nn.Cell):
 
 
 if __name__ == "__main__":
-    context.set_context(mode=context.GRAPH_MODE)
-    context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(jit_config={"jit_level": "O1"})
     input_x = Tensor([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]], dtype=mstype.float32)
     input_y = Tensor([[0.11, 3.3, 1.1], [1.1, 0.2, 1.4], [1.1, 2.2, 0.3]], dtype=mstype.float32)
     net = NetWithWeights()

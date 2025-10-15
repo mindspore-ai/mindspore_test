@@ -16,12 +16,13 @@
 test compile cache with control flow.
 """
 import numpy as np
-from mindspore import Tensor, ops, nn, lazy_inline, context
+from mindspore import Tensor, ops, nn, lazy_inline, context, jit
 from mindspore.common.parameter import Parameter
 from mindspore.nn import Cell
 import mindspore.ops.operations as P
 
 
+@jit
 class Grad(Cell):
     def __init__(self, net):
         super().__init__()
@@ -79,6 +80,7 @@ class LazyInlineNet(Cell):
         b = BaseBlock()
         self.blocks.append(b)
 
+    @jit
     def construct(self, lazy_net_x):
         out = lazy_net_x
         for _ in range(5):
@@ -86,6 +88,7 @@ class LazyInlineNet(Cell):
         return out
 
 
+@jit
 class GradNet(Cell):
     """
     GradNet for LazyInlineNet
@@ -119,7 +122,7 @@ class GradNet(Cell):
 
 if __name__ == "__main__":
     # graph mode
-    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    context.set_context(jit_config={"jit_level": "O0"})
     input_x = Tensor(np.ones((8, 8)).astype(np.float32))
     input_y = Tensor(6)
     lazy_inline_net = LazyInlineNet()

@@ -1579,20 +1579,23 @@ CNodePtr KernelGraphMgr::CreateSwitchInput(const CNodePtr &cnode, const AnfNodeP
   return partial_node;
 }
 
-void KernelGraphMgr::CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs) {
+bool KernelGraphMgr::CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs) {
   if (kgs.empty() || kgs[0] == nullptr) {
     MS_LOG(EXCEPTION) << "Invalid kernel graphs for cache.";
+    return false;
   }
   const auto &kg = kgs[0];
   auto &context = CompileCacheContext::GetInstance();
   auto fg = context.FrontGraph();
   if (fg == nullptr) {
     MS_LOG(EXCEPTION) << "The frontend graph to be cached is null";
+    return false;
   }
   if (!fg->func_graphs_used_total().empty() && kgs.size() > 1) {
-    MS_LOG(INFO) << "Cache multi backend kernel graph.";
-    CacheMultiKernelGraph(kgs);
-    return;
+    MS_LOG(INFO) << "Start to cache multi backend kernel graph.";
+    auto cache_multi_graph_res = CacheMultiKernelGraph(kgs);
+    MS_LOG(INFO) << "Cache multi backend kernel graph " << (cache_multi_graph_res == true ? "success" : "failed.");
+    return cache_multi_graph_res;
   }
   MS_LOG(INFO) << "Begin to cache kernel graph " << kg->ToString();
   std::set<KernelGraphPtr> visit;
@@ -1646,16 +1649,17 @@ void KernelGraphMgr::CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs) {
   std::vector<FuncGraphPtr> child_graphs_for_dump(child_graphs.begin(), child_graphs.end());
   if (!DumpBinaryProto(kg, child_graphs_for_dump, isolated_nodes, mindir_path)) {
     MS_LOG(ERROR) << "Failed to cache kernel graph to mindir: " << fg->ToString();
-    return;
+    return false;
   }
   (void)(std::for_each(front_backend_graph_map_.begin(), front_backend_graph_map_.end(),
                        [&context](const auto &fb) { context.AddBackendGraphToFrontendGraph(fb.second, fb.first); }));
   const std::string &json_path = cache_path + kJsonSuffix;
   if (!DumpKernelGraphJson(kg, child_graphs, isolated_nodes_map, json_path)) {
     MS_LOG(ERROR) << "Failed to cache kernel graph to json.";
-    return;
+    return false;
   }
   MS_LOG(INFO) << "Cache kernel graph " << kg->ToString() << " success.";
+  return true;
 }
 
 std::vector<AnfNodePtr> KernelGraphMgr::CreateCallSwitchInputs(const CNodePtr &cnode, KernelGraph *graph) const {

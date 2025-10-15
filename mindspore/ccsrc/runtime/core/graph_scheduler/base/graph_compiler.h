@@ -149,7 +149,7 @@ class GraphCompiler {
   bool CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
 
   // Cache kernel kernel graph if export_kbk_compile_cache_ is true.
-  void CacheGraphKbk(const std::vector<KernelGraphPtr> &graph);
+  bool CacheGraphKbk(const std::vector<KernelGraphPtr> &graph);
 
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;

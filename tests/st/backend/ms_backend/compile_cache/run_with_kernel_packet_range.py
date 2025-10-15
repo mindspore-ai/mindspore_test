@@ -17,9 +17,10 @@ test compile cache with kernel packet range.
 """
 import numpy as np
 import mindspore as ms
-from mindspore import context, ops, nn, Tensor
+from mindspore import context, ops, nn, Tensor, jit
 
 
+@jit
 class RangeNet(nn.Cell):
     def __init__(self):
         super().__init__()
@@ -35,11 +36,10 @@ def run_simple_reshape_net():
     net.set_inputs(Tensor(shape=[None, None], dtype=ms.float32))
     x = Tensor(np.ones([10, 2]).astype(np.float32))
     output = net(x)
-    print("RUNTIME_COMPILE", output, "RUNTIME_CACHE")
-    print("RUNTIME_COMPILE", output.asnumpy().shape, "RUNTIME_CACHE")
+    print("RUNTIME_COMPILE", output[0], "RUNTIME_CACHE")
+    print("RUNTIME_COMPILE", output[0].asnumpy().shape, "RUNTIME_CACHE")
 
 
 if __name__ == "__main__":
-    context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
     run_simple_reshape_net()

@@ -18,8 +18,7 @@ test compile cache with control flow.
 import numpy as np
 from mindspore.common import dtype as mstype
 from mindspore.ops import composite as C
-from mindspore import nn, Tensor
-from mindspore import context
+from mindspore import nn, Tensor, context, jit
 
 
 class ForwardNet(nn.Cell):
@@ -47,6 +46,7 @@ class ForwardNet(nn.Cell):
         self.zero = Tensor(np.array(0), mstype.int32)
         self.i = Tensor(np.array(0), mstype.int32)
 
+    @jit(backend="ms_backend")
     def construct(self, x, y):
         out = self.zero
         for _ in range(0, self.max_cycles):
@@ -58,6 +58,7 @@ class ForwardNet(nn.Cell):
         return out
 
 
+@jit
 class BackwardNet(nn.Cell):
     def __init__(self, net):
         super().__init__(auto_prefix=False)
@@ -81,8 +82,8 @@ def run_net_for_n_while():
     3. Compare backward results between both mode
     4. Print results for verification
     """
-    context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O0"})
+    context.set_context(mode=context.GRAPH_MODE)
     x = Tensor(np.array(1), mstype.int32)
     y = Tensor(np.array(3), mstype.int32)
     forward_net = ForwardNet(max_cycles=3)
