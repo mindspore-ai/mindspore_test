@@ -31,6 +31,7 @@
 #include "backend/common/pass/label_1f1b_overlap_node.h"
 #include "backend/common/pass/overlap_grad_reduce.h"
 #include "backend/common/pass/overlap_1b1f.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/utils/parallel_context.h"
@@ -274,10 +275,15 @@ void AscendAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<InsertPreFetchDepend>());
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
-    after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+  // Check whether the GPTO option "passes" is set to be off
+  // Under GPTO mode, this option is to disable manual overlap passes
+  const auto &backend_jit_config = kernel_graph->backend_jit_config();
+  if (backend_jit_config.IsGptoPassesEnabled()) {
+    if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
+      after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+    }
+    after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
   }
-  after_inline_pm->AddPass(std::make_shared<Overlap1b1f>());
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(AscendAfterInlineOptimize);

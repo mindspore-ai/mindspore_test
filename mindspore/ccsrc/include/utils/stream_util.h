@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_STREAM_UTIL_H_
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_STREAM_UTIL_H_
 namespace mindspore {
-constexpr auto kDefaultStreamIndex = 0;
-constexpr auto kWorldGroupStreamIndex = 1;
+constexpr size_t kDefaultStreamIndex = 0;
+constexpr size_t kWorldGroupStreamIndex = 1;
 }  // namespace mindspore
 #endif
