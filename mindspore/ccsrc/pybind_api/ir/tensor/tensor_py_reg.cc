@@ -231,15 +231,6 @@ extern int TensorPython_set_init(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION_RET_FAIL_END
 }
 
-extern int TensorPython_set_device(PyObject *self, PyObject *value, void *) {
-  HANDLE_MS_EXCEPTION
-  PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);
-  const char *deviceString = PyUnicode_AsUTF8(value);
-  obj->value.SetDevice(std::string(deviceString));
-  return 0;
-  HANDLE_MS_EXCEPTION_RET_FAIL_END
-}
-
 extern int TensorPython_set_ParentTensor(PyObject *self, PyObject *value, void *) {
   HANDLE_MS_EXCEPTION
   PyType<TensorPy> *obj = reinterpret_cast<PyType<TensorPy> *>(self);

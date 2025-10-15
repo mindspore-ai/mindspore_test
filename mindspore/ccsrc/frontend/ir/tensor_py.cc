@@ -1161,12 +1161,6 @@ const TensorPyPtr TensorPyImpl::InitTensorPy(const py::dict &input) {
   return tensorpy;
 }
 
-TensorPyPtr TensorPyImpl::MakeTensorOfNumpy(const py::array &input) {
-  auto tensor = TensorPybind::MakeTensorOfNumpy(input);
-  MS_EXCEPTION_IF_NULL(tensor);
-  return std::make_shared<TensorPy>(tensor);
-}
-
 TensorPyPtr TensorPyImpl::ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims,
                                                const TypePtr &type_ptr) {
   auto tensor = TensorPybind::ConvertBytesToTensor(bytes_obj, dims, type_ptr);
@@ -1182,82 +1176,15 @@ TensorPyPtr TensorPyImpl::FromDLPack(const py::object &dlpack_capsule) {
 
 py::object TensorPyImpl::ToDLPack(const py::object &tensor) { return TensorPybind::ToDLPack(tensor); }
 
-void TensorPyImpl::SetOffload(const TensorPyPtr &tensorpy, bool release) {
-  auto tensor = tensorpy->GetTensor();
-  TensorPybind::Offload(tensor, release);
-}
-
-void TensorPyImpl::SetLoad(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  TensorPybind::Load(*tensor);
-}
-
-py::bytes TensorPyImpl::GetBytes(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::GetBytes(*tensor);
-}
-
-py::array TensorPyImpl::SyncAsNumpy(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::SyncAsNumpy(*tensor);
-}
-
-void TensorPyImpl::FlushFromCache(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::FlushFromCache(*tensor);
-}
-
-TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking) {
-  auto tensor = tensorpy->GetTensor();
-  auto to_tensor = TensorPybind::MoveTo(*tensor, to, blocking);
-  MS_EXCEPTION_IF_NULL(to_tensor);
-  return std::make_shared<TensorPy>(to_tensor);
-}
-
-void TensorPyImpl::SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
-                                    const TypePtr type_ptr) {
-  auto tensor = tensorpy->GetTensor();
-  TensorPybind::SetDeviceAddress(tensor, addr, shape, type_ptr);
-}
-
-void TensorPyImpl::SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value) {
-  auto tensor = tensorpy->GetTensor();
-  TensorPybind::SetUserData(tensor, key, value);
-}
-
-const py::object TensorPyImpl::GetUserData(const TensorPyPtr &tensorpy, const py::str &key) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::GetUserData(tensor, key);
-}
-
-py::object TensorPyImpl::ToList(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::ToList(tensor);
-}
-
 py::object TensorPyImpl::Item(const TensorPyPtr &tensorpy) {
   auto tensor = tensorpy->GetTensor();
   return TensorPybind::Item(tensor);
-}
-
-uint64_t TensorPyImpl::RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook) {
-  auto tensor = tensorpy->GetTensor();
-  return pynative::HookAdapter::RegisterTensorBackwardHook(tensor, hook);
 }
 
 void TensorPyImpl::RemoveTensorBackwardHook(uint64_t handle_id) {
   pynative::HookAdapter::RemoveTensorBackwardHook(handle_id);
 }
 
-py::list TensorPyImpl::GetHooks(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return pynative::HookAdapter::GetHooks(tensor);
-}
-
-uintptr_t TensorPyImpl::DataPtr(const TensorPyPtr &tensorpy) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::DataPtr(tensor);
-}
 ShapeVector TensorPyImpl::GetShapeFromTuple(const py::tuple &tuple) {
   ShapeVector shape;
   const size_t size = tuple.size();
