@@ -158,6 +158,7 @@
 /tests/st/compiler/ @ginfung
 /tests/st/container/ @changzherui
 /tests/st/cpu_data_parallel/ @ZPaC
+/tests/st/dataloader/ @jonyguo
 /tests/st/dataset/ @jonyguo
 /tests/st/dataset_helper/ @changzherui
 /tests/st/data_transfer/ @jonyguo

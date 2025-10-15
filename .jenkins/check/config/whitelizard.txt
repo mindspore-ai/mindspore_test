@@ -11,6 +11,9 @@ mindspore/mindspore/ccsrc/minddata/dataset/audio/kernels/audio_utils.h:mindspore
 mindspore/mindspore/ccsrc/minddata/dataset/vision/kernels/dvpp/utils/dvpp_video.cc:DvppVideo::SaveYuvFile
 mindspore/mindspore/ccsrc/minddata/dataset/vision/kernels/dvpp/utils/dvpp_image_utils.cc:mindspore::dataset::DvppConvertColor, mindspore::dataset::DvppErase, mindspore::dataset::DvppNormalize, mindspore::dataset::DvppPerspective, mindspore::dataset::DvppResizedCrop, mindspore::dataset::DvppRotate, mindspore::dataset::CreateAclTensor
 mindspore/mindspore/python/mindspore/dataset/engine/datasets.py:_worker_loop
+mindspore/mindspore/python/mindspore/dataset/dataloader/_utils/collate.py:default_convert, collate
+mindspore/mindspore/python/mindspore/dataset/dataloader/_utils/pin_memory.py:pin_memory_fn
+mindspore/mindspore/python/mindspore/dataset/dataloader/dataloader.py:__init__
 mindspore/mindspore/python/mindspore/mindrecord/filewriter.py:write_raw_data, _parallel_commit
 mindspore/mindspore/core/abstract/ops/primitive_infer_map.cc:mindspore::abstract::GetPrimitiveInferMap
 mindspore/mindspore/core/include/ir/tensor.h:mindspore::tensor::NewData

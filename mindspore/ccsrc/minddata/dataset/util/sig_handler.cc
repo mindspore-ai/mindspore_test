@@ -22,6 +22,8 @@
 #endif
 
 #include <csignal>
+#include <map>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -118,6 +120,10 @@ void ReleaseShmAndMsgByWorkerPIDs(const std::vector<int> &pids) {
 
 /// \brief Release the shared memory and message queue when got signal TERM / CHLD
 void ReleaseShmAndMsg() {
+  if (g_shm_id.empty()) {
+    return;
+  }
+
   std::string current_pid = std::to_string(getpid());
   std::string ppid = std::to_string(getppid());
 
@@ -151,7 +157,7 @@ void ReleaseShmAndMsg() {
 
     auto substr_ppid = item.first.substr(first_underline_char + 1, second_underline_char - first_underline_char - 1);
     // parent process is still alive, but the msg queue is not used
-    // Scenario 1: when the independet dataset exit and the main process is still alive, not need to release shm & msg
+    // Scenario 1: when the independent dataset exit and the main process is still alive, not need to release shm & msg
     // Scenario 2: when the tree_adapter launch Python Workers success, but launch C++ op failed, the status.msg_stime
     //             is not changed. Should release the shm & msg
     if (ppid == substr_ppid && kill(std::stoi(ppid), 0) == 0) {
@@ -260,6 +266,94 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
   raise(signal);
 }
 
+/// \brief A signal handler for SIGSEGV to retrieve the segmentation information.
+/// \param[in] signal The signal that was raised.
+/// \param[in] info The siginfo structure.
+/// \param[in] context The context info.
+void SIGSEGVHandler(int signal, siginfo_t *info, void *context) {
+  if (signal != SIGSEGV) {
+    MS_LOG(ERROR) << "SIGSEGVHandler expects SIGSEGV signal, but got: " << strsignal(signal);
+    _exit(EXIT_FAILURE);
+  }
+
+  const std::string msg = "Unexpected segmentation fault encountered in process: " + std::to_string(getpid());
+  if (info->si_code == SEGV_MAPERR) {
+    MS_LOG(ERROR) << msg << ". Address not mapped to object.";
+  } else if (info->si_code == SEGV_ACCERR) {
+    MS_LOG(ERROR) << msg << ". Invalid permissions for mapped object.";
+#ifdef SEGV_BNDERR
+  } else if (info->si_code == SEGV_BNDERR) {
+    MS_LOG(ERROR) << msg << ". Failed address bound checks.";
+#endif
+#ifdef SEGV_PKUERR
+  } else if (info->si_code == SEGV_PKUERR) {
+    MS_LOG(ERROR) << msg << ". Access was denied by memory protection keys.";
+#endif
+  } else {
+    MS_LOG(ERROR) << msg << ".";
+  }
+
+  // reset the handler to the default
+  struct sigaction bus_action {};
+  bus_action.sa_handler = SIG_DFL;
+  bus_action.sa_flags = 0;
+  if (sigemptyset(&bus_action.sa_mask) != 0) {
+    MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  if (sigaction(signal, &bus_action, nullptr) != 0) {
+    MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  raise(signal);
+}
+
+/// \brief A signal handler for SIGFPE to retrieve the kill information.
+/// \param[in] signal The signal that was raised.
+/// \param[in] info The siginfo structure.
+/// \param[in] context The context info.
+void SIGFPEHandler(int signal, siginfo_t *info, void *context) {
+  if (signal != SIGBUS) {
+    MS_LOG(ERROR) << "SIGBUSHandler expects SIGBUS signal, but got: " << strsignal(signal);
+    _exit(EXIT_FAILURE);
+  }
+
+  const std::string msg = "Unexpected floating-point exception encountered in process: " + std::to_string(getpid());
+  if (info->si_code == FPE_INTDIV) {
+    MS_LOG(ERROR) << msg << ". Integer divide by zero.";
+  } else if (info->si_code == FPE_INTOVF) {
+    MS_LOG(ERROR) << msg << ". Integer overflow.";
+  } else if (info->si_code == FPE_FLTDIV) {
+    MS_LOG(ERROR) << msg << ". Floating-point divide by zero.";
+  } else if (info->si_code == FPE_FLTOVF) {
+    MS_LOG(ERROR) << msg << ". Floating-point overflow.";
+  } else if (info->si_code == FPE_FLTUND) {
+    MS_LOG(ERROR) << msg << ". Floating-point underflow.";
+  } else if (info->si_code == FPE_FLTRES) {
+    MS_LOG(ERROR) << msg << ". Floating-point inexact result.";
+  } else if (info->si_code == FPE_FLTINV) {
+    MS_LOG(ERROR) << msg << ". Floating-point invalid operation.";
+  } else if (info->si_code == FPE_FLTSUB) {
+    MS_LOG(ERROR) << msg << ". Subscript out of range.";
+  } else {
+    MS_LOG(ERROR) << msg << ".";
+  }
+
+  // reset the handler to the default
+  struct sigaction bus_action {};
+  bus_action.sa_handler = SIG_DFL;
+  bus_action.sa_flags = 0;
+  if (sigemptyset(&bus_action.sa_mask) != 0) {
+    MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  if (sigaction(signal, &bus_action, nullptr) != 0) {
+    MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  raise(signal);
+}
+
 /// \brief A signal handler for SIGCHLD to clean the rest processes.
 /// \param[in] signal The signal that was raised.
 /// \param[in] info The siginfo structure.
@@ -335,6 +429,51 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
 }
 #endif
 
+std::string CheckIfWorkerExit() {
+#if !defined(_WIN32) && !defined(_WIN64)
+  for (auto &worker_group : worker_groups) {
+    auto &pids = worker_group.second;
+    int ppid = pids[0];
+    if (getpid() != ppid) {
+      continue;  // this worker group is not the children of current process
+    }
+    for (auto i = 1; i < pids.size(); ++i) {
+      int pid = pids[i];
+      siginfo_t sig_info{};
+      sig_info.si_pid = 0;
+      auto error = waitid(P_PID, pid, &sig_info, WEXITED | WNOHANG | WNOWAIT);
+      std::string msg;
+      if (error < 0) {
+        continue;
+      } else {
+        if (sig_info.si_pid == 0) {
+          continue;  // There were no children in a wait state.
+        }
+        if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {
+          // exited unexpected
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
+                std::to_string(sig_info.si_status) + ".";
+        } else if (sig_info.si_code == CLD_KILLED) {
+          // killed by signal
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+                " was killed by signal: " + std::string(strsignal(sig_info.si_status)) + ".";
+        } else if (sig_info.si_code == CLD_DUMPED) {
+          // core dumped
+          msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+                " core dumped: " + std::string(strsignal(sig_info.si_status)) + ".";
+        } else {
+          MS_LOG(INFO) << "Ignore dataset worker process " << pid << " with signal code " << sig_info.si_code;
+          continue;
+        }
+      }
+      pids.clear();  // Clear the monitoring status of the process group to avoid triggering this again.
+      return msg;
+    }
+  }
+#endif
+  return "";
+}
+
 void RegisterHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
   SetSignalHandler(SIGINT, &SIGINTHandler, nullptr);
@@ -353,6 +492,8 @@ void RegisterWorkerHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
   SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
   SetSignalHandler(SIGTERM, &SIGTERMHandler, nullptr);
+  SetSignalHandler(SIGSEGV, &SIGSEGVHandler, nullptr);
+  SetSignalHandler(SIGFPE, &SIGFPEHandler, nullptr);
 #endif
 }
 
