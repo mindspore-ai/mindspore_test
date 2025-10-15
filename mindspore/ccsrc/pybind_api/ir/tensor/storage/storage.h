@@ -36,6 +36,10 @@ class Storage {
   std::string device() const;
   const StorageBasePtr get_storage_base() const { return storage_base_; }
   StorageBasePtr get_mutable_storage_base() const { return storage_base_; }
+  TypeId GetTypeId() const;
+  uint32_t GetStreamId() const;
+  const DevicePointerPtr &GetDevicePointer() const;
+  const DeviceAddressPtr &GetDeviceAddress() const;
 
  private:
   StorageBasePtr storage_base_;

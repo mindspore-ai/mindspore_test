@@ -109,6 +109,26 @@ int64_t StorageBase::NBytes() const {
   return device_data_->size();
 }
 
+TypeId StorageBase::GetTypeId() const {
+  MS_EXCEPTION_IF_NULL(device_data_);
+  return device_data_->type_id();
+}
+
+uint32_t StorageBase::GetStreamId() const {
+  MS_EXCEPTION_IF_NULL(device_data_);
+  return device_data_->stream_id();
+}
+
+const DevicePointerPtr &StorageBase::GetDevicePointer() const {
+  MS_EXCEPTION_IF_NULL(device_data_);
+  return device_data_->device_pointer();
+}
+
+const DeviceAddressPtr &StorageBase::GetDeviceAddress() const {
+  MS_EXCEPTION_IF_NULL(device_data_);
+  return device_data_;
+}
+
 void StorageBase::InplaceCopy(const StorageBasePtr &src, bool non_blocking) {
   MS_EXCEPTION_IF_NULL(device_data_);
   MS_EXCEPTION_IF_NULL(src->device_data_);

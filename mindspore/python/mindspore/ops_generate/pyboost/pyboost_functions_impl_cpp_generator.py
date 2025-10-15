@@ -55,19 +55,27 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         )
         self.convert_to_tensor_template = Template(
             'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToTensor(${input}, ${need_contiguous}, '
-            'op_run_info->requires_grad);\n'
+            'op_run_info->requires_grad, ${is_inplace});\n'
         )
         self.convert_to_tensor_view_template = Template(
             'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToTensor(${input}, ${need_contiguous}, '
-            'requires_grad);\n'
+            'requires_grad, ${is_inplace});\n'
+        )
+        self.convert_to_tensor_inplace_template = Template(
+            'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToTensor(${input}, ${need_contiguous}, '
+            'op_run_info->requires_grad, ${is_inplace});\n'
         )
         self.convert_to_tensor_list_template = Template(
             'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToValueTuple(${input}, ${need_contiguous}, '
-            'op_run_info->requires_grad);\n'
+            'op_run_info->requires_grad, ${is_inplace});\n'
         )
         self.convert_to_tensor_list_view_template = Template(
             'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToValueTuple(${input}, ${need_contiguous}, '
-            'requires_grad);\n'
+            'requires_grad, ${is_inplace});\n'
+        )
+        self.convert_to_tensor_list_inplace_template = Template(
+            'auto ${output} = PyNativeAlgo::Common::ConvertStubNodeToValueTuple(${input}, ${need_contiguous}, '
+            'op_run_info->requires_grad, ${is_inplace});\n'
         )
         self.implicit_cast_template = Template(
             '// Do mixed precision and implicit cast\n' \
@@ -250,6 +258,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         """
         convert_stub_str = ''
         need_contiguous = 'true'
+        is_inplace = 'false'
         convert_to_tensor_template = self.convert_to_tensor_template
         convert_to_tensor_list_template = self.convert_to_tensor_list_template
         if op_proto.op_view:
@@ -257,21 +266,27 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
             need_contiguous = 'false'
             convert_to_tensor_template = self.convert_to_tensor_view_template
             convert_to_tensor_list_template = self.convert_to_tensor_list_view_template
-
+        if op_proto.op_inplace:
+            # Cpu inplace need contiguous tensor
+            is_inplace = 'true'
+            convert_to_tensor_template = self.convert_to_tensor_inplace_template
+            convert_to_tensor_list_template = self.convert_to_tensor_list_inplace_template
         for op_arg in op_proto.op_args:
             if pyboost_utils.is_tensor(op_arg):
                 convert_stub_output_name = op_arg.arg_name + '_optional' if is_optional_param(op_arg) \
                     else op_arg.arg_name + "_tensor"
                 convert_stub_str += convert_to_tensor_template.replace(input=op_arg.arg_name,
                                                                        output=convert_stub_output_name,
-                                                                       need_contiguous=need_contiguous)
+                                                                       need_contiguous=need_contiguous,
+                                                                       is_inplace=is_inplace)
             elif pyboost_utils.is_tensor_list(op_arg):
                 # To adapt the cases where TensorList is optional.
                 convert_stub_output_name = op_arg.arg_name + '_optional' if is_optional_param(op_arg) \
                     else op_arg.arg_name + "_tensor_list"
                 convert_stub_str += convert_to_tensor_list_template.replace(input=op_arg.arg_name,
                                                                             output=convert_stub_output_name,
-                                                                            need_contiguous=need_contiguous)
+                                                                            need_contiguous=need_contiguous,
+                                                                            is_inplace=is_inplace)
         return convert_stub_str
 
     def _get_call_args_str(self, op_proto: OpProto):

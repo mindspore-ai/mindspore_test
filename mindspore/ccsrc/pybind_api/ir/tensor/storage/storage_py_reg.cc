@@ -19,6 +19,7 @@
 #include "pybind_api/ir/tensor/storage/storage_py.h"
 #include "include/utils/exception.h"
 #include "include/utils/pybind_api/api_register.h"
+#include "include/utils/pynative/storage_py.h"
 
 namespace mindspore {
 static Py_ssize_t StoragePy_Length(StoragePy *self) {
@@ -192,6 +193,7 @@ void RegStorage(py::module *m) {
     return;
   }
   Py_INCREF(&StoragePyType);
+  SetStoragePyType(&StoragePyType);
   m->add_object("StoragePy", reinterpret_cast<PyObject *>(&StoragePyType));
 }
 

@@ -69,6 +69,7 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"list[number]", ops::OP_DTYPE::DT_LIST_NUMBER},
   {"list[str]", ops::OP_DTYPE::DT_LIST_STR},
   {"tensor", ops::OP_DTYPE::DT_TENSOR},
+  {"storage", ops::OP_DTYPE::DT_STORAGE},
   {"str", ops::OP_DTYPE::DT_STR},
   {"type", ops::OP_DTYPE::DT_TYPE},
 };

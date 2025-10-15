@@ -322,6 +322,7 @@ mindspore.Tensor
     mindspore.Tensor.searchsorted
     mindspore.Tensor.select
     mindspore.Tensor.select_scatter
+    mindspore.Tensor.set_
     mindspore.Tensor.set_const_arg
     mindspore.Tensor.sgn
     mindspore.Tensor.shape

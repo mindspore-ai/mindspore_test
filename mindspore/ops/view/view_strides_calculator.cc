@@ -87,6 +87,79 @@ bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides)
   return true;
 }
 
+int64_t ComputeStorageNelements(int64_t storage_offset, const std::vector<int64_t> &shape,
+                                const std::vector<int64_t> &stride) {
+  int64_t size = 1;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    if (shape[i] <= 0) {
+      MS_LOG(EXCEPTION) << "Attempted to set the storage of a tensor with invalid shape " << shape;
+    }
+    size += stride[i] * (shape[i] - 1);
+  }
+  return size + storage_offset;
+}
+
+TensorStorageInfoPtr CheckSetStorageInfo(const device::DeviceAddressPtr &origin_device_address, int64_t storage_offset,
+                                         const std::vector<int64_t> &shape, const std::vector<int64_t> &stride,
+                                         const std::string &source_device_type_name, int64_t source_storage_size,
+                                         const TypeId &source_storage_dtype) {
+  const std::string &origin_device_type_name = device::GetDeviceNameByType(origin_device_address->GetDeviceType());
+  if (source_device_type_name != origin_device_type_name) {
+    MS_LOG(EXCEPTION) << "Attempted to set the storage of a tensor on device \"" << origin_device_type_name
+                      << "\" to a storage on different device \"" << source_device_type_name
+                      << "\".  This is no longer allowed; the devices must match.";
+  }
+  if (shape.size() != stride.size()) {
+    MS_LOG(EXCEPTION) << "unequal shape length (" << shape.size() << ") and stride length (" << stride.size() << ")";
+  }
+  constexpr size_t max_shape_dim = 8;
+  if (shape.size() > max_shape_dim) {
+    MS_LOG(EXCEPTION) << "The input shape's dim must in the range of [0, " << max_shape_dim << "], but got '"
+                      << shape.size();
+  }
+  if (storage_offset < 0) {
+    MS_LOG(EXCEPTION) << "Tensor: invalid storage offset " << storage_offset;
+  }
+
+  bool isContiguous = IsContiguous(shape, stride);
+
+  const TensorStorageInfoPtr &origin_storage_info = origin_device_address->GetTensorStorageInfo();
+  std::vector<int64_t> ori_shape;
+  std::vector<int64_t> ori_stride;
+  if (origin_storage_info == nullptr) {
+    ori_shape = origin_device_address->GetShapeVector();
+    ori_stride = GetOriStrides(ori_shape);
+  } else {
+    ori_shape = origin_storage_info->shape;
+    ori_stride = origin_storage_info->strides;
+  }
+
+  bool shape_unchanged = shape == ori_shape ? true : false;
+  bool stride_unchanged = stride == ori_stride ? true : false;
+  int64_t storage_nelements = ComputeStorageNelements(storage_offset, shape, stride);
+  int64_t origin_item_size = GetTypeByte(TypeIdToType(origin_device_address->type_id()));
+  int64_t storage_nelements_bytes = origin_item_size * storage_nelements;
+  if (shape_unchanged && stride_unchanged) {
+    if (storage_nelements_bytes > source_storage_size) {
+      MS_LOG(EXCEPTION) << "setStorage: shape " << shape << ", strides " << stride << ", storage offset "
+                        << storage_offset << ", and itemsize " << origin_item_size << " requiring a storage size of "
+                        << storage_nelements_bytes << " are out of bounds for storage of size " << source_storage_size;
+    }
+  }
+
+  int64_t source_item_size = GetTypeByte(TypeIdToType(source_storage_dtype));
+  int64_t source_storage_nelements = static_cast<int64_t>(source_storage_size / source_item_size);
+  if (storage_nelements_bytes <= source_storage_size) {
+    ori_shape = {source_storage_nelements};
+  } else {
+    ori_shape = {storage_nelements};
+  }
+  ori_stride = {1};
+  auto new_storage_info = std::make_shared<TensorStorageInfo>(
+    std::move(shape), std::move(stride), storage_offset, std::move(ori_shape), std::move(ori_stride), isContiguous);
+  return new_storage_info;
+}
+
 int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr, bool wrap_scalar) {
   if (MS_LIKELY(dim_post_expr * -1 <= dim && dim < dim_post_expr)) {
     if (dim < 0) {

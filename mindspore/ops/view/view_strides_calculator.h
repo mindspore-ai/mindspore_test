@@ -44,7 +44,13 @@ OPS_API int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr, bool wrap_sca
 OPS_API bool IsDynamic(const std::vector<int64_t> &shape);
 OPS_API bool HasZero(const std::vector<int64_t> &value);
 OPS_API bool CheckInputsNull(const std::vector<ValuePtr> &inputs, const size_t &input_num);
-
+OPS_API int64_t ComputeStorageNelements(int64_t storage_offset, const std::vector<int64_t> &shape,
+                                        const std::vector<int64_t> &stride);
+OPS_API TensorStorageInfoPtr CheckSetStorageInfo(const device::DeviceAddressPtr &origin_device_address,
+                                                 int64_t storage_offset, const std::vector<int64_t> &shape,
+                                                 const std::vector<int64_t> &stride,
+                                                 const std::string &source_device_type_name,
+                                                 int64_t source_storage_size, const TypeId &source_storage_dtype);
 inline OPS_API std::tuple<std::vector<int64_t>, std::vector<int64_t>, size_t> GetOriShapeStridesAndOffset(
   const std::vector<int64_t> &cur_shape, const std::vector<int64_t> &cur_strides,
   const TensorStorageInfoPtr &cur_storage_info) {

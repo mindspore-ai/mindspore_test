@@ -50,14 +50,18 @@ struct Common {
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
   static tensor::TensorPtr StubNodeToTensor(const ValuePtr &value);
   PYNATIVE_EXPORT static tensor::TensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous,
-                                                                   bool requires_grad);
+                                                                   bool requires_grad, bool is_inplace = false);
   PYNATIVE_EXPORT static std::optional<tensor::TensorPtr> ConvertStubNodeToTensor(const std::optional<ValuePtr> &v,
                                                                                   bool need_contiguous,
-                                                                                  bool requires_grad);
-  static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad);
-  static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad);
+                                                                                  bool requires_grad,
+                                                                                  bool is_inplace = false);
+  static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueListPtr &v, bool need_contiguous, bool requires_grad,
+                                                   bool is_inplace = false);
+  static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad,
+                                                   bool is_inplace = false);
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
-                                                                  bool need_contiguous, bool requires_grad);
+                                                                  bool need_contiguous, bool requires_grad,
+                                                                  bool is_inplace = false);
   static ValueNodePtr CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs = nullptr);
   static void SetOutputUsedInBpropGraph(const ValuePtr &value);
   static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value);

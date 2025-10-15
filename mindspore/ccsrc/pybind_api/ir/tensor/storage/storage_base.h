@@ -36,6 +36,10 @@ class StorageBase {
   int64_t NBytes() const;
   void InplaceCopy(const StorageBasePtr &src, bool non_blocking);
   std::string device() const;
+  TypeId GetTypeId() const;
+  uint32_t GetStreamId() const;
+  const DevicePointerPtr &GetDevicePointer() const;
+  const DeviceAddressPtr &GetDeviceAddress() const;
 
  private:
   device::DeviceAddressPtr device_data_{nullptr};
