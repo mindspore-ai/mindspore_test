@@ -137,7 +137,7 @@ FRONTEND_EXPORT void SwapCache(const py::object &host_, const py::object &device
                                const bool &type);
 
 bool IsPhaseExport(const std::string &phase);
-py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
+FRONTEND_EXPORT py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 void SetLoopCount(const ResourcePtr &resource);
 void ResetId(const ResourcePtr &resource);
 #ifdef ENABLE_DUMP_IR

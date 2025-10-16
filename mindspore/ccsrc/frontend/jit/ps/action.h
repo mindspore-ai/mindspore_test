@@ -61,8 +61,8 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &value,
 
 FuncGraphPtr ProgramSpecialize(const abstract::AnalysisEnginePtr &engine, const FuncGraphPtr &func_graph,
                                const abstract::AnalysisContextPtr &context);
-FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_graph,
-                         const abstract::AbstractBasePtrList &args_abs);
+FRONTEND_EXPORT FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_graph,
+                                         const abstract::AbstractBasePtrList &args_abs);
 void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason = nullptr);
 bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph);
 AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param);
