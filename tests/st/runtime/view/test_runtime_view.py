@@ -17,7 +17,9 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor, ops
 from mindspore.common import dtype as mstype
+from mindspore.ops.auto_generate import TransposeView
 from tests.mark_utils import arg_mark
+import pytest
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_output_view_parameter():
@@ -41,3 +43,21 @@ def test_output_view_parameter():
     context.set_context(mode=ms.PYNATIVE_MODE)
     res2 = net(*input_x)
     assert np.allclose(res1[3].asnumpy(), res2[3].asnumpy())
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_inplace_ops_with_view_input():
+    """
+    Feature: Inplace operator doesn't accept a view input
+    Description: Runtime throws an exception when an inplace operator uses a view input
+    Expectation: No exception.
+    """
+    def func():
+        tensor = Tensor(np.ones((3, 2), dtype=np.float32))
+        view_tensor = TransposeView()(tensor, (1, 0))
+        assign_add = ops.AssignAdd()
+        assign_add(view_tensor, Tensor(np.ones((2, 3), dtype=np.float32)))
+
+    with pytest.raises(RuntimeError) as err:
+        func_jit = ms.jit(func, backend="ms_backend")
+        func_jit()
+    assert "is an inplace op and does not support view input." in str(err.value)
