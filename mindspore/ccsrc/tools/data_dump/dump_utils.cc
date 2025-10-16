@@ -97,31 +97,6 @@ bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_dat
   return true;
 }
 
-void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector shape, void *out_data) {
-  MS_EXCEPTION_IF_NULL(in_data);
-  MS_EXCEPTION_IF_NULL(out_data);
-  MS_EXCEPTION_IF_ZERO("in_data_len", in_data_len);
-  auto element_num = std::accumulate(shape.begin(), shape.end(), 1LL, std::multiplies<int64_t>());
-  const int64_t elemnum_per_byte = 8;
-  auto elemnum_last_byte = element_num % elemnum_per_byte;
-
-  const uint8_t *src_data = static_cast<const uint8_t *>(in_data);
-  uint8_t *dst_data = static_cast<uint8_t *>(out_data);
-  for (size_t i = 0; i < in_data_len - 1; ++i) {
-    for (int j = 7; j >= 0; --j) {
-      *dst_data = (*src_data >> j) & 1;
-      ++dst_data;
-    }
-    ++src_data;
-  }
-
-  // Handles cases where the number of in_data elements is not a multiple of 8
-  for (int j = 7; j >= elemnum_last_byte; --j) {
-    *dst_data = (*src_data >> j) & 1;
-    ++dst_data;
-  }
-}
-
 std::string GenerateDumpPath(uint32_t graph_id, uint32_t rank_id, bool is_cst) {
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   std::string net_name = dump_json_parser.net_name();
