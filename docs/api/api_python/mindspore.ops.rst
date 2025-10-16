@@ -127,6 +127,7 @@ Array操作
     mindspore.ops.nansum
     mindspore.ops.normal
     mindspore.ops.nonzero
+    mindspore.ops.nsa_compress
     mindspore.ops.numel
     mindspore.ops.permute
     mindspore.ops.population_count

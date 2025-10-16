@@ -6155,5 +6155,23 @@ REG_BPROP_BUILDER("Frac").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 REG_BPROP_BUILDER("BitwiseNot").FreeUselessValues_IO({i0}, {}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("NsaCompress").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(i0);
+  auto weight = ib->GetInput(i1);
+  auto compress_block_size = ib->GetInput(i2);
+  auto compress_stride = ib->GetInput(i3);
+  auto actual_seq_len = ib->GetInput(i4);
+  auto grad_output = ib->GetInput(i6);
+
+  auto grad_out =
+    ib->Emit("NsaCompressGrad", {grad_output, input, weight, compress_block_size, compress_stride, actual_seq_len});
+  auto grad_input = ib->TupleGetItem(grad_out, 0);
+  auto grad_weight = ib->TupleGetItem(grad_out, 1);
+
+  return {grad_input, grad_weight, ib->OutZeros(compress_block_size), ib->OutZeros(compress_stride),
+          ib->OutZeros(actual_seq_len)};
+});
+
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

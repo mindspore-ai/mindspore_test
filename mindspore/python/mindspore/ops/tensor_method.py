@@ -1983,6 +1983,7 @@ def tensor_inplace_masked_scatter(input, mask, source):
 def tensor_broadcast_to(x, shape):
     return F.broadcast_to(x, shape)
 
+
 def tensor_squeeze(input, axis=None):
     return F.squeeze(input, axis)
 
@@ -2003,3 +2004,8 @@ def tensor_imag(input):
     For details, please refer to :func:`mindspore.ops.imag`.
     """
     return ops.imag(input)
+
+
+def _tensor_nsa_compress(input, weight, compress_block_size, compress_stride, *, actual_seq_len=None):
+    """Placeholder for unsupported devices: nsa_compress."""
+    raise RuntimeError("'nsa_compress' is only supported on Ascend.")
