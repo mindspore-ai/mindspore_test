@@ -1576,7 +1576,7 @@ class CellBackwardHook(PrimitiveWithInfer):
         tensors_idx = []
         tensors = []
         for i, arg in enumerate(args):
-            if isinstance(arg, Tensor):
+            if isinstance(arg, Tensor_):
                 tensors_idx.append(i)
                 tensors.append(arg)
 

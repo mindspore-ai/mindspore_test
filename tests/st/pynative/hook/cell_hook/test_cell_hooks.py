@@ -18,7 +18,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 from tests.mark_utils import arg_mark
-from tests.st.pynative.hook.common import assert_equal
+from tests.st.pynative.hook.cell_hook.common import assert_equal
 
 def forward_pre_hook_fn1(cell, inputs):
     pass

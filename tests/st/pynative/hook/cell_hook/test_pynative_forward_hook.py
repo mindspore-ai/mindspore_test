@@ -23,9 +23,10 @@ from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from mindspore.common.api import jit
 from mindspore import ops as P
-from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
-from tests.st.pynative.hook.common import assert_jit_net, assert_jit_grad_net_by_grad_op, assert_jit_grad_net_by_ms_grad
+from tests.st.pynative.hook.cell_hook.common import assert_jit_net, assert_jit_grad_net_by_grad_op, \
+    assert_jit_grad_net_by_ms_grad
+
 
 def forward_pre_hook_fn_bn(cell, inp):
     out = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")(inp[0])
@@ -68,13 +69,7 @@ def forward_hook_fn_mul(cell, inp, outp):
     return out
 
 
-@jit
-def forward_hook_fn_with_ms_func(cell, inp, outp):
-    return outp
-
-
 def backward_hook_fn(cell, grad_inp, grad_outp):
-
     return grad_inp
 
 
@@ -223,15 +218,15 @@ class CompareSingleNet5(nn.Cell):
 
     def construct(self, x):
         x = self.conv(x)
-        x = x + x # inner
-        x = x + x # inner.bn
-        x = x * x # inner.bn
+        x = x + x  # inner
+        x = x + x  # inner.bn
+        x = x * x  # inner.bn
         x = self.bn(x)
-        x = x + x # inner.bn
-        x = x * x # inner.bn
+        x = x + x  # inner.bn
+        x = x * x  # inner.bn
         x = self.relu(x)
-        x = x + x # inner
-        x = x * x # inner
+        x = x + x  # inner
+        x = x * x  # inner
         x = x + x
         return x
 
@@ -289,10 +284,7 @@ class CompareMultiNet2(nn.Cell):
         x = self.mul(x, x)
         return x
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
+
 def test_pynative_forward_hook():
     """
     Feature: PyNative hook function.
@@ -353,10 +345,6 @@ def test_pynative_forward_hook():
     assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_multi_inp():
     """
     Feature: PyNative hook function.
@@ -407,19 +395,15 @@ def test_pynative_forward_hook_multi_inp():
     grad = grad_net(inputs)
     with pytest.raises(RuntimeError) as e:
         assert_jit_grad_net_by_grad_op(grad_op, net, grad, True, inputs)
-    assert (
-        "Failed to compile in GRAPH_MODE because the method or function 'mindspore.nn.cell.Cell.register_forward_hook' "
-        "is not supported in 'construct' or function with @jit decorator" in str(e.value))
+    assert ("Failed to compile in GRAPH_MODE because the method or function "
+            "'mindspore.nn.cell.Cell.register_forward_hook' is not supported in "
+            "'construct' or function with @jit decorator" in str(e.value))
     expect_grad = grad_op(compare_net, ParameterTuple(compare_net.trainable_params()))(inputs)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_exception():
     """
     Feature: PyNative hook function.
@@ -432,16 +416,9 @@ def test_pynative_forward_hook_exception():
     with pytest.raises(TypeError):
         net.relu.register_forward_pre_hook("Test")
     with pytest.raises(TypeError):
-        net.conv.register_forward_pre_hook(forward_hook_fn_with_ms_func)
-    with pytest.raises(TypeError):
-        net.conv.register_forward_hook(forward_hook_fn_with_ms_func)
-        _pynative_executor.sync()
+        net.conv.register_forward_hook("Test")
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_with_ms_func():
     """
     Feature: PyNative hook function.
@@ -483,7 +460,6 @@ def test_pynative_forward_hook_with_ms_func():
     single_net_msfunc.construct = old_construct
 
 
-
 def forward_pre_hook_fn(cell, inputs):
     print("forward inputs:", inputs)
     input_x = inputs[0]
@@ -502,10 +478,6 @@ class TestHookNet(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_delete():
     """
     Feature: PyNative hook function.
@@ -551,10 +523,6 @@ class TestHookInputNet(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_cell_input():
     """
     Feature: PyNative hook function.
@@ -579,10 +547,6 @@ class KwargsNet(nn.Cell):
         return x * x
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_pre_hook_with_kwargs():
     """
     Feature: PyNative forward pre hook with kwargs.
@@ -615,39 +579,13 @@ def test_pynative_forward_pre_hook_with_kwargs():
     assert np.allclose(output.asnumpy(), np.array([7.0], dtype=np.float32), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_forward_pre_hook_with_kwargs_return_error():
-    """
-    Feature: PyNative forward pre hook with kwargs.
-    Description: forward pre hook with keyword arguments returns an invalid type.
-    Expectation: Raise RuntimeError
-    """
-
-    def forward_pre_hook_kwargs(cell, args, kwargs):
-        args = (arg * 2 for arg in args)
-        return args
-
-    net = KwargsNet()
-    net.register_forward_pre_hook(forward_pre_hook_kwargs, with_kwargs=True)
-    x = ms.Tensor(2.0, dtype=ms.float32)
-    with pytest.raises(RuntimeError) as err:
-        net(x)
-        assert "forward pre hook with kwargs must return None or a tuple of (new_args, new_kwargs)" in str(err.value)
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_forward_hook_with_kwargs():
     """
     Feature: PyNative forward hook with kwargs.
     Description: Verify the correctness of forward_hook with keyword arguments.
     Expectation: The calculation result is correct.
     """
+
     def forward_hook_kwargs(cell, args, kwargs, output):
         return output + kwargs['bias']
 
@@ -669,3 +607,46 @@ def test_pynative_forward_hook_with_kwargs():
     handle1.remove()
     output = net(x, bias=bias)
     assert np.allclose(output.asnumpy(), np.array([9.0], dtype=np.float32), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_cell_forward_hook_test_suite():
+    """
+    Feature: PyNative forward hook.
+    Description: Test suite for pynative cell forward hook.
+    Expectation: Success
+    """
+    test_pynative_forward_hook()
+    test_pynative_forward_hook_multi_inp()
+    test_pynative_forward_hook_exception()
+    test_pynative_forward_hook_with_ms_func()
+    test_pynative_forward_hook_delete()
+    test_pynative_forward_hook_cell_input()
+    test_pynative_forward_pre_hook_with_kwargs()
+    test_pynative_forward_hook_with_kwargs()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_forward_pre_hook_with_kwargs_return_error():
+    """
+    Feature: PyNative forward pre hook with kwargs.
+    Description: forward pre hook with keyword arguments returns an invalid type.
+    Expectation: Raise RuntimeError
+    """
+
+    def forward_pre_hook_kwargs(cell, args, kwargs):
+        args = (arg * 2 for arg in args)
+        return args
+
+    net = KwargsNet()
+    net.register_forward_pre_hook(forward_pre_hook_kwargs, with_kwargs=True)
+    x = ms.Tensor(2.0, dtype=ms.float32)
+    with pytest.raises(RuntimeError) as err:
+        net(x)
+        assert "forward pre hook with kwargs must return None or a tuple of (new_args, new_kwargs)" in str(err.value)

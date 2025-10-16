@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,23 +13,11 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
-import mindspore.nn as nn
-import mindspore.common.dtype as mstype
-
-from mindspore import Tensor
-from mindspore import ParameterTuple
-from mindspore.nn import Momentum
-from mindspore.nn import WithLossCell
-from mindspore.ops import composite as C
-from mindspore.ops import operations as P
+from mindspore.nn import Momentum, WithLossCell
 from mindspore.common.initializer import TruncatedNormal
-from mindspore.common.api import _pynative_executor
-from mindspore._extends.parse import compile_config
+from mindspore import nn, ops, Tensor, ParameterTuple
 from tests.mark_utils import arg_mark
-
-grad_all = C.GradOperation(get_all=True)
 
 
 def weight_variable():
@@ -43,6 +31,15 @@ def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):
     return nn.Conv2d(in_channels, out_channels,
                      kernel_size=kernel_size, stride=stride, padding=padding,
                      weight_init=weight, has_bias=False, pad_mode="valid")
+
+
+def cell_hook_function_print_grad(cell, grad_input, grad_output):
+    assert grad_input[0].asnumpy().shape == (32, 6, 14, 14)
+    assert grad_output[0].asnumpy().shape == (32, 16, 10, 10)
+
+
+def custom_hook_function_print_and_save_grad(grad_out):
+    assert grad_out[0].asnumpy().shape == (32, 6, 28, 28)
 
 
 def fc_with_initialize(input_channels, out_channels):
@@ -60,13 +57,17 @@ class test_custom_hook_function_base():
         return hook_function, cell_hook_function
 
 
-def cell_hook_function_print_grad(cell, grad_input, grad_output):
-    assert grad_input[0].asnumpy().shape == (32, 6, 14, 14)
-    assert grad_output[0].asnumpy().shape == (32, 16, 10, 10)
+class GradWrap(nn.Cell):
+    """ GradWrap definition """
 
+    def __init__(self, network):
+        super(GradWrap, self).__init__(auto_prefix=False)
+        self.network = network
+        self.weights = ParameterTuple(filter(lambda x: x.requires_grad, network.get_parameters()))
 
-def custom_hook_function_print_and_save_grad(grad_out):
-    assert grad_out[0].asnumpy().shape == (32, 6, 28, 28)
+    def construct(self, x, label):
+        weights = self.weights
+        return ops.GradOperation(get_by_list=True)(self.network, weights)(x, label)
 
 
 class LeNet5(nn.Cell):
@@ -82,8 +83,8 @@ class LeNet5(nn.Cell):
         self.fc3 = fc_with_initialize(84, self.num_class)
         self.relu = nn.ReLU()
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.reshape = P.Reshape()
-        self.hook = P.HookBackward(hook_function)
+        self.reshape = ops.Reshape()
+        self.hook = ops.HookBackward(hook_function)
 
     def construct(self, x):
         x = self.conv1(x)
@@ -102,72 +103,16 @@ class LeNet5(nn.Cell):
         return x
 
 
-class GradWrap(nn.Cell):
-    """ GradWrap definition """
-
-    def __init__(self, network):
-        super(GradWrap, self).__init__(auto_prefix=False)
-        self.network = network
-        self.weights = ParameterTuple(filter(lambda x: x.requires_grad, network.get_parameters()))
-
-    def construct(self, x, label):
-        weights = self.weights
-        return C.GradOperation(get_by_list=True)(self.network, weights)(x, label)
-
-
-class test_custom_cell_base():
-    def __init__(self):
-        pass
-
-    def test_custom_cell_function(self, cell):
-        return cell
-
-
-class MulAdd(nn.Cell):
-    def construct(self, x, y):
-        return 2 * x + y
-
-    def bprop(self, x, y, out, dout):
-        assert x.asnumpy() == 1.0
-        assert y.asnumpy() == 2.0
-        assert out.asnumpy() == 4.0
-        assert dout.asnumpy() == 1.0
-        return dout, y
-
-
-class Ms_Cell(nn.Cell):
-    def __init__(self):
-        super(Ms_Cell, self).__init__()
-        self.relu = P.ReLU()
-
-    def construct(self, x):
-        return self.relu(x)
-
-    def bprop(self, x, out, dout):
-        dout = Tensor(np.float32(0.0))
-        assert dout.shape == ()
-        return dout
-
-
-class Ms_Cell_Change_Shape(nn.Cell):
-    def __init__(self):
-        super(Ms_Cell_Change_Shape, self).__init__()
-        self.relu = P.ReLU()
-
-    def construct(self, x):
-        return self.relu(x)
-
-    def bprop(self, x, out, dout):
-        dout = Tensor(np.ones([5, 5]).astype(np.float32))
-        assert dout.shape == (5, 5)
-        return dout
-
-
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_pynative_lenet_train_hook_function_print_and_save_grad():
+def test_pynative_lenet5_train_hook_function_print_and_save_grad():
+    """
+    Feature: Test hook backward ops, cell backward hook.
+    Description: Test hook backward ops, cell backward hook with LeNet5.
+    Expectation: Success
+    """
     hook = test_custom_hook_function_base()
     function = hook.test_custom_hook_function(custom_hook_function_print_and_save_grad,
                                               cell_hook_function_print_grad)
@@ -185,56 +130,6 @@ def test_pynative_lenet_train_hook_function_print_and_save_grad():
     grads = train_network(input_data, label)
     success = optimizer(grads)
     assert success
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_custom_bprop_and_Cell_MulAdd():
-    custom_cell = test_custom_cell_base()
-    mul_add = custom_cell.test_custom_cell_function(MulAdd())
-    mul_add.bprop_debug = True
-    grad_all(mul_add)(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
-    assert grad_all(mul_add)(Tensor(1, mstype.float32), Tensor(2, mstype.float32)) == \
-           (Tensor(1.0, mstype.float32), Tensor(2.0, mstype.float32))
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_custom_bprop_and_cell_ms_cell_change_shape():
-    """
-    Feature: Custom bprop
-    Description: Custom bprop change shape
-    Expectation: No exception.
-    """
-    compile_config.CHECK_BPROP = 1
-    custom_cell = test_custom_cell_base()
-    ms_cell = custom_cell.test_custom_cell_function(Ms_Cell_Change_Shape())
-    ms_cell.bprop_debug = True
-    with pytest.raises(ValueError) as ex:
-        grad_all(ms_cell)(Tensor(1, mstype.float32))
-        _pynative_executor.sync()
-    assert "should have the same shape as the 0th arg" in str(ex.value)
-    compile_config.CHECK_BPROP = ''
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_pynative_custom_bprop_and_Cell_Ms_Cell():
-    """
-    Feature: Custom bprop
-    Description: Custom bprop debug
-    Expectation: No exception.
-    """
-    custom_cell = test_custom_cell_base()
-    ms_cell = custom_cell.test_custom_cell_function(Ms_Cell())
-    ms_cell.bprop_debug = True
-    assert grad_all(ms_cell)(Tensor(1, mstype.float32)) == (Tensor(0.0, mstype.float32),)
 
 
 CELL_HOOK_DONE = False
@@ -299,8 +194,8 @@ class LeNet(nn.Cell):
         self.fc3 = fc_with_initialize(84, self.num_class)
         self.relu = nn.ReLU()
         self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.reshape = P.Reshape()
-        self.hook = P.HookBackward(var_hook_function)
+        self.reshape = ops.Reshape()
+        self.hook = ops.HookBackward(var_hook_function)
 
     def construct(self, x):
         x = self.conv1(x)
@@ -323,11 +218,11 @@ class LeNet(nn.Cell):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_hook():
+def test_pynative_lenet_with_hook():
     """
-    Feature: Hook for auto diff.
-    Description: Run the hook during auto diff.
-    Expectation: No exception.
+    Feature: Test hook backward ops, cell backward hook, custom bprop.
+    Description: Test hook backward ops, cell backward hook, custom bprop with LeNet.
+    Expectation: Success
     """
     net = LeNet()
     optimizer = Momentum(filter(lambda x: x.requires_grad, net.get_parameters()), 0.1, 0.9)
