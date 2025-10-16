@@ -27,6 +27,7 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
 import mindspore.dataset.engine.iterators as it
+from mindspore.dataset import PKSampler
 import mindspore.ops as ops
 from mindspore import log as logger
 from mindspore import Tensor
@@ -3268,6 +3269,45 @@ def test_perf_do_copy_parameter():
     assert do_copy_false_time < do_copy_true_time
 
 
+def test_generatordataset_do_not_support_PKSampler():
+    """
+    Feature: test GeneratorDataset with Sampler
+    Description: Testing GeneratorDataset with PKSampler
+    Expectation: SUCCESS (not support yet)
+    """
+
+    sequence_data = [1, 2, 3, 4, 5, 6]
+
+    class MyDataset:
+        def __init__(self, sequence_data):
+            self.sequence_data = sequence_data
+
+        def __getitem__(self, index):
+            return self.sequence_data[index], self.sequence_data[index]
+
+        def __len__(self):
+            return len(self.sequence_data)
+
+    with pytest.raises(ValueError) as info:
+        my_dataset = ds.GeneratorDataset(MyDataset(sequence_data), column_names=['data', 'label'],
+                                         sampler=PKSampler(10))
+        sampler = PKSampler(10)
+        my_dataset.add_sampler(sampler)
+        iterator = my_dataset.create_dict_iterator()
+        for item in iterator:
+            print(item)
+    assert "GeneratorDataset doesn't support PKSampler" in str(info)
+
+    with pytest.raises(RuntimeError) as info:
+        my_dataset = ds.GeneratorDataset(MyDataset(sequence_data), column_names=['data', 'label'])
+        sampler = PKSampler(10)
+        my_dataset.add_sampler(sampler)
+        iterator = my_dataset.create_dict_iterator()
+        for item in iterator:
+            print(item)
+    assert "GeneratorDataset doesn't support PKSampler" in str(info)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -3354,3 +3394,4 @@ if __name__ == "__main__":
     test_generator_dataset_with_parallel_convert_exception()
     test_generator_dataset_debug_mode()
     test_perf_do_copy_parameter()
+    test_generatordataset_do_not_support_PKSampler()
