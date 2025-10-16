@@ -2439,6 +2439,11 @@ class MappableDataset(SourceDataset):
             raise RuntimeError(f"When multiple samplers are used, ensure that the shuffle of the input sampler " +
                                f"must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {new_sampler.get_shuffle_mode()}.")
 
+        from mindspore.dataset.engine.datasets_user_defined import GeneratorDataset  \
+        # pylint: disable=import-outside-toplevel
+        if isinstance(self, GeneratorDataset) and isinstance(new_sampler, samplers.PKSampler):
+            raise RuntimeError("GeneratorDataset doesn't support PKSampler")
+
         new_sampler.add_child(self.sampler)
         self.sampler = new_sampler
 
