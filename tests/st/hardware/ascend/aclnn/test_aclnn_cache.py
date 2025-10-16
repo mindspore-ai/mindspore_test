@@ -256,14 +256,14 @@ def test_aclnn_cache_memory_pyboost():
     """
     context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
     net = SimpleNet2()
-    for i in range(1000):
+    for i in range(2000):
         dim1 = np.random.randint(1, 11)
         dim2 = np.random.randint(1000, 2000)
         dim3 = np.random.randint(20, 80)
         random_array = np.random.rand(dim1, dim2, dim3)
         x = mindspore.Tensor(random_array.astype(np.float32))
         net(x)
-        if i % 100 == 0:
+        if i % 200 == 0:
             print(f'step {i}, memory usage: {psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2} MB')
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
