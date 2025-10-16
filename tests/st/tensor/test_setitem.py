@@ -190,7 +190,55 @@ def test_previous_setitem_level1(capture_mode):
     value = -1
     previous_setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
 
+class NetSetitemCpu(nn.Cell):
+    """test setitem use net"""
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+    def construct(self, x):
+        x = ops.abs(x)
+        x[self.index] = self.value
+        return x
 
+def previous_setitem_check_grad(x, index, value, np_expected, capture_mode=None):
+    """setitem run and check"""
+    if capture_mode is None:
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+
+    net = NetSetitemCpu(index, value)
+    ms_grad = grad_func(net, x)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(net.construct, x, index, value)
+
+    assert np.allclose(np_expected, ms_grad.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                        f"expected:{np_expected} {np_expected.shape}, " \
+                                                        f"ms_grad:{ms_grad} {ms_grad.shape}"
+@arg_mark(
+    plat_marks=['cpu_linux'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+@pytest.mark.parametrize('capture_mode', [None])
+def test_previous_setitem_with_grad_on_cpu(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of previous tensor setitem grad
+    Expectation: success
+    """
+    index = 0
+    np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                            [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]])
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    value = -1
+    previous_setitem_check_grad(ms_x, index, value, np_expected)
 
 @arg_mark(
     plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
