@@ -275,6 +275,7 @@
 /tests/ut/python/ops/composite/ @ginfung
 
 # The maintainers of other code directories.
+/.gitee/ @limingqi107
 /.jenkins/ @nicholas_yhr
 /cmake/ @nicholas_yhr
 /cmake/external_libs/ @tronzhang
@@ -284,6 +285,9 @@
 /scripts/ @nicholas_yhr
 /third_party/  @tronzhang
 /.gitmodules  @tronzhang
+/.gitignore @limingqi107
+/.gitattributes @limingqi107
+/.clangformat @limingqi107
 /requirements.txt  @tronzhang
 /setup.py  @tronzhang
 /Third_Party_Open_Source_Software_Notice  @tronzhang
