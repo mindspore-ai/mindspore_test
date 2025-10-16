@@ -14,7 +14,7 @@
 
 import os
 import subprocess
-from tests.st.runtime.run_capture_graph import Net1, SeqNet, expected_output
+from tests.st.runtime.kernel_capture.run_capture_graph import Net1, SeqNet, expected_output
 from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.ops as P
@@ -208,6 +208,39 @@ def test_multi_graph_cache_with_num_limit_for_capture_graph():
 
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Failed to analyse logs: {str(e)}")
+    finally:
+        if os.path.exists(log_file):
+            os.remove(log_file)
+
+
+@arg_mark(
+    plat_marks=['platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='essential'
+)
+def test_weight_change():
+    """
+    Feature: test weight change
+    Description: Weight input change will trigger exception when enable capture graph
+    Expectation: give relative exception
+    """
+    command = 'export GLOG_v=1 && python run_capture_graph_with_exception.py > capture_graph_weight_change.log 2>&1'
+    os.system(command)
+
+    log_file = "capture_graph_weight_change.log"
+
+    try:
+        address_changed = int(subprocess.check_output(
+            f"grep 'device address has changed' {log_file} | wc -l",
+            shell=True
+        ).decode().strip())
+
+        assert address_changed > 0, "Expected 'device address has changed' in logs but not found"
+
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to analyse logs: {str(e)}")
+        raise
     finally:
         if os.path.exists(log_file):
             os.remove(log_file)
