@@ -66,10 +66,7 @@
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/constants.h"
-#include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/ps/ps_context.h"
 #endif
 #ifdef ENABLE_DUMP_IR
 #include "ir/cell.h"

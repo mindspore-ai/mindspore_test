@@ -123,11 +123,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/util.h"
-#include "include/backend/distributed/ps/ps_context.h"
-#endif
-
 #ifndef REGISTER_PASS_FUNC_IMPL
 #define REGISTER_PASS_FUNC_IMPL(name)                                                                        \
   namespace {                                                                                                \
@@ -428,11 +423,6 @@ bool OffloadActivationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr 
 REGISTER_OPT_PASS_FUNC(OffloadActivationWrapper)
 
 bool parallel_mode() {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
-    return false;
-  }
-#endif
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   return (parallel_mode == parallel::kAutoParallel) || (parallel_mode == parallel::kSemiAutoParallel);
 }

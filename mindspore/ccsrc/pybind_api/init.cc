@@ -37,9 +37,6 @@
 #include "frontend/parallel/device_manager.h"
 #include "include/common/utils/offload_context.h"
 #include "frontend/parallel/costmodel_context.h"
-#if ((defined ENABLE_CPU) && (!defined _WIN32))
-#include "include/backend/distributed/ps/util.h"
-#endif
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/init.h"
 #include "include/backend/distributed/collective/collective_manager.h"
