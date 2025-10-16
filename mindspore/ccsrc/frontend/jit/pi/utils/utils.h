@@ -84,7 +84,7 @@ class Utils {
 
 /* use python format pattern */
 template <typename... Args>
-py::str PyStringFormat(std::string fmt, Args &&...args) {
+py::str PyStringFormat(std::string fmt, Args &&... args) {
   if (fmt.back() == '\n') {
     fmt.back() = ' ';
   }
@@ -184,7 +184,6 @@ py::object ConvertCppTensorToMsTensor(const py::object &tensor);
 
 std::string GetTopModule(const py::object &o);
 py::object GetPyCodeObject(const py::object &any, bool exact_func = false);
-size_t DeviceAvailableMemSize();
 bool CheckConstPyObject(PyObject *cnst);
 
 template <typename T>

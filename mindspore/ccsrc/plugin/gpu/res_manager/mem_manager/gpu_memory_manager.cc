@@ -36,13 +36,6 @@ std::vector<void *> GPUMemoryManager::MallocContinuousMemFromMemPool(const std::
   return GPUMemoryAllocator::GetInstance().AllocContinuousTensorMem(size_list, stream_id);
 }
 
-size_t GPUMemoryManager::GetAvailableMemSize() {
-  auto available_mem_size = GPUMemoryAllocator::GetInstance().free_mem_size() +
-                            GPUMemoryAllocator::GetInstance().TotalMemStatistics() -
-                            GPUMemoryAllocator::GetInstance().TotalUsedMemStatistics();
-  return available_mem_size;
-}
-
 // Relevant function to manage memory statistics
 size_t GPUMemoryManager::GetTotalMemStatistics() const {
   return GPUMemoryAllocator::GetInstance().TotalMemStatistics();
@@ -124,16 +117,6 @@ void GPUMemoryManager::Initialize() {
 }
 
 void GPUMemoryManager::Finalize() { GPUMemoryAllocator::GetInstance().ReleaseDeviceRes(); }
-
-uint8_t *GPUMemoryManager::MallocStaticMem(size_t size, bool, uint32_t) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto device_ptr = MallocMemFromMemPool(size, false);
-  if (device_ptr == nullptr) {
-    MS_LOG(EXCEPTION) << "Device memory isn't enough and alloc failed, alloc size:" << size;
-  }
-  return AddressOffset(device_ptr, 0);
-}
 
 DynamicMemPool *GPUMemoryManager::GetMemoryPool() {
   if (MS_UNLIKELY(memory_pool_ == nullptr)) {

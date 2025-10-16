@@ -42,16 +42,9 @@ class RUNTIME_HARDWARE_EXPORT MemoryManager {
   virtual void Initialize() = 0;
   virtual void Finalize() = 0;
   virtual void ResetDynamicMemory() {}
-  virtual void ClearGlobalIdleMem() {}
 
-  uint8_t *MallocOutputMem(const AnfNodePtr &node, size_t index, MemType type, size_t size,
-                           const DeviceAddressPtr &address, bool comm_mem);
   uint8_t *MallocWorkSpaceMem(const AnfNodePtr &node, size_t index, MemType type, size_t size);
   uint8_t *MallocWorkSpaceMem(size_t size);
-  virtual uint8_t *MallocMem(MemType type, size_t size, const DeviceAddressPtr &address, uint32_t graph_id);
-  virtual uint8_t *MallocMem(MemType type, size_t size, const DeviceAddressPtr &address) {
-    return MallocMem(type, size, address, kInvalidGraphId);
-  }
   // param address is the address type of each device
   // param from_persistent_mem shows whether the tensor is a parameter in Pynative mode
   virtual bool MallocMemFromMemPool(const DeviceAddressPtr &address, size_t size);
@@ -73,10 +66,6 @@ class RUNTIME_HARDWARE_EXPORT MemoryManager {
   }
   virtual void SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) {
     MS_LOG(INFO) << "Call default swap out " << host_ptr << "," << device_ptr << "," << mem_size << "," << stream;
-  }
-  virtual size_t GetAvailableMemSize() {
-    MS_LOG(ERROR) << "Return default 0 mem size!";
-    return 0;
   }
 
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
@@ -131,13 +120,8 @@ class RUNTIME_HARDWARE_EXPORT MemoryManager {
   }
   virtual void ResetMaxMemoryReserved() {}
   virtual void ResetMaxMemoryAllocated() {}
-  virtual size_t EmptyCache() { return -1L; }
 
  protected:
-  virtual uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) = 0;
-  virtual uint8_t *MallocStaticMem(size_t size, bool communication_mem) {
-    return MallocStaticMem(size, communication_mem, kInvalidGraphId);
-  }
   virtual uint8_t *MallocDynamicMem(size_t size, bool communication_mem);
 
   // Hold memory pool for common operations on memory.
