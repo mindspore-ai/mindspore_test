@@ -34,9 +34,9 @@ def test_custom_cpu_string():
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     with tempfile.TemporaryDirectory() as tmpdirname:
         CustomOpBuilder("custom_cpu",
-                        "jit_test_files/graph/add_cpu.cpp",
-                        backend="CPU", op_def="jit_test_files/graph/add_cpu.yaml",
-                        op_doc="jit_test_files/graph/add_cpu.yaml",
+                        "kernel_impl/add_cpu.cpp",
+                        backend="CPU", op_def="ops_yaml/add_cpu.yaml",
+                        op_doc="ops_yaml/add_cpu.yaml",
                         build_dir=tmpdirname).build()
         auto_generate_path = os.path.join(tmpdirname, "custom_cpu_auto_generate")
         assert os.path.isdir(auto_generate_path), \
@@ -68,9 +68,9 @@ def test_custom_cpu_list():
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     with tempfile.TemporaryDirectory() as tmpdirname:
         CustomOpBuilder("custom_cpu",
-                        ["jit_test_files/graph/add_cpu.cpp"],
-                        backend="CPU", op_def=["jit_test_files/graph/add_cpu.yaml"],
-                        op_doc=["jit_test_files/graph/add_cpu.yaml"],
+                        ["kernel_impl/add_cpu.cpp"],
+                        backend="CPU", op_def=["ops_yaml/add_cpu.yaml"],
+                        op_doc=["ops_yaml/add_cpu.yaml"],
                         build_dir=tmpdirname).build()
         auto_generate_path = os.path.join(tmpdirname, "custom_cpu_auto_generate")
         assert os.path.isdir(auto_generate_path), \
@@ -102,9 +102,9 @@ def test_custom_cpu_tuple():
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     with tempfile.TemporaryDirectory() as tmpdirname:
         CustomOpBuilder("custom_cpu",
-                        ("jit_test_files/graph/add_cpu.cpp"),
-                        backend="CPU", op_def=("jit_test_files/graph/add_cpu.yaml"),
-                        op_doc=("jit_test_files/graph/add_cpu.yaml"),
+                        ("kernel_impl/add_cpu.cpp"),
+                        backend="CPU", op_def=("ops_yaml/add_cpu.yaml"),
+                        op_doc=("ops_yaml/add_cpu.yaml"),
                         build_dir=tmpdirname).build()
         auto_generate_path = os.path.join(tmpdirname, "custom_cpu_auto_generate")
         assert os.path.isdir(auto_generate_path), \
@@ -137,9 +137,9 @@ def test_custom_cpu_mixed():
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     with tempfile.TemporaryDirectory() as tmpdirname:
         CustomOpBuilder("custom_cpu",
-                        "jit_test_files/graph/add_cpu.cpp",
-                        backend="CPU", op_def=("jit_test_files/graph/add_cpu.yaml"),
-                        op_doc="jit_test_files/graph/add_cpu.yaml",
+                        "kernel_impl/add_cpu.cpp",
+                        backend="CPU", op_def=("ops_yaml/add_cpu.yaml"),
+                        op_doc="ops_yaml/add_cpu.yaml",
                         build_dir=tmpdirname).build()
         auto_generate_path = os.path.join(tmpdirname, "custom_cpu_auto_generate")
         assert os.path.isdir(auto_generate_path), \

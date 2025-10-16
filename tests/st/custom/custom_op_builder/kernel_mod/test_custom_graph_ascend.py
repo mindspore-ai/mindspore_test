@@ -36,10 +36,10 @@ def test_custom_single_operator():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("single_op",
-                                              ["jit_test_files/graph/add4.cpp",
-                                               "jit_test_files/graph/module.cpp"],
-                                              backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
-                                              op_doc=["jit_test_files/graph/add4_doc.yaml"],
+                                              ["kernel_impl/add4.cpp",
+                                               "kernel_impl/module.cpp"],
+                                              backend="Ascend", op_def=["ops_yaml/add4.yaml"],
+                                              op_doc=["ops_yaml/add4_doc.yaml"],
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y):
@@ -68,10 +68,10 @@ def test_custom_single_operator_tuple():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("single_op_tuple",
-                                              ("jit_test_files/graph/add4.cpp",
-                                               "jit_test_files/graph/module.cpp"),
-                                              backend="Ascend", op_def=("jit_test_files/graph/add4.yaml"),
-                                              op_doc=("jit_test_files/graph/add4_doc.yaml"),
+                                              ("kernel_impl/add4.cpp",
+                                               "kernel_impl/module.cpp"),
+                                              backend="Ascend", op_def=("ops_yaml/add4.yaml"),
+                                              op_doc=("ops_yaml/add4_doc.yaml"),
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y):
@@ -100,9 +100,9 @@ def test_custom_single_operator_no_doc():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("single_op_no_doc",
-                                              ["jit_test_files/graph/add4.cpp",
-                                               "jit_test_files/graph/module.cpp"],
-                                              backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
+                                              ["kernel_impl/add4.cpp",
+                                               "kernel_impl/module.cpp"],
+                                              backend="Ascend", op_def=["ops_yaml/add4.yaml"],
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y):
@@ -127,10 +127,10 @@ def test_custom_single_operator_func():
     ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     with tempfile.TemporaryDirectory() as tmpdirname:
         my_ops = CustomOpBuilder("single_op_func",
-                                 ["jit_test_files/graph/add4.cpp",
-                                  "jit_test_files/graph/module.cpp"],
-                                 backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
-                                 op_doc=["jit_test_files/graph/add4_doc.yaml"], build_dir=tmpdirname).load()
+                                 ["kernel_impl/add4.cpp",
+                                  "kernel_impl/module.cpp"],
+                                 backend="Ascend", op_def=["ops_yaml/add4.yaml"],
+                                 op_doc=["ops_yaml/add4_doc.yaml"], build_dir=tmpdirname).load()
 
         @ms.jit()
         def add_net(x, y):
@@ -159,10 +159,10 @@ def test_custom_multi_operator():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("graphmode_add_2",
-                                              ["jit_test_files/graph/add4.cpp", "jit_test_files/graph/add3.cpp",
-                                               "jit_test_files/graph/module.cpp"], backend="Ascend",
-                                              op_def=["jit_test_files/graph/add4.yaml",
-                                                      "jit_test_files/graph/add3.yaml"], build_dir=tmpdirname).load()
+                                              ["kernel_impl/add4.cpp", "kernel_impl/add3.cpp",
+                                               "kernel_impl/module.cpp"], backend="Ascend",
+                                              op_def=["ops_yaml/add4.yaml",
+                                                      "ops_yaml/add3.yaml"], build_dir=tmpdirname).load()
 
             def construct(self, x, y):
                 out = self.my_ops.add4(x, y, 1)
@@ -212,11 +212,11 @@ def test_CustomOpBuilder_exception_1():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("exception_1",
-                                              ["jit_test_files/graph/add4.cpp",
-                                               'jit_test_files/pyboost_aclnn_sum.cpp',
-                                               "jit_test_files/graph/module.cpp"],
-                                              backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
-                                              op_doc=["jit_test_files/graph/add4_doc.yaml"],
+                                              ["kernel_impl/add4.cpp",
+                                               'kernel_impl/pyboost_aclnn_sum.cpp',
+                                               "kernel_impl/module.cpp"],
+                                              backend="Ascend", op_def=["ops_yaml/add4.yaml"],
+                                              op_doc=["ops_yaml/add4_doc.yaml"],
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y):
@@ -244,11 +244,11 @@ def test_CustomOpBuilder_exception_2():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("exception_2",
-                                              ["jit_test_files/graph/add4.cpp",
-                                               'jit_test_files/pyboost_aclnn_sum.cpp',
-                                               "jit_test_files/graph/module.cpp"],
-                                              backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
-                                              op_doc=["jit_test_files/graph/add4_doc.yaml"],
+                                              ["kernel_impl/add4.cpp",
+                                               'kernel_impl/pyboost_aclnn_sum.cpp',
+                                               "kernel_impl/module.cpp"],
+                                              backend="Ascend", op_def=["ops_yaml/add4.yaml"],
+                                              op_doc=["ops_yaml/add4_doc.yaml"],
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y, z):
@@ -275,11 +275,11 @@ def test_CustomOpBuilder_exception_3():
             def __init__(self):
                 super(MyNet, self).__init__()
                 self.my_ops = CustomOpBuilder("exception_3",
-                                              ["jit_test_files/graph/add4.cpp",
-                                               'jit_test_files/pyboost_aclnn_sum.cpp',
-                                               "jit_test_files/graph/module.cpp"],
-                                              backend="Ascend", op_def=["jit_test_files/graph/add4.yaml"],
-                                              op_doc=["jit_test_files/graph/add4_doc.yaml"],
+                                              ["kernel_impl/add4.cpp",
+                                               'kernel_impl/pyboost_aclnn_sum.cpp',
+                                               "kernel_impl/module.cpp"],
+                                              backend="Ascend", op_def=["ops_yaml/add4.yaml"],
+                                              op_doc=["ops_yaml/add4_doc.yaml"],
                                               build_dir=tmpdirname).load()
 
             def construct(self, x, y, z):
