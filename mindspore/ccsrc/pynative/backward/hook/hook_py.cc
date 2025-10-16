@@ -33,8 +33,6 @@ namespace {
 // For store hook
 uint64_t unique_id_ = 0;
 std::unordered_map<uint64_t, std::weak_ptr<BackwardNode>> hook_id_node_map_;
-std::unordered_map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> tensor_id_with_hook_map_;
-std::unordered_map<uint64_t, uint64_t> unique_id_with_tensor_id_;
 
 BackwardNodePtr BuildAutoGradMeta(const tensor::TensorPtr &tensor) {
   runtime::Pipeline::Get().WaitFrontend();
