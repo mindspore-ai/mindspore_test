@@ -106,6 +106,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import nllloss_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import adaptive_max_pool2d_impl
 from mindspore.ops.function.array_func import gather_ext
 from mindspore.ops.operations.manually_defined import flash_attention_score, fused_infer_attention_score
+from mindspore.ops.functional_overload import nsa_compress
 
 abs_ = P.Abs()
 add_ = P.Add()
@@ -9369,6 +9370,7 @@ __all__ = [
     'prompt_flash_attention',
     'flash_attention_score',
     'fused_infer_attention_score',
+    'nsa_compress',
     'flip',
     'fliplr',
     'flipud',

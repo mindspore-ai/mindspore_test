@@ -504,6 +504,7 @@ from .nn_func import (
     fractional_max_pool2d,
     fractional_max_pool3d,
     speed_fusion_attention,
+    nsa_compress,
     pixel_shuffle,
     pixel_unshuffle,
     hardshrink,
