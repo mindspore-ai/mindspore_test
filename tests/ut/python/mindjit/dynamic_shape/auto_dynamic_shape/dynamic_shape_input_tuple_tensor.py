@@ -13,27 +13,26 @@
 # limitations under the License.
 # ============================================================================
 
-from mindspore import nn, Tensor, jit
-from mindspore import dtype as mstype
 import numpy as np
+from mindspore import Tensor, jit, mutable
+from mindspore import dtype as mstype
 
 
-class DynamicShapeNet1(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.num = 2
+@jit(dynamic=1)
+def func(x):
+    out = x[0] + x[1]
+    return out
 
-    @jit(dynamic=1)
-    def construct(self, value):
-        return self.num * value
+x1 = Tensor(np.random.rand(2, 3, 4), mstype.float32)
+y1 = Tensor(np.random.rand(2, 3, 4), mstype.float32)
+x2 = Tensor(np.random.rand(3, 3, 4), mstype.float32)
+y2 = Tensor(np.random.rand(3, 3, 4), mstype.float32)
+x3 = Tensor(np.random.rand(4, 3, 4), mstype.float32)
+y3 = Tensor(np.random.rand(4, 3, 4), mstype.float32)
+x4 = Tensor(np.random.rand(5, 3, 4), mstype.float32)
+y4 = Tensor(np.random.rand(5, 3, 4), mstype.float32)
 
-x = Tensor(np.random.rand(2, 3), mstype.float32)
-y = Tensor(np.random.rand(2, 4), mstype.float32)
-z = Tensor(np.random.rand(2, 5), mstype.float32)
-w = Tensor(np.random.rand(2, 6), mstype.float32)
-
-net = DynamicShapeNet1()
-output1 = net(x)
-output2 = net(y)
-output3 = net(z)
-output4 = net(w)
+func(mutable((x1, y1)))
+func(mutable((x2, y2)))
+func(mutable((x3, y3)))
+func(mutable((x4, y4)))

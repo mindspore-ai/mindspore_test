@@ -236,6 +236,7 @@
 /tests/ut/cpp/ops/ @liangchenghui
 
 # The maintainers of tests/ut/python.
+/tests/ut/python/mindjit/ @ginfung
 /tests/ut/python/_extends/ @ginfung
 /tests/ut/python/_extends/graph_kernel/ @gaoxiong1
 /tests/ut/python/_extends/parallel_compile/ @gaoxiong1
