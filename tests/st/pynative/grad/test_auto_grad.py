@@ -23,6 +23,7 @@ from mindspore.nn.optim import Momentum
 from mindspore import ops, COOTensor, CSRTensor
 from mindspore.common.api import _pynative_executor
 from mindspore.ops.composite import GradOperation
+from mindspore.ops.auto_generate import GroupedMatmul
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, GradOfAllParams, GradOfAllInputsAndParams
 from tests.mark_utils import arg_mark
 
@@ -946,3 +947,41 @@ def test_all_tests():
     test_cootensor_values_abs_train()
     test_csrtensor_values_sum_train()
     test_pynative_temporary_cell_variables()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_tuple_input_need_compute_grad_out():
+    """
+    Features: Test ops tuple input need compute grad out.
+    Description: Use tensor hook to verify need_compute_grad_out.
+    Expectation: No exception.
+    """
+    count = 0
+
+    def record_hook(unused):
+        nonlocal count
+        count += 1
+
+    group_matmul_ops = GroupedMatmul(split_item=3, group_type=0)
+
+    def forward_fn(x, w, group_list):
+        x = x + 1.0
+        w = w + 1.0
+        x.register_hook(record_hook)
+        w.register_hook(record_hook)
+        res = group_matmul_ops([x], [w], None, None, None, None, None, group_list)
+        return res[0] + 1.0
+
+    m, k, n, e = 10, 20, 8, 5
+    x = ops.rand(m, k, dtype=mindspore.float32)
+    w = ops.rand(e, k, n, dtype=mindspore.float32)
+    group_list = Tensor(np.arange(0, m, m // e) + m // e, dtype=mindspore.int64)
+
+    mindspore.value_and_grad(forward_fn, grad_position=(0, 1))(x, w, group_list)
+    assert count == 2
+
+    mindspore.value_and_grad(forward_fn, grad_position=(1,))(x, w, group_list)
+    assert count == 3
