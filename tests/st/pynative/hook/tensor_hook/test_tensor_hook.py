@@ -410,7 +410,7 @@ def test_tensor_backward_hook_register_error():
     Expectation: Raise TypeError.
     """
     x = ms.Tensor([1.0])
-    with pytest.raises(TypeError, match="hook_fn must be callable"):
+    with pytest.raises(TypeError, match="must be python function"):
         x.register_hook(1.0)
 
 

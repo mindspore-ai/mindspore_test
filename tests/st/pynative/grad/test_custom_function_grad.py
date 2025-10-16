@@ -889,6 +889,7 @@ def test_custom_function_auto_reduce_same_shape():
     Description: Test auto reduce.
     Expectation: success.
     """
+
     class CustomFunctionAutoReduceNet(_Function):
         @staticmethod
         def forward(ctx, x, y):
@@ -898,7 +899,7 @@ def test_custom_function_auto_reduce_same_shape():
         @staticmethod
         def backward(ctx, *args):
             return Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]]), \
-                   Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
+                Tensor([[1., 1., 1.], [1., 1., 1.], [2., 2., 2.]])
 
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
@@ -920,6 +921,7 @@ def test_custom_function_auto_reduce_not_same_shape():
     Description: Test auto reduce.
     Expectation: success.
     """
+
     class CustomFunctionAutoReduceNet2(_Function):
         @staticmethod
         def forward(ctx, x, y):
@@ -929,7 +931,8 @@ def test_custom_function_auto_reduce_not_same_shape():
         @staticmethod
         def backward(ctx, *args):
             return Tensor(np.ones((1, 1, 24, 8828, 128)).astype('float32')), \
-                   Tensor(np.ones((1, 1, 24, 8828, 128)).astype('float32'))
+                Tensor(np.ones((1, 1, 24, 8828, 128)).astype('float32'))
+
     x = Tensor(np.random.rand(1, 24, 8828, 128).astype('float32'))
     y = Tensor(np.random.rand(1, 24, 8828, 128).astype('float32'))
     net = CustomFunctionAutoReduceNet2()
@@ -950,6 +953,7 @@ def test_custom_function_auto_reduce_zero_shape():
     Description: Test auto reduce.
     Expectation: success.
     """
+
     class CustomFunctionAutoReduceNet2(_Function):
         @staticmethod
         def forward(ctx, x, y):
@@ -959,6 +963,7 @@ def test_custom_function_auto_reduce_zero_shape():
         @staticmethod
         def backward(ctx, *args):
             return Tensor(np.ones((1, 128)).astype('float32')), Tensor(np.ones((1, 128)).astype('float32'))
+
     x = Tensor(1.)
     y = Tensor(2.)
     net = CustomFunctionAutoReduceNet2()
@@ -977,7 +982,7 @@ class CustomFunctionAutoCastNet(_Function):
     @staticmethod
     def backward(ctx, *args):
         return Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1011,7 +1016,7 @@ class CustomFunctionBroadcastExecptionNet(_Function):
     @staticmethod
     def backward(ctx, *args):
         return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1042,7 +1047,7 @@ class CustomFunctionSelfRequiresGrad(_Function):
     @staticmethod
     def backward(ctx, *args):
         return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1072,7 +1077,7 @@ class CustomFunctionOutRequiresGrad(_Function):
     @staticmethod
     def backward(ctx, *args):
         return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1123,9 +1128,13 @@ class CustomFunctionNotRaiseError(_Function):
     @staticmethod
     def backward(ctx, *args):
         return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=mindspore.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=mindspore.int64)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_custom_function_not_raise_error():
     """
     Feature: Custom autograd function.
@@ -1135,3 +1144,45 @@ def test_custom_function_not_raise_error():
     x = Tensor([3, 3, 3], mindspore.float32)
     y = Tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]], mindspore.float32)
     _ = CustomFunctionNotRaiseError.apply(x, y)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_mark_non_differentiable_error():
+    """
+    Feature: Custom autograd function.
+    Description: Test mark_non_differentiable for non-tensor.
+    Expectation: Raise Runtime error.
+    """
+
+    class MarkNonDiffErrorOp(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            ctx.mark_non_differentiable(x, 1.0)
+            return x
+
+    with pytest.raises(RuntimeError, match="element of non_differentiable should be a tensor"):
+        MarkNonDiffErrorOp.apply(Tensor([1.0]))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_mark_dirty_error():
+    """
+    Feature: Custom autograd function.
+    Description: Test mark_dirty for non-tensor.
+    Expectation: Raise Runtime error.
+    """
+
+    class MarkDirtyErrorOp(_Function):
+        @staticmethod
+        def forward(ctx, x):
+            ctx.mark_dirty(x, 1.0)
+            return x
+
+    with pytest.raises(RuntimeError, match="element of dirty_tensors should be a tensor"):
+        MarkDirtyErrorOp.apply(Tensor([1.0]))
