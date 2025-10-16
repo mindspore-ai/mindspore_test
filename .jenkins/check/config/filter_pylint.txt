@@ -17,6 +17,8 @@
 "mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py"                                                 "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "not-callable"
+"mindspore/mindspore/python/mindspore/common/api.py"                                                                     "unnecessary-direct-lambda-call"
+"mindspore/mindspore/python/mindspore/common/api.py"                                                                     "use-a-generator"
 "mindspore/mindspore/python/mindspore/common/parameter.py"                                                               "protected-access"
 "mindspore/mindspore/python/mindspore/common/parameter.py"                                                               "no-value-for-parameter"
 "mindspore/mindspore/python/mindspore/common/hook_handle.py"                                                             "protected-access"

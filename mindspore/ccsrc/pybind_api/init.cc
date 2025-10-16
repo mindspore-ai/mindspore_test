@@ -58,6 +58,7 @@
 #include "pybind_api/graph/pipeline_py.h"
 #include "pybind_api/graph/custom_pass_py.h"
 #include "pybind_api/frombuffer.h"
+#include "pybind_api/graph/custom_backend_py.h"
 #ifdef _WIN32
 #include "kernel/cpu/utils/cpu_utils.h"
 #endif
@@ -127,6 +128,7 @@ void RegModule(py::module *m) {
   RegReuseDataPtr(m);
   mindspore::graph::RegCustomPass(m);
   mindspore::backend::RegBackendGraphMock(m);
+  mindspore::graph::RegCustomBackend(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);

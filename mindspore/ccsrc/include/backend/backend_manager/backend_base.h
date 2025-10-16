@@ -22,11 +22,12 @@
 #include <vector>
 #include <utility>
 
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 #include "mindspore/core/include/base/base_ref.h"
 #include "backend/backend_manager/visible.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "ir/tensor.h"
-#include "include/utils/python_adapter.h"
 
 namespace mindspore {
 namespace backend {
