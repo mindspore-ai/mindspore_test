@@ -119,7 +119,7 @@ bool IsConstantValue(int op, const std::vector<ValueNode *> &inputs) {
 }
 
 static void MakeConstantFold(ValueNode *node) {
-  node->SetConstantValue(IsConstantValue(node->GetOpcode(), node->getInputs()));
+  node->SetConstantValue(IsConstantValue(node->GetOpcode(), node->inputs()));
 }
 
 static void MakeCodeConstantInfo(ValueNode *node) {
@@ -376,7 +376,7 @@ static void MakePrimitiveConstantInfoCommon(ValueNode *node) {
     return;
   }
   // check all inputs tensor shape is constant, other inputs is constant
-  const auto &inputs = node->getInputs();
+  const auto &inputs = node->inputs();
   bool constant_shape = std::none_of(inputs.begin(), inputs.end(), [](ValueNode *i) {
     const auto &cnst = i->GetConstantInfo();
     if (cnst == nullptr) {

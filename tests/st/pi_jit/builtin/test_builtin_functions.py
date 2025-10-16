@@ -13,10 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """Test builtin function constant fold"""
-from mindspore import Tensor
-from mindspore import context
-from mindspore.common.api import jit
-from ..share.utils import match_array, assert_executed_by_graph_mode
+
+from mindspore import Tensor, ops, jit, context
+
+from tests.st.pi_jit.share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 
@@ -27,6 +27,7 @@ def test_abs():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
+
     def fn(x: Tensor):
         return abs(x) + 1
 
@@ -48,6 +49,7 @@ def test_len():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
+
     @jit(capture_mode='bytecode')
     def fn(x: Tensor):
         return len(x) + 1
@@ -66,6 +68,7 @@ def test_pow():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
+
     def fn(x: Tensor):
         return pow(x, 2) + 1
 
@@ -78,3 +81,34 @@ def test_pow():
 
     match_array(o1, o2)
     assert_executed_by_graph_mode(fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_builtin_function_type_v1():
+    """
+    Feature: python builtin type().
+    Description: Test one stage basic operation.
+    Expectation: No graph breaks.
+    """
+
+    def view(x: Tensor, *shape):
+        # when x triggers dynamic shape, the shape argument may become a variable (contains kValueAny).
+        if type(shape) is tuple:
+            return ops.reshape(x, shape)
+        else:
+            return ops.flatten(x)
+
+    def fn(x: Tensor, n: int, dim: int):
+        B = x.shape[0]
+        T = x.shape[1]  # may trigger dynamic shape
+        return view(x, B, T, n, dim)
+
+    compiled_fn = pi_jit_with_config(fn, jit_config={'_symbolic': 1}, fullgraph=True)
+
+    # Currently, the 7th tensor shape change triggers dynamic shape compilation.
+    for i in range(1, 10):
+        x = ops.randn(1, i, 4)
+        o1 = fn(x, 2, 2)
+        o2 = compiled_fn(x, 2, 2)
+        match_array(o1, o2)
+        assert_executed_by_graph_mode(compiled_fn)

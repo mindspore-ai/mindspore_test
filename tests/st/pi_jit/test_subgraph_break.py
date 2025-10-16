@@ -847,7 +847,7 @@ def test_call_function_graph_break_in_loop_v14():
 
     match_array(o1, o2, error=7)
     assert_has_graph_break(f1, break_count=1)
-    check_ir_num('graph_before_compile', 5)
+    check_ir_num('graph_before_compile', 3)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -51,7 +51,7 @@ class PIJitCaptureContext:
     Context manager for pijit graph capture
     """
 
-    def __init__(self, fullgraph=False, jit_config=None, input_signature=None):
+    def __init__(self, fullgraph=False, jit_config=None):
         _update_graph_executor_config(jit_config)
         config = {'fullgraph': fullgraph}
         if isinstance(jit_config, JitConfig):
@@ -64,10 +64,9 @@ class PIJitCaptureContext:
             raise TypeError(f"The config '_disable_pijit' must be callable but got {disable_pijit}")
 
         self.config = config
-        self.input_signature = input_signature
         self.ret = None
         self.fn = None
-        self._init_arg = iter([self.config, self.input_signature])
+        self._init_arg = iter([self.config])
 
         if not SKIP_RULES:
             return

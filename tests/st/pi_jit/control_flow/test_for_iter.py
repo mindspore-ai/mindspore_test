@@ -14,7 +14,7 @@
 ''' test FOR_ITER for pijit '''
 import pytest
 import sys
-from mindspore import jit, Tensor
+from mindspore import jit, Tensor, ops
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
@@ -158,3 +158,32 @@ def test_for_zip_iter_2():
     match_array(o1, o2)
     if sys.version_info >= (3, 8):
         assert_executed_by_graph_mode(fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_for_iter_of_non_const_tuple():
+    """
+    Feature: Test FOR_ITER.
+    Description: Test FOR_TIER of a non-const tuple.
+    Expectation: No exception, no graph breaks.
+    """
+
+    def view(x, *shape):
+        result = [1]
+        for dim in shape:  # shape is not a constant tuple
+            result.append(dim)
+        return ops.reshape(x, result)
+
+    def fn(x: Tensor, n: int, dim: int):
+        B = x.shape[0]  # may trigger dynamic shape.
+        return view(x, B, n, dim)
+
+    compiled_fn = pi_jit_with_config(fn, jit_config={'_symbolic': 1}, fullgraph=True)
+
+    # Currently, the 7th tensor shape change triggers dynamic shape compilation.
+    for i in range(10):
+        x = ops.randn(i, 4)
+        o1 = fn(x, 2, 2)
+        o2 = compiled_fn(x, 2, 2)
+        match_array(o1, o2)
+        assert_executed_by_graph_mode(compiled_fn)

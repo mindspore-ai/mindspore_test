@@ -161,8 +161,7 @@ class Graph {
 
   const FrameStates &GetFrame(int bci) const;
   void SetFrame(int bci, const FrameStates &f);
-  auto &GetFrames() { return frame_states_; }
-  const auto &GetFrames() const { return frame_states_; }
+
   Allocator &allocator() { return alloc_; }
   ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                           const std::string &name = "");
@@ -296,6 +295,10 @@ std::string GetFileName(const Graph *graph);
 // Return a string in format: 'func_name' at "file_path:line_number"
 std::string GetNameAndLocation(const Graph *graph);
 
+CallNode *FindBreakAtCall(const Graph *graph);
+
+// Check if the graph is break at calling subgraph.
+inline bool IsBreakAtCall(Graph *graph) { return FindBreakAtCall(graph) != nullptr; }
 }  // namespace pijit
 }  // namespace mindspore
 
