@@ -225,3 +225,21 @@ def test_heter_lenet():
     context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     out_ascend = train_lenet()
     print(out_ascend)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@test_utils.run_test_with_On
+def test_heter_lenet_pynative():
+    """
+    Feature: PyNative special format in the heterogeneous scene.
+    Description: Test special format in the heterogeneous scene.
+    Expectation: success.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    ms.set_seed(42)
+    np.random.seed(42)
+    out_ascend = train_lenet()
+    expect_data = np.array([[2.6390028e-06, -1.0571928e-05, 5.6523363e-06, 5.9253930e-06,
+                             9.7876073e-06, 3.1337552e-06, 5.2174191e-06, 9.4886109e-06,
+                             7.1082345e-06, -3.6553743e-06]])
+    assert np.allclose(out_ascend.asnumpy(), expect_data)

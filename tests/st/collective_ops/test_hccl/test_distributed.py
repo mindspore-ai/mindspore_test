@@ -1683,3 +1683,31 @@ def test_hccl_scalar():
     output_handle = all_gather_into_tensor(output_tensor, input_tensor)
     assert output_handle is None
     assert np.allclose(output_tensor.asnumpy(), except_output_tensor.asnumpy())
+
+
+@log_function_entry_exit
+def test_hccl_overlap():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+
+    input_np = np.ones((1024, 1024)).astype(np.float32)
+
+    x = ms.Tensor.from_numpy(input_np)
+    expect_sum_output = ms.Tensor(input_np * (sum(list(range(1, size + 1)))))
+
+    for _ in range(100):
+        w = x * (rank + 1)
+        w, sum_output_handle = ms.communication.comm_func.all_reduce(w, async_op=True)
+
+        # Communication/Compute overlap.
+        # The shape and dtype of empty is same as w.
+        # Incorrect calculation results will occur if memory cross-stream usage is improper.
+        empty = ms.mint.empty_like(w)
+        zeros = ms.mint.zeros_like(w)
+        empty.copy_(zeros)
+
+        sum_output_handle.wait()
+        assert np.allclose(w.asnumpy(), expect_sum_output.asnumpy())
