@@ -123,6 +123,7 @@ void RegModule(py::module *m) {
   RegTensorDoc(m);
   RegReuseDataPtr(m);
   mindspore::graph::RegCustomPass(m);
+  mindspore::backend::RegBackendGraphMock(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
