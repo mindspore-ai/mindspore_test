@@ -109,7 +109,7 @@ static constexpr size_t kAsyncLaunchThreadNum = 1;
 static constexpr size_t kMultiPipelineThreadNum = 3;
 
 static constexpr size_t kMaxBindCoreThreadNum = 5;
-static const size_t kBindCoreThreadStep = 20;
+static const size_t kBindCoreThreadStep = 5;
 
 bool GetNeedSyncStream(const GraphCompilerInfo &graph_compiler_info) {
   auto ms_context = MsContext::GetInstance();
