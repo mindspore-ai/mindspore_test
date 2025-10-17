@@ -22,20 +22,6 @@
 #include "inc/ms_cpu_kernel.h"
 
 namespace aicpu {
-struct ResizerState {
-  void CalculateSize(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape, bool align_corners_flag);
-  int64_t batch_size;
-  int64_t out_height;
-  int64_t out_width;
-  int64_t in_height;
-  int64_t in_width;
-  int64_t channels;
-  float height_scale;
-  float width_scale;
-  int64_t out_hw_size;
-  int64_t in_hw_size;
-  int64_t bchw_size;
-};
 
 template <typename T1, typename T2>
 uint32_t DoCompute(CpuKernelContext &ctx);
@@ -47,16 +33,7 @@ class ResizeBicubicCpuKernel : public CpuKernel {
  private:
   uint32_t GetInputAndCheck(CpuKernelContext &ctx);
 
-  template <typename T1, typename T2>
-  uint32_t DoCompute(CpuKernelContext &ctx);
-
-  template <typename T1, typename T2>
-  inline uint32_t InterpolateWithCache(CpuKernelContext &ctx, const T1 *input_data, T2 *output_data);
-
   DataType dtype_ = DT_INT32;
-  ResizerState state_info_;
-  bool half_pixel_centers_ = false;
-  bool align_corners_ = false;
 };
 }  // namespace aicpu
 #endif

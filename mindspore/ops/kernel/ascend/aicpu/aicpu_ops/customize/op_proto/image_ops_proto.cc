@@ -21,6 +21,22 @@
 #include "utils/op_const.h"
 #include "utils/util.h"
 namespace ge {
+// ----------------ResizeBicubic-------------------
+IMPLEMT_INFERFUNC(ResizeBicubic, ResizeBicubicInfer) {
+  TensorDesc x_desc = op.GetInputDescByName("images");
+  TensorDesc y_desc = op.GetOutputDescByName("y");
+
+  DataType data_type = x_desc.GetDataType();
+  y_desc.SetDataType(data_type);
+  if (op.UpdateOutputDesc("y", y_desc) != GRAPH_SUCCESS) {
+    return GRAPH_FAILED;
+  }
+  return ResizeShapeFn(op, "images", "size", "y");
+}
+
+INFER_FUNC_REG(ResizeBicubic, ResizeBicubicInfer);
+// ----------------ResizeBicubic END-------------------
+
 // ----------------AdjustHue Start-------------------
 IMPLEMT_INFERFUNC(AdjustHue, AdjustHueInfer) {
   auto images_desc = op.GetInputDesc(0);
