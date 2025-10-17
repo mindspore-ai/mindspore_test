@@ -37,8 +37,6 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/util.h"
-#include "include/backend/distributed/ps/ps_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 #endif
@@ -345,11 +343,6 @@ bool HandleInterleavedPipeline(const ResourcePtr &res) {
 
 // Only auto_parallel and semi_auto_parallel support PipelineSplit
 bool PipelineSplit(const ResourcePtr &res) {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
-    return true;
-  }
-#endif
   MS_EXCEPTION_IF_NULL(res);
   if (!ValidateParallelContext(res)) {
     return true;
@@ -410,11 +403,6 @@ bool PipelineSplit(const ResourcePtr &res) {
 
 // Only auto_parallel and semi_auto_parallel support ParallelVirtualDataset
 bool ParallelVirtualDataset(const ResourcePtr &res) {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
-    return true;
-  }
-#endif
   MS_EXCEPTION_IF_NULL(res);
   auto parallel_context = parallel::ParallelContext::GetInstance();
   MS_EXCEPTION_IF_NULL(parallel_context);

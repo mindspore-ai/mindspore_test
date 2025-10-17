@@ -54,9 +54,6 @@
 #include "frontend/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
-#if defined(__linux__) && defined(WITH_BACKEND)
-#include "include/backend/distributed/ps/util.h"
-#endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
@@ -218,11 +215,6 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(root);
   bool is_pre_action = !root->has_flag(AUTO_PARALLEL_FINISH_PRE_ACTION);
   bool changes = PreprocessRootGraph(root);
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::Util::IsRoleOfPServer() || ps::Util::IsRoleOfScheduler()) {
-    return changes;
-  }
-#endif
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
   if (SkipAutoParallel(root, strategy_search_mode, is_pre_action, msTime)) {

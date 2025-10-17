@@ -79,7 +79,7 @@ using OnServerReceiveMessage =
   std::function<void(const std::shared_ptr<TcpConnection> &conn, const std::shared_ptr<MessageMeta> &meta,
                      const Protos &protos, const void *data, size_t size)>;
 
-class TcpServer {
+class BACKEND_COMMON_EXPORT TcpServer {
  public:
   using OnConnected = std::function<void(const TcpServer &, const TcpConnection &)>;
   using OnDisconnected = std::function<void(const TcpServer &, const TcpConnection &)>;
