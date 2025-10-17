@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "pynative/forward/pyboost/converter.h"
+#include <vector>
+#include <utility>
+#include <string>
 #include <memory>
 #include <optional>
 #include <set>
@@ -1057,11 +1060,11 @@ bool FunctionSignature::Parse(PyObject *args, PyObject *kwargs, ParserArgs &pars
                               std::string *out_error_msg) {
   size_t nargs = 0;
   if (!IsPyObjNone(args)) {
-    nargs = (size_t)GetListOrTupleSize(args);
+    nargs = static_cast<size_t>(GetListOrTupleSize(args));
   }
   size_t nkwargs = 0;
   if (!IsPyObjNone(kwargs)) {
-    nkwargs = (size_t)PyDict_Size(kwargs);
+    nkwargs = static_cast<size_t>(PyDict_Size(kwargs));
   }
   size_t arg_pos = 0;
   size_t out_arglist_index = 0;
@@ -1142,7 +1145,7 @@ bool FunctionSignature::RaiseParseKeywordArgsError(size_t nkwargs, bool raise_er
         }
         if (pos < 0) {
           error_msg = " got an unexpected keyword argument '" + arg_name + "'.";
-        } else if (pos < (int64_t)nargs) {
+        } else if (pos < static_cast<int64_t>(nargs)) {
           error_msg = " got multiple values for argument '" + arg_name + "'.";
         }
       }
@@ -1912,6 +1915,10 @@ template ValueTuplePtr Converter::ToIntList<CPythonTuple>(PyObject *python_args,
 template ValueTuplePtr Converter::ToIntList<CPythonList>(PyObject *python_args, size_t i);
 template ValueTuplePtr Converter::ToTensorList<CPythonTuple>(PyObject *python_args, size_t i);
 template ValueTuplePtr Converter::ToTensorList<CPythonList>(PyObject *python_args, size_t i);
+template ValueTuplePtr Converter::ToBoolList<CPythonTuple>(PyObject *python_args, size_t i);
+template ValueTuplePtr Converter::ToBoolList<CPythonList>(PyObject *python_args, size_t i);
+template ValueTuplePtr Converter::ToFloatList<CPythonTuple>(PyObject *python_args, size_t i);
+template ValueTuplePtr Converter::ToFloatList<CPythonList>(PyObject *python_args, size_t i);
 template std::optional<ValueTuplePtr> Converter::ToTensorListOptional<CPythonTuple>(PyObject *python_args, size_t i);
 template std::optional<ValueTuplePtr> Converter::ToTensorListOptional<CPythonList>(PyObject *python_args, size_t i);
 template std::optional<ValueTuplePtr> Converter::ToIntListOptional<CPythonTuple>(PyObject *python_args, size_t i);
