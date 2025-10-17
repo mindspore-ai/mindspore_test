@@ -37,6 +37,7 @@
 #include "backend/common/pass/broadcast_to_fusion.h"
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node.h"
 #include "backend/common/pass/replace_addn_fusion.h"
+#include "backend/common/pass/transpose_to_reshape_pass.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #ifdef ENABLE_DUMP_IR
@@ -64,6 +65,7 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr() {
   common_pm->AddFusionPass(std::make_shared<BroadcastToFusion>());
   common_pm->AddPass(std::make_shared<AddAttrToNode>());
   common_pm->AddFusionPass(std::make_shared<ReplaceAddNFusion>());
+  common_pm->AddFusionPass(std::make_shared<TransposeToReshapePass>());
   return common_pm;
 }
 
