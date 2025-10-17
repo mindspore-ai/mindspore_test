@@ -18,6 +18,7 @@ mindspore
     mindspore.SparseTensor
     mindspore.is_tensor
     mindspore.from_numpy
+    mindspore.frombuffer
 
 参数
 ^^^^^
