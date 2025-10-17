@@ -214,6 +214,9 @@ class ConstOutputEliminater : public AnfVisitor {
         return false;
       }
       auto use_node_graph = use_node->func_graph();
+      if (use_node_graph->output() != use_node) {
+        return false;
+      }
       auto &fg_use_map_sub = use_node_graph->func_graph_cnodes_index();
       auto mng_sub = use_node_graph->manager();
       for (auto &fg_use_sub : fg_use_map_sub) {
