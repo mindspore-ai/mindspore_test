@@ -383,6 +383,7 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
       MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of kbyk to " << capacity_;
       MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
     }
+    device_context_ = device::DeviceContextManager::GetInstance().GetDeviceContext("Ascend").get();
   }
   ~AclnnKernelMod();
 
@@ -441,7 +442,8 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
   std::list<CacheTuple> hash_cache_;
   size_t capacity_{64};
   std::string fullname_;
-
+  const device::DeviceContext *device_context_;
+  uint32_t stream_id_{UINT32_MAX};
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;
 };

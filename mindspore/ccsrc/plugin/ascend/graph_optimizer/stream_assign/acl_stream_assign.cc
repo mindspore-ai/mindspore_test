@@ -72,7 +72,7 @@ void SetForSwitchInline(const NotNull<KernelGraphPtr> &kernel_graph, const CNode
 void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
-  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
+  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kWorldGroupStreamIndex), node);
 }
 
 void AssignStreamForMoveTo(const AnfNodePtr &node) {
@@ -88,7 +88,7 @@ void AssignStreamForMoveTo(const AnfNodePtr &node) {
     }
     copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
     AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(copy_out_stream_id), node);
   } else if (dst_str == kToNpu) {
     auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
     size_t copy_in_stream_id;
@@ -100,7 +100,7 @@ void AssignStreamForMoveTo(const AnfNodePtr &node) {
     }
     copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
     AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(copy_in_stream_id), node);
   } else {
     MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
   }
@@ -155,7 +155,22 @@ bool IsUsersSetStreamsOp(const AnfNodePtr &node) {
   return false;
 }
 
-void AddStreamIdForUsersSetStreamsOp(const AnfNodePtr &node, std::map<int64_t, size_t> *stream_map) {
+bool IsUsersSetResLimitOp(const AnfNodePtr &node, const string &attr, int64_t *pnum) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  if (cnode->HasAttr(attr)) {
+    int64_t num = GetValue<int64_t>(cnode->GetAttr(attr));
+    MS_LOG(DEBUG) << "User set res limit num for node " << node->fullname_with_scope() << ", core num is " << num;
+    *pnum = num;
+    return true;
+  }
+  return false;
+}
+
+void AddStreamIdForUsersSetStreamsOp(const AnfNodePtr &node, mindspore::HashMap<int64_t, size_t> *stream_map) {
   // Add backend stream_id for operators where users have specified streams.
   auto cnode = node->cast<CNodePtr>();
   int64_t stream_id = GetValue<int64_t>(cnode->GetAttr(kAttrStreamId));
@@ -165,17 +180,16 @@ void AddStreamIdForUsersSetStreamsOp(const AnfNodePtr &node, std::map<int64_t, s
     new_stream_id = iter->second;
   } else {
     AscendStreamMng::GetInstance().CreateStream(&new_stream_id);
-    // if repeated stream_id, not overwrite the previous one; pick the first stream_id.
-    stream_map->insert(std::pair(stream_id, new_stream_id));
+    (*stream_map)[stream_id] = new_stream_id;
     MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << new_stream_id;
   }
   AnfAlgo::SetStreamId(new_stream_id, node.get());
-  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(new_stream_id), node);
+  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(new_stream_id), node);
   MS_LOG(INFO) << "Set stream_id: " << new_stream_id << " by no group for node " << node->fullname_with_scope();
 }
 
 void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_manager,
-                        std::map<int64_t, size_t> *stream_map) {
+                        mindspore::HashMap<int64_t, size_t> *stream_map) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
@@ -190,11 +204,11 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
                    << ", because it is users set stream operator.";
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kDefaultStreamIndex), node);
     }
   } else if (common::AnfAlgo::IsLcclCommunicationOp(cnode)) {
     AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kDefaultStreamIndex), node);
     MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
                  << ", because it is an LCCL operator.";
   } else {
@@ -202,21 +216,21 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
     if (!group_name.empty()) {
       size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
       AnfAlgo::SetStreamId(comm_stream_id, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(comm_stream_id), node);
       MS_LOG(INFO) << "Set stream id by group " << comm_stream_id << " for node " << node->fullname_with_scope()
                    << ", group: " << group_name;
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
-      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope()
-                   << ", because group value is not string.";
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kDefaultStreamIndex), node);
+      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope() << ", because group value is "
+                   << group_value->ToString();
     }
   }
 }
 
 void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_t> *event_map,
                               std::map<uint32_t, aclrtEvent> *rt_event_map,
-                              std::map<uint32_t, size_t> *event_stream_map) {
+                              std::map<uint32_t, uint32_t> *event_stream_map) {
   // Add backend event_id and aclrtEvent for operators where users have specified events.
   auto cnode = node->cast<CNodePtr>();
   auto name = common::AnfAlgo::GetCNodeName(cnode);
@@ -254,13 +268,8 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
     MS_EXCEPTION_IF_NULL(prim);
     auto stream_value = prim->GetAttr(kAttrStreamId);
     MS_EXCEPTION_IF_NULL(stream_value);
-    size_t stream_id;
-    if (stream_value->isa<Int32Imm>()) {
-      stream_id = GetValue<int32_t>(stream_value);
-    } else {
-      stream_id = GetValue<size_t>(stream_value);
-    }
-
+    uint32_t stream_id;
+    stream_id = GetValue<uint32_t>(stream_value);
     // if repeated event_id, not overwrite the previous one; pick the first event_id.
     const auto &iter_event = event_stream_map->find(new_event_id);
     if (iter_event == event_stream_map->end()) {
@@ -271,7 +280,7 @@ void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_
   }
 }
 
-void AddRecordStreamIdForUsersStreamRecv(const AnfNodePtr &node, const std::map<uint32_t, size_t> &event_stream_map) {
+void AddRecordStreamIdForUsersStreamRecv(const AnfNodePtr &node, const std::map<uint32_t, uint32_t> &event_stream_map) {
   // Add record_stream_id attribute to 'event.wait', which is the stream_id of 'event.record' stored in
   // event_stream_map.
   const auto &cnode = node->cast<CNodePtr>();
@@ -295,6 +304,59 @@ void AddRecordStreamIdForUsersStreamRecv(const AnfNodePtr &node, const std::map<
 }
 }  // namespace
 
+CNodePtr AclStreamAssign::CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr,
+                                                 const mindspore::HashMap<std::string, uint32_t> &res_limit_map) {
+  auto limit_op = std::make_shared<Primitive>(kResLimitOpName);
+  MS_EXCEPTION_IF_NULL(limit_op);
+  auto limit_apply = std::make_shared<ValueNode>(limit_op);
+  MS_EXCEPTION_IF_NULL(limit_apply);
+  auto limit_node_ptr = graph_ptr->NewCNode({limit_apply});
+  MS_EXCEPTION_IF_NULL(limit_node_ptr);
+  for (const auto &iter : res_limit_map) {
+    common::AnfAlgo::SetNodeAttr(iter.first, MakeValue(iter.second), limit_node_ptr);
+  }
+  return limit_node_ptr;
+}
+
+void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph) {
+  std::map<size_t, int64_t> strem_res_limit_cube;
+  std::map<size_t, int64_t> strem_res_limit_vector;
+  auto kernels = kernel_graph->execution_order();
+  std::vector<CNodePtr> new_exec_orders;
+  for (auto &kernel : kernels) {
+    auto process_stream_id = AnfAlgo::GetStreamId(kernel);
+    strem_res_limit_cube[process_stream_id] = -1;
+    strem_res_limit_vector[process_stream_id] = -1;
+  }
+  for (const auto &node : kernels) {
+    if (IsUsersSetStreamsOp(node)) {
+      int64_t cube_num = -1;
+      int64_t vector_num = -1;
+      mindspore::HashMap<std::string, uint32_t> res_limit_map;
+      auto process_stream_id = AnfAlgo::GetStreamId(node);
+      if (IsUsersSetResLimitOp(node, kAttrCubeNum, &cube_num)) {
+        if (strem_res_limit_cube[process_stream_id] != cube_num) {
+          strem_res_limit_cube[process_stream_id] = cube_num;
+          res_limit_map[kAttrCubeNum] = cube_num;
+        }
+      }
+      if (IsUsersSetResLimitOp(node, kAttrVectorNum, &vector_num)) {
+        if (strem_res_limit_vector[process_stream_id] != vector_num) {
+          strem_res_limit_vector[process_stream_id] = vector_num;
+          res_limit_map[kAttrVectorNum] = vector_num;
+        }
+      }
+      if (res_limit_map.size() != 0) {
+        auto limit_node = CreateLimitApplyKernel(kernel_graph, res_limit_map);
+        MS_LOG(INFO) << "Create Limit node " << limit_node->fullname_with_scope();
+        new_exec_orders.push_back(limit_node);
+      }
+    }
+    new_exec_orders.push_back(node);
+  }
+  kernel_graph->set_execution_order(new_exec_orders);
+}
+
 void AclStreamAssign::AssignStream(
   const NotNull<KernelGraphPtr> &kernel_graph,
   const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
@@ -309,13 +371,13 @@ void AclStreamAssign::AssignStream(
   }
   uint32_t max_stream_id = kDefaultStreamIndex;
   // Frontend's stream_id --> backend's stream_id
-  static std::map<int64_t, size_t> stream_map;
+  mindspore::HashMap<int64_t, size_t> stream_map;
   // Frontend's event_id --> backend's event_id
   static std::map<uint32_t, uint32_t> event_map;
   // backend's event_id --> backend's aclrt event
   static std::map<uint32_t, aclrtEvent> rt_event_map;
   // backend's event_id --> backend's stream_id
-  static std::map<uint32_t, size_t> event_stream_map;
+  static std::map<uint32_t, uint32_t> event_stream_map;
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -349,7 +411,7 @@ void AclStreamAssign::AssignStream(
         AddStreamIdForUsersSetStreamsOp(node, &stream_map);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kDefaultStreamIndex), node);
       }
     } else {
       // Default scene, multi_stream:group, all communication op use the communication stream by group
@@ -366,7 +428,7 @@ void AclStreamAssign::AssignStream(
     if (common::AnfAlgo::GetCNodeName(kernels[i - 1]) == kMemSetOpName) {
       auto stream_id = AnfAlgo::GetStreamId(kernels[i]);
       AnfAlgo::SetStreamId(stream_id, kernels[i - 1].get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(stream_id), kernels[i - 1]);
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(stream_id), kernels[i - 1]);
     }
   }
 
@@ -374,6 +436,7 @@ void AclStreamAssign::AssignStream(
     AddRecordStreamIdForUsersStreamRecv(node, event_stream_map);
   }
   InsertEventForNonTaskSink(kernel_graph);
+  InsertResLimitForNonTaskSink(kernel_graph);
 }
 
 void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {

@@ -155,6 +155,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                                 \
       MS_VLOG(mindspore::VLogLevel::VL_ACLNN_OP) << "Set aclnn cache queue length of pyboost to " << capacity_;   \
     }                                                                                                             \
+    device_context->device_res_manager_->UseStreamResInCurrentThread(stream_id);                                  \
     mindspore::runtime::ProfilerRecorder aclnn_profiler(mindspore::runtime::ProfilerModule::kPynative,            \
                                                         mindspore::runtime::ProfilerEvent::kPyBoostLaunchAclnn,   \
                                                         aclnn_name, false);                                       \
@@ -229,6 +230,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                             \
       MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of pyboost to " << capacity_;                     \
     }                                                                                                         \
+    device_context->device_res_manager_->UseStreamResInCurrentThread(real_stream_id);                         \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                              \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false); \
     auto stream_ptr = device_context->device_res_manager_->GetStream(real_stream_id);                         \

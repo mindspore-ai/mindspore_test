@@ -1146,7 +1146,7 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
   auto nodes = kernel_graph->execution_order();
   for (auto &node : nodes) {
     MS_EXCEPTION_IF_NULL(node);
-    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimResLimit})) {
       continue;
     }
     device::ascend::GenerateKernelBuildInfo(node, RT_KERNEL);

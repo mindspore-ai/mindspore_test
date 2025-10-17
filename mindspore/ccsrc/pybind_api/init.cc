@@ -131,6 +131,7 @@ void RegModule(py::module *m) {
   mindspore::graph::RegCustomBackend(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
+  mindspore::hal::RegResLimit(m);
   mindspore::hal::RegCommHandle(m);
   mindspore::hal::RegMemory(m);
   mindspore::hal::RegUtils(m);
