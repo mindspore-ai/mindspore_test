@@ -20,6 +20,11 @@ body:
     required: true
 - type: textarea
   attributes:
+    label: 涉及到的对外API
+    description: >
+      描述该特性是否会有对外API的增加与变更情况的发生，以及变更可能会造成的周边影响.    
+- type: textarea
+  attributes:
     label: 与其他模块的相关性描述
     description: >
       描述与其他模块存在的可能关联性，以方便补充对应的场景验证.
