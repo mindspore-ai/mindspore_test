@@ -29,6 +29,15 @@ inline void DoGradReshapeImpl(const mindspore::tensor::TensorPtr &output, const 
     auto backward_node = std::make_shared<pynative::autograd::ViewBackwardNode>("Reshape", input->shape());
     return backward_node;
   };
+  pynative::autograd::DoViewGrad(input, output, make_func);
+}
+
+inline void DoGradViewImpl(const mindspore::tensor::TensorPtr &output, const mindspore::tensor::TensorPtr &input,
+                           const std::vector<int64_t> &shape) {
+  auto make_func = [&input]() -> BackwardNodePtr {
+    auto backward_node = std::make_shared<pynative::autograd::ViewBackwardNode>("View", input->shape());
+    return backward_node;
+  };
   bool is_safe = kernel::pyboost::OpRunStatus::Get().IsSafeView();
   pynative::autograd::DoViewGrad(input, output, make_func, is_safe);
 }

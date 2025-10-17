@@ -26,8 +26,6 @@ namespace mindspore::kernel::pyboost {
 inline device::DeviceType GetDeviceTarget() { return OpRunStatus::Get().device_target(); }
 mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &input,
                                           const std::vector<int64_t> &shape) {
-  static auto reshape_grad_func = AutoGradFactory::Get().ops_auto_grad_registers().ReshapeGradFuncObj;
-
   auto storage_info = ops::ReshapeBasicTypeCalc(input, shape);
   const auto &device_target = GetDeviceTarget();
   if (MS_LIKELY(storage_info)) {
@@ -47,21 +45,18 @@ mindspore::tensor::TensorPtr reshape_impl(const mindspore::tensor::TensorPtr &in
       kernel::pyboost::PyBoostUtils::MallocOpInputsForView(device_context, input);
       MS_LOG(DEBUG) << "View device task Reshape end";
     }));
+
+    static auto reshape_grad_func = AutoGradFactory::Get().ops_auto_grad_registers().ReshapeGradFuncObj;
     reshape_grad_func(outputs[0], input, shape);
     MS_LOG(DEBUG) << "View Reshape Call end";
     return outputs[0];
   }
 
-  MS_LOG(DEBUG) << "View Contiguous + View Call start";
+  MS_LOG(DEBUG) << "View Contiguous + Unsafe View Call start";
   const auto contig_tensor = contiguous(input);
-  auto output = [&contig_tensor, &shape]() {
-    kernel::pyboost::RequireGradGuard require_grad_guard(false);
-    auto output = view(contig_tensor, shape);
-    return output;
-  }();
   IsSafeViewGuard safe_view_guard(false);
-  reshape_grad_func(output, contig_tensor, shape);
-  MS_LOG(DEBUG) << "View Contiguous + View Call end";
+  auto output = view(contig_tensor, shape);
+  MS_LOG(DEBUG) << "View Contiguous + Unsafe View Call end";
   return output;
 }
 }  // namespace mindspore::kernel::pyboost
