@@ -58,9 +58,6 @@ class COMMON_EXPORT Common {
   static std::string GetCompilerCachePath();
   static std::string GetKernelMetaTempDir();
   static std::string GetUserDefineCachePath();
-  static bool GetDebugTerminate();
-  static bool GetDebugExitSuccess();
-  static void DebugTerminate(bool val, bool exit_success);
   static bool CheckInterval();
   static bool CheckIfPrintIrPass(const std::string &pass_name);
 
@@ -70,8 +67,6 @@ class COMMON_EXPORT Common {
  private:
   static bool IsEveryFilenameValid(const std::string &path, size_t length_limit, const std::string &error_message);
 
-  inline static bool debugger_terminate_ = false;
-  inline static bool exit_success_ = false;
   inline static size_t g_id_ = 0;
 #if defined(SYSTEM_ENV_POSIX)
   inline static std::mutex random_data_lock_;

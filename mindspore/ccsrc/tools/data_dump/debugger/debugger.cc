@@ -276,8 +276,6 @@ void Debugger::DumpParamsAndConstAndHistory() {
       LoadConstsForGraph(graph);
       // Dump constant data for GPU.
       E2eDump::DumpConstantData(graph.get(), datadump::GetRankID(), debugger_.get());
-      // Dump constant data for Ascend.
-      DumpConstantDataAscend(graph);
     }
   }
   for (auto kernel_graph = executed_graph_ptr_set_.cbegin(); kernel_graph != executed_graph_ptr_set_.cend();
@@ -293,19 +291,6 @@ void Debugger::DumpParamsAndConstAndHistory() {
   }
   if (!cur_root_graph_checked) {
     visited_root_graph_ids_.push_back(cur_root_graph_id_);
-  }
-}
-
-void Debugger::DumpConstantDataAscend(const KernelGraphPtr &graph) {
-  if (device_target_ != kAscendDevice) {
-    return;
-  }
-  auto &json_parser = DumpJsonParser::GetInstance();
-  if (json_parser.e2e_dump_enabled() || json_parser.async_dump_enabled()) {
-    // Dump constant data for ascend mindRT, for old runtime constant data is dumped in session_basic.
-    uint32_t rank_id = datadump::GetRankID();
-    std::string cst_file_dir = GenerateDumpPath(graph->root_graph_id(), rank_id, true);
-    DumpConstantInfo(graph, cst_file_dir);
   }
 }
 
@@ -385,9 +370,7 @@ void Debugger::PostExecuteGraphDebugger() {
 void Debugger::PostExecute() {
   // access lock for public method
   std::lock_guard<std::mutex> a_lock(access_lock_);
-  if (Common::GetDebugTerminate()) {
-    return;
-  }
+
   if (debugger_ && debugger_->DebuggerBackendEnabled()) {
     // Only keep parameters in th current map
     // GPU ResetLoadedTensors for old runtime happens in preExecute

@@ -391,15 +391,6 @@ std::string Common::GetKernelMetaTempDir() {
   return kernel_meta_temp_dir;
 }
 
-bool Common::GetDebugTerminate() { return debugger_terminate_; }
-
-bool Common::GetDebugExitSuccess() { return exit_success_; }
-
-void Common::DebugTerminate(bool val, bool exit_success) {
-  debugger_terminate_ = val;
-  exit_success_ = exit_success;
-}
-
 uint64_t Common::GetTimeStamp() {
   auto cur_sys_time = std::chrono::system_clock::now();
   auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(cur_sys_time.time_since_epoch()).count();

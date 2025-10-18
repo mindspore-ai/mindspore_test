@@ -55,9 +55,5 @@ BACKEND_COMMON_EXPORT void DumpDataViaCallback(const CNodePtr &cnode,
                                                const std::vector<KernelTensor *> &output_kernel_tensors,
                                                const DeviceContext *device_context);
 
-BACKEND_COMMON_EXPORT std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
-
-// get the full name of a tensor, which is the name used in TensorLoader
-std::string GetTensorFullName(const debugger::TensorProto &tensor);
 }  // namespace mindspore
 #endif
