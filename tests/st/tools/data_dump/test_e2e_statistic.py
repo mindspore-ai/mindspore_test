@@ -324,6 +324,7 @@ def test_e2e_statistic_sync_host():
     def extra_json_settings(data):
         data["e2e_dump_settings"]["stat_calc_mode"] = "host"
         data["e2e_dump_settings"]["enable"] = True
+        data["e2e_dump_settings"]["save_kernel_args"] = True
         data["common_dump_settings"]["statistic_category"].append("md5")
         data["common_dump_settings"]["statistic_category"].append("hash:sha1")
         data["common_dump_settings"]["statistic_category"].append("hash")

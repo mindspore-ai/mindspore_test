@@ -155,7 +155,7 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
         MS_EXCEPTION_IF_NULL(addr);
         ShapeVector int_shapes;
         GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
-        DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+        HostDumpMemToFile(*addr, file_path, int_shapes, type);
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
@@ -321,7 +321,7 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
         auto addr = AnfAlgo::GetOutputAddr(input, index);
         MS_EXCEPTION_IF_NULL(addr);
         GetDumpIntShape(input, index, NOT_NULL(&int_shapes), trans_flag);
-        DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+        HostDumpMemToFile(*addr, file_path, int_shapes, type);
       }
     }
     if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
@@ -393,7 +393,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       }
     }
     if (dump_json_parser.IsTensorDump()) {
-      DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+      HostDumpMemToFile(*addr, file_path, int_shapes, type);
     }
   }
 }
@@ -451,7 +451,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
     if (dump_json_parser.IsTensorDump()) {
-      DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
+      HostDumpMemToFile(*addr, file_path, int_shapes, type);
     }
   }
 }

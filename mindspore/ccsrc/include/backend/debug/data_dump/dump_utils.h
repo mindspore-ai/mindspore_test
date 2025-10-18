@@ -73,8 +73,8 @@ const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVect
  * Runtime category: Old runtime, MindRT.
  * Description: Dump the data in memory into file path.
  */
-void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &addr, const ShapeVector &int_shapes,
-                   const TypeId &type, bool trans_flag = false);
+void HostDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const ShapeVector &host_shape,
+                       TypeId host_type);
 
 /*
  * Feature group: Dump.
