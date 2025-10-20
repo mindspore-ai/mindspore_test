@@ -208,6 +208,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
     return std::shared_ptr<void>(::malloc(size), ::free);
   }
+  virtual size_t GetAvailableMemSize() const { return 0; }
 
   // Allocate continuous device memory according to size list.
   // Communication operators may need continuous memory for input and output

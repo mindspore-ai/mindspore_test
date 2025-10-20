@@ -33,6 +33,12 @@ uint8_t *CPUMemoryManager::MemMalloc(size_t size) {
   }
 }
 
+uint8_t *CPUMemoryManager::MallocStaticMem(size_t size, bool, uint32_t) {
+  auto ptr = MemMalloc(size);
+  static_mem_[ptr] = size;
+  return ptr;
+}
+
 uint8_t *CPUMemoryManager::MallocDynamicMem(size_t size, bool) {
   void *ptr = nullptr;
   size_t min_size = 0;
