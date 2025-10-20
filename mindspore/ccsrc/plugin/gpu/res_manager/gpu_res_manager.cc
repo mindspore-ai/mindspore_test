@@ -158,6 +158,8 @@ void *GPUResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
+size_t GPUResManager::GetAvailableMemSize() const { return mem_manager_->GetAvailableMemSize(); }
+
 void GPUResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   MS_EXCEPTION_IF_NULL(ptr);

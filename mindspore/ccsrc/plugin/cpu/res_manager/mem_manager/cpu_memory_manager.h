@@ -58,6 +58,7 @@ class CPUMemoryManager : public MemoryManager {
   bool GetDynamicMalloc() { return dynamic_malloc_; }
 
  protected:
+  uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
   uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
 
  private:
