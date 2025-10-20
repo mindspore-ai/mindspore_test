@@ -42,8 +42,8 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter)
-from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter, Zeros, Ones)
+from .manually_defined import Rank, Shape, Tile, Cast, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
 
