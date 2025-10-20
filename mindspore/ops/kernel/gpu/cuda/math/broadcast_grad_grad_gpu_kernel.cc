@@ -27,6 +27,40 @@ namespace mindspore {
 namespace kernel {
 namespace {
 constexpr size_t kMaxDim = 7;
+
+bool AlignedBroadCastShape(size_t align_rank, std::vector<size_t> *broadcast, std::vector<size_t> *lhs,
+                           std::vector<size_t> *rhs) {
+  if (broadcast == nullptr || lhs == nullptr || rhs == nullptr) {
+    MS_LOG(ERROR) << "input is nullptr.";
+    return false;
+  }
+  size_t broadcast_rank = broadcast->size();
+  size_t l_rank = lhs->size();
+  size_t r_rank = rhs->size();
+  if (broadcast_rank > align_rank || l_rank > align_rank || r_rank > align_rank) {
+    return false;
+  }
+  std::vector<size_t> aligned_broadcast(align_rank, 1);
+  std::vector<size_t> aligned_lhs(align_rank, 1);
+  std::vector<size_t> aligned_rhs(align_rank, 1);
+  size_t broadcast_offset = align_rank - broadcast_rank;
+  for (size_t i = 0; i < broadcast_rank; i++) {
+    aligned_broadcast[i + broadcast_offset] = (*broadcast)[i];
+  }
+
+  size_t l_offset = align_rank - l_rank;
+  for (size_t i = 0; i < l_rank; i++) {
+    aligned_lhs[i + l_offset] = (*lhs)[i];
+  }
+  size_t r_offset = align_rank - r_rank;
+  for (size_t i = 0; i < r_rank; i++) {
+    aligned_rhs[i + r_offset] = (*rhs)[i];
+  }
+  *broadcast = aligned_broadcast;
+  *lhs = aligned_lhs;
+  *rhs = aligned_rhs;
+  return true;
+}
 }  // namespace
 bool BroadcastOpGradGradGpuKernelMod::GetOpType() {
   static const std::map<std::string, BroadcastGradGradOpType> broadcast_grad_grad_op_type = {
@@ -89,7 +123,7 @@ int BroadcastOpGradGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &i
   need_broadcast_ = common::AnfAlgo::IsTensorBroadcast(x1_shape_, x2_shape_);
   // For x1_shape, x2_shape, dy1_shape, it's validation has been done in ops/infer/xxx.cc.
   // But we need check shape rank less equal to 7D.
-  if (!broadcast_utils::AlignedBroadCastShape(kMaxDim, &sopd_grad_shape_, &x1_shape_, &x2_shape_)) {
+  if (!AlignedBroadCastShape(kMaxDim, &sopd_grad_shape_, &x1_shape_, &x2_shape_)) {
     MS_LOG(ERROR)
       << "For '" << kernel_name_
       << "', it's dimension of input x1, x2 or dy shape less equal than 7D, which is invalid in gpu backend. ";

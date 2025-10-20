@@ -21,8 +21,8 @@
 #include <vector>
 #include <utility>
 #include "ops/primitive_c.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
-#include "include/backend/visible.h"
+#include "backend/ms_backend/graph_fusion/model/node.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel::inner {
 #define CHECK_ATTR(attrs, attr_name)                                                              \
@@ -32,7 +32,7 @@ namespace mindspore::graphkernel::inner {
     }                                                                                             \
   } while (0)
 
-class BACKEND_EXPORT PrimOp : public Node {
+class PrimOp : public Node {
  public:
   enum class ComputeType : int {
     VIRTUAL = 0,

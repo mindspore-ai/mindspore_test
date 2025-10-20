@@ -34,7 +34,6 @@ namespace mindspore {
 namespace kernel {
 namespace {
 constexpr char kTypeInt32[] = "Int32";
-constexpr auto kQuad = 4;
 constexpr size_t kInputFirstIndex = 0;
 }  // namespace
 
@@ -81,46 +80,12 @@ TypeId DtypeToTypeId(const std::string &dtypes) {
   return StringToTypeId(dtypes);
 }
 
-size_t GetDtypeNbyte(const std::string &dtype) {
-  static const std::unordered_map<std::string, size_t> dtype_nbyte_map = {
-    {"float16", sizeof(float) / 2},   {"float32", sizeof(float)},     {"float64", sizeof(float) * 2},
-    {"int8", sizeof(int) / kQuad},    {"int16", sizeof(int) / 2},     {"int32", sizeof(int)},
-    {"int64", sizeof(int) * 2},       {"uint8", sizeof(int) / kQuad}, {"uint16", sizeof(int) / 2},
-    {"uint32", sizeof(int)},          {"uint64", sizeof(int) * 2},    {"bool", sizeof(char)},
-    {"complex64", sizeof(float) * 2}, {"bfloat16", sizeof(float) / 2}};
-
-  auto iter = dtype_nbyte_map.find(dtype);
-  if (iter != dtype_nbyte_map.end()) {
-    return iter->second;
-  } else {
-    MS_EXCEPTION(ArgumentError) << "Illegal input dtype:" << dtype;
-  }
-}
-
 bool IsSameShape(const ShapeVector &shape_a, const ShapeVector &shape_b) { return shape_a == shape_b; }
 
 bool CheckShapesSame(const ShapeArray &shape_array) {
   auto first_shape = shape_array[0];
   return std::all_of(shape_array.begin() + 1, shape_array.end(),
                      [&first_shape](const ShapeVector &shape) { return IsSameShape(shape, first_shape); });
-}
-
-std::vector<TypeId> GetOutputObjectTypeListFromKernelAttr(const kernel::KernelAttr &kernel_attr) {
-  size_t output_attr_size = kernel_attr.GetOutputSize();
-  std::vector<TypeId> res;
-  for (size_t i = 0; i < output_attr_size; ++i) {
-    res.push_back(kernel_attr.GetOutputAttr(i).object_type);
-  }
-  return res;
-}
-
-std::vector<TypeId> GetInputObjectTypeListFromKernelAttr(const kernel::KernelAttr &kernel_attr) {
-  size_t input_attr_size = kernel_attr.GetInputSize();
-  std::vector<TypeId> res;
-  for (size_t i = 0; i < input_attr_size; ++i) {
-    res.push_back(kernel_attr.GetInputAttr(i).object_type);
-  }
-  return res;
 }
 
 KernelObjectType TypeIdToKernelObjectType(const TypeId &type_id) {
@@ -172,48 +137,6 @@ TypeId KernelObjectTypeToTypeId(const KernelObjectType &object_type) {
     return kTypeUnknown;
   }
   return trans_map[object_type];
-}
-
-// The allsame/skip_check and the unequal size scenario don't support object type backoff and use the object_types,
-// other scenes support the object type backoff and use the selected_object_types.
-std::vector<KernelObjectType> CalKernelObjectTypes(const std::vector<TypeId> &object_types,
-                                                   const std::vector<TypeId> &selected_object_types, bool all_same,
-                                                   bool skip_check) {
-  std::vector<KernelObjectType> ret;
-  //  Use the selected_object_types in the equal size scenario.
-  if (object_types.size() == selected_object_types.size()) {
-    for (size_t i = 0; i < selected_object_types.size(); ++i) {
-      // Allsame/skip_check doesn't support the backoff.
-      bool not_backoff = ((all_same || skip_check) && (selected_object_types[i] != object_types[i]));
-      if (not_backoff) {
-        (void)ret.emplace_back(TypeIdToKernelObjectTypeForTupleUnfold(object_types[i]));
-      } else {
-        (void)ret.emplace_back(TypeIdToKernelObjectType(selected_object_types[i]));
-      }
-    }
-    return ret;
-  }
-
-  // Use the object_types in the unequal size scenario, and convert tuple to tupleUnflod.
-  for (size_t i = 0; i < object_types.size(); ++i) {
-    (void)ret.emplace_back(TypeIdToKernelObjectTypeForTupleUnfold(object_types[i]));
-  }
-  return ret;
-}
-
-std::vector<KernelObjectType> CalOutputElementObjectTypes(const AnfNodePtr &kernel_node,
-                                                          const kernel::KernelAttr &selected_kernel_attr) {
-  MS_EXCEPTION_IF_NULL(kernel_node);
-  auto selected_output_object_types = GetOutputObjectTypeListFromKernelAttr(selected_kernel_attr);
-  MS_LOG(DEBUG) << "Output object type:" << selected_output_object_types << " for node:" << kernel_node->DebugString()
-                << " select attr:" << kernel::FetchPrintInfoByKernelAttr(selected_kernel_attr);
-  auto element_num = GetOutputNum(kernel_node);
-  if (selected_kernel_attr.GetAllSame() && selected_output_object_types.size() == 1) {
-    return std::vector<KernelObjectType>(element_num, TypeIdToKernelObjectType(selected_output_object_types[0]));
-  }
-  MS_EXCEPTION_IF_CHECK_FAIL(element_num == selected_output_object_types.size(),
-                             "Check multi-output kernel attr size failed.");
-  return TypeIdToKernelObjectType(selected_output_object_types);
 }
 
 std::string FetchPrintInfoByKernelAttr(KernelAttr selected_kernel_attr) {
@@ -545,15 +468,6 @@ KernelAttr GetKernelAttrFromTensors(const std::vector<KernelTensor *> &inputs,
     (void)kernel_attr.AddOutputAttr(tensor->dtype_id(), GetFormatFromEnumToStr(tensor->format()));
   }
   return kernel_attr;
-}
-
-void SyncOutInRef(const KernelAttr &from_kernel_attr, KernelAttr *to_kernel_attr) {
-  const auto &out_in_ref = from_kernel_attr.GetOutInRefMap();
-  bool all_out_in_ref = from_kernel_attr.GetAllOutInRef();
-  for (const auto &ref : out_in_ref) {
-    (void)to_kernel_attr->AddOutInRef(ref.first, ref.second);
-  }
-  (void)to_kernel_attr->AddAllOutInRef(all_out_in_ref);
 }
 
 namespace math {

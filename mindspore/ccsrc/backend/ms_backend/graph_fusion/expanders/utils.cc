@@ -20,8 +20,6 @@
 #include <vector>
 #include <unordered_set>
 
-#include "backend/ms_backend/graph_fusion/model/lite_graph.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
 #include "ir/value.h"
 #include "utils/check_convert_utils.h"
 

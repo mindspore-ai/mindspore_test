@@ -97,7 +97,7 @@ bool HaveReduceInPredecessors(const AnfNodePtr &node) {
 }  // namespace
 
 std::shared_ptr<AtomicAddChecker> AtomicAddChecker::Init() {
-  auto processor = kernel::GetProcessorFromContext();
+  auto processor = GetProcessorFromContext();
   if (processor == kernel::Processor::AICORE) {
     return std::make_shared<AtomicAddCheckerAscend>();
   } else if (processor == kernel::Processor::CUDA) {

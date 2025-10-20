@@ -33,7 +33,7 @@
 #include "utils/hash_map.h"
 #include "utils/check_convert_utils.h"
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "backend/ms_backend/graph_fusion/model/node.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 

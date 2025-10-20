@@ -27,7 +27,7 @@
 namespace mindspore::graphkernel {
 using opt::PassManager;
 
-class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
+class GraphKernelPassManager : public PassManager {
  public:
   GraphKernelPassManager(size_t stage, const std::string &name) : PassManager(name, true), stage_(stage) {}
   ~GraphKernelPassManager() = default;

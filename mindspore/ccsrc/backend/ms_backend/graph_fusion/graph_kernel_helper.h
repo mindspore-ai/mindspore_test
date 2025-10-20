@@ -64,7 +64,6 @@ bool AnfToJsonDesc(const AnfNodePtrList &nodes, const DumpOption &dump_option, n
 bool AnfToJsonDesc(const AnfNodePtrList &nodes, const DumpOption &dump_option, nlohmann::json *op_desc,
                    std::map<std::string, AnfNodePtr> *address_node_map);
 bool AnfToJsonDesc(const std::vector<AnfNodePtrList> &graphs, const DumpOption &dump_option, nlohmann::json *op_desc);
-FuncGraphPtr JsonDescToAnf(const std::string &json_desc);
 
 std::string GetFormat(const AnfNodePtr &node);
 TypePtr GetType(const AnfNodePtr &node);
@@ -80,5 +79,6 @@ ValueNodePtr CreateTensorValueNode(const DataInfo &info, void *value_ptr, size_t
 AbstractBasePtr GetOutputAbstract(const AnfNodePtr &node, size_t output_idx);
 bool IsBufferStitchNode(const AnfNodePtr &node);
 bool CheckDefaultFormat(const AnfNodePtr &node);
+kernel::Processor GetProcessorFromContext();
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_GRAPH_KERNEL_HELPER_H_

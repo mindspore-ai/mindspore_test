@@ -104,7 +104,6 @@ class MatrixInfo {
 };
 using MatrixInfoPtr = std::shared_ptr<MatrixInfo>;
 RUNTIME_HARDWARE_EXPORT TypeId DtypeToTypeId(const std::string &dtypes);
-RUNTIME_HARDWARE_EXPORT size_t GetDtypeNbyte(const std::string &dtype);
 RUNTIME_HARDWARE_EXPORT bool IsSameShape(const ShapeVector &shape_a, const ShapeVector &shape_b);
 RUNTIME_HARDWARE_EXPORT bool CheckShapesSame(const ShapeArray &shape_array);
 template <typename T>
@@ -215,10 +214,7 @@ RUNTIME_HARDWARE_EXPORT KernelAttr GetKernelAttrFromBuildInfo(const KernelBuildI
 RUNTIME_HARDWARE_EXPORT KernelAttr GetKernelAttrFromTensors(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &outputs);
 // Synchronize the output and input reference map between two kernel attrs.
-RUNTIME_HARDWARE_EXPORT void SyncOutInRef(const KernelAttr &from_kernel_attr, KernelAttr *to_kernel_attr);
 RUNTIME_HARDWARE_EXPORT std::string FetchPrintInfoByKernelAttr(KernelAttr selected_kernel_attr);
-RUNTIME_HARDWARE_EXPORT std::vector<TypeId> GetInputObjectTypeListFromKernelAttr(const KernelAttr &kernel_attr);
-RUNTIME_HARDWARE_EXPORT std::vector<TypeId> GetOutputObjectTypeListFromKernelAttr(const KernelAttr &kernel_attr);
 RUNTIME_HARDWARE_EXPORT std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKernelAttr(
   const KernelAttr &kernel_attr);
 // Tuple --> Tuple.
@@ -233,12 +229,6 @@ RUNTIME_HARDWARE_EXPORT TypeId KernelObjectTypeToTypeId(const KernelObjectType &
 RUNTIME_HARDWARE_EXPORT bool CheckAttrForAllSameInput(const size_t input_num,
                                                       const std::vector<mindspore::TypeId> &input_types,
                                                       const KernelAttr &cur_kernel_attr);
-
-RUNTIME_HARDWARE_EXPORT std::vector<KernelObjectType> CalOutputElementObjectTypes(
-  const AnfNodePtr &kernel_node, const KernelAttr &selected_kernel_attr);
-RUNTIME_HARDWARE_EXPORT std::vector<KernelObjectType> CalKernelObjectTypes(
-  const std::vector<TypeId> &object_types, const std::vector<TypeId> &selected_object_types, bool all_same,
-  bool skip_check);
 
 template <typename Derived>
 class MatchKernelHelper {

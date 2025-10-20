@@ -23,10 +23,22 @@
 #include "ir/anf.h"
 #include "ir/dtype/type_id.h"
 #include "utils/shape_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "symbolic_shape/symbol.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore::graphkernel {
+using DFormat = std::string;
+using DShape = ShapeVector;
+
+namespace inner {
+struct RUNTIME_HARDWARE_EXPORT NodeBase {
+  DShape shape;
+  TypeId type;
+  DFormat format;
+  ListSymbolPtr symbolic_shape{nullptr};
+};
+}  // namespace inner
+
 class Callback;
 using CallbackPtr = std::shared_ptr<Callback>;
 class RUNTIME_HARDWARE_EXPORT Callback {

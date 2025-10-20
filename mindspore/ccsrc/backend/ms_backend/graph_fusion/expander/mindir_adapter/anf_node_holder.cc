@@ -17,6 +17,7 @@
 #include "backend/ms_backend/graph_fusion/expander/mindir_adapter/anf_node_holder.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "abstract/abstract_value.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel::expander {
 ValuePtr AnfNodeHolder::GetValue() {

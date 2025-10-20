@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_MODEL_NODE_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_MODEL_NODE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
+#define MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_
 
 #include <memory>
 #include <vector>
@@ -24,9 +24,9 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "runtime/hardware_abstract/visible.h"
-#include "symbolic_shape/symbol.h"
+#include "include/backend/visible.h"
 #include "ops_utils/op_constants.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel::inner {
 enum class NType {
@@ -42,23 +42,16 @@ enum class NType {
 using DFormat = std::string;
 using DShape = ShapeVector;
 using DAttrs = mindspore::HashMap<std::string, ValuePtr>;
-
-struct RUNTIME_HARDWARE_EXPORT NodeBase {
-  DShape shape;
-  TypeId type;
-  DFormat format;
-  ListSymbolPtr symbolic_shape{nullptr};
-};
 using NodeBaseList = std::vector<NodeBase>;
 
 struct ExtraInfo {
   DAttrs cnode_attrs_;
 };
 
-class RUNTIME_HARDWARE_EXPORT Node;
+class BACKEND_EXPORT Node;
 using NodePtr = std::shared_ptr<Node>;
 using NodePtrList = std::vector<NodePtr>;
-class RUNTIME_HARDWARE_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
+class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
  public:
   explicit Node(const NodeBase &baseinfo) : NodeBase(baseinfo) {}
   virtual ~Node() { ClearInputs(); }  // remove this node from the previous nodes' user.
@@ -110,7 +103,7 @@ class RUNTIME_HARDWARE_EXPORT Node : public NodeBase, public std::enable_shared_
   void RemoveUser(Node *const user, size_t index);
 };
 
-class RUNTIME_HARDWARE_EXPORT ConstTensorNode : public Node {
+class ConstTensorNode : public Node {
  public:
   explicit ConstTensorNode(const tensor::TensorPtr &data)
       : Node({data->DataSize() == 1 ? DShape({1}) : data->shape(), data->data_type(), kOpFormat_DEFAULT}),
@@ -126,7 +119,7 @@ class RUNTIME_HARDWARE_EXPORT ConstTensorNode : public Node {
   tensor::TensorPtr data_;
 };
 
-class RUNTIME_HARDWARE_EXPORT ConstScalarNode : public Node {
+class ConstScalarNode : public Node {
  public:
   explicit ConstScalarNode(const ValuePtr &data);
   ~ConstScalarNode() = default;
@@ -139,7 +132,7 @@ class RUNTIME_HARDWARE_EXPORT ConstScalarNode : public Node {
   ValuePtr data_;
 };
 
-class RUNTIME_HARDWARE_EXPORT ConstTupleNode : public Node {
+class ConstTupleNode : public Node {
  public:
   explicit ConstTupleNode(const ValuePtr &data, const size_t len);
   ~ConstTupleNode() = default;
@@ -152,7 +145,7 @@ class RUNTIME_HARDWARE_EXPORT ConstTupleNode : public Node {
   ValuePtr data_;
 };
 
-class RUNTIME_HARDWARE_EXPORT ParamNode : public Node {
+class ParamNode : public Node {
  public:
   explicit ParamNode(const NodeBase &baseinfo) : Node(baseinfo) {}
   ~ParamNode() = default;
@@ -161,7 +154,7 @@ class RUNTIME_HARDWARE_EXPORT ParamNode : public Node {
 };
 
 // the OutputNode's inputs are the real outputs of graph, like the `make_tuple` in FuncGraph.
-class RUNTIME_HARDWARE_EXPORT OutputNode : public Node {
+class OutputNode : public Node {
  public:
   OutputNode() : Node({{1}, TypeId::kNumberTypeBegin, kOpFormat_DEFAULT}) { debug_name_ = "Output"; }
   ~OutputNode() = default;
@@ -169,4 +162,4 @@ class RUNTIME_HARDWARE_EXPORT OutputNode : public Node {
   NType NodeType() override { return NType::Output; }
 };
 }  // namespace mindspore::graphkernel::inner
-#endif
+#endif  // MINDSPORE_CCSRC_BACKEND_GRAPH_FUSION_MODEL_NODE_H_

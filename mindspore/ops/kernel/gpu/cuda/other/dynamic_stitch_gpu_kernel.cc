@@ -22,6 +22,25 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+constexpr auto kQuad = 4;
+size_t GetDtypeNbyte(const std::string &dtype) {
+  static const std::unordered_map<std::string, size_t> dtype_nbyte_map = {
+    {"float16", sizeof(float) / 2},   {"float32", sizeof(float)},     {"float64", sizeof(float) * 2},
+    {"int8", sizeof(int) / kQuad},    {"int16", sizeof(int) / 2},     {"int32", sizeof(int)},
+    {"int64", sizeof(int) * 2},       {"uint8", sizeof(int) / kQuad}, {"uint16", sizeof(int) / 2},
+    {"uint32", sizeof(int)},          {"uint64", sizeof(int) * 2},    {"bool", sizeof(char)},
+    {"complex64", sizeof(float) * 2}, {"bfloat16", sizeof(float) / 2}};
+
+  auto iter = dtype_nbyte_map.find(dtype);
+  if (iter != dtype_nbyte_map.end()) {
+    return iter->second;
+  } else {
+    MS_EXCEPTION(ArgumentError) << "Illegal input dtype:" << dtype;
+  }
+}
+}  // namespace
+
 DynamicStitchKernelMod::DynamicStitchKernelMod()
     : n_(0), real_ele_num_(0), max_index_(0), one_data_ele_num_(0), data_type_size_(0) {
   ResetResource();

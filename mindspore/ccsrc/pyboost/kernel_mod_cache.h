@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_KERNEL_COMMON_KERNEL_MOD_CACHE_H_
-#define MINDSPORE_OPS_KERNEL_COMMON_KERNEL_MOD_CACHE_H_
+#ifndef MINDSPORE_CCSRC_PYBOOST_KERNEL_MOD_CACHE_H_
+#define MINDSPORE_CCSRC_PYBOOST_KERNEL_MOD_CACHE_H_
 
 #include <utility>
 #include <vector>
@@ -23,11 +23,10 @@
 #include <string>
 #include <unordered_map>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace kernel {
-class RUNTIME_HARDWARE_EXPORT KernelModCache {
+class PYBOOST_API KernelModCache {
  public:
   static KernelModCache &GetInstance();
 
@@ -49,4 +48,4 @@ class RUNTIME_HARDWARE_EXPORT KernelModCache {
 
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_OPS_KERNEL_COMMON_KERNEL_MOD_CACHE_H_
+#endif  // MINDSPORE_CCSRC_PYBOOST_KERNEL_MOD_CACHE_H_

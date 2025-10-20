@@ -22,10 +22,9 @@
 
 #include "utils/hash_map.h"
 #include "backend/ms_backend/graph_fusion/expanders/utils.h"
-#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::expanders {
-class BACKEND_EXPORT OpDescFactory {
+class OpDescFactory {
  public:
   static OpDescFactory &Instance() {
     static OpDescFactory instance{};

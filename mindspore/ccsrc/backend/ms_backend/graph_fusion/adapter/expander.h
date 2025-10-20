@@ -18,7 +18,6 @@
 #include <memory>
 #include "backend/ms_backend/graph_fusion/core/expander.h"
 #include "ir/func_graph.h"
-#include "include/backend/visible.h"
 #include <nlohmann/json.hpp>
 
 namespace mindspore::graphkernel {
@@ -75,12 +74,12 @@ class SetDynamicShapeAttrDeco : public ExpanderDecorator {
 /**
  * Get the Expander which is used to expand a cnode to a funcgraph which composite same function with core ops.
  */
-BACKEND_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init);
+ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init);
 
 /**
  * Get the Expander which is used to expand a cnode to a funcgraph which composite same function with core ops.
  */
-BACKEND_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, bool abstract = true);
+ExpanderPtr GetExpander(const AnfNodePtr &node, bool abstract = true);
 
 bool IsComplexOp(const AnfNodePtr &node);
 }  // namespace mindspore::graphkernel

@@ -22,7 +22,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "ir/tensor_new.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
-#include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
+#include "mindspore/ccsrc/pyboost/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
 #include "backend/common/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"

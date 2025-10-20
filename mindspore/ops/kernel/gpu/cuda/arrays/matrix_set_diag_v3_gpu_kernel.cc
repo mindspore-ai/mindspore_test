@@ -27,6 +27,21 @@
 
 namespace mindspore {
 namespace kernel {
+std::pair<MatrixDiag::Alignment, MatrixDiag::Alignment> GetAlignments(const std::string &alignment) {
+  static const mindspore::HashMap<std::string, std::pair<MatrixDiag::Alignment, MatrixDiag::Alignment>> AlignmentMap{
+    {"RIGHT_LEFT", {MatrixDiag::RIGHT, MatrixDiag::LEFT}},
+    {"LEFT_RIGHT", {MatrixDiag::LEFT, MatrixDiag::RIGHT}},
+    {"RIGHT_RIGHT", {MatrixDiag::RIGHT, MatrixDiag::RIGHT}},
+    {"LEFT_LEFT", {MatrixDiag::LEFT, MatrixDiag::LEFT}}};
+
+  auto alignment_iter = AlignmentMap.find(alignment);
+  if (alignment_iter == AlignmentMap.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For  current kernel, input alignment is invalid: " << alignment
+                               << ". please limit it to {RIGHT_LEFT, LEFT_RIGHT, RIGHT_RIGHT, LEFT_LEFT}";
+  }
+  return alignment_iter->second;
+}
+
 bool MatrixSetDiagV3GpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   if (kernel_name_ != prim::kPrimMatrixSetDiagV3->name()) {

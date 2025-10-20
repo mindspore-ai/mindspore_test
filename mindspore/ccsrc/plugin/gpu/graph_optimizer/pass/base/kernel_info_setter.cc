@@ -418,6 +418,33 @@ void UpdateKernelFormatInfo(const CNodePtr &kernel_node, const std::vector<TypeI
   }
 }
 
+std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(const std::vector<AnfNodePtr> &node_list,
+                                                          const std::vector<AnfNodePtr> &input_list,
+                                                          const std::vector<AnfNodePtr> &output_list) {
+  std::vector<std::pair<AnfNodePtr, size_t>> output_index;
+  for (size_t i = 0; i < output_list.size(); ++i) {
+    auto const &output = output_list[i];
+    MS_EXCEPTION_IF_NULL(output);
+    bool found = false;
+    auto pree_node = common::AnfAlgo::VisitKernel(output, 0);
+    auto pos = std::find(std::begin(node_list), std::end(node_list), pree_node.first);
+    if (pos != std::end(node_list)) {
+      output_index.push_back(pree_node);
+      continue;
+    }
+    auto ret = std::find(std::begin(input_list), std::end(input_list), pree_node.first);
+    if (ret != std::end(input_list)) {
+      output_index.push_back(std::make_pair(pree_node.first, 0));
+      found = true;
+    }
+    if (!found) {
+      MS_EXCEPTION(ArgumentError) << "Output [" << i << "][" << output->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                                  << "] of [" << output->func_graph()->ToString() << "] found no related kernel info.";
+    }
+  }
+  return output_index;
+}
+
 void SetGraphKernelInfo(const CNodePtr &kernel_node, const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -457,7 +484,7 @@ void SetGraphKernelInfo(const CNodePtr &kernel_node, const FuncGraphPtr &func_gr
     mng = Manage(func_graph, true);
     func_graph->set_manager(mng);
   }
-  auto output_index = kernel::GetOutputIndex(node_list, input_list, output_list);
+  auto output_index = GetOutputIndex(node_list, input_list, output_list);
   std::vector<std::string> graph_output_format;
   std::vector<TypeId> graph_output_type;
   for (size_t i = 0; i < output_index.size(); ++i) {

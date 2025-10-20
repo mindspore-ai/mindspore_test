@@ -178,7 +178,7 @@ bool DecreaseTransferPrecision::ProcessFather(const FuncGraphPtr &, const AnfNod
     graph_info_builder.SetInputsDeviceType(cnode_input_type);
     graph_info_builder.SetOutputsFormat(cnode_output_format);
     graph_info_builder.SetOutputsDeviceType(cnode_output_type);
-    graph_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+    graph_info_builder.SetProcessor(GetProcessorFromContext());
     graph_info_builder.SetKernelType(KernelType::AKG_KERNEL);
     graph_info_builder.SetFusionType(kPatternOpaque);
     auto info_1 = graph_info_builder.Build();
@@ -291,7 +291,7 @@ bool DecreaseTransferPrecision::ProcessSon(const FuncGraphPtr &, const AnfNodePt
   node_info_builder.SetInputsDeviceType(cnode_input_type);
   node_info_builder.SetOutputsFormat(cnode_output_format);
   node_info_builder.SetOutputsDeviceType(cnode_output_type);
-  node_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+  node_info_builder.SetProcessor(GetProcessorFromContext());
   node_info_builder.SetKernelType(KernelType::AKG_KERNEL);
   node_info_builder.SetFusionType(kPatternOpaque);
   auto info_1 = node_info_builder.Build();
