@@ -541,6 +541,7 @@ Reduction函数
     mindspore.ops.max_unpool3d
     mindspore.ops.moe_token_permute
     mindspore.ops.moe_token_unpermute
+    mindspore.ops.nsa_select_attention
     mindspore.ops.prompt_flash_attention
     mindspore.ops.ring_attention_update
     mindspore.ops.rms_norm

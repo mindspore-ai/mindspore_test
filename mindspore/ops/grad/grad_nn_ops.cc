@@ -3898,6 +3898,48 @@ REG_BPROP_BUILDER("SpeedFusionAttention").SetBody((BODYFUNC(ib) {
           ib->OutZeros(kv_start_idx)};
 }));
 
+REG_BPROP_BUILDER("NsaSelectAttention").SetBody((BODYFUNC(ib) {
+  auto query = ib->GetInput(i0);
+  auto key = ib->GetInput(i1);
+  auto value = ib->GetInput(i2);
+  auto topk_indices = ib->GetInput(i3);
+  auto scale_value = ib->GetInput(i4);
+  auto head_num = ib->GetInput(i5);
+  auto select_block_size = ib->GetInput(i6);
+  auto select_block_count = ib->GetInput(i7);
+  auto atten_mask = ib->GetInput(i8);
+  auto actual_seq_qlen = ib->GetInput(i9);
+  auto actual_seq_kvlen = ib->GetInput(i10);
+  auto out = ib->GetInput(i11);
+  auto dout = ib->GetInput(i12);
+
+  auto attention_out = ib->TupleGetItem(out, i0);
+  auto softmax_max = ib->TupleGetItem(out, i1);
+  auto softmax_sum = ib->TupleGetItem(out, i2);
+
+  auto grad = ib->TupleGetItem(dout, i0);
+
+  auto ret = ib->Emit("NsaSelectAttentionGrad",
+                      {grad, query, key, value, attention_out, softmax_max, softmax_sum, topk_indices, scale_value,
+                       head_num, select_block_size, select_block_count, atten_mask, actual_seq_qlen, actual_seq_kvlen});
+
+  auto dq = ib->TupleGetItem(ret, i0);
+  auto dk = ib->TupleGetItem(ret, i1);
+  auto dv = ib->TupleGetItem(ret, i2);
+
+  return {dq,
+          dk,
+          dv,
+          ib->OutZeros(topk_indices),
+          ib->OutZeros(scale_value),
+          ib->OutZeros(head_num),
+          ib->OutZeros(select_block_size),
+          ib->OutZeros(select_block_count),
+          ib->OutZeros(atten_mask),
+          ib->OutZeros(actual_seq_qlen),
+          ib->OutZeros(actual_seq_kvlen)};
+}));
+
 REG_BPROP_BUILDER("RmsNorm").FreeUselessValues_IO({i2}, {i0}).SetBody((BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto gamma = ib->GetInput(i1);

@@ -91,7 +91,7 @@ from mindspore.ops.auto_generate import avg_pool3d_ext_op
 # 18
 
 # 19
-
+from mindspore.ops.functional_overload import nsa_select_attention
 # 20
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
@@ -9362,6 +9362,7 @@ __all__ = [
     'fractional_max_pool2d',
     'fractional_max_pool3d',
     'speed_fusion_attention',
+    'nsa_select_attention',
     'pixel_shuffle',
     'pixel_unshuffle',
     'hardshrink',
