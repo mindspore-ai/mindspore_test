@@ -271,6 +271,7 @@
 /tests/ut/python/runtime/ @limingqi107
 /tests/ut/python/scipy/ @yi-zhang95
 /tests/ut/python/train/ @changzherui
+/tests/ut/python/ops/composite/ @ginfung
 
 # The maintainers of other code directories.
 /.jenkins/ @nicholas_yhr
