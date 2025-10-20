@@ -870,14 +870,13 @@ def full_like_ext(input, fill_value, *, dtype=None):
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
-        >>> input = Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
-        >>> output = mint.full_like(input, 1)
+        >>> input = mindspore.Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
+        >>> output = mindspore.ops.function.array_func.full_like_ext(input, 1)
         >>> print(output)
         [[1 1]
          [1 1]]
-        >>> input = Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
-        >>> output = mint.full_like(input, 0, dtype=mindspore.float32)
+        >>> input = mindspore.Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
+        >>> output = mindspore.ops.function.array_func.full_like_ext(input, 0, dtype=mindspore.float32)
         >>> print(output)
         [[0. 0. 0.]
          [0. 0. 0.]
@@ -985,9 +984,8 @@ def chunk_ext(input, chunks, dim=0):
     Examples:
         >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor
         >>> input_x = np.arange(9).astype("float32")
-        >>> output = mindspore.mint.chunk(Tensor(input_x), 3)
+        >>> output = mindspore.ops.function.array_func.chunk_ext(mindspore.Tensor(input_x), 3)
         >>> print(output)
         (Tensor(shape=[3], dtype=Float32, value= [ 0.00000000e+00,  1.00000000e+00,  2.00000000e+00]),
          Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
