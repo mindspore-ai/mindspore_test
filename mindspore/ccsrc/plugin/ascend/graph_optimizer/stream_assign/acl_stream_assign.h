@@ -49,6 +49,14 @@ struct NodeIoExecInfo {
 };
 using NodeIoExecInfoPtr = std::shared_ptr<NodeIoExecInfo>;
 
+struct ResLimitInfo {
+  uint32_t cube_num;
+  uint32_t vector_num;
+  bool cube_num_modify_flag;
+  bool vector_num_modify_flag;
+};
+using ResLimitInfoPtr = std::shared_ptr<ResLimitInfo>;
+
 class AclStreamAssign {
  public:
   static AclStreamAssign &GetInstance() {
@@ -107,7 +115,7 @@ class AclStreamAssign {
 
   CNodePtr CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr,
                                   const mindspore::HashMap<std::string, uint32_t> &res_limit_map);
-  void InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph);
+  void InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph, DeviceResManager *device_res_manager);
   CNodePtr CreateSendApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr, uint32_t event_id, uint32_t stream_id,
                                  uint32_t event_generate_id);
   CNodePtr CreateRecvApplyKernel(const NotNull<KernelGraphPtr> &graph_ptr, uint32_t event_id, uint32_t record_stream_id,

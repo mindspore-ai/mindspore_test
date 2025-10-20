@@ -1743,17 +1743,15 @@ bool AscendResManager::DestroyAllEvents() {
 void AscendResManager::GetDeviceLimit(int32_t device_id, uint32_t *cube_num, uint32_t *vector_num) {
   MS_EXCEPTION_IF_NULL(cube_num);
   MS_EXCEPTION_IF_NULL(vector_num);
-  auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
-                      << "]. The details refer to 'Ascend Error Message'.";
+  int32_t dev = device_id;
+  if (device_id == -1) {
+    dev = device_id_;
   }
-  ret = CALL_ASCEND_API(aclrtGetDeviceResLimit, device_id, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE, cube_num);
+  auto ret = CALL_ASCEND_API(aclrtGetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE, cube_num);
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Call aclrtGetDeviceResLimit failed! Error flag is " << ret;
   }
-  ret =
-    CALL_ASCEND_API(aclrtGetDeviceResLimit, device_id, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE, vector_num);
+  ret = CALL_ASCEND_API(aclrtGetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE, vector_num);
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Call aclrtGetDeviceResLimit failed! Error flag is " << ret;
   }
@@ -1761,21 +1759,20 @@ void AscendResManager::GetDeviceLimit(int32_t device_id, uint32_t *cube_num, uin
 
 void AscendResManager::SetDeviceLimit(int32_t device_id, int32_t cube_num, int32_t vector_num) {
   enable_res_limit_ = true;
-  auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
-                      << "]. The details refer to 'Ascend Error Message'.";
+  int32_t dev = device_id;
+  if (device_id != -1) {
+    dev = device_id_;
   }
   if (cube_num > 0) {
-    ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, device_id, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
-                          static_cast<uint32_t>(cube_num));
+    auto ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_CUBE_CORE,
+                               static_cast<uint32_t>(cube_num));
     if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Call aclrtSetDeviceResLimit failed! Error flag is " << ret;
     }
   }
   if (vector_num > 0) {
-    ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, device_id, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE,
-                          static_cast<uint32_t>(vector_num));
+    auto ret = CALL_ASCEND_API(aclrtSetDeviceResLimit, dev, aclrtDevResLimitType::ACL_RT_DEV_RES_VECTOR_CORE,
+                               static_cast<uint32_t>(vector_num));
     if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Call aclrtSetDeviceResLimit failed! Error flag is " << ret;
     }

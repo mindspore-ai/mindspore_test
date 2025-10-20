@@ -155,7 +155,7 @@ bool IsUsersSetStreamsOp(const AnfNodePtr &node) {
   return false;
 }
 
-bool IsUsersSetResLimitOp(const AnfNodePtr &node, const string &attr, int64_t *pnum) {
+bool IsUsersSetResLimitOp(const AnfNodePtr &node, const string &attr, uint32_t *pnum) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return false;
@@ -164,8 +164,10 @@ bool IsUsersSetResLimitOp(const AnfNodePtr &node, const string &attr, int64_t *p
   if (cnode->HasAttr(attr)) {
     int64_t num = GetValue<int64_t>(cnode->GetAttr(attr));
     MS_LOG(DEBUG) << "User set res limit num for node " << node->fullname_with_scope() << ", core num is " << num;
-    *pnum = num;
-    return true;
+    if (num > 0) {
+      *pnum = static_cast<uint32_t>(num);
+      return true;
+    }
   }
   return false;
 }
@@ -318,42 +320,71 @@ CNodePtr AclStreamAssign::CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &
   return limit_node_ptr;
 }
 
-void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph) {
-  std::map<size_t, int64_t> strem_res_limit_cube;
-  std::map<size_t, int64_t> strem_res_limit_vector;
+void AclStreamAssign::InsertResLimitForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                   DeviceResManager *device_res_manager) {
+  bool enable_with_stream = false;
+  mindspore::HashMap<size_t, ResLimitInfoPtr> stream_res_limit_map;
   auto kernels = kernel_graph->execution_order();
   std::vector<CNodePtr> new_exec_orders;
   for (auto &kernel : kernels) {
     auto process_stream_id = AnfAlgo::GetStreamId(kernel);
-    strem_res_limit_cube[process_stream_id] = -1;
-    strem_res_limit_vector[process_stream_id] = -1;
+    auto iter = stream_res_limit_map.find(process_stream_id);
+    if (iter == stream_res_limit_map.end()) {
+      auto limit_info = std::make_shared<ResLimitInfo>();
+      MS_EXCEPTION_IF_NULL(limit_info);
+      limit_info->cube_num = UINT32_MAX;
+      limit_info->vector_num = UINT32_MAX;
+      limit_info->cube_num_modify_flag = false;
+      limit_info->vector_num_modify_flag = false;
+      stream_res_limit_map[process_stream_id] = limit_info;
+    }
+    uint32_t cube_num = 0;
+    uint32_t vector_num = 0;
+    if (IsUsersSetResLimitOp(kernel, kAttrCubeNum, &cube_num) ||
+        IsUsersSetResLimitOp(kernel, kAttrVectorNum, &vector_num)) {
+      enable_with_stream = true;
+    }
   }
+  if (!enable_with_stream) {
+    return;
+  }
+  MS_LOG(INFO) << "Begin to Insert ResLimit node.";
+  uint32_t device_cube_num = 0;
+  uint32_t device_vector_num = 0;
+  int32_t default_device_id = -1;
+  MS_EXCEPTION_IF_NULL(device_res_manager);
+  device_res_manager->GetDeviceLimit(default_device_id, &device_cube_num, &device_vector_num);
   for (const auto &node : kernels) {
-    if (IsUsersSetStreamsOp(node)) {
-      int64_t cube_num = -1;
-      int64_t vector_num = -1;
-      mindspore::HashMap<std::string, uint32_t> res_limit_map;
-      auto process_stream_id = AnfAlgo::GetStreamId(node);
-      if (IsUsersSetResLimitOp(node, kAttrCubeNum, &cube_num)) {
-        if (strem_res_limit_cube[process_stream_id] != cube_num) {
-          strem_res_limit_cube[process_stream_id] = cube_num;
-          res_limit_map[kAttrCubeNum] = cube_num;
-        }
-      }
-      if (IsUsersSetResLimitOp(node, kAttrVectorNum, &vector_num)) {
-        if (strem_res_limit_vector[process_stream_id] != vector_num) {
-          strem_res_limit_vector[process_stream_id] = vector_num;
-          res_limit_map[kAttrVectorNum] = vector_num;
-        }
-      }
-      if (res_limit_map.size() != 0) {
-        auto limit_node = CreateLimitApplyKernel(kernel_graph, res_limit_map);
-        MS_LOG(INFO) << "Create Limit node " << limit_node->fullname_with_scope();
-        new_exec_orders.push_back(limit_node);
-      }
+    uint32_t cube_num = device_cube_num;
+    uint32_t vector_num = device_vector_num;
+    mindspore::HashMap<std::string, uint32_t> res_limit_map;
+    auto process_stream_id = AnfAlgo::GetStreamId(node);
+    auto iter = stream_res_limit_map.find(process_stream_id);
+    if (iter == stream_res_limit_map.end()) {
+      MS_LOG(EXCEPTION) << "Can't get process_stream_id for  " << process_stream_id;
+    }
+    if (IsUsersSetResLimitOp(node, kAttrCubeNum, &cube_num)) {
+      iter->second->cube_num_modify_flag = true;
+    }
+    if (iter->second->cube_num_modify_flag && iter->second->cube_num != cube_num) {
+      iter->second->cube_num = cube_num;
+      res_limit_map[kAttrCubeNum] = cube_num;
+    }
+    if (IsUsersSetResLimitOp(node, kAttrVectorNum, &vector_num)) {
+      iter->second->vector_num_modify_flag = true;
+    }
+    if (iter->second->vector_num_modify_flag && iter->second->vector_num != vector_num) {
+      iter->second->vector_num = vector_num;
+      res_limit_map[kAttrVectorNum] = vector_num;
+    }
+    if (res_limit_map.size() != 0) {
+      auto limit_node = CreateLimitApplyKernel(kernel_graph, res_limit_map);
+      MS_LOG(INFO) << "Create Limit node " << limit_node->fullname_with_scope();
+      new_exec_orders.push_back(limit_node);
     }
     new_exec_orders.push_back(node);
   }
+  MS_LOG(INFO) << "End to Insert ResLimit node.";
   kernel_graph->set_execution_order(new_exec_orders);
 }
 
@@ -436,7 +467,7 @@ void AclStreamAssign::AssignStream(
     AddRecordStreamIdForUsersStreamRecv(node, event_stream_map);
   }
   InsertEventForNonTaskSink(kernel_graph);
-  InsertResLimitForNonTaskSink(kernel_graph);
+  InsertResLimitForNonTaskSink(kernel_graph, device_res_manager);
 }
 
 void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {

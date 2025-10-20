@@ -37,6 +37,7 @@ py::tuple GetDeviceLimit(int32_t device_id) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device::GetDeviceTypeByName(device_name), static_cast<uint32_t>(device_id)});
+  device_context->Initialize();
   device_context->device_res_manager_->GetDeviceLimit(device_id, &cube_num, &vector_num);
   return py::make_tuple(cube_num, vector_num);
 }
@@ -46,6 +47,7 @@ void SetDeviceLimit(int32_t device_id, int32_t cube_num, int32_t vector_num) {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device::GetDeviceTypeByName(device_name), static_cast<uint32_t>(device_id)});
+  device_context->Initialize();
   device_context->device_res_manager_->SetDeviceLimit(device_id, cube_num, vector_num);
 }
 
