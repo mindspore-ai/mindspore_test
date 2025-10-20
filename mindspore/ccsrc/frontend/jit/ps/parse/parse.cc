@@ -921,7 +921,7 @@ FunctionBlockPtr Parser::ParseLambdaFunction(const py::object &node, const Funct
   return func_block;
 }
 
-void Parser::SetCurrentStreamId(const size_t stream_id) {
+void Parser::SetCurrentStreamId(size_t stream_id) {
   stream_ids_.push(stream_id);
   MS_LOG(DEBUG) << "SetCurrentStreamId stream_id: " << stream_id << ", stack size: " << stream_ids_.size();
 }
@@ -936,7 +936,7 @@ void Parser::ClearCurrentStreamId() {
   stream_ids_.pop();
 }
 
-void Parser::SetStreamCoreNums(std::vector<int64_t> stream_limit_args) {
+void Parser::SetStreamCoreNums(const std::vector<int64_t> &stream_limit_args) {
   stream_core_nums_.push(stream_limit_args);
   MS_LOG(DEBUG) << "Push stream_core_nums_: ";
 }
@@ -956,7 +956,6 @@ void Parser::TagSubgraphWithStream(const FuncGraphPtr &subgraph) {
   }
   auto stream_id = stream_ids_.top();
   subgraph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-  subgraph->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX, MakeValue(stream_id));
   subgraph->set_attr(kFuncGraphFlagStreamId, MakeValue(stream_id));
   MS_LOG(DEBUG) << "TagSubgraphWithStream stream_id: " << stream_id << ", subgraph: " << subgraph->ToString();
 }
@@ -4784,7 +4783,7 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       auto after_func = after_block->func_graph();
       MS_EXCEPTION_IF_NULL(after_func);
       after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-
+      after_func->set_flag(kFuncGraphFlagStreamCtxAfter, true);
       auto body_func = body_block->func_graph();
       MS_EXCEPTION_IF_NULL(body_func);
       if (body_func->get_return() == nullptr) {
@@ -4811,7 +4810,7 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       auto after_func = after_block->func_graph();
       MS_EXCEPTION_IF_NULL(after_func);
       after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-
+      after_func->set_flag(kFuncGraphFlagStreamLimitCtxAfter, true);
       auto body_func = body_block->func_graph();
       MS_EXCEPTION_IF_NULL(body_func);
       if (body_func->get_return() == nullptr) {

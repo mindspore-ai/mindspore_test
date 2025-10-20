@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
+import re
+import shutil
 import pytest
 import numpy as np
 import mindspore as ms
@@ -19,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, ops
 from mindspore.runtime import Stream
 from mindspore.runtime import StreamCtx as MsJitStreamCtx
+from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
@@ -43,7 +47,30 @@ s2 = Stream()
 s3 = Stream()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def clean_all_ir_files(folder_path):
+    if os.path.exists(folder_path):
+        for file_name in os.listdir(folder_path):
+            if file_name.endswith('.ir') or file_name.endswith('.dot') or \
+                    file_name.endswith('.dat') or file_name.endswith('.pb'):
+                os.remove(os.path.join(folder_path, file_name))
+
+
+def find_newest_validateir_file(folder_path):
+    ckpt_files = map(lambda f: os.path.join(folder_path, f),
+                     filter(lambda f: re.match(r'\d+_validate_\d+.ir', f),
+                            os.listdir(folder_path)))
+    return max(ckpt_files, key=os.path.getctime)
+
+
+def read_file(save_path):
+    filename = find_newest_validateir_file(save_path)
+    with open((os.path.join(filename)), 'r') as f:
+        content = f.read()
+    clean_all_ir_files(save_path)
+    return content
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx():
     """
     Feature: Support with stream.
@@ -58,13 +85,32 @@ def test_my_ms_jit_stream_ctx():
                 z = a + b + x
             return z - y
 
+
+    save_path = "./test_my_ms_jit_stream_ctx"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     net = MyMsJitStreamCtxNet()
     x = Tensor(np.ones([3, 3]), ms.float32)
     out = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert (out.asnumpy() == x.asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 1
+
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_runtime():
     """
     Feature: Support with stream.
@@ -79,12 +125,29 @@ def test_my_ms_jit_stream_ctx_runtime():
                 z = a + b + x
             return z - y
 
+    save_path = "./test_my_ms_jit_stream_ctx_runtime"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     net = MyMsJitStreamCtxNet()
     x = Tensor(np.ones([3, 3]), ms.float32)
     out = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert (out.asnumpy() == x.asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 1
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_mutli():
     """
     Feature: Support with stream.
@@ -101,13 +164,31 @@ def test_my_ms_jit_stream_ctx_mutli():
                 y = a - y
             return y + z
 
+
+    save_path = "./test_my_ms_jit_stream_ctx_mutli"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     net = MyMsJitStreamCtxMutliNet()
     x = Tensor(np.ones([3, 3]), ms.float32)
     out = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert (out.asnumpy() == (x * 2).asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 2
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_nest():
     """
     Feature: Support with stream.
@@ -124,14 +205,31 @@ def test_my_ms_jit_stream_ctx_nest():
                     y = a - y
             return y + z
 
+
+    save_path = "./test_my_ms_jit_stream_ctx_nest"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     net = MyMsJitStreamCtxMutliNet()
     x = Tensor(np.ones([3, 3]), ms.float32)
-    print("x:", x)
     out = net(x)
-    print("out:", out)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    assert (out.asnumpy() == (x * 2).asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 2
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_basic_stream_block_annotation_1():
     """
     Feature: Support with stream.
@@ -150,13 +248,32 @@ def test_basic_stream_block_annotation_1():
             y = y + z
             return y + z
 
+
+    save_path = "./test_basic_stream_block_annotation_1"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    net = MsJitStreamNet()
     x = Tensor(np.ones([3, 3]), ms.float32)
     con = 0
-    result = MsJitStreamNet()(x, con)
+    result = net(x, con)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert np.allclose(result, Tensor(np.ones([3, 3], dtype=np.float32)) * 23)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 3
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, con)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, con)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_basic_stream_block_annotation_2():
     """
     Feature: Support with stream.
@@ -176,12 +293,31 @@ def test_basic_stream_block_annotation_2():
             x = ops.abs(x)
             return x
 
+
+    save_path = "./test_basic_stream_block_annotation_2"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = SimpleStreamNet()(x)
+    net = SimpleStreamNet()
+    result = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 3)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 3
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_nested_stream_blocks():
     """
     Feature: Support with stream.
@@ -199,12 +335,30 @@ def test_nested_stream_blocks():
                 x4 = x3 + Tensor(np.ones([2, 2], dtype=np.float32))
             return x4
 
+    save_path = "./test_nested_stream_blocks"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = NestedStreamNet()(x)
+    net = NestedStreamNet()
+    result = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 5)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 4
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_complex_nested_streams():
     """
     Feature: Support with stream.
@@ -225,12 +379,30 @@ def test_complex_nested_streams():
                 x5 = x4 + t
             return x5
 
+    save_path = "./test_complex_nested_streams"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = ComplexStreamsNet()(x)
+    net = ComplexStreamsNet()
+    result = net(x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 5
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multiple_independent_streams():
     """
     Feature: Support with stream.
@@ -254,13 +426,32 @@ def test_multiple_independent_streams():
             result = result + intermediate
             return result
 
+
+    save_path = "./test_multiple_independent_streams"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     x = Tensor(np.ones([2, 2], dtype=np.float32))
     y = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = MutliStreamsNet()(x, y)
+    net = MutliStreamsNet()
+    result = net(x, y)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 6)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 4
+    ms.set_context(save_graphs=False)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, y)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, y)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stream_with_control_flow():
     """
     Feature: Support with stream.
@@ -278,14 +469,20 @@ def test_stream_with_control_flow():
             return x
 
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result_with_stream = ConditionalStreamNet()(x, True)
-    result_without_stream = ConditionalStreamNet()(x, False)
+    net = ConditionalStreamNet()
+    result_with_stream = net(x, True)
+    result_without_stream = net(x, False)
     assert np.allclose(result_with_stream, result_without_stream)
     assert np.allclose(result_with_stream, Tensor(np.ones([2, 2], dtype=np.float32)) * 2)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, True)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, False)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
 @pytest.mark.skip(reason='Not support yet, UnboundLocalError')
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_switch_like_control_flow_with_streams():
     """
     Feature: Support with stream.
@@ -330,7 +527,7 @@ def test_switch_like_control_flow_with_streams():
     assert np.allclose(result3, Tensor(np.ones([2, 2], dtype=np.float32)) * 8)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stream_with_break_statement():
     """
     Feature: Support with stream.
@@ -354,11 +551,17 @@ def test_stream_with_break_statement():
             return result
 
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = StreamWithBreakNet()(x, 5)
+    net = StreamWithBreakNet()
+    result = net(x, 5)
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)) * 7)
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, 5)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, 5)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stream_with_continue_statement():
     """
     Feature: Support with stream.
@@ -382,11 +585,18 @@ def test_stream_with_continue_statement():
             return result
 
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-    result = StreamWithContinueNet()(x, 4)
+    net = StreamWithContinueNet()
+    result = net(x, 4)
     assert np.allclose(result, Tensor(np.ones([2, 2], dtype=np.float32)))
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, 4)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, 4)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stream_with_return_statement():
     """
     Feature: Support with stream.
@@ -409,15 +619,21 @@ def test_stream_with_return_statement():
             return result
 
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-
-    result_early = StreamWithReturnNet()(x, True)
+    net = StreamWithReturnNet()
+    result_early = net(x, True)
     assert np.allclose(result_early, Tensor(np.ones([2, 2], dtype=np.float32)) * 2)
 
-    result_full = StreamWithReturnNet()(x, False)
+    result_full = net(x, False)
     assert np.allclose(result_full, Tensor(np.ones([2, 2], dtype=np.float32)) * 3)
 
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, True)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, False)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multiple_returns_in_different_streams():
     """
     Feature: Support with stream.
@@ -441,12 +657,18 @@ def test_multiple_returns_in_different_streams():
                 return x3
 
     x = Tensor(np.ones([2, 2], dtype=np.float32))
-
-    result1 = StreamWithReturnNet()(x, 1)
+    net = StreamWithReturnNet()
+    result1 = net(x, 1)
     assert np.allclose(result1, Tensor(np.ones([2, 2], dtype=np.float32)) * 2)
 
-    result2 = StreamWithReturnNet()(x, 2)
+    result2 = net(x, 2)
     assert np.allclose(result2, Tensor(np.ones([2, 2], dtype=np.float32)) * 3)
 
-    result3 = StreamWithReturnNet()(x, 3)
+    result3 = net(x, 3)
     assert np.allclose(result3, Tensor(np.ones([2, 2], dtype=np.float32)) * 5)
+
+    ms.set_context(mode=ms.context.PYNATIVE_MODE)
+    pynative_grad_out = grad(net)(x, 1)
+    ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    graph_grad_out = grad(net)(x, 1)
+    assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()

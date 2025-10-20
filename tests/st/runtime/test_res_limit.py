@@ -17,7 +17,7 @@ import mindspore.context as context
 from mindspore import Tensor, ops
 import mindspore as ms
 from tests.mark_utils import arg_mark
-ms.set_device("Ascend")
+
 context.set_context(mode=context.PYNATIVE_MODE)
 CUBE_NUM = 24
 VECTOR_NUM = 48

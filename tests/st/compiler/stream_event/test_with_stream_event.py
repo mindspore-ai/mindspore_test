@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
 from mindspore.runtime import Stream, StreamCtx
+from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
@@ -39,6 +41,20 @@ b = Tensor(np.ones([3, 3]), ms.float32)
 s1 = Stream()
 s2 = Stream()
 
+class WithEventNet1(nn.Cell):
+    def __init__(self):
+        super(WithEventNet1, self).__init__()
+        self.depend = ops.Depend()
+
+    def construct(self, x):
+        y = x * 2
+        event = ms.runtime.Event()
+        with MyMsJitStreamCtx(s1):
+            z = a + b + x
+            event = self.depend(event, z)
+            event.record()
+            event.wait()
+        return y + z
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_event():
@@ -48,26 +64,27 @@ def test_with_stream_event():
     Expectation: Run success.
     """
 
-    class WithEventNet(nn.Cell):
-        def __init__(self):
-            super(WithEventNet, self).__init__()
-            self.depend = ops.Depend()
+    ms.set_context(mode=ms.GRAPH_MODE)
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    net = WithEventNet1()
+    out = net(x)
+    print("out:", out)
 
-        def construct(self, x):
-            y = x * 2
-            event = ms.runtime.Event()
-            with MyMsJitStreamCtx(s1):
-                z = a + b + x
-                event = self.depend(event, z)
-                event.record()
-                event.wait()
-            return y + z
+
+@pytest.mark.skip(reason='Not support yet')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_event_grad():
+    """
+    Feature: Support event and with stream in graph mode.
+    Description: Support event and with stream in graph mode.
+    Expectation: Run success.
+    """
 
     ms.set_context(mode=ms.GRAPH_MODE)
     x = Tensor(np.ones([3, 3]), ms.float32)
-    net = WithEventNet()
-    out = net(x)
-    print("out:", out)
+    net = WithEventNet1()
+    graph_grad_out = grad(net)(x)
+    print("graph_grad_out:", graph_grad_out)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

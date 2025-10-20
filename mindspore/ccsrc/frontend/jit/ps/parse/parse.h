@@ -439,12 +439,12 @@ class Parser {
   py::object list_pop_target_obj_;
 
   std::stack<size_t> stream_ids_;
-  void SetCurrentStreamId(const size_t stream_id);
+  void SetCurrentStreamId(size_t stream_id);
   void ClearCurrentStreamId();
   void TagSubgraphWithStream(const FuncGraphPtr &subgraph);
 
   std::stack<std::vector<int64_t>> stream_core_nums_;
-  void SetStreamCoreNums(std::vector<int64_t> stream_limit_args);
+  void SetStreamCoreNums(const std::vector<int64_t> &stream_limit_args);
   void ClearStreamCoreNums();
   void TagSubgraphWithStreamCoreNums(const FuncGraphPtr &subgraph);
 
