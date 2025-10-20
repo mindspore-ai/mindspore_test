@@ -42,7 +42,7 @@ void MonitorLoop(std::mutex *monitor_mtx, std::condition_variable *monitor_cv, b
     return;
   }
   std::shared_ptr<ConfigManager> cfg = GlobalContext::config_manager();
-  int32_t check_interval = cfg->multiprocessing_timeout_interval();
+  auto check_interval = cfg->multiprocessing_timeout_interval();
   auto start_time = std::chrono::system_clock::now();
 
   while (true) {
@@ -91,12 +91,6 @@ std::mutex mtx;
 void PrintPythonStack(const int32_t &worker_id, const std::string &op_type) {
   std::string input_cmd = "py-spy dump -p " + std::to_string(worker_id);
 
-  // check the input
-  if (input_cmd.size() >= cmd_len) {
-    MS_LOG(WARNING) << "ExecuteCMD the input cmd is too long.";
-    return;
-  }
-
   // gen the output file
   std::stringstream ss;
   ss << std::this_thread::get_id();
@@ -130,9 +124,9 @@ void PrintPythonStack(const int32_t &worker_id, const std::string &op_type) {
   }
 
   // read the output file
-  std::ifstream ifs(output_filename, std::ios::in);
+  std::ifstream ifs(canonical_path, std::ios::in);
   if (!ifs.is_open()) {
-    MS_LOG(WARNING) << "ExecuteCMD read file: " << output_filename << " failed.";
+    MS_LOG(WARNING) << "ExecuteCMD read file: " << canonical_path << " failed.";
     return;
   }
 
@@ -159,8 +153,8 @@ void PrintPythonStack(const int32_t &worker_id, const std::string &op_type) {
   }
 
   // remove the output file
-  if (remove(output_filename.c_str()) != 0) {
-    MS_LOG(WARNING) << "ExecuteCMD remove file: " << output_filename << " failed.";
+  if (remove(canonical_path) != 0) {
+    MS_LOG(WARNING) << "ExecuteCMD remove file: " << canonical_path << " failed.";
   }
 }
 #endif

@@ -437,7 +437,7 @@ std::string CheckIfWorkerExit() {
     if (getpid() != ppid) {
       continue;  // this worker group is not the children of current process
     }
-    for (auto i = 1; i < pids.size(); ++i) {
+    for (size_t i = 1; i < pids.size(); ++i) {
       int pid = pids[i];
       siginfo_t sig_info{};
       sig_info.si_pid = 0;

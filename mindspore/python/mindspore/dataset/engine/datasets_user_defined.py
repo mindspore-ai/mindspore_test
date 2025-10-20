@@ -966,18 +966,9 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.source = _GeneratorWrapper(self.source)
 
         self.prepared_source = None  # source to be sent to C++
-        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True and \
-           get_multiprocessing_start_method() == "fork":
-            self.num_parallel_workers = 1
-            logger.warning(
-                "Input 'source' of 'GeneratorDataset' includes network computing operators like in mindspore.nn, "
-                "mindspore.ops, mindspore.numpy module and etc, which do not support multi-thread compiling, recommend"
-                " to replace it with python implemented operator like numpy etc. Here decrease 'num_parallel_workers' "
-                "into 1.")
+        self._check_operator_mixed()
+        self._check_windows(self.num_parallel_workers, python_multiprocessing)
 
-        if platform.system().lower() == 'windows' and num_parallel_workers > 1 and python_multiprocessing:
-            logger.warning("Python multiprocessing is not supported on Windows platform.")
-        self.python_multiprocessing = python_multiprocessing if platform.system().lower() != 'windows' else False
         if self.python_multiprocessing and get_debug_mode():
             logger.warning("Python multiprocessing is not supported in debug mode."
                            " Ignoring Python multiprocessing for GeneratorDataset.")
@@ -1011,6 +1002,23 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         self.sample_fn = None
         # Ignore batch_info in the input parameter.
         self.collate_fn = (lambda *args: collate_fn(*args[:-1])) if collate_fn is not None else None
+
+    def _check_operator_mixed(self):
+        """check whether operator mixed"""
+        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True and \
+           get_multiprocessing_start_method() == "fork":
+            self.num_parallel_workers = 1
+            logger.warning(
+                "Input 'source' of 'GeneratorDataset' includes network computing operators like in mindspore.nn, "
+                "mindspore.ops, mindspore.numpy module and etc, which do not support multi-thread compiling, recommend"
+                " to replace it with python implemented operator like numpy etc. Here decrease 'num_parallel_workers' "
+                "into 1.")
+
+    def _check_windows(self, num_parallel_workers, python_multiprocessing):
+        """disable multiprocess when windows"""
+        if platform.system().lower() == 'windows' and num_parallel_workers > 1 and self.python_multiprocessing:
+            logger.warning("Python multiprocessing is not supported on Windows platform.")
+        self.python_multiprocessing = python_multiprocessing if platform.system().lower() != 'windows' else False
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:
@@ -1128,6 +1136,31 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
                        "to reduce num_parallel_workers to {} or smaller.".format(self.num_parallel_workers,
                                                                                  valid_num_worker)
                 logger.warning(info)
+
+    def add_sampler(self, new_sampler):
+        """
+        Add a child sampler for the current dataset.
+
+        Note:
+            - If the sampler is added and it has a shuffle option, its value must be ``Shuffle.GLOBAL`` .
+              Additionally, the original sampler's shuffle value cannot be ``Shuffle.PARTIAL`` .
+
+        Args:
+            new_sampler (Sampler): The child sampler to be added.
+
+        Examples:
+            >>> import mindspore.dataset as ds
+            >>> dataset = ds.GeneratorDataset([i for i in range(10)], "column1")
+            >>>
+            >>> new_sampler = ds.DistributedSampler(10, 2)
+            >>> dataset.add_sampler(new_sampler)
+        """
+        # check PKSampler
+        if isinstance(new_sampler, samplers.PKSampler):
+            raise RuntimeError("GeneratorDataset doesn't support PKSampler")
+
+        # call parent class
+        super().add_sampler(new_sampler)
 
 
 class _NumpySlicesDataset:
