@@ -37,9 +37,6 @@ list(APPEND _TOOLS_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/data_dump.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/common/csv_writer.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/summary/callbacks.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/summary/event_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
     )
 
@@ -87,7 +84,10 @@ set_target_properties(mindspore_dump PROPERTIES INSTALL_RPATH $ORIGIN)
 
 set(_TOOLS_SRC_INDEPENDENT_LIST)
 list(APPEND _TOOLS_SRC_INDEPENDENT_LIST "${CMAKE_CURRENT_SOURCE_DIR}/callback.cc"
-                                        "${CMAKE_CURRENT_SOURCE_DIR}/debug_func.cc")
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/debug_func.cc"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/summary/callbacks.cc"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/summary/event_writer.cc")
 file(GLOB_RECURSE _TENSOR_DUMP_LIST "${CMAKE_CURRENT_SOURCE_DIR}/tensor_dump/*.cc")
 list(APPEND _TOOLS_SRC_INDEPENDENT_LIST ${_TENSOR_DUMP_LIST})
 

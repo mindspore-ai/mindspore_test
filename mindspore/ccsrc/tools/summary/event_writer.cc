@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/backend/debug/event_writer.h"
+#include "tools/summary/event_writer.h"
 #include <string>
 #include "utils/system/base.h"
 #include "utils/system/file_system.h"
