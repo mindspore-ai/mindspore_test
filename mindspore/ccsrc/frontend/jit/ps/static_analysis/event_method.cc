@@ -35,16 +35,16 @@ void PreprocessForEventMethod(const FuncGraphPtr &func_graph, EventMap *event_me
   auto nodes = func_graph->order_list();
   for (auto &weak_cnode : nodes) {
     const auto &cnode = weak_cnode.lock();
-    MS_LOG(DEBUG) << "cnode: " << cnode->DebugString();
-    if (IsPrimitiveCNode(cnode, prim::kPrimStreamSend) || IsPrimitiveCNode(cnode, prim::kPrimStreamRecv)) {
+    auto node_abs = cnode->abstract();
+    MS_EXCEPTION_IF_NULL(node_abs);
+    if (node_abs->isa<abstract::AbstractEvent>()) {
       auto event_method_node = cnode->cast<CNodePtr>();
-      auto input = event_method_node->input(1);
-      while (IsPrimitiveCNode(input, prim::kPrimDepend)) {
-        input = input->cast<CNodePtr>()->input(1);
-      }
-      auto event_value = GetValueNode<EventPtr>(input);
-      MS_EXCEPTION_IF_NULL(event_value);
-      auto event_id = event_value->value();
+      const auto &input = event_method_node->input(1);
+      const auto &abs = input->abstract();
+      MS_EXCEPTION_IF_NULL(abs);
+      auto event_abs = abs->cast<abstract::AbstractEventPtr>();
+      MS_EXCEPTION_IF_NULL(event_abs);
+      auto event_id = event_abs->event_id();
       (*event_method_nodes)[event_id].emplace_back(cnode);
       common::AnfAlgo::SetNodeAttrSafely(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)), cnode);
     }
@@ -54,21 +54,25 @@ void PreprocessForEventMethod(const FuncGraphPtr &func_graph, EventMap *event_me
   }
 }
 
-void CheckAndReplace(const FuncGraphPtr &func_graph, const EventMap &event_method_nodes) {
+void CheckAndReplace(const EventMap &event_method_nodes) {
   for (auto iter : event_method_nodes) {
     auto event_id = iter.first;
     MS_LOG(DEBUG) << "The id of event: " << event_id;
     auto cur_event_method_nodes = iter.second;
-    // %0 = StreamSendInner(event1)
-    // %1 = StreamRecvInner(event1)
+    // %0 = StreamSend(event1)
+    // %1 = Depend(event1, x)
+    // %2 = StreamRecv(event1)
     // After Replace
-    // %0 = StreamSendInner(event1)
-    // %1 = StreamRecvInner(%0)
+    // %0 = StreamSend(event1)
+    // %1 = Depend(%0, x)
+    // %2 = StreamRecv(%1)
     for (size_t index = cur_event_method_nodes.size() - 1; index > 0; --index) {
       auto after_node = cur_event_method_nodes[index]->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(after_node);
       const auto &before_node = cur_event_method_nodes[index - 1];
       MS_EXCEPTION_IF_NULL(before_node);
+      auto after_cnode = after_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(after_cnode);
       after_node->set_input(1, before_node);
     }
   }
@@ -90,7 +94,7 @@ void EventMethod(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph->manager());
   EventMap event_method_nodes;
   PreprocessForEventMethod(func_graph, &event_method_nodes);
-  CheckAndReplace(func_graph, event_method_nodes);
+  CheckAndReplace(event_method_nodes);
   ClearEventFuncFlag(func_graph);
 }
 }  // namespace pipeline

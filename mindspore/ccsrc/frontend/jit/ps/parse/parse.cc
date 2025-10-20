@@ -921,11 +921,7 @@ FunctionBlockPtr Parser::ParseLambdaFunction(const py::object &node, const Funct
   return func_block;
 }
 
-void Parser::SetCurrentStreamId(const int64_t stream_id) {
-  if (stream_id < 0) {
-    MS_LOG(ERROR) << "Invalid stream_id: " << stream_id << ", must be non-negative.";
-    return;
-  }
+void Parser::SetCurrentStreamId(const size_t stream_id) {
   stream_ids_.push(stream_id);
   MS_LOG(DEBUG) << "SetCurrentStreamId stream_id: " << stream_id << ", stack size: " << stream_ids_.size();
 }
@@ -940,6 +936,19 @@ void Parser::ClearCurrentStreamId() {
   stream_ids_.pop();
 }
 
+void Parser::SetStreamCoreNums(std::vector<int64_t> stream_limit_args) {
+  stream_core_nums_.push(stream_limit_args);
+  MS_LOG(DEBUG) << "Push stream_core_nums_: ";
+}
+
+void Parser::ClearStreamCoreNums() {
+  if (stream_core_nums_.empty()) {
+    MS_LOG(ERROR) << "ClearStreamCoreNums failed";
+    return;
+  }
+  stream_core_nums_.pop();
+}
+
 void Parser::TagSubgraphWithStream(const FuncGraphPtr &subgraph) {
   if (subgraph == nullptr || stream_ids_.empty()) {
     MS_LOG(ERROR) << "TagSubgraphWithStream failed";
@@ -952,12 +961,32 @@ void Parser::TagSubgraphWithStream(const FuncGraphPtr &subgraph) {
   MS_LOG(DEBUG) << "TagSubgraphWithStream stream_id: " << stream_id << ", subgraph: " << subgraph->ToString();
 }
 
+void Parser::TagSubgraphWithStreamCoreNums(const FuncGraphPtr &subgraph) {
+  if (subgraph == nullptr || stream_core_nums_.empty()) {
+    MS_LOG(ERROR) << "TagSubgraphWithStreamCoreNums failed";
+    return;
+  }
+  auto stream_core_nums = stream_core_nums_.top();
+  int64_t stream_id = stream_core_nums[0];
+  if (stream_id < 0) {
+    MS_LOG(EXCEPTION) << "Invalid stream_id: " << stream_id << ", must be non-negative.";
+  }
+  int64_t cube_num = stream_core_nums[1];
+  int64_t vector_num = stream_core_nums[2];
+  subgraph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+  subgraph->set_attr(kFuncGraphFlagStreamLimitId, MakeValue(static_cast<size_t>(stream_id)));
+  subgraph->set_attr(kFuncGraphFlagCubeNum, MakeValue(cube_num));
+  subgraph->set_attr(kFuncGraphFlagVectorNum, MakeValue(vector_num));
+  MS_LOG(DEBUG) << "TagSubgraphWithStreamCoreNums stream_id: " << stream_id << ", subgraph: " << subgraph->ToString();
+}
+
 FunctionBlockPtr Parser::ParseStatements(const FunctionBlockPtr &block, const py::object &nodes) {
   auto node_list = py::cast<py::list>(nodes);
   size_t count = py::len(node_list);
   MS_LOG(DEBUG) << "The nodes count is " << count;
   auto sub_block = block;
   bool in_stream_context = !stream_ids_.empty();
+  bool in_stream_limit_context = !stream_core_nums_.empty();
   for (size_t i = 0; i < count; ++i) {
     MS_LOG(DEBUG) << "Start parse statement[" << i << "]: " << py::str(node_list[i])
                   << ", block: " << sub_block->ToString();
@@ -969,6 +998,10 @@ FunctionBlockPtr Parser::ParseStatements(const FunctionBlockPtr &block, const py
     MS_EXCEPTION_IF_NULL(next_block->func_graph());
     if (in_stream_context && next_block != sub_block) {
       TagSubgraphWithStream(next_block->func_graph());
+    }
+
+    if (in_stream_limit_context && next_block != sub_block) {
+      TagSubgraphWithStreamCoreNums(next_block->func_graph());
     }
     // Propagate flag of return statement back;
     if (sub_block != block && sub_block->is_return_statement_inside()) {
@@ -4636,32 +4669,73 @@ AnfNodePtr Parser::ParseWithitem(const FunctionBlockPtr &block, const py::object
   return enter_node;
 }
 
-py::object Parser::GetMSJitStreamObj(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
+py::object Parser::GetStreamIdFromMsJitStreamCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
   py::object function_ast_node = python_adapter::GetPyObjAttr(context_expr_obj, "func");
+  bool is_stream_ctx = false;
   auto arg_type =
     AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, function_ast_node)));
   if (arg_type == AST_SUB_TYPE_NAME) {
     std::string name_id = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "id"));
     MS_LOG(DEBUG) << "The name of call node is: " << name_id;
-    bool is_ms_jit_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_MS_JIT_STREAM_CTX, name_id).cast<bool>();
-    MS_LOG(DEBUG) << "is_ms_jit_stream_ctx: " << is_ms_jit_stream_ctx;
-    if (!is_ms_jit_stream_ctx) {
-      return py::none();
-    }
-    py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
-    MS_LOG(DEBUG) << "args: " << py::str(args);
-    if (args.size() != 1) {
-      MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
-    }
-    std::string stream_name = py::cast<std::string>(python_adapter::GetPyObjAttr(args[0], "id"));
-    MS_LOG(DEBUG) << "The stream_name: " << stream_name;
-    py::object stream_obj = ast_->CallParserObjMethod(PYTHON_MOD_GET_MS_JIT_STREAM_OBJ, stream_name);
-    MS_LOG(DEBUG) << "The stream_obj: " << py::str(stream_obj);
-    if (!stream_obj.is_none()) {
-      return stream_obj;
-    }
+    is_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_CTX, name_id).cast<bool>();
+  } else if (arg_type == AST_SUB_TYPE_ATTRIBUTE) {
+    auto attr_name = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "attr"));
+    is_stream_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_CTX, attr_name).cast<bool>();
+  }
+  if (!is_stream_ctx) {
+    return py::none();
+  }
+  py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
+  if (args.size() != 1) {
+    MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
+  }
+  std::string stream_name = py::cast<std::string>(python_adapter::GetPyObjAttr(args[0], "id"));
+  py::object stream_obj_id = ast_->CallParserObjMethod(PYTHON_MOD_GET_MS_JIT_STREAM_OBJ_ID, stream_name);
+  if (!stream_obj_id.is_none()) {
+    return stream_obj_id;
   }
   return py::none();
+}
+
+std::vector<int64_t> Parser::ParseStreamLimitCtx(const FunctionBlockPtr &block, const py::object &context_expr_obj) {
+  py::object function_ast_node = python_adapter::GetPyObjAttr(context_expr_obj, "func");
+  auto arg_type =
+    AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, function_ast_node)));
+  MS_LOG(DEBUG) << "arg_type: " << arg_type;
+  bool is_stream_limit_ctx = false;
+  if (arg_type == AST_SUB_TYPE_NAME) {
+    std::string name_id = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "id"));
+    MS_LOG(DEBUG) << "The name of call node is: " << name_id;
+    is_stream_limit_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX, name_id).cast<bool>();
+  } else if (arg_type == AST_SUB_TYPE_ATTRIBUTE) {
+    std::string attr_name = py::cast<std::string>(python_adapter::GetPyObjAttr(function_ast_node, "attr"));
+    MS_LOG(DEBUG) << "The name of call node is: " << attr_name;
+    is_stream_limit_ctx = ast_->CallParserObjMethod(PYTHON_MOD_CHECK_IS_STREAM_LIMIT_CTX, attr_name).cast<bool>();
+  }
+  if (!is_stream_limit_ctx) {
+    return {};
+  }
+  py::list args = python_adapter::GetPyObjAttr(context_expr_obj, "args");
+  constexpr size_t stream_limit_ctx_args_size = 3;
+  if (args.size() != stream_limit_ctx_args_size) {
+    MS_LOG(EXCEPTION) << "Only supports 3 args in the with StreamLimitCtx statement.";
+  }
+  constexpr size_t stream_id_index = 0;
+  constexpr size_t cube_num_index = 1;
+  constexpr size_t vector_num_index = 2;
+  std::string stream_name = py::cast<std::string>(python_adapter::GetPyObjAttr(args[stream_id_index], "id"));
+  py::object stream_obj_id = ast_->CallParserObjMethod(PYTHON_MOD_GET_MS_JIT_STREAM_OBJ_ID, stream_name);
+  auto cube_num_obj = python_adapter::GetPyObjAttr(args[cube_num_index], "value");
+  if (!py::isinstance<py::int_>(cube_num_obj)) {
+    MS_LOG(EXCEPTION) << "The cube_num must be constant, but got :" << (std::string)py::str(cube_num_obj);
+  }
+  int64_t cube_num = py::cast<int64_t>(cube_num_obj);
+  auto vector_num_obj = python_adapter::GetPyObjAttr(args[vector_num_index], "value");
+  if (!py::isinstance<py::int_>(vector_num_obj)) {
+    MS_LOG(EXCEPTION) << "The vector_num_obj must be constant, but got :" << (std::string)py::str(vector_num_obj);
+  }
+  int64_t vector_num = py::cast<int64_t>(vector_num_obj);
+  return {py::cast<int64_t>(stream_obj_id), cube_num, vector_num};
 }
 
 // with expression [as variable]:
@@ -4683,26 +4757,16 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
 
     // Check if is MSJitStreamCtx, get the stream object(s1) form 'with statement'.
     // with MyMsJitStreamCtx(s1):
-    auto stream_obj = GetMSJitStreamObj(block, context_expr_obj);
-    if (!py::isinstance<py::none>(stream_obj)) {
+    auto stream_obj_id = GetStreamIdFromMsJitStreamCtx(block, context_expr_obj);
+    MS_LOG(DEBUG) << "stream_obj_id:" << py::str(stream_obj_id);
+    if (!py::isinstance<py::none>(stream_obj_id)) {
       // Currently only support: with MsJitStreamCtx(s1)
       if (items_objs.size() != 1) {
         MS_LOG(EXCEPTION) << "Only supports a stream in the with statement.";
       }
 
-      py::object stream_obj_id =
-        python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_GET_OBJ_ID, stream_obj);
-      if (py::isinstance<py::none>(stream_obj_id)) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Get py obj failed";
-      }
-      auto id = stream_obj_id.cast<std::string>();
-      MS_LOG(DEBUG) << "The id of stream obj is: " << id;
-      static std::map<std::string, uint32_t> stream_map;
-      if (stream_map.find(id) == stream_map.end()) {
-        static int64_t stream_id = 1;
-        stream_map[id] = stream_id++;
-      }
-      SetCurrentStreamId(stream_map[id]);
+      auto id = py::cast<size_t>(stream_obj_id);
+      SetCurrentStreamId(id);
 
       FunctionBlockPtr body_block = MakeFunctionBlock();
       MS_EXCEPTION_IF_NULL(body_block);
@@ -4728,6 +4792,34 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
       }
       return after_block;
     }
+    // Parse StreamLimit Ctx
+    auto stream_limit_ctx_args = ParseStreamLimitCtx(block, context_expr_obj);
+    if (!stream_limit_ctx_args.empty()) {
+      SetStreamCoreNums(stream_limit_ctx_args);
+      FunctionBlockPtr body_block = MakeFunctionBlock();
+      MS_EXCEPTION_IF_NULL(body_block);
+      auto body_func_graph = body_block->func_graph();
+      MS_EXCEPTION_IF_NULL(body_func_graph);
+      TagSubgraphWithStreamCoreNums(body_func_graph);
+      block->Jump(body_block, {});
+      body_block->Mature();
+      py::object body_node = python_adapter::GetPyObjAttr(node, "body");
+      body_block = ParseStatements(body_block, body_node);
+      ClearStreamCoreNums();
+      FunctionBlockPtr after_block = MakeFunctionBlock();
+      after_block->Mature();
+      auto after_func = after_block->func_graph();
+      MS_EXCEPTION_IF_NULL(after_func);
+      after_func->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
+
+      auto body_func = body_block->func_graph();
+      MS_EXCEPTION_IF_NULL(body_func);
+      if (body_func->get_return() == nullptr) {
+        body_block->Jump(after_block, {});
+      }
+      return after_block;
+    }
+
     AnfNodePtr context_expr_node = ParseExprNode(block, context_expr_obj);
     context_expr_nodes.push(context_expr_node);
     auto enter_node = ParseWithitem(block, items_obj, context_expr_node);

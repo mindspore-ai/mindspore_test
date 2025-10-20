@@ -17,7 +17,8 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
-from mindspore.runtime.ms_jit_stream_ctx import MsJitStream, MsJitStreamCtx
+from mindspore.runtime import Stream
+from mindspore.runtime import StreamCtx as MsJitStreamCtx
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
@@ -37,9 +38,9 @@ class MyMsJitStreamCtx(MsJitStreamCtx):
 
 a = Tensor(np.ones([3, 3]), ms.float32)
 b = Tensor(np.ones([3, 3]), ms.float32)
-s1 = MsJitStream()
-s2 = MsJitStream()
-s3 = MsJitStream()
+s1 = Stream()
+s2 = Stream()
+s3 = Stream()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -62,6 +63,26 @@ def test_my_ms_jit_stream_ctx():
     out = net(x)
     assert (out.asnumpy() == x.asnumpy()).all()
 
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_my_ms_jit_stream_ctx_runtime():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    class MyMsJitStreamCtxNet(nn.Cell):
+        def construct(self, x):
+            y = x * 2
+            with ms.runtime.StreamCtx(s1):
+                z = a + b + x
+            return z - y
+
+    net = MyMsJitStreamCtxNet()
+    x = Tensor(np.ones([3, 3]), ms.float32)
+    out = net(x)
+    assert (out.asnumpy() == x.asnumpy()).all()
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_mutli():

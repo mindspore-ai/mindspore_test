@@ -16,13 +16,13 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
-from mindspore.runtime.ms_jit_stream_ctx import MsJitStream, MsJitStreamCtx
+from mindspore.runtime import Stream, StreamCtx
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
 
 
-class MyMsJitStreamCtx(MsJitStreamCtx):
+class MyMsJitStreamCtx(StreamCtx):
     def __init__(self, ctx_stream):
         self.stream = ctx_stream
         self.prev_stream = None
@@ -36,8 +36,8 @@ class MyMsJitStreamCtx(MsJitStreamCtx):
 
 a = Tensor(np.ones([3, 3]), ms.float32)
 b = Tensor(np.ones([3, 3]), ms.float32)
-s1 = MsJitStream()
-s2 = MsJitStream()
+s1 = Stream()
+s2 = Stream()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -70,7 +70,7 @@ def test_with_stream_event():
     print("out:", out)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_event_multi_with_streams():
     """
     Feature: Support event and with stream in graph mode.
@@ -103,7 +103,7 @@ def test_event_multi_with_streams():
     print("out:", out)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_multi_events():
     """
     Feature: Support event and with stream in graph mode.

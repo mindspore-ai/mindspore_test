@@ -25,14 +25,23 @@ namespace irpass {
 int64_t GetStreamIdFuncGraphWithStreamCtx(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto value = func_graph->get_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX);
-  if (value != nullptr && value->isa<Int64Imm>()) {
-    const auto &stream_id = GetValue<int64_t>(value);
+  if (value != nullptr) {
+    const auto &stream_id = GetValue<size_t>(value);
+    MS_LOG(DEBUG) << "stream_id:" << stream_id << " func_graph:" << func_graph->ToString();
+    auto fg_used_total = func_graph->func_graphs_used_total();
+    for (const auto &fg : fg_used_total) {
+      auto stream_limit_id_value = fg->get_attr(kFuncGraphFlagStreamLimitId);
+      if (stream_limit_id_value != nullptr) {
+        MS_LOG(DEBUG) << "Pass labels to the subgraph: " << fg->ToString();
+        fg->set_attr(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX, MakeValue(stream_id));
+      }
+    }
     return stream_id;
   }
   return -1;
 }
 
-bool CheckNeedMark(const CNodePtr &cnode, int64_t stream_id) {
+bool CheckNeedMark(const CNodePtr &cnode, size_t stream_id) {
   if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
     auto need_check_node = cnode->input(1);
     if (!need_check_node->isa<CNode>()) {
@@ -50,13 +59,7 @@ bool CheckNeedMark(const CNodePtr &cnode, int64_t stream_id) {
   return true;
 }
 
-bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
-  MS_EXCEPTION_IF_NULL(root);
-  MS_EXCEPTION_IF_NULL(opt);
-  auto manager = opt->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  MS_LOG(DEBUG) << "root fg: " << root->ToString();
-
+void MarkWithStreamCtx(const FuncGraphPtr &root) {
   const auto &all_nodes = TopoSort(root->return_node(), SuccDeeperSimple, AlwaysInclude);
   MS_LOG(DEBUG) << "all_nodes size: " << all_nodes.size();
   for (auto &node : all_nodes) {
@@ -69,21 +72,70 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
     auto need_mark = (stream_id != -1) && CheckNeedMark(cnode, stream_id);
     if (need_mark) {
       MS_LOG(DEBUG) << "The cnode need mark: " << cnode->DebugString() << " need_mark:" << need_mark;
-      cnode->AddAttr("stream_id", MakeValue(static_cast<int64_t>(stream_id)));
+      cnode->AddAttr(kFuncGraphFlagStreamId, MakeValue(static_cast<int64_t>(stream_id)));
     } else {
       MS_LOG(DEBUG) << "The cnode do not need mark: " << cnode->DebugString() << " need_mark:" << need_mark;
     }
   }
+}
+
+int64_t GetStreamLimitId(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto value = func_graph->get_attr(kFuncGraphFlagStreamLimitId);
+  if (value != nullptr) {
+    const auto &stream_limit_id = GetValue<size_t>(value);
+    return stream_limit_id;
+  }
+  return -1;
+}
+
+void MarkWithStreamLimitCtx(const FuncGraphPtr &root) {
+  const auto &all_nodes = TopoSort(root->return_node(), SuccDeeperSimple, AlwaysInclude);
+  MS_LOG(DEBUG) << "all_nodes size: " << all_nodes.size();
+  for (auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    auto cur_func = cnode->func_graph();
+    int64_t stream_limit_id = GetStreamLimitId(cur_func);
+    MS_LOG(DEBUG) << "stream_limit_id:" << stream_limit_id;
+    int64_t stream_id = -1;
+    if (cnode->HasAttr(kFuncGraphFlagStreamId)) {
+      stream_id = GetValue<int64_t>(cnode->GetAttr(kFuncGraphFlagStreamId));
+    }
+    if (stream_limit_id != -1 && stream_id != -1 && stream_limit_id == stream_id) {
+      auto cube_num_value = cur_func->get_attr(kFuncGraphFlagCubeNum);
+      MS_EXCEPTION_IF_NULL(cube_num_value);
+      int64_t cube_num = GetValue<int64_t>(cube_num_value);
+      auto vector_num_value = cur_func->get_attr(kFuncGraphFlagVectorNum);
+      MS_EXCEPTION_IF_NULL(vector_num_value);
+      int64_t vector_num = GetValue<int64_t>(vector_num_value);
+      cnode->AddAttr(kFuncGraphFlagCubeNum, MakeValue(static_cast<int64_t>(cube_num)));
+      cnode->AddAttr(kFuncGraphFlagVectorNum, MakeValue(static_cast<int64_t>(vector_num)));
+    }
+  }
+}
+
+bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+  MS_EXCEPTION_IF_NULL(root);
+  MS_EXCEPTION_IF_NULL(opt);
+  auto manager = opt->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  MS_LOG(DEBUG) << "root fg: " << root->ToString();
+  MarkWithStreamCtx(root);
+  MarkWithStreamLimitCtx(root);
 
   auto all_func_graphs = root->func_graphs_used_total();
   for (auto &fg : all_func_graphs) {
     MS_EXCEPTION_IF_NULL(fg);
     bool is_with_stream_func = (GetStreamIdFuncGraphWithStreamCtx(fg) != -1);
-    MS_LOG(DEBUG) << "is_with_stream_func: " << is_with_stream_func;
     if (is_with_stream_func) {
-      MS_LOG(DEBUG) << "is_with_stream_func fg: " << fg->ToString();
       fg->erase_flag(FUNC_GRAPH_FLAG_NO_INLINE_WITH_STREAM_CTX);
       fg->erase_flag(FUNC_GRAPH_FLAG_NO_INLINE);
+      fg->erase_flag(kFuncGraphFlagStreamLimitId);
+      fg->erase_flag(kFuncGraphFlagCubeNum);
+      fg->erase_flag(kFuncGraphFlagVectorNum);
     }
   }
   return false;
