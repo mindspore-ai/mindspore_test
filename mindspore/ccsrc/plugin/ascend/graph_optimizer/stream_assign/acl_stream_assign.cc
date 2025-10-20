@@ -75,7 +75,7 @@ void SetForSwitchInline(const NotNull<KernelGraphPtr> &kernel_graph, const CNode
 void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
-  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(kWorldGroupStreamIndex), node);
+  common::AnfAlgo::SetNodeAttrSafely(kAttrStreamId, MakeValue<uint32_t>(kWorldGroupStreamIndex), node);
 }
 
 void AssignStreamForMoveTo(const AnfNodePtr &node) {
@@ -189,7 +189,7 @@ void AddStreamIdForUsersSetStreamsOp(const AnfNodePtr &node, mindspore::HashMap<
     MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << new_stream_id;
   }
   AnfAlgo::SetStreamId(new_stream_id, node.get());
-  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue<uint32_t>(new_stream_id), node);
+  common::AnfAlgo::SetNodeAttrSafely(kAttrStreamId, MakeValue<uint32_t>(new_stream_id), node);
   MS_LOG(INFO) << "Set stream_id: " << new_stream_id << " by no group for node " << node->fullname_with_scope();
 }
 
@@ -234,78 +234,70 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
 }
 
 void AddEventForUsersSetEvent(const AnfNodePtr &node, std::map<uint32_t, uint32_t> *event_map,
-                              std::map<uint32_t, aclrtEvent> *rt_event_map,
-                              std::map<uint32_t, uint32_t> *event_stream_map) {
+                              std::map<uint32_t, std::pair<aclrtEvent, uint32_t>> *event_info_map) {
   // Add backend event_id and aclrtEvent for operators where users have specified events.
-  auto cnode = node->cast<CNodePtr>();
-  auto name = common::AnfAlgo::GetCNodeName(cnode);
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(event_map);
+  MS_EXCEPTION_IF_NULL(event_info_map);
+
+  if (!node->isa<CNode>()) {
+    MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
+  }
+  const auto &cnode = node->cast<CNodePtr>();
+  const auto &name = common::AnfAlgo::GetCNodeName(cnode);
   if (name != kStreamSendOpName && name != kStreamRecvOpName) {
     return;
   }
   if (cnode->GetAttr(kAttrEventId) == nullptr) {
     return;
   }
+
   auto &resource_manager = AscendStreamMng::GetInstance();
-  uint32_t event_id = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
+  const uint32_t event_id = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
   uint32_t new_event_id;
-  aclrtEvent event;
-  const auto &iter = event_map->find(event_id);
+  aclrtEvent event = nullptr;
+
+  const auto iter = event_map->find(event_id);
   if (iter != event_map->end()) {
     new_event_id = iter->second;
-    event = (*rt_event_map)[new_event_id];
+    auto info_iter = event_info_map->find(new_event_id);
+    MS_EXCEPTION_IF_NULL(info_iter->second.first);
+    event = info_iter->second.first;
   } else {
     new_event_id = resource_manager.ApplyNewEvent();
     event = resource_manager.ApplyRtEvent();
-    // if repeated event_id, not overwrite the previous one; pick the first event_id.
-    event_map->insert(std::pair(event_id, new_event_id));
-    rt_event_map->insert(std::pair(new_event_id, event));
+    event_map->emplace(event_id, new_event_id);
+    event_info_map->emplace(new_event_id, std::make_pair(event, UINT32_MAX));
     MS_LOG(INFO) << "Create ascend copy out event, event id: " << new_event_id;
   }
-  cnode->AddAttr(kAttrEventId, MakeValue(static_cast<uint32_t>(new_event_id)));
+  common::AnfAlgo::SetNodeAttrSafely(kAttrEventId, MakeValue(new_event_id), node);
   MS_LOG(INFO) << "Set event_id: " << new_event_id << " for user set event node " << node->fullname_with_scope();
 
   if (name == kStreamSendOpName) {
-    common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
-    // Record stream_id and event_id corresponding to user-inserted 'event.record', and store them in event_stream_map.
-    // This is for subsequent use of record_stream_id when processing user-inserted 'event.wait' in the func
-    // 'AddRecordStreamIdForUsersStreamRecv'.
+    // Record event_id to stream_id corresponding to user-inserted 'event.record', and store them in event_info_map.
+    // This is for subsequent use of record_stream_id when processing user-inserted 'event.wait'.
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
     auto stream_value = prim->GetAttr(kAttrStreamId);
     MS_EXCEPTION_IF_NULL(stream_value);
     uint32_t stream_id;
     stream_id = GetValue<uint32_t>(stream_value);
-    // if repeated event_id, not overwrite the previous one; pick the first event_id.
-    const auto &iter_event = event_stream_map->find(new_event_id);
-    if (iter_event == event_stream_map->end()) {
-      event_stream_map->insert(std::pair(new_event_id, stream_id));
-    }
+    (*event_info_map)[new_event_id].second = stream_id;
+    common::AnfAlgo::SetNodeAttrSafely(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
   } else {
-    common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
+    // Add record_stream_id attribute to 'event.wait', which is the stream_id of 'event.record' stored in
+    // event_info_map. If no StreamSend with the same event_id is found before StreamRecv, skip this streamRecv.
+    auto &event_info = (*event_info_map)[new_event_id];
+    if (event_info.second != UINT32_MAX) {
+      auto record_stream_id = event_info.second;
+      common::AnfAlgo::SetNodeAttrSafely(kAttrRecordEventStream, MakeValue(static_cast<uint32_t>(record_stream_id)),
+                                         node);
+      common::AnfAlgo::SetNodeAttrSafely(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), node);
+    } else {
+      MS_LOG(INFO) << "No paired StreamSend with event_id: " << new_event_id
+                   << " found, the launch of this node: " << node->fullname_with_scope() << " will be skipped.";
+    }
   }
-}
-
-void AddRecordStreamIdForUsersStreamRecv(const AnfNodePtr &node, const std::map<uint32_t, uint32_t> &event_stream_map) {
-  // Add record_stream_id attribute to 'event.wait', which is the stream_id of 'event.record' stored in
-  // event_stream_map.
-  const auto &cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  auto name = common::AnfAlgo::GetCNodeName(cnode);
-  if (name != kStreamRecvOpName) {
-    return;
-  }
-
-  auto event_id = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
-  const auto &iter = event_stream_map.find(event_id);
-  if (iter == event_stream_map.end()) {
-    // Only StreamRecv in graph, no StreamSend.
-    MS_LOG(EXCEPTION) << "Before StreamRecv, there is no StreamSend corresponding to event_id: " << event_id
-                      << ". Please verify that event.record and event.wait are present in pairs and in the correct "
-                         "order in the network script.";
-  }
-
-  auto record_stream_id = iter->second;
-  common::AnfAlgo::SetNodeAttr(kAttrRecordEventStream, MakeValue(static_cast<uint32_t>(record_stream_id)), node);
 }
 }  // namespace
 
@@ -318,7 +310,7 @@ CNodePtr AclStreamAssign::CreateLimitApplyKernel(const NotNull<KernelGraphPtr> &
   auto limit_node_ptr = graph_ptr->NewCNode({limit_apply});
   MS_EXCEPTION_IF_NULL(limit_node_ptr);
   for (const auto &iter : res_limit_map) {
-    common::AnfAlgo::SetNodeAttr(iter.first, MakeValue(iter.second), limit_node_ptr);
+    common::AnfAlgo::SetNodeAttrSafely(iter.first, MakeValue(iter.second), limit_node_ptr);
   }
   return limit_node_ptr;
 }
@@ -408,10 +400,8 @@ void AclStreamAssign::AssignStream(
   static mindspore::HashMap<int64_t, size_t> stream_map;
   // Frontend's event_id --> backend's event_id
   static std::map<uint32_t, uint32_t> event_map;
-  // backend's event_id --> backend's aclrt event
-  static std::map<uint32_t, aclrtEvent> rt_event_map;
-  // backend's event_id --> backend's stream_id
-  static std::map<uint32_t, uint32_t> event_stream_map;
+  // Backend's event_id --> (aclrt event, StreamSend's stream_id)
+  static std::map<uint32_t, std::pair<aclrtEvent, uint32_t>> event_info_map;
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -454,7 +444,7 @@ void AclStreamAssign::AssignStream(
     }
     max_stream_id = std::max(max_stream_id, AnfAlgo::GetStreamId(node));
 
-    AddEventForUsersSetEvent(node, &event_map, &rt_event_map, &event_stream_map);
+    AddEventForUsersSetEvent(node, &event_map, &event_info_map);
   }
   kernel_graph->set_enable_multi_stream(max_stream_id != kDefaultStreamIndex);
 
@@ -466,9 +456,6 @@ void AclStreamAssign::AssignStream(
     }
   }
 
-  for (const auto &node : kernels) {
-    AddRecordStreamIdForUsersStreamRecv(node, event_stream_map);
-  }
   InsertEventForNonTaskSink(kernel_graph);
   InsertResLimitForNonTaskSink(kernel_graph, device_res_manager);
 }
@@ -481,15 +468,13 @@ void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {
     MS_EXCEPTION_IF_NULL(node);
     auto name = common::AnfAlgo::GetCNodeName(node);
     if (name == kStreamRecvOpName) {
-      auto cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      auto event_id = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
+      auto event_id = common::AnfAlgo::GetNodeAttr<uint32_t>(node, kAttrEventId);
       event_recv_map[event_id] = node;
     }
     if (name == kStreamSendOpName) {
       auto cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      auto event_id = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
+      auto event_id = common::AnfAlgo::GetNodeAttr<uint32_t>(node, kAttrEventId);
       event_send_map[event_id] = node;
     }
   }
@@ -828,7 +813,7 @@ CNodePtr AclStreamAssign::CreateSendApplyKernel(const NotNull<KernelGraphPtr> &g
   MS_EXCEPTION_IF_NULL(send_apply);
   auto send_node_ptr = graph_ptr->NewCNode({send_apply});
   MS_EXCEPTION_IF_NULL(send_node_ptr);
-  send_node_ptr->AddAttr(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)));
+  common::AnfAlgo::SetNodeAttr(kAttrEventId, MakeValue(event_id), send_node_ptr);
   common::AnfAlgo::SetNodeAttr(kAttrRecordWaitEventStreamPairId, MakeValue(event_generate_id), send_node_ptr);
   AnfAlgo::SetStreamId(stream_id, send_node_ptr.get());
   return send_node_ptr;
@@ -843,7 +828,7 @@ CNodePtr AclStreamAssign::CreateRecvApplyKernel(const NotNull<KernelGraphPtr> &g
   MS_EXCEPTION_IF_NULL(recv_apply);
   auto recv_node_ptr = graph_ptr->NewCNode({recv_apply});
   MS_EXCEPTION_IF_NULL(recv_node_ptr);
-  recv_node_ptr->AddAttr(kAttrEventId, MakeValue(static_cast<uint32_t>(event_id)));
+  common::AnfAlgo::SetNodeAttr(kAttrEventId, MakeValue(event_id), recv_node_ptr);
   common::AnfAlgo::SetNodeAttr(kAttrRecordEventStream, MakeValue(record_stream_id), recv_node_ptr);
   common::AnfAlgo::SetNodeAttr(kAttrRecordWaitEventStreamPairId, MakeValue(event_generate_id), recv_node_ptr);
   AnfAlgo::SetStreamId(stream_id, recv_node_ptr.get());

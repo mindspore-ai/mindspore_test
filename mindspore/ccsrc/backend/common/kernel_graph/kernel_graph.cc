@@ -942,8 +942,9 @@ void KernelGraph::PrintGraphExecuteOrder() const {
     MS_EXCEPTION_IF_NULL(cur_cnode_ptr);
 
     std::string event_str;
-    if (cur_cnode_ptr->GetAttr(kAttrEventId) != nullptr) {
-      event_str = ", event id[" + std::to_string(GetValue<uint32_t>(cur_cnode_ptr->GetAttr(kAttrEventId))) + "]";
+    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cur_cnode_ptr)) {
+      event_str =
+        ", event id[" + std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cur_cnode_ptr, kAttrEventId)) + "]";
     }
 
     std::string label_str;

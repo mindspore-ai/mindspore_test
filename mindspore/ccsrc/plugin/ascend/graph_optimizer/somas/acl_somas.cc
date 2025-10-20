@@ -64,7 +64,7 @@ void AclSomas::InitEventInfo(const session::KernelGraph &graph) {
   for (const auto &kernel : kernels) {
     auto type = common::AnfAlgo::GetCNodeName(kernel);
     if (type == kStreamSendOpName) {
-      auto event = GetValue<uint32_t>(kernel->GetAttr(kAttrEventId));
+      auto event = common::AnfAlgo::GetNodeAttr<uint32_t>(kernel, kAttrEventId);
       auto iter = event_map_.find(event);
       if (iter == event_map_.end()) {
         auto pair = somas::EventPair();
@@ -74,7 +74,7 @@ void AclSomas::InitEventInfo(const session::KernelGraph &graph) {
         iter->second.send_ = kernel;
       }
     } else if (type == kStreamRecvOpName) {
-      auto event = GetValue<uint32_t>(kernel->GetAttr(kAttrEventId));
+      auto event = common::AnfAlgo::GetNodeAttr<uint32_t>(kernel, kAttrEventId);
       auto iter = event_map_.find(event);
       if (iter == event_map_.end()) {
         auto pair = somas::EventPair();

@@ -18,7 +18,6 @@
 # pylint: disable=W1514
 # pylint: disable=R1725
 import os
-import pytest
 import re
 import shutil
 import numpy as np
@@ -183,7 +182,6 @@ def test_event_multi_with_streams():
     assert len(event_id_num) == 3
 
 
-@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_multi_events():
     """

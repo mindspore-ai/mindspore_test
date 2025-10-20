@@ -187,8 +187,8 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
   order_info->stream_id = std::to_string(AnfAlgo::GetStreamId(cnode));
   order_info->node_info = cnode->DebugString();
   std::string event_id;
-  if (cnode->GetAttr(kAttrEventId) != nullptr) {
-    event_id = std::to_string(GetValue<uint32_t>(cnode->GetAttr(kAttrEventId)));
+  if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+    event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
   }
   order_info->event_id = event_id;
   std::string group;

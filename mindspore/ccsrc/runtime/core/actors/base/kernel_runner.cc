@@ -113,8 +113,8 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
   if (type == kStreamSendOpName || type == kStreamRecvOpName) {
     auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
     std::string event_id;
-    if (cnode->GetAttr(kAttrEventId) != nullptr) {
-      event_id = std::to_string(GetValue<uint32_t>(cnode->GetAttr(kAttrEventId)));
+    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+      event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
     } else {
       MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
     }
