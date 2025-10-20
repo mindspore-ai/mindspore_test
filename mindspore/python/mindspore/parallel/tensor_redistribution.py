@@ -24,19 +24,20 @@ from mindspore.parallel.redistribute_infer import RedistributionOperatorInfer
 _tensor_transform = TensorTransform.get_instance()
 
 
-_REDISTRIBUTION_GROUP_CACHE = []
+_REDISTRIBUTION_GROUP_CACHE = {}
 
 
 def _get_comm_group(rank_list):
     """_get_comm_group"""
     global _REDISTRIBUTION_GROUP_CACHE
-    hash_str_rank_list = '-'.join([str(rank) for rank in rank_list])
-    group_name = f"{len(rank_list)}-{hash_str_rank_list}"
-    if group_name not in _REDISTRIBUTION_GROUP_CACHE:
+    map_key = hash(tuple(rank_list))
+    if map_key not in _REDISTRIBUTION_GROUP_CACHE:
+        hash_str_rank_list = '-'.join([str(rank) for rank in rank_list])
+        group_name = f"{len(rank_list)}-{hash_str_rank_list}"
         logger.warning(f"Create hccl comm group {group_name} for rank list {rank_list}")
-        create_group(group_name, rank_list)
-        _REDISTRIBUTION_GROUP_CACHE.append(group_name)
-    return group_name
+        create_group(group_name, list(rank_list))
+        _REDISTRIBUTION_GROUP_CACHE[map_key] = group_name
+    return _REDISTRIBUTION_GROUP_CACHE[map_key]
 
 
 
@@ -80,10 +81,9 @@ class TensorRedistribution:
 
     def _construct_all_concat(self, x, *args):
         """args: (*rank_list, concat_dim)"""
-        rank_list = list(args[0:-1])
+        rank_list = args[0:-1]
         concat_dim = args[-1]
         group = _get_comm_group(rank_list)
-        x = x.contiguous()
         output, _ = comm.comm_func.all_gather_into_tensor(x, group=group)
         if concat_dim == 0:
             return output
@@ -98,11 +98,10 @@ class TensorRedistribution:
 
     def _construct_all_concat_new(self, x, *args):
         """args: (concat_dim, concat_size, group)"""
-        rank_list = list(args[2])
+        rank_list = args[2]
         concat_dim = args[0]
         concat_size = args[1]
         group = _get_comm_group(rank_list)
-        x = x.contiguous()
         output, _ = comm.comm_func.all_gather_into_tensor(x, group=group)
         if concat_dim == 0:
             return output
@@ -129,8 +128,6 @@ class TensorRedistribution:
                              f"cannot be evenly split into {split_count} parts")
 
         split_size = dim_size // split_count
-        x = x.contiguous()
-
         final_shape = list(original_shape)
         if split_dim != concat_dim:
             final_shape[split_dim] = split_size

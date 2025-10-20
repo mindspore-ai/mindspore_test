@@ -1385,34 +1385,29 @@ class Cell(Cell_):
 
     def _parallel_in_args(self, *args, **kwargs):
         """_parallel_in_args"""
-        # redistribution for inputs
-        # 1. layout -> (dev_matrix, tensor_map, tensor_slice_shape)
-        # 2. get transform operator list
-        # 3. convert op list to actual op and execute it
+        processed_args = list(args)
+        processed_kwargs = dict(kwargs)
+
         if self.in_layout is not None:
             if len(self.in_layout) != len(args):
                 raise ValueError(f"The size of in_layout must be equal to inputs num, but got {len(self.in_layout)} "
                                  f"and {len(args)}")
-            new_args = []
+
             for i, arg in enumerate(args):
                 if not isinstance(arg, Tensor) or arg is None:
-                    new_args.append(arg)
                     continue
                 to_layout = self.in_layout[i]
-                new_args.append(arg.redistribute(to_layout))
-            args = new_args
-        new_kwargs = {}
-        if kwargs:
+                processed_args[i] = arg.redistribute(to_layout)
+
+        if hasattr(self, "optional_in_layout") and self.optional_in_layout:
             for k, v in kwargs.items():
                 if not isinstance(v, Tensor) or v.layout is None:
-                    new_kwargs[k] = v
                     continue
-                if self.optional_in_layout is None or k not in self.optional_in_layout:
+                if k not in self.optional_in_layout:
                     raise ValueError(f"Key word {k} in optional inputs dose not configured layout.")
                 to_layout = self.optional_in_layout[k]
-                new_kwargs[k] = v.redistribute(to_layout)
-
-        return args, new_kwargs
+                processed_kwargs[k] = v.redistribute(to_layout)
+        return tuple(processed_args), processed_kwargs
 
     def _parallel_out_args(self, outputs):
         """_parallel_out_args"""
