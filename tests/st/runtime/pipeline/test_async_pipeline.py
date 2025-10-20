@@ -43,7 +43,7 @@ class NetJit(nn.Cell):
         self.mul = P.Mul()
         self.add_n = P.AddN()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         output = []
         for _ in range(g_block_num):
@@ -59,7 +59,7 @@ class ListInputNetJit(NetJit):
     """
     Construct a multiple input network structure.
     """
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, list_x):
         output = []
         for i in range(g_block_num):

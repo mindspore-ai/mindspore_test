@@ -30,7 +30,7 @@ class UniqueNet(nn.Cell):
         self.square = P.Square()
         self.relu = P.ReLU()
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         x, _ = self.unique(x)
         x = self.square(x)
