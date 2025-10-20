@@ -39,34 +39,69 @@ constexpr size_t kInputFASGradQueryBSNDRank = 4;
 constexpr size_t kInputFASGradAttnMaskCompressionDim = 2048;
 constexpr size_t kFARealShiftCompressionDim = 1024;
 // None indicates that the optional input is not passed
-bool IsFlashAttentionScoreGradOptionalInputNotPass(const AbstractBasePtr &input) {
-  MS_EXCEPTION_IF_NULL(input);
-  return input->GetType()->type_id() == kMetaTypeNone;
+bool IsFlashAttentionScoreGradOptionalInputNotPass(const InferInfoPtr &input) { return input->IsNone(); }
+
+static inline void ValidateGradAttnMaskType(const InferInfoPtr &attn_mask, const std::string &op_name) {
+  if (IsFlashAttentionScoreGradOptionalInputNotPass(attn_mask)) {
+    return;
+  }
+  auto attn_mask_type = attn_mask->GetType();
+  if (!(attn_mask_type == kNumberTypeUInt8 || attn_mask_type == kNumberTypeBool)) {
+    MS_LOG(EXCEPTION) << op_name << ": invalid dtype for attn_mask.";
+  }
 }
 
-void CheckFlashAttentionScoreGradInputShape(const AbstractBasePtr &input, const ShapeVector &expect_shape,
+static inline void EnsureGradPaddingMaskNone(const InferInfoPtr &padding_mask, const std::string &op_name) {
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(padding_mask)) {
+    MS_LOG(EXCEPTION) << op_name << ": 'padding_mask' must be None currently.";
+  }
+}
+
+static inline void ValidateGradKeepProbAndDropMask(const InferInfoPtrList &input_infos, const std::string &op_name) {
+  auto keep_prob_opt = input_infos[kFASGradInputKeepProbIndex]->GetScalarValue<float>();
+  if (!keep_prob_opt.has_value()) {
+    return;
+  }
+  auto keep_prob = keep_prob_opt.value();
+  if (keep_prob > 1 || keep_prob < 0) {
+    MS_LOG(EXCEPTION) << op_name << ": attribute `keep_prob` must be a floating point number in [0, 1], but got "
+                      << keep_prob;
+  }
+  if (common::IsFloatEqual(keep_prob, 1.0)) {
+    if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputDropMaskIndex])) {
+      MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be None when keep_prob is 1.0.";
+    }
+    return;
+  }
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputDropMaskIndex])) {
+    auto drop_mask_type = input_infos[kFASGradInputDropMaskIndex]->GetType();
+    if (drop_mask_type != kNumberTypeUInt8) {
+      MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be uint8 when keep_prob in (0, 1).";
+    }
+  }
+}
+
+void CheckFlashAttentionScoreGradInputShape(const InferInfoPtr &input, const ShapeVector &expect_shape,
                                             const std::string &op_name, const std::string &input_name,
                                             bool optional = false) {
-  MS_EXCEPTION_IF_NULL(input);
   if (IsFlashAttentionScoreGradOptionalInputNotPass(input) && optional) {
     return;
   }
-  auto input_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input->GetShape())[kShape];
+  auto input_shape = input->GetShape();
   if (input_shape != expect_shape) {
     MS_LOG(EXCEPTION) << op_name << ": The shape of input `" << input_name << "' must be " << expect_shape
                       << ", but got shape is " << input_shape;
   }
 }
 
-void CheckFlashAttentionScoreGradInputShape(const AbstractBasePtr &input,
+void CheckFlashAttentionScoreGradInputShape(const InferInfoPtr &input,
                                             const std::vector<ShapeVector> &expect_shape_list,
                                             const std::string &op_name, const std::string &input_name,
                                             bool optional = false) {
-  MS_EXCEPTION_IF_NULL(input);
   if (IsFlashAttentionScoreGradOptionalInputNotPass(input) && optional) {
     return;
   }
-  auto input_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input->GetShape())[kShape];
+  auto input_shape = input->GetShape();
   if (std::all_of(expect_shape_list.begin(), expect_shape_list.end(),
                   [&input_shape](const ShapeVector &expect_shape) { return input_shape != expect_shape; })) {
     MS_LOG(EXCEPTION) << op_name << ": The shape of input `" << input_name << "' must be one of " << expect_shape_list
@@ -74,7 +109,7 @@ void CheckFlashAttentionScoreGradInputShape(const AbstractBasePtr &input,
   }
 }
 
-void CheckFlashAttentionScoreGradAttnMaskShape(const AbstractBasePtr &attn_mask, const std::string &op_name,
+void CheckFlashAttentionScoreGradAttnMaskShape(const InferInfoPtr &attn_mask, const std::string &op_name,
                                                int64_t sparse_mode, int64_t batch_size, int64_t q_head_num,
                                                int64_t q_seq_len, int64_t kv_seq_len) {
   const std::vector<int64_t> need_compress_attn_mask_mode = {kFAGSparseLeftUpCausal, kFAGSparseRightDownCausal,
@@ -94,24 +129,17 @@ void CheckFlashAttentionScoreGradAttnMaskShape(const AbstractBasePtr &attn_mask,
   }
 }
 
-void CheckFlashAttentionScoreGradPrefix(const AbstractBasePtr &prefix, const std::string &op_name, int64_t sparse_mode,
+void CheckFlashAttentionScoreGradPrefix(const InferInfoPtr &prefix, const std::string &op_name, int64_t sparse_mode,
                                         int64_t batch_size) {
   if (sparse_mode == kFAGSparsePrefix) {
-    auto prefix_type = prefix->GetType();
-    MS_EXCEPTION_IF_NULL(prefix_type);
-    if (!prefix_type->isa<Tuple>()) {
-      MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix type should be TupleType.";
+    auto arr_opt = prefix->GetArrayValue<int64_t>();
+    if (!arr_opt.has_value() || arr_opt->HasUnknownValue()) {
+      MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix list must be known and not None.";
     }
-    auto prefix_tuple = prefix_type->cast<TuplePtr>();
-    MS_EXCEPTION_IF_NULL(prefix_tuple);
-    if (prefix_tuple->elements().size() != LongToSize(batch_size)) {
+    auto vec = arr_opt->ToVector();
+    if (SizeToLong(vec.size()) != batch_size) {
       MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix list size should be equal to " << batch_size << ", but got "
-                        << prefix_tuple->elements().size();
-    }
-    for (const auto &element : prefix_tuple->elements()) {
-      if (element->type_id() != kNumberTypeInt64) {
-        MS_LOG(EXCEPTION) << "For [" << op_name << "], prefix element type should be int64.";
-      }
+                        << vec.size();
     }
   } else {
     if (!IsFlashAttentionScoreGradOptionalInputNotPass(prefix)) {
@@ -193,38 +221,38 @@ std::vector<int64_t> GetFASGradInfoFromInputLayout(int64_t input_layout, int64_t
   return std::vector<int64_t>{batch_size, q_seq_len, kv_seq_len};
 }
 
-BaseShapePtr FlashAttentionScoreGradFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                         const std::vector<AbstractBasePtr> &input_args) const {
+ShapeArray FlashAttentionScoreGradFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                       const InferInfoPtrList &input_infos) const {
   MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
-  auto query_shape = input_args[kFASGradInputQueryIndex]->GetShape()->GetShapeVector();
-  auto key_shape = input_args[kFASGradInputKeyIndex]->GetShape()->GetShapeVector();
+  auto query_shape = input_infos[kFASGradInputQueryIndex]->GetShape();
+  auto key_shape = input_infos[kFASGradInputKeyIndex]->GetShape();
 
-  abstract::BaseShapePtrList output_shape_ptr_list(kFASGradOutputsNum);
-  output_shape_ptr_list[kFASGradOutputDqIndex] = std::make_shared<abstract::Shape>(query_shape);
-  output_shape_ptr_list[kFASGradOutputDkIndex] = std::make_shared<abstract::Shape>(key_shape);
-  auto value_shape = input_args[kFASGradInputValueIndex]->GetShape()->GetShapeVector();
-  output_shape_ptr_list[kFASGradOutputDvIndex] = std::make_shared<abstract::Shape>(value_shape);
+  ShapeArray out_shapes(kFASGradOutputsNum);
+  out_shapes[kFASGradOutputDqIndex] = query_shape;
+  out_shapes[kFASGradOutputDkIndex] = key_shape;
+  auto value_shape = input_infos[kFASGradInputValueIndex]->GetShape();
+  out_shapes[kFASGradOutputDvIndex] = value_shape;
   ShapeVector pse_shape{0};
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputPseShiftIndex])) {
-    pse_shape = input_args[kFASGradInputPseShiftIndex]->GetShape()->GetShapeVector();
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputPseShiftIndex])) {
+    pse_shape = input_infos[kFASGradInputPseShiftIndex]->GetShape();
   }
-  output_shape_ptr_list[kFASGradOutputDpseIndex] = std::make_shared<abstract::Shape>(pse_shape);
+  out_shapes[kFASGradOutputDpseIndex] = pse_shape;
 
-  auto input_layout_opt = GetScalarValue<int64_t>(input_args[kFASGradInputLayoutIndex]->GetValue());
+  auto input_layout_opt = input_infos[kFASGradInputLayoutIndex]->GetScalarValue<int64_t>();
   if (!input_layout_opt.has_value() || IsDynamic(query_shape) || IsDynamic(key_shape)) {
-    return std::make_shared<abstract::TupleShape>(output_shape_ptr_list);
+    return out_shapes;
   }
   auto input_layout = input_layout_opt.value();
   if (input_layout == FASInputLayoutMode::TND) {
-    if (IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputActualSeqQlenIndex]) ||
-        IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputActualSeqKVlenIndex])) {
+    if (IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputActualSeqQlenIndex]) ||
+        IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputActualSeqKVlenIndex])) {
       MS_LOG(EXCEPTION) << op_name << ": actual_seq_qlen and actual_seq_kvlen should be not none.";
     }
-    return std::make_shared<abstract::TupleShape>(output_shape_ptr_list);
+    return out_shapes;
   }
 
-  auto q_head_num_opt = GetScalarValue<int64_t>(input_args[kFASGradInputHeadNumIndex]->GetValue());
+  auto q_head_num_opt = input_infos[kFASGradInputHeadNumIndex]->GetScalarValue<int64_t>();
   if (q_head_num_opt.has_value()) {
     // check shape
     auto q_head_num = q_head_num_opt.value();
@@ -233,101 +261,84 @@ BaseShapePtr FlashAttentionScoreGradFuncImpl::InferShape(const PrimitivePtr &pri
     int64_t q_seq_len = shape_info[kIndex1];
     int64_t kv_seq_len = shape_info[kIndex2];
 
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputPseShiftIndex],
+    CheckFlashAttentionScoreGradInputShape(input_infos[kFASGradInputPseShiftIndex],
                                            {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                             {1, q_head_num, q_seq_len, kv_seq_len},
                                             {batch_size, q_head_num, kFARealShiftCompressionDim, kv_seq_len},
                                             {1, q_head_num, kFARealShiftCompressionDim, kv_seq_len}},
                                            op_name, "pse_shift", true);
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputDropMaskIndex],
+    CheckFlashAttentionScoreGradInputShape(input_infos[kFASGradInputDropMaskIndex],
                                            {batch_size, q_head_num, q_seq_len, kv_seq_len / 8}, op_name, "drop_mask",
                                            true);
 
-    auto sparse_mode_opt = GetScalarValue<int64_t>(input_args[kFASGradInputSparseModeIndex]->GetValue());
+    auto sparse_mode_opt = input_infos[kFASGradInputSparseModeIndex]->GetScalarValue<int64_t>();
     if (sparse_mode_opt.has_value()) {
       auto sparse_mode = sparse_mode_opt.value();
-      CheckFlashAttentionScoreGradAttnMaskShape(input_args[kFASGradInputAttnMaskIndex], op_name, sparse_mode,
+      CheckFlashAttentionScoreGradAttnMaskShape(input_infos[kFASGradInputAttnMaskIndex], op_name, sparse_mode,
                                                 batch_size, q_head_num, q_seq_len, kv_seq_len);
-      CheckFlashAttentionScoreGradPrefix(input_args[kFASGradInputPrefixIndex], op_name, sparse_mode, batch_size);
+      CheckFlashAttentionScoreGradPrefix(input_infos[kFASGradInputPrefixIndex], op_name, sparse_mode, batch_size);
     }
 
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputSoftmaxMaxIndex],
+    CheckFlashAttentionScoreGradInputShape(input_infos[kFASGradInputSoftmaxMaxIndex],
                                            {batch_size, q_head_num, q_seq_len, kFASGradSoftmaxLastDim}, op_name,
                                            "softmax_max");
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputSoftmaxSumIndex],
+    CheckFlashAttentionScoreGradInputShape(input_infos[kFASGradInputSoftmaxSumIndex],
                                            {batch_size, q_head_num, q_seq_len, kFASGradSoftmaxLastDim}, op_name,
                                            "softmax_sum");
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputSoftmaxOutIndex], ShapeVector{1}, op_name,
+    CheckFlashAttentionScoreGradInputShape(input_infos[kFASGradInputSoftmaxOutIndex], ShapeVector{1}, op_name,
                                            "softmax_out", true);
   }
-
-  return std::make_shared<abstract::TupleShape>(output_shape_ptr_list);
+  return out_shapes;
 }
 
-TypePtr FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
-                                                   const std::vector<AbstractBasePtr> &input_args) const {
+std::vector<TypeId> FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
+                                                               const InferInfoPtrList &input_infos) const {
   auto op_name = prim->name();
-  std::map<std::string, TypePtr> types1;
-  std::map<std::string, TypePtr> types2;
-  // "x", "kernel_query", "kernel_key", "kernel_value", "gamma", " beta", "bias_query", "bias_key", "bias_value"
-  (void)types1.emplace("query", input_args[kFASGradInputQueryIndex]->GetType());
-  (void)types1.emplace("key", input_args[kFASGradInputKeyIndex]->GetType());
-  (void)types1.emplace("value", input_args[kFASGradInputValueIndex]->GetType());
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputPseShiftIndex])) {
-    (void)types1.emplace("pse_shift", input_args[kFASGradInputPseShiftIndex]->GetType());
+  ValidateGradAttnMaskType(input_infos[kFASGradInputAttnMaskIndex], op_name);
+  EnsureGradPaddingMaskNone(input_infos[kFASGradInputPaddingMaskIndex], op_name);
+  // 1) (query,key,value,dy) must have same dtype
+  const auto q_type = input_infos[kFASGradInputQueryIndex]->GetType();
+  const auto k_type = input_infos[kFASGradInputKeyIndex]->GetType();
+  const auto v_type = input_infos[kFASGradInputValueIndex]->GetType();
+  const auto dy_type = input_infos[kFASGradInputDyIndex]->GetType();
+  std::vector<TypeId> qkvd_types{q_type, k_type, v_type, dy_type};
+  CheckAndConvertUtils::CheckTypeIdsSame("query/key/value/dy", qkvd_types, op_name);
+  // 2) qkv/dy dtype must be valid
+  CheckAndConvertUtils::CheckTypeIdValid("query", q_type, {kNumberTypeFloat16, kNumberTypeBFloat16, kNumberTypeFloat32},
+                                         op_name);
+  // Ensure optional tensors keep dtype consistency with q_type
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputPseShiftIndex])) {
+    auto pse_type = input_infos[kFASGradInputPseShiftIndex]->GetType();
+    std::vector<TypeId> types{q_type, pse_type};
+    CheckAndConvertUtils::CheckTypeIdsSame("pse_shift", types, op_name);
   }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputAttnMaskIndex])) {
-    auto attn_mask_type = input_args[kFASGradInputAttnMaskIndex]->GetType();
-    CheckAndConvertUtils::CheckTensorTypeValid("attn_mask", attn_mask_type, {kUInt8, kBool}, op_name);
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputAttentionInIndex])) {
+    auto attention_in_type = input_infos[kFASGradInputAttentionInIndex]->GetType();
+    std::vector<TypeId> types{q_type, attention_in_type};
+    CheckAndConvertUtils::CheckTypeIdsSame("attention_in", types, op_name);
   }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputPaddingMaskIndex])) {
-    MS_LOG(EXCEPTION) << op_name << ": 'padding_mask' must be None currently.";
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputSoftmaxOutIndex])) {
+    auto softmax_out_type = input_infos[kFASGradInputSoftmaxOutIndex]->GetType();
+    std::vector<TypeId> types{q_type, softmax_out_type};
+    CheckAndConvertUtils::CheckTypeIdsSame("softmax_out", types, op_name);
   }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputAttentionInIndex])) {
-    (void)types1.emplace("attention_in", input_args[kFASGradInputAttentionInIndex]->GetType());
+  // Stats tensors must be float32 when provided
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputSoftmaxMaxIndex])) {
+    auto softmax_max_type = input_infos[kFASGradInputSoftmaxMaxIndex]->GetType();
+    CheckAndConvertUtils::CheckTypeIdValid("softmax_max", softmax_max_type, {kNumberTypeFloat32}, op_name);
   }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputSoftmaxMaxIndex])) {
-    (void)types2.emplace("softmax_max", input_args[kFASGradInputSoftmaxMaxIndex]->GetType());
+  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputSoftmaxSumIndex])) {
+    auto softmax_sum_type = input_infos[kFASGradInputSoftmaxSumIndex]->GetType();
+    CheckAndConvertUtils::CheckTypeIdValid("softmax_sum", softmax_sum_type, {kNumberTypeFloat32}, op_name);
   }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputSoftmaxSumIndex])) {
-    (void)types2.emplace("softmax_sum", input_args[kFASGradInputSoftmaxSumIndex]->GetType());
-  }
-  if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputSoftmaxOutIndex])) {
-    (void)types1.emplace("softmax_out", input_args[kFASGradInputSoftmaxOutIndex]->GetType());
-  }
-  (void)types1.emplace("dy", input_args[kFASGradInputDyIndex]->GetType());
-  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types1, {kFloat16, kBFloat16, kFloat32}, op_name);
-  if (!types2.empty()) {
-    (void)CheckAndConvertUtils::CheckTensorTypeSame(types2, {kFloat32}, op_name);
-  }
+  ValidateGradKeepProbAndDropMask(input_infos, op_name);
 
-  auto keep_prob_value_ptr = input_args[kFASGradInputKeepProbIndex]->GetValue();
-  MS_EXCEPTION_IF_NULL(keep_prob_value_ptr);
-  auto keep_prob_opt = GetScalarValue<float>(keep_prob_value_ptr);
-  if (keep_prob_opt.has_value()) {
-    auto keep_prob = keep_prob_opt.value();
-    if (keep_prob > 1 || keep_prob < 0) {
-      MS_LOG(EXCEPTION) << op_name << ": attribute `keep_prob` must be a floating point number in [0, 1], but got "
-                        << keep_prob;
-    }
-    if (common::IsFloatEqual(keep_prob, 1.0)) {
-      if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputDropMaskIndex])) {
-        MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be None when keep_prob is 1.0.";
-      }
-    } else {
-      if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_args[kFASGradInputDropMaskIndex])) {
-        auto drop_mask_type = input_args[kFASGradInputDropMaskIndex]->GetType();
-        CheckAndConvertUtils::CheckTensorTypeValid("drop_mask", drop_mask_type, {kUInt8}, op_name);
-      }
-    }
-  }
-
-  std::vector<TypePtr> output_type_ptr_list(kFASGradOutputsNum);
-  output_type_ptr_list[kFASGradOutputDqIndex] = std::make_shared<TensorType>(type);
-  output_type_ptr_list[kFASGradOutputDkIndex] = std::make_shared<TensorType>(type);
-  output_type_ptr_list[kFASGradOutputDvIndex] = std::make_shared<TensorType>(type);
-  output_type_ptr_list[kFASGradOutputDpseIndex] = std::make_shared<TensorType>(type);
-  return std::make_shared<Tuple>(output_type_ptr_list);
+  std::vector<TypeId> outs(kFASGradOutputsNum);
+  outs[kFASGradOutputDqIndex] = q_type;
+  outs[kFASGradOutputDkIndex] = q_type;
+  outs[kFASGradOutputDvIndex] = q_type;
+  outs[kFASGradOutputDpseIndex] = q_type;
+  return outs;
 }
 
 }  // namespace ops
