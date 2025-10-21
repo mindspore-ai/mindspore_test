@@ -68,7 +68,7 @@ def _generate_url(addr, port):
     Generates a url string by addr and port
 
     """
-    url = f"http://{addr}:{port}/"
+    url = ""
     return url
 
 
