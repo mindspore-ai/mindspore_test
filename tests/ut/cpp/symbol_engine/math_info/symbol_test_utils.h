@@ -17,8 +17,8 @@
 #ifndef UT_CPP_SYMBOL_ENGINE_MATH_INFO_SYMBOL_TEST_UTILS_H_
 #define UT_CPP_SYMBOL_ENGINE_MATH_INFO_SYMBOL_TEST_UTILS_H_
 
-#include "symbolic_shape/int_symbol.h"
-#include "symbolic_shape/symbol_info.h"
+#include "abstract/symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/symbol_info.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"
 #include "common/common_test.h"
 

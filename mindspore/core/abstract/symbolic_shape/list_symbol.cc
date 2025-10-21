@@ -15,9 +15,9 @@
  */
 
 #include <utility>
-#include "symbolic_shape/symbol.h"
-#include "symbolic_shape/utils.h"
-#include "symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/symbol.h"
+#include "abstract/symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/int_symbol.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"
 

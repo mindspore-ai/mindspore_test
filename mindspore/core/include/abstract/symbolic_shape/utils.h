@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_UTILS_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_UTILS_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_UTILS_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_UTILS_H_
 
 #include <vector>
 #include <string>
@@ -61,4 +61,4 @@ MS_CORE_API BaseShapePtr QueryShape(const AbstractBasePtr &abs);
 MS_CORE_API ValuePtr QueryValue(const AbstractBasePtr &abs);
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_UTILS_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_UTILS_H_

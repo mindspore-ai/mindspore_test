@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/pass.h"
-#include "symbolic_shape/operation_builder.h"
+#include "abstract/symbolic_shape/operation_builder.h"
 
 namespace mindspore::graphkernel::packet {
 // Extend kernel to a bigger subgraph using a symbol engine,

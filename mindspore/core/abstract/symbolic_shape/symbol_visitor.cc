@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "symbolic_shape/symbol_visitor.h"
+#include "abstract/symbolic_shape/symbol_visitor.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

@@ -27,7 +27,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/common/visible.h"
-#include "symbolic_shape/symbol_info.h"
+#include "abstract/symbolic_shape/symbol_info.h"
 
 namespace mindspore::parallel {
 constexpr char kStandalone[] = "stand_alone";

@@ -23,7 +23,7 @@
 #include <memory>
 #include <vector>
 #include "base/base.h"
-#include "symbolic_shape/symbol_info.h"
+#include "abstract/symbolic_shape/symbol_info.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ops/op_def/array_ops.h"

@@ -23,7 +23,7 @@
 #include "backend/ms_backend/graph_fusion/convert_call_to_prim.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
-#include "symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/utils.h"
 
 namespace mindspore::graphkernel::test {
 using NodeShapeVector = std::map<AnfNodePtr, ShapeVector>;

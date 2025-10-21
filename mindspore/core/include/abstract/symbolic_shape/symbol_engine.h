@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -44,4 +44,4 @@ class MS_CORE_API SymbolEngine : public Base {
 }  // namespace symshape
 using SymbolEnginePtr = std::shared_ptr<symshape::SymbolEngine>;
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_ENGINE_H_

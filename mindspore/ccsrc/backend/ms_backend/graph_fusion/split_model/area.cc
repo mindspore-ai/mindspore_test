@@ -16,7 +16,7 @@
 #include "backend/ms_backend/graph_fusion/split_model/area.h"
 #include <algorithm>
 #include <sstream>
-#include "symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
 namespace {

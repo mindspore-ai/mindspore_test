@@ -15,8 +15,8 @@
  */
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/multi_symbol_engine.h"
 #include <utility>
-#include "symbolic_shape/utils.h"
-#include "symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace graphkernel {

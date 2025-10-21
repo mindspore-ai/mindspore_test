@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "symbolic_shape/int_symbol.h"
-#include "symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/utils.h"
 #include "ir/dtype/tensor_type.h"
 
 namespace mindspore {

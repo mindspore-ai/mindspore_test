@@ -23,8 +23,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "symbolic_shape/operation.h"
-#include "symbolic_shape/symbol_visitor.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/syntax.h"
 
 namespace mindspore::graphkernel::symshape {

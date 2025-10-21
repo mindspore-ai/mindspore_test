@@ -31,7 +31,6 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
-#include "symbolic_shape/symbol.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"

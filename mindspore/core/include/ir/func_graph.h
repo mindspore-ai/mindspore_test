@@ -38,7 +38,7 @@
 #include "ir/manager.h"
 #include "ir/dtype/amp.h"
 #include "abstract/abstract_value.h"
-#include "symbolic_shape/symbol_engine.h"
+#include "abstract/symbolic_shape/symbol_engine.h"
 
 namespace mindspore {
 using BaseRefCounterMap = OrderedMap<BaseRef, int, BaseRefHash>;

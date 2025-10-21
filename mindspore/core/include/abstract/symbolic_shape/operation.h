@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_H_
 #include <memory>
 #include <vector>
 #include <string>
 #include <utility>
 #include <map>
 
-#include "symbolic_shape/symbol.h"
-#include "symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/symbol.h"
+#include "abstract/symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace symshape {
@@ -164,4 +164,4 @@ class MS_CORE_API Operation : public Base {
 using OperationEmitter = Operation::Emitter;
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_H_

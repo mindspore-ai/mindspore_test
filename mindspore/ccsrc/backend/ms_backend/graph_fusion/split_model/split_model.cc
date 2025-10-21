@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <string>
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "symbolic_shape/int_symbol.h"
+#include "abstract/symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
 ReachTable::ReachTable(size_t size) : size_(size), reach_(size, std::vector<bool>(size, false)) {

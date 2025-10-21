@@ -49,8 +49,6 @@
 #include "utils/phase.h"
 #include "utils/shape_utils.h"
 
-#include "symbolic_shape/symbol_info.h"
-
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 

@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "symbolic_shape/symbol_visitor.h"
+#include "abstract/symbolic_shape/symbol_visitor.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/jit/syntax.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/symbol_engine/multi_symbol_engine.h"
 
