@@ -17,9 +17,13 @@ import numpy as np
 import pytest
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore.common import Tensor
+from mindspore import Tensor, Parameter, ops
 from mindspore.ops import composite as C
+from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
+from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputsAndParams, GradOfAllInputs
+import torch
+import torch.nn as pynn
 
 
 class CustomBpropNet(nn.Cell):
@@ -157,7 +161,7 @@ class CustomFunctionBroadcastExecptionNet(nn.Cell):
 
     def bprop(self, *args):
         return Tensor([[1, 1, 1, 1], [1, 1, 1, 1], [2, 2, 2, 2]], dtype=ms.int64), \
-               Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=ms.int64)
+            Tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]], dtype=ms.int64)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -231,3 +235,429 @@ def test_custom_function_multi_output_return_self_net():
     grad_net = C.GradOperation(get_all=True)
     grad_net(net)(x)
     assert id(output[0]) != id(x)
+
+
+class MyMul(pynn.Module):
+    def __init__(self):
+        super().__init__()
+        self.inputs = None
+
+    def forward(self, inputs):
+        self.inputs = inputs
+        out = inputs * inputs
+        return out
+
+    def my_hook(self, module, grad_input, grad_output):
+        grad_input = grad_input[0] * 2
+        grad_input = tuple(
+            [grad_input, grad_input])
+        return grad_input
+
+
+class MyMean(pynn.Module):
+    def forward(self, inputs):
+        out = inputs / 2
+        return out
+
+
+def tensor_hook(grad):
+    print('tensor hook')
+    print('grad:', grad)
+    return grad
+
+
+class MyNet(pynn.Module):
+    def __init__(self):
+        super(MyNet, self).__init__()
+        self.p1 = pynn.Parameter(torch.Tensor(np.array([2.0], dtype=np.float32)))
+        self.f2 = MyMean()
+        self.inputs = None
+
+    def forward(self, inputs):
+        self.inputs = inputs
+        output = inputs * self.p1
+        output = self.f2(output)
+        return output
+
+
+class MyNet2(pynn.Module):
+    def __init__(self):
+        super(MyNet2, self).__init__()
+        self.f1 = MyNet()
+        self.f2 = MyMul()
+
+    def forward(self, inputs):
+        out = self.f1(inputs)
+        out = self.f2(out)
+        return out
+
+
+class MEMul(nn.Cell):
+    def construct(self, x):
+        out = x * x
+        return out
+
+
+class MEMul1(nn.Cell):
+    def __init__(self):
+        super(MEMul1, self).__init__()
+        self.f = MEMul()
+        self.f.set_grad()
+        self.grad = GradOfAllInputs(self.f, sens_param=False)
+
+    def construct(self, x):
+        out = self.f(x)
+        return out
+
+    def bprop(self, x, out, dout):
+        grads = self.grad(x)
+        grads = grads[0] * 2
+        return (grads,)
+
+
+class CustomNetWithParam(nn.Cell):
+    def __init__(self):
+        super(CustomNetWithParam, self).__init__()
+        self.w = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
+        self.grad = GradOperation(get_all=True, get_by_list=True, sens_param=True)
+        self.internal_params = [self.w]
+
+    def construct(self, x):
+        output = self.w * x
+        return output
+
+    def bprop(self, *args):
+        return (self.w * args[-1],), {self.w: args[0] * args[-1]}
+
+
+class NetWithParam(nn.Cell):
+    def __init__(self):
+        super(NetWithParam, self).__init__()
+        self.w = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
+        self.grad = GradOperation(get_all=True, get_by_list=True, sens_param=True)
+        self.internal_params = [self.w]
+
+    def construct(self, x):
+        output = self.w * x
+        return output
+
+
+class MEMean(nn.Cell):
+    def construct(self, x):
+        out = x / 2
+        return out
+
+
+class MENet1(nn.Cell):
+    def __init__(self):
+        super(MENet1, self).__init__()
+        self.p1 = Parameter(Tensor(np.array([2.0], dtype=np.float32)), name='weight')
+        self.f2 = MEMean()
+
+    def construct(self, x):
+        output = x * self.p1
+        output = self.f2(output)
+        return output
+
+
+class MENet2(nn.Cell):
+    def __init__(self):
+        super(MENet2, self).__init__()
+        self.f1 = MENet1()
+        self.f2 = MEMul1()
+
+    def construct(self, x):
+        output = self.f1(x)
+        output = self.f2(output)
+        return output
+
+
+class SelfDefineNoneNet(nn.Cell):
+    def __init__(self):
+        super(SelfDefineNoneNet, self).__init__()
+        self.f = MEMul()
+
+    def construct(self, x):
+        out = self.f(x)
+        return out, None
+
+    def bprop(self, *args):
+        return args[-1]
+
+
+class TestNoneNet(nn.Cell):
+    def __init__(self):
+        super(TestNoneNet, self).__init__()
+        self.define_net = SelfDefineNoneNet()
+
+    def construct(self, x):
+        out, _ = self.define_net(x)
+        return out
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_compare_with_pytorch():
+    """
+    Feature: Test custom bprop nested grad feature
+    Description: Test custom bprop nested grad
+    Expectation: Success
+    """
+    net = MyNet2()
+    net.register_backward_hook(net.f2.my_hook)
+    netme = MENet2()
+    grad_net = GradOfFirstInput(netme)
+    grad_net.set_train()
+
+    for _ in range(0, 3):
+        output_np = np.ones([2, 2]).astype(dtype=np.float32)
+        input_np = np.random.randn(2, 2).astype(dtype=np.float32)
+
+        inputs = torch.from_numpy(input_np.copy().astype(np.float32))
+        output = torch.from_numpy(output_np.copy().astype(np.float32))
+        inputs.requires_grad = True
+        inputs.register_hook(tensor_hook)
+        result = net(inputs)
+        result.backward(output)
+
+        input_me = Tensor(input_np.copy().astype(np.float32))
+        output_me = Tensor(output_np.copy().astype(np.float32))
+        input_grad = grad_net(input_me, output_me)
+        assert np.allclose(inputs.grad, input_grad.asnumpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_with_weight():
+    """
+    Feature: Test custom bprop with weight feature
+    Description: Test custom bprop with weight
+    Expectation: Success
+    """
+
+    input1 = Tensor(np.ones(1).astype(dtype=np.float32))
+    sens_param = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = NetWithParam()
+    grad_net = GradOfAllInputsAndParams(net)
+    grad1 = grad_net(input1, sens_param)
+
+    custom_net = CustomNetWithParam()
+    grad_custom_net = GradOfAllInputsAndParams(custom_net)
+    grad2 = grad_custom_net(input1, sens_param)
+
+    assert np.allclose(grad1[0][0].asnumpy(), grad2[0][0].asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(grad1[1][0].asnumpy(), grad2[1][0].asnumpy(), 0.0001, 0.0001)
+
+
+class MEMul1WithUsedMap(nn.Cell):
+    def __init__(self):
+        super(MEMul1WithUsedMap, self).__init__()
+        self.f = MEMul()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        out = self.f(x)
+        return out
+
+    def bprop(self, *args):
+        grads = args[0] * 2
+        return (grads,)
+
+
+class BpropNet(nn.Cell):
+    def construct(self, x):
+        return x * x
+
+    def bprop(self, *args):
+        return (args[0] * args[-1],)
+
+
+class NestedBpropNet(nn.Cell):
+    def __init__(self):
+        super(NestedBpropNet, self).__init__()
+        self.sub_cell = BpropNet()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        out = self.sub_cell(x)
+        return out
+
+    def bprop(self, *args):
+        return (2 * args[0] * args[-1],)
+
+
+class TupleScalarBpropNet(nn.Cell):
+    def __init__(self):
+        super(TupleScalarBpropNet, self).__init__()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        return 3, x * x
+
+    def bprop(self, *args):
+        return (2 * args[0] * args[-1][0],)
+
+
+class TestTupleScalarBpropNet(nn.Cell):
+    def __init__(self):
+        super(TestTupleScalarBpropNet, self).__init__()
+        self.sub_cell = TupleScalarBpropNet()
+
+    def construct(self, x):
+        out = self.sub_cell(x)
+        return out[0] * 2 * out[1]
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_used_map():
+    """
+    Feature: Test custom bprop with used map
+    Description: Test custom bprop with used map
+    Expectation: Success
+    """
+    input1 = Tensor(np.ones(1).astype(dtype=np.float32))
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = MEMul1WithUsedMap()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([2], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_nested():
+    """
+    Feature: Test custom bprop with used map
+    Description: Test custom bprop with used map
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = NestedBpropNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([10], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_with_none():
+    """
+    Feature: Test custom bprop with none
+    Description: Test custom bprop with none
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = TestNoneNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([1], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_with_tuple_scalar():
+    """
+    Feature: Test custom bprop with tuple scalar
+    Description: Test custom bprop with tuple scalar
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = TestTupleScalarBpropNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([60], dtype=np.float32), 0.0001, 0.0001)
+
+
+class test_custom_hook_function_base():
+    def __init__(self):
+        pass
+
+    def test_custom_hook_function(self, hook_function, cell_hook_function):
+        return hook_function, cell_hook_function
+
+
+class test_custom_cell_base():
+    def __init__(self):
+        pass
+
+    def test_custom_cell_function(self, cell):
+        return cell
+
+
+class MulAdd(nn.Cell):
+    def construct(self, x, y):
+        return 2 * x + y
+
+    def bprop(self, x, y, out, dout):
+        assert x.asnumpy() == 1.0
+        assert y.asnumpy() == 2.0
+        assert out.asnumpy() == 4.0
+        assert dout.asnumpy() == 1.0
+        return dout, y
+
+
+class Ms_Cell(nn.Cell):
+    def __init__(self):
+        super(Ms_Cell, self).__init__()
+        self.relu = ops.ReLU()
+
+    def construct(self, x):
+        return self.relu(x)
+
+    def bprop(self, x, out, dout):
+        dout = Tensor(np.float32(0.0))
+        assert dout.shape == ()
+        return dout
+
+
+grad_all = C.GradOperation(get_all=True)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_custom_bprop_and_Cell_MulAdd():
+    """
+    Feature: Custom bprop
+    Description: Custom bprop with MulAdd Cell.
+    Expectation: No exception.
+    """
+    custom_cell = test_custom_cell_base()
+    mul_add = custom_cell.test_custom_cell_function(MulAdd())
+    mul_add.bprop_debug = True
+    grad_all(mul_add)(Tensor(1, ms.float32), Tensor(2, ms.float32))
+    assert grad_all(mul_add)(Tensor(1, ms.float32), Tensor(2, ms.float32)) == \
+           (Tensor(1.0, ms.float32), Tensor(2.0, ms.float32))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_custom_bprop_and_Cell_Ms_Cell():
+    """
+    Feature: Custom bprop
+    Description: Custom bprop debug
+    Expectation: No exception.
+    """
+    custom_cell = test_custom_cell_base()
+    ms_cell = custom_cell.test_custom_cell_function(Ms_Cell())
+    ms_cell.bprop_debug = True
+    assert grad_all(ms_cell)(Tensor(1, ms.float32)) == (Tensor(0.0, ms.float32),)

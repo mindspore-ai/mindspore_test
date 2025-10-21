@@ -40,6 +40,8 @@ py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim,
   op_run_info->source_type = converter.source_type();
 
   {
+    kernel::pyboost::OpRunStatus::Get().set_run_info(
+      kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision, op_run_info->device_target));
     GilReleaseWithCheck no_gil;
     runtime::Pipeline::Get().frontend_stage()->Wait();
   }

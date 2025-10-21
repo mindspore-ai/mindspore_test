@@ -20,7 +20,7 @@ from mindspore import context
 from mindspore import jit, ops
 from mindspore.ops import GradOperation
 from tests.mark_utils import arg_mark
-from tests.st.pynative.hook.common import assert_jit_grad_net_by_grad_op
+from tests.st.pynative.hook.cell_hook.common import assert_jit_grad_net_by_grad_op
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -59,6 +59,7 @@ class Net(nn.Cell):
         x = x + x
         return x
 
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -84,10 +85,7 @@ def test_pynative_backward_pre_hook_on_net(hook):
 
     assert_jit_grad_net_by_grad_op(grad_op, net, grad, False, input_x, input_y)
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
+
 def test_pynative_backward_pre_hook_with_no_return():
     """
     Feature: PyNative hook function.
@@ -107,10 +105,6 @@ def test_pynative_backward_pre_hook_with_no_return():
     assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_old_return():
     """
     Feature: PyNative hook function.
@@ -130,10 +124,6 @@ def test_pynative_backward_pre_hook_with_old_return():
     assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_new_return():
     """
     Feature: PyNative hook function.
@@ -153,10 +143,6 @@ def test_pynative_backward_pre_hook_with_new_return():
     assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_modify_cell():
     """
     Feature: PyNative hook function.
@@ -178,10 +164,6 @@ def test_pynative_backward_pre_hook_with_modify_cell():
     assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_new_return_multi_register():
     """
     Feature: PyNative hook function.
@@ -202,10 +184,6 @@ def test_pynative_backward_pre_hook_with_new_return_multi_register():
     assert np.allclose(grad[1].asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_handle_remove():
     """
     Feature: PyNative hook function.
@@ -245,10 +223,6 @@ def test_pynative_backward_pre_hook_with_handle_remove():
     assert np.allclose(grad[1].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_backward_hook_and_remove():
     """
     Feature: PyNative hook function.
@@ -288,10 +262,6 @@ def test_pynative_backward_pre_hook_with_backward_hook_and_remove():
     assert np.allclose(grad[1].asnumpy(), expect_grad.asnumpy(), 0.000001, 0.000001)
 
 
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
 def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
     """
     Feature: PyNative hook function.
@@ -347,12 +317,33 @@ def test_pynative_backward_pre_hook_with_backward_hook_multi_register():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
+def test_pynative_cell_backward_pre_hook_test_suite():
+    """
+    Feature: PyNative cell backward hook.
+    Description: Test suite for pynative cell backward pre hook.
+    Expectation: Success
+    """
+    test_pynative_backward_pre_hook_with_no_return()
+    test_pynative_backward_pre_hook_with_old_return()
+    test_pynative_backward_pre_hook_with_new_return()
+    test_pynative_backward_pre_hook_with_modify_cell()
+    test_pynative_backward_pre_hook_with_new_return_multi_register()
+    test_pynative_backward_pre_hook_with_handle_remove()
+    test_pynative_backward_pre_hook_with_backward_hook_and_remove()
+    test_pynative_backward_pre_hook_with_backward_hook_multi_register()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_jit_backward_pre_hook_with_wrong_number_of_output():
     """
     Feature: PyNative hook function with jit.
     Description: Test PyNative hook function with jit.
     Expectation: Raise error.
     """
+
     class GradOfAllInputs(nn.Cell):
         def __init__(self, net):
             super().__init__()
@@ -363,7 +354,6 @@ def test_jit_backward_pre_hook_with_wrong_number_of_output():
         def construct(self, *inputs):
             grad_net = self.grad_op(self.net)
             return grad_net(*inputs)
-
 
     class InnerNet(nn.Cell):
         def __init__(self):
@@ -388,7 +378,7 @@ def test_jit_backward_pre_hook_with_wrong_number_of_output():
             return x
 
     def double_pback(cell, grad_output):
-        return grad_output*2
+        return grad_output * 2
 
     input1_np = np.array([2.0, 3.0, 4.0]).astype(np.float32)
     input2_np = np.array([2.0, 3.0, 4.0]).astype(np.float32)
