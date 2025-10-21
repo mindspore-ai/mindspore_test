@@ -14,8 +14,10 @@
 # ============================================================================
 
 import os
+import numpy as np
 import pytest
-from mindspore import Tensor, ops, context
+import mindspore as ms
+from mindspore import Tensor, ops, context, nn
 from tests.mark_utils import arg_mark
 
 class EnvContext:
@@ -73,7 +75,7 @@ def test_pynative_disable_auto_h2d():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_synchronize():
@@ -95,7 +97,7 @@ def test_pynative_synchronize():
         z = Tensor([0, 3], ms.float32)
         net = MulNet()
         net.set_inputs(Tensor(shape=[None], dtype=ms.float32), y, z)
-        output = grad(net, grad_position=(1, 2))(x, y, z)
+        output = ms.grad(net, grad_position=(1, 2))(x, y, z)
         assert (output[0].asnumpy() == np.array([0, 6], dtype=np.float32)).all()
         assert (output[1].asnumpy() == np.array([-2, 6], dtype=np.float32)).all()
     finally:
