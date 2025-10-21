@@ -26,6 +26,7 @@ void PyObjManager::Clear() {
   Py_XDECREF(tensor_module_);
   Py_XDECREF(abc_module_);
   Py_XDECREF(tensor_python_class_);
+  Py_XDECREF(untyped_storage_class_);
 }
 
 PyObject *PyObjManager::GetTensorModule() {
@@ -71,5 +72,13 @@ PyTypeObject *PyObjManager::GetTensorPythonType() {
     return python_tensor_type_;
   }
   return python_tensor_type_;
+}
+
+PyTypeObject *PyObjManager::GetUntypedStorageClass() {
+  if (untyped_storage_class_ == nullptr) {
+    const auto mindspore_module = PyImport_ImportModule("mindspore");
+    untyped_storage_class_ = (PyTypeObject *)PyObject_GetAttrString(mindspore_module, "UntypedStorage");
+  }
+  return untyped_storage_class_;
 }
 }  // namespace mindspore

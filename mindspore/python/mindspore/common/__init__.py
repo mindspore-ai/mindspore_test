@@ -29,6 +29,7 @@ from mindspore.common.file_system import set_mindio_server_info, mindio_preload
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.seed import set_seed, get_seed
 from mindspore.common.tensor import Tensor, tensor
+from mindspore.common.storage import UntypedStorage
 from mindspore.common.sparse_tensor import RowTensor, RowTensorInner, SparseTensor, COOTensor, CSRTensor
 from mindspore.common.mutable import mutable
 from mindspore.common.jit_config import JitConfig
@@ -102,6 +103,7 @@ __all__.extend([
     "tensor", "Tensor", "RowTensor", "SparseTensor", "COOTensor", "CSRTensor",  # tensor
     'jit', 'jit_class', '_no_grad', 'saved_tensors_hooks', 'register_saved_tensors_hooks',  # api
     "Parameter", "ParameterTuple",  # parameter
+    "UntypedStorage",
     "dtype",
     "set_seed", "get_seed", "manual_seed", # random seed
     "set_dump",

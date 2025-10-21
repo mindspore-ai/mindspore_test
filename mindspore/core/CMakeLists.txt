@@ -140,3 +140,8 @@ endif()
 if(ANDROID_NDK)
     target_link_libraries(mindspore_core PRIVATE -llog)
 endif()
+
+# link for shm_open and shm_unlink
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(mindspore_core PRIVATE rt)
+endif()

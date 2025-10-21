@@ -35,6 +35,7 @@
 #include "mindapi/base/types.h"
 #include "ir/device_type.h"
 #include "ir/format_utils.h"
+#include "device_address/map_memory_allocator.h"
 
 using std::string;
 
@@ -122,6 +123,10 @@ class DevicePointer {
 
   void set_allocator(std::shared_ptr<AddressAllocator> allocator) { allocator_ = allocator; }
 
+  const std::shared_ptr<MapAllocator> &map_allocator() const { return map_allocator_; }
+
+  void set_map_allocator(std::shared_ptr<MapAllocator> map_allocator) { map_allocator_ = map_allocator; }
+
  private:
   void *ptr_{nullptr};
 
@@ -133,6 +138,8 @@ class DevicePointer {
 
   // The device address allocator that contains allocate memory and delete memory functions.
   std::shared_ptr<AddressAllocator> allocator_;
+
+  std::shared_ptr<MapAllocator> map_allocator_;
 };
 using DevicePointerPtr = std::shared_ptr<DevicePointer>;
 
@@ -242,6 +249,12 @@ class MS_CORE_API DeviceAddress {
 
   bool remote() const { return remote_; }
   void set_remote(bool remote) { remote_ = remote; }
+
+  void set_map_allocator(std::shared_ptr<MapAllocator> map_allocator) {
+    device_pointer_->set_map_allocator(map_allocator);
+  }
+
+  const std::shared_ptr<MapAllocator> &map_allocator() const { return device_pointer_->map_allocator(); }
 
   void set_data(tensor::TensorDataPtr &&data);
   const tensor::TensorDataPtr &data() const;

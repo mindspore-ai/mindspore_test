@@ -156,4 +156,14 @@ std::string StorageBase::device() const {
   MS_EXCEPTION_IF_NULL(device_data_);
   return device::GetDeviceNameByType(device_data_->GetDeviceType());
 }
+
+const MapAllocatorPtr &StorageBase::GetMapAllocator() const {
+  MS_EXCEPTION_IF_NULL(device_data_);
+  return device_data_->map_allocator();
+}
+
+void StorageBase::SetDevicePointer(const DevicePointerPtr device_pointer) {
+  device_data_->set_device_pointer(device_pointer);
+}
+
 }  // namespace mindspore

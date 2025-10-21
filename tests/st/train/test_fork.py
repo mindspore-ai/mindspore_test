@@ -17,10 +17,10 @@ import time
 import platform
 import pytest
 import mindspore as ms
-import mindspore.ops as ops
+from mindspore import ops
 import mindspore.multiprocessing as mp
 import mindspore.ops.functional as F
-import mindspore.context as context
+from mindspore import context
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -181,7 +181,7 @@ def test_fork_with_pynative_pipeline():
     """
     ms.set_context(mode=ms.PYNATIVE_MODE)
 
-    def my_child_process(q):
+    def my_child_process(q, e):
         for _ in range(10):
             y = ops.log(ms.Tensor(2.0))
         y.asnumpy()
@@ -194,6 +194,10 @@ def test_fork_with_pynative_pipeline():
         y.asnumpy()
 
         q.put(y)
+        # Sharing tensor between processes will use reduce_tensor in reductions.py,
+        # which will share fd(file descriptor). Use e.wait() here to make sure that
+        # fd will not be closed until other process has got the data.
+        e.wait()
 
     mp.set_start_method("fork", force=True)
 
@@ -206,9 +210,12 @@ def test_fork_with_pynative_pipeline():
     time.sleep(2)
 
     q = mp.Queue()
-    p = mp.Process(target=my_child_process, args=(q,))
+    e = mp.Event()
+    p = mp.Process(target=my_child_process, args=(q, e))
     p.start()
-    assert q.get().asnumpy() == ops.log(ms.Tensor(2.0)).asnumpy()
+    out = q.get()
+    e.set()
+    assert out.asnumpy() == ops.log(ms.Tensor(2.0)).asnumpy()
     p.join()
 
 

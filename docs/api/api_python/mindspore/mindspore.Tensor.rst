@@ -205,6 +205,7 @@ mindspore.Tensor
     mindspore.Tensor.isposinf
     mindspore.Tensor.isreal
     mindspore.Tensor.is_pinned
+    mindspore.Tensor.is_shared
     mindspore.Tensor.is_signed
     mindspore.Tensor.item
     mindspore.Tensor.itemset
