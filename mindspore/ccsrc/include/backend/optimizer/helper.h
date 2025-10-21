@@ -130,13 +130,6 @@ enum ConvBn1Output {
   kMean,
 };
 
-// check whether node depends on either of nodes or not
-BACKEND_COMMON_EXPORT bool IsDepend(const FuncGraph &graph, const AnfNodePtr &node,
-                                    const std::vector<AnfNodePtr> &nodes);
-BACKEND_COMMON_EXPORT bool IsDepend(const FuncGraph &graph, const AnfNodePtr &node,
-                                    const std::vector<AnfNodePtr> &nodes,
-                                    mindspore::HashSet<AnfNodePtr> *visited_nodes);
-
 BACKEND_COMMON_EXPORT bool UnVisited(const BaseRef &n);
 
 BACKEND_COMMON_EXPORT bool Visited(const BaseRef &n);
@@ -148,14 +141,7 @@ BACKEND_COMMON_EXPORT CNodePtr NewCNode(const std::vector<AnfNodePtr> &inputs, c
 BACKEND_COMMON_EXPORT CNodePtr NewCNode(const CNodePtr &cnode, const KernelGraphPtr &fg,
                                         const std::vector<AnfNodePtr> &orig_nodes);
 
-// check if the input node is CNode, then check it's input_size, return CNodePtr if check success.
-BACKEND_COMMON_EXPORT CNodePtr CheckAnfNodeIfCNodeAndInputSize(const AnfNodePtr &node, size_t input_size);
-
 BACKEND_COMMON_EXPORT void CheckCNodeInputSize(const CNodePtr &cnode, size_t input_tensor_size);
-
-bool HasSymmetricalKernelInfo(const AnfNodePtr &node_x, const AnfNodePtr &node_y);
-
-const AnfNodePtr EliminateDependTransop(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
 
 void CreateOutputsOfConvBn1(const FuncGraphPtr &func_graph, const CNodePtr &conv_cnode, const CNodePtr &bn_cnode,
                             std::vector<AnfNodePtr> *conv_bn1_outputs);
@@ -211,28 +197,17 @@ BACKEND_COMMON_EXPORT bool IsUsedByOthers(const FuncGraphPtr &graph, const AnfNo
 BACKEND_COMMON_EXPORT std::shared_ptr<std::vector<std::pair<AnfNodePtr, int>>> GetRealNodeUsedList(
   const FuncGraphPtr &graph, const AnfNodePtr &node);
 
-size_t GetRealNodeNum(const FuncGraphPtr &graph, const AnfNodePtr &node);
-
 BACKEND_COMMON_EXPORT std::shared_ptr<std::vector<std::pair<AnfNodePtr, int>>> GetRealNodeUsedListByOutputIdx(
   const FuncGraphPtr &graph, const AnfNodePtr &node, size_t output_index);
-bool IsNotRealUsedByOthers(const FuncGraphPtr &graph, const AnfNodePtr &node);
-
-bool CNodeTypeEqual(const BaseRef &a, const BaseRef &b);
 
 AnfNodePtr SexpToNode(const BaseRef &sexp, const BaseRef &graph, PrimitiveVarMap *primitive_vars,
                       bool multigraph = false);
-
-// Check var_node in two equivs is the same node
-BACKEND_COMMON_EXPORT bool IsSameNode(const EquivPtr &equiv1, const EquivPtr &equiv2, const VarPtr &var_node);
 
 // Get anf_node from equiv by var_node
 BACKEND_COMMON_EXPORT AnfNodePtr GetAnfNodeByVar(const EquivPtr &equiv, const VarPtr &var_node);
 
 // Get tuple getitem's index
 BACKEND_COMMON_EXPORT int64_t GetGetitemIndex(const AnfNodePtr &getitem);
-
-// Compare tuple getitem's index, return bool[n1's index < n2's index]
-BACKEND_COMMON_EXPORT bool CompareTupleGetitem(const AnfNodePtr &n1, const AnfNodePtr &n2);
 
 // Get attr which is bool from cnode
 BACKEND_COMMON_EXPORT bool GetBoolAttr(const AnfNodePtr &node, const std::string &attr_name);
@@ -248,9 +223,6 @@ BACKEND_COMMON_EXPORT ValueNodePtr MakeValueNode(const ValueNodePtr &value_node)
 BACKEND_COMMON_EXPORT void TransferDependOrUpdateState(const CNodePtr &old_node, const FuncGraphPtr &graph,
                                                        const CNodePtr &new_node);
 
-// Infer the shape and write to out abstract.
-void CppInferShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_spec_list, const CNodePtr &cnode);
-
 // Infer the shape and type.
 BACKEND_COMMON_EXPORT AbstractBasePtr CppInferShapeAndType(const PrimitivePtr &prim,
                                                            const AbstractBasePtrList &args_spec_list);
@@ -261,14 +233,6 @@ BACKEND_COMMON_EXPORT kernel::KernelBuildInfoPtr GenerateKernelBuildInfo(const s
 BACKEND_COMMON_EXPORT kernel::KernelBuildInfoPtr GenerateKernelBuildInfo(const CNodePtr &node);
 
 BACKEND_COMMON_EXPORT bool IsConstant(const BaseRef &n);
-
-// Get used number of node's each output
-BACKEND_COMMON_EXPORT std::vector<int64_t> GetNodeOutputUsedNum(const session::KernelGraph &kernel_graph,
-                                                                const AnfNodePtr &node);
-
-// Get total used number of node's output
-BACKEND_COMMON_EXPORT int64_t GetNodeOutputTotalUsedNum(const session::KernelGraph &kernel_graph,
-                                                        const AnfNodePtr &node);
 
 // Get custom operator attr input indexes
 BACKEND_COMMON_EXPORT void GetCustomOpAttrIndex(const PrimitivePtr &primitive, mindspore::HashSet<size_t> *indexes);

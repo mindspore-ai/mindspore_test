@@ -194,49 +194,6 @@ void HalfToFloat(void *dst, const void *src, size_t elem_num) {
 }
 }  // namespace
 
-AnfNodePtr AnfRuntimeAlgorithm::MakeMonadValueNode(const KernelGraphPtr &kg) {
-  MS_EXCEPTION_IF_NULL(kg);
-  return kg->NewValueNode(kUMonad->ToAbstract(), kUMonad);
-}
-
-// Convert: a = former(xxx)
-//          b = latter(x, xxx)
-// To:      a = former(xxx)
-//          d1 = Depend(x, a)
-//          b = latter(d1, xxx)
-//          ...
-//          out = Depend(out, latter)
-void AnfRuntimeAlgorithm::KeepOrder(const KernelGraphPtr &kg, const AnfNodePtr &former, const AnfNodePtr &latter) {
-  MS_EXCEPTION_IF_NULL(kg);
-  MS_EXCEPTION_IF_NULL(former);
-  MS_EXCEPTION_IF_NULL(latter);
-  if (latter->isa<CNode>()) {
-    auto latter_cnode = latter->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(latter_cnode);
-    constexpr size_t inputsize = 2;
-    constexpr size_t kFirstDataInputIndex = 1;
-    if (latter_cnode->size() < inputsize) {
-      return;
-    }
-    auto latter_input = latter_cnode->input(kFirstDataInputIndex);
-    auto depend1 = kg->NewCNode({NewValueNode(prim::kPrimDepend), latter_input, former});
-    MS_EXCEPTION_IF_NULL(depend1);
-    MS_EXCEPTION_IF_NULL(latter_input);
-    depend1->set_abstract(latter_input->abstract());
-    latter_cnode->set_input(kFirstDataInputIndex, depend1);
-
-    auto return_node = kg->get_return();
-    MS_EXCEPTION_IF_NULL(return_node);
-    auto depend2 = kg->NewCNode(
-      {NewValueNode(prim::kPrimDepend), return_node->cast<CNodePtr>()->input(kFirstDataInputIndex), latter});
-    MS_EXCEPTION_IF_NULL(depend2);
-    depend2->set_abstract(return_node->cast<CNodePtr>()->input(kFirstDataInputIndex)->abstract());
-    kg->set_output(depend2);
-    MS_LOG(DEBUG) << "former: " << former->DebugString() << ", latter: " << latter->DebugString()
-                  << ", depend1: " << depend1->DebugString() << ", depend2: " << depend2->DebugString();
-  }
-}
-
 size_t AnfRuntimeAlgorithm::GetOutputTensorNum(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   size_t res;
@@ -249,37 +206,6 @@ size_t AnfRuntimeAlgorithm::GetOutputTensorNum(const AnfNodePtr &node) {
       return 1;
     }
     res = GetOutputTensorNumByKernelInfo(node);
-  } else if (type->isa<TypeNone>()) {
-    res = 0;
-  } else if (type->isa<CSRTensorType>()) {
-    // Currently, CSRTensor only supports 2-D matrix (shape has 2 values). 5 outputs = 3 Tensors + 2 shape values.
-    constexpr size_t kCSRTensorOutputNum = 5;
-    res = kCSRTensorOutputNum;
-  } else if (type->isa<COOTensorType>()) {
-    // Currently, COOTensor only supports 2-D matrix (shape has 2 values). 4 outputs = 2 Tensors + 2 shape values.
-    constexpr size_t kCOOTensorOutputNum = 4;
-    res = kCOOTensorOutputNum;
-  } else if (AnfUtils::NeedJumpMonadOutput(node) && type->isa<MonadType>()) {
-    res = 0;
-  } else {
-    res = 1;
-  }
-  return res;
-}
-
-size_t AnfRuntimeAlgorithm::GetOutputNumWithoutKernelInfo(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  const auto &kernel_info = node->kernel_info();
-  if (kernel_info != nullptr) {
-    MS_LOG_WITH_NODE(EXCEPTION, node) << "Kernel info is not null for node:" << node->DebugString();
-  }
-
-  size_t res;
-  TypePtr type = node->Type();
-  if (type == nullptr) {
-    res = 0;
-  } else if (type->isa<Tuple>() || type->isa<List>()) {
-    res = 1;
   } else if (type->isa<TypeNone>()) {
     res = 0;
   } else if (type->isa<CSRTensorType>()) {
@@ -1447,18 +1373,6 @@ uint32_t AnfRuntimeAlgorithm::GetGraphId(const AnfNode *node) {
   return kernel_info->graph_id();
 }
 
-size_t AnfRuntimeAlgorithm::GetInputGraphIdxByKernelIdx(const mindspore::AnfNodePtr &anf_node,
-                                                        size_t input_index_in_kernel) {
-  MS_EXCEPTION_IF_NULL(anf_node);
-  return input_index_in_kernel;
-}
-
-size_t AnfRuntimeAlgorithm::GetInputKernelIdxByGraphIdx(const mindspore::AnfNodePtr &anf_node,
-                                                        size_t input_index_in_graph) {
-  MS_EXCEPTION_IF_NULL(anf_node);
-  return input_index_in_graph;
-}
-
 std::vector<KernelGraphPtr> AnfRuntimeAlgorithm::GetCallSwitchKernelGraph(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   if (!(common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimCall) ||
@@ -1520,40 +1434,6 @@ KernelGraphPtr AnfRuntimeAlgorithm::GetValueNodeKernelGraph(const AnfNodePtr &no
   return kernel_graph;
 }
 
-bool AnfRuntimeAlgorithm::IsIndependentNode(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  if (AnfAlgo::GetKernelType(node) != AICPU_KERNEL) {
-    return false;
-  }
-
-  if (common::AnfAlgo::GetCNodeName(node) == kGetNextOpName) {
-    MS_LOG(INFO) << "GetNext should not be independent node";
-    return false;
-  }
-
-  // aicpu stack ops are not independent nodes.
-  if (common::AnfAlgo::GetCNodeName(node) == kStackInitOpName ||
-      common::AnfAlgo::GetCNodeName(node) == kStackDestroyOpName ||
-      common::AnfAlgo::GetCNodeName(node) == kStackPopOpName ||
-      common::AnfAlgo::GetCNodeName(node) == kStackPushOpName) {
-    MS_LOG(INFO) << "AICPU stack ops should not be independent node";
-    return false;
-  }
-
-  size_t input_nums = common::AnfAlgo::GetInputTensorNum(node);
-  if (input_nums == 0) {
-    return true;
-  }
-
-  auto inputs = node->inputs();
-  for (size_t i = 1; i < inputs.size(); i++) {
-    if (!inputs[i]->isa<ValueNode>()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 KernelGraphPtr AnfRuntimeAlgorithm::FetchKernelGraph(const AnfNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   const auto &func_graph = node->func_graph();
@@ -1577,76 +1457,6 @@ AnfNodePtr AnfRuntimeAlgorithm::FetchFrontNodeByBackendNode(const AnfNodePtr &ba
     front_node = backend_node;
   }
   return front_node;
-}
-
-namespace {
-// Host kernel with inputs on host
-bool SkipDataSync(const CNodePtr &node, const std::map<uint32_t, tensor::TensorPtr> &depend_tensors) {
-  if (!common::AnfAlgo::IsHostKernel(node)) {
-    return false;
-  }
-  auto input_size = common::AnfAlgo::GetInputTensorNum(node);
-  for (size_t i = 0; i < input_size; ++i) {
-    auto input_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
-    auto real_input = input_with_index.first;
-    auto iter_tensor = depend_tensors.find(i);
-    if (iter_tensor != depend_tensors.end()) {
-      auto output_addr = AnfAlgo::GetOutputAddr(real_input, 0);
-      MS_EXCEPTION_IF_NULL(output_addr);
-      if (output_addr->GetDeviceType() != device::DeviceType::kCPU) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-}  // namespace
-
-void AnfRuntimeAlgorithm::InferShape(const CNodePtr &node, std::map<uint32_t, tensor::TensorPtr> *depend_tensors) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_LOG(INFO) << "InferShape start, node:" << node->DebugString();
-  auto inputs = node->inputs();
-  if (inputs.empty()) {
-    MS_LOG_WITH_NODE(EXCEPTION, node) << "Inputs should not be empty! Cnode: " << node->DebugString() << "."
-                                      << trace::DumpSourceLines(node);
-  }
-  AbstractBasePtrList args_spec_list;
-  auto primitive = GetValueNode<PrimitivePtr>(inputs[0]);
-  auto input_size = common::AnfAlgo::GetInputTensorNum(node);
-  for (size_t i = 0; i < input_size; ++i) {
-    auto input_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
-    auto real_input = input_with_index.first;
-    MS_EXCEPTION_IF_NULL(real_input);
-    auto cnode_input = node->input(i + 1);
-    MS_EXCEPTION_IF_NULL(cnode_input);
-    if (depend_tensors != nullptr) {
-      auto iter_tensor = depend_tensors->find(i);
-      if (iter_tensor != depend_tensors->cend()) {
-        auto tensor_ptr = iter_tensor->second;
-        MS_EXCEPTION_IF_NULL(tensor_ptr);
-        if (!SkipDataSync(node, *depend_tensors)) {
-          // sync data from device to host
-          tensor_ptr = tensor_ptr->cpu();
-        }
-        // cppcheck-suppress unreadVariable
-        auto lock = AnfUtils::GetAbstractLock(real_input.get());
-        auto real_abs = real_input->abstract();
-        MS_EXCEPTION_IF_NULL(real_abs);
-        if (real_abs->isa<abstract::AbstractTensor>()) {
-          real_abs->set_value(tensor_ptr);
-        } else if (real_abs->isa<abstract::AbstractTuple>() && (!common::AnfAlgo::IsDynamicSequence(real_input))) {
-          auto tuple_get_item_index = common::AnfAlgo::GetTupleGetItemOutIndex(cnode_input->cast<CNodePtr>());
-          auto abstract_tuple = real_abs->cast<abstract::AbstractTuplePtr>();
-          MS_EXCEPTION_IF_NULL(abstract_tuple);
-          auto tuple_elements = abstract_tuple->elements()[tuple_get_item_index];
-          tuple_elements->set_value(tensor_ptr);
-        }
-      }
-    }
-    common::AnfAlgo::AddArgList(&args_spec_list, real_input, input_with_index.second);
-  }
-  auto eval_result = opt::CppInferShapeAndType(primitive, args_spec_list);
-  node->set_abstract(eval_result);
 }
 
 void AnfRuntimeAlgorithm::InsertMakeTupleForOutput(const NotNull<KernelGraphPtr> &root_graph) {
@@ -1783,98 +1593,6 @@ bool AnfRuntimeAlgorithm::IsDynamicShapeSkipExecute(bool skip_mode, const ShapeV
   return false;
 }
 
-bool AnfRuntimeAlgorithm::IsDynamicShapeSkipExecute(const CNodePtr &cnode) {
-  // Skip run ReduceSum when axis is a Empty Tensor
-  MS_EXCEPTION_IF_NULL(cnode);
-  auto op_name = common::AnfAlgo::GetCNodeName(cnode);
-  if ((op_name != kReduceSumOpName) && (op_name != kReduceSumDOpName)) {
-    return false;
-  }
-
-  bool skip_mode = false;
-  if (common::AnfAlgo::HasNodeAttr(kAttrSkipMode, cnode)) {
-    skip_mode = common::AnfAlgo::GetNodeAttr<bool>(cnode, kAttrSkipMode);
-  }
-
-  if (!skip_mode) {
-    return false;
-  }
-
-  const size_t axes_index = 1;
-  if (cnode->size() <= axes_index + 1) {
-    return false;
-  }
-  auto input_axes = cnode->input(axes_index + 1);
-  // cppcheck-suppress unreadVariable
-  auto lock = AnfUtils::GetAbstractLock(input_axes.get());
-  auto abs = input_axes->abstract();
-  MS_EXCEPTION_IF_NULL(abs);
-  auto axes_abs = abs->Clone();
-  MS_EXCEPTION_IF_NULL(axes_abs);
-  auto axes_shape = AnfAlgo::GetInputDeviceShape(cnode, axes_index);
-  if (axes_abs->isa<abstract::AbstractTensor>()) {
-    if (std::any_of(axes_shape.begin(), axes_shape.end(), [](int64_t shape) { return shape == 0; })) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool AnfRuntimeAlgorithm::IsNeedUpdateShapeAndTypeAfterLaunch(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto graph = FetchKernelGraph(node.get());
-  // The graph run mode does not have kernelmod.
-  if ((graph == nullptr) || graph->is_graph_run_mode()) {
-    return true;
-  }
-
-  auto kernel_mod = GetKernelMod(node);
-  if (kernel_mod == nullptr) {
-    return true;
-  }
-  return kernel_mod->IsNeedUpdateOutputShapeAndSize();
-}
-
-bool AnfRuntimeAlgorithm::HasComputedDependInputNode(const CNodePtr &kernel) {
-  MS_EXCEPTION_IF_NULL(kernel);
-  auto real_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
-
-  for (size_t i = 0; i < real_input_num; i++) {
-    const auto &input_node = common::AnfAlgo::GetInputNode(kernel, i);
-    MS_EXCEPTION_IF_NULL(input_node);
-    auto real_input_node = common::AnfAlgo::VisitKernelWithReturnType(input_node, 0, false);
-    MS_EXCEPTION_IF_NULL(real_input_node.first);
-    if (!real_input_node.first->isa<CNode>()) {
-      continue;
-    }
-
-    auto kernel_mod = AnfAlgo::GetKernelMod(real_input_node.first);
-    if (kernel_mod && kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void AnfRuntimeAlgorithm::UpdateOutputAddrSize(device::KernelInfo const *kernel_info, const CNodePtr &kernel) {
-  MS_EXCEPTION_IF_NULL(kernel_info);
-  MS_EXCEPTION_IF_NULL(kernel);
-  auto &output_kernel_tensors = kernel_info->output_kernel_tensor_list();
-  for (size_t i = 0; i < output_kernel_tensors.size(); ++i) {
-    auto output_kernel_tensor = output_kernel_tensors[i];
-    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-    auto output_address = output_kernel_tensor->device_address().get();
-    MS_EXCEPTION_IF_NULL(output_address);
-    auto output_addr_size = AnfAlgo::GetOutputTensorMemSize(kernel, i);
-    MS_LOG(DEBUG) << "output size:" << output_addr_size << " index:" << i
-                  << " for kernel:" << kernel->fullname_with_scope()
-                  << " abstract:" << (kernel->abstract() == nullptr ? "null" : kernel->abstract()->ToString());
-    if (output_addr_size != output_address->GetSize()) {
-      output_address->SetSize(output_addr_size);
-    }
-  }
-}
-
 void AnfRuntimeAlgorithm::AddOutInRefToGraph(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   for (const auto &cnode : graph->execution_order()) {
@@ -1895,19 +1613,6 @@ void AnfRuntimeAlgorithm::AddOutInRefToGraph(const KernelGraphPtr &graph) {
       }
     }
   }
-}
-
-bool AnfRuntimeAlgorithm::HasOriginFormat(const AnfNodePtr &anf_node) {
-  MS_EXCEPTION_IF_NULL(anf_node);
-  return anf_node->isa<CNode>() && common::AnfAlgo::HasNodeAttr(kAttrOriginFormat, anf_node->cast<CNodePtr>());
-}
-
-std::string AnfRuntimeAlgorithm::GetOriginFormat(const AnfNodePtr &anf_node) {
-  MS_EXCEPTION_IF_NULL(anf_node);
-  if (anf_node->isa<CNode>() && common::AnfAlgo::HasNodeAttr(kAttrOriginFormat, anf_node->cast<CNodePtr>())) {
-    return common::AnfAlgo::GetNodeAttr<std::string>(anf_node, kAttrOriginFormat);
-  }
-  return {};
 }
 
 bool AnfRuntimeAlgorithm::NodeValueIsFuncGraph(const AnfNodePtr &node) {
@@ -2172,17 +1877,6 @@ abstract::BaseShapePtr AnfRuntimeAlgorithm::GetOutputDetailShape(const AnfNodePt
 abstract::BaseShapePtr AnfRuntimeAlgorithm::GetPrevNodeOutputDetailShape(const AnfNodePtr &node, size_t input_idx) {
   KernelWithIndex kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx);
   return AnfAlgo::GetOutputDetailShape(kernel_with_index.first, kernel_with_index.second);
-}
-
-std::vector<TypeId> AnfRuntimeAlgorithm::GetAllOutputInferDataTypes(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  std::vector<TypeId> outputs;
-  auto out_nums = AnfAlgo::GetOutputElementNum(node);
-  for (size_t i = 0; i < out_nums; i++) {
-    auto type = common::AnfAlgo::GetOutputInferDataType(node, i);
-    outputs.push_back(type);
-  }
-  return outputs;
 }
 
 // if input node is MakeTuple, find the PrevNodeNum recursively;

@@ -64,26 +64,6 @@ class BACKEND_COMMON_EXPORT PatternProcessPass : public PatternPass {
   void Build();
   AnfNodePtr pattern_ = nullptr;
 };
-
-class BACKEND_COMMON_EXPORT MultipleOutputPatternProcessPass : public PatternProcessPass {
- public:
-  explicit MultipleOutputPatternProcessPass(const std::string &name = "", bool multigraph = true)
-      : PatternProcessPass(name, multigraph),
-        child_pattern_engine_(PatternEngine(std::make_shared<Visitor>())),
-        child_primitive_vars_(std::make_shared<PrimitiveVarMap>()),
-        child_equiv_(std::make_shared<Equiv>()) {}
-  ~MultipleOutputPatternProcessPass() override = default;
-  virtual BaseRef DefineAnotherPattern() const = 0;
-  // check two patterns whether share the same nodes or not
-  virtual bool IsShareNodes(const EquivPtr &equiv1, const EquivPtr &equiv2) const = 0;
-
- protected:
-  bool MatchAnotherPattern(const AnfNodePtr &node, const EquivPtr &equiv) const;
-  std::vector<AnfNodePtr> GetOrigNodes() const override;
-  PatternEngine child_pattern_engine_;
-  PrimitiveVarMapPtr child_primitive_vars_;
-  EquivPtr child_equiv_;
-};
 }  // namespace opt
 }  // namespace mindspore
 

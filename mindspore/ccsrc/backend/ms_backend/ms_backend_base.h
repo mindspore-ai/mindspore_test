@@ -118,8 +118,6 @@ class MSBackendBase : public BackendBase {
 
   void ParseControlNodes(const GraphCompilerInfo &graph_compile_info);
 
-  void UpdateGraphCompilerInfo(const GraphCompilerInfo &graph_compile_info);
-
   void CreateTensorArgs(const VectorRef &args, const GraphCompilerInfo &);
 
   // Wait multi stream finish.
