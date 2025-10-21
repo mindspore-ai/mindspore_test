@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <functional>
+#include <tuple>
 #include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "frontend/jit/ps/parse/parse_base.h"
@@ -2180,6 +2181,9 @@ py::object TensorIndex::SetItemByTensor(const ShapeVector &data_shape, bool is_p
         (void)index_shape.emplace_back(1);
       }
       ShapeVector updates_shape = index_shape;
+      if (data_shape.empty()) {
+        MS_EXCEPTION(TypeError) << "Cannot iterate over a scalar tensor.";
+      }
       (void)updates_shape.insert(updates_shape.end(), data_shape.begin() + 1, data_shape.end());
       if (py_value_type != TensorIndexType::Tensor) {
         (void)value_transfer_types.emplace_back(static_cast<int>(ValueTransferType::kNumberToTensor));
@@ -2189,9 +2193,6 @@ py::object TensorIndex::SetItemByTensor(const ShapeVector &data_shape, bool is_p
       (void)value_transfer_args.emplace_back(py::none());
       (void)value_transfer_types.emplace_back(static_cast<int>(ValueTransferType::kBroadCast));
       (void)value_transfer_args.emplace_back(VectorToPyTuple(updates_shape));
-      if (data_shape.empty()) {
-        MS_EXCEPTION(TypeError) << "Cannot iterate over a scalar tensor.";
-      }
       int64_t index_shape_dim = std::accumulate(index_shape.begin(), index_shape.end(), 1, std::multiplies<>());
       if (index_shape_dim <= 1) {
         int64_t first_val = data_shape[0];
@@ -2272,6 +2273,9 @@ py::object TensorIndex::SetItemBySlice(const ShapeVector &data_shape, const Type
                                        const ValuePtr &data_value) {
   MS_LOG(INFO) << "(View) In branch set item by slice, data_shape: " << data_shape
                << " tensor_indexes: " << tensor_index << "value: " << TensorIndex::py_value_handle_;
+  if (data_shape.empty()) {
+    MS_EXCEPTION(TypeError) << "Cannot iterate over a scalar tensor.";
+  }
   Slice slice_info = Slice(tensor_index.slice(), data_shape[0]);
   std::tuple<int64_t, py::object, ShapeVector> value_transfer =
     GetValueTransferType(py_value_type, set_item_by_non_tensor, data_type, slice_info.step() >= 0);
@@ -2521,6 +2525,9 @@ int64_t GetIndex(const py::object &index, const int64_t default_value) {
     TensorPtr tensor_index = ConvertToTensor(index);
     MS_EXCEPTION_IF_NULL(tensor_index);
     return DoItem(tensor_index);
+  }
+  if (py::isinstance<py::float_>(index)) {
+    MS_EXCEPTION(IndexError) << "slice indices must be integers or None or Tensor";
   }
   return index.cast<int64_t>();
 }
