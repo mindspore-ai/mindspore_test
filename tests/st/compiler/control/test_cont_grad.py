@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1554,157 +1554,49 @@ def test_if_by_if_forward_all_const_branch():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_if_const_grad():
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_if_while_bprop():
     """
     Feature: Control flow
-    Description: Test control flow in graph mode.
+    Description: Test control flow with bprop in graph mode.
     Expectation: No exception.
     """
-    class MyNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-            self.add = P.Add()
+    class Net(nn.Cell):
+        def construct(self, x, y, z, input1):
+            if x != y:
+                out = input1 + input1
+            else:
+                out = input1 - input1
+            if x == z:
+                out2 = input1 * input1
+            else:
+                out2 = input1 / input1
+            if x == z:
+                out3_f = (lambda a: a + a)
+                out3 = out3_f(input1)
+            else:
+                out3_f = (lambda a: a + a + a)
+                out3 = out3_f(input1)
+            return out, out2, out3
 
-        def construct(self, *inputs):
-            out = self.add(*inputs)
-            return out
+        def bprop(self, x, y, z, input1, out, dout):
+            return x * 2, y * 3, z, input1 * 5.1
 
     class GradNet(nn.Cell):
         def __init__(self, net):
             super(GradNet, self).__init__()
             self.net = net
-            self.weights = ParameterTuple(net.trainable_params())
 
         def construct(self, *inputs):
-            a = 1
-            b = 2
-            if a > 0:
-                b = 1
-            a += b
-            return grad_by_list(self.net, self.weights)(*inputs)
+            return grad_all(self.net)(*inputs)
 
     context.set_context(mode=context.GRAPH_MODE)
-    my_net = MyNet()
-    net = GradNet(my_net)
-    a = Tensor(np.array(0), dtype=ms.int32)
-    b = Tensor(np.array(1), dtype=ms.int32)
-    net(a, b)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_if_by_if_const_grad():
-    """
-    Feature: Control flow
-    Description: Test control flow in graph mode.
-    Expectation: No exception.
-    """
-    class MyNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-            self.add = P.Add()
-
-        def construct(self, *inputs):
-            out = self.add(*inputs)
-            return out
-
-    class GradNet(nn.Cell):
-        def __init__(self, net):
-            super(GradNet, self).__init__()
-            self.net = net
-            self.weights = ParameterTuple(net.trainable_params())
-
-        def construct(self, *inputs):
-            a = 1
-            b = 2
-            if a > 0:
-                b = 1
-            if a < 0:
-                b = 0
-            if a == 0:
-                b = 3
-            a += b
-            return grad_by_list(self.net, self.weights)(*inputs)
-
-    context.set_context(mode=context.GRAPH_MODE)
-    my_net = MyNet()
-    net = GradNet(my_net)
-    a = Tensor(np.array(0), dtype=ms.int32)
-    b = Tensor(np.array(1), dtype=ms.int32)
-    net(a, b)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_while_const_grad():
-    """
-    Feature: Control flow
-    Description: Test control flow in graph mode.
-    Expectation: No exception.
-    """
-    class MyNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-            self.add = P.Add()
-
-        def construct(self, *inputs):
-            out = self.add(*inputs)
-            return out
-
-    class GradNet(nn.Cell):
-        def __init__(self, net):
-            super(GradNet, self).__init__()
-            self.net = net
-            self.weights = ParameterTuple(net.trainable_params())
-
-        def construct(self, *inputs):
-            a = 1
-            while a > 1:
-                a = a - 1
-            return grad_by_list(self.net, self.weights)(*inputs)
-
-    context.set_context(mode=context.GRAPH_MODE)
-    my_net = MyNet()
-    net = GradNet(my_net)
-    a = Tensor(np.array(0), dtype=ms.int32)
-    b = Tensor(np.array(1), dtype=ms.int32)
-    net(a, b)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_if_by_while_const_grad():
-    """
-    Feature: Control flow
-    Description: Test control flow in graph mode.
-    Expectation: No exception.
-    """
-    class MyNet(nn.Cell):
-        def __init__(self):
-            super().__init__()
-            self.add = P.Add()
-
-        def construct(self, *inputs):
-            out = self.add(*inputs)
-            return out
-
-    class GradNet(nn.Cell):
-        def __init__(self, net):
-            super(GradNet, self).__init__()
-            self.net = net
-            self.weights = ParameterTuple(net.trainable_params())
-
-        def construct(self, *inputs):
-            a = 1
-            b = 2
-            if a > 0:
-                b = 0
-            while a > 1:
-                a = a - 1
-            a += b
-            return grad_by_list(self.net, self.weights)(*inputs)
-
-    context.set_context(mode=context.GRAPH_MODE)
-    my_net = MyNet()
-    net = GradNet(my_net)
-    a = Tensor(np.array(0), dtype=ms.int32)
-    b = Tensor(np.array(1), dtype=ms.int32)
-    net(a, b)
+    x = np.array(0).astype(np.float32)
+    y = np.array(3).astype(np.float32)
+    input1 = np.random.randn(512, 512, 7, 7).astype(np.float32)
+    net = Net()
+    grad_out = GradNet(net)(Tensor(x), Tensor(y), Tensor(x), Tensor(input1))
+    assert np.allclose(grad_out[0].asnumpy(), x * 2, 0.0001, 0.0001)
+    assert np.allclose(grad_out[1].asnumpy(), y * 3, 0.0001, 0.0001)
+    assert np.allclose(grad_out[2].asnumpy(), x, 0.0001, 0.0001)
+    assert np.allclose(grad_out[3].asnumpy(), input1 * 5.1, 0.0001, 0.0001)

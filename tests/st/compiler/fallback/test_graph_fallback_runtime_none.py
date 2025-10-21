@@ -238,34 +238,6 @@ def test_none_is_default_value_of_parameter_2():
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
-          essential_mark='unessential')
-def test_none_is_slice_in_list():
-    """
-    Feature: Support None.
-    Description: Support None is slice in list.
-    Expectation: No exception.
-    """
-    @jit
-    def foo():
-        arr1 = np.array([1, 2, 3])
-        print(arr1[0:2])
-        print(arr1[:, None])
-        print(arr1[None, :])
-        arr2 = np.array([[[1, 2], [3, 4], [5, 6]],
-                         [[1, 2], [3, 4], [5, 6]]])
-        print(arr2[0:2, :])
-        print(arr2[:, 0])
-        print(arr2[0, :])
-        print(arr2[None, :])
-        print(arr2[:, None, :])
-        print(arr2[:, :, None])
-        return 0
-
-    res = foo()
-    assert res == 0
-
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_none_assign_print():
     """
@@ -823,3 +795,78 @@ def test_grad_with_return_none_2():
     x = ms.Tensor([10])
     out = ops.GradOperation()(func)(x)
     assert out == Tensor([0])
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_none_as_index():
+    """
+    Feature: Support None.
+    Description: Support None as index.
+    Expectation: No exception.
+    """
+    def fn1(x):
+        return x[None]
+
+    def fn2(x):
+        return x[None, :, :, :, :]
+
+    def fn3(x):
+        return x[:, :, None, :, :]
+
+    def fn4(x):
+        return x[:, :, :, :, None]
+
+    def fn5(x):
+        return x[None, :, :, None, :, :, None]
+
+    def fn6(x):
+        return x[None, None, None, :, :, :, None]
+
+    def fn7(x):
+        return x[:, :, None, None, :, None, :]
+
+    def fn8(x):
+        return x[None, :]
+
+    def fn9(x):
+        return x[:, None]
+
+    def fn10(x):
+        return x[..., None]
+
+    def fn11(x):
+        return x[None, ..., None]
+
+    def fn12(x):
+        return x[None, None, None, None, None, None, None, None]
+
+    def fn13(x):
+        return x[None, :, 2:7:2, ..., :4, 5:, 3]
+
+    def fn14(x):
+        return x[(1, 1, 2, 1), None, :2]
+
+    def fn15(x):
+        return x[None, (1, 1)]
+
+    def check_fn_output(fn, arg):
+        out_jit = jit(fn)(arg)
+        expect = fn(arg)
+        return np.all(out_jit.asnumpy() == expect.asnumpy())
+
+    x = ms.Tensor(np.arange(60).reshape(1, 3, 4, 5))
+    assert check_fn_output(fn1, x)
+    assert check_fn_output(fn2, x)
+    assert check_fn_output(fn3, x)
+    assert check_fn_output(fn4, x)
+    assert check_fn_output(fn5, x)
+    assert check_fn_output(fn6, x)
+    assert check_fn_output(fn7, x)
+    assert check_fn_output(fn8, x)
+    assert check_fn_output(fn9, x)
+    assert check_fn_output(fn10, x)
+    assert check_fn_output(fn11, x)
+    assert check_fn_output(fn12, ms.Tensor(np.array(6)))
+    assert check_fn_output(fn13, ms.Tensor(np.random.randint(5, size=(3, 8, 2, 6, 7, 5))))
+    assert check_fn_output(fn14, ms.Tensor(np.random.randint(5, size=(3, 8, 2, 6, 7, 5))))
+    assert check_fn_output(fn15, ms.Tensor(np.random.randint(5, size=(3, 4))))

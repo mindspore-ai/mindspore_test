@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import numpy as np
 from tests.mark_utils import arg_mark
 from mindspore import context
-from mindspore import Tensor, nn
+from mindspore import Tensor, nn, jit
 from mindspore.common.parameter import Parameter
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
@@ -96,8 +96,8 @@ def test_for_in_while_02():
             self.add = P.Add()
             self.sub = P.Sub()
             self.assign = P.Assign()
-            self.param_a = Parameter(Tensor(5, mstype.float32), name='a')
-            self.param_b = Parameter(Tensor(7, mstype.float32), name='b')
+            self.param_a = Parameter(Tensor([5], mstype.float32), name='a')
+            self.param_b = Parameter(Tensor([7], mstype.float32), name='b')
 
         def construct(self, x):
             self.assign(self.param_a, x + self.param_a)
@@ -130,3 +130,48 @@ def test_for_in_while_02():
     expect_backward_res = (Tensor([1], mstype.float32),)
     assert graph_forward_res == expect_forward_res
     assert graph_backward_res == expect_backward_res
+
+
+@arg_mark(plat_marks=['cpu_linux',], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_if_by_for_in_while():
+    """
+    Feature: Control Flow
+    Description: Test if-for in while.
+    Expectation: No exception.
+    """
+    def func(x):
+        out = x
+        while x > 1:
+            out = out + x
+            x = x - 1
+            if x < 5:
+                break
+            for _ in range(3):
+                x = x - 1
+                out = out + x
+        return out
+
+    x = Tensor(12)
+    assert jit(func)(x) == 78
+
+
+@arg_mark(plat_marks=['cpu_linux',], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_for_by_if_in_while():
+    """
+    Feature: Control Flow
+    Description: Test for-if in while.
+    Expectation: No exception.
+    """
+    def func(x):
+        out = x
+        while x > 1:
+            x = x - 1
+            out = out + x
+            for _ in range(5):
+                out = out + x
+            if x < 3:
+                return out
+        return out
+
+    x = Tensor(9)
+    assert jit(func)(x) == 219
