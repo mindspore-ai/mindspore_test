@@ -21,17 +21,9 @@
         - Ascend平台不支持越界检查，若越界可能会造成未知错误。
 
     参数：
-        - **input_x** (Tensor) - 输入Tensor。 `input_x` 的维度必须不小于indices.shape[-1]。
-        - **indices** (Tensor) - 输入Tensor的索引，数据类型为int32或int64。其rank必须至少为2。
+        - **input_x** (Tensor) - 输入tensor。 `input_x` 的维度必须不小于indices.shape[-1]。
+        - **indices** (Tensor) - 输入tensor的索引，数据类型为mindspore.int32或mindspore.int64。其rank必须至少为2。
         - **updates** (Tensor) - 指定与 `input_x` 相加的Tensor，其数据类型与 `input_x` 相同，并且shape应等于 :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]` 。
 
     返回：
         Tensor
-    
-    异常：
-        - **TypeError** - 如果 `input_x` 、 `indices` 或者 `updates` 不是Tensor。
-        - **TypeError** - 如果Tensor本身的数据类型不被支持。
-        - **TypeError** - 如果 `input_x` 和 `updates` 的数据类型不同。
-        - **ValueError** - 如果 `indices` 的rank小于2。
-        - **ValueError** - 如果 `indices` 的最后一个维度大于 `input_x` 的维度数。
-        - **ValueError** - 如果 `updates` 的shape不等于 :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]` 。
