@@ -18,6 +18,8 @@ import mindspore.nn as nn
 from mindspore import context, Tensor, ops
 from mindspore.common import dtype as mstype
 from mindspore.ops.auto_generate import TransposeView
+from mindspore._c_expression import UMonad
+from tests.st.backend.ms_backend.common.backend_graph import BackendGraph
 from tests.mark_utils import arg_mark
 import pytest
 
@@ -61,3 +63,54 @@ def test_inplace_ops_with_view_input():
         func_jit = ms.jit(func, backend="ms_backend")
         func_jit()
     assert "is an inplace op and does not support view input." in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_view_to_only_depend_shape():
+    """
+    Feature: view output to shape op.
+    Description: not convert contiguous.
+    Expectation: No exception.
+    """
+    context.set_context(jit_config={"jit_level": "O1"})
+    root_graph = BackendGraph()
+    a = BackendGraph()
+    func_a = root_graph.add_valuenode(a)
+
+    root_para_1 = root_graph.add_parameter(ms.float32, (-1, -1))
+    root_para_2 = root_graph.add_parameter(ms.float32, (-1,))
+    root_para_3 = root_graph.add_parameter(ms.float32, (-1, -1))
+    U = root_graph.add_valuenode(UMonad())
+    root_add = root_graph.add_cnode("Add", root_para_3, root_para_3)
+    root_scalar_0 = root_graph.add_valuenode(0)
+    select_ext = root_graph.add_cnode("SelectExtView", root_add, root_scalar_0, root_scalar_0, U)
+    call = root_graph.add_cnode(func_a, root_para_1, root_para_2, select_ext)
+    root_graph.add_return(call)
+
+    para_1 = a.add_parameter(ms.float32, (-1, -1))
+    para_2 = a.add_parameter(ms.float32, (-1,))
+    para_3 = a.add_parameter(ms.float32, (-1,))
+
+    shape_1 = a.add_cnode("Shape", para_3)
+    get_item = a.add_cnode("TupleGetItem", shape_1, a.add_valuenode(0))
+    make_tuple_1 = a.add_cnode("MakeTuple", a.add_valuenode(10), get_item)
+    scalar_0 = a.add_valuenode(0)
+    tuple_0_0 = a.add_valuenode((0, 0))
+    tuple_1_1 = a.add_valuenode((1, 1))
+    strided_slice = a.add_cnode("StridedSlice", para_1, tuple_0_0, make_tuple_1, tuple_1_1, scalar_0, scalar_0,
+                                scalar_0, scalar_0, scalar_0)
+    ones_like = a.add_cnode("OnesLike", strided_slice)
+    shape_2 = a.add_cnode("Shape", para_1)
+    strided_slice_grad = a.add_cnode("StridedSliceGrad", ones_like, shape_2, tuple_0_0, make_tuple_1, tuple_1_1)
+    zeros_like = a.add_cnode("ZerosLike", para_2)
+    make_tuple_2 = a.add_cnode("MakeTuple", strided_slice_grad, zeros_like)
+    a.add_return(make_tuple_2)
+
+    root_graph.infer()
+    print(root_graph)
+    root_graph.compile()
+    p1 = np.random.rand(32, 16).astype(np.float32)
+    p2 = np.random.rand(10).astype(np.float32)
+    p3 = np.random.rand(32, 10).astype(np.float32)
+    out = root_graph(Tensor(p1), Tensor(p2), Tensor(p3))
+    print(out)

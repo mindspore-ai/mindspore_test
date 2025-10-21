@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import numpy as np
 import mindspore
 from mindspore import Tensor, ops, nn, context
 import mindspore.ops.operations as P
-import numpy as np
+from mindspore._c_expression import UMonad
+from tests.st.backend.ms_backend.common.backend_graph import BackendGraph
 from tests.mark_utils import arg_mark
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -108,3 +110,38 @@ def test_control_flow_if_input_heter():
     x = add(Tensor(x), 1)
     out = net(x, Tensor(y))
     print('output: ', out)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_control_flow_call_same_graph_for_monad():
+    """
+    Feature: test control flow.
+    Description: test same call in control flow.
+    Expectation: No exception.
+    """
+    root_graph = BackendGraph()
+    a = BackendGraph()
+    shape = (2, 2)
+
+    sub_para = a.add_parameter(mindspore.float32, shape)
+    sub_add = a.add_cnode("Add", sub_para, sub_para)
+    a.add_return(sub_add)
+
+    root_para = root_graph.add_parameter(mindspore.float32, shape)
+    func_a = root_graph.add_valuenode(a)
+    call_1 = root_graph.add_cnode(func_a, root_para)
+    call_2 = root_graph.add_cnode(func_a, root_para)
+    U = root_graph.add_valuenode(UMonad())
+    updatestate = root_graph.add_cnode("UpdateState", U, call_1, call_2)
+    prim_add = P.AssignAdd().set_device("CPU")
+    value_node_prim_add = root_graph.add_valuenode(prim_add)
+    assign_add = root_graph.add_cnode(value_node_prim_add, call_1, call_2, updatestate)
+    root_graph.add_return(assign_add)
+
+    print(root_graph)
+    root_graph.infer()
+    print(root_graph)
+    root_graph.compile()
+    input_x = Tensor(np.ones(shape).astype(np.float32))
+    out = root_graph(input_x)
+    print(out)
