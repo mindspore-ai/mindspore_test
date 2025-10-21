@@ -310,17 +310,17 @@ std::vector<TypeId> FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePt
   if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputPseShiftIndex])) {
     auto pse_type = input_infos[kFASGradInputPseShiftIndex]->GetType();
     std::vector<TypeId> types{q_type, pse_type};
-    CheckAndConvertUtils::CheckTypeIdsSame("pse_shift", types, op_name);
+    CheckAndConvertUtils::CheckTypeIdsSame("query/pse_shift", types, op_name);
   }
   if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputAttentionInIndex])) {
     auto attention_in_type = input_infos[kFASGradInputAttentionInIndex]->GetType();
     std::vector<TypeId> types{q_type, attention_in_type};
-    CheckAndConvertUtils::CheckTypeIdsSame("attention_in", types, op_name);
+    CheckAndConvertUtils::CheckTypeIdsSame("query/attention_in", types, op_name);
   }
   if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputSoftmaxOutIndex])) {
     auto softmax_out_type = input_infos[kFASGradInputSoftmaxOutIndex]->GetType();
     std::vector<TypeId> types{q_type, softmax_out_type};
-    CheckAndConvertUtils::CheckTypeIdsSame("softmax_out", types, op_name);
+    CheckAndConvertUtils::CheckTypeIdsSame("query/softmax_out", types, op_name);
   }
   // Stats tensors must be float32 when provided
   if (!IsFlashAttentionScoreGradOptionalInputNotPass(input_infos[kFASGradInputSoftmaxMaxIndex])) {

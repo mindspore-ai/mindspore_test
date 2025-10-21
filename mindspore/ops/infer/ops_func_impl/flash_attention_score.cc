@@ -75,9 +75,9 @@ static inline void ValidateKeepProbAndDropMask(const InferInfoPtrList &input_inf
     }
     return;
   }
-  auto drop_mask_type = input_infos[kFlashAttentionScoreInputDropMaskIndex]->GetType();
-  if (drop_mask_type != kNumberTypeUInt8) {
-    MS_LOG(EXCEPTION) << op_name << ": 'drop_mask' must be uint8 when keep_prob in (0, 1).";
+  if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputDropMaskIndex])) {
+    const auto drop_mask_type = input_infos[kFlashAttentionScoreInputDropMaskIndex]->GetType();
+    CheckAndConvertUtils::CheckTypeIdValid("drop_mask", drop_mask_type, {kNumberTypeUInt8}, op_name);
   }
 }
 
@@ -428,7 +428,7 @@ std::vector<TypeId> FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &p
   if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputRealShiftIndex])) {
     const auto real_shift_type = input_infos[kFlashAttentionScoreInputRealShiftIndex]->GetType();
     std::vector<TypeId> types{q_type, real_shift_type};
-    CheckAndConvertUtils::CheckTypeIdsSame("real_shift", types, op_name);
+    CheckAndConvertUtils::CheckTypeIdsSame("query/real_shift", types, op_name);
   }
 
   // 5) attn_mask dtype must be valid when provided
@@ -444,13 +444,6 @@ std::vector<TypeId> FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &p
 
   // 6) keep_prob/drop_mask rule
   ValidateKeepProbAndDropMask(input_infos, op_name);
-  auto keep_prob_opt = input_infos[kFlashAttentionScoreInputKeepProbIndex]->GetScalarValue<float>();
-  if (keep_prob_opt.has_value() && !common::IsFloatEqual(keep_prob_opt.value(), 1.0)) {
-    if (!IsFlashAttentionScoreOptionalInputNotPass(input_infos[kFlashAttentionScoreInputDropMaskIndex])) {
-      const auto drop_mask_type = input_infos[kFlashAttentionScoreInputDropMaskIndex]->GetType();
-      CheckAndConvertUtils::CheckTypeIdValid("drop_mask", drop_mask_type, {kNumberTypeUInt8}, op_name);
-    }
-  }
 
   std::vector<TypeId> outs(kFlashAttentionScoreOutputsNum);
   outs[kFlashAttentionScoreOutputSoftmaxMaxIndex] = kNumberTypeFloat32;
