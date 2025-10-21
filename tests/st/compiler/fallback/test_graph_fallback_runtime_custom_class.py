@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
 # ============================================================================
 """ test graph JIT Fallback runtime feature """
 import pytest
+import random
+import torch
 import numpy as np
 import mindspore as ms
 from mindspore import context
-from mindspore import ops, nn, Tensor
+from mindspore import ops, nn, Tensor, jit_class
+import mindspore.common.dtype as mstype
 from mindspore import mutable
 from tests.mark_utils import arg_mark
 from tests.st.compiler.utils import match_array
@@ -33,6 +36,7 @@ def test_getattr_cust_class():
     Description: Support getattr for custom class.
     Expectation: No exception.
     """
+
     class GetattrClass():
         def __init__(self):
             self.attr1 = 99
@@ -158,6 +162,7 @@ def test_parser_fallback_nested_class_outer():
     Description: Graph syntax getattr support custom class input.
     Expectation: AttributeError.
     """
+
     class Inner:
         def __init__(self):
             self.number = ms.Tensor(2, dtype=ms.int32)
@@ -221,7 +226,6 @@ def test_resolve_cust_class():
     net = UNet(UserDefinedNet())
     x = np.array([10], np.float32)
     output = net(ms.Tensor(x))
-    print(output)
     assert output == 200
 
 
@@ -333,6 +337,7 @@ def test_parser_fallback_nested_class_outer_grad():
     Description: Graph syntax getattr support custom class input.
     Expectation: AttributeError.
     """
+
     class Inner:
         def __init__(self):
             self.number = ms.Tensor(2, dtype=ms.int32)
@@ -367,6 +372,7 @@ def test_create_custom_class_default():
     Description: Graph syntax getattr support create custom class instance.
     Expectation: No exception.
     """
+
     class InnerNet:
         def __init__(self):
             self.number = 2
@@ -394,6 +400,7 @@ def test_create_custom_class_args():
     Description: Graph syntax getattr support create custom class instance.
     Expectation: No exception.
     """
+
     class InnerNet:
         def __init__(self, number):
             self.number = number
@@ -420,6 +427,7 @@ def test_getattr_cust_class_const():
     Description: Support getattr for custom class.
     Expectation: No exception.
     """
+
     class GetattrClass():
         def __init__(self):
             self.attr1 = 99
@@ -474,14 +482,12 @@ def test_custom_class_jit():
         def construct(self, x):
             return self.net(x)
 
-    with pytest.raises(RuntimeError) as err:
-        x = ms.Tensor(2)
-        call_net = InnerNet()
-        custom_net = CustomNet(call_net)
-        out_net = OutNet(custom_net)
-        out = out_net(x)
-        print("out:", out)
-    assert "Nested execution during JIT execution for 'InnerNet.construct' is not supported" in str(err.value)
+    x = ms.Tensor(2)
+    call_net = InnerNet()
+    custom_net = CustomNet(call_net)
+    out_net = OutNet(custom_net)
+    out = out_net(x)
+    assert out == 14
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -491,6 +497,7 @@ def test_kwargs_is_custom_class_attr():
     Description: Graph syntax resolve support custom class input is kwargs.
     Expectation: No error.
     """
+
     class Config:
         def __init__(self, **kwargs):
             self.aaa = kwargs.pop("aaa", 2.0)
@@ -544,3 +551,160 @@ def test_custom_class_getattr_and_custom_class_may_raise_exception():
     a = Tensor([1, 2, 3])
     o = model(a)
     match_array(o, Tensor([6, 7, 8]))
+
+
+class GradNet(nn.Cell):
+    def __init__(self, net, grad_position=0):
+        super().__init__()
+        self.grad_net = ops.grad(net, grad_position=grad_position)  # pylint: disable=E1102
+
+    def construct(self, *x):
+        return self.grad_net(*x)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_fallback_parse_node_conver_bit():
+    """
+    Feature: subclass is custom class.
+    Description: Get attr form a custom class.
+    Expectation: No error.
+    """
+
+    class SubClass:
+        x = np.array(2)
+        y = np.array(-1)
+
+    class InnerClass(nn.Cell):
+        def __init__(self, sub):
+            super().__init__()
+            self.subclass = sub
+
+        def construct(self, x):
+            a = x << self.subclass.x
+            b = a >> self.subclass.y
+            c = self.subclass.x & self.subclass.y
+            d = b | c
+            e = a ^ d
+            return e
+
+    class TouchNet(torch.nn.Module):
+        def __init__(self, sub):
+            super().__init__()
+            self.subclass = sub
+
+        def forward(self, x):
+            a = x << self.subclass.x
+            b = a >> self.subclass.y
+            c = self.subclass.x & self.subclass.y
+            d = b | c
+            e = a ^ d
+            return e
+
+    x = random.choice([random.randint(-5, 10), 100])
+    ms_out = InnerClass(SubClass())(x)
+    torch_out = TouchNet(SubClass())(x)
+
+    assert np.allclose(torch_out, ms_out, 1e-5, 1e-5)
+    ms_grad = GradNet(InnerClass(SubClass()))(x)
+    assert ms_grad == ()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_fallback_parse_node_conver_enhance_arithmetic():
+    """
+    Feature: subclass is custom class.
+    Description: Get attr form a custom class.
+    Expectation: No error.
+    """
+
+    class SubClass:
+        x = np.array([1.0, 2.0, 3.0])
+        y = np.array([10.0, 20.0, 30.0])
+
+    class InnerClass(nn.Cell):
+        def __init__(self, sub):
+            super().__init__()
+            self.subclass = sub
+
+        def construct(self, x, y):
+            x = x.asnumpy()
+            y = y.asnumpy()
+            y = y + self.subclass.x
+            y = y - self.subclass.y
+            z = y[0]
+            return x, y, z
+
+    class TouchNet(torch.nn.Module):
+        def __init__(self, sub):
+            super().__init__()
+            self.subclass = sub
+
+        def forward(self, x, y):
+            y = y + self.subclass.x
+            y = y - self.subclass.y
+            z = y[0]
+            return x, y, z
+
+    x = np.random.randn(3).astype(np.float32)
+    y = np.random.randn(3).astype(np.float32)
+    context.set_context(jit_level='O0')
+    ms_out = InnerClass(SubClass())(Tensor(x), Tensor(y))
+    torch_out = TouchNet(SubClass())(x, y)
+    for tt, mt in zip(torch_out, ms_out):
+        assert np.allclose(tt, mt, 1e-5, 1e-5)
+    grad_net = GradNet(InnerClass(SubClass()), grad_position=(0, 1))
+    grad_net(Tensor(x), Tensor(y))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_class_abnormal_variable_input():
+    """
+    Feature: subclass is custom class.
+    Description: Get attr form a custom class.
+    Expectation: No error.
+    """
+
+    @jit_class
+    class InnerNet:
+        def __init__(self, val):
+            self.number = val
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            inner_net = InnerNet(x)
+            return inner_net.number
+
+    x = Tensor(2, mstype.int32)
+    net = Net()
+    with pytest.raises(TypeError):
+        net(x)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_class_abnormal_call_magic_method():
+    """
+    Feature: subclass is custom class.
+    Description: Get attr form a custom class.
+    Expectation: No error.
+    """
+
+    @jit_class
+    class InnerNet:
+        def __init__(self, val):
+            self.val = val
+
+    class Net(nn.Cell):
+        def __init__(self, val):
+            super(Net, self).__init__()
+            self.val = val
+
+        def construct(self):
+            obj = InnerNet(self.val)
+            out = obj.__str__()
+            return obj, out
+
+    context.set_context(jit_level='O0')
+    net = Net(2)
+    out = net()
+    res = out[0].__str__()
+    assert out[1] == res

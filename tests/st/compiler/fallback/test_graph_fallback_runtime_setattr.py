@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -236,7 +236,7 @@ def test_setattr_global_obj_attr1():
     data_obj1 = AssignTarget()
     data_obj1.x = 100
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr1():
         data_obj1.x = 99
         return data_obj1.x
@@ -894,3 +894,155 @@ def test_type_of_getattr_after_setattr():
     net = Net()
     res = net()
     assert np.all(res.asnumpy() == np.array([[1, 2, 8, 4, 8]]))
+
+
+class GradNet(nn.Cell):
+    def __init__(self, net, grad_position=0):
+        super().__init__()
+        # pylint: disable=E1102
+        self.grad_net = ops.grad(net, grad_position=grad_position)
+
+    def construct(self, *x):
+        return self.grad_net(*x)
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_modify_args_of_cell_in_graph():
+    """
+    Feature: Feature setattr. Make sure setattr getting correct attr.
+    Description: convert getattrs after setattr into interpret node and infer as the as abstract as setattr's value
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        def construct(self, y):
+            return ops.matmul(self.x, y)
+
+    @jit(backend="ms_backend")
+    def modify_func():
+        obj.x = Tensor([[-1, 0], [0, -1]], ms.float32)
+        obj.x += 1
+        return obj.x
+
+    obj = Net()
+    ret1 = modify_func()
+    y = Tensor([[1, 2, 3], [4, 5, 6]], ms.float32)
+    ms_out = obj(y)
+    ms_grad = GradNet(obj)(y)
+    ret2 = modify_func()
+
+    assert np.allclose(np.array([[0, 1], [1, 0]]), ret1.asnumpy(), 0, 0)
+    assert np.allclose(np.array([[4, 5, 6], [1, 2, 3]]), ms_out.asnumpy(), 0, 0)
+    assert np.allclose(np.ones([2, 3]), ms_grad.asnumpy(), 0, 0)
+    assert np.allclose(np.array([[0, 1], [1, 0]]), obj.x .asnumpy(), 0, 0)
+    assert np.allclose(ret1.asnumpy(), ret2.asnumpy(), 0, 0)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_modify_args_of_jitclass_in_graph():
+    """
+    Feature: Feature setattr. Make sure setattr getting correct attr.
+    Description: convert getattrs after setattr into interpret node and infer as the as abstract as setattr's value
+    Expectation: No exception.
+    """
+    @jit_class
+    class Inner:
+        def __init__(self):
+            self.x = 1
+
+    @jit(backend="ms_backend")
+    def modify_func(y):
+        if y >= 0:
+            for _ in range(5):
+                obj.x = obj.x + 1
+        else:
+            while y < 0:
+                obj.x = obj.x - 1
+                y = y + 1
+        return obj.x
+
+    y = Tensor(10)
+    obj = Inner()
+    x_before = obj.x
+    x_after = modify_func(y)
+
+    y = Tensor(-6)
+    x_after2 = modify_func(y)
+
+    assert x_before == 1
+    assert x_after == 6
+    assert x_after2 == 0
+    assert obj.x == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_modify_args_of_jitclass_outside():
+    """
+    Feature: Feature setattr. Make sure setattr getting correct attr.
+    Description: convert getattrs after setattr into interpret node and infer as the as abstract as setattr's value
+    Expectation: No exception.
+    """
+    @jit_class
+    class Inner:
+        def __init__(self):
+            self.x = 5
+
+    @jit(backend="ms_backend")
+    def get_x():
+        return obj.x + 1
+
+    @jit(backend="ms_backend")
+    def get_y():
+        obj.x = obj.x+1
+        return obj.x
+
+    obj = Inner()
+    x_before = get_x()
+    y_before = get_y()
+    obj.x += 10
+    x_after = get_x()
+    y_after = get_y()
+
+    assert x_before == 6
+    assert x_after == 6
+    assert y_before == 6
+    assert y_after == 17
+    assert obj.x == 17
+
+
+@pytest.mark.skip(reason="Unsupported setattr test cases")
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_fallback_modify_args_of_jitclass_not_construct():
+    """
+    Feature: Feature setattr. Make sure setattr getting correct attr.
+    Description: convert getattrs after setattr into interpret node and infer as the as abstract as setattr's value
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+    obj = Net()
+
+    class ModNet(nn.Cell):
+        def construct(self, y):
+            self._mod_x()
+            return ops.mul(obj.x, y)
+
+        @jit(backend="ms_backend")
+        def _mod_x(self):
+            obj.x = -1*obj.x
+
+    ms_net = ModNet()
+    x_before = obj.x
+    y = Tensor(16)
+    ms_out = ms_net(y)
+    assert ms_out == -16
+    ms_out2 = ms_net(y)
+    assert ms_out2 == 16
+    assert x_before == 1
+    ms_grad = GradNet(ms_net)(y)
+    assert ms_grad == -1
