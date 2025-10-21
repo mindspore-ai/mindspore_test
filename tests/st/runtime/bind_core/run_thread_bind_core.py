@@ -35,7 +35,10 @@ def _get_env_with_json(env_name, default):
             return value
     return default
 
-affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST', None)
+if os.getenv("RANK_ID") == "0" or os.getenv("RANK_ID") is None:
+    affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST', None)
+else:
+    affinity_cpu_list = _get_env_with_json('AFFINITY_CPU_LIST_2', None)
 module_to_cpu_dict = _get_env_with_json('MODULE_TO_CPU_DICT', None)
 
 ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
