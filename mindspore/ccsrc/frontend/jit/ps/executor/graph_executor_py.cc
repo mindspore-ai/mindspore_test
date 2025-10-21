@@ -494,25 +494,12 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
   }
 }
 
-#ifdef ENABLE_DEBUGGER
-void GraphExecutorPy::TerminateDebugger() {
-  if (Common::GetDebugTerminate()) {
-    MS_LOG(INFO) << "Terminate debugger and clear resources!";
-    exit(static_cast<int>(!Common::GetDebugExitSuccess()));
-  }
-}
-#endif
-
 py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &phase_obj) {
   JitRunningScope jit_running_scope;
   if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
     py::int_ ret = 0;
     return ret;
   }
-  // Mindspore debugger notify main thread to exit after one step, and will not run next step
-#ifdef ENABLE_DEBUGGER
-  TerminateDebugger();
-#endif
   if (!py::isinstance<py::str>(phase_obj)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Run failed, phase input is not a str";
   }

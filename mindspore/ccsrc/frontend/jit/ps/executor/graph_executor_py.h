@@ -102,9 +102,6 @@ class FRONTEND_EXPORT GraphExecutorPy : public ExecutorPy {
                     const py::object &phase) override;
   py::object RunInner(const py::tuple &args, const py::object &phase) override;
   void SaveCompiledGraph(const std::string &phase) override;
-#ifdef ENABLE_DEBUGGER
-  void TerminateDebugger();
-#endif
 
   static std::shared_ptr<GraphExecutorPy> executor_;
   static std::mutex instance_lock_;

@@ -843,33 +843,4 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<KernelTensor *
   }
 }
 
-/*
- * Feature group: Dump, Online Debugger.
- * Target device group: Ascend, GPU.
- * Runtime category: MindRT.
- * Description: Returns the error_info when sink_mode is true and we are in online debugger mode or dump mode for
- * GPU, if everything is normal the error_info string will be empty.
- */
-std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr) {
-  std::string error_info = "";
-  bool sink_mode =
-    ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE || graph_ptr->IsDatasetGraph();
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->CheckDebuggerDumpEnabled() && sink_mode && IsDeviceTargetGPU()) {
-    error_info = "e2e_dump is not supported on GPU with dataset_sink_mode=True. Please set dataset_sink_mode=False";
-  }
-  return error_info;
-}
-
-std::string GetTensorFullName(const debugger::TensorProto &tensor) {
-  string node_name = tensor.node_name();
-  if (tensor.truncate()) {
-    // scopes in node name are separated by '/'
-    // use the name without scope if truncate is true
-    std::size_t found = node_name.find_last_of("/");
-    node_name = node_name.substr(found + 1);
-  }
-  return node_name + ":" + tensor.slot() + (tensor.iter() == "" ? "" : ":" + tensor.iter());
-}
 }  // namespace mindspore

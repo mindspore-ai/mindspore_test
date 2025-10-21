@@ -22,8 +22,4 @@ void DumpIRProtoWithSrcInfo(const FuncGraphPtr &func_graph, const std::string &s
   return;
 }
 
-void DumpConstantInfo(const KernelGraphPtr &graph, const std::string &target_dir) {
-  MS_LOG(ERROR) << "Not support DumpConstantInfo ";
-  return;
-}
 }  // namespace mindspore

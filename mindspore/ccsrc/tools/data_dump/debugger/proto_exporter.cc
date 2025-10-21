@@ -632,13 +632,6 @@ void DumpIRProtoWithSrcInfo(const FuncGraphPtr &func_graph, const std::string &s
   ChangeFileMode(file_path, S_IRUSR);
 }
 
-void DumpConstantInfo(const KernelGraphPtr &graph, const std::string &target_dir) {
-  // Dump constant to npy file
-  MS_LOG(INFO) << "Start e2e dump Const values";
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  E2eDump::DumpConstantData(graph.get(), target_dir, debugger.get());
-}
 #else
 void DumpIRProtoWithSrcInfo(const FuncGraphPtr &, const std::string &, const std::string &, LocDebugDumpMode) {
   static bool already_printed = false;
@@ -648,15 +641,6 @@ void DumpIRProtoWithSrcInfo(const FuncGraphPtr &, const std::string &, const std
   already_printed = true;
   MS_LOG(WARNING) << "The functionality of dumping function graph IR in protobuf format is disabled,"
                   << "because ENABLE_DEBUGGER option is off"
-                  << "please recompile source to enable it. See help of building script.";
-}
-void DumpConstantInfo(const KernelGraphPtr &, const std::string &) {
-  static bool already_printed = false;
-  if (already_printed) {
-    return;
-  }
-  already_printed = true;
-  MS_LOG(WARNING) << "The functionality of dumping function graph constant is disabled, "
                   << "please recompile source to enable it. See help of building script.";
 }
 #endif
