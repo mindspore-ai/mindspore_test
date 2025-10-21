@@ -2164,7 +2164,7 @@ REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
 REG_BPROP_BUILDER("Sin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto dout = ib->GetInput(i2);
-  auto dx = ib->Mul(dout, ib->Cos(x));
+  auto dx = ib->Mul(dout, ib->Conj(ib->Cos(x)));
   return {dx};
 });
 
