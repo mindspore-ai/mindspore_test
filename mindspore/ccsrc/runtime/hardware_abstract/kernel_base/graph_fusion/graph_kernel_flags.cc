@@ -356,7 +356,6 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("enable_horizontal_fusion", &enable_horizontal_fusion);
   reg.AddFlag("enable_auto_tensor_inplace", &enable_auto_tensor_inplace);
   reg.AddFlag("enable_dynamic_batch", &enable_dynamic_batch);
-  reg.AddFlag("enable_low_precision", &enable_low_precision);
   reg.AddFlag("enable_csr_fusion", &enable_csr_fusion);
   reg.AddFlag("enable_debug_mode", &enable_debug_mode);
   reg.AddFlag("enable_lite_conv_tuning", &enable_lite_conv_tuning);
@@ -442,7 +441,6 @@ std::string GraphKernelFlags::DumpAllFlags() const {
   json["enable_auto_tensor_inplace"] = enable_auto_tensor_inplace;
   json["enable_dynamic_batch"] = enable_dynamic_batch;
   json["enable_csr_fusion"] = enable_csr_fusion;
-  json["enable_low_precision"] = enable_low_precision;
   json["enable_debug_mode"] = enable_debug_mode;
   json["enable_lite_conv_tuning"] = enable_lite_conv_tuning;
   json["enable_vectorization"] = enable_vectorization;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,38 +31,40 @@
 
 namespace mindspore::graphkernel::test {
 namespace {
-void Init() {
+void Init(const std::string &op_name) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
 
   std::map<std::string, std::string> jit_config;
-  jit_config["graph_kernel_flags"] = "--enable_expand_ops=SiLUGrad";
+  jit_config["graph_kernel_flags"] = "--enable_expand_ops=" + op_name;
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
 
   SPLIT_MODEL_REGISTER(kAscendDevice, graphkernel::inner::SplitModelAscend);
 }
 }  // namespace
 
-struct SiLUGradParams {
-  ShapeVector x0_shape;
-  ShapeVector x1_shape;
-  TypePtr x0_type;
-  TypePtr x1_type;
+struct Params {
+  std::string op_name;
+  ShapeArray input_shape;
+  TypePtr input_type;
+  size_t target_split_num{1};
 };
 
-/// Feature: Test graph kernel SiLUGrad dynamic shape
-/// Description: SiLUGrad inputs are dynamic shape and it will expanded
-/// Expectation: After expand and split pass, the sub graph of SiLUGrad should not be split into multiple sub graphs
-class TestSiLUGrad : public GraphKernelCommonTestSuite, public testing::WithParamInterface<SiLUGradParams> {};
+/// Feature: Test graph kernel op dynamic shape
+/// Description: inputs are dynamic shape
+/// Expectation: After split pass, the sub graph should not be split into multiple sub graphs
+class TestRectifySymbol : public GraphKernelCommonTestSuite, public testing::WithParamInterface<Params> {};
 
-TEST_P(TestSiLUGrad, silu_grad) {
-  Init();
+TEST_P(TestRectifySymbol, rectify_symbol) {
   const auto &param = GetParam();
+  Init(param.op_name);
   ConstructGraph c;
-  auto x0 = c.NewTensorInput("x0", param.x0_type, param.x0_shape);
-  auto x1 = c.NewTensorInput("x1", param.x1_type, param.x1_shape);
-  auto op = c.NewCNodeWithBuildInfo("SiLUGrad", {x0, x1}, {});
+  std::vector<AnfNodePtr> inputs(param.input_shape.size());
+  for (size_t i = 0; i < param.input_shape.size(); ++i) {
+    inputs[i] = c.NewTensorInput("x" + std::to_string(i), param.input_type, param.input_shape[i]);
+  }
+  auto op = c.NewCNodeWithBuildInfo(param.op_name, inputs);
   c.SetOutput(op);
 
   RunPass(c.GetGraph(), {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
@@ -75,9 +77,16 @@ TEST_P(TestSiLUGrad, silu_grad) {
       gk_node_num += 1;
     }
   }
-  EXPECT_EQ(gk_node_num, 1);
+  EXPECT_EQ(gk_node_num, param.target_split_num);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpSiLUGrad, TestSiLUGrad,
-                        testing::Values(SiLUGradParams{{-1, 32}, {-1, 32}, kFloat32, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestOpRectifySymbol, TestRectifySymbol,
+                        testing::Values(Params{"AddN", {{-1, -1}, {-1, -1}}, kFloat32},
+                                        Params{"GeLUGrad", {{-1, -1}, {-1, -1}}, kFloat32},
+                                        Params{"SiLUGrad", {{-1, -1}, {-1, -1}}, kFloat32},
+                                        Params{"SiLUGrad", {{-1, 32}, {-1, 32}}, kFloat32},
+                                        Params{"SiLUGrad", {{16, -1}, {16, -1}}, kFloat32},
+                                        Params{"SiLUGrad", {{16, 32}, {-1, 32}}, kFloat32},
+                                        Params{"SiLUGrad", {{16, 32}, {16, -1}}, kFloat32},
+                                        Params{"RmsNormGrad", {{-1, 64}, {-1, 64}, {-1, 1}, {64}}, kFloat32, 3}));
 }  // namespace mindspore::graphkernel::test
