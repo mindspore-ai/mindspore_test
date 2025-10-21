@@ -300,29 +300,35 @@ class TestAutotuneSaveLoad:
         Description: Test autotune config saving with offload=True
         Expectation: Autotune should not write the config file and print a log message
         """
-        original_seed = ds.config.get_seed()
-        ds.config.set_seed(1)
-        at_final_json_filename = "test_autotune_warning_with_offload_config.json"
-        config_path = tmp_path / at_final_json_filename
-        ds.config.set_enable_autotune(True, str(config_path))
+        try:
+            original_seed = ds.config.get_seed()
+            ds.config.set_seed(1)
+            at_final_json_filename = "test_autotune_warning_with_offload_config.json"
+            config_path = tmp_path / at_final_json_filename
+            ds.config.set_enable_autotune(True, str(config_path))
 
-        # Dataset with offload activated.
-        dataset = ds.ImageFolderDataset(DATA_DIR, num_samples=8)
-        dataset = dataset.map(operations=[vision.Decode()], input_columns="image")
-        dataset = dataset.map(operations=[vision.HWC2CHW()], input_columns="image", offload=True)
-        dataset = dataset.batch(8, drop_remainder=True)
+            # Dataset with offload activated.
+            dataset = ds.ImageFolderDataset(DATA_DIR, num_samples=8)
+            dataset = dataset.map(operations=[vision.Decode()], input_columns="image")
+            dataset = dataset.map(operations=[vision.HWC2CHW()], input_columns="image", offload=True)
+            dataset = dataset.batch(8, drop_remainder=True)
 
-        for _ in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
-            pass
-
-        _, err = capfd.readouterr()
-
-        assert "Some nodes have been offloaded. AutoTune is unable to write the autotune configuration to disk. " \
-               "Disable offload to prevent this from happening." in err
-
-        with pytest.raises(FileNotFoundError):
-            with open(config_path) as _:
+            for _ in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
                 pass
+
+            _, err = capfd.readouterr()
+
+            assert "Some nodes have been offloaded. AutoTune is unable to write the autotune configuration to disk. " \
+                   "Disable offload to prevent this from happening." in err
+
+            with pytest.raises(FileNotFoundError):
+                with open(config_path) as _:
+                    pass
+        except TypeError as err:
+            # prob failed
+            ds.config.set_enable_autotune(False)
+            ds.config.set_seed(original_seed)
+            raise err
 
         ds.config.set_enable_autotune(False)
         ds.config.set_seed(original_seed)

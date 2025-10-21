@@ -3269,11 +3269,11 @@ def test_perf_do_copy_parameter():
     assert do_copy_false_time < do_copy_true_time
 
 
-def test_generatordataset_do_not_support_PKSampler():
+def test_generatordataset_do_not_support_pk_Sampler():
     """
-    Feature: test GeneratorDataset with Sampler
+    Feature: Test GeneratorDataset with Sampler
     Description: Testing GeneratorDataset with PKSampler
-    Expectation: SUCCESS (not support yet)
+    Expectation: Raise RuntimeError that PKSampler does not currently support
     """
 
     sequence_data = [1, 2, 3, 4, 5, 6]
@@ -3291,8 +3291,6 @@ def test_generatordataset_do_not_support_PKSampler():
     with pytest.raises(ValueError) as info:
         my_dataset = ds.GeneratorDataset(MyDataset(sequence_data), column_names=['data', 'label'],
                                          sampler=PKSampler(10))
-        sampler = PKSampler(10)
-        my_dataset.add_sampler(sampler)
         iterator = my_dataset.create_dict_iterator()
         for item in iterator:
             print(item)

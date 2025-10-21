@@ -51,19 +51,29 @@ Status ConvertPythonToTensor(const py::object &py_obj, TensorRow *output) {
 
 #if !defined(_WIN32) && !defined(_WIN64)
 PyFuncOp::PyFuncOp(const py::function &func)
-    : output_type_(DataType::DE_UNKNOWN), worker_pid_(-1), thread_idx_(-1), msg_queue_(nullptr), shm_queue_(nullptr) {
+    : output_type_(DataType::DE_UNKNOWN),
+      worker_pid_(-1),
+      thread_idx_(-1),
+      msg_queue_(nullptr),
+      shm_queue_(nullptr),
+      monitor_exit_flag_(true) {
   py::gil_scoped_acquire gil_acquire;
   py_func_ptr_ = func;
 }
 
 PyFuncOp::PyFuncOp(const py::function &func, DataType::Type output_type)
-    : output_type_(output_type), worker_pid_(-1), thread_idx_(-1), msg_queue_(nullptr), shm_queue_(nullptr) {
+    : output_type_(output_type),
+      worker_pid_(-1),
+      thread_idx_(-1),
+      msg_queue_(nullptr),
+      shm_queue_(nullptr),
+      monitor_exit_flag_(true) {
   py::gil_scoped_acquire gil_acquire;
   py_func_ptr_ = func;
 }
 
 PyFuncOp::PyFuncOp(std::shared_ptr<PyFuncOp> op)
-    : worker_pid_(-1), thread_idx_(-1), msg_queue_(nullptr), shm_queue_(nullptr) {
+    : worker_pid_(-1), thread_idx_(-1), msg_queue_(nullptr), shm_queue_(nullptr), monitor_exit_flag_(true) {
   py::gil_scoped_acquire gil_acquire;
   py_func_ptr_ = op->py_func_ptr_;
   output_type_ = op->output_type_;
