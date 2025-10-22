@@ -89,12 +89,15 @@ ShapeVector GetPermFromDims(const AnfNodePtr &transpose_node, const ShapeVector 
 
 // Return true if perm swaps the last two dimensions (e.g., [..., N, M] -> [..., M, N]).
 bool IsSwapLastTwoPerm(const ShapeVector &perm) {
-  if (perm.size() < 2) {
+  constexpr size_t kLastTwo = 2;
+  if (perm.size() < kLastTwo) {
     return false;
   }
   ShapeVector expect(perm.size());
   std::iota(expect.begin(), expect.end(), 0);
-  std::swap(expect[expect.size() - 2], expect[expect.size() - 1]);
+  auto last_idx = expect.size() - 1;
+  auto second_last_idx = expect.size() - kLastTwo;
+  std::swap(expect[second_last_idx], expect[last_idx]);
   return perm == expect;
 }
 
