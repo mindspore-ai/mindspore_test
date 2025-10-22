@@ -782,7 +782,7 @@ def test_control_arrow_from_switch_to_gather():
     assert ret3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_branch_only_u_input():
     """
     Feature: Contrtol flow inline.
@@ -794,17 +794,17 @@ def test_branch_only_u_input():
     def foo(x, y):
         x = x + 1
         if x < 3:
-            ops.print("this is true")
+            print("this is true")
         else:
             y = ops.reshape(y, (4, 1))
-            ops.print("this is false")
+            print("this is false")
         return ops.shape(y)
 
     ret1 = foo(Tensor(1), Tensor([[1, 2], [3, 4]]))
     assert ret1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_branch_u_input_and_input():
     """
     Feature: Contrtol flow inline.
@@ -816,10 +816,10 @@ def test_branch_u_input_and_input():
     def foo(x, y):
         x = x + 1
         if x < 3:
-            ops.print("this is true")
+            print("this is true")
         else:
             y = ops.reshape(y, (4, 1))
-            ops.print("this is false")
+            print("this is false")
         return ops.shape(y)
 
     ret1 = foo(Tensor(1), Tensor([[1, 2], [3, 4]]))
