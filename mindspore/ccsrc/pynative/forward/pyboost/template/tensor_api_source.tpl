@@ -20,6 +20,7 @@
 #include "pybind_api/ir/tensor/tensor_api/auto_generate/tensor_api.h"
 #include "mindspore/ccsrc/pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "pynative/forward/pyboost/converter.h"
+#include "pynative/forward/pyboost/fallback.h"
 #include "pynative/forward/pyboost/auto_generate/pyboost_api.h"
 #include "pynative/forward/pyboost/auto_generate/pyboost_core.h"
 #include "pynative/utils/pynative_utils.h"
@@ -28,7 +29,7 @@ ${ops_inc}
 
 namespace mindspore {
 namespace tensor {
-
+using TensorOverloadCall = pynative::TensorOverloadCall;
 ${tenosr_func_call_body}
 
 }  // namespace tensor

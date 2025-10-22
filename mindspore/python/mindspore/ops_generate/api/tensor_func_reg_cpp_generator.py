@@ -23,7 +23,7 @@ that can be used to call the Pyboost primitive implementations.
 
 import os
 
-import common.template as template
+from common import template
 import common.gen_constants as K
 from common.template import Template
 from common.gen_utils import save_file
@@ -31,7 +31,7 @@ from common.base_generator import BaseGenerator
 from common.op_proto import OpProto
 from pyboost.op_template_parser import OpTemplateParser
 from pyboost import pyboost_utils
-import api.op_api_proto as op_api_proto
+from api import op_api_proto
 
 
 class TensorFuncRegCppGenerator(BaseGenerator):
@@ -77,6 +77,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '}'
         )
         self.pyboost_return_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '}\n'
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = mindspore::pynative::'
@@ -85,6 +89,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'return res;\n'
         )
         self.callback_python_template = Template(
+            'if (parse_args.has_fallback()) {\n'
+            '  auto op_call = std::make_shared<TensorOverloadCall>("${class_name}", callback);\n'
+            '  return pynative::HandleFallback(self, py_args, py_kwargs, py::cast(op_call));\n'
+            '}\n'
             'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
             'py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
             'py::dict empty_dict = py::dict();\n'
@@ -145,7 +153,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             all_op_func_data, alias_func_mapping)
         tensor_api_header = self.TENSOR_API_HEADER.replace(
             tensor_api_declaration_list=tensor_api_declaration_list)
-        save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api.h",
+        save_file(os.path.join(work_path, K.TENSOR_API_PATH), "tensor_api.h",
                   tensor_api_header)
         self._generate_func_name_for_stub_tensor(
             work_path, tensor_cpp_methods_list)
@@ -274,7 +282,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                               signatures=signature_str,
                                                                               max_args=max_size,
                                                                               self_index=self_index,
-                                                                              ut_body=ut_body)
+                                                                              ut_body=ut_body,
+                                                                              op_name=func_proto.op_proto.op_name)
             func_call_body_list.append(tensor_func_single_call_body)
 
     def _create_overload_op_source_files(self, overload_op_func_data, func_call_body_list):
@@ -459,14 +468,17 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
             convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
             self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
+
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
+                                                        op_name=func_proto.op_proto.op_name,
                                                         pyboost_function=op_pyboost_func_name,
                                                         self_index=self_index,
                                                         convert_args=convert_args_str)
 
         if func_proto_device == 'py_method':
-            return self.callback_python_template.replace(py_method=func_proto.py_method)
+            return self.callback_python_template.replace(py_method=func_proto.py_method,
+                                                         class_name=func_proto.op_proto.op_class.name)
 
         raise TypeError("Only support pyboost or python_method.")
 
