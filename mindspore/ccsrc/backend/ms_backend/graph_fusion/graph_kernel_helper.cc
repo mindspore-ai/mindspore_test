@@ -34,7 +34,6 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/dtype/tensor_type.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/akg/akg_kernel_json_decoder.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/fake_abstract_shape.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
@@ -67,6 +66,21 @@ bool GenJson(const AnfNodePtrList &op_nodes, const std::pair<AnfNodePtrList, Anf
 }
 }  // namespace
 
+kernel::Processor GetProcessorFromContext() {
+  kernel::Processor processor = kernel::Processor::UNKNOWN;
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto device_info = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_info == kGPUDevice) {
+    processor = kernel::Processor::CUDA;
+  } else if (device_info == kAscendDevice) {
+    processor = kernel::Processor::AICORE;
+  } else if (device_info == kCPUDevice) {
+    processor = kernel::Processor::CPU;
+  }
+  return processor;
+}
+
 AbstractBasePtr GetOutputAbstract(const AnfNodePtr &node, size_t output_idx) {
   auto out_spec = node->abstract();
   if (out_spec->isa<abstract::AbstractTuple>()) {
@@ -81,7 +95,7 @@ kernel::KernelBuildInfoPtr BuildSelectKernelBuildInfo(const std::vector<std::str
                                                       const std::vector<std::string> &output_formats,
                                                       const std::vector<TypeId> &output_types) {
   return BuildSelectKernelBuildInfo(inputs_format, inputs_type, output_formats, output_types,
-                                    kernel::GetProcessorFromContext());
+                                    GetProcessorFromContext());
 }
 
 // Build for new node with given processor
@@ -186,16 +200,6 @@ bool AnfToJsonDesc(const std::vector<AnfNodePtrList> &graphs, const DumpOption &
 
   *op_desc = graphs_desc[0];
   return true;
-}
-
-FuncGraphPtr JsonDescToAnf(const std::string &json_desc) {
-  kernel::AkgKernelJsonDecoder akg_kernel_json_decoder;
-  auto fg = akg_kernel_json_decoder.DecodeFusedNodes(json_desc);
-  if (fg == nullptr) {
-    MS_LOG(ERROR) << "Akg decode json to graph failed. json is: " << json_desc;
-    return nullptr;
-  }
-  return fg;
 }
 
 std::string GetFormat(const AnfNodePtr &node) { return AnfAlgo::GetOutputFormat(node, 0); }
@@ -320,7 +324,7 @@ CNodePtr CreateCNode(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &
   info_builder.SetInputsDeviceType(input_types);
   info_builder.SetOutputsFormat(output_formats);
   info_builder.SetOutputsDeviceType(output_types);
-  info_builder.SetProcessor(kernel::GetProcessorFromContext());
+  info_builder.SetProcessor(GetProcessorFromContext());
   info_builder.SetKernelType(KernelType::AKG_KERNEL);
   info_builder.SetFusionType(kPatternOpaque);
   auto selected_info = info_builder.Build();

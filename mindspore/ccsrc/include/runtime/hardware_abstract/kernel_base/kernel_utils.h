@@ -28,7 +28,6 @@
 namespace mindspore {
 namespace kernel {
 RUNTIME_HARDWARE_EXPORT float Scaling(size_t in_size, size_t out_size, bool align_corners);
-float ScaleGrid(const int x, const float scale);
 inline float Scaler(const size_t x, const float scale, bool half_pixel_centers) {
   if (half_pixel_centers) {
     /**
@@ -67,9 +66,6 @@ struct HalfPixelFunc {
     return new_length > 1 ? (new_x + half_pixel) * old_length / new_length - half_pixel : 0;
   }
 };
-
-void RUNTIME_HARDWARE_EXPORT ComputeInterpolationWeights(const size_t out_size, const size_t in_size, const float scale,
-                                                         CachedInterpolation *interpolation, bool half_pixel_centers);
 
 template <typename T>
 inline T ComputeLerp(T top_left, T top_right, T bottom_left, T bottom_right, T x_lerp, T y_lerp) {
@@ -199,22 +195,6 @@ inline void ComputeSourceIndexAndLambda(int64_t *const input_index0, int64_t *co
     *lambda0 = one - *lambda1;
   }
 }
-
-RUNTIME_HARDWARE_EXPORT void CheckSliceValid(const std::vector<int64_t> &start, const std::vector<int64_t> &stop,
-                                             const std::vector<int64_t> &step, const std::vector<int64_t> &input_shape);
-RUNTIME_HARDWARE_EXPORT size_t CalOffset(const std::vector<int64_t> &start, const std::vector<int64_t> &stop,
-                                         const std::vector<int64_t> &dim_offset);
-RUNTIME_HARDWARE_EXPORT std::vector<int64_t> CalDimOffset(const std::vector<int64_t> &input_shape);
-RUNTIME_HARDWARE_EXPORT size_t GetCopySize(const std::vector<int64_t> &dim_offset, const std::vector<int64_t> &start,
-                                           const std::vector<int64_t> &stop);
-
-RUNTIME_HARDWARE_EXPORT std::pair<MatrixDiag::Alignment, MatrixDiag::Alignment> GetAlignments(
-  const std::string &alignment);
-
-namespace broadcast_utils {
-RUNTIME_HARDWARE_EXPORT bool AlignedBroadCastShape(size_t align_rank, std::vector<size_t> *broadcast,
-                                                   std::vector<size_t> *lhs, std::vector<size_t> *rhs);
-}  // namespace broadcast_utils
 
 #define CHECK_KERNEL_WORKSPACE_SIZE(actual_size, expect_size, kernel_name)                                           \
   do {                                                                                                               \

@@ -141,21 +141,6 @@ class RUNTIME_HARDWARE_EXPORT DataQueueMgr {
   HANDLER_DEFINE(bool, CleanTdtHandle);
   HANDLER_DEFINE(bool, DestoryTdtHandle);
 };
-RUNTIME_HARDWARE_EXPORT void UpdateGetNextNode(const AnfNodePtr &data_kernel);
-
-RUNTIME_HARDWARE_EXPORT void UpdateGetNextNode(const PrimitivePtr &primitive,
-                                               const std::vector<kernel::KernelTensor *> &inputs,
-                                               const std::vector<kernel::KernelTensor *> &outputs,
-                                               std::vector<size_t> *output_size_list);
-
-RUNTIME_HARDWARE_EXPORT void UpdateGetNextWithDataQueueItems(const AnfNodePtr &data_kernel,
-                                                             const std::vector<device::DataQueueItem> &data);
-
-RUNTIME_HARDWARE_EXPORT void UpdateGetNextWithDataQueueItems(const std::vector<kernel::KernelTensor *> &inputs,
-                                                             const std::vector<kernel::KernelTensor *> &outputs,
-                                                             const std::vector<device::DataQueueItem> &data,
-                                                             std::vector<size_t> *output_size_list);
-
 RUNTIME_HARDWARE_EXPORT void RetryPeakItemFromDataQueue(const AnfNodePtr &data_kernel,
                                                         const std::shared_ptr<BlockingQueue> &data_queue,
                                                         std::vector<device::DataQueueItem> *data);

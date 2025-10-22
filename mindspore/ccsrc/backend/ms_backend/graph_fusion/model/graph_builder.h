@@ -24,6 +24,7 @@
 #include "ir/tensor_new.h"
 #include "mindapi/base/type_id.h"
 #include "backend/ms_backend/graph_fusion/model/lite_graph.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel::inner {
 class GraphBuilder : public LiteGraph::GraphBuilderBase {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/runtime/hardware_abstract/kernel_base/kernel_mod_cache.h"
+#include "mindspore/ccsrc/pyboost/kernel_mod_cache.h"
 
 #include <vector>
 #include <unordered_set>

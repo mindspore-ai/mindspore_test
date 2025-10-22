@@ -8,6 +8,7 @@ file(GLOB_RECURSE _PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "comm_handle.cc"
         "comm_utils.cc"
         "pyboost_utils.cc"
+        "kernel_mod_cache.cc"
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")

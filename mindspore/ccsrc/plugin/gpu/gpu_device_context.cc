@@ -81,6 +81,7 @@ const char kEventOptimizeGraph[] = "OptimizeGraph";
 const char kStageOptimizeWithoutDeviceInfo[] = "OptimizeWithoutDeviceInfo";
 const char kStageSetKernelInfo[] = "SetKernelInfo";
 const char kStageOptimizeWithDeviceInfo[] = "OptimizeWithDeviceInfo";
+constexpr char kKernelObjectTypeNotSupportedStr[] = "KernelObjectTypeNotSupported";
 std::string GetCurrentDir() {
 #ifndef _WIN32
   Dl_info dl_info;
@@ -302,6 +303,10 @@ void RunOpRemoveNopNode(const KernelGraphPtr &kernel_graph) {
   }
 }
 
+bool IsKernelObjectTypeNotSupportedError(const std::string &error_str) {
+  return error_str.find(kKernelObjectTypeNotSupportedStr) != std::string::npos;
+}
+
 bool CheckSupportBackoff(const KernelGraphPtr &graph, const CNodePtr &node,
                          const std::pair<std::string, ExceptionType> &failure_info) {
   MS_EXCEPTION_IF_NULL(node);
@@ -312,7 +317,7 @@ bool CheckSupportBackoff(const KernelGraphPtr &graph, const CNodePtr &node,
   const auto &kernel_name = common::AnfAlgo::GetCNodeName(node);
   const auto &kernel_attrs = kernel::NativeCpuKernelMod::GetCpuSupportedList(kernel_name);
   // CPU also doesn't support the kernel.
-  if (kernel_attrs.empty() || kernel::IsKernelObjectTypeNotSupportedError(failure_info.first)) {
+  if (kernel_attrs.empty() || IsKernelObjectTypeNotSupportedError(failure_info.first)) {
     return false;
   }
   return true;

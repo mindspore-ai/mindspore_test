@@ -197,7 +197,7 @@ bool DecreaseComputePrecision::Process(const FuncGraphPtr &func_graph) const {
     graph_info_builder.SetInputsDeviceType(cnode_input_type);
     graph_info_builder.SetOutputsFormat(cnode_output_format);
     graph_info_builder.SetOutputsDeviceType(cnode_output_type);
-    graph_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+    graph_info_builder.SetProcessor(GetProcessorFromContext());
     graph_info_builder.SetKernelType(KernelType::AKG_KERNEL);
     graph_info_builder.SetFusionType(kPatternOpaque);
     auto info_1 = graph_info_builder.Build();

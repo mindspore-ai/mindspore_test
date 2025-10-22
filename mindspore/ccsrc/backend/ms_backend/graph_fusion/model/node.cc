@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "backend/ms_backend/graph_fusion/model/node.h"
 #include <algorithm>
 #include <utility>
 #include "abstract/utils.h"

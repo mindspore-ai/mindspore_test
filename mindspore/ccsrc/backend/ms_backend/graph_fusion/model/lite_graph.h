@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <string>
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "backend/ms_backend/graph_fusion/model/node.h"
 
 namespace mindspore::graphkernel::inner {
 class LiteGraph {

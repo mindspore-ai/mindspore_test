@@ -42,9 +42,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
-namespace {
-constexpr char kKernelObjectTypeNotSupportedStr[] = "KernelObjectTypeNotSupported";
-}
 namespace kernel {
 std::string GetCompilerCachePath() { return Common::GetUserDefineCachePath(); }
 
@@ -138,33 +135,6 @@ void SaveJsonInfo(const std::string &json_name, const std::string &info, const s
   ChangeFileMode(realpath.value(), S_IRUSR);
 }
 
-std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(const std::vector<AnfNodePtr> &node_list,
-                                                          const std::vector<AnfNodePtr> &input_list,
-                                                          const std::vector<AnfNodePtr> &output_list) {
-  std::vector<std::pair<AnfNodePtr, size_t>> output_index;
-  for (size_t i = 0; i < output_list.size(); ++i) {
-    auto const &output = output_list[i];
-    MS_EXCEPTION_IF_NULL(output);
-    bool found = false;
-    auto pree_node = common::AnfAlgo::VisitKernel(output, 0);
-    auto pos = std::find(std::begin(node_list), std::end(node_list), pree_node.first);
-    if (pos != std::end(node_list)) {
-      output_index.push_back(pree_node);
-      continue;
-    }
-    auto ret = std::find(std::begin(input_list), std::end(input_list), pree_node.first);
-    if (ret != std::end(input_list)) {
-      output_index.push_back(std::make_pair(pree_node.first, 0));
-      found = true;
-    }
-    if (!found) {
-      MS_EXCEPTION(ArgumentError) << "Output [" << i << "][" << output->DebugString(AnfNode::DebugStringLevel::kLevel2)
-                                  << "] of [" << output->func_graph()->ToString() << "] found no related kernel info.";
-    }
-  }
-  return output_index;
-}
-
 void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list) {
   MS_EXCEPTION_IF_NULL(node_list);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -225,50 +195,19 @@ void GetFuncGraphOutputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNode
   }
 }
 
-Processor GetProcessorFromContext() {
-  kernel::Processor processor = kernel::Processor::UNKNOWN;
+std::string GetStrProcessorFromContext() {
+  string str_processor = kernel::kProcessorUnknown;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto device_info = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (device_info == kGPUDevice) {
-    processor = kernel::Processor::CUDA;
-  } else if (device_info == kAscendDevice) {
-    processor = kernel::Processor::AICORE;
-  } else if (device_info == kCPUDevice) {
-    processor = kernel::Processor::CPU;
-  }
-  return processor;
-}
-
-std::string GetStrProcessorFromContext() {
-  auto processor = GetProcessorFromContext();
-  string str_processor = kernel::kProcessorUnknown;
-  if (processor == kernel::Processor::CUDA) {
     str_processor = kernel::kProcessorCuda;
-  } else if (processor == kernel::Processor::AICORE) {
+  } else if (device_info == kAscendDevice) {
     str_processor = kernel::kProcessorAiCore;
-  } else if (processor == kernel::Processor::CPU) {
+  } else if (device_info == kCPUDevice) {
     str_processor = kernel::kProcessorCpu;
   }
   return str_processor;
-}
-
-bool GetShapeSize(const ShapeVector &shape, const TypePtr &type_ptr, int64_t *size_i) {
-  MS_EXCEPTION_IF_NULL(type_ptr);
-  size_t type_byte = GetTypeByte(type_ptr);
-  if (type_byte == 0) {
-    return false;
-  }
-  for (size_t j = 0; j < shape.size(); j++) {
-    if (shape[j] <= 0) {
-      MS_LOG(DEBUG) << "shape[" << shape << "] has invalid value(less equal 0), set size to 0";
-      size_i[0] = 0;
-      return true;
-    }
-    size_i[0] = LongMulWithOverflowCheck(size_i[0], shape[j]);
-  }
-  size_i[0] = LongMulWithOverflowCheck(size_i[0], SizeToInt(type_byte));
-  return true;
 }
 
 bool IsDynamicParamKernel(const std::string &op_name) {
@@ -290,10 +229,6 @@ bool IsDynamicParamKernel(const std::string &op_name) {
   }
 
   return true;
-}
-
-bool IsKernelObjectTypeNotSupportedError(const std::string &error_str) {
-  return error_str.find(kKernelObjectTypeNotSupportedStr) != std::string::npos;
 }
 
 // In compile stage, run resize when kernel is not dynamic shape or has no value depend list.

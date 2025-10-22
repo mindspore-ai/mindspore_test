@@ -19,10 +19,9 @@
 #include <string>
 #include <vector>
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
-#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel {
-class BACKEND_EXPORT CallbackImpl : public Callback {
+class CallbackImpl : public Callback {
  public:
   virtual ~CallbackImpl() = default;
   ShapeVector GetInputShape(const AnfNodePtr &node, size_t i) override;
@@ -47,7 +46,7 @@ class BACKEND_EXPORT CallbackImpl : public Callback {
   void CollectInputTypesAndFormats(const AnfNodePtr &node, std::vector<TypeId> *input_types,
                                    std::vector<std::string> *input_formats, bool is_basic_node = false);
 };
-class BACKEND_EXPORT CallbackImplWithInferShape : public CallbackImpl {
+class CallbackImplWithInferShape : public CallbackImpl {
  public:
   ShapeVector GetInputShape(const AnfNodePtr &node, size_t i) override;
   ShapeVector GetOutputShape(const AnfNodePtr &node, size_t i) override;

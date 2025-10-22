@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <memory>
 #include "backend/ms_backend/graph_fusion/model/op_register.h"
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/node.h"
+#include "backend/ms_backend/graph_fusion/model/node.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_callback.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

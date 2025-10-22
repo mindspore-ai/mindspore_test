@@ -160,6 +160,15 @@ void MallocMemoryForDeviceAddress(device::DeviceAddress *device_address, const d
 
 }  // namespace
 
+void SyncOutInRef(const kernel::KernelAttr &from_kernel_attr, kernel::KernelAttr *to_kernel_attr) {
+  const auto &out_in_ref = from_kernel_attr.GetOutInRefMap();
+  bool all_out_in_ref = from_kernel_attr.GetAllOutInRef();
+  for (const auto &ref : out_in_ref) {
+    (void)to_kernel_attr->AddOutInRef(ref.first, ref.second);
+  }
+  (void)to_kernel_attr->AddAllOutInRef(all_out_in_ref);
+}
+
 void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs) {
   MS_EXCEPTION_IF_NULL(apply_kernel);
   auto kernel_attrs = apply_kernel_attrs;

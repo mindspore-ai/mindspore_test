@@ -33,6 +33,7 @@
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
 
 namespace mindspore::graphkernel {
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
@@ -206,7 +207,7 @@ void CallbackImpl::SetGraphKernelNodeKernelInfo(const AnfNodePtr &node) {
     para_info_builder.SetOutputsFormat({graph_input_format.back()});
     para_info_builder.SetOutputsDeviceType({graph_input_type.back()});
     para_info_builder.SetKernelType(KernelType::AKG_KERNEL);
-    para_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+    para_info_builder.SetProcessor(GetProcessorFromContext());
     AnfAlgo::SetSelectKernelBuildInfo(para_info_builder.Build(), fg->parameters()[i - 1].get());
   }
   AnfNodePtrList outputs;
@@ -224,7 +225,7 @@ void CallbackImpl::SetGraphKernelNodeKernelInfo(const AnfNodePtr &node) {
   }
   opt::GenerateKernelObjectTypeForNewCNode(cnode, &graph_input_obj_type, &graph_output_obj_type);
   kernel::KernelBuildInfo::KernelBuildInfoBuilder graph_info_builder;
-  graph_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+  graph_info_builder.SetProcessor(GetProcessorFromContext());
   graph_info_builder.SetKernelType(KernelType::AKG_KERNEL);
   graph_info_builder.SetFusionType(kPatternOpaque);
   graph_info_builder.SetInputsFormat(graph_input_format);
@@ -279,7 +280,7 @@ void CallbackImpl::SetBasicNodeKernelInfo(const AnfNodePtr &node, const std::vec
   info_builder.SetInputsDeviceType(input_types);
   info_builder.SetOutputsFormat(output_formats);
   info_builder.SetOutputsDeviceType(output_types);
-  info_builder.SetProcessor(kernel::GetProcessorFromContext());
+  info_builder.SetProcessor(GetProcessorFromContext());
   info_builder.SetKernelType(KernelType::AKG_KERNEL);
   info_builder.SetFusionType(kPatternOpaque);
   auto selected_info = info_builder.Build();

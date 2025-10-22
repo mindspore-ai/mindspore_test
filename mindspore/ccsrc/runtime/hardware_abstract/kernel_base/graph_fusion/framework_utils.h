@@ -65,17 +65,11 @@ RUNTIME_HARDWARE_EXPORT std::string GetCompilerCachePath();
 KernelPackPtr SearchCache(const std::string &kernel_name, const std::string &processor);
 KernelPackPtr InsertCache(const std::string &kernel_name, const std::string &processor);
 
-RUNTIME_HARDWARE_EXPORT bool GetShapeSize(const ShapeVector &shape, const TypePtr &type_ptr, int64_t *size_i);
-
 RUNTIME_HARDWARE_EXPORT void SaveJsonInfo(const std::string &json_name, const std::string &info,
                                           const std::string &base_path);
 
-RUNTIME_HARDWARE_EXPORT Processor GetProcessorFromContext();
 RUNTIME_HARDWARE_EXPORT std::string GetStrProcessorFromContext();
 
-RUNTIME_HARDWARE_EXPORT std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(
-  const std::vector<AnfNodePtr> &node_list, const std::vector<AnfNodePtr> &input_list,
-  const std::vector<AnfNodePtr> &output_list);
 RUNTIME_HARDWARE_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list);
 RUNTIME_HARDWARE_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *node_list,
                                                  std::vector<AnfNodePtr> *input_list,
@@ -93,7 +87,6 @@ struct KernelArgs {
 
 RUNTIME_HARDWARE_EXPORT bool CheckResizeCondition(const CNodePtr &node);
 RUNTIME_HARDWARE_EXPORT bool IsDynamicParamKernel(const std::string &op_name);
-RUNTIME_HARDWARE_EXPORT bool IsKernelObjectTypeNotSupportedError(const std::string &error_str);
 RUNTIME_HARDWARE_EXPORT std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKernelAttr(
   const KernelAttr &kernel_attr);
 }  // namespace kernel

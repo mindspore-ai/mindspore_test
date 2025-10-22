@@ -125,7 +125,7 @@ std::pair<AnfNodePtr, size_t> TsaAtomicAddToFirstTensor::GetOrCreateNewTsaFirstN
   para_info_builder.SetOutputsFormat({parameter_format});
   para_info_builder.SetOutputsDeviceType({parameter_type});
   para_info_builder.SetKernelType(KernelType::AKG_KERNEL);
-  para_info_builder.SetProcessor(kernel::GetProcessorFromContext());
+  para_info_builder.SetProcessor(GetProcessorFromContext());
   AnfAlgo::SetSelectKernelBuildInfo(para_info_builder.Build(), parameter.get());
 
   // Create inner op.

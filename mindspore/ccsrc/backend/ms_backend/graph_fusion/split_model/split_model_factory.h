@@ -21,10 +21,9 @@
 
 #include "backend/ms_backend/graph_fusion/split_model/split_model.h"
 #include "utils/hash_map.h"
-#include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::inner {
-class BACKEND_EXPORT SplitModelFactory {
+class SplitModelFactory {
  public:
   static SplitModelFactory &Instance() {
     static SplitModelFactory instance = SplitModelFactory();

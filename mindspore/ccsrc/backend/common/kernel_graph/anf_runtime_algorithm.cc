@@ -2673,13 +2673,60 @@ void AnfRuntimeAlgorithm::SetKernelObjectTypeBuildInfo(
   kernel_build_info->SetOutputElementsKernelObjectType(output_elements_kernel_object_types);
 }
 
+namespace {
+// The allsame/skip_check and the unequal size scenario don't support object type backoff and use the object_types,
+// other scenes support the object type backoff and use the selected_object_types.
+std::vector<KernelObjectType> CalKernelObjectTypes(const std::vector<TypeId> &object_types,
+                                                   const std::vector<TypeId> &selected_object_types, bool all_same,
+                                                   bool skip_check) {
+  std::vector<KernelObjectType> ret;
+  //  Use the selected_object_types in the equal size scenario.
+  if (object_types.size() == selected_object_types.size()) {
+    for (size_t i = 0; i < selected_object_types.size(); ++i) {
+      // Allsame/skip_check doesn't support the backoff.
+      bool not_backoff = ((all_same || skip_check) && (selected_object_types[i] != object_types[i]));
+      if (not_backoff) {
+        (void)ret.emplace_back(kernel::TypeIdToKernelObjectTypeForTupleUnfold(object_types[i]));
+      } else {
+        (void)ret.emplace_back(kernel::TypeIdToKernelObjectType(selected_object_types[i]));
+      }
+    }
+    return ret;
+  }
+
+  // Use the object_types in the unequal size scenario, and convert tuple to tupleUnflod.
+  for (size_t i = 0; i < object_types.size(); ++i) {
+    (void)ret.emplace_back(kernel::TypeIdToKernelObjectTypeForTupleUnfold(object_types[i]));
+  }
+  return ret;
+}
+
+std::vector<TypeId> GetInputObjectTypeListFromKernelAttr(const kernel::KernelAttr &kernel_attr) {
+  size_t input_attr_size = kernel_attr.GetInputSize();
+  std::vector<TypeId> res;
+  for (size_t i = 0; i < input_attr_size; ++i) {
+    res.push_back(kernel_attr.GetInputAttr(i).object_type);
+  }
+  return res;
+}
+
+std::vector<TypeId> GetOutputObjectTypeListFromKernelAttr(const kernel::KernelAttr &kernel_attr) {
+  size_t output_attr_size = kernel_attr.GetOutputSize();
+  std::vector<TypeId> res;
+  for (size_t i = 0; i < output_attr_size; ++i) {
+    res.push_back(kernel_attr.GetOutputAttr(i).object_type);
+  }
+  return res;
+}
+}  // namespace
+
 static std::vector<KernelObjectType> CalInputKernelObjectTypes(const AnfNodePtr &kernel_node,
                                                                const kernel::KernelAttr &selected_kernel_attr) {
   MS_EXCEPTION_IF_NULL(kernel_node);
-  auto selected_input_object_types = kernel::GetInputObjectTypeListFromKernelAttr(selected_kernel_attr);
+  auto selected_input_object_types = GetInputObjectTypeListFromKernelAttr(selected_kernel_attr);
   auto input_object_types = AnfAlgo::GetAllInputObjectType(kernel_node);
-  return kernel::CalKernelObjectTypes(input_object_types, selected_input_object_types,
-                                      selected_kernel_attr.GetAllSame(), selected_kernel_attr.GetSkipCheck());
+  return CalKernelObjectTypes(input_object_types, selected_input_object_types, selected_kernel_attr.GetAllSame(),
+                              selected_kernel_attr.GetSkipCheck());
 }
 
 static bool HasOutputElementsKernelObjectType(const std::vector<kernel::KernelObjectType> &output_kernel_object_types) {
@@ -2690,10 +2737,26 @@ static bool HasOutputElementsKernelObjectType(const std::vector<kernel::KernelOb
 static std::vector<KernelObjectType> CalOutputKernelObjectTypes(const AnfNodePtr &kernel_node,
                                                                 const kernel::KernelAttr &selected_kernel_attr) {
   MS_EXCEPTION_IF_NULL(kernel_node);
-  auto selected_output_object_types = kernel::GetOutputObjectTypeListFromKernelAttr(selected_kernel_attr);
+  auto selected_output_object_types = GetOutputObjectTypeListFromKernelAttr(selected_kernel_attr);
   auto output_object_types = AnfAlgo::GetAllOutputObjectType(kernel_node);
-  return kernel::CalKernelObjectTypes(output_object_types, selected_output_object_types,
-                                      selected_kernel_attr.GetAllSame(), selected_kernel_attr.GetSkipCheck());
+  return CalKernelObjectTypes(output_object_types, selected_output_object_types, selected_kernel_attr.GetAllSame(),
+                              selected_kernel_attr.GetSkipCheck());
+}
+
+std::vector<KernelObjectType> CalOutputElementObjectTypes(const AnfNodePtr &kernel_node,
+                                                          const kernel::KernelAttr &selected_kernel_attr) {
+  MS_EXCEPTION_IF_NULL(kernel_node);
+  auto selected_output_object_types = GetOutputObjectTypeListFromKernelAttr(selected_kernel_attr);
+  MS_LOG(DEBUG) << "Output object type:" << selected_output_object_types << " for node:" << kernel_node->DebugString()
+                << " select attr:" << kernel::FetchPrintInfoByKernelAttr(selected_kernel_attr);
+  auto element_num = kernel::GetOutputNum(kernel_node);
+  if (selected_kernel_attr.GetAllSame() && selected_output_object_types.size() == 1) {
+    return std::vector<KernelObjectType>(element_num,
+                                         kernel::TypeIdToKernelObjectType(selected_output_object_types[0]));
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(element_num == selected_output_object_types.size(),
+                             "Check multi-output kernel attr size failed.");
+  return kernel::TypeIdToKernelObjectType(selected_output_object_types);
 }
 
 void AnfRuntimeAlgorithm::SetKernelObjectTypeWithSelectedAttr(const CNodePtr &kernel_node,

@@ -16,10 +16,28 @@
 
 #include "plugin/ascend/kernel_executor/host/host_kernel_mod.h"
 
-#include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace kernel {
+bool GetShapeSize(const ShapeVector &shape, const TypePtr &type_ptr, int64_t *size_i) {
+  MS_EXCEPTION_IF_NULL(type_ptr);
+  size_t type_byte = GetTypeByte(type_ptr);
+  if (type_byte == 0) {
+    return false;
+  }
+  for (size_t j = 0; j < shape.size(); j++) {
+    if (shape[j] <= 0) {
+      MS_LOG(DEBUG) << "shape[" << shape << "] has invalid value(less equal 0), set size to 0";
+      size_i[0] = 0;
+      return true;
+    }
+    size_i[0] = LongMulWithOverflowCheck(size_i[0], shape[j]);
+  }
+  size_i[0] = LongMulWithOverflowCheck(size_i[0], SizeToInt(type_byte));
+  return true;
+}
+
 void HostKernelFactory::Register(const std::string &name, HostKernelCreater &&fun) {
   hostKernelMap_.emplace(name, std::move(fun));
 }
