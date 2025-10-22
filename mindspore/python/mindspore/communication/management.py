@@ -171,6 +171,8 @@ def init(backend_name=None):
             backend_name = "nccl"
         elif device_target == "CPU":
             backend_name = "mccl"
+            if os.getenv("MS_SIMULATION_LEVEL"):
+                raise RuntimeError("Dryrun is not supported on CPU device for a distributed job.")
         else:
             raise RuntimeError("For 'set_context', the argument 'device_target' {} is not supported in "
                                "parallel initialization, please use Ascend, GPU or CPU.".format(device_target))
@@ -194,7 +196,7 @@ def init(backend_name=None):
             raise RuntimeError("For 'init', the argument 'backend_name' should be '{}' to init '{}', "
                                "but got 'hccl'.".format(DEVICE_TO_BACKEND[device_target], device_target))
         if is_initialized(device_target):
-            logger.warning(f"For 'init' in Ascend backend, the backend is already initialized, please set it before "
+            logger.warning("For 'init' in Ascend backend, the backend is already initialized, please set it before "
                            "the definition of any Tensor and Parameter, and the instantiation and execution of any "
                            "operation and net, otherwise the 'init' may not take effect.")
         if not host_init:
@@ -273,7 +275,7 @@ def _init_without_sched(backend_name=None, init_method=None, timeout=None, world
             raise RuntimeError("For 'init', the argument 'backend_name' should be '{}' to init '{}', "
                                "but got 'hccl'.".format(DEVICE_TO_BACKEND[device_target], device_target))
         if is_initialized(device_target):
-            logger.warning(f"For 'init' in Ascend backend, the backend is already initialized, please set it before "
+            logger.warning("For 'init' in Ascend backend, the backend is already initialized, please set it before "
                            "the definition of any Tensor and Parameter, and the instantiation and execution of any "
                            "operation and net, otherwise the 'init' may not take effect.")
         GlobalComm.BACKEND = Backend("hccl")
