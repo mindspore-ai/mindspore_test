@@ -48,6 +48,7 @@ AnfNodePtr BuildShape(const PatternMap &m) {
 }
 
 AnfNodePtr BuildReshape(const PatternMap &m, const AnfNodePtr &reshape) {
+  MS_EXCEPTION_IF_NULL(reshape);
   auto transpose = m.Get(kTranspose);
   MS_EXCEPTION_IF_NULL(transpose);
   reshape->set_abstract(transpose->abstract());
