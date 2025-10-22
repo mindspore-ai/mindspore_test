@@ -1480,6 +1480,8 @@ bool GraphBuilder::DoGetItem(const Instr &instr) {
 ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, ValueNode *value, bool ignore_key_error) {
   PyObject *index_object = key->GetVobj()->GetPyObject().ptr();
   if (index_object == nullptr || !key->IsConstantValue()) {
+    MS_LOG(INFO) << "Dict setitem only support constant key, but key object: " << index_object
+                 << ", is_constant: " << key->IsConstantValue();
     return nullptr;  // only supported constant key
   }
   constexpr const int kNumberTwo = 2;
@@ -1496,10 +1498,18 @@ ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, Va
       this->DoLoadConst(instr);
       this->push(map);
       this->DoLoadConst(instr);
-      this->DoGetItem({BINARY_SUBSCR, 0});
+      if (!this->DoGetItem({BINARY_SUBSCR, 0})) {
+        MS_LOG(INFO) << "Failed to do dict getitem by keys[" << i << "]";
+        return nullptr;
+      }
     }
-    elements = {frame_.GetStacks().end() - size * kNumberTwo, frame_.GetStacks().end()};
-    popn(size * kNumberTwo);
+    int elements_num = static_cast<int>(size * kNumberTwo);
+    if (frame_.GetStacks().size() < IntToSize(elements_num)) {
+      MS_LOG(INFO) << "Stack size " << frame_.GetStacks().size() << " is less than expected " << elements_num;
+      return nullptr;
+    }
+    elements = {frame_.GetStacks().end() - elements_num, frame_.GetStacks().end()};
+    popn(elements_num);
   } else {
     // check type when cast
     auto dict = dynamic_cast<AbstractDict *>(map->GetVobj());
@@ -1511,16 +1521,25 @@ ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, Va
       this->DoLoadConst(instr);
       this->push(map);
       this->DoLoadConst(instr);
-      this->DoGetItem({BINARY_SUBSCR, 0});
+      if (!this->DoGetItem({BINARY_SUBSCR, 0})) {
+        MS_LOG(INFO) << "Failed to do dict getitem by key ";
+        return nullptr;
+      }
     }
-    elements = {frame_.GetStacks().end() - dict->size() * kNumberTwo, frame_.GetStacks().end()};
-    popn(dict->size() * kNumberTwo);
+    int elements_num = static_cast<int>(dict->size() * kNumberTwo);
+    if (frame_.GetStacks().size() < IntToSize(elements_num)) {
+      MS_LOG(INFO) << "Stack size " << frame_.GetStacks().size() << " is less than expected " << elements_num;
+      return nullptr;
+    }
+    elements = {frame_.GetStacks().end() - elements_num, frame_.GetStacks().end()};
+    popn(elements_num);
   }
 
   // set(delete) element
   if (value != nullptr) {
     bool insert = false;
     for (size_t index = 0; index < elements.size(); index += 2) {
+      MS_EXCEPTION_IF_NULL(elements[index]);
       if (elements[index]->GetVobj() == key->GetVobj()) {
         elements[index + 1] = value;
         insert = true;
@@ -2813,11 +2832,12 @@ ScopePtr GetScopeForCallNode(CallNode *node) {
 
 AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
   AbstractWrapperPtrList ret;
-  for (auto arg : args) {
+  for (size_t i = 0; i < args.size(); ++i) {
+    auto arg = args[i];
     MS_EXCEPTION_IF_NULL(arg);
     auto wrapper = arg->abstract_wrapper();
     if (wrapper == nullptr) {
-      MS_LOG(INFO) << "infer failed with nullptr abstract wrapper";
+      MS_LOG(INFO) << "Args[" << i << "] abstract wrapper is nullptr, arg: " << arg->ToString();
       return {nullptr};
     }
     if (FGBuilder()->FindNodeByWrapper(wrapper) == nullptr) {

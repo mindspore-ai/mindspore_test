@@ -44,7 +44,6 @@ class Obj:
     def func(self):
         return 1
 
-@jit(capture_mode="bytecode") # One-stage will fix it later
 def func(self, x):
     tpe = kw_inline_test()
     lst = list(tpe)
@@ -58,7 +57,7 @@ def func(self, x):
     return {e: d, **self, "rec_tuple": x}
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_self_reference():
     """
     Feature: Self Reference Test
@@ -71,13 +70,12 @@ def test_self_reference():
     lst[0] = rec
     d = {"k": 1}
     d["self"] = d
-    jit_mode_pi_enable()
-    context.set_context(mode=context.PYNATIVE_MODE)
-    b = func(d, rec)
-    jit_mode_pi_disable()
-    context.set_context(mode=context.GRAPH_MODE)
+
     a = func(d, rec)
-    jit_mode_pi_enable()
+
+    jit_func = jit(func, capture_mode="bytecode")
+    b = jit_func(d, rec)
+
     assert a == b
 
 

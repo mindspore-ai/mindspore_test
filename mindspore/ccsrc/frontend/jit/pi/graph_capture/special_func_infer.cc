@@ -490,6 +490,7 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   ValueNode *old_node = dict_node;
   ValueNode *new_node = parent->TransformDictSetItem(dict_node, key_node, nullptr, default_node != nullptr);
   if (new_node == nullptr) {
+    MS_LOG(INFO) << "Failed to infer dict.pop() for node: " << call_node->ToString();
     return false;
   }
 
