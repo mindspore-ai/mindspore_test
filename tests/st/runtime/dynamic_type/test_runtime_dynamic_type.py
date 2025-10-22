@@ -377,7 +377,7 @@ def test_cpu_any_type_empty_tuple():
     print(a, b, c, d)
 
 
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_pyobj_to_tensor():
     """
     Feature: tensor data.
@@ -432,7 +432,7 @@ def test_pyobj_to_tensor():
     assert grad_out[0].asnumpy()[0][0][0] == 1
 
 
-@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_pyexecute_launch_d2h():
     """
     Feature: tensor data.
