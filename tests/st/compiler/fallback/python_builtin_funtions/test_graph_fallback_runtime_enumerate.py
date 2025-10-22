@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,3 +94,27 @@ def test_enumerate_check_start():
         out = net(x)
         print("out:", out)
     assert "'For 'enumerate', the 'start' should be a const int number, but got [1, 2, 3].'" in str(error_info.value)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_parser_construct_no_tensor_035():
+    """
+    Feature: JIT Fallback
+    Description: Test enumerate() in fallback runtime
+    Expectation:No exception
+    """
+    class Net(ms.nn.Cell):
+        def construct(self, input_1, start):
+            return enumerate(input_1, start)
+
+    input_np_1 = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_a = Tensor(input_np_1)
+    net = Net()
+    out_me = net(input_a, 2)
+    out_np = enumerate(input_np_1, 2)
+    for np_enum, ms_enum in zip(out_np, out_me):
+        if isinstance(ms_enum[0], Tensor):
+            assert np_enum[0] == ms_enum[0].asnumpy()
+        else:
+            assert np_enum[0] == ms_enum[0]
+        assert np.allclose(np_enum[1], ms_enum[1].asnumpy(), 0, 0)
