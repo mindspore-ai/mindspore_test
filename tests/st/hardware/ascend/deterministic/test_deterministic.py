@@ -85,7 +85,7 @@ def test_deterministic_uss(mode):
 class AllReduceNet(nn.Cell):
     def __init__(self):
         super(AllReduceNet, self).__init__()
-        self.allreduce = ops.AllReduce()
+        self.allreduce = ops.AllReduce(ops.ReduceOp.SUM)
 
     def construct(self, x):
         output = self.allreduce(x)
@@ -98,22 +98,23 @@ def test_allreduce_deterministic():
     Description: test deterministic for allreduce
     Expectation: the result of multiple run should be same
     """
-    context.set_context(mode=ms.GRAPH_MODE, deterministic="ON")
+    context.set_context(deterministic="ON")
     init()
     x = ms.Tensor(np.random.randn(16, 1024), ms.float32)
     allreduce_net = AllReduceNet()
-    output1 = allreduce_net(x)
-    output2 = allreduce_net(x)
+    output1 = (jit(allreduce_net))(x)
+    output2 = (jit(allreduce_net))(x)
     assert np.allclose(output1.asnumpy(), output2.asnumpy(), rtol=0, atol=0)
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend", "platform_ascend910b"], level_mark="level0", card_mark="allcards",
+          essential_mark="essential")
 def test_deterministic_allreduce():
     """
     Feature: mpirun ascend op deterministic test case
     Description: test deterministic for allreduce
     Expectation: the result of multiple run should be same
     """
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_deterministic.py::" \
-                            "test_allreduce_deterministic")
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10808 " \
+                            "--join=True pytest -s test_deterministic.py::test_allreduce_deterministic")
     assert return_code == 0
