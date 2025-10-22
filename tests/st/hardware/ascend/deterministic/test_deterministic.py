@@ -22,30 +22,39 @@ from mindspore import ops, nn, context, jit
 import mindspore as ms
 from mindspore.communication import init
 
-class ReduceNet(nn.Cell):
-    def __init__(self):
-        super(ReduceNet, self).__init__()
-        self.reducesum = ops.ReduceSum(keep_dims=False)
+class ReduceMatmulNet(nn.Cell):
+    def __init__(self, shape):
+        super(ReduceMatmulNet, self).__init__()
+        self.weight = ms.Parameter(ms.Tensor(np.full(shape, 1), dtype=ms.float32), name="weight")
+        self.reducemean = ops.ReduceMean()
+        self.matmul = ops.MatMul()
+        self.reducesum = ops.ReduceSum()
 
     def construct(self, x):
-        output = self.reducesum(x, 1)
+        output = self.reducemean(x, 1)
+        output = self.matmul(output, self.weight)
+        output = self.reducesum(output)
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_deterministic_reducesum(mode):
+@pytest.mark.parametrize('mode', ['pynative', 'jit'])
+def test_deterministic_reduce_matmul(mode):
     """
     Feature: ascend op deterministic test case
-    Description: test deterministic for reducesum in acl/ge
+    Description: test deterministic for reduce ops and matmul in acl/ge
     Expectation: the result of multiple run should be same
     """
-    context.set_context(mode=mode, deterministic="ON")
-    x = ms.Tensor(np.random.randn(16, 1024), ms.float32)
-    reduce_net = ReduceNet()
-    output1 = reduce_net(x)
-    output2 = reduce_net(x)
+    context.set_context(deterministic="ON")
+    x = ms.Tensor(np.random.randn(8090, 4, 8), ms.float32)
+    net = ReduceMatmulNet(shape=(8, 4096))
+    if mode == 'pynative':
+        output1 = net(x)
+        output2 = net(x)
+    elif mode == 'jit':
+        output1 = (jit(net))(x)
+        output2 = (jit(net))(x)
     assert np.allclose(output1.asnumpy(), output2.asnumpy(), rtol=0, atol=0)
 
 
