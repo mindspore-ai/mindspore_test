@@ -15,14 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "frontend/jit/ps/parse/data_converter.h"
 
+#include <cstdint>
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
 #include <map>
+#include <set>
+#include <memory>
 
+#include "numpy/arrayobject.h"
 #include "include/common/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/resolve.h"
 #include "frontend/jit/ps/pipeline.h"
@@ -47,7 +51,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/core/include/utils/value_utils.h"
 #include "ir/func_graph_flag.h"
+
+#if NPY_API_VERSION < 0x0000000d
+#error Current Numpy version is too low, the required version is not less than 1.19.3.
+#endif
 
 namespace mindspore {
 namespace parse {
@@ -1251,32 +1260,29 @@ ValuePtr ConvertBool(const py::object &obj) {
 
 ValuePtr ConvertInt(const py::object &obj) {
   // bool is also an instance of py::int_
-  if (py::isinstance<py::bool_>(obj) || !py::isinstance<py::int_>(obj)) {
+  if (!ParseUtilsCheckInt(obj.ptr())) {
     return nullptr;
   }
   return ConvertIntegerWithType(obj);
 }
 
 ValuePtr ConvertFloat(const py::object &obj) {
-  if (!py::isinstance<py::float_>(obj)) {
+  if (!ParseUtilsCheckFloat(obj.ptr())) {
     return nullptr;
   }
   return ConvertFloatWithType(obj);
 }
 
 ValuePtr ConvertNumber(const py::object &obj) {
-  if (py::isinstance<py::bool_>(obj)) {
+  if (ParseUtilsCheckBool(obj.ptr())) {
     return PyCast<BoolImm, bool>(obj);
   }
-
-  if (py::isinstance<py::int_>(obj)) {
+  if (ParseUtilsCheckInt(obj.ptr())) {
     return ConvertIntegerWithType(obj);
   }
-
-  if (py::isinstance<py::float_>(obj)) {
+  if (ParseUtilsCheckFloat(obj.ptr())) {
     return ConvertFloatWithType(obj);
   }
-
   return nullptr;
 }
 
@@ -1349,17 +1355,17 @@ ValuePtr ConvertSingleElementToTensor(const py::object &obj) {
 }
 
 ValuePtr ConvertNumberToTensor(const py::object &obj) {
-  if (py::isinstance<py::bool_>(obj)) {
+  if (ParseUtilsCheckBool(obj.ptr())) {
     auto v = py::cast<bool>(obj);
     return tensor::from_scalar(v);
   }
 
-  if (py::isinstance<py::int_>(obj)) {
+  if (ParseUtilsCheckInt(obj.ptr())) {
     auto v = py::cast<int64_t>(obj);
     return tensor::from_scalar(v);
   }
 
-  if (py::isinstance<py::float_>(obj)) {
+  if (ParseUtilsCheckFloat(obj.ptr())) {
     auto v = py::cast<pyfloat>(obj);
     return tensor::from_scalar(v);
   }
@@ -1596,14 +1602,11 @@ ValuePtr ConvertTensorToInt(const py::object &obj) {
 }
 
 ValuePtr ConvertTensorAndInt(const py::object &obj) {
-  // bool is also an instance of py::int_
-  if (py::isinstance<py::bool_>(obj)) {
-    return nullptr;
-  } else if (py::isinstance<py::int_>(obj)) {
-    return ConvertIntegerWithType(obj);
-  } else {
-    return ConvertTensorToInt(obj);
+  auto value_opt = ConvertGeneralizedIntToBasicInt(obj.ptr());
+  if (value_opt) {
+    return std::make_shared<Int64Imm>(*value_opt);
   }
+  return nullptr;
 }
 
 ValuePtr ConvertTensorToFloat(const py::object &obj) {
@@ -1674,8 +1677,7 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
 }
 
 ValuePtr ConvertBoolOrIntToFloat(const py::object &obj) {
-  // bool is also an instance of py::int_
-  if (!py::isinstance<py::int_>(obj)) {
+  if (!ParseUtilsCheckInt(obj.ptr()) && !PyBool_Check(obj.ptr())) {
     return nullptr;
   }
   return ConvertFloatWithType(obj);
@@ -1817,6 +1819,122 @@ OpDefConvertFunc GetConverterByType(int32_t dtype) {
   }
 
   return it->second;
+}
+
+namespace {
+bool IsNumpyAvailable() {
+  static bool available = []() {
+    if (_import_array() >= 0) {
+      return true;
+    } else {
+      MS_LOG(WARNING) << "Numpy init failed.";
+      return false;
+    }
+  }();
+  return available;
+}
+
+inline static bool IsNumpyInt(PyObject *obj) { return IsNumpyAvailable() && PyArray_IsScalar(obj, Integer); }
+
+inline static bool IsNumpyBool(PyObject *obj) { return IsNumpyAvailable() && PyArray_IsScalar(obj, Bool); }
+
+inline static bool IsNumpyFloat(PyObject *obj) { return IsNumpyAvailable() && PyArray_IsScalar(obj, Floating); }
+
+inline static bool IsNumpyScalar(PyObject *obj) {
+  return IsNumpyAvailable() &&
+         (PyArray_IsScalar(obj, Integer) || PyArray_IsScalar(obj, Bool) || PyArray_IsScalar(obj, Floating));
+}
+
+inline static bool IsNumpyScalarIntArray(PyObject *obj) {
+  if (!IsNumpyAvailable()) {
+    return false;
+  }
+  // numpy array with empty shape and one int element
+  if (!PyArray_Check(obj)) {
+    return false;
+  }
+  PyArrayObject *array_obj = reinterpret_cast<PyArrayObject *>(obj);
+  if (!PyArray_IsZeroDim(array_obj)) {
+    return false;
+  }
+  static std::set<int> valid_int_types{NPY_SHORT, NPY_USHORT, NPY_INT,      NPY_UINT,
+                                       NPY_LONG,  NPY_ULONG,  NPY_LONGLONG, NPY_ULONGLONG};
+  int array_data_type = PyArray_TYPE(array_obj);
+  return valid_int_types.find(array_data_type) != valid_int_types.end();
+}
+
+inline int64_t ConvertNumpyScalarIntArray(PyObject *obj) {
+  PyArrayObject *array_obj = reinterpret_cast<PyArrayObject *>(obj);
+  void *data = PyArray_DATA(array_obj);
+  int type_num = PyArray_TYPE(array_obj);
+  int64_t value;
+  switch (type_num) {
+    case NPY_SHORT:
+      value = *reinterpret_cast<short *>(data);
+      break;
+    case NPY_USHORT:
+      value = *reinterpret_cast<unsigned short *>(data);
+      break;
+    case NPY_INT:
+      value = *reinterpret_cast<int *>(data);
+      break;
+    case NPY_UINT:
+      value = *reinterpret_cast<unsigned int *>(data);
+      break;
+    case NPY_LONG:
+      value = *reinterpret_cast<long *>(data);
+      break;
+    case NPY_ULONG:
+      value = *reinterpret_cast<unsigned long *>(data);
+      break;
+    case NPY_LONGLONG:
+      value = *reinterpret_cast<long long *>(data);
+      break;
+    case NPY_ULONGLONG:
+      value = *reinterpret_cast<unsigned long long *>(data);
+      break;
+    default:
+      MS_EXCEPTION(ValueError) << "Unsupported data type " << type_num;
+  }
+  return value;
+}
+
+inline static bool IsIntScalarTensor(PyObject *obj) {
+  auto tensor = ConvertPyObjectTensorValue(obj);
+  if (!tensor) {
+    return false;
+  }
+  auto tensor_type = tensor->data_type();
+  auto tensor_size = tensor->DataSize();
+  static const std::set<TypeId> valid_integral{kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
+                                               kNumberTypeInt,   kNumberTypeInt32, kNumberTypeInt64};
+  return (tensor_size == 1 && valid_integral.find(tensor_type) != valid_integral.end());
+}
+}  // namespace
+
+bool ParseUtilsCheckInt(PyObject *obj) { return (!PyBool_Check(obj) && PyLong_Check(obj)) || IsNumpyInt(obj); }
+bool ParseUtilsCheckFloat(PyObject *obj) { return PyFloat_Check(obj) || IsNumpyFloat(obj); }
+bool ParseUtilsCheckBool(PyObject *obj) { return PyBool_Check(obj) || IsNumpyBool(obj); }
+bool ParseUtilsCheckScalar(PyObject *obj) { return PyFloat_Check(obj) || PyLong_Check(obj) || IsNumpyScalar(obj); }
+
+bool IsGeneralizedInt(PyObject *obj) {
+  return ParseUtilsCheckInt(obj) || IsNumpyScalarIntArray(obj) || IsIntScalarTensor(obj);
+}
+
+// convert int, numpy int, numpy scalar int array or scalar int tensor to int
+std::optional<int64_t> ConvertGeneralizedIntToBasicInt(PyObject *obj) {
+  if (ParseUtilsCheckInt(obj)) {
+    return static_cast<int64_t>(PyLong_AsLongLong(obj));
+  }
+  if (IsNumpyScalarIntArray(obj)) {
+    return ConvertNumpyScalarIntArray(obj);
+  }
+  // convert tensor with one int element to int
+  auto tensor = ConvertPyObjectTensorValue(obj);
+  if (MS_UNLIKELY(tensor == nullptr)) {
+    return std::nullopt;
+  }
+  return FetchTensorIntValue(tensor);
 }
 }  // namespace parse
 }  // namespace mindspore

@@ -95,6 +95,14 @@ FRONTEND_EXPORT OpDefConvertFunc GetConverterByType(int32_t dtype);
 FRONTEND_EXPORT ValuePtr ConvertTensor(const py::object &obj);
 FRONTEND_EXPORT ValuePtr ConvertPyObjectTensor(PyObject *obj);
 
+// convert PyObject to c++ type
+FRONTEND_EXPORT bool ParseUtilsCheckInt(PyObject *obj);
+FRONTEND_EXPORT bool ParseUtilsCheckFloat(PyObject *obj);
+FRONTEND_EXPORT bool ParseUtilsCheckBool(PyObject *obj);
+FRONTEND_EXPORT bool ParseUtilsCheckScalar(PyObject *obj);
+FRONTEND_EXPORT bool IsGeneralizedInt(PyObject *obj);
+FRONTEND_EXPORT std::optional<int64_t> ConvertGeneralizedIntToBasicInt(PyObject *obj);
+
 template <typename TS, typename TD, OpDefConvertFunc func>
 ValuePtr ConvertSequence(const py::object &obj) {
   if (!py::isinstance<TS>(obj)) {

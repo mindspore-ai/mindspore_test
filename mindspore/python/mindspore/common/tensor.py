@@ -711,9 +711,11 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
             [[1 3]
             [2 4]]
         """
-        if self.ndim <= 1:
+        rank = self.ndim
+        if rank <= 1:
             return self
-        return self.transpose()
+        dims = [i for i in range(rank - 1, -1, -1)]
+        return self.permute(dims)
 
     @staticmethod
     def from_numpy(array):
