@@ -16,7 +16,7 @@
 import os
 import numpy as np
 import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, jit
 from mindspore.ops.composite import GradOperation
 from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
@@ -1682,3 +1682,105 @@ def test_mutable_empty_list():
     net = Net()
     out = net(x, index)
     assert out == []
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_return_scalar_dict():
+    """
+    Feature: Support mutable in graph.
+    Description: Support mutable in graph.
+    Expectation: No Expectation.
+    """
+    @jit(backend="ms_backend")
+    def func_return_scalar():
+        ret = {'x': mutable(3), 'a': mutable(4)}
+        return ret
+
+    out = func_return_scalar()
+
+    assert isinstance(out['x'], int) and out['x'] == 3
+    assert isinstance(out['a'], int) and out['a'] == 4
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_return_scalar_dict_tuple():
+    """
+    Feature: Support mutable in graph.
+    Description: Support mutable in graph.
+    Expectation: No Expectation.
+    """
+    @jit(backend="ms_backend")
+    def func_return_scalar():
+        ret = {'x': (mutable(3), mutable(4.2), mutable(2.4))}
+        return ret
+
+    out = func_return_scalar()['x']
+
+    assert isinstance(out[0], int)
+    assert isinstance(out[1], float)
+    assert isinstance(out[2], float)
+    std_out = (3, 4.2, 2.4)
+    assert np.allclose(std_out, out, 1e-5, 1e-5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_return_scalar_tuple_same_type():
+    """
+    Feature: Support mutable in graph.
+    Description: Support mutable in graph.
+    Expectation: No Expectation.
+    """
+    @jit(backend="ms_backend")
+    def func_return_scalar(x):
+        ret = (x, mutable(4.6))
+        return ret
+
+    out = func_return_scalar(mutable(3.5))
+
+    assert isinstance(out[0], float)
+    assert isinstance(out[1], float)
+    assert np.allclose((3.5, 4.6), out, 1e-5, 1e-5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_return_scalar_tuple_diff_type():
+    """
+    Feature: Support mutable in graph.
+    Description: Support mutable in graph.
+    Expectation: No Expectation.
+    """
+    @jit(backend="ms_backend")
+    def func_return_scalar():
+        ret = (mutable(3.345), mutable(4), bool(mutable(0)))
+        return ret
+
+    out = func_return_scalar()
+
+    assert isinstance(out[0], float)
+    assert isinstance(out[1], int)
+    assert isinstance(out[2], bool)
+    assert np.allclose((3.345, 4, False), out, 1e-5, 1e-5)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_return_scalar_not_top_cell():
+    """
+    Feature: Support mutable in graph.
+    Description: Support mutable in graph.
+    Expectation: No Expectation.
+    """
+    class Inner(nn.Cell):
+        def construct(self, x):
+            return x ** 2
+
+    class ScalarNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.inner = Inner()
+
+        def construct(self, x):
+            return self.inner(x)
+
+    context.set_context(jit_level="O0")
+    out = ScalarNet()(mutable(-5))
+    assert isinstance(out, int) and out == 25
