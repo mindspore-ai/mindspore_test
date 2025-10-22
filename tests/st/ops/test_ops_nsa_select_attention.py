@@ -1385,6 +1385,11 @@ def test_ops_nsa_select_attention_batch_processing(mode, dtype):
     # Compare MindSpore with PyTorch forward results
     compare_results(torch_out[:3], ms_out, grad=False)
 
+    if not _env_has_torch_npu:
+        print("aclnnNsaSelectedAttentionGrad does not support deterministic calculations in this case, "
+              "So skip backward comparison to avoid random failure.")
+        return
+
     # MindSpore nsa_select_attention backward
     ms_out_grad = nsa_select_attention_backward_func(ms_query, ms_key, ms_value, ms_topk_indices, scale_value,
                                                      head_num, select_block_size, select_block_count, None,
