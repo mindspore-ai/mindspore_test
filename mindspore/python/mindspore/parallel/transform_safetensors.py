@@ -850,32 +850,73 @@ def _extract_last_two_numbers(file_name):
     return all_numbers[-2:]
 
 
+def _find_shortest_file(matched_files, rank_ckpts, new_file_suffix, file_suffix):
+    """Find the shortest file from a list of matched files."""
+    min_length = min(len(os.path.basename(ckpt)) for ckpt in matched_files)
+    shortest_files = [ckpt for ckpt in matched_files if len(os.path.basename(ckpt)) == min_length]
+    if len(shortest_files) == 1:
+        return shortest_files[0]
+    raise ValueError(f"Multiple files with suffix '{file_suffix}' found in {rank_ckpts}. Following MindSpore naming "
+                     f"rules, searched for files ending with '{new_file_suffix}' but found multiple "
+                     f"files {matched_files}. Then searched for the shortest filename, but found multiple shortest "
+                     f"files {shortest_files}. Please set file_suffix to the longest common suffix of all files.")
+
+
+def _get_matched_file(matched, rank_ckpts, new_file_suffix, file_suffix):
+    """Get the file from a list of matched files."""
+    if len(matched) == 1:
+        return matched[0]
+    if len(matched) > 1:
+        return _find_shortest_file(matched, rank_ckpts, new_file_suffix, file_suffix)
+    raise ValueError(f"Multiple files with suffix '{file_suffix}' found in {rank_ckpts}. Following MindSpore naming "
+                     f"rules, searched for files ending with '{new_file_suffix}' but found zero files. "
+                     f"Please set file_suffix to the longest common suffix of all files.")
+
+
 def _find_most_matching_file(rank_ckpts, file_suffix, format):
     """Finds the most matching checkpoint file based on the file_suffix."""
     if file_suffix is None:
         rank_ckpts.sort(key=_extract_last_two_numbers)
-    else:
-        pattern = rf'^_(\d+)-(\d+)_(\d+)$'
-        matches = re.search(pattern, file_suffix)
-        if matches is not None:
-            matched = [ckpt for ckpt in rank_ckpts if not ckpt.endswith(f"rank{file_suffix}.{format}")]
-            if len(matched) == 1:
-                return matched[0]
-        pattern = rf'^(\d+)-(\d+)_(\d+)$'
-        matches = re.search(pattern, file_suffix)
-        if matches is not None:
-            matched = [ckpt for ckpt in rank_ckpts if
-                       ckpt.endswith(f"_{file_suffix}.{format}") and not ckpt.endswith(f"rank_{file_suffix}.{format}")]
-            if len(matched) == 1:
-                return matched[0]
-        pattern = rf'^(\d+)_(\d+)$'
-        matches = re.search(pattern, file_suffix)
-        if matches is not None:
-            matched = [ckpt for ckpt in rank_ckpts if ckpt.endswith(f"-{file_suffix}.{format}")]
-            if len(matched) == 1:
-                return matched[0]
-        rank_ckpts.sort(key=lambda x: len(os.path.basename(x)), reverse=True)
-    return rank_ckpts[-1]
+        return rank_ckpts[-1]
+
+    new_file_suffix = file_suffix
+    pattern1 = rf'^_(\d+)-(\d+)_(\d+)$'
+    matches1 = re.search(pattern1, file_suffix)
+    pattern2 = rf'^(\d+)-(\d+)_(\d+)$'
+    matches2 = re.search(pattern2, file_suffix)
+    # Pattern matching for _{task_id}-{epoch}_{step} format (e.g., _1-10_100 or 1-10_100)
+    if matches1 is not None or matches2 is not None:
+        if matches2 is not None:
+            new_file_suffix = "_" + new_file_suffix
+        matched = [ckpt for ckpt in rank_ckpts if ckpt.endswith(f"{new_file_suffix}.{format}") and
+                   not ckpt.endswith(f"rank{new_file_suffix}.{format}")]
+        return _get_matched_file(matched, rank_ckpts, new_file_suffix, file_suffix)
+
+    pattern3 = rf'^-(\d+)_(\d+)$'
+    matches3 = re.search(pattern3, file_suffix)
+    pattern4 = rf'^(\d+)_(\d+)$'
+    matches4 = re.search(pattern4, file_suffix)
+    # Pattern matching for -{epoch}_{step} format (e.g., -10_100 or 10_100)
+    if matches3 is not None or matches4 is not None:
+        if matches4 is not None:
+            new_file_suffix = "-" + new_file_suffix
+        matched = [ckpt for ckpt in rank_ckpts if ckpt.endswith(f"{new_file_suffix}.{format}")]
+        return _get_matched_file(matched, rank_ckpts, new_file_suffix, file_suffix)
+
+    pattern5 = rf'^_(\d+)$'
+    matches5 = re.search(pattern5, file_suffix)
+    pattern6 = rf'^(\d+)$'
+    matches6 = re.search(pattern6, file_suffix)
+    # Pattern matching for _{step} format (e.g., _100 or 100)
+    if matches5 is not None or matches6 is not None:
+        if matches6 is not None:
+            new_file_suffix = "_" + new_file_suffix
+        matched = [ckpt for ckpt in rank_ckpts if ckpt.endswith(f"{new_file_suffix}.{format}")]
+        return _get_matched_file(matched, rank_ckpts, new_file_suffix, file_suffix)
+
+    raise ValueError(f"Multiple {format} files ending with '{file_suffix}' found in {rank_ckpts}. "
+                     f"Cannot determine which file is the intended one. "
+                     f"Please set file_suffix to the longest common suffix.")
 
 
 def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
@@ -912,6 +953,11 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
                 chosen_file = all_safetensor_files_map[rank_id]
         elif rank_ckpts:
             all_safetensor_files_map[rank_id] = rank_ckpts[0]
+        else:
+            raise ValueError(f"No safetensors files found in directory '{safetensor_dir}' "
+                             f"with suffix '{file_suffix}' and format '{format}'. "
+                             f"Please verify the directory contains the expected files. "
+                             f"Recommend setting file_suffix to the longest common suffix.")
     if file_suffix is not None and multiple_files_found_flag:
         logger.warning(f"When unified_safetensors files with file_suffix `{file_suffix}`, multiple files were found. "
                        f"Showing one list: {multiple_files_list}; selected `{chosen_file}` from it. "
