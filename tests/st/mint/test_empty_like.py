@@ -220,3 +220,40 @@ def test_empty_like_pin_memory(pin_memory):
         assert y.is_pinned()
     else:
         assert not y.is_pinned()
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_empty_like_cpu_kbk_pin_memory_true_raises():
+    """
+    Feature: empty_like with pin_memory=True in GRAPH O0 mode on CPU device.
+    Description: In GRAPH O0 mode, CPU backend should raise when pin_memory=True.
+    Expectation: Raise RuntimeError with proper message.
+    """
+    np.random.seed(0)
+    ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
+    net = Net()
+
+    with pytest.raises(RuntimeError, match="pin_memory"):
+        _ = net(input_tensor, dtype=mstype.float32, pin_memory=True)
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_empty_like_cpu_kbk_pin_memory_false_ok():
+    """
+    Feature: empty_like with pin_memory=False in GRAPH O0 mode on CPU device.
+    Description: In GRAPH O0 mode, CPU backend should work when pin_memory=False.
+    Expectation: Run success and output has expected shape/dtype and not pinned.
+    """
+    np.random.seed(1)
+    ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
+    net = Net()
+    y = net(input_tensor, dtype=mstype.float32, pin_memory=False)
+    assert np.allclose(y.shape, (1, 2, 3))
+    np.testing.assert_equal(y.dtype, mstype.float32)
+    assert not y.is_pinned()
