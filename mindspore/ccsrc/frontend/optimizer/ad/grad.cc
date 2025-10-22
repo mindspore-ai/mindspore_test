@@ -256,7 +256,15 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
       }
     }
   }
-  return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
+  auto output_graph = GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace, is_grad_by_j);
+  auto primal_fg_iter = output_graph->transforms().find("primal");
+  if (primal_fg_iter != output_graph->transforms().end()) {
+    auto actual_primal_graph = primal_fg_iter->second.func_graph();
+    auto jit_config = PhaseManager::GetInstance().jit_config();
+    actual_primal_graph->set_user_data<std::map<std::string, std::string>>(
+      "jit_config", std::make_shared<std::map<std::string, std::string>>(jit_config));
+  }
+  return output_graph;
 }
 
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,

@@ -462,6 +462,10 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     } else {
       output->set_abstract(origin_forward_output_abs);
     }
+    if (grad_param->source_fg->has_user_data("jit_config")) {
+      forward_fg->set_user_data<std::map<std::string, std::string>>(
+        "jit_config", grad_param->source_fg->user_data<std::map<std::string, std::string>>("jit_config"));
+    }
     auto forward_result = GetGraphResult(forward_fg, arg_list, cache_hit, grad_param->graph_cache_key);
     py::object py_forward_result =
       HandleForwardResult(forward_result, forward_fg, origin_forward_output_abs, grad_param, need_reuse_forward_node);
@@ -480,6 +484,11 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     grad_param->op_grad_info->out_abs = pynative::CommonUtils::SetAbstractValueToAnyValue(real_forward_output_abs);
   }
   grad_param->jit_out_has_dict = JitOutputHasDict(grad_param->op_grad_info->out_abs);
+
+  if (grad_param->source_fg->has_user_data("jit_config")) {
+    after_opt_fg->set_user_data<std::map<std::string, std::string>>(
+      "jit_config", grad_param->source_fg->user_data<std::map<std::string, std::string>>("jit_config"));
+  }
 
   // 4. Store forward_graph and bprop
   if (!cache_hit) {
@@ -1062,6 +1071,10 @@ std::pair<FuncGraphPtr, VectorRef> FilterGraph(const VectorRef &args, const Vect
     MS_LOG(INFO) << "Filter grad graph output.";
     const auto &new_graph =
       FilterGraphOutput(is_filtered, std::pair(args, added_args), func_graph, cache_key, next_edges);
+    if (func_graph->has_user_data("jit_config")) {
+      new_graph->set_user_data<std::map<std::string, std::string>>(
+        "jit_config", func_graph->user_data<std::map<std::string, std::string>>("jit_config"));
+    }
     return std::pair(new_graph, added_args);
   } else if (filter_level == "2") {
     MS_LOG(INFO) << "Filter grad graph input and output.";

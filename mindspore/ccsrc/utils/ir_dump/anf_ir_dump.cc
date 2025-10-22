@@ -473,6 +473,16 @@ void DumpGlobalInfoEntry(const FuncGraphPtr &graph, std::ostringstream &buffer, 
   buffer << "# IR entry: @" << graph->ToString() << std::endl;
   buffer << "# Total subgraphs: " << sub_graphs_size << std::endl;
   buffer << std::endl;
+  if (graph->has_user_data("jit_config")) {
+    std::map<std::string, std::string> jit_config =
+      *(graph->user_data<std::map<std::string, std::string>>("jit_config"));
+    buffer << "jit config {" << std::endl;
+    for (const auto &config : jit_config) {
+      buffer << config.first << ": " << config.second << std::endl;
+    }
+    buffer << "}" << std::endl;
+    buffer << std::endl;
+  }
 
   if (!graph->attrs().empty()) {
     buffer << "# Attrs:" << std::endl;

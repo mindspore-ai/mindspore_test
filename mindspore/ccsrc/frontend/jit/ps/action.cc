@@ -1856,6 +1856,10 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   if (func_graph == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "TaskEmit args error";
   }
+  if (func_graph->has_user_data("jit_config")) {
+    PhaseManager::GetInstance().set_jit_config(
+      *(func_graph->user_data<std::map<std::string, std::string>>("jit_config")));
+  }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   context_ptr->Refresh();
