@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) const {
-  const auto &input_x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-  const auto &indices_shape = input_args[kIndex1]->GetShape()->GetShapeVector();
+ShapeArray GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
+  const auto &input_x_shape = input_infos[kIndex0]->GetShape();
+  MS_EXCEPTION_IF_NULL(input_infos[kIndex1]);
+  const auto &indices_shape = input_infos[kIndex1]->GetShape();
   if (IsDynamicRank(input_x_shape) || IsDynamicRank(indices_shape)) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeRankAny});
+    return {{abstract::Shape::kShapeRankAny}};
   }
 
   std::vector<int64_t> indices_new_shape = indices_shape;
@@ -40,7 +41,7 @@ BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto indices_end_value = indices_new_shape[indices_rank - kIndex1];
 
   if (indices_end_value == abstract::Shape::kShapeDimAny) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeRankAny});
+    return {{abstract::Shape::kShapeRankAny}};
   }
 
   MS_CHECK_VALUE(
@@ -57,12 +58,13 @@ BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
     output_shape.push_back(input_x_shape[i]);
   }
 
-  return std::make_shared<abstract::TensorShape>(output_shape);
+  return {output_shape};
 }
 
-TypePtr GatherNdFuncImpl::InferType(const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType();
+std::vector<TypeId> GatherNdFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                const InferInfoPtrList &input_infos) const {
+  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
+  return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

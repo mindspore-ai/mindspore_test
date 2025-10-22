@@ -104,7 +104,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, \
-    expand_as, unstack_ext_view_op, full_like_op, \
+    expand_as, unstack_ext_view_op, full_like_op, tensor_scatter_add, \
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import take, tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op, tril_ext_op, \
@@ -149,7 +149,6 @@ shape_ = P.Shape()
 split_tensor = SplitTensor()
 split_with_size = SplitWithSize()
 size_ = P.Size()
-tensor_scatter_add_ = P.TensorScatterAdd()
 tensor_scatter_div_ = P.TensorScatterDiv()
 tensor_scatter_max_ = P.TensorScatterMax()
 tensor_scatter_min_ = P.TensorScatterMin()
@@ -2819,51 +2818,6 @@ def gather_elements(input, dim, index):
          [4 3]]
     """
     return gather_d_(input, dim, index)
-
-
-def tensor_scatter_add(input_x, indices, updates):
-    r"""
-    Return a new tensor by adding the values from `updates` in `input_x` indicated by
-    `indices` .
-
-    .. math::
-        output\left [indices  \right ] = input\_x + update
-
-    The figure below shows an example of the computational process of tensor_scatter_add:
-
-    .. image:: ../images/TensorScatterAdd.png
-        :align: center
-
-    Note:
-        - On GPU, if some values of the `indices` are out of bound, instead of raising an index error,
-          the corresponding `updates` will not be updated to self tensor.
-        - On CPU, if some values of the `indices` are out of bound, raising an index error.
-        - On Ascend, out of bound checking is not supported, if some values of the `indices` are out of bound,
-          unknown errors may be caused.
-
-    Args:
-        input_x (Tensor): The input tensor.
-        indices (Tensor): The specified indices.
-        updates (Tensor): The update values.
-
-    Returns:
-        Tensor
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> input_x = mindspore.tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], mindspore.float32)
-        >>> indices = mindspore.tensor([[0, 0], [0, 0]], mindspore.int32)
-        >>> updates = mindspore.tensor([1.0, 2.2], mindspore.float32)
-        >>> output = mindspore.ops.tensor_scatter_add(input_x, indices, updates)
-        >>> print(output)
-        [[ 3.1  0.3  3.6]
-         [ 0.4  0.5 -3.2]]
-    """
-
-    return tensor_scatter_add_(input_x, indices, updates)
 
 
 def tensor_scatter_sub(input_x, indices, updates):
