@@ -24,6 +24,8 @@
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "include/api/dual_abi_helper.h"
 #include "include/api/status.h"
 #include "include/dataset/constants.h"
@@ -160,6 +162,10 @@ class Vocab {
 
   /// \brief Destructor.
   ~Vocab() = default;
+
+  Status ToJSON(nlohmann::json *json);
+
+  static Status FromJSON(const nlohmann::json &json, std::shared_ptr<Vocab> *vocab);
 
   static const WordIdType kNoTokenExists;
   static const WordType kNoIdExists;
