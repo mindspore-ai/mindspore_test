@@ -18,7 +18,7 @@ import os
 import pytest
 from tests.mark_utils import arg_mark
 
-from mindspore import ops, nn, context
+from mindspore import ops, nn, context, jit
 import mindspore as ms
 from mindspore.communication import init
 
@@ -46,6 +46,39 @@ def test_deterministic_reducesum(mode):
     reduce_net = ReduceNet()
     output1 = reduce_net(x)
     output2 = reduce_net(x)
+    assert np.allclose(output1.asnumpy(), output2.asnumpy(), rtol=0, atol=0)
+
+
+class USSNet(nn.Cell):
+    def __init__(self):
+        super(USSNet, self).__init__()
+        self.uss = ops.UnsortedSegmentSum()
+
+    def construct(self, input_x, segment_ids, num_segments):
+        output = self.uss(input_x, segment_ids, num_segments)
+        return output
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'jit'])
+def test_deterministic_uss(mode):
+    """
+    Feature: ascend op deterministic test case
+    Description: test deterministic for unsorted_segment_sum in acl/ge
+    Expectation: the result of multiple run should be same
+    """
+    context.set_context(deterministic="ON")
+    input_x = ms.Tensor(np.random.randn(16, 1024).astype(np.float32))
+    segment_ids = ms.Tensor(np.ones([16, 1024]).astype(np.int32))
+    num_segments = 4
+    uss_net = USSNet()
+    if mode == 'pynative':
+        output1 = uss_net(input_x, segment_ids, num_segments)
+        output2 = uss_net(input_x, segment_ids, num_segments)
+    elif mode == 'jit':
+        output1 = (jit(uss_net))(input_x, segment_ids, num_segments)
+        output2 = (jit(uss_net))(input_x, segment_ids, num_segments)
     assert np.allclose(output1.asnumpy(), output2.asnumpy(), rtol=0, atol=0)
 
 
