@@ -4106,9 +4106,9 @@ def std_ext(input, dim=None, *, correction=1, keepdim=False):
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import mint, Tensor
+        >>> from mindspore import ops, Tensor
         >>> input = Tensor(np.array([[1, 2, 3], [-1, 1, 4]]).astype(np.float32))
-        >>> output = ops.std_ext(input, dim=1, correction=1, keepdim=False)
+        >>> output = ops.function.math_func.std_ext(input, dim=1, correction=1, keepdim=False)
         >>> print(output)
         [1.      2.5166113]
     """
@@ -4446,7 +4446,7 @@ def std_mean_ext(input, dim=None, *, correction=1, keepdim=False):
     Examples:
         >>> import mindspore as ms
         >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output_std, output_mean = ms.mint.std_mean(input, 1, correction=2, keepdim=True)
+        >>> output_std, output_mean = ms.ops.function.math_func.std_mean_ext(input, 1, correction=2, keepdim=True)
         >>> print(output_std)
         [[1.5811388]
          [7.3824115]]
@@ -4501,7 +4501,7 @@ def var_mean_ext(input, dim=None, *, correction=1, keepdim=False):
     Examples:
         >>> import mindspore as ms
         >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output_var, output_mean = ms.mint.var_mean(input, 1, correction=2, keepdim=True)
+        >>> output_var, output_mean = ms.ops.function.math_func.var_mean_ext(input, 1, correction=2, keepdim=True)
         >>> print(output_var)
         [[ 2.5]
          [54.5]]
@@ -4747,7 +4747,7 @@ def addmm_ext(input, mat1, mat2, *, beta=1, alpha=1):
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor, ops
         >>> input = Tensor(np.ones([3, 3]).astype(np.float32))
         >>> mat1 = Tensor(np.ones([3, 4]).astype(np.float32))
         >>> mat2 = Tensor(np.ones([4, 3]).astype(np.float32))
@@ -4893,11 +4893,11 @@ def addmv_ext(input, mat, vec, *, beta=1, alpha=1):
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor, ops
         >>> input = Tensor(np.array([2., 3.]).astype(np.float32))
         >>> mat = Tensor(np.array([[2., 5., 3.], [4., 2., 2.]]).astype(np.float32))
         >>> vec = Tensor(np.array([3., 2., 4.]).astype(np.float32))
-        >>> output = mint.addmv(input, mat, vec)
+        >>> output = ops.function.math_func.addmv_ext(input, mat, vec)
         >>> print(output)
         [30. 27.]
     """
@@ -11930,8 +11930,8 @@ def isnan_ext(tensor):
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
-        >>> input1 = Tensor([np.nan, 2, 3, 4])
-        >>> output = ms.mint.isnan(input1)
+        >>> input1 = ms.Tensor([np.nan, 2, 3, 4])
+        >>> output = ms.ops.function.math_func.isnan_ext(input1)
         >>> print(output)
         [ True  False  False  False]
     """

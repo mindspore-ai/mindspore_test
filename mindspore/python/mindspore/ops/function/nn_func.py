@@ -314,12 +314,11 @@ def adaptive_avg_pool2d_ext(input, output_size):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
         >>> # case 1: output_size=(3, 2)
-        >>> input = Tensor(np.array([[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        >>> input = mindspore.Tensor(np.array([[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
         ...                            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
         ...                            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]]), mindspore.float32)
-        >>> output = mint.nn.functional.adaptive_avg_pool2d(input, (3, 2))
+        >>> output = mindspore.ops.function.nn_func.adaptive_avg_pool2d_ext(input, (3, 2))
         >>> print(output)
         [[[1.5 2.5]
          [4.5 5.5]
@@ -1810,9 +1809,8 @@ def dropout2d_ext(input, p=0.5, training=True, inplace=False):
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
-        >>> input = Tensor(np.ones([2, 1, 2, 3]), mindspore.float32)
-        >>> output = mint.nn.functional.dropout2d(input, 0.5)
+        >>> input = mindspore.Tensor(np.ones([2, 1, 2, 3]), mindspore.float32)
+        >>> output = mindspore.ops.function.nn_func.dropout2d_ext(input, 0.5)
         >>> print(output.shape)
         (2, 1, 2, 3)
     """
@@ -4504,10 +4502,9 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
         >>> input = mindspore.Tensor(np.random.randn(3, 5), mindspore.float32)
         >>> target = mindspore.Tensor(np.array([1, 0, 4]), mindspore.int32)
-        >>> output = mint.nn.functional.nll_loss(input, target)
+        >>> output = mindspore.ops.function.nn_func.nll_loss_ext(input, target)
 
     """
     return _nllloss_nd(input, target, weight, ignore_index, reduction)
@@ -6426,10 +6423,9 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops, mint
-        >>> x = Tensor(np.ones([10, 32, 32, 32]), mindspore.float32)
-        >>> weight = Tensor(np.ones([32, 32, 3, 3]), mindspore.float32)
-        >>> output = mint.nn.functional.conv2d(x, weight)
+        >>> x = mindspore.Tensor(np.ones([10, 32, 32, 32]), mindspore.float32)
+        >>> weight = mindspore.Tensor(np.ones([32, 32, 3, 3]), mindspore.float32)
+        >>> output = mindspore.ops.function.nn_func.conv2d_ext(x, weight)
         >>> print(output.shape)
         (10, 32, 30, 30)
     """
