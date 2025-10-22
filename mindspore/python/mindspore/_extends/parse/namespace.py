@@ -116,6 +116,8 @@ class ClassMemberNamespace(Namespace):
         d, = self.dicts
         if name == "namespace":
             return self
+        if isinstance(d, super):
+            return getattr(d, name)
         try:
             if hasattr(d, name):
                 return getattr(d, name)
