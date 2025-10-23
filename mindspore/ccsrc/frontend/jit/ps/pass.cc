@@ -741,6 +741,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, c
     {{kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", GetJitOptPassA1(irpass)},
+     {"with_stream_mark", opt::OptPassConfig(opt::OptPassConfig(opt::irpass::WithStreamMark))},
      {"recompute_prepare", opt::OptPassConfig({irpass.set_cell_output_no_recompute_})},
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},

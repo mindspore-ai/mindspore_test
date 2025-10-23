@@ -166,6 +166,8 @@ bool WithStreamMark(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
       fg->erase_flag("marked_stream_limit_ctx");
     }
   }
+  root->erase_flag("marked_stream_ctx");
+  root->erase_flag("marked_stream_limit_ctx");
   return false;
 }
 }  // namespace irpass

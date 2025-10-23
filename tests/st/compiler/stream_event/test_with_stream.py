@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+from mindspore import Tensor, ops, Parameter
 from mindspore.runtime import Stream
 from mindspore.runtime import StreamCtx as MsJitStreamCtx
 from mindspore.ops.functional import grad
@@ -85,7 +85,6 @@ def test_my_ms_jit_stream_ctx():
                 z = a + b + x
             return z - y
 
-
     save_path = "./test_my_ms_jit_stream_ctx"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
     ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
@@ -147,6 +146,7 @@ def test_my_ms_jit_stream_ctx_runtime():
     graph_grad_out = grad(net)(x)
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_my_ms_jit_stream_ctx_mutli():
     """
@@ -163,7 +163,6 @@ def test_my_ms_jit_stream_ctx_mutli():
             with MyMsJitStreamCtx(s2):
                 y = a - y
             return y + z
-
 
     save_path = "./test_my_ms_jit_stream_ctx_mutli"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
@@ -204,7 +203,6 @@ def test_my_ms_jit_stream_ctx_nest():
                 with MyMsJitStreamCtx(s2):
                     y = a - y
             return y + z
-
 
     save_path = "./test_my_ms_jit_stream_ctx_nest"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
@@ -247,7 +245,6 @@ def test_basic_stream_block_annotation_1():
                 y = y + z
             y = y + z
             return y + z
-
 
     save_path = "./test_basic_stream_block_annotation_1"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
@@ -292,7 +289,6 @@ def test_basic_stream_block_annotation_2():
                 x = x + Tensor(np.ones([2, 2], dtype=np.float32))
             x = ops.abs(x)
             return x
-
 
     save_path = "./test_basic_stream_block_annotation_2"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
@@ -425,7 +421,6 @@ def test_multiple_independent_streams():
             result = x_relu + y_relu
             result = result + intermediate
             return result
-
 
     save_path = "./test_multiple_independent_streams"
     os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
@@ -595,7 +590,6 @@ def test_stream_with_continue_statement():
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
 
 
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_stream_with_return_statement():
     """
@@ -672,3 +666,60 @@ def test_multiple_returns_in_different_streams():
     ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     graph_grad_out = grad(net)(x, 1)
     assert (pynative_grad_out.asnumpy() == graph_grad_out.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_with_morph():
+    """
+    Feature: Support with stream.
+    Description: Support with stream.
+    Expectation: Run success.
+    """
+
+    def infer_dtype(args):
+        return args
+
+    def infer_shape(args):
+        return args
+
+    def mul_by(*args):
+        def inner(x):
+            with ms.runtime.StreamCtx(s1):
+                y = args[0] * x
+            return y - 1
+
+        return inner
+
+    class MorphNet(nn.Cell):
+        def __init__(self):
+            super(MorphNet, self).__init__()
+            np_weight0 = np.array([1.0, 2.0, 3.0])
+            np_weight1 = np.array([4.0, 5.0, 6.0])
+            self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+            self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+            self.mul_by_100 = ops.Morph(mul_by(100), infer_shape, infer_dtype)
+
+        def construct(self, x):
+            input_a = x * self.weight0
+            input_b = self.mul_by_100(input_a)
+            out = input_b * self.weight1
+            return out
+
+    save_path = "./test_with_stream_with_morph"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    np_input_x = np.array([7.0, 8.0, 9.0])
+    input_x = Tensor(np_input_x, ms.float32)
+    net = MorphNet()
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+    grad_net = grad_op(net, net.trainable_params())
+    grad_net(input_x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(stream_id_num) == 1
