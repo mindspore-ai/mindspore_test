@@ -6,7 +6,8 @@ mindspore.mint.distributed.all_reduce
     使用指定方式对通信组内的所有设备的Tensor数据进行规约操作，所有设备都得到相同的结果，返回规约操作后的张量。
 
     .. note::
-        集合中的所有进程的Tensor必须具有相同的shape和格式。
+        - 集合中的所有进程的Tensor必须具有相同的shape和格式。
+        - 当前仅支持PyNative模式，不支持Graph模式。
 
     参数：
         - **tensor** (Tensor) - 输入和输出待规约操作的Tensor，Tensor的shape为 :math:`(x_1, x_2, ..., x_R)`，该函数输出直接覆盖输入。
