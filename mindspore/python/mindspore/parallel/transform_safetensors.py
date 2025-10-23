@@ -944,7 +944,7 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
                 chosen_file = all_safetensor_files_map[rank_id]
         elif rank_ckpts:
             all_safetensor_files_map[rank_id] = rank_ckpts[0]
-        else:
+        elif file_suffix is not None:
             raise ValueError(f"No safetensors files found in directory '{safetensor_dir}' "
                              f"with suffix '{file_suffix}' and format '{format}'. "
                              f"Please verify the directory contains the expected files. "
@@ -1232,7 +1232,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     if os.path.isfile(src_dir):
         raise ValueError("For 'unified_safetensors', the 'src_dir' can not be a file.")
     all_safetensor_files_map = _collect_safetensor_files(src_dir, format="safetensors", file_suffix=file_suffix)
-    all_ckpt_files_map = _collect_safetensor_files(src_dir, format="ckpt", file_suffix=file_suffix)
+    all_ckpt_files_map = _collect_safetensor_files(src_dir, format="ckpt")
     if all_safetensor_files_map and all_ckpt_files_map:
         raise ValueError("For 'unified_safetensors', the 'src_dir' cannot contain "
                          "both ckpt file and safetensors file simultaneously")
