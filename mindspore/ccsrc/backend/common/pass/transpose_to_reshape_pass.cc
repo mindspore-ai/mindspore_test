@@ -77,11 +77,10 @@ bool TransposeToReshapePass::CheckMatchedDAG(const PatternMap &m, const FuncGrap
                       << "], permute dim size [" << permute.size() << "].";
   }
   // 2. remove shape==1 dimension in permute list
+  std::transform(permute.cbegin(), permute.cend(), permute.begin(),
+                 [&input_shape](int64_t dim) { return dim < 0 ? dim + SizeToLong(input_shape.size()) : dim; });
   permute.erase(std::remove_if(permute.begin(), permute.end(),
-                               [&input_shape](int64_t dim) {
-                                 auto permute_dim = LongToSize(dim < 0 ? dim + SizeToLong(input_shape.size()) : dim);
-                                 return input_shape[permute_dim] == 1;
-                               }),
+                               [&input_shape](int64_t dim) { return input_shape.at(LongToSize(dim)) == 1; }),
                 permute.end());
   // 3. check if rest dimension in permute list is ascending
   for (size_t i = 1; i < permute.size(); ++i) {
