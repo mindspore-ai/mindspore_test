@@ -30,7 +30,6 @@
 
 namespace mindspore {
 namespace distributed {
-constexpr auto kOpExecutorWorkerJoinName = "OpExecutorWorkerJoin";
 using mindspore::tools::TFTWaitSem;
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
@@ -66,7 +65,7 @@ bool Initialize() {
 
     // Release PyNative resources.
     runtime::Pipeline::Get().WaitAll();
-    callback::CommonCallback::GetInstance().GetCallback<void>(kOpExecutorWorkerJoinName)();
+    runtime::Pipeline::Get().WorkerJoin();
     MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
     return true;

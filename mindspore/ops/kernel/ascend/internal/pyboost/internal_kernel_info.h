@@ -41,7 +41,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 
 namespace mindspore {
 namespace kernel {

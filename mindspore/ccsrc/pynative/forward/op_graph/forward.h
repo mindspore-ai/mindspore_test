@@ -30,7 +30,7 @@
 #include "ir/cell.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
-#include "backend/ms_backend/op_backend.h"
+#include "pynative/utils/runtime/op_backend/op_backend.h"
 #include "ir/device_type.h"
 
 namespace mindspore {

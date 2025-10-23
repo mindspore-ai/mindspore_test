@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_ASYNC_DEVICE_TASK_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_ASYNC_DEVICE_TASK_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_TASK_DEVICE_TASK_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_TASK_DEVICE_TASK_H_
 
 #include <utility>
 #include <vector>
@@ -24,11 +24,11 @@
 
 #include "runtime/pipeline/task/task.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "runtime/pynative/op_compiler.h"
+#include "pynative/utils/runtime/op_compiler.h"
 
 namespace mindspore {
 namespace runtime {
-class BACKEND_EXPORT OpTaskContext {
+class PYNATIVE_UTILS_EXPORT OpTaskContext {
  public:
   OpTaskContext(GraphId graph_id, KernelGraphPtr graph, session::BackendOpRunInfoPtr op_run_info,
                 OpCompilerInfoPtr op_compiler_info, bool is_pynative_infer)
@@ -54,7 +54,7 @@ class BACKEND_EXPORT OpTaskContext {
   bool is_pyantive_infer_;
 };
 
-class BACKEND_EXPORT DeviceOpTask : public AsyncTask {
+class PYNATIVE_UTILS_EXPORT DeviceOpTask : public AsyncTask {
  public:
   DeviceOpTask(std::shared_ptr<OpTaskContext> context, TaskType task_type)
       : AsyncTask(task_type), context_(std::move(context)) {}
@@ -68,7 +68,7 @@ class BACKEND_EXPORT DeviceOpTask : public AsyncTask {
   std::shared_ptr<OpTaskContext> context_;
 };
 
-class BACKEND_EXPORT DeviceOpRunTask : public DeviceOpTask {
+class PYNATIVE_UTILS_EXPORT DeviceOpRunTask : public DeviceOpTask {
  public:
   DeviceOpRunTask(std::shared_ptr<OpTaskContext> context,
                   std::function<void(const std::shared_ptr<OpTaskContext> &context)> run_func);
@@ -79,7 +79,7 @@ class BACKEND_EXPORT DeviceOpRunTask : public DeviceOpTask {
   std::function<void(const std::shared_ptr<OpTaskContext> &context)> run_func_;
 };
 
-class BACKEND_EXPORT PyBoostDeviceTask : public AsyncTask {
+class PYNATIVE_UTILS_EXPORT PyBoostDeviceTask : public AsyncTask {
  public:
   explicit PyBoostDeviceTask(std::function<void()> run_func) : AsyncTask(kPyBoostOpTask), run_func_(run_func) {}
   ~PyBoostDeviceTask() = default;
@@ -90,7 +90,7 @@ class BACKEND_EXPORT PyBoostDeviceTask : public AsyncTask {
   std::function<void()> run_func_;
 };
 
-class BACKEND_EXPORT DeviceLaunchTask : public AsyncTask {
+class PYNATIVE_UTILS_EXPORT DeviceLaunchTask : public AsyncTask {
  public:
   explicit DeviceLaunchTask(std::function<void()> run_func) : AsyncTask(kKernelTask), run_func_(std::move(run_func)) {}
   ~DeviceLaunchTask() = default;
@@ -101,7 +101,7 @@ class BACKEND_EXPORT DeviceLaunchTask : public AsyncTask {
   std::function<void()> run_func_;
 };
 
-class BACKEND_EXPORT PassthroughDeviceTask : public AsyncTask {
+class PYNATIVE_UTILS_EXPORT PassthroughDeviceTask : public AsyncTask {
  public:
   explicit PassthroughDeviceTask(std::function<void(void)> run_func)
       : AsyncTask(kDeviceOpTask), run_func_(std::move(run_func)) {}
@@ -112,7 +112,7 @@ class BACKEND_EXPORT PassthroughDeviceTask : public AsyncTask {
   std::function<void(void)> run_func_;
 };
 
-class BACKEND_EXPORT PassthroughNoWaitDeviceTask : public AsyncTask {
+class PYNATIVE_UTILS_EXPORT PassthroughNoWaitDeviceTask : public AsyncTask {
  public:
   explicit PassthroughNoWaitDeviceTask(std::function<void(void)> run_func)
       : AsyncTask(kDeviceOpTask), run_func_(std::move(run_func)) {}
@@ -124,4 +124,4 @@ class BACKEND_EXPORT PassthroughNoWaitDeviceTask : public AsyncTask {
 };
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_ASYNC_DEVICE_TASK_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYNATIVE_UTILS_RUNTIME_TASK_DEVICE_TASK_H_

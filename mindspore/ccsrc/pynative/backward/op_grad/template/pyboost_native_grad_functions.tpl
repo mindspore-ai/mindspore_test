@@ -15,7 +15,7 @@
  */
 
 #include "pynative/backward/op_grad/auto_generate/pyboost_native_grad_functions.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "include/common/utils/python_adapter.h"

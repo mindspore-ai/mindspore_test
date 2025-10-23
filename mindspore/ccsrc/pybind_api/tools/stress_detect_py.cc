@@ -15,16 +15,16 @@
  */
 #include "pybind_api/tools/stress_detect_py.h"
 #include <utility>
-#include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {
 namespace {
-DeviceContext *GetDeviceCtx() {
+device::DeviceContext *GetDeviceCtx() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device::GetDeviceTypeByName(device_name), MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});

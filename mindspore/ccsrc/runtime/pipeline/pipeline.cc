@@ -97,5 +97,14 @@ void Pipeline::DisablePipeline() {
 }
 
 void Pipeline::DisableMultiThreadAfterFork() { Pipeline::Get().DisablePipeline(); }
+
+void Pipeline::WorkerJoin() {
+  GilReleaseWithCheck gil_release;
+  frontend_stage_->WorkerJoin();
+  bprop_stage_->WorkerJoin();
+  backend_stage_->WorkerJoin();
+  launch_stage_->WorkerJoin();
+  stress_detect_->WorkerJoin();
+}
 }  // namespace runtime
 }  // namespace mindspore

@@ -21,17 +21,17 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "runtime/pynative/op_compiler.h"
-#include "runtime/pynative/task/device_task.h"
+#include "pynative/utils/runtime/op_compiler.h"
+#include "pynative/utils/runtime/task/device_task.h"
 
 namespace mindspore::compile {
 using BackendOpRunInfoPtr = session::BackendOpRunInfoPtr;
 using KernelTensor = kernel::KernelTensor;
 using KernelTensorPtr = kernel::KernelTensorPtr;
 
-class BACKEND_EXPORT ViewBackend {
+class PYNATIVE_UTILS_EXPORT ViewBackend {
  public:
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
@@ -54,7 +54,7 @@ class BACKEND_EXPORT ViewBackend {
   inline static ContiguousFunc contiguous_func_;
 };
 
-class PostRunOp {
+class PYNATIVE_UTILS_EXPORT PostRunOp {
  public:
   void UpdateOutput(const std::vector<session::KernelWithIndex> &output_nodes, VectorRef *outputs) const;
 
@@ -79,7 +79,7 @@ class PostRunOp {
                                                   size_t idx_in_graph_outputs) const;
 };
 
-class BACKEND_EXPORT OpBackend {
+class PYNATIVE_UTILS_EXPORT OpBackend {
  public:
   OpBackend() = default;
   ~OpBackend() = default;

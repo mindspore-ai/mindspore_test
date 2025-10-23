@@ -23,7 +23,6 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "include/backend/visible.h"
-#include "runtime/pynative/op_runner.h"
 
 namespace mindspore::runtime {
 class PYBOOST_API ValueConverter {

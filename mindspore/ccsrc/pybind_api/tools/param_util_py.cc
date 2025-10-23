@@ -18,7 +18,6 @@
 #include <algorithm>
 #include "ir/anf.h"
 #include "ir/tensor_new.h"
-#include "runtime/pynative/op_executor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"

@@ -32,7 +32,7 @@
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "include/common/utils/stub_tensor.h"
-#include "runtime/pynative/op_executor.h"
+#include "pynative/utils/runtime/op_executor.h"
 #include "tools/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"

@@ -62,8 +62,6 @@
 "mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.h"                         "runtime/string"
 "mindspore/mindspore/ops/kernel/cpu/native/linear_sum_assignment_cpu_kernel.cc"           "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/native/arithmetic_self_cpu_kernel.cc"                 "readability/braces"
-"mindspore/mindspore/ccsrc/runtime/pynative/forward/pyboost/func_object.h"                             "runtime/explicit"
-"mindspore/mindspore/ccsrc/runtime/pynative/forward/pyboost/func_object.h"
 "mindspore/mindspore/ops/kernel/cpu/native/dct_cpu_kernel.cc"
 "mindspore/mindspore/ops/kernel/cpu/utils/fft_helper.h"                             "build/include_subdir"
 "mindspore/mindspore/ccsrc/debug/data_dump/npy_header.h"

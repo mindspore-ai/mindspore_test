@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pynative/ir_converter.h"
+#include "pynative/utils/runtime/ir_converter.h"
 
 #include <atomic>
 #include <algorithm>

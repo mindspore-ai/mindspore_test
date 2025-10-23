@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pynative/lazy_fusion.h"
+#include "pynative/utils/runtime/lazy_fusion.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
 

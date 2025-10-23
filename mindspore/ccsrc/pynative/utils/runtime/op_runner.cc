@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pynative/op_runner.h"
+#include "pynative/utils/runtime/op_runner.h"
 
 #include <string>
 #include <vector>
@@ -33,9 +33,9 @@
 #include "ir/map_tensor.h"
 #include "include/common/utils/convert_utils.h"
 #include "backend/common/device_address_utils.h"
-#include "runtime/pynative/op_runtime_info.h"
-#include "runtime/pynative/op_executor.h"
-#include "runtime/pynative/op_compiler.h"
+#include "pynative/utils/runtime/op_runtime_info.h"
+#include "pynative/utils/runtime/op_executor.h"
+#include "pynative/utils/runtime/op_compiler.h"
 #include "runtime/core/actors/base/actor_common.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
@@ -43,7 +43,7 @@
 #include "tools/profiler/profiling.h"
 #include "backend/common/pass_manager/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "runtime/pynative/ir_converter.h"
+#include "pynative/utils/runtime/ir_converter.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/stream_guard.h"
 using mindspore::profiler::ProfilerManager;
