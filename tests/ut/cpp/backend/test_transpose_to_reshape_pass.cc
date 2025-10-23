@@ -47,12 +47,30 @@ TEST_F(TransposeToReshapePass, test_transpose_to_reshape_succ) {
 }
 
 /// Feature: A backend pass: TransposeToReshapePass
-/// Description: Cannot convert Transpose to Reshape under certain condition
+/// Description: Cannot convert Transpose to Reshape when data is rearranged
 /// Expectation: After optimize, still Transpose
 TEST_F(TransposeToReshapePass, test_transpose_to_reshape_fail) {
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kBFloat16, {1, 1, 2, 2, 1, 3, 4});
   auto permute = c.NewValueNode(MakeValue<std::vector<int64_t>>(std::vector<int64_t>{3, 1, 2, 5, 0, 4, 6}));
+  auto transpose = c.NewCNode("Transpose", {input, permute}, {});
+
+  c.SetOutput(transpose);
+  c.GetGraph()->set_run_mode(device::RunMode::kKernelMode);
+  test::RunPass(c.GetGraph(), {std::make_shared<opt::TransposeToReshapePass>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("input").AddVar("permute").AddCNode(
+    "transpose", {std::make_shared<Primitive>("Transpose"), "input", "permute"});
+  EXPECT_TRUE(checker.build_pattern_map(c.GetGraph()->output()));
+}
+
+/// Feature: A backend pass: TransposeToReshapePass
+/// Description: Cannot convert Transpose to Reshape when data is rearranged(with negative dim)
+/// Expectation: After optimize, still Transpose
+TEST_F(TransposeToReshapePass, test_transpose_to_reshape_fail_neg_dim) {
+  test::ConstructGraph c;
+  auto input = c.NewTensorInput("input", kBFloat16, {4, 8});
+  auto permute = c.NewValueNode(MakeValue<std::vector<int64_t>>(std::vector<int64_t>{-1, 0}));
   auto transpose = c.NewCNode("Transpose", {input, permute}, {});
 
   c.SetOutput(transpose);
