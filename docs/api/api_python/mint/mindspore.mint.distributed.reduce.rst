@@ -7,7 +7,7 @@ mindspore.mint.distributed.reduce
 
     .. note::
         - 只有目标为dst的进程(全局的进程编号)才会收到规约操作后的输出。
-        - 当前支持PyNative模式，不支持Graph模式。
+        - 当前仅支持PyNative模式，不支持Graph模式。
         - 其他进程需传入Tensor，该Tensor没有数学意义。
 
     参数：

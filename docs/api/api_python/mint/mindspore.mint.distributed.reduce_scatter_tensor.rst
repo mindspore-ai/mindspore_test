@@ -6,7 +6,8 @@ mindspore.mint.distributed.reduce_scatter_tensor
     规约并且分发指定通信组中的Tensor，返回分发后的Tensor。
 
     .. note::
-        在集合的所有过程中，Tensor必须具有相同的shape和格式。
+        - 在集合的所有过程中，Tensor必须具有相同的shape和格式。
+        - 当前仅支持PyNative模式，不支持Graph模式。
 
     参数：
         - **output** (Tensor) - 输出分发的Tensor，其shape为 :math:`(N/rank\_size, *)`。
