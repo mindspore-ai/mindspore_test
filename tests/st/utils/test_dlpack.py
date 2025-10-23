@@ -1,3 +1,4 @@
+"""Module test for dlpack"""
 # Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
 from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
@@ -26,7 +28,6 @@ def test_dlpack_npu_tensor_conversion():
     Description: test from_dlpack and to_dlpack for npu tensor
     Expectation: success
     """
-    ms.set_context(device_target="Ascend")
     x = Tensor(np.array([1, 2, 3]), ms.float32)
     x = x.add_(1)
     x_ptr = x.data_ptr()
@@ -59,7 +60,6 @@ def test_dlpack_uint(dtype):
     Description: test from_dlpack and to_dlpack for various data types
     Expectation: success
     """
-    ms.set_context(device_target="Ascend")
     ms_tensor = ms.Tensor([1, 2, 3], dtype=ms.uint8)
     ms_tensor = ms_tensor + ms_tensor
     ms_tensor = ops.cast(ms_tensor, dtype)
@@ -138,3 +138,34 @@ def test_dlpack_shared_memory():
     b = from_dlpack(ms_dlpack)
     a[0] = 100
     assert np.allclose(a.asnumpy(), b.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_dlpack_cpu_tensor_conversion():
+    """
+    Feature: test dlpack for cpu tensor
+    Description: test from_dlpack and to_dlpack for cpu tensor conversion
+    Expectation: success
+    """
+    x = Tensor(np.array([1, 2, 3]), ms.float32)
+    x_ptr = x.data_ptr()
+    dlpack_x = to_dlpack(x)
+    y = from_dlpack(dlpack_x)
+    y_ptr = y.data_ptr()
+    assert x_ptr == y_ptr
+    assert np.allclose(x.asnumpy(), y.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("dtype", [ms.int8, ms.int16, ms.int32, ms.int64, ms.float16, ms.float32, ms.float64])
+def test_dlpack_cpu_different_types(dtype):
+    """
+    Feature: test dlpack for cpu tensor with different data types
+    Description: test from_dlpack and to_dlpack for cpu tensor with various data types
+    Expectation: success
+    """
+    ms_tensor = Tensor(np.array([1, 1, 0]), dtype)
+    ms_dlpack = to_dlpack(ms_tensor)
+    ms_tensor_from_ms_pack = from_dlpack(ms_dlpack)
+    assert np.allclose(ms_tensor.asnumpy(), ms_tensor_from_ms_pack.asnumpy())
+    assert ms_tensor.data_ptr() == ms_tensor_from_ms_pack.data_ptr()

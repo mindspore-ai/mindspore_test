@@ -15,12 +15,15 @@
  */
 
 #include "frontend/ir/dlpack_utils.h"
+
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "frontend/ir/device_type_utils.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
-#include "utils/log_adapter.h"
 #include "ir/device_type.h"
 #include "ir/tensor_storage_info.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
@@ -145,11 +148,15 @@ DLDataType DLPackUtils::GetDLDataType(const TypeId &type_id) {
   return dtype;
 }
 
-DLDevice DLPackUtils::GetDLDevice(size_t device_id) {
-  // only support Ascend now.
+DLDevice DLPackUtils::GetDLDevice(size_t device_id, device::DeviceType device_type) {
   DLDevice ctx;
-  ctx.device_id = static_cast<int32_t>(device_id);
-  ctx.device_type = DLDeviceType::kDLExtDev;
+  if (device_type == device::DeviceType::kCPU) {
+    ctx.device_id = static_cast<int32_t>(0);
+  } else if (device_type == device::DeviceType::kAscend) {
+    ctx.device_id = static_cast<int32_t>(device_id);
+  }
+
+  ctx.device_type = DeviceTypeUtils::MsDeviceTargetToDLDeviceType(device_type);
   return ctx;
 }
 
@@ -227,23 +234,13 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
   tensor->set_storage_info(storage_info);
 
   auto dldevice = dlpack->dl_tensor.device;
-  auto device_id = dldevice.device_id;
   auto device_type = dldevice.device_type;
-  if (device_type != kDLExtDev) {
-    MS_LOG(EXCEPTION) << "Unsupported device type: " << device_type;
-  }
 
-  // only support Ascend now.
+  // Get current device type from MindSpore context
   auto ms_context = MsContext::GetInstance();
   auto ms_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &ms_device = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  device::DeviceContextKey host_key = {device::DeviceType::kAscend, ms_device_id};
-  if (ms_device != kAscendDevice) {
-    MS_LOG(EXCEPTION) << "Only support Ascend device now, but got " << ms_device;
-  }
-  if (ms_device_id != static_cast<uint32_t>(device_id)) {
-    MS_LOG(EXCEPTION) << "Device id not match, expect " << ms_device_id << ", but got " << device_id;
-  }
+  device::DeviceContextKey host_key;
+  host_key = {DeviceTypeUtils::DLDeviceTypeToMsDeviceTarget(device_type), ms_device_id};
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(device_context);
   device_context->Initialize();
@@ -257,12 +254,12 @@ TensorPtr DLPackUtils::FromDLPack(DLManagedTensor *dlpack) {
 
   device_address->set_tensor_storage_info(storage_info);
   tensor->set_device_address(device_address);
-  tensor->set_contiguous_callback([](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
+  tensor->set_contiguous_callback([device_context](const DeviceAddressPtr &device_address) -> DeviceAddressPtr {
     MS_EXCEPTION_IF_NULL(device_address);
     auto device_addr = device_address;
     MS_EXCEPTION_IF_NULL(device_addr);
     // as_numpy sync promise contiguous run_sync
-    return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_addr);
+    return runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(device_context, device_addr);
   });
 
   // set data
@@ -306,6 +303,8 @@ DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
     }
   }
   runtime::Pipeline::Get().WaitFrontend();
+  const auto device_type = src->device_address()->GetDeviceType();
+  kernel::pyboost::OpRunStatus::Get().set_run_info(kernel::pyboost::OpStatus(true, device_type));
   auto view = kernel::pyboost::as_strided(src, dlm_tensor->shape, dlm_tensor->strides, src->storage_offset());
   runtime::Pipeline::Get().WaitForward();
   dlm_tensor->tensor.manager_ctx = dlm_tensor;
@@ -315,12 +314,10 @@ DLManagedTensor *DLPackUtils::ToDLPack(const TensorPtr &src) {
     MS_LOG(EXCEPTION) << "Device address is nullptr";
   }
   dlm_tensor->handle = view;
-  const auto &ms_device = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (ms_device != kAscendDevice) {
-    MS_LOG(EXCEPTION) << "Only support Ascend device now, but got " << ms_device;
-  }
   const auto &ms_device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  dlm_tensor->tensor.dl_tensor.device = GetDLDevice(ms_device_id);
+
+  // Set DLPack device via unified conversion
+  dlm_tensor->tensor.dl_tensor.device = GetDLDevice(ms_device_id, device_type);
   dlm_tensor->tensor.dl_tensor.ndim = static_cast<int32_t>(dlm_tensor->shape.size());
   dlm_tensor->tensor.dl_tensor.dtype = GetDLDataType(src->data_type());
   dlm_tensor->tensor.dl_tensor.shape = view->storage_info()->shape.data();
