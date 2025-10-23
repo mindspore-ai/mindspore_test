@@ -8,7 +8,7 @@ add_library(mindspore_pynative_utils SHARED ${PYNATIVE_UTILS_SRC_LIST})
 target_link_libraries(mindspore_pynative_utils PRIVATE mindspore_core
 mindspore_common mindspore_backend_manager mindspore_hardware_abstract
 mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool
-mindspore_runtime_utils)
+mindspore_runtime_utils mindspore::pybind11_module)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_compile_definitions(mindspore_pynative_utils PRIVATE PYNATIVE_UTILS_DLL)
 endif()
