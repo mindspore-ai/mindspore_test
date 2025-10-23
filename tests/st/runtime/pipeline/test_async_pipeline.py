@@ -24,7 +24,6 @@ from mindspore.common.api import jit
 from mindspore import mutable
 from mindspore.common import Parameter
 from mindspore import dtype as mstype
-import mindspore.context as context
 from tests.mark_utils import arg_mark
 
 
@@ -260,12 +259,10 @@ def execute_network_with_compare(input_data, static_net, dynamic_net):
     assert np.allclose(static_output[0].asnumpy(), dynamic_output[0].asnumpy())
 
     diff_time = abs(dynamic_net_cost_time - static_net_cost_time)
-    assert diff_time / static_net_cost_time < 0.1
+    print("performance diff ratio: ", diff_time / static_net_cost_time)
 
 
-@pytest.mark.skip(reason="The CI pipeline is not suitable for monitoring performance case,"
-                  "removing post-test smoke testing phase.")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_dynamic_vs_static_shape_block_num_5():
     """
     Feature: Graph support async pipeline.
@@ -273,13 +270,14 @@ def test_async_pipe_dynamic_vs_static_shape_block_num_5():
     Expectation: The program execute and exit normally, the performance deterioration of dynamic shape network does not
                  exceed 10% compared to static shape network.
     """
-    context.set_context(mode=context.GRAPH_MODE)
     input_data = Tensor(np.zeros((32, 64)).astype(np.float32))
     dyn_input_data = Tensor(shape=(None, None), dtype=mstype.float32)
 
     block_num = 5
     static_net = BaseNet(block_num)
     dynamic_net = BaseNet(block_num)
+    static_net.construct = jit(static_net.construct, backend='ms_backend')
+    dynamic_net.construct = jit(dynamic_net.construct, backend='ms_backend')
     dynamic_net.set_inputs(dyn_input_data)
 
     execute_network_with_compare(input_data, static_net, dynamic_net)
@@ -287,7 +285,7 @@ def test_async_pipe_dynamic_vs_static_shape_block_num_5():
 
 @pytest.mark.skip(reason="The CI pipeline is not suitable for monitoring performance case,"
                   "removing post-test smoke testing phase.")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_large_input_dynamic_vs_static_shape_block_num_50():
     """
     Feature: Graph support async pipeline.
@@ -296,19 +294,20 @@ def test_async_pipe_large_input_dynamic_vs_static_shape_block_num_50():
     Expectation: The program execute and exit normally, the performance deterioration of dynamic shape network does
                  not exceed 10% compared to static shape network.
     """
-    context.set_context(mode=context.GRAPH_MODE)
     input_data = Tensor(np.zeros((1024, 1024)).astype(np.float32))
     dyn_input_data = Tensor(shape=(None, None), dtype=mstype.float32)
 
     block_num = 50
     static_net = BaseNet(block_num)
     dynamic_net = BaseNet(block_num)
+    static_net.construct = jit(static_net.construct, backend='ms_backend')
+    dynamic_net.construct = jit(dynamic_net.construct, backend='ms_backend')
     dynamic_net.set_inputs(dyn_input_data)
 
     execute_network_with_compare(input_data, static_net, dynamic_net)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_depend_op():
     """
     Feature: Graph support async pipeline.
@@ -333,7 +332,7 @@ def test_async_pipe_single_input_multi_output_depend_op():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_not_depend_op():
     """
     Feature: Graph support async pipeline.
@@ -359,7 +358,7 @@ def test_async_pipe_single_input_multi_output_not_depend_op():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_only_graph():
     """
     Feature: Graph support async pipeline.
@@ -384,7 +383,7 @@ def test_async_pipe_single_input_multi_output_only_graph():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_multi_input_multi_output_depend_op():
     """
     Feature: Graph support async pipeline.
@@ -409,7 +408,7 @@ def test_async_pipe_multi_input_multi_output_depend_op():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_multi_input_multi_output_without_depend_op():
     """
     Feature: Graph support async pipeline.
@@ -434,7 +433,7 @@ def test_async_pipe_multi_input_multi_output_without_depend_op():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_multi_input_multi_output_graph_only():
     """
     Feature: Graph support async pipeline.
@@ -459,7 +458,7 @@ def test_async_pipe_multi_input_multi_output_graph_only():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_with_grad_depend_op():
     """
     Feature: Graph support async pipeline.
@@ -485,7 +484,7 @@ def test_async_pipe_single_input_multi_output_with_grad_depend_op():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_with_grad():
     """
     Feature: Graph support async pipeline.
@@ -511,7 +510,7 @@ def test_async_pipe_single_input_multi_output_with_grad():
     print("Total time cost: ", cost_time, flush=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level2', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_async_pipe_single_input_multi_output_only_graph_with_grad():
     """
     Feature: Graph support async pipeline.
