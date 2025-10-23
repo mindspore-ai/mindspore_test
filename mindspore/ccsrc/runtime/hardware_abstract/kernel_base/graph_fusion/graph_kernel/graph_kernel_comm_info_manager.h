@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADAPTER_GRAPH_KERNEL_COMM_INFO_MANAGER_H_
-#define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADAPTER_GRAPH_KERNEL_COMM_INFO_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ABSTRACT_GRAPH_FUSION_GRAPH_KERNEL_COMM_INFO_MANAGER_H_
+#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ABSTRACT_GRAPH_FUSION_GRAPH_KERNEL_COMM_INFO_MANAGER_H_
 #include <map>
 #include <functional>
 #include <memory>
@@ -23,11 +23,11 @@
 #include <string>
 
 #include "base/base.h"
-#include "include/backend/visible.h"
+#include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
 namespace graphkernel {
-class BACKEND_EXPORT GraphKernelCommInfo {
+class RUNTIME_HARDWARE_EXPORT GraphKernelCommInfo {
  public:
   GraphKernelCommInfo() = default;
   virtual ~GraphKernelCommInfo() = default;
@@ -37,7 +37,7 @@ class BACKEND_EXPORT GraphKernelCommInfo {
 
 using GraphKernelCommInfoCreator = std::function<std::shared_ptr<GraphKernelCommInfo>()>;
 
-class BACKEND_EXPORT GraphKernelCommInfoManager {
+class RUNTIME_HARDWARE_EXPORT GraphKernelCommInfoManager {
  public:
   static GraphKernelCommInfoManager &Instance();
   void Register(const std::string &device_type, GraphKernelCommInfoCreator &&creator);
@@ -50,7 +50,7 @@ class BACKEND_EXPORT GraphKernelCommInfoManager {
   std::map<std::string, GraphKernelCommInfoCreator> comm_info_map_;
 };
 
-class BACKEND_EXPORT GraphKernelCommInfoRegister {
+class RUNTIME_HARDWARE_EXPORT GraphKernelCommInfoRegister {
  public:
   GraphKernelCommInfoRegister(const std::string &device_type, GraphKernelCommInfoCreator &&creator) {
     GraphKernelCommInfoManager::Instance().Register(device_type, std::move(creator));
@@ -64,4 +64,4 @@ class BACKEND_EXPORT GraphKernelCommInfoRegister {
 }  // namespace graphkernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADAPTER_GRAPH_KERNEL_COMM_INFO_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_ABSTRACT_GRAPH_FUSION_GRAPH_KERNEL_COMM_INFO_MANAGER_H_

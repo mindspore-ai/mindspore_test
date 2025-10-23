@@ -18,10 +18,10 @@
 #include <string>
 #include <memory>
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "include/common/callback.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
-#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/ascend_pass_optimization.h"
 #include "plugin/ascend/graph_optimizer/pass/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
@@ -117,12 +117,24 @@ void AscendGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGrap
     MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();
   }
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
-    graphkernel::GraphKernelOptimize(graph);
+    constexpr char kGraphKernelOptimizeCallBackFunc[] = "GraphKernelOptimize";
+    static auto graphkernel_optimize_callback =
+      callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(
+        kGraphKernelOptimizeCallBackFunc);
+    if (graphkernel_optimize_callback) {
+      graphkernel_optimize_callback(graph);
+    }
   }
   opt::AscendGraphOptimizeACLAfterKernelSelect(graph);
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableKernelPacket() &&
       common::AnfAlgo::IsDynamicGraph(graph)) {
-    graphkernel::KernelPacketOptimize(graph);
+    constexpr char kKernelPacketOptimizeCallBackFunc[] = "KernelPacketOptimize";
+    static auto kernelpacket_optimize_callback =
+      callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(
+        kKernelPacketOptimizeCallBackFunc);
+    if (kernelpacket_optimize_callback) {
+      kernelpacket_optimize_callback(graph);
+    }
   }
   // after kernel packet
   opt::AscendGraphOptimizeACLAfterKernelPacket(graph);

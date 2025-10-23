@@ -24,6 +24,7 @@ file(GLOB_RECURSE GRAPH_KERNEL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "kernel_base/graph_fusion/graph_kernel_flags.cc"
     "kernel_base/graph_fusion/graph_kernel_info.cc"
     "kernel_base/graph_fusion/kash/*.cc"
+    "kernel_base/graph_fusion/graph_kernel/graph_kernel_comm_info_manager.cc"
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")

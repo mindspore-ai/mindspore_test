@@ -26,7 +26,7 @@ set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
 target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspore_core mindspore_ops mindspore_common
-                      mindspore_ops_ascend mindspore_profiler mindspore_runtime_pipeline mindspore_ms_backend
+                      mindspore_ops_ascend mindspore_profiler mindspore_runtime_pipeline
                       mindspore_hardware_abstract mindspore_runtime_utils mindspore_cpu)
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
