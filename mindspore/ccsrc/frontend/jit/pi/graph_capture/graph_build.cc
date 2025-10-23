@@ -3255,10 +3255,11 @@ py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTr
 
   if (callable_type == AObject::kTypeType) {
     call_node->SetInlineReason(InlineReason::kInlineFunc_ArgType_IsClass);
-    HandleCallClass(call_node);
     if (static_cast<AbstractType *>(callable)->GetTypeType() == AObject::kTypeCell) {
       *stop_reason = StopTraceReason::kStopTraceCanNotCreateCell;
+      return py::object();
     }
+    HandleCallClass(call_node);
     return py::object();
   }
 
