@@ -205,6 +205,9 @@ class GraphBuilder {
   // transform list set item to make a new list
   ValueNode *TransformListSetItem(ValueNode *list, ValueNode *key, ValueNode *val);
 
+  // Helper method to extract dict keys from map object or AbstractDict
+  std::vector<py::object> GetDictKeys(ValueNode *map, PyObject *map_object);
+
   // make a tensor copy operation
   ValueNode *MakeTensorCopy(ValueNode *tensor);
 
