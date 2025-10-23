@@ -35,7 +35,7 @@ def assert_executed_by_graph_mode(func, x, index, value):
 
 
 def is_index_need_skip(index, skip_list):
-    """cheeck if index need skip, used for debug"""
+    """check if index need skip, used for debug"""
     def check_index_same(index, to_skip):
         if type(to_skip) != type(index):  # pylint: disable=unidiomatic-typecheck
             return False
@@ -347,6 +347,30 @@ def test_previous_setitem_exception_type_error(mode, capture_mode):
             ms_x[[0]] = -1
         else:
             _ = func_scalar_tensor(ms_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_scalar_tensor_with_slice_index(x):
+        x[slice(0, 1, 1)] = -1
+        return x
+    ms_x = Tensor(1)
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[slice(0, 1, 1)] = -1
+        else:
+            _ = func_scalar_tensor_with_slice_index(ms_x)
+    assert "Cannot iterate over a scalar tensor" in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_scalar_tensor_with_Tensor_index(x):
+        x[Tensor(1)] = -1
+        return x
+    ms_x = Tensor(1)
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[Tensor(1)] = -1
+        else:
+            _ = func_scalar_tensor_with_Tensor_index(ms_x)
+    assert "Cannot iterate over a scalar tensor" in str(exc.value)
 
 
 def setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
@@ -1114,6 +1138,18 @@ def test_setitem_exception_without_jit_ast(mode, capture_mode):
             ms_x[Tensor(3 + 4j, dtype=ms.complex64):1:1] = -1
         else:
             _ = func_tensor_as_slice_index_with_unsupport_type(ms_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_slice_with_float_index(x):
+        x[slice(1.1, 2)] = -1
+        return x
+    ms_x = Tensor(np_x)
+    with pytest.raises(IndexError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[slice(1.1, 2)] = -1
+        else:
+            _ = func_slice_with_float_index(ms_x)
+    assert "slice indices must be integers or None or Tensor" in str(exc.value)
 
 class IndexDynamicShapeNet(nn.Cell):
     def construct(self, x, index, value):

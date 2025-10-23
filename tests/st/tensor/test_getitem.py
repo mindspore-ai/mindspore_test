@@ -840,6 +840,13 @@ def test_getitem_exception_without_jit_ast(mode, capture_mode):
             else func_tensor_as_slice_index_with_unsupport_type(ms_x)
         )
 
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func_slice_with_float_index(x):
+        return x[slice(1.1, 2)]
+    with pytest.raises(IndexError) as exc:
+        _ = ms_x[slice(1.1, 2)] if mode == ms.PYNATIVE_MODE else func_slice_with_float_index(ms_x)
+    assert "slice indices must be integers or None or Tensor" in str(exc.value)
+
 
 class NetMutableSequenceIndex(nn.Cell):
     def construct(self, x, index):
