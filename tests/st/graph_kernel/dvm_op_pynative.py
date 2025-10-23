@@ -250,16 +250,19 @@ def test_inplace_binary():
     Expectation: the result match with the expected result
     """
 
-    def _run(func, data_type):
-        flag = gen_flag(get_func_name(func), data_type)
-        x0 = Parameter(gen_input((10, 80), data_type), name=flag)
-        x1 = gen_input((10, 80), data_type)
+    def _run(func, data_type1, data_type2):
+        flag = gen_flag(get_func_name(func), data_type1, data_type2)
+        x0 = Parameter(gen_input((10, 80), data_type1), name=flag)
+        x1 = gen_input((10, 80), data_type2)
         y0 = func(x0, x1)
         compare_outputs(flag, [y0, x0])
 
-    for item in [[ops.auto_generate.InplaceDiv(), ["float32", "float16", "bfloat16", "int32"]]]:
-        for d in item[-1]:
-            _run(item[0], d)
+    for f in [ops.auto_generate.InplaceDiv()]:
+        for d1 in ["float32", "float16", "bfloat16", "int32"]:
+            for d2 in ["float32", "float16", "bfloat16", "int32"]:
+                if d1 == "int32" and d2 != d1:
+                    continue
+                _run(f, d1, d2)
 
 
 def test_muls():

@@ -15,6 +15,7 @@
 
 import numpy as np
 import os
+import shutil
 import pytest
 import mindspore.context as context
 from mindspore import Tensor, nn, JitConfig
@@ -274,8 +275,12 @@ def test_dvm_bool():
 
     context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
+    context.set_context(graph_kernel_flags="--dump_as_text")
     case1()
     case2()
+    dump_dir = "./graph_kernel_dump"
+    if os.path.isdir(dump_dir):
+        shutil.rmtree(dump_dir)
 
 
 class NetPow(nn.Cell):

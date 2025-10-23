@@ -116,13 +116,6 @@ class RUNTIME_HARDWARE_EXPORT GraphKernelFlags {
   bool enable_dynamic_batch{false};
 
   /**
-   * Enable low precision in data transferring between graph kernel and computing in graph kernel
-   * in graph kernel.
-   * Experimental feature, enabled by the enable_low_precision flag
-   */
-  bool enable_low_precision{false};
-
-  /**
    * Debug mode for graph kernel.
    * Enable Debug mode for graph kernel
    */

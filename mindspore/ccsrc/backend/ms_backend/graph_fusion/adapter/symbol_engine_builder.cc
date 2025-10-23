@@ -48,10 +48,14 @@ void SetSymbolShapeEqual(const std::vector<ListSymbolPtr> &shapes) {
       auto ib = b->as_sptr<IntSymbol>();
       if (!ia->is_const()) {
         MS_LOG(DEBUG) << "Set symbols equal: " << a->ToString() << ", " << b->ToString();
-        ia->SetEqual(ib);
+        if (!ib->is_const()) {
+          ia->SetEqual(ib);
+        } else {
+          ia->SetValue(ib->value());
+        }
       } else if (!ib->is_const()) {
         MS_LOG(DEBUG) << "Set symbols equal: " << a->ToString() << ", " << b->ToString();
-        ib->SetEqual(ia);
+        ib->SetValue(ib->value());
       }
     }
   }

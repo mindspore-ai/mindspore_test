@@ -44,8 +44,6 @@
 #include "backend/ms_backend/graph_fusion/reorder_ops.h"
 #include "backend/ms_backend/graph_fusion/core/update_state_formatter.h"
 #include "backend/ms_backend/graph_fusion/axis_normalizer.h"
-#include "backend/ms_backend/graph_fusion/decrease_compute_precision.h"
-#include "backend/ms_backend/graph_fusion/decrease_transfer_precision.h"
 #include "backend/ms_backend/graph_fusion/csr_atomic_add.h"
 #include "backend/ms_backend/graph_fusion/tsa_atomic_add_to_first_tensor.h"
 #include "backend/ms_backend/graph_fusion/uss_atomic_add.h"
@@ -160,7 +158,7 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt1() const {
   auto pm = std::make_shared<GraphKernelPassManager>(2, "highlevelopt1");
 
   // Remove redundant Cast(bias, fp16) for Matmul input
-  pm->Add(std::make_shared<CastMatmulFusion>(), OptLevel_2, is_ascend);
+  pm->Add(std::make_shared<CastMatmulFusion>(), OptLevel_2, (is_ascend && !is_dvm));
 
   // Reorder Cast and Type-insensitive node
   pm->Add(std::make_shared<ReorderOps>(), OptLevel_2);
@@ -229,11 +227,6 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt2() const {
   // Enable atomic add for stitch nodes.
   auto level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_stitch_fusion);
   pm->Add(std::make_shared<StitchAtomicCleanInserter>(), level, is_gpu);
-
-  // Enable low precision
-  auto level_low_precision = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_low_precision);
-  pm->Add(std::make_shared<DecreaseTransferPrecision>(), level_low_precision);
-  pm->Add(std::make_shared<DecreaseComputePrecision>(), level_low_precision, is_ascend);
 
   // Optimize memory
   auto memory_optimize_level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_auto_tensor_inplace);
