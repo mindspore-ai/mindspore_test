@@ -32,6 +32,8 @@
 #include "tools/profiler/profiling.h"
 #include "tools/profiler/profiler.h"
 
+#include "utils/ms_context.h"
+
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/config_manager.h"
@@ -439,6 +441,15 @@ std::map<string, string> GenerateJitConfigMap(const py::dict &jit_config) {
 void ExecutorPy::SetJitConfig(const py::dict &config) {
   auto jit_config = GenerateJitConfigMap(config);
   PhaseManager::GetInstance().set_jit_config(jit_config);
+
+  auto infer_boost_iter = jit_config.find("infer_boost");
+  if (infer_boost_iter != jit_config.end()) {
+    if (!MsContext::GetInstance()->IsEnableInferBoost()) {
+      // Model Phase only enable infer boost
+      // when set_context enable infer boost, do not disable by executor
+      MsContext::GetInstance()->SetJitInferBoost(infer_boost_iter->second);
+    }
+  }
 }
 
 namespace {
@@ -562,8 +573,7 @@ bool ExecutorPy::Compile(const py::object &source, const py::tuple &args, const 
       std::map<std::string, std::string> custom_info;
       custom_info["phase"] = py::cast<std::string>(phase);
       uint64_t start_time = profiler::GetClockSyscnt();
-      auto jit_config = GenerateJitConfigMap(config);
-      PhaseManager::GetInstance().set_jit_config(jit_config);
+      SetJitConfig(config);
       res = CompileInner(source, args, kwargs, phase);
       (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, start_time, profiler::GetClockSyscnt(), 1,
                                       custom_info);
