@@ -24,6 +24,7 @@ import numpy as np
 
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
+from mindspore.dataset import text
 from mindspore.dataset import transforms
 from mindspore.dataset import vision
 from mindspore import log as logger
@@ -912,6 +913,35 @@ def test_serdes_uniform_augment(cleanup_tmp_file):
     # Restore configuration
     ds.config.set_seed(original_seed)
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
+
+
+@pytest.mark.parametrize("cleanup_tmp_file", ["bert_tokenizer_pipeline*.json"], indirect=True)
+def test_serdes_bert_tokenizer(cleanup_tmp_file):
+    """
+    Feature: Serialize and Deserialize Support
+    Description: Test serialize and deserialize on pipeline with UniformAugment op
+    Expectation: Serialized versus Deserialized+reserialized pipeline output verified
+    """
+
+    text_dataset_file = "../data/dataset/testTokenizerData/bert_tokenizer.txt"
+    bert_vocab_list = [
+        "床", "前", "明", "月", "光", "疑", "是", "地", "上", "霜", "举", "头", "望", "低", "思", "故", "乡",
+        "繁", "體", "字", "嘿", "哈", "大", "笑", "嘻",
+        "i", "am", "mak", "make", "small", "mistake", "##s", "during", "work", "##ing", "hour",
+        "😀", "😃", "😄", "😁", "+", "/", "-", "=", "12", "28", "40", "16", " ", "I",
+        "[CLS]", "[SEP]", "[UNK]", "[PAD]", "[MASK]", "[unused1]", "[unused10]"
+    ]
+    dataset = ds.TextFileDataset(text_dataset_file, shuffle=False)
+    vocab = text.Vocab.from_list(bert_vocab_list)
+    text_transforms = [text.BertTokenizer(vocab=vocab)]
+    dataset = dataset.map(operations=text_transforms, input_columns="text")
+    deserilized_dataset = util_check_serialize_deserialize_file(dataset, "bert_tokenizer_pipeline")
+
+    # Iterate and compare the data in the original dataset against the deserialized one.
+    for sample1, sample2 in zip(dataset.create_tuple_iterator(num_epochs=1, output_numpy=True),
+                                deserilized_dataset.create_tuple_iterator(num_epochs=1, output_numpy=True)):
+        for column1, column2 in zip(sample1, sample2):
+            np.testing.assert_array_equal(column1, column2)
 
 
 @pytest.mark.parametrize("cleanup_tmp_file", ["complex1_dataset_pipeline*.json"], indirect=True)
