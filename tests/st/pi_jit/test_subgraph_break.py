@@ -583,7 +583,7 @@ def test_call_function_graph_break_in_loop_v7():
         return z
 
     def f1(a, b):
-        c = a ** 2
+        c = a**2
         d = b + 2
         return f2(c, d)
 
@@ -1148,7 +1148,7 @@ def f2(input_tensor: Tensor, weights: Tensor, params: dict, sizes: tuple, count:
     outer_tensor = input_tensor * weights
 
     def f3(
-            tensor1: Tensor, tensor2: Tensor, scale: float, config: dict, dims: tuple, values: list, flag: bool
+        tensor1: Tensor, tensor2: Tensor, scale: float, config: dict, dims: tuple, values: list, flag: bool
     ) -> Tensor:
         scaled_tensor = tensor1 * GLOBAL_SCALE - count  # global var + free var
         print('GRAPH BREAK', end='')
@@ -1642,6 +1642,34 @@ def test_subgraph_break_at_return_and_condition():
 
 
 @save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_at_return_and_condition_v2():
+    """
+    Feature: Subgraph break at return with logical and-condition.
+    Description: f2 returns an and-expression on Tensor reductions; f1 returns f2 result.
+    Expectation: JIT result matches pynative; generates 2 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_006
+    """
+
+    def f2(x: Tensor):
+        a = x + 1
+        return (a.sum() > 10) and (a.mean() > 2)
+
+    def f1(x: Tensor):
+        return f2(x)
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x)
+
+    assert o1 == o2
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_subgraph_break_at_return_or_condition():
     """
@@ -1865,3 +1893,192 @@ def test_subgraph_break_at_calling_nested_Cell():
     match_array(o1, o2)
     assert_has_graph_break(model.construct, break_count=1)
     check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_if_condition_asnumpy():
+    """
+    Feature: Subgraph break at if condition using Tensor.asnumpy().
+    Description: f2 compares Tensor with scalar via asnumpy() in if condition; f1 calls f2.
+    Expectation: JIT result matches pynative; generates 2 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_001
+    """
+
+    def f2(x: Tensor):
+        a = x + 1
+        if a.asnumpy() >= 3:  # graph break
+            a = a * 2
+        else:
+            a = a * 3
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([1])
+    o1 = f1(x)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_if_elif_condition_asnumpy():
+    """
+    Feature: Subgraph breaks at if/elif conditions using Tensor.asnumpy().
+    Description: f2 has asnumpy() in if and elif conditions; both conditions are evaluated sequentially.
+    Expectation: JIT result matches pynative; generates 3 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_002
+    """
+
+    def f2(x: Tensor):
+        a = x + 1
+        if a.asnumpy() > 10:  # graph break
+            a = a * 2
+        elif (a + 1).asnumpy() > 8:  # graph break
+            a = a * 3
+        else:
+            a = a * 4
+        return a + 1
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([2])
+    o1 = f1(x)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_elif_condition_asnumpy():
+    """
+    Feature: Subgraph break at elif condition using Tensor.asnumpy().
+    Description: f2 has break only at elif condition; f1 passes an extra scalar arg z.
+    Expectation: JIT result matches pynative; generates 2 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_003
+    """
+
+    def f2(x: Tensor, z):
+        a = x + 1
+        if z < 2:
+            a = a * 2
+        elif a.asnumpy() > 8:  # graph break
+            a = a * 3
+        else:
+            a = a * 4
+        return a + 1
+
+    def f1(x: Tensor, z):
+        y = x * 2
+        w = f2(x, z)
+        return y + w
+
+    x = Tensor([2])
+    o1 = f1(x, 2)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x, 2)
+
+    match_array(o1, o2)
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 2)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_two_separate_if_conditions_asnumpy():
+    """
+    Feature: Subgraph breaks at two separate if conditions using Tensor.asnumpy().
+    Description: f2 contains two independent if-statements, both conditions use asnumpy(); f1 calls f2.
+    Expectation: JIT result matches pynative; generates 3 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_004
+    """
+
+    def f2(x: Tensor):
+        a = x + 1
+        b = x * 5
+        if a.asnumpy() >= 3:  # graph break
+            a = a * 2
+        else:
+            a = a * 3
+        if b.asnumpy() >= 6:  # graph break
+            b = b * 2
+        else:
+            b = b * 3
+        return a + b
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([1])
+    o1 = f1(x)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 3)
+
+
+@save_graph_ir(ir_name='graph_before_compile')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_nested_if_multiple_breaks_asnumpy():
+    """
+    Feature: Subgraph breaks in nested-if structure (multiple potential breaks).
+    Description: f2 has nested if/elif/else with conditions on Tensor reductions; f1 calls f2.
+    Expectation: JIT result matches pynative; generates 4 graphs.
+    Migrated from: test_parse_pijit_improve_if_split.py::test_parse_pijit_improve_if_split_005
+    """
+
+    def f2(x: Tensor):
+        a = x + 1
+        b = x * 2
+        c = a + b
+        d = b + c
+        if a.sum() >= 2:  # graph break
+            if b.sum() >= 60:  # graph break
+                b = b * 3
+            elif c.sum() >= 70:  # graph break
+                c = c * 2
+            else:
+                c = c * 3
+        else:
+            if d.sum() >= 100:
+                d = d * 4
+        return a + b + c + d
+
+    def f1(x: Tensor):
+        y = x * 2
+        z = f2(x)
+        return y + z
+
+    x = Tensor([1, 2, 3])
+    o1 = f1(x)
+
+    compiled_f1 = pi_jit_with_config(f1, jit_config=jit_cfg)
+    o2 = compiled_f1(x)
+
+    match_array(o1, o2)
+    assert_has_graph_break(compiled_f1, break_count=1)
+    check_ir_num('graph_before_compile', 4)
+
