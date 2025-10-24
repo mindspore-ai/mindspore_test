@@ -17,7 +17,6 @@ if(ENABLE_D OR ENABLE_ACL)
             _mindspore_ascend_symbol_obj)
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/config_manager.cc")
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../common/debug/common.cc")
-        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/callback.cc")
 
         if(NOT WIN32)
             list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/anfalgo.cc")
@@ -32,10 +31,7 @@ if(ENABLE_D OR ENABLE_ACL)
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/compile_cache_context.cc")
 
         list(APPEND _TRANSFORM_SRC_LIST
-                "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_tensor.cc")
-        list(APPEND _TRANSFORM_SRC_LIST
             "${CMAKE_CURRENT_SOURCE_DIR}/../../../runtime/hardware_abstract/kernel_base/kernel_build_info.cc")
-        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../minddata/dataset/core/types.cc")
         add_library(mindspore_graph_ir SHARED ${_TRANSFORM_SRC_LIST} $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>
             $<TARGET_OBJECTS:_mindspore_ascend_op_adapter_obj>)
     endif()
