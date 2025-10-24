@@ -53,8 +53,6 @@ using KernelGraphPtr = std::shared_ptr<KernelGraph>;
 
 class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
  public:
-  static AnfNodePtr MakeMonadValueNode(const KernelGraphPtr &kg);
-  static void KeepOrder(const KernelGraphPtr &kg, const AnfNodePtr &former, const AnfNodePtr &latter);
   // Get the memory size of output tensor of node.
   static size_t GetOutputTensorMemSize(const AnfNodePtr &node, size_t output_index);
   static size_t GetOutputTensorMemSize(const AnfNodePtr &node, size_t output_index, const ShapeVector &shape);
@@ -222,14 +220,8 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static void SetGraphId(uint32_t graph_id, AnfNode *node);
   // get graph id
   static uint32_t GetGraphId(const AnfNode *node);
-  // get input index in graph for some tbe ops which input order is different between graph and tbe kernel
-  static size_t GetInputGraphIdxByKernelIdx(const AnfNodePtr &anf_node, size_t input_index_in_kernel);
-  // get input index in kernel for some tbe ops which input order is different between graph and tbe kernel
-  static size_t GetInputKernelIdxByGraphIdx(const AnfNodePtr &anf_node, size_t input_index_in_graph);
   static std::vector<KernelGraphPtr> GetCallSwitchKernelGraph(const CNodePtr &cnode);
   static KernelGraphPtr GetValueNodeKernelGraph(const AnfNodePtr &node);
-  static bool IsIndependentNode(const CNodePtr &node);
-  static void InferShape(const CNodePtr &node, std::map<uint32_t, tensor::TensorPtr> *depend_tensors = nullptr);
   static KernelGraphPtr FetchKernelGraph(const AnfNode *node);
   static AnfNodePtr FetchFrontNodeByBackendNode(const AnfNodePtr &backend_node, const KernelGraph &graph);
   static void InsertMakeTupleForOutput(const NotNull<KernelGraphPtr> &root_graph);
@@ -245,23 +237,12 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
 
   static void UpdateGraphValidRefPair(const KernelGraphPtr &graph);
   static bool IsDynamicShapeSkipExecute(bool skip_mode, const ShapeVector &axes_shape);
-  static bool IsDynamicShapeSkipExecute(const CNodePtr &cnode);
-  // return true if need to update output's shape and type after launch
-  static bool IsNeedUpdateShapeAndTypeAfterLaunch(const AnfNodePtr &cnode);
-  // The size of output address may be changed in dynamic shape scenario, for example, the output shape of operator
-  // 'Unique' will change after Launch, the output address size should update.
-  static void UpdateOutputAddrSize(device::KernelInfo const *kernel_info, const CNodePtr &kernel);
   static bool IsShapesDynamic(const std::vector<ShapeVector> &shapes);
 
   // Get shape after padding
   static ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index);
 
-  // Check whether the kernel has input node which is a computed depend kernel.
-  static bool HasComputedDependInputNode(const CNodePtr &kernel);
-
   static void AddOutInRefToGraph(const KernelGraphPtr &graph);
-  static bool HasOriginFormat(const AnfNodePtr &anf_node);
-  static std::string GetOriginFormat(const AnfNodePtr &anf_node);
 
   static bool NodeValueIsFuncGraph(const AnfNodePtr &node);
 
@@ -280,8 +261,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
 
   // Get the real output num(which can be build and run in device).
   static size_t GetOutputTensorNum(const AnfNodePtr &node);
-  // Get the real output num before kernel select.
-  static size_t GetOutputNumWithoutKernelInfo(const AnfNodePtr &node);
   // Get the expanded output element num(which the tuple is expanded to calculate num).
   static size_t GetOutputElementNum(const AnfNodePtr &node);
 
@@ -291,8 +270,6 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static TypeId GetInputObjectType(const CNodePtr &node, size_t input_idx);
   static std::vector<TypeId> GetAllInputObjectType(const AnfNodePtr &node);
   static std::vector<TypeId> GetAllOutputObjectType(const AnfNodePtr &node);
-  // Get all output infer data type.
-  static std::vector<TypeId> GetAllOutputInferDataTypes(const AnfNodePtr &node);
   // Get unfold input num
   static size_t GetInputElementNum(const AnfNodePtr &node);
   static bool IsRealSquenceOutput(const AnfNodePtr &node);
