@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Operator information schema and registry for tests.
+
+Defines `OpInfo` dataclass and an in-repo registry for op metadata across
+backends to drive parameterized tests.
+"""
 import torch
 import mindspore as ms
 from mindspore import mint
@@ -21,7 +26,7 @@ import functools
 import inspect
 
 dtypes_as_torch = (
-    ms.bool, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8,
+    ms.bool_, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8,
     ms.float16, ms.float32, ms.float64,
     ms.complex64, ms.complex128,
     ms.bfloat16,
@@ -31,13 +36,25 @@ dtypes_extra_uint = (
 )
 
 dtypes_integral = (
-    ms.bool,
+    ms.bool_,
     ms.int8, ms.int16, ms.int32, ms.int64,
     ms.uint8, ms.uint16, ms.uint32, ms.uint64,
 )
 
 @dataclass
 class OpInfo:
+    """Metadata describing an operator under test.
+
+    Attributes:
+        name: Short op alias used in logs and test names.
+        op: MindSpore callable implementation.
+        ref: Reference implementation (e.g., torch, numpy).
+        tensor_variant: Tensor method variant if applicable.
+        inplace_variant: In-place variant if applicable.
+        dtypes_ascend/cpu/gpu: Supported dtypes on each backend.
+        dtypes_intersection: Intersection of supported dtypes across backends.
+        is_differentiable: Whether gradients are expected/computed.
+    """
     name: str
     op: Optional[Callable] = None
     ref: Optional[Callable] = None

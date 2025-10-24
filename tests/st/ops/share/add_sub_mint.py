@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Add/Sub operator tests using MindSpore Mint APIs.
+
+Provides `AddSubMintOpFactory` to exercise mixed dtype and scalar/tensor
+combinations with forward/grad comparisons.
+"""
 import mindspore as ms
 from mindspore import nn
 from typing import Callable
@@ -28,6 +33,10 @@ class AddSubMintNetNoKwargs(nn.Cell):
         return self.op(*op_args[:-1], alpha=op_args[-1])
 
 class AddSubMintOpFactory(BinaryOpsFactory):
+    """Factory for mint.add/mint.sub style tests.
+
+    Generates diverse sample inputs and runs backend comparisons.
+    """
     def __init__(
             self,
             *,
@@ -36,7 +45,7 @@ class AddSubMintOpFactory(BinaryOpsFactory):
             op_info: OpInfo = None,
             op_input=None,
             op_args=(),
-            op_kwargs={},
+            op_kwargs=None,
             op_name=None,
             sample_inputs_func=None,
             **kwargs,
@@ -47,13 +56,13 @@ class AddSubMintOpFactory(BinaryOpsFactory):
             op_info=op_info,
             op_input=op_input,
             op_args=op_args,
-            op_kwargs=op_kwargs,
+            op_kwargs=op_kwargs if op_kwargs is not None else {},
             op_name=op_name,
             sample_inputs_func=sample_inputs_func,
             **kwargs,
         )
         self.update_op_net_class(op_net_class_no_kwargs=AddSubMintNetNoKwargs)
-        self.integer_dtypes = [ms.bool, ms.int8, ms.int16, ms.int32, ms.int64,
+        self.integer_dtypes = [ms.bool_, ms.int8, ms.int16, ms.int32, ms.int64,
                                ms.uint8, ms.uint16, ms.uint32, ms.uint64]
         self.extra_uint_dtypes = [ms.uint16, ms.uint32, ms.uint64]
 
@@ -69,6 +78,13 @@ class AddSubMintOpFactory(BinaryOpsFactory):
             *,
             grad_cmp=True,
     ):
+        """Run add/sub tests with mixed tensor dtypes.
+
+        Args:
+            input_dtypes: Iterable of dtypes for the first input.
+            other_dtypes: Iterable of dtypes for the second input.
+            grad_cmp: Whether to run gradient comparison.
+        """
         def add_sub_mixed_dtype_sample_inputs_func():
             op_params = [
                 ((3,), (3,), -5.5),
@@ -90,7 +106,7 @@ class AddSubMintOpFactory(BinaryOpsFactory):
                         sample_inputs.append(OpSampleInput(
                             op_input=input_tensor,
                             op_args=(other_tensor,),
-                            op_kwargs=dict(alpha=alpha),
+                            op_kwargs={"alpha": alpha},
                             op_name=f'mint_add_{input_dtype}_{other_dtype}_mixed_dtype',
                         ))
             return sample_inputs
@@ -108,6 +124,14 @@ class AddSubMintOpFactory(BinaryOpsFactory):
             scalar_is_input=True,
             grad_cmp=True,
     ):
+        """Run add/sub tests mixing scalar and tensor inputs.
+
+        Args:
+            scalar: The scalar value to combine with tensors.
+            dtypes: Iterable of tensor dtypes to test.
+            scalar_is_input: If True, scalar is first arg, else second.
+            grad_cmp: Whether to run gradient comparison.
+        """
         def add_sub_scalar_tensor_mixed_sample_inputs_func():
             op_params = [
                 ((3,), -5.5),
@@ -128,7 +152,7 @@ class AddSubMintOpFactory(BinaryOpsFactory):
                     sample_inputs.append(OpSampleInput(
                         op_input=scalar if scalar_is_input else input_tensor,
                         op_args=(input_tensor if scalar_is_input else scalar,),
-                        op_kwargs=dict(alpha=alpha) if alpha is not None else {},
+                        op_kwargs={"alpha": alpha} if alpha is not None else {},
                         op_name=f'mint_add_{dtype}_scalar_{"input" if scalar_is_input else "other"}',
                     ))
             return sample_inputs

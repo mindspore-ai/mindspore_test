@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for add operation and Mint API wrappers.
 
+Covers forward/backward, dynamic shape/rank, mixed dtype, and special values.
+"""
 import numpy as np
 import pytest
 import torch
@@ -45,6 +48,11 @@ class AddCell(Cell):
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_forward(context_mode):
+    """
+    Feature: ops.extend.add
+    Description: Forward with fixed and dynamic shapes across GRAPH/PYNATIVE modes.
+    Expectation: Output equals x + y * alpha within rtol.
+    """
     ms.set_context(jit_level='O0')
     ms.context.set_context(mode=context_mode)
 
@@ -102,6 +110,11 @@ def test_ops_dynamic():
           level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_backward(context_mode):
+    """
+    Feature: ops.extend.add
+    Description: Backward gradient computation across GRAPH/PYNATIVE modes.
+    Expectation: Gradient w.r.t. x equals ones_like(y) within rtol.
+    """
     ms.set_context(jit_level='O0')
     ms.context.set_context(mode=context_mode)
 
@@ -259,7 +272,7 @@ def test_mint_f_add_nd_same_dtype(mode, op_info):
     '''
     fact = AddSubMintOpFactory(
         op_info=op_info,
-        op_kwargs=dict(alpha=2),
+        op_kwargs={"alpha": 2},
     )
     fact.set_context_mode(mode=mode)
     fact.test_binary_op_nd_same_dtype()
@@ -280,7 +293,7 @@ def test_mint_f_add_nd_same_dtype_without_bfloat16(mode, op_info):
     '''
     fact = AddSubMintOpFactory(
         op_info=op_info,
-        op_kwargs=dict(alpha=2),
+        op_kwargs={"alpha": 2},
     )
     fact.set_context_mode(mode=mode)
     fact.test_binary_op_nd_same_dtype(disable_op_info_dtypes=[ms.bfloat16])
@@ -305,7 +318,7 @@ def test_mint_f_add_nd_same_extra_dtype(mode, op_info):
     '''
     fact = AddSubMintOpFactory(
         op_info=op_info,
-        op_kwargs=dict(alpha=2),
+        op_kwargs={"alpha": 2},
     )
     fact.set_context_mode(mode=mode)
     fact.test_binary_op_nd_same_dtype(dtypes=dtypes_extra_uint)
@@ -333,7 +346,7 @@ def test_mint_f_add_other_not_tensor(mode):
         ref=torch.add,
         op_input=input_x,
         op_args=(other,),
-        op_kwargs=dict(alpha=alpha),
+        op_kwargs={"alpha": alpha},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(TypeError):
@@ -362,7 +375,7 @@ def test_mint_f_add_other_shape_not_match(mode):
         ref=torch.add,
         op_input=input_x,
         op_args=(other,),
-        op_kwargs=dict(alpha=alpha),
+        op_kwargs={"alpha": alpha},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(ValueError):
@@ -389,7 +402,7 @@ def test_mint_f_add_float32_2d_discontinuous_tensor(mode):
         ref=torch.add,
         op_input=input_x,
         op_args=(other,),
-        op_kwargs=dict(alpha=alpha),
+        op_kwargs={"alpha": alpha},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -415,13 +428,13 @@ def test_mint_f_add_float32_inf_nan_broadcast(mode):
             OpSampleInput(
                 op_input=make_tensor_with_np_array(np.full((3,), np.nan), ms.float32),
                 op_args=(make_tensor_with_np_array(np.full((1,), np.nan), ms.float32),),
-                op_kwargs=dict(alpha=12.3),
+                op_kwargs={"alpha": 12.3},
                 op_name='mint_add_nan_broadcast_float32',
             ),
             OpSampleInput(
                 op_input=make_tensor_with_np_array(np.full((8, 5, 4), np.inf), ms.float32),
                 op_args=(make_tensor_with_np_array(np.full((8, 5, 1), np.inf), ms.float32),),
-                op_kwargs=dict(alpha=12.3),
+                op_kwargs={"alpha": 12.3},
                 op_name='mint_add_inf_broadcast_float32',
             ),
         ]
@@ -537,7 +550,7 @@ def test_mint_f_add_mixed_extra_dtype_forward(mode):
     Expectation: MindSpore forward matches PyTorch.
     '''
     extra_dtypes = [ms.uint16, ms.uint32, ms.uint64]
-    mixed_dtypes = [ms.bool,]
+    mixed_dtypes = [ms.bool_,]
     fact = AddSubMintOpFactory(
         op=mint.add,
         ref=torch.add,
@@ -655,7 +668,7 @@ def test_mint_f_add_dynamic_shape(mode):
         compile_input = OpSampleInput(
             op_input=ms.Tensor(shape=(None, None, None, None, None), dtype=ms.float32),
             op_args=(ms.Tensor(shape=(None, None, None, 1, None), dtype=ms.float32),),
-            op_kwargs=dict(alpha=mutable(input_data=3.3, dynamic_len=False)),
+            op_kwargs={"alpha": mutable(input_data=3.3, dynamic_len=False)},
             op_name='add_compile_input'
         )
         sample_inputs.append(compile_input)
@@ -667,7 +680,7 @@ def test_mint_f_add_dynamic_shape(mode):
             sample_inputs.append(OpSampleInput(
                 op_input=make_tensor(input_shape, ms.float32),
                 op_args=(make_tensor(other_shape, ms.float32),),
-                op_kwargs=dict(alpha=alpha),
+                op_kwargs={"alpha": alpha},
                 op_name='add_running_input'
             ))
         return sample_inputs
@@ -701,7 +714,7 @@ def test_mint_f_add_dynamic_rank(mode):
         compile_input = OpSampleInput(
             op_input=ms.Tensor(shape=None, dtype=ms.float32),
             op_args=(ms.Tensor(shape=None, dtype=ms.float32),),
-            op_kwargs=dict(alpha=mutable(input_data=2.33, dynamic_len=False)),
+            op_kwargs={"alpha": mutable(input_data=2.33, dynamic_len=False)},
             op_name='add_compile_input'
         )
         sample_inputs.append(compile_input)
@@ -713,7 +726,7 @@ def test_mint_f_add_dynamic_rank(mode):
             sample_inputs.append(OpSampleInput(
                 op_input=make_tensor(input_shape, ms.float32),
                 op_args=(make_tensor(other_shape, ms.float32),),
-                op_kwargs=dict(alpha=alpha),
+                op_kwargs={"alpha": alpha},
                 op_name='add_running_input'
             ))
         return sample_inputs

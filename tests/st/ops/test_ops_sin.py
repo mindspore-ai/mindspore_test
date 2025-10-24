@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for sin operation and Mint/ops frontends.
+
+Covers forward/backward, vmap, dynamic shape/rank, dtype and special values.
+"""
 import pytest
 import torch
 import numpy as np
@@ -271,7 +275,7 @@ def test_f_sin_integer_bool_forward(mode):
         ))
         # bool 6D
         sample_inputs.append(OpSampleInput(
-            op_input=make_tensor((4, 4, 3, 4, 4, 9), ms.bool),
+            op_input=make_tensor((4, 4, 3, 4, 4, 9), ms.bool_),
             op_name='sin_bool_6d',
         ))
         return sample_inputs
@@ -378,7 +382,7 @@ def test_f_sin_bool_6d_4x4x3x4x4x9_random_forward(mode):
     Expectation: results match reference (no grad for bool).
     """
     fact = ElementwiseOpsFactory(
-        op_input=make_tensor((4, 4, 3, 4, 4, 9), ms.bool),
+        op_input=make_tensor((4, 4, 3, 4, 4, 9), ms.bool_),
         op=ops.sin,
         ref=torch.sin,
     )
