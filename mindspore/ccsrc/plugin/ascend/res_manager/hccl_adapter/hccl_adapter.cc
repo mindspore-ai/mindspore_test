@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <sstream>
 #include "include/common/utils/utils.h"
-#include "symbolic_shape/symbol.h"
 #define google ascend_private
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/opskernel/ops_kernel_builder.h"

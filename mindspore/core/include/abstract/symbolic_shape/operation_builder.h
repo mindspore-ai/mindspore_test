@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_
 #include <vector>
 #include <string>
 #include <memory>
 #include <utility>
 #include <unordered_map>
 #include "ir/primitive.h"
-#include "symbolic_shape/operation.h"
+#include "abstract/symbolic_shape/operation.h"
 
 namespace mindspore {
 namespace symshape {
@@ -194,4 +194,4 @@ class MS_CORE_API OperationBuilderInfoRegistry {
   const auto UNIQUE_NAME(g_ob_, __COUNTER__) = OperationBuilderInfoRegistry::RegHelper(name)
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_OPERATION_BUILDER_H_

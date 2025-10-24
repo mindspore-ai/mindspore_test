@@ -23,7 +23,6 @@
 #include "ir/anf.h"
 #include "ir/dtype/type_id.h"
 #include "utils/shape_utils.h"
-#include "symbolic_shape/symbol.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore::graphkernel {

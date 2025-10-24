@@ -26,7 +26,6 @@
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "symbolic_shape/utils.h"
 #include "abstract/abstract_value.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_engine.h"

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "symbolic_shape/operation.h"
-#include "symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/operation.h"
+#include "abstract/symbolic_shape/utils.h"
 
 namespace mindspore {
 namespace symshape {

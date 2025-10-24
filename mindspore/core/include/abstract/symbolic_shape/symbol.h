@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_H_
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -435,4 +435,4 @@ using symshape::Symbol;
 using symshape::SymbolPtr;
 using symshape::SymbolPtrList;
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_H_

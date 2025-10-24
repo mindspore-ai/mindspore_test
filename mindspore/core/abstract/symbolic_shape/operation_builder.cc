@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "symbolic_shape/operation_builder.h"
+#include "abstract/symbolic_shape/operation_builder.h"
 #include <functional>
-#include "symbolic_shape/utils.h"
+#include "abstract/symbolic_shape/utils.h"
 #include "ir/dtype/tensor_type.h"
 
 namespace mindspore {

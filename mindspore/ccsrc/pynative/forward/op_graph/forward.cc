@@ -27,7 +27,6 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/amp/amp.h"
 #include "include/common/utils/python_fallback_running.h"
-#include "symbolic_shape/symbol.h"
 #include "utils/ms_context.h"
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/predict_out_type_map.h"

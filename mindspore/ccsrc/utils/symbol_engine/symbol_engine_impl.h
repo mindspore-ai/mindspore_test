@@ -27,8 +27,8 @@
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "symbolic_shape/operation_builder.h"
-#include "symbolic_shape/operation.h"
+#include "abstract/symbolic_shape/operation_builder.h"
+#include "abstract/symbolic_shape/operation.h"
 #include "include/common/visible.h"
 #include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 

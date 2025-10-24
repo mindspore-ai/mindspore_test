@@ -27,8 +27,6 @@
 #include "mindspore/ops/infer/symbol_ops_impl/j_op.h"
 #include "utils/check_convert_utils.h"
 #include "utils/anf_utils.h"
-#include "symbolic_shape/utils.h"
-#include "symbolic_shape/operation_builder.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "mindspore/ccsrc/include/common/utils/anfalgo.h"
 

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
-#include "symbolic_shape/symbol.h"
-#include "symbolic_shape/operation.h"
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
+#include "abstract/symbolic_shape/symbol.h"
+#include "abstract/symbolic_shape/operation.h"
 
 namespace mindspore {
 namespace symshape {
@@ -44,4 +44,4 @@ class MS_CORE_API SymbolVisitor {
 };
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_

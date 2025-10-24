@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_INT_SYMBOL_H_
-#define MINDSPORE_CORE_SYMBOLIC_SHAPE_INT_SYMBOL_H_
+#ifndef MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_INT_SYMBOL_H_
+#define MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_INT_SYMBOL_H_
 
 #include <memory>
 #include <string>
-#include "symbolic_shape/symbol.h"
-#include "symbolic_shape/math_info.h"
+#include "abstract/symbolic_shape/symbol.h"
+#include "abstract/symbolic_shape/math_info.h"
 
 namespace mindspore {
 namespace symshape {
@@ -126,4 +126,4 @@ GVAR_DEF(IntSymbolPtr, kSym1, IntSymbol::Make(1));
 GVAR_DEF(IntSymbolPtr, kSym2, IntSymbol::Make(2));
 GVAR_DEF(IntSymbolPtr, kSymNeg1, IntSymbol::Make(-1));
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_SYMBOLIC_SHAPE_INT_SYMBOL_H_
+#endif  // MINDSPORE_CORE_ABSTRACT_SYMBOLIC_SHAPE_INT_SYMBOL_H_
