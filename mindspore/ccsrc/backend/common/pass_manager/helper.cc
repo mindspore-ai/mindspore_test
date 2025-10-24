@@ -894,38 +894,6 @@ AbstractBasePtrList RectifyAbstract(const PrimitivePtr &prim, const AbstractBase
   }
   return RectifyAbstractFromDynamicInput(prim, input_abstract);
 }
-
-inline AbstractBasePtr InferShapeWithCheck(const PrimitivePtr &prim, const PrimitivePtr &prim_clone,
-                                           const AbstractBasePtrList &infer_spec_list, const AbstractBasePtr &orig_abs,
-                                           const CNodePtr &cnode) {
-  MS_EXCEPTION_IF_NULL(prim_clone);
-  MS_EXCEPTION_IF_NULL(orig_abs);
-  AbstractBasePtr out_abs;
-  if (auto shape_optional = abstract::InferShapeByFuncImpl(prim_clone, infer_spec_list); shape_optional.has_value()) {
-    out_abs = orig_abs->Clone();
-    out_abs->set_shape(shape_optional.value());
-  } else if (auto found = abstract::GetPrimitiveInferImpl(prim_clone); found.has_value()) {
-    auto infer = found.value();
-    MS_EXCEPTION_IF_CHECK_FAIL(infer.IsImplInferShapeAndType(), "There is no infer-shape implement for backend!");
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (common::AnfAlgo::IsDynamicSequence(cnode)) {
-      out_abs = infer.InferShapeAndType(nullptr, prim_clone, infer_spec_list);
-    } else {
-      out_abs = orig_abs->Clone();
-      MS_EXCEPTION_IF_NULL(out_abs);
-      auto shape = infer.InferShape(prim_clone, infer_spec_list);
-      if (shape == nullptr) {
-        MS_LOG(EXCEPTION) << "Infer shape with backend function failed";
-      }
-      out_abs->set_shape(shape);
-    }
-  } else {
-    MS_EXCEPTION_IF_NULL(prim);
-    MS_LOG(EXCEPTION) << "Get infer functions failed, the operator is not support dynamic shape yet, primitive name:"
-                      << prim->name() << " primitive type:" << prim->type_name();
-  }
-  return out_abs;
-}
 }  // namespace
 
 AnfNodePtr SexpToNode(const BaseRef &sexp, const BaseRef &graph, PrimitiveVarMap *primitive_vars, bool multigraph) {
