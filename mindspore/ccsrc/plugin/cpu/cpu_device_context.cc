@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "include/common/callback.h"
 #include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
 #include "plugin/cpu/graph_optimizer/pass/base/reg_cpu_const_input_to_attr.h"
 #include "plugin/cpu/graph_optimizer/pass/train/insert_cast_to_pyexecute.h"
@@ -51,7 +52,6 @@
 #include "backend/common/pass/add_training_attr.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
-#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_optimization.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -286,7 +286,13 @@ void CPUKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
 
     // Run graph kernel fusion optimization
     if (graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
-      graphkernel::GraphKernelOptimize(kernel_graph);
+      constexpr char kGraphKernelOptimizeCallBackFunc[] = "GraphKernelOptimize";
+      static auto graphkernel_optimize_callback =
+        callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(
+          kGraphKernelOptimizeCallBackFunc);
+      if (graphkernel_optimize_callback) {
+        graphkernel_optimize_callback(kernel_graph);
+      }
       kernel_graph->SetExecOrderByDefault();
     }
   }

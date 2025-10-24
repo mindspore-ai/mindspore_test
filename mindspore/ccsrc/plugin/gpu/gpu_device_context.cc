@@ -23,6 +23,7 @@
 #include <utility>
 #include <unordered_set>
 #include "kernel/gpu/gpu_common.h"
+#include "include/common/callback.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_build.h"
 #include "plugin/gpu/kernel_executor/gpu_kernel_task.h"
 #include "plugin/gpu/res_manager/gpu_device_manager.h"
@@ -527,7 +528,13 @@ void GPUKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
 
     // Graph kernel fusion optimization
     if (graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
-      graphkernel::GraphKernelOptimize(kernel_graph);
+      constexpr char kGraphKernelOptimizeCallBackFunc[] = "GraphKernelOptimize";
+      static auto graphkernel_optimize_callback =
+        callback::CommonCallback::GetInstance().GetCallback<void, const KernelGraphPtr &>(
+          kGraphKernelOptimizeCallBackFunc);
+      if (graphkernel_optimize_callback) {
+        graphkernel_optimize_callback(kernel_graph);
+      }
       kernel_graph->SetExecOrderByDefault();
     }
 

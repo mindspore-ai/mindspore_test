@@ -28,7 +28,7 @@
 #include "backend/ms_backend/graph_fusion/core/graph_kernel_utils.h"
 #include "backend/ms_backend/graph_fusion/core/value_depend_op_utils.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
-#include "backend/ms_backend/graph_fusion/adapter/graph_kernel_comm_info_manager.h"
+#include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_comm_info_manager.h"
 #include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
