@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <vector>
 #include "plugin/ascend/kernel_executor/rts/send.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -29,10 +29,12 @@ bool SendKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   auto primitive = common::AnfAlgo::GetCNodePrimitive(anf_node);
   MS_EXCEPTION_IF_NULL(primitive);
-  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, anf_node->cast<CNodePtr>())) {
-    MS_LOG(INTERNAL_EXCEPTION) << "SendKernel has no attr kAttrEventId";
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (cnode->GetAttr(kAttrEventId) == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "RecvKernel has no attr kAttrEventId";
   }
-  event_id_ = GetValue<uint32_t>(primitive->GetAttr(kAttrEventId));
+  event_id_ = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
 
   if (common::AnfAlgo::HasNodeAttr(kAttrRecordEvent, anf_node->cast<CNodePtr>())) {
     event_ = reinterpret_cast<aclrtEvent>(GetValue<uintptr_t>(primitive->GetAttr(kAttrRecordEvent)));

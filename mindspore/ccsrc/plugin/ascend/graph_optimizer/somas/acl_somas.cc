@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ void AclSomas::InitEventInfo(const session::KernelGraph &graph) {
   for (const auto &kernel : kernels) {
     auto type = common::AnfAlgo::GetCNodeName(kernel);
     if (type == kStreamSendOpName) {
-      auto event = common::AnfAlgo::GetNodeAttr<uint32_t>(kernel, kAttrEventId);
+      auto event = GetValue<uint32_t>(kernel->GetAttr(kAttrEventId));
       auto iter = event_map_.find(event);
       if (iter == event_map_.end()) {
         auto pair = somas::EventPair();
@@ -74,7 +74,7 @@ void AclSomas::InitEventInfo(const session::KernelGraph &graph) {
         iter->second.send_ = kernel;
       }
     } else if (type == kStreamRecvOpName) {
-      auto event = common::AnfAlgo::GetNodeAttr<uint32_t>(kernel, kAttrEventId);
+      auto event = GetValue<uint32_t>(kernel->GetAttr(kAttrEventId));
       auto iter = event_map_.find(event);
       if (iter == event_map_.end()) {
         auto pair = somas::EventPair();

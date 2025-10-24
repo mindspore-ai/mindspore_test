@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <vector>
 #include "plugin/ascend/kernel_executor/rts/recv.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -30,10 +31,12 @@ bool RecvKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   auto primitive = common::AnfAlgo::GetCNodePrimitive(anf_node);
   MS_EXCEPTION_IF_NULL(primitive);
-  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, anf_node->cast<CNodePtr>())) {
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (cnode->GetAttr(kAttrEventId) == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "RecvKernel has no attr kAttrEventId";
   }
-  event_id_ = GetValue<uint32_t>(primitive->GetAttr(kAttrEventId));
+  event_id_ = GetValue<uint32_t>(cnode->GetAttr(kAttrEventId));
   if (common::AnfAlgo::HasNodeAttr(kAttrRecordEventStream, anf_node->cast<CNodePtr>())) {
     record_stream_id_ = GetValue<uint32_t>(primitive->GetAttr(kAttrRecordEventStream));
   }

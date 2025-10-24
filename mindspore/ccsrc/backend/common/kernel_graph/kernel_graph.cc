@@ -16,8 +16,12 @@
 #include "include/backend/kernel_graph.h"
 #include <algorithm>
 #include <exception>
+#include <memory>
 #include <queue>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/kernel_graph/exec_order_builder.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -938,9 +942,8 @@ void KernelGraph::PrintGraphExecuteOrder() const {
     MS_EXCEPTION_IF_NULL(cur_cnode_ptr);
 
     std::string event_str;
-    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cur_cnode_ptr)) {
-      event_str =
-        ", event id[" + std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cur_cnode_ptr, kAttrEventId)) + "]";
+    if (cur_cnode_ptr->GetAttr(kAttrEventId) != nullptr) {
+      event_str = ", event id[" + std::to_string(GetValue<uint32_t>(cur_cnode_ptr->GetAttr(kAttrEventId))) + "]";
     }
 
     std::string label_str;

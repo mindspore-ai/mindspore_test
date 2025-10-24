@@ -12,16 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+# pylint: disable=C0114
+# pylint: disable=C0115
+# pylint: disable=C0116
+# pylint: disable=W1514
+# pylint: disable=R1725
+import os
 import pytest
+import re
+import shutil
 import numpy as np
 import mindspore as ms
-import mindspore.nn as nn
-from mindspore import Tensor, ops
+from mindspore import nn
+from mindspore import Tensor, ops, Parameter
 from mindspore.runtime import Stream, StreamCtx
 from mindspore.ops.functional import grad
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
+
+
+def clean_all_ir_files(folder_path):
+    if os.path.exists(folder_path):
+        for file_name in os.listdir(folder_path):
+            if file_name.endswith('.ir') or file_name.endswith('.dot') or \
+                    file_name.endswith('.dat') or file_name.endswith('.pb'):
+                os.remove(os.path.join(folder_path, file_name))
+
+
+def find_newest_validateir_file(folder_path):
+    ckpt_files = map(lambda f: os.path.join(folder_path, f),
+                     filter(lambda f: re.match(r'\d+_validate_\d+.ir', f),
+                            os.listdir(folder_path)))
+    return max(ckpt_files, key=os.path.getctime)
+
+
+def read_file(save_path):
+    filename = find_newest_validateir_file(save_path)
+    with open((os.path.join(filename)), 'r') as f:
+        content = f.read()
+    clean_all_ir_files(save_path)
+    return content
 
 
 class MyMsJitStreamCtx(StreamCtx):
@@ -41,6 +72,7 @@ b = Tensor(np.ones([3, 3]), ms.float32)
 s1 = Stream()
 s2 = Stream()
 
+
 class WithEventNet1(nn.Cell):
     def __init__(self):
         super(WithEventNet1, self).__init__()
@@ -56,6 +88,7 @@ class WithEventNet1(nn.Cell):
             event.wait()
         return y + z
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_event():
     """
@@ -64,14 +97,28 @@ def test_with_stream_event():
     Expectation: Run success.
     """
 
-    ms.set_context(mode=ms.GRAPH_MODE)
+    save_path = "./test_with_stream_event"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+
     x = Tensor(np.ones([3, 3]), ms.float32)
     net = WithEventNet1()
     out = net(x)
-    print("out:", out)
+    assert (out.asnumpy() == (5 * x).asnumpy()).all()
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    event_id_num = re.findall('event_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert (out.asnumpy() == (x * 5).asnumpy()).all()
+    assert len(stream_id_num) == 5
+    assert len(event_id_num) == 3
 
 
-@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_event_grad():
     """
@@ -84,7 +131,7 @@ def test_with_stream_event_grad():
     x = Tensor(np.ones([3, 3]), ms.float32)
     net = WithEventNet1()
     graph_grad_out = grad(net)(x)
-    print("graph_grad_out:", graph_grad_out)
+    assert (graph_grad_out.asnumpy() == (3 * x).asnumpy()).all()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -114,12 +161,29 @@ def test_event_multi_with_streams():
                 z = z + z1
             return y + z
 
+    save_path = "./test_event_multi_with_streams"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+
     x = Tensor(np.ones([3, 3]), ms.float32)
-    net = WithEventNet()
+    net = WithEventNet1()
     out = net(x)
-    print("out:", out)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    assert (out.asnumpy() == (5 * x).asnumpy()).all()
+    content = read_file(save_path)
+    stream_id_num = re.findall('stream_id', content)
+    event_id_num = re.findall('event_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert (out.asnumpy() == (x * 5).asnumpy()).all()
+    assert len(stream_id_num) == 5
+    assert len(event_id_num) == 3
 
 
+@pytest.mark.skip(reason='Not support yet')
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_stream_multi_events():
     """
@@ -146,7 +210,82 @@ def test_with_stream_multi_events():
             output = x - y * (output / 2)
             return output
 
+    save_path = "./test_with_stream_multi_events"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
     x = Tensor(np.ones([3, 3]), ms.float32)
     net = WithEventNet()
     out = net(x)
-    print("out:", out)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    assert (out.asnumpy() == (-2 * x).asnumpy()).all()
+    content = read_file(save_path)
+    event_id_num = re.findall('event_id', content)
+    stream_id_num = re.findall('stream_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(event_id_num) == 4
+    assert len(stream_id_num) == 6
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_stream_event_with_morph():
+    """
+    Feature: Support with stream event in morph.
+    Description: Support with stream event in morph.
+    Expectation: Run success.
+    """
+
+    def infer_dtype(args):
+        return args
+
+    def infer_shape(args):
+        return args
+
+    def mul_by(*args):
+        def inner(x):
+            event = ms.runtime.Event()
+            with ms.runtime.StreamCtx(s1):
+                y = args[0] * x
+                event = ops.Depend()(event, y)
+                event.record()
+                event.wait()
+            return y - 1
+
+        return inner
+
+    class MorphNet(nn.Cell):
+        def __init__(self):
+            super(MorphNet, self).__init__()
+            np_weight0 = np.array([1.0, 2.0, 3.0])
+            np_weight1 = np.array([4.0, 5.0, 6.0])
+            self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+            self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+            self.mul_by_100 = ops.Morph(mul_by(100), infer_shape, infer_dtype)
+
+        def construct(self, x):
+            input_a = x * self.weight0
+            input_b = self.mul_by_100(input_a)
+            out = input_b * self.weight1
+            return out
+
+    save_path = "./test_with_stream_event_with_morph"
+    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'validate'
+    ms.set_context(jit_config={"jit_level": "O0"}, save_graphs=True, save_graphs_path=save_path)
+    np_input_x = np.array([7.0, 8.0, 9.0])
+    input_x = Tensor(np_input_x, ms.float32)
+    net = MorphNet()
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+    grad_net = grad_op(net, net.trainable_params())
+    grad_net(input_x)
+    os.unsetenv('MS_DEV_DUMP_IR_PASSES')
+    ms.set_context(save_graphs=False)
+    content = read_file(save_path)
+    event_id_num = re.findall('event_id', content)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(event_id_num) == 3

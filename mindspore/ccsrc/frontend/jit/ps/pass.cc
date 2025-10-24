@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-
+#include <map>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
@@ -105,6 +105,7 @@
 #include "utils/compile_config.h"
 #include "frontend/jit/ps/pipeline_split.h"
 #include "frontend/jit/ps/static_analysis/auto_monad.h"
+#include "frontend/jit/ps/static_analysis/event_method.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/meta_fg_eliminate.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
@@ -425,6 +426,9 @@ bool OffloadActivationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr 
 }
 REGISTER_OPT_PASS_FUNC(OffloadActivationWrapper)
 
+bool EventMethodActionWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return EventMethod(root); }
+REGISTER_OPT_PASS_FUNC(EventMethodActionWrapper)
+
 bool parallel_mode() {
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   return (parallel_mode == parallel::kAutoParallel) || (parallel_mode == parallel::kSemiAutoParallel);
@@ -452,6 +456,7 @@ void AddMetaMorphosis(const ResourcePtr &resource, const std::string &add_before
       opt::OptPassGroupMap map_meta_morph(
         {{"meta_morphosis", opt::OptPassConfig({irpass.meta_morphosis_}, true)},
          {"meta_morphosis_renormalize", opt::OptPassConfig::Renormalize(true)},
+         {"meta_morphosis_event_method", opt::OptPassConfig(EventMethodActionWrapper, true)},
          {"meta_morphosis_auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper, true), jump_to}});
       (void)map_a->insert(it, map_meta_morph.begin(), map_meta_morph.end());
     }

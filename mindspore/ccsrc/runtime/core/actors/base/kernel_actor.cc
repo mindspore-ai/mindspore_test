@@ -25,7 +25,6 @@
 #include <utility>
 #include <vector>
 #include <string>
-
 #include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -107,10 +106,10 @@ void AddNodeMemTrackerInfo(const CNodePtr cnode, const std::string &actor_name, 
 
 void AddEventNodeToGraphTracker(const CNodePtr &cnode, const std::string &type, const std::string &stream_id) {
   auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
-  if (!common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
+  if (cnode->GetAttr(kAttrEventId) == nullptr) {
     MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
   }
-  std::string event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
+  std::string event_id = std::to_string(GetValue<uint32_t>(cnode->GetAttr(kAttrEventId)));
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, node_name, node_name, "", true);
   device::tracker::CALL_MEMORY_TRACKER(UpdateTask, node_name,
                                        {{device::tracker::kStreamId, stream_id}, {device::tracker::kEvent, event_id}});

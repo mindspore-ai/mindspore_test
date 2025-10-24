@@ -25,7 +25,6 @@
 #include <utility>
 #include <vector>
 #include <string>
-
 #include "ir/dtype/tensor_type.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
 #include "runtime/core/actors/base/memory_manager_actor.h"
@@ -114,8 +113,8 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
   if (type == kStreamSendOpName || type == kStreamRecvOpName) {
     auto node_name = type == kStreamSendOpName ? "RecordEvent" : "WaitEvent";
     std::string event_id;
-    if (common::AnfAlgo::HasNodeAttr(kAttrEventId, cnode)) {
-      event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
+    if (cnode->GetAttr(kAttrEventId) != nullptr) {
+      event_id = std::to_string(GetValue<uint32_t>(cnode->GetAttr(kAttrEventId)));
     } else {
       MS_LOG(EXCEPTION) << "StreamSend or StreamRecv ops does not have attribute kAttrEventId.";
     }
