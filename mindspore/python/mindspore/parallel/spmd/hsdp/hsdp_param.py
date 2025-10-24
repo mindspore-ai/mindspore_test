@@ -81,6 +81,7 @@ class HSDPParam:
             self.shard_size = rank_gcd
         if rank_gcd % self.shard_size != 0:
             self.shard_size = 1
+        self.param.hsdp_effective_shard_size = self.shard_size
 
     def _init_rank_info(self):
         """init parameter rank info"""
