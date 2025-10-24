@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+test memory feature in ascend
+"""
 import re
-
-from mindspore import Tensor
-import mindspore.context as context
-import mindspore as ms
-import mindspore.nn as nn
-from mindspore.ops import operations as P
-from tests.mark_utils import arg_mark
-from tests.device_utils import set_device, get_device_id
+import multiprocessing
+import numpy as np
 import shutil
 import os
-import numpy as np
 import acl
 import sys
+
+from mindspore import Tensor
+from mindspore import context
+import mindspore as ms
+from mindspore import nn, jit
+from mindspore.ops import operations as P
+from mindspore.common.initializer import TruncatedNormal
+
+from tests.mark_utils import arg_mark
+from tests.device_utils import set_device, get_device_id
+
 sys.path.append("..")
 from test_hal_util import run_cmd
 
@@ -35,7 +42,7 @@ FLOAT32_SIZE = 4
 
 class Net(nn.Cell):
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.ops = P.Abs()
 
     def construct(self, x):
@@ -140,7 +147,7 @@ def test_memory_replay():
 
 def extract_memory_usage(filename):
     pattern = r'Actual peak memory usage \(with fragments\): (\d+)M'
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         for line in file:
             match = re.search(pattern, line)
             if match:
@@ -221,3 +228,97 @@ def test_runtime_memory_stats_idle():
 
     # 512b for each input and output, so the total memory usage is 512 * 3
     assert ms.runtime.memory_stats()["total_idle_memory"] == (512 * 3)
+
+
+
+def weight_variable():
+    """weight initial"""
+    return TruncatedNormal(0.02)
+
+# context.set_context(save_graphs = True, save_graphs_path="./grahp_jit")
+def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):
+    """weight initial for conv layer"""
+    weight = weight_variable()
+    return nn.Conv2d(in_channels, out_channels,
+                     kernel_size=kernel_size, stride=stride, padding=padding,
+                     weight_init=weight, has_bias=False, pad_mode="valid")
+
+
+def fc_with_initialize(input_channels, out_channels):
+    """weight initial for fc layer"""
+    weight = weight_variable()
+    bias = weight_variable()
+    return nn.Dense(input_channels, out_channels, weight, bias)
+
+
+class LeNet5(nn.Cell):
+    """
+    Lenet network
+    Args:
+        num_class (int): Num classes. Default: 10.
+
+    Returns:
+        Tensor, output tensor
+
+    Examples:
+        >>> LeNet(num_class=10)
+    """
+
+    def __init__(self, num_class=10):
+        super().__init__()
+        self.num_class = num_class
+        self.batch_size = 32
+        self.conv1 = conv(1, 6, 5)
+        self.conv2 = conv(6, 16, 5)
+        self.fc1 = fc_with_initialize(16 * 5 * 5, 120)
+        self.fc2 = fc_with_initialize(120, 84)
+        self.fc3 = fc_with_initialize(84, self.num_class)
+        self.relu = nn.ReLU()
+        self.max_pool2d = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.reshape = P.Reshape()
+
+    @jit
+    def construct(self, x):
+        """build network"""
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.max_pool2d(x)
+        x = self.conv2(x)
+        x = self.relu(x)
+        x = self.max_pool2d(x)
+        x = self.reshape(x, (self.batch_size, -1))
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.relu(x)
+        x = self.fc3(x)
+        return x
+
+def train_model():
+    net = LeNet5()
+    input_tensor = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
+    for _ in range(10):
+        net(input_tensor)
+    return True
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_runtime_vmm_close_multi_model_train():
+    """
+    Feature: basic test for multi model train.
+    Description: close vmm to train multi model.
+    Expectation: train multi model successfully.
+    """
+    set_device()
+
+    os.environ['MS_ALLOC_CONF'] = 'enable_vmm:False'
+    ms.runtime.set_memory(max_size="10GB", increase_size="1GB")
+    res = []
+    with multiprocessing.Pool(processes=2) as pool:
+        for _ in range(2):
+            res.append(pool.apply_async(train_model))
+        pool.close()
+        pool.join()
+
+        for i in res:
+            assert i.get()
+    del os.environ['MS_ALLOC_CONF']
