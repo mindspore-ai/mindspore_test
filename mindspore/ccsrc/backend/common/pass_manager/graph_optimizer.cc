@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "include/backend/optimizer/graph_optimizer.h"
+#include "backend/common/pass_manager/cache_manager.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

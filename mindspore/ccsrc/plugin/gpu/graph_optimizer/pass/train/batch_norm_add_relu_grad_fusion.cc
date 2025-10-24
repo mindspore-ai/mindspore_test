@@ -88,25 +88,6 @@ void SetShapeAndType(const CNodePtr &bn_add_relu_grad, const AnfNodePtr &bn_grad
   common::AnfAlgo::SetOutputTypeAndDetailShape(outputs_type, outputs_shape, bn_add_relu_grad.get());
 }
 
-// Compare tuple getitem's index, return bool[n1's index < n2's index]
-bool CompareTupleGetitem(const AnfNodePtr &n1, const AnfNodePtr &n2) {
-  MS_EXCEPTION_IF_NULL(n1);
-  MS_EXCEPTION_IF_NULL(n2);
-  auto n1_cnode = n1->cast<CNodePtr>();
-  auto n2_cnode = n2->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(n1_cnode);
-  MS_EXCEPTION_IF_NULL(n2_cnode);
-  auto index_input1 = n1_cnode->input(kInputNodeOutputIndexInTupleGetItem);
-  MS_EXCEPTION_IF_NULL(index_input1);
-  auto value_node1 = index_input1->cast<ValueNodePtr>();
-  MS_EXCEPTION_IF_NULL(value_node1);
-  auto index_input2 = n2_cnode->input(kInputNodeOutputIndexInTupleGetItem);
-  MS_EXCEPTION_IF_NULL(index_input2);
-  auto value_node2 = index_input2->cast<ValueNodePtr>();
-  MS_EXCEPTION_IF_NULL(value_node2);
-  return GetValue<int64_t>(value_node1->value()) < GetValue<int64_t>(value_node2->value());
-}
-
 void ReplaceOutput(const FuncGraphPtr &graph, const AnfNodePtr &bn_grad, const AnfNodePtr &relu_grad,
                    const CNodePtr &bn_add_relu_grad) {
   // Create outputs

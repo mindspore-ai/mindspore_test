@@ -2230,6 +2230,11 @@ RunningStatus MSBackendBase::Run(BackendGraphId graph_id, const VectorRef &input
   MS_LOG(INFO) << "Status record: end run actor: " << graph_id;
   return kRunningSuccess;
 }
+
+void MSBackendBase::UpdateGraphCompilerInfo(const GraphCompilerInfo &graph_compile_info) {
+  MS_EXCEPTION_IF_NULL(graph_compile_info.root_func_graph_);
+  graph_compile_info.origin_outputs_order_ = FetchOriginOutputOrder(graph_compile_info.root_func_graph_->output());
+}
 }  // namespace ms_backend
 }  // namespace backend
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2025 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,34 @@ AnfNodePtr PatternProcessPass::Run(const FuncGraphPtr &func_graph, const AnfNode
     }
   }
   return nullptr;
+}
+
+bool MultipleOutputPatternProcessPass::MatchAnotherPattern(const AnfNodePtr &node, const EquivPtr &equiv) const {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(equiv);
+  VarPtr fg = std::make_shared<Var>("RootG");
+  MS_EXCEPTION_IF_NULL(child_primitive_vars_);
+  MS_EXCEPTION_IF_NULL(child_equiv_);
+  EquivPtr another_equiv =
+    child_pattern_engine_.Match(SexpToNode(DefineAnotherPattern(), fg, child_primitive_vars_.get(), true), node,
+                                *child_primitive_vars_, child_equiv_);
+  if (another_equiv != nullptr && !another_equiv->empty()) {
+    return IsShareNodes(equiv, another_equiv);
+  }
+  return false;
+}
+
+std::vector<AnfNodePtr> MultipleOutputPatternProcessPass::GetOrigNodes() const {
+  std::vector<AnfNodePtr> orig_nodes = PatternProcessPass::GetOrigNodes();
+  for (auto &prim_var : *child_primitive_vars_) {
+    auto baseref = (*child_equiv_)[prim_var.second];
+    if (!utils::isa<CNode>(baseref)) {
+      continue;
+    }
+    auto node = utils::cast<AnfNodePtr>(baseref);
+    orig_nodes.push_back(node);
+  }
+  return orig_nodes;
 }
 }  // namespace opt
 }  // namespace mindspore

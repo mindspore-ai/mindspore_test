@@ -61,6 +61,7 @@ class BACKEND_COMMON_EXPORT PassManager {
   const std::string name_;
   std::vector<PassPtr> passes_;
   bool run_only_once_;
+  CacheManagerPtr cache_manager_;
   std::map<PassPtr, bool> fusion_passes_switch_;
 };
 using PassManagerPtr = std::shared_ptr<PassManager>;

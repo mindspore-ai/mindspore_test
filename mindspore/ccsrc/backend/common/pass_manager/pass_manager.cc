@@ -18,12 +18,13 @@
 #include <string>
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
+#include "backend/common/pass_manager/cache_manager.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace opt {
 PassManager::PassManager(const std::string &name, bool run_only_once)
-    : name_(name), passes_{}, run_only_once_(run_only_once) {}
+    : name_(name), passes_{}, run_only_once_(run_only_once), cache_manager_(std::make_shared<CacheManager>()) {}
 
 void PassManager::AddPass(const PassPtr &pass) {
   if (pass != nullptr) {
@@ -108,6 +109,7 @@ bool PassManager::Run(const FuncGraphPtr &func_graph, const std::vector<PassPtr>
   for (const auto &pass : passes) {
     if (pass != nullptr) {
       auto pass_name = GetPassFullname(num, pass);
+      pass->SetCacheManager(cache_manager_);
       bool enable = true;
       auto kv = fusion_passes_switch_.find(pass);
       if (kv != fusion_passes_switch_.end()) {

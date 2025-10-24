@@ -288,6 +288,7 @@ constexpr auto kAttrMode = "mode";
 constexpr auto kAttrWindow = "window";
 constexpr auto kAttrCeilMode = "ceil_mode";
 constexpr auto kAttrGlobalPooling = "global_pooling";
+constexpr auto kAttrNonTask = "non_task";
 constexpr auto kAttrIsGrad = "is_grad";
 constexpr auto kAttrRecompute = "recompute";
 constexpr auto kAttrParallelOptLoad = "parallel_opt_load";

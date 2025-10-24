@@ -119,6 +119,8 @@ class COMMON_EXPORT AnfAlgo {
   static size_t GetInputNum(const CNodePtr &cnode);
   // get the num of inputs exclude monads for real_kernel (which can be build and run in device)
   static size_t GetInputTensorNum(const AnfNodePtr &node);
+  // get prev node output width output index has tuplegetitem
+  static bool IsPrevNodeHasTupleGetItem(const AnfNodePtr &anf_node, size_t input_idx, bool skip_nop_node = false);
   // get prev node output width output index
   static KernelWithIndex GetPrevNodeOutput(const AnfNodePtr &anf_node, size_t input_idx, bool skip_nop_node = false);
   // get all the untuple real prev_nodes output
@@ -154,8 +156,12 @@ class COMMON_EXPORT AnfAlgo {
   static bool IsGraphKernel(const AnfNodePtr &node);
   // checkout whether the anf node is an inner node of graph kernel.
   static bool IsNodeInGraphKernel(const AnfNodePtr &node);
+  // get the real output of GraphKernel.
+  static AnfNodePtr GetOutputOfGraphkernel(const KernelWithIndex &kernel_with_index);
   // check parameter is weight or data
   static bool IsParameterWeight(const ParameterPtr &node);
+  // checkout whether the anf node is include the label_index.
+  static bool IsLabelIndexInNode(const AnfNodePtr &node, size_t label_index);
   // Check whether the cnode update parameter
   static bool IsUpdateParameterKernel(const CNodePtr &node);
   static AnfNodePtr GetInputNode(const CNodePtr &node, size_t index);
@@ -169,16 +175,22 @@ class COMMON_EXPORT AnfAlgo {
   static bool IsNaiveCommunicationOp(const std::string &kernel_name);
   static bool IsNaiveCommunicationOp(const AnfNodePtr &node);
   static bool IsLcclCommunicationOp(const AnfNodePtr &node);
+  static bool IsDtypeFormatSensitiveOp(const AnfNodePtr &node);
   static bool IsFusedCommunicationOp(const AnfNodePtr &node);
   static bool IsInplaceNode(const mindspore::AnfNodePtr &kernel, const string &type);
   static bool IsGetNext(const NotNull<AnfNodePtr> &node);
   static bool IsNeedSkipNopOpAddr(const AnfNodePtr &node);
+  static bool IsNeedSkipNopOpExecution(const AnfNodePtr &node);
   static FuncGraphPtr GetValueNodeFuncGraph(const AnfNodePtr &node);
+  static bool IsSwitchCall(const CNodePtr &call_node);
   static bool IsScalarInput(const CNodePtr &cnode, size_t index);
   static bool IsScalarOutput(const CNodePtr &cnode, size_t index);
   static void ReorderExecList(NotNull<std::vector<CNodePtr> *> node_list);
   static void ReorderPosteriorExecList(NotNull<std::vector<CNodePtr> *> node_list);
-
+  // get fix output precision of cnode.
+  static TypeId GetCNodeOutputPrecision(const AnfNodePtr &node);
+  // get fix output precision from prev node, input_idx is the input index of current node related to prev node.
+  static TypeId GetPrevNodeOutputPrecision(const AnfNodePtr &node, size_t input_idx);
   static std::string GetMoveToDstStr(const AnfNodePtr &node);
   static bool IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicShape(const AnfNodePtr &node);
@@ -189,15 +201,23 @@ class COMMON_EXPORT AnfAlgo {
   static bool IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph);
   static bool IsNodeInputDynamicRank(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicRank(const AnfNodePtr &node);
+  static bool IsInputAnchorDynamicRank(const AnfNodePtr &node, size_t idx);
   static bool IsOutputAnchorDynamicRank(const AnfNodePtr &node, size_t idx);
   static bool IsCondControlKernel(const CNodePtr &node);
   static bool GetBooleanAttr(const AnfNodePtr &node, const std::string &attr);
   static std::optional<string> GetDumpFlag(const AnfNodePtr &node);
+  static void GetRealDynamicShape(const std::vector<size_t> &shape, NotNull<std::vector<int64_t> *> dynamic_shape);
   static std::vector<int64_t> GetOutputMaxShape(const AnfNodePtr &anf_node, size_t index);
   static bool IsHostKernel(const CNodePtr &kernel_node);
+  static void AddArgList(AbstractBasePtrList *args_spec_list, const AnfNodePtr &real_input, size_t real_input_index);
   // Used to check whether an AnfNode is a Summary Node.
   static bool IsSummaryNode(const AnfNodePtr &node);
   static bool IsAKGSparseOP(const AnfNodePtr &cnode);
+  // Find real input nodes.
+  static void GetAllFatherRealNode(const AnfNodePtr &anf_node, std::vector<AnfNodePtr> *result,
+                                   std::set<AnfNodePtr> *visited);
+  static void GetAllVisitedCNode(const CNodePtr &node, std::vector<AnfNodePtr> *used_kernels,
+                                 std::set<AnfNodePtr> *visited);
   static std::string GetGraphSplitGroup(const AnfNodePtr &node);
   static AnfNodeIndexSet GetUpdateStateUsers(const FuncGraphManagerPtr &manager, const AnfNodePtr &node);
   // Get node real inputs, skip `MakeTuple`, `TupleGetItem`, `Depend`, `Load`, `UpdateState` etc.
@@ -234,8 +254,13 @@ class COMMON_EXPORT AnfAlgo {
   // executed in vm. For example, the operator "bprop_cut" will be compiled into kernel graph and be launch
   // in backend in PyNative mode.
   static bool IsBpropCutOpExecInBackend(const AnfNodePtr &node);
+
+  static bool IsNodeInputContainMonad(const AnfNodePtr &node);
   // Check whether a cnode has a monad input.
   static bool HasMonadInput(const AnfNodePtr &node);
+
+  // Check if node is non-task op.
+  static bool IsNonTaskOp(const CNodePtr &node);
   // Check if node has none input after IR fusion.
   static bool IsNoneInput(const AnfNodePtr &node, size_t index);
   // Check whether node is a call node, call nodes are those cnodes whose first input is not primitive node.
@@ -291,6 +316,7 @@ class COMMON_EXPORT AnfAlgo {
   static TypeId GetSparseTypeIdAt(const AnfNodePtr &node, size_t idx);
 
   static std::string GetTensorValueString(const tensor::TensorPtr &tensor);
+  static abstract::AbstractBasePtr FrontendGetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
 
   static bool IsNodeMutableScalar(const AnfNodePtr &node);
   static bool IsDynamicSequence(const AnfNodePtr &node);
