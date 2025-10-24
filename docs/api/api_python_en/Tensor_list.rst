@@ -17,6 +17,13 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, target
     :members:
 
+{% elif fullname == "mindspore.nn.Optimizer" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: flatten_gradients
+    :members:
+
 {% elif "mindspore.experimental.optim" in fullname and "lr_scheduler" not in fullname and objname[0].istitle() %}
 {{ fullname | underline }}
 
