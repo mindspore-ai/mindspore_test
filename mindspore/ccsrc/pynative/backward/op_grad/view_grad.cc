@@ -16,6 +16,7 @@
 
 #include "mindspore/ccsrc/pynative/backward/op_grad/view_grad.h"
 #include <memory>
+#include <vector>
 #include "mindspore/core/include/utils/device_manager_conf.h"
 #include "pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
@@ -74,5 +75,48 @@ ValuePtrList SliceExtViewBackwardNode::CallBackward(const ValuePtrList &grads) {
   auto slice_part = kernel::pyboost::slice_ext_view(grad_input, dim_, start_, end_, step_);
   (void)kernel::pyboost::inplace_copy(slice_part, grad, std::make_shared<BoolImm>(true));
   return {grad_input};
+}
+
+namespace {
+inline static ValuePtrList SplitWithSizeBackward(const ValuePtrList &grads, const std::vector<int64_t> &split_sizes,
+                                                 const int64_t dim, const std::vector<int64_t> &self_shape,
+                                                 const TypeId self_dtype) {
+  auto grad_dtype = std::make_shared<Int64Imm>(static_cast<int64_t>(self_dtype));
+  const int64_t ndim = self_shape.size();
+  const auto real_dim = ops::DynamicDimWrap(dim, ndim);
+
+  std::vector<ValuePtr> real_grads(grads.size());
+  for (size_t i = 0; i < grads.size(); ++i) {
+    const auto &grad_i = grads[i];
+    if (!grad_i->isa<None>()) {
+      real_grads[i] = grad_i;
+    } else {
+      const auto &length = split_sizes[i];
+      auto grad_size = self_shape;
+      grad_size[real_dim] = length;
+      real_grads[i] = kernel::pyboost::zeros(PackBasicTypeToValue(grad_size), grad_dtype);
+    }
+  }
+
+  const auto all_grads_tuple = std::make_shared<ValueTuple>(real_grads);
+  const auto concat_dim = std::make_shared<Int64Imm>(real_dim);
+  auto grad_input = kernel::pyboost::concat(all_grads_tuple, concat_dim);
+  return {grad_input};
+}
+}  // namespace
+
+ValuePtrList SplitTensorBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
+  const int64_t ndim = self_shape_.size();
+  const auto real_dim = ops::DynamicDimWrap(dim_, ndim);
+  int64_t num_splits = grads.size();
+  std::vector<int64_t> split_sizes(num_splits, split_size_);
+  split_sizes[split_sizes.size() - 1] = split_size_ - (num_splits * split_size_ - self_shape_[real_dim]);
+  return SplitWithSizeBackward(grads, split_sizes, real_dim, self_shape_, self_dtype_);
+}
+
+ValuePtrList SplitWithSizeBackwardNode::CallBackward(const ValuePtrList &grads) {
+  SetDeviceTarget();
+  return SplitWithSizeBackward(grads, split_size_, dim_, self_shape_, self_dtype_);
 }
 }  // namespace mindspore::pynative::autograd
