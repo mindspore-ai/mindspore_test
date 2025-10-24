@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_DYNAMIC_MEM_POOL_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_DYNAMIC_MEM_POOL_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_DYNAMIC_MEM_POOL_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_DYNAMIC_MEM_POOL_H_
 
 #include <algorithm>
 #include <functional>
@@ -406,4 +406,4 @@ struct MemoryTimeEvent {
 using MemoryTimeEventPtr = std::shared_ptr<MemoryTimeEvent>;
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_DYNAMIC_MEM_POOL_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_DYNAMIC_MEM_POOL_H_

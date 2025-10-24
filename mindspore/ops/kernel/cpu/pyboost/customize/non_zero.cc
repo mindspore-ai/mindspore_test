@@ -22,7 +22,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {

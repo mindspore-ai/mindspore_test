@@ -21,13 +21,13 @@
 #include <memory>
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/memory_manager/memory_manager.h"
+#include "include/runtime/hardware_abstract/memory_manager/memory_manager.h"
 
 #include "mindspore/core/include/device_address/convert_tensor_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
-#include "runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
+#include "include/runtime/hardware_abstract/collective/collective_comm_lib_loader.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/cpu/res_manager/collective/ms_collective_comm_lib.h"
 #endif

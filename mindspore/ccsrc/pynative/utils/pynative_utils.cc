@@ -43,7 +43,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "pynative/utils/predict_out_type_map.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/pynative/abstract_converter.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pynative/backward/grad_utils.h"

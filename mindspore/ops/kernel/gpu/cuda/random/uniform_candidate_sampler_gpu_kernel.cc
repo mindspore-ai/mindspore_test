@@ -17,7 +17,7 @@
 #include "kernel/gpu/cuda/random/uniform_candidate_sampler_gpu_kernel.h"
 #include <algorithm>
 #include "mindspore/ops/infer/uniform_candidate_sampler.h"
-#include "runtime/hardware_abstract/kernel_base/philox_random.h"
+#include "include/runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

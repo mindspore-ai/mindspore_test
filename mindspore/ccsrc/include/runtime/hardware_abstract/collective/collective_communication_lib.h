@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_
 
 #include <atomic>
 #include <map>
@@ -25,7 +25,7 @@
 #include <variant>
 #include <unordered_map>
 #include "ir/dtype/type_id.h"
-#include "runtime/hardware_abstract/collective/communication_group.h"
+#include "include/runtime/hardware_abstract/collective/communication_group.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
@@ -211,4 +211,4 @@ class RUNTIME_HARDWARE_EXPORT CollectiveCommunicationLib {
 using CollectiveCommunicationLibPtr = CollectiveCommunicationLib *;
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COLLECTIVE_COMMUNICATION_LIB_H_

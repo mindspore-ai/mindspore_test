@@ -22,7 +22,7 @@
 #include <utility>
 
 #include "infer/random_categorical.h"
-#include "runtime/hardware_abstract/kernel_base/philox_random.h"
+#include "include/runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,14 +31,12 @@ namespace {
 using KernelRunFunc = RandomCategoricalCpuKernel::KernelRunFunc;
 #define RANDOM_CATEGORICAL_ADD_KERNEL(logits_dtype, nun_sample_dtype, seed_dtype, output_dtype, logits_type, \
                                       output_type)                                                           \
-  {                                                                                                          \
-    KernelAttr()                                                                                             \
-      .AddInputAttr(kNumberType##logits_dtype)                                                               \
-      .AddInputAttr(kNumberType##nun_sample_dtype)                                                           \
-      .AddInputAttr(kNumberType##seed_dtype)                                                                 \
-      .AddOutputAttr(kNumberType##output_dtype),                                                             \
-      &RandomCategoricalCpuKernel::LaunchKernel<logits_type, output_type>                                    \
-  }
+  {KernelAttr()                                                                                              \
+     .AddInputAttr(kNumberType##logits_dtype)                                                                \
+     .AddInputAttr(kNumberType##nun_sample_dtype)                                                            \
+     .AddInputAttr(kNumberType##seed_dtype)                                                                  \
+     .AddOutputAttr(kNumberType##output_dtype),                                                              \
+   &RandomCategoricalCpuKernel::LaunchKernel<logits_type, output_type>}
 }  // namespace
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &RandomCategoricalCpuKernel::GetFuncList() const {

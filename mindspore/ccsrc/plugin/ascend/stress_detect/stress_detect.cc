@@ -25,7 +25,7 @@
 #include "mindspore/core/include/utils/device_manager_conf.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {

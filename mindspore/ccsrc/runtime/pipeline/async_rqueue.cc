@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/pipeline/async_rqueue.h"
+#include "include/runtime/pipeline/async_rqueue.h"
 
 #include <utility>
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)

@@ -29,7 +29,7 @@
 #include "pynative/utils/base.h"
 #include "pynative/backward/top_cell.h"
 #include "pynative/backward/jit_grad/jit_grad.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/op_grad/bprop_task.h"
 #include "include/utils/pynative/variable.h"
 #include "frontend/jit/ps/resource.h"

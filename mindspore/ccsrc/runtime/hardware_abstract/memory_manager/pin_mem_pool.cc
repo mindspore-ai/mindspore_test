@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/hardware_abstract/memory_manager/pin_mem_pool.h"
+#include "include/runtime/hardware_abstract/memory_manager/pin_mem_pool.h"
 #include <string>
 #include <algorithm>
 #include <cstdlib>

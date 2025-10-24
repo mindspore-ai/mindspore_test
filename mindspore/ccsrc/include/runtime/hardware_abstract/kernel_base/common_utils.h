@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_COMMON_COMMON_UTILS_H_
-#define MINDSPORE_OPS_COMMON_COMMON_UTILS_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_COMMON_UTILS_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_COMMON_UTILS_H_
 
 #include <dirent.h>
 #include <sstream>
@@ -295,4 +295,4 @@ inline void GetRawAddress(const std::vector<AddressPtr> &addrs, std::vector<void
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_OPS_COMMON_COMMON_UTILS_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_COMMON_UTILS_H_

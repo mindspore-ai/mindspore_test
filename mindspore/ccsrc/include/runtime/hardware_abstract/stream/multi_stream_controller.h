@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_MULTI_STREAM_CONTROLLER_HEADER_H
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_MULTI_STREAM_CONTROLLER_HEADER_H
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_STREAM_MULTI_STREAM_CONTROLLER_HEADER_H
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_STREAM_MULTI_STREAM_CONTROLLER_HEADER_H
 
 #include <cstdint>
 
@@ -85,4 +85,4 @@ class RUNTIME_HARDWARE_EXPORT MultiStreamController {
 using MultiStreamControllerPtr = std::shared_ptr<MultiStreamController>;
 }  // namespace device
 }  // namespace mindspore
-#endif
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_STREAM_MULTI_STREAM_CONTROLLER_HEADER_H

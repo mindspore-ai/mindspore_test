@@ -35,7 +35,7 @@
 #include "tools/profiler/profiling.h"
 using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "backend/common/device_address_utils.h"
 #include "backend/common/kernel_graph/session_basic.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

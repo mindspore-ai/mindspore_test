@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/cuda/random/random_choice_with_mask_gpu_kernel.h"
 #include "mindspore/ops/infer/random_choice_with_mask.h"
-#include "runtime/hardware_abstract/kernel_base/philox_random.h"
+#include "include/runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

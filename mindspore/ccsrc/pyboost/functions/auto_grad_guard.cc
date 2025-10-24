@@ -16,7 +16,7 @@
 
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 #include "utils/ms_context.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "utils/device_manager_conf.h"
 
 namespace mindspore {

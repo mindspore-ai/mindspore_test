@@ -23,7 +23,7 @@
 #include <utility>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "mindapi/base/type_traits.h"
 
@@ -154,7 +154,7 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   template <typename... T>
   static void ProcessCrossStreamAddress(const std::string &op_name, const DeviceContext *device_context,
-                                        size_t op_stream_id, const T &... args) {
+                                        size_t op_stream_id, const T &...args) {
     // memory_stream_addresses pair : memory_stream_id, address.
     std::vector<std::pair<uint32_t, void *>> cross_stream_addresses;
     (GetCrossStreamAddressInfo(op_stream_id, &cross_stream_addresses, args), ...);
@@ -173,7 +173,7 @@ class BACKEND_COMMON_EXPORT DeviceAddressUtils {
 
   template <typename... T>
   static void ProcessCrossStreamAddressWithEvent(const std::string &op_name, const DeviceContext *device_context,
-                                                 size_t op_stream_id, const DeviceEventPtr &event, const T &... args) {
+                                                 size_t op_stream_id, const DeviceEventPtr &event, const T &...args) {
     // memory_stream_addresses pair : memory_stream_id, address.
     std::vector<std::pair<uint32_t, void *>> cross_stream_addresses;
     (GetCrossStreamAddressInfo(op_stream_id, &cross_stream_addresses, args), ...);

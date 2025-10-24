@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_SWAP_MANAGER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_SWAP_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_SWAP_MANAGER_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_SWAP_MANAGER_H_
 
 #include <memory>
 #include <queue>
@@ -25,7 +25,7 @@
 #include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "ir/device_address.h"
 #include "runtime/hardware_abstract/memory_manager/io_handle.h"
-#include "runtime/hardware_abstract/memory_manager/pin_mem_pool.h"
+#include "include/runtime/hardware_abstract/memory_manager/pin_mem_pool.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore {
@@ -76,4 +76,4 @@ using SwapManagerPtr = std::shared_ptr<SwapManager>;
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_GSM_SWAP_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIMR_HARDWARE_ABSTRACT_MEMORY_MANAGER_SWAP_MANAGER_H_

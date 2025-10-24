@@ -21,7 +21,7 @@
 #include <algorithm>
 #include "include/cluster/init.h"
 #include "tools/profiler/profiler.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pyboost/functions/auto_generate/functions.h"
 #include "pyboost/functions/auto_grad_guard.h"
 #include "pynative/backward/hook/hook_py.h"

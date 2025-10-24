@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_ENV_H_
-#define MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_ENV_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_RUNTIME_ENV_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_RUNTIME_ENV_H_
 
 #include <memory>
 #include <utility>
@@ -67,4 +67,4 @@ RUNTIME_UTILS_EXPORT bool IsEnableRuntimeConfig(const std::string &runtime_confi
 RUNTIME_UTILS_EXPORT bool IsDisableRuntimeConfig(const std::string &runtime_config);
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_RUNTIME_CONF_RUNTIME_ENV_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_UTILS_RUNTIME_CONF_RUNTIME_ENV_H_

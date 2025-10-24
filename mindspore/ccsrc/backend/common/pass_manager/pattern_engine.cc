@@ -65,7 +65,7 @@ std::ostream &operator<<(std::ostream &os, const VarPtr &var) {
 }
 
 template <>
-std::ostream &operator<<<VarPtr, BaseRef>(std::ostream &os, const Equiv &equiv) {
+std::ostream &operator<< <VarPtr, BaseRef>(std::ostream &os, const Equiv &equiv) {
   os << "[Equiv]"
      << "\n";
   for (auto &equiv_item : equiv) {

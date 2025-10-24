@@ -27,7 +27,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/utils/tensor_py.h"
-#include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/utils/pynative/variable.h"
 
 namespace mindspore {

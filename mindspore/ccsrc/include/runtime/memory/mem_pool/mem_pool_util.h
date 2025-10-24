@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
-#define MINDSPORE_CCSRC_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_MEM_POOL_UTIL_H_
 
 #include <atomic>
 #include <string>
 
-#include "runtime/memory/mem_pool/mem_env.h"
+#include "include/runtime/memory/mem_pool/mem_env.h"
 #include "include/backend/visible.h"
 #include "utils/ms_utils.h"
 

@@ -25,7 +25,7 @@
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/pyboost/comm_utils.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/backend/debug/execute_order_tracker/kernel_cache.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"

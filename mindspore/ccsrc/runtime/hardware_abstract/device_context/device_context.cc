@@ -16,7 +16,7 @@
 
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "utils/ms_context.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace device {

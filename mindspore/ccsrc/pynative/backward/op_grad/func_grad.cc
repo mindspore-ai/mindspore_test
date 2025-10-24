@@ -28,7 +28,7 @@
 #include "include/utils/pynative/common_utils.h"
 #include "pynative/utils/pynative_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "pynative/backward/hook/custom_function.h"
 #include "pynative/backward/grad_utils.h"
 #include "frontend/operator/primitive_py.h"

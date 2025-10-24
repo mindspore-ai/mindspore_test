@@ -24,7 +24,7 @@
 #include "infer/ops_func_impl/tile.h"
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_kernel.h"
 #include "kernel/ascend/dvm/pyboost_impl/lazy_fusion_flags.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "view/view_strides_calculator.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
@@ -166,7 +166,7 @@ ShapeVector GetReduceDim(const std::optional<ValueTuplePtr> &dim, size_t rank) {
 }
 
 template <typename F, typename... Args>
-void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &... inputs) {
+void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &...inputs) {
   size_t stream = op->stream_id();
   const DeviceContext *context = op->device_context();
   PyBoostUtils::PrepareOpInputs(context, stream, inputs...);
@@ -452,7 +452,7 @@ struct MatMulAdapter {
 };
 
 template <typename... Args>
-void DumpOp(const std::string &op_name, OpRunner *op, const Args &... inputs) {
+void DumpOp(const std::string &op_name, OpRunner *op, const Args &...inputs) {
   if (LazyFusionFlags::GetInstance().dump_as_text) {
     auto k = g_lazy_fusion_manager.Get(op->device_context(), op->stream_id());
     k->DumpOp(op_name, op->outputs(), inputs...);

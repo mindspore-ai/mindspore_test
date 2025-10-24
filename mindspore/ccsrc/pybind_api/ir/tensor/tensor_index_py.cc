@@ -36,7 +36,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "mindspore/ccsrc/runtime/hardware_abstract/utils.h"
 #include "mindspore/ccsrc/pybind_api/ir/tensor/tensor_api/auto_generate/tensor_api.h"
 #include "mindspore/core/include/ir/device_address_maker.h"

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_MEM_REUSE_TRACKER_GRAPH_H_
-#define MINDSPORE_CCSRC_BACKEND_MEM_REUSE_TRACKER_GRAPH_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_TRACKER_GRAPH_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_TRACKER_GRAPH_H_
 
 #include <memory>
 #include <string>
@@ -90,4 +90,4 @@ bool NeedSkipRaceCheck(const TaskInfoPtr &task_info);
 }  // namespace tracker
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_MEM_REUSE_TRACKER_GRAPH_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_MEMORY_MEM_POOL_TRACKER_GRAPH_H_

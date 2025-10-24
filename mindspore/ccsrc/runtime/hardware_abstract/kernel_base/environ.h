@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ENVIRON_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ENVIRON_H_
+#ifndef MINDSPORE_CCSRC_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_ENVIRON_H_
+#define MINDSPORE_CCSRC_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_ENVIRON_H_
 
 #include <vector>
 #include <string>
@@ -88,4 +88,4 @@ using EnvironPtr = std::shared_ptr<Environ>;
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ENVIRON_H_
+#endif  // MINDSPORE_CCSRC_RUNTIMR_HARDWARE_ABSTRACT_KERNEL_BASE_ENVIRON_H_

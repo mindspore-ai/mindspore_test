@@ -22,7 +22,7 @@
 #include "include/utils/pybind_api/api_register.h"
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/pynative_utils.h"
-#include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "include/runtime/hardware_abstract/stream/multi_stream_controller.h"
 
 namespace mindspore {
 namespace hal {

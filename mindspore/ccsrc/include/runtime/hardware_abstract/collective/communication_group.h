@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COMMUNICATION_GROUP_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COMMUNICATION_GROUP_H_
+#ifndef MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COMMUNICATION_GROUP_H_
+#define MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COMMUNICATION_GROUP_H_
 
 #include <map>
 #include <string>
@@ -97,7 +97,8 @@ using CommunicationGroupPtr = std::shared_ptr<CommunicationGroup>;
 }  // namespace mindspore
 
 #ifndef COMM_GROUP_HDR_FILE_REL_PATH
-#define COMM_GROUP_HDR_FILE_REL_PATH "mindspore/ccsrc/runtime/hardware_abstract/collective/communication_group.h"
+#define COMM_GROUP_HDR_FILE_REL_PATH \
+  "mindspore/ccsrc/include/runtime/hardware_abstract/collective/communication_group.h"
 #endif
 static constexpr size_t GetCommLibFileRelPathPos() noexcept {
   return sizeof(__FILE__) > sizeof(COMM_GROUP_HDR_FILE_REL_PATH)
@@ -128,4 +129,4 @@ static constexpr size_t GetCommLibFileRelPathPos() noexcept {
       pybind11::pybind11_fail(oss.str());                                                                     \
     }                                                                                                         \
   } while (0)
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COMMUNICATION_GROUP_H_
+#endif  // MINDSPORE_CCSRC_INCLUDE_RUNTIME_HARDWARE_ABSTRACT_COLLECTIVE_COMMUNICATION_GROUP_H_

@@ -28,7 +28,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/random_op_impl.cuh"
 #include "include/curand.h"
 #include "utils/ms_context.h"
-#include "runtime/hardware_abstract/kernel_base/philox_random.h"
+#include "include/runtime/hardware_abstract/kernel_base/philox_random.h"
 
 namespace mindspore {
 namespace kernel {

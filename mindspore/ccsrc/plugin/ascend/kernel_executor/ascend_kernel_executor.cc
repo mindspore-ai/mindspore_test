@@ -57,7 +57,7 @@
 #endif
 
 #include "mindspore/ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "pyboost/pyboost_utils.h"
 #include "pyboost/op_runner.h"

@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <memory>
 #include "backend/common/device_address_utils.h"
-#include "runtime/pipeline/pipeline.h"
+#include "include/runtime/pipeline/pipeline.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
@@ -80,7 +80,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
   })
 
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                                  \
-  [](const std::string &api_str, const auto &... args) -> auto {                                                  \
+  [](const std::string &api_str, const auto &...args) -> auto {                                                   \
     std::unique_lock<std::mutex> lock(mutex_);                                                                    \
     if (MS_UNLIKELY(capacity_ == 0)) {                                                                            \
       auto [ws_size, executor, cache, release_func] = GEN_EXECUTOR(api_str, args...);                             \
@@ -134,8 +134,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
         return std::make_tuple(ws_size, executor, cache, release_func, update_func);                              \
       }                                                                                                           \
     }                                                                                                             \
-  }                                                                                                               \
-  (aclnn_api, __VA_ARGS__)
+  }(aclnn_api, __VA_ARGS__)
 
 #define LAUNCH_ACLNN(aclnn_api, device_context, stream_id, ...)                                                   \
   do {                                                                                                            \
@@ -211,7 +210,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
 
 #define LAUNCH_ACLNN_SYNC(aclnn_api, device_context, stream_id, ...)                                          \
   [](const std::string &aclnn_name, const device::DeviceContext *device_context, size_t real_stream_id,       \
-     auto &... args) -> auto {                                                                                \
+     auto &...args) -> auto {                                                                                 \
     static auto simu = common::IsCompileSimulation();                                                         \
     if (simu) {                                                                                               \
       MS_LOG(EXCEPTION) << "For " << aclnn_name << ", the output shape depends on the actual execution,"      \
@@ -254,8 +253,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       release_func();                                                                                         \
     }                                                                                                         \
     return all_acl_tensor;                                                                                    \
-  }                                                                                                           \
-  (#aclnn_api, device_context, stream_id, __VA_ARGS__)
+  }(#aclnn_api, device_context, stream_id, __VA_ARGS__)
 
 namespace mindspore {
 namespace kernel {
