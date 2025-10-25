@@ -16,6 +16,12 @@
 
 #include "runtime/core/actors/base/actor_common.h"
 #include <memory>
+#include <map>
+#include <algorithm>
+#include <vector>
+#include <set>
+#include <string>
+#include <utility>
 #include <unordered_map>
 #include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -739,18 +745,18 @@ void MemoryTraceManager::AddKernelMemoryTraceBlock(const KernelMemoryTraceBlockP
   (*kernel_memory_trace_blocks_)[device_context].emplace_back(block);
 }
 
-const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>>
-  &MemoryTraceManager::GetMergeBlocks() {
+const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>> &
+MemoryTraceManager::GetMergeBlocks() {
   return merged_memory_trace_blocks_;
 }
 
-const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>
-  &MemoryTraceManager::GetAllKernelBlocksnfo() {
+const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &
+MemoryTraceManager::GetAllKernelBlocksnfo() {
   return kernel_to_block_;
 }
 
-const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>
-  &MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
+const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> &
+MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
   return kernel_tensor_to_kernel_mem_blocks_;
 }
 
@@ -1090,6 +1096,21 @@ void AllocMemAndCopyForParameter(size_t outer_index, size_t inner_index, tensor:
   graph_parameter_store->InsertDeviceTensorIntoCallback(tensor->device_address());
 }
 
+bool IsRefOutputInTuple(const AnfNodePtr &node, size_t index) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->abstract() == nullptr || !node->abstract()->isa<abstract::AbstractSequence>()) {
+    return false;
+  }
+  const auto &seq_abs = node->abstract()->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(seq_abs);
+  if (seq_abs->dynamic_len() || index >= seq_abs->size()) {
+    return false;
+  }
+  const auto &sub_abs = seq_abs->elements()[index];
+  MS_EXCEPTION_IF_NULL(sub_abs);
+  return sub_abs->isa<abstract::AbstractRefTensor>();
+}
+
 void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
                               const AID &from_aid, bool is_first_user, size_t stream_id, bool *has_h2d_copy = nullptr) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
@@ -1133,10 +1154,13 @@ void PrepareParameterWithCopy(const std::pair<KernelWithIndex, size_t> &paramete
   MS_EXCEPTION_IF_NULL(front_node.first);
   AllocMemAndCopyForParameter(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id,
                               has_h2d_copy);
-  if ((graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first))) {
+  if (graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first) ||
+      IsRefOutputInTuple(front_node.first, inner_index)) {
     tensor->set_device_address(device_tensor);
     kernel_tensor->set_new_ref_count(SIZE_MAX);
-    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Set new ref count to max for device address:" << device_tensor
+                                                 << " parameter:" << front_node.first->DebugString()
+                                                 << " outer index:" << outer_index << " inner index:" << inner_index;
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
 }
