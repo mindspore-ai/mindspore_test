@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative/adapter.h"
+#include "include/utils/python_utils.h"
+
 namespace mindspore {
-namespace pynative {
-PyNativeAdapter::PyNativeAdapter() = default;
-PyNativeAdapter::~PyNativeAdapter() = default;
-HookAdapter::HookAdapter() = default;
-HookAdapter::~HookAdapter() = default;
-}  // namespace pynative
+ExceptionHandler &ExceptionHandler::Get() {
+  static ExceptionHandler instance;
+  return instance;
+}
 }  // namespace mindspore

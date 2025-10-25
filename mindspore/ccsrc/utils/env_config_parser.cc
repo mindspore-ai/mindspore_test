@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/debug/env_config_parser.h"
+#include "include/utils/env_config_parser.h"
 #include <algorithm>
 #include <fstream>
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 

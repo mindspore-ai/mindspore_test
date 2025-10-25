@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/primitive_utils.h"
+#include "include/utils/primitive_utils.h"
 
 #include <memory>
 
 #include "ir/primitive.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "mindspore/ccsrc/utils/base_ref_py.h"
 
 namespace mindspore {

@@ -28,7 +28,7 @@
 #include "ir/func_graph.h"
 #include "abstract/symbolic_shape/operation_builder.h"
 #include "abstract/symbolic_shape/operation.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "mindspore/ccsrc/utils/symbol_engine/utils.h"
 
 namespace mindspore {

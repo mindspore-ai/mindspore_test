@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative/abstract_converter.h"
+#include "include/utils/pynative/abstract_converter.h"
 #include <algorithm>
 #include <iterator>
 #include <memory>

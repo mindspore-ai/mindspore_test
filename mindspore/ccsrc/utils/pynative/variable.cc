@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative//variable.h"
+#include "include/utils/pynative//variable.h"
 #include <memory>
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/pynative/common_utils.h"
 #include "tools/profiler/profiler.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"

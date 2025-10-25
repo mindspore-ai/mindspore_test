@@ -95,35 +95,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_profiler PRIVATE mindspore::pybind11_module)
 endif()
 
-
-set(COMMON_SUB_COMP
-        utils
-        common
-        common/debug
-        common/amp
-        )
-
-foreach(_comp ${COMMON_SUB_COMP})
-    add_subdirectory(${_comp})
-    string(REPLACE "/" "_" sub ${_comp})
-    if(TARGET _mindspore_${sub}_obj)
-        list(APPEND COMMON_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core)
-        if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_${sub}_obj PRIVATE COMMON_DLL)
-        endif()
-    endif()
-endforeach()
-
-
-add_library(mindspore_common SHARED ${COMMON_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input
-                      mindspore::securec mindspore_profiler)
-set_target_properties(mindspore_common PROPERTIES INSTALL_RPATH $ORIGIN)
-if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
-endif()
-
+add_subdirectory(utils)
 
 set(BACKEND_COMMON_SUB_COMP
         tools

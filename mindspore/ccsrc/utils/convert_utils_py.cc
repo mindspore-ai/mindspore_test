@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 
 #include <vector>
 #include <string>
@@ -39,12 +39,12 @@
 #include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
-#include "include/common/fallback.h"
-#include "include/common/utils/stub_tensor.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/fallback.h"
+#include "include/utils/stub_tensor.h"
+#include "include/utils/convert_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/utils/tensor_py_wrapper.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/tensor_py_wrapper.h"
 
 namespace mindspore {
 namespace {

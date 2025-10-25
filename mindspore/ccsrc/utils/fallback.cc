@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "include/common/fallback.h"
+#include "include/utils/fallback.h"
 
 #include <queue>
 
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/phase.h"

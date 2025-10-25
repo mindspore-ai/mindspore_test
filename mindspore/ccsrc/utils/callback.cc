@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 
 namespace mindspore::callback {
 CommonCallback &CommonCallback::GetInstance() {

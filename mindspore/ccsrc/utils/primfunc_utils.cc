@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/primfunc_utils.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/primfunc_utils.h"
+#include "include/utils/convert_utils_py.h"
 
 namespace mindspore::ops {
 std::string EnumToString(OP_DTYPE dtype) {

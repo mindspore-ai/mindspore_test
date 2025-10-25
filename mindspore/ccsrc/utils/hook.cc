@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/hook.h"
+#include "include/utils/hook.h"
 #include <string>
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/tensor_py.h"
 #include "pybind11/pytypes.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

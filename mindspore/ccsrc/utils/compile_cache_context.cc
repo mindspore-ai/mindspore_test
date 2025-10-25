@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 

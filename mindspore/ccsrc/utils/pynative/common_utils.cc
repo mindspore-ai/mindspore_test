@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/pynative/common_utils.h"
 
 #include <string>
 #include <vector>
@@ -26,9 +26,9 @@
 #include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore {
 namespace pynative {

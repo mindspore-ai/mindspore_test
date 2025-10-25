@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "include/common/env_vars.h"
+#include "include/utils/env_vars.h"
 #include <string>
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"

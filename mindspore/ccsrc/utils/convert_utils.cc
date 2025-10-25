@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "ir/graph_utils.h"

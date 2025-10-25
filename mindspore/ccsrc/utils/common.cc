@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 
 #include <memory>
 #include <iomanip>
@@ -28,7 +28,7 @@
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

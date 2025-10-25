@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/tensor_utils.h"
+#include "include/utils/tensor_utils.h"
 
 namespace mindspore {
 namespace tensor {

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative/hook.h"
-#include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/pyobj_manager.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/pynative/hook.h"
+#include "include/utils/convert_utils_py.h"
+#include "include/utils/pyobj_manager.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

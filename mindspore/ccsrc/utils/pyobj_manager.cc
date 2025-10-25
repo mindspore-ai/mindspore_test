@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/pyobj_manager.h"
+#include "include/utils/pyobj_manager.h"
 
 namespace mindspore {
 PyObjManager &PyObjManager::Get() {

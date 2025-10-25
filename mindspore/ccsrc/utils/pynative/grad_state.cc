@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/pynative/grad_state.h"
+#include "include/utils/pynative/grad_state.h"
 
 namespace mindspore {
 namespace pynative {

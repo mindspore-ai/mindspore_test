@@ -15,7 +15,7 @@
  */
 #include "ir/dtype/amp.h"
 #include "ir/dtype/number.h"
-#include "include/common/amp/amp.h"
+#include "include/utils/amp.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

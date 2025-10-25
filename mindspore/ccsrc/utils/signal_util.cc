@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/signal_util.h"
+#include "include/utils/signal_util.h"
 #include <csignal>
 #include "utils/log_adapter.h"
 
