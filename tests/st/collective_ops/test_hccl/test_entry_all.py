@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication ops.
+"""
+
 import os
 import subprocess
 from mindspore import context
@@ -187,6 +191,18 @@ def test_allgather_v():
     Expectation: success
     """
     return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_allgather_v.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_allgatherv_dts():
+    """
+    Feature: mpi run 2P case of 'allgather_v' communication operator.
+    Description: mpi run 2P case of 'allgather_v' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True pytest -sv  test_allgatherv_dts.py")
     assert return_code == 0
 
 

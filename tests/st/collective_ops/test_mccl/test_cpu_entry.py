@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication for cpu.
+"""
 import copy
 import os
 import signal
@@ -34,6 +37,9 @@ def test_hccl_mint_cpu_ops():
 
 
 def _create_worker_process(worker_id, cmd_list, log_dir, base_env, env):
+    """
+    Feature: test create worker process
+    """
     log_file = f'{log_dir}/worker_{worker_id}.log'
     custom_env = base_env.copy()
     custom_env.update(env)
@@ -58,6 +64,9 @@ def _create_worker_process(worker_id, cmd_list, log_dir, base_env, env):
 
 
 def _check_processes_status(processes, return_codes):
+    """
+    Feature: test check processes status
+    """
     all_finished = True
     has_failed = False
     for i, p in enumerate(processes):
@@ -74,6 +83,9 @@ def _check_processes_status(processes, return_codes):
 
 
 def _handle_failed_workers(processes):
+    """
+    Feature: test handle failed workers
+    """
     print("Some worker processes failed. Waiting 5 seconds before terminating all workers...")
     time.sleep(5)
 
@@ -95,6 +107,9 @@ def _handle_failed_workers(processes):
 
 
 def run_workers(cmd_list=None, world_size=8, log_dir='output', env=None):
+    """
+    Feature: test run_workers
+    """
     print(f"\nStart to run {world_size} worker processes, cmd_list: {cmd_list}, log_dir: {log_dir}, "
           f"input_env: {env}")
 
@@ -191,9 +206,9 @@ def test_hccl_mint_cpu_ops1():
     Expectation: success
     """
     return_code = os.system(
-        rf"cp  test_comm_cpu.py test_comm_cpu1.py && "\
-        rf"sed -i 's/mindspore\.mint\.distributed\.distributed/mindspore.ops.communication/g' "\
-        rf"test_comm_cpu1.py && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
-        rf"--master_port=10666 --join=True pytest -s test_comm_cpu1.py"
+        r"cp  test_comm_cpu.py test_comm_cpu1.py && "\
+        r"sed -i 's/mindspore\.mint\.distributed\.distributed/mindspore.ops.communication/g' "\
+        r"test_comm_cpu1.py && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
+        r"--master_port=10666 --join=True pytest -s test_comm_cpu1.py"
     )
     assert return_code == 0

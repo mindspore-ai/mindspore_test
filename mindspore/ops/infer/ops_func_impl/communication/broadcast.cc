@@ -16,6 +16,8 @@
 
 #include "infer/ops_func_impl/communication/broadcast.h"
 #include <set>
+#include <string>
+#include <vector>
 #include "mindapi/ir/value.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
@@ -36,26 +38,6 @@
 namespace mindspore {
 namespace ops {
 MIND_API_OPERATOR_IMPL(Broadcast, BaseOperator);
-void Broadcast::Init(const int64_t root_rank, const std::string &group) {
-  this->set_root_rank(root_rank);
-  this->set_group(group);
-}
-void Broadcast::set_root_rank(const int64_t root_rank) { (void)this->AddAttr(kKeepProb, api::MakeValue(root_rank)); }
-
-void Broadcast::set_group(const std::string &group) {
-  CheckAndConvertUtils::CheckString(kGroup, group, {"hccl_world_group", "hccl_world_group"}, this->name());
-  (void)this->AddAttr(kGroup, api::MakeValue(group));
-}
-int64_t Broadcast::get_root_rank() const {
-  auto value_ptr = this->GetAttr(kRootRank);
-  return GetValue<int64_t>(value_ptr);
-}
-
-std::string Broadcast::get_group() const {
-  auto value_ptr = this->GetAttr(kGroup);
-  return GetValue<std::string>(value_ptr);
-}
-
 void CheckParallelValidTypes(const AbstractBasePtr x, const std::string &op_name) {
   // The data type check is only migrated from the previous corresponding python code,
   // and need further confirmation is required
