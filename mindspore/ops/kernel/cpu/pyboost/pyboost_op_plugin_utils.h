@@ -110,9 +110,9 @@ std::enable_if_t<!has_int_or_vector_int_v<Args...>, std::vector<tensor::TensorPt
   op->ProfileTrackerTask();
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, args...]() {
+  // pass 'outputs' by value because op->outputs() is occasionally broken in the dispatch task
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, &op_name, outputs, args...]() {
     auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
     constexpr bool is_inplace_lambda = sizeof...(InplaceIndices) > 0;
 
     // Process tensor arguments for MallocOpInputs

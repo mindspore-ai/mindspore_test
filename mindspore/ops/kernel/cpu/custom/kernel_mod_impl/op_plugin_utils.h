@@ -19,7 +19,8 @@
 
 #include <string>
 #include <vector>
-#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info.h"
+#include <unordered_set>
+#include "kernel/cpu/custom/kernel_mod_impl/custom_kernel_input_info_impl.h"
 #include "kernel/cpu/utils/visible.h"
 
 namespace mindspore::kernel {
@@ -33,9 +34,9 @@ struct OpPluginKernelParam {
   void *stream{nullptr};
 };
 
-void *GetOpPluginHandle();
+OPS_HOST_API void *GetOpPluginHandle();
 OPS_HOST_API bool IsOpPluginKernel(const std::string &op_name);
-const std::vector<std::string> &GetAllOpPluginKernelNames();
+OPS_HOST_API const std::unordered_set<std::string> &GetAllOpPluginKernelNames();
 int LaunchOpPluginKernel(const std::string &op_name, size_t nparam, void **params, int *ndims, int64_t **shapes,
                          const char **type_pointer_list, void *kernel_info, void *stream = nullptr);
 int LaunchOpPluginKernel(const std::string &op_name, OpPluginKernelParam *param);
