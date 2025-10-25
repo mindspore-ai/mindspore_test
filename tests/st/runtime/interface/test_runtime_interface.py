@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""
+test split interface in common api.
+"""
 import mindspore as ms
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore import context
 from mindspore.ops import operations as P
 from mindspore.common.api import _frontend_compile, _graph_split
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_split():
     """
     Feature: split interface.
@@ -27,6 +32,9 @@ def test_split():
     Expectation: Run success.
     """
     class Net(nn.Cell):
+        """
+        Test net in testcase for split op.
+        """
         def __init__(self):
             super().__init__()
             self.assignadd = P.AssignAdd()
@@ -58,6 +66,7 @@ def test_split():
     assert res2[0] == 21
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_split_multi_op():
     """
     Feature: split interface.
@@ -65,6 +74,9 @@ def test_split_multi_op():
     Expectation: Run success.
     """
     class Net(nn.Cell):
+        """
+        Test net in testcase for split op.
+        """
         def __init__(self):
             super().__init__()
             self.add = P.Add().add_prim_attr("split_op", True).add_prim_attr("func_id", "add_func")
