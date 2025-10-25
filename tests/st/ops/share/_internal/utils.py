@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Utility helpers for operation testing.
+
+This module provides:
+- OpSampleInput: a lightweight container for op inputs/args/kwargs with
+  convenient transformations (copy/asnumpy/astorch/discontiguous).
+- Tensor helpers for discontiguity, host sync, and tensor creation.
+"""
 # pylint: disable=R1705
 import math
 import torch
@@ -22,6 +29,14 @@ from mindspore.common.dtype import _dtype_to_nptype
 from typing import Optional
 
 class OpSampleInput:
+    """Container of a single operation invocation sample.
+
+    Attributes:
+        op_input: The first positional input (commonly a Tensor).
+        op_args: Extra positional arguments of the operator.
+        op_kwargs: Keyword arguments of the operator.
+        op_name: A short name for identification in logs.
+    """
 
     __slots__ = [
         "op_input",
@@ -42,7 +57,16 @@ class OpSampleInput:
         self.op_kwargs = op_kwargs if op_kwargs is not None else {}
         self.op_name = op_name if op_name is not None else "UnknownOp"
 
-    def transform(self, fn, method):
+    def transform(self, fn, method_name):
+        """Apply a transformation recursively to op_input/op_args/op_kwargs.
+
+        Args:
+            fn: A callable used to transform each leaf element.
+            method_name: Suffix appended to `op_name` for traceability.
+
+        Returns:
+            A new OpSampleInput with transformed fields.
+        """
         def _transform(x):
             def _transform_to(x):
                 return fn(x)
@@ -72,10 +96,19 @@ class OpSampleInput:
             transformed_op_input,
             op_args=transformed_op_args,
             op_kwargs=transformed_op_kwargs,
-            op_name=self.op_name + "_transformed_" + method,
+            op_name=self.op_name + "_transformed_" + method_name,
         )
 
     def convert_to_args(self, append_dout=None):
+        """Flatten input/args/kwargs (and optional dout) into a single args tuple.
+
+        Args:
+            append_dout: Optional extra output gradients to append.
+
+        Returns:
+            A new OpSampleInput whose `op_args` contains all flattened arguments,
+            and `op_input`/`op_kwargs` are cleared.
+        """
         def _to_args_list(x):
             if isinstance(x, dict):
                 return list(x.values())
@@ -95,10 +128,14 @@ class OpSampleInput:
             op_input=None,
             op_args=tuple(op_args),
             op_kwargs={},
-            op_name=self.op_name + "_with_dout",
+            op_name=self.op_name + ("_to_args_with_dout" if append_dout is not None else "_to_args"),
         )
 
     def copy(self):
+        """Deep-ish copy of Tensor-like content.
+
+        Ensures ms.Tensor elements are copied while preserving structure.
+        """
         def _copy(x):
             if isinstance(x, ms.Tensor):
                 return x.copy()
@@ -115,6 +152,7 @@ class OpSampleInput:
         return self.transform(_copy, 'copy')
 
     def asnumpy(self):
+        """Convert all Tensor leaves to numpy arrays (values copied)."""
         def _asnumpy(x):
             if isinstance(x, ms.Tensor):
                 return ms_asnumpy(x).copy()
@@ -131,6 +169,15 @@ class OpSampleInput:
             convert_half_to_float: Optional[bool] = False,
             convert_extra_uint: Optional[bool] = False,
     ):
+        """Convert MindSpore tensors and dtypes to PyTorch counterparts.
+
+        Args:
+            convert_half_to_float: Cast float16 to float32 for reference backends.
+            convert_extra_uint: Convert extra uint dtypes to supported types.
+
+        Returns:
+            A new OpSampleInput converted for PyTorch execution.
+        """
         def _dtype_to_torch_dtype(msdtype):
             msdtype_to_torch_dtype_dict = {
                 ms.bool_: torch.bool,
@@ -162,6 +209,7 @@ class OpSampleInput:
         return self.transform(_astorch, 'astorch')
 
     def discontiguous(self):
+        """Make all Tensor leaves discontiguous in memory when possible."""
         def _discontiguous(x):
             if isinstance(x, ms.Tensor):
                 return _tensor_to_discontiguous(x)
@@ -176,6 +224,14 @@ class OpSampleInput:
         return self.transform(_discontiguous, 'discontiguous')
 
     def summary(self, values=False):
+        """Human-readable summary for debugging.
+
+        Args:
+            values: Whether to include stats like mean/max/min for arrays.
+
+        Returns:
+            A string summary of this sample input.
+        """
         def _tensor_summary(x):
             if isinstance(x, (ms.Tensor, torch.Tensor, np.ndarray)):
                 sum_info = f"{type(x).__name__}(shape={x.shape}, dtype={x.dtype}"
@@ -183,18 +239,18 @@ class OpSampleInput:
                     sum_info += f", mean={x.mean()}, max={x.max()}, min={x.min()}"
                 return sum_info + ")"
             elif isinstance(x, list):
-                return f"list[" + ", ".join(map(_tensor_summary, x)) + "]"
+                return "list[" + ", ".join(map(_tensor_summary, x)) + "]"
             elif isinstance(x, tuple):
-                return f"tuple(" + ", ".join(map(_tensor_summary, x)) + ")"
+                return "tuple(" + ", ".join(map(_tensor_summary, x)) + ")"
             elif isinstance(x, dict):
-                return f"dict(" + ", ".join(f"{k}: {_tensor_summary(v)}" for k, v in x.items()) + ")"
+                return "dict(" + ", ".join(f"{k}: {_tensor_summary(v)}" for k, v in x.items()) + ")"
             else:
                 return f"{type(x).__name__}({x})"
 
         return self.__repr__(_tensor_summary)
 
     def __repr__(self, print_func=lambda x: x):
-        return f"OpSampleInput(\n" + \
+        return "OpSampleInput(\n" + \
                f"op_input={print_func(self.op_input)},\n" + \
                f"op_args={print_func(self.op_args)},\n" + \
                f"op_kwargs={print_func(self.op_kwargs)},\n" + \
@@ -202,6 +258,11 @@ class OpSampleInput:
 
 
 def _tensor_to_discontiguous(x):
+    """Return a view that is not contiguous in memory when feasible.
+
+    For non-trivial tensors, materialize a new last dimension to break
+    contiguity and return the second slice view.
+    """
     if not x.is_contiguous():
         return x
 
@@ -209,8 +270,11 @@ def _tensor_to_discontiguous(x):
         return x
 
     empty_tensor = x.new_empty(x.shape + (2,))
-    if x.dtype == ms.bool:
+    # set magic number for unusable memory.
+    if x.dtype == ms.bool_:
         empty_tensor[..., 0] = True
+    elif not x.is_floating_point() and not x.is_complex():
+        empty_tensor[..., 0] = 77
     else:
         empty_tensor[..., 0] = math.nan
     empty_tensor[..., 1] = x.copy()
@@ -221,6 +285,16 @@ def _tensor_to_discontiguous(x):
 
 
 def ms_asnumpy(tensor, convert_half_to_float=False, convert_extra_uint=False):
+    """Convert a MindSpore tensor to numpy array with optional casts.
+
+    Args:
+        tensor: MindSpore Tensor to convert.
+        convert_half_to_float: If True, cast float16 to float32 before copying.
+        convert_extra_uint: If True, cast uint16/32/64 to int64 for compatibility.
+
+    Returns:
+        Numpy ndarray on host.
+    """
     def _sync_host(tensor):
         try:
             host_tensor = tensor.to('cpu')
@@ -252,6 +326,10 @@ def make_tensor(
         random_seed: Optional[int] = None,
         random_method: Optional[str] = None,
 ):
+    """Create a MindSpore Tensor with random contents for testing.
+
+    Supports integer/float/complex/bfloat16, with multiple random methods.
+    """
     def _generate_ndarray(shape, dtype, low, high, random_method):
         def _generate_ndarray_by_random_method(random_method, shape, dtype, low, high):
             if random_method == 'randn':
@@ -267,7 +345,7 @@ def make_tensor(
             return ndarray
 
         dtype_to_np_dtype_dict = {
-            ms.bool: (np.bool_, 'randint', 0, 2),
+            ms.bool_: (np.bool_, 'randint', 0, 2),
             ms.int8: (np.int8, 'randint', -9, 10),
             ms.int16: (np.int16, 'randint', -9, 10),
             ms.int32: (np.int32, 'randint', -9, 10),
@@ -317,6 +395,7 @@ def make_tensor_with_np_array(
         device: Optional[str] = None,
         discontiguous: Optional[bool] = False,
 ):
+    """Wrap a numpy array into a MindSpore Tensor with optional device/memory tweaks."""
     result = ms.Tensor(np_array, dtype=dtype)
 
     if device is not None:

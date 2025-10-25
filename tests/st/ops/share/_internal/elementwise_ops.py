@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Elementwise operator test factory and utilities.
+
+This module provides `ElementwiseOpsFactory` to build elementwise operator
+tests with unified forward/grad comparison across backends.
+"""
 import mindspore as ms
 from typing import Callable
 from tests.st.ops.share._internal.meta import OpsFactory
@@ -19,6 +24,11 @@ from tests.st.ops.share._internal.utils import OpSampleInput, make_tensor
 from tests.st.ops.share._op_info.op_info import OpInfo
 
 class ElementwiseOpsFactory(OpsFactory):
+    """Factory for elementwise ops testcases.
+
+    Provides helpers to generate sample inputs of various shapes and run
+    forward and gradient comparisons.
+    """
     def __init__(
             self,
             *,
@@ -47,15 +57,14 @@ class ElementwiseOpsFactory(OpsFactory):
             shapes: list[tuple[int, ...]],
             dtype,
     ):
-        '''
-        Test the elementwise op with 0-D to N-D input tensors.
+        '''Run elementwise op tests with 0-D to N-D tensors.
         Args:
             shapes: A list of shapes for the input tensors.
             dtype: The dtype of the input tensors.
         Returns:
             None
         '''
-        no_grad_dtypes = [ms.bool, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8, ms.uint16, ms.uint32, ms.uint64]
+        no_grad_dtypes = [ms.bool_, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8, ms.uint16, ms.uint32, ms.uint64]
         def elementwise_op_nd_sample_inputs_func():
             sample_inputs = []
             for shape in shapes:

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Tests for sum operation across dtypes, shapes, and dynamic settings.
+
+Includes forward/grad comparisons and argument validation cases.
+"""
 import pytest
 import torch
 import random
@@ -45,42 +49,42 @@ def test_f_sum_float_complex_forward_grad(mode):
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((3, 7, 6, 8), ms.complex64),
             op_args=(np.random.choice(dims, size=1).tolist(), False),
-            op_kwargs=dict(dtype=ms.complex64),
+            op_kwargs={"dtype": ms.complex64},
             op_name='sum_complex64_4d'
         ))
         # complex128 2D, dim=0, keepdim=False, dtype=complex128
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((3, 7), ms.complex128),
             op_args=(0, False),
-            op_kwargs=dict(dtype=ms.complex128),
+            op_kwargs={"dtype": ms.complex128},
             op_name='sum_complex128_2d'
         ))
         # float32 7D, random dim/keepdim, cast to float64
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((3, 7, 6, 8, 2, 3, 4), ms.float32),
             op_args=(random.randint(-7, 6), random.choice([True, False])),
-            op_kwargs=dict(dtype=ms.float64),
+            op_kwargs={"dtype": ms.float64},
             op_name='sum_float32_7d_to_float64'
         ))
         # float32 1D, dim=-1, keepdim=False, dtype=float32
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((5,), ms.float32),
             op_args=(-1, False),
-            op_kwargs=dict(dtype=ms.float32),
+            op_kwargs={"dtype": ms.float32},
             op_name='sum_float32_1d'
         ))
         # float16 2D, dim=-1, keepdim=True, dtype=None
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((9, 5), ms.float16),
             op_args=(-1, True),
-            op_kwargs=dict(dtype=None),
+            op_kwargs={"dtype": None},
             op_name='sum_float16_2d_keepdim'
         ))
         # float64 7D, dim=5, keepdim=False, dtype=None
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((5, 7, 8, 7, 9, 8, 4), ms.float64),
             op_args=(5, False),
-            op_kwargs=dict(dtype=None),
+            op_kwargs={"dtype": None},
             op_name='sum_float64_7d'
         ))
         return sample_inputs
@@ -114,35 +118,35 @@ def test_f_sum_integer_forward(mode):
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((3, 7, 6, 8, 2, 3), ms.int32),
             op_args=(random.randint(-6, 5), random.choice([True, False])),
-            op_kwargs=dict(dtype=ms.int32),
+            op_kwargs={"dtype": ms.int32},
             op_name='sum_int32_6d_forward'
         ))
         # int32 3D, dim=0, keepdim=False, cast to int64
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((7, 3, 4), ms.int32, -500, 500, random_method='randint'),
             op_args=(0, False),
-            op_kwargs=dict(dtype=ms.int64),
+            op_kwargs={"dtype": ms.int64},
             op_name='sum_int32_3d_to_int64'
         ))
         # int64 4D, dim=1, keepdim=True, cast to float64
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((3, 9, 5, 4), ms.int64, -500, 500, random_method='randint'),
             op_args=(1, True),
-            op_kwargs=dict(dtype=ms.float64),
+            op_kwargs={"dtype": ms.float64},
             op_name='sum_int64_4d_to_float64'
         ))
         # int16 6D, dim=-3, keepdim=False, keep dtype int16
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((4, 8, 3, 9, 5, 7), ms.int16, -500, 500, random_method='randint'),
             op_args=(-3, False),
-            op_kwargs=dict(dtype=ms.int16),
+            op_kwargs={"dtype": ms.int16},
             op_name='sum_int16_6d_forward'
         ))
         # int8 7D, dim=3, keepdim=True, cast to int16
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((9, 5, 7, 5, 3, 3, 8), ms.int8, -5, 5, random_method='randint'),
             op_args=(3, True),
-            op_kwargs=dict(dtype=ms.int16),
+            op_kwargs={"dtype": ms.int16},
             op_name='sum_int8_7d_to_int16'
         ))
         return sample_inputs
@@ -178,7 +182,7 @@ def test_f_sum_tuple_dim_6d(mode):
         ref=torch.sum,
         op_input=x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=ms.float64),
+        op_kwargs={"dtype": ms.float64},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -205,19 +209,19 @@ def test_f_sum_input_x_extra_uint_dtypes(mode):
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((8, 4, 9, 3, 8), ms.uint16, 0, 5, random_method='randint'),
             op_args=(3, True),
-            op_kwargs=dict(dtype=ms.int8),
+            op_kwargs={"dtype": ms.int8},
             op_name='sum_uint16_sample_input',
         ))
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((7, 3), ms.uint32, 0, 100, random_method='randint'),
             op_args=(0, False),
-            op_kwargs=dict(dtype=ms.float16),
+            op_kwargs={"dtype": ms.float16},
             op_name='sum_uint32_sample_input',
         ))
         sample_inputs.append(OpSampleInput(
             op_input=make_tensor((5, 7, 8, 7, 9, 8), ms.uint64, 0, 1000, random_method='randint'),
             op_args=(-3, False),
-            op_kwargs=dict(dtype=ms.int64),
+            op_kwargs={"dtype": ms.int64},
             op_name='sum_uint64_sample_input',
         ))
         return sample_inputs
@@ -254,7 +258,7 @@ def test_f_sum_input_x_1d_uint8_0_true_mstype_int64(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -274,7 +278,7 @@ def test_f_sum_input_x_4d_bool__dim_len2_true_mstype_float64(mode):
     Description: bool 4D tensor reduce at dim=3, keepdim=True, dtype=float64; forward-only.
     Expectation: Outputs match reference.
     '''
-    input_x = make_tensor((8, 4, 9, 3), ms.bool)
+    input_x = make_tensor((8, 4, 9, 3), ms.bool_)
     dim = 3
     keepdim = True
     dtype = ms.float64
@@ -283,7 +287,7 @@ def test_f_sum_input_x_4d_bool__dim_len2_true_mstype_float64(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -311,7 +315,7 @@ def test_f_sum_input_x_1d_float32_dim_len2_false_none(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -340,7 +344,7 @@ def test_f_sum_input_x_not_tensor(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(TypeError):
@@ -370,7 +374,7 @@ def test_f_sum_dim_float(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(TypeError):
@@ -400,7 +404,7 @@ def test_f_sum_keep_dims_float(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(TypeError):
@@ -430,7 +434,7 @@ def test_f_sum_dtype_float(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(TypeError):
@@ -460,7 +464,7 @@ def test_f_sum_dim_out_range(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     with pytest.raises(ValueError):
@@ -488,7 +492,7 @@ def test_f_sum_input_5d_random(mode):
         ref=torch.sum,
         op_input=input_x,
         op_args=(dim, keepdim),
-        op_kwargs=dict(dtype=dtype),
+        op_kwargs={"dtype": dtype},
     )
     fact.set_context_mode(mode=mode)
     fact.forward_cmp()
@@ -514,7 +518,7 @@ def test_f_sum_dynamic_shape(mode):
         compile_input = OpSampleInput(
             op_input=ms.Tensor(shape=(None,), dtype=ms.float32),
             op_args=(mutable(input_data=0, dynamic_len=False), mutable(input_data=False, dynamic_len=False)),
-            op_kwargs=dict(dtype=ms.float32),
+            op_kwargs={"dtype": ms.float32},
             op_name='sum_compile_input'
         )
         sample_inputs.append(compile_input)
@@ -526,7 +530,7 @@ def test_f_sum_dynamic_shape(mode):
             sample_inputs.append(OpSampleInput(
                 op_input=make_tensor(shape, ms.float32),
                 op_args=(mutable(input_data=0, dynamic_len=False), mutable(input_data=False, dynamic_len=False)),
-                op_kwargs=dict(dtype=ms.float32),
+                op_kwargs={"dtype": ms.float32},
                 op_name='sum_running_input'
             ))
         return sample_inputs
@@ -559,7 +563,7 @@ def test_f_sum_dynamic_rank(mode):
         compile_input = OpSampleInput(
             op_input=ms.Tensor(shape=None, dtype=ms.float32),
             op_args=(mutable(input_data=0, dynamic_len=False), mutable(input_data=False, dynamic_len=False)),
-            op_kwargs=dict(dtype=ms.float32),
+            op_kwargs={"dtype": ms.float32},
             op_name='sum_compile_input'
         )
         sample_inputs.append(compile_input)
@@ -572,7 +576,7 @@ def test_f_sum_dynamic_rank(mode):
             sample_inputs.append(OpSampleInput(
                 op_input=make_tensor(shape, ms.float32),
                 op_args=(mutable(input_data=0, dynamic_len=False), mutable(input_data=False, dynamic_len=False)),
-                op_kwargs=dict(dtype=ms.float32),
+                op_kwargs={"dtype": ms.float32},
                 op_name='sum_running_input'
             ))
         return sample_inputs

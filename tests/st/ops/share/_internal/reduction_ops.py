@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Reduction operator test factory and utilities.
+
+This module offers `ReductionOpsFactory` for building reduction operator tests,
+including forward and gradient comparisons.
+"""
 import torch
 import mindspore as ms
 from mindspore import nn
@@ -29,6 +34,11 @@ class ReductionOpNetNoKwargs(nn.Cell):
         return self.op(*op_args[:-1], dtype=op_args[-1])
 
 class ReductionOpsFactory(OpsFactory):
+    """Factory for reduction ops testcases.
+
+    Extends the common factory with net class tweaking and reduction-specific
+    sample input builders.
+    """
     def __init__(
             self,
             *,
@@ -37,7 +47,7 @@ class ReductionOpsFactory(OpsFactory):
             op_info: OpInfo = None,
             op_input=None,
             op_args=(),
-            op_kwargs={},
+            op_kwargs=None,
             op_name=None,
             sample_inputs_func=None,
             **kwargs,
@@ -48,7 +58,7 @@ class ReductionOpsFactory(OpsFactory):
             op_info=op_info,
             op_input=op_input,
             op_args=op_args,
-            op_kwargs=op_kwargs,
+            op_kwargs=op_kwargs if op_kwargs is not None else {},
             op_name=op.__name__ if op is not None else "ReductionOp",
             sample_inputs_func=sample_inputs_func,
             **kwargs,
@@ -69,14 +79,14 @@ class ReductionOpsFactory(OpsFactory):
         Returns:
             None
         '''
-        no_grad_dtypes = [ms.bool, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8, ms.uint16, ms.uint32, ms.uint64]
+        no_grad_dtypes = [ms.bool_, ms.int8, ms.int16, ms.int32, ms.int64, ms.uint8, ms.uint16, ms.uint32, ms.uint64]
         def reduction_op_nd_sample_inputs_func():
             sample_inputs = []
             for op_param in op_params:
                 sample_inputs.append(OpSampleInput(
                     op_input=make_tensor(op_param['shape'], dtype),
                     op_args=(op_param['dim'], op_param['keepdim']),
-                    op_kwargs=dict(dtype=op_param['dtype']),
+                    op_kwargs={"dtype": op_param['dtype']},
                     op_name=self.op_name,
                 ))
             return sample_inputs
