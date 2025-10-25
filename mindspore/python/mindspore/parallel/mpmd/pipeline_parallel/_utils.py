@@ -13,9 +13,13 @@
 # limitations under the License.
 # ============================================================================
 """pipeline parallel utils"""
-from mindspore import nn
-import mindspore.ops as ops
+import io
+import pickle
+from mindspore import nn, Tensor, mint, ops
+from mindspore.common import dtype as mstype
+from mindspore.mint.distributed.distributed import _object_to_tensor, send, recv
 from mindspore.parallel import custom_shard
+from mindspore.communication import GlobalComm
 
 
 class BatchDimSpec:
@@ -29,7 +33,7 @@ class BatchDimSpec:
 
     def __init__(self, batch_dim):
         if not isinstance(batch_dim, int):
-            raise TypeError(f"batch_dim must be int.")
+            raise TypeError(f"batch_dim must be int, but got type {type(batch_dim)}.")
         self.batch_dim = batch_dim
 
     def __repr__(self):
@@ -41,13 +45,13 @@ class BatchDimSpec:
     @staticmethod
     def from_tuple(batch_dims):
         if not isinstance(batch_dims, tuple):
-            raise TypeError(f"batch_dims must be tuple.")
+            raise TypeError(f"batch_dims must be tuple, but got type {type(batch_dims)}.")
         return tuple(BatchDimSpec(dim) for dim in batch_dims)
 
     @staticmethod
     def from_dict(batch_dims):
         if not isinstance(batch_dims, dict):
-            raise TypeError(f"batch_dims must be dict.")
+            raise TypeError(f"batch_dims must be dict, but got type {type(batch_dims)}.")
         return {k: BatchDimSpec(v) for k, v in batch_dims.items()}
 
 
@@ -95,15 +99,15 @@ class _MicroBatch(nn.Cell):
                 cur_kwarg_batch_dim = 0
                 if self.kwargs_batch_dim is not None:
                     cur_kwarg_batch_dim = self.kwargs_batch_dim[key].batch_dim
-                micro_kwarg = self.split_inputs(cur_kwarg, cur_kwarg_batch_dim, micro_idx)
+                micro_kwarg = self.split_inputs_with_custom_shard(cur_kwarg, cur_kwarg_batch_dim, micro_idx)
                 micro_kwargs[key] = micro_kwarg
             kwargs_after_split.append(micro_kwargs)
         return args_after_split, kwargs_after_split
 
-    def split_inputs_with_custom_shard(self, input, cur_arg_batch_dim, cur_kwarg_batch_dim):
+    def split_inputs_with_custom_shard(self, input, cur_arg_batch_dim, micro_idx):
         input_layout = input.layout
         func_wrap = custom_shard(self.split_inputs, out_layouts=(input_layout,), in_layouts=(input_layout, None, None))
-        return func_wrap(input, cur_arg_batch_dim, cur_kwarg_batch_dim)
+        return func_wrap(input, cur_arg_batch_dim, micro_idx)
 
     def split_inputs(self, input, cur_arg_batch_dim, micro_idx):
         """
@@ -130,37 +134,90 @@ class _RecvInfo:
     Used for construct forward Receive operation and backward Send operation.
     """
 
-    def __init__(self, dtype, shape, layout, src_stage, dyn_shape, dyn_rank):
-        self._src_stage = src_stage
-        self.buffer = None
-        self._shape = shape
-        self._dtype = dtype
-        self._layout = layout
-        self._dyn_shape = dyn_shape
-        self._dyn_rank = dyn_rank
-        self.src_stage = src_stage
-
-    @classmethod
-    def from_instance(cls, recv_info):
-        return cls(recv_info.dtype, recv_info.shape, recv_info.layout, recv_info.src_stage,
-                   recv_info.dyn_shape, recv_info.dyn_rank)
+    def __init__(self, global_rank, buffer=None):
+        self._global_rank = global_rank
+        self._buffer = buffer
 
     @property
-    def shape(self):
-        return self._shape
+    def global_rank(self):
+        return self._global_rank
 
     @property
-    def dtype(self):
-        return self._dtype
+    def buffer(self):
+        return self._buffer
 
-    @property
-    def dyn_shape(self):
-        return self._dyn_shape
+    @buffer.setter
+    def buffer(self, val):
+        self._buffer = val
 
-    @property
-    def dyn_rank(self):
-        return self._dyn_rank
 
-    @property
-    def layout(self):
-        return self._layout
+def send_object(obj, dst=0, group=None):
+    """
+    send the input Python object to dst rank.
+
+    Note:
+        - Similar to :func:`mindspore.mint.distributed.send`, but Python objects can be passed in.
+        - Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        object (Any): The input to be send.
+        dst (int, optional): Specifies the rank(global rank) of the process that send the Python object to.
+            Default: ``0`` .
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+
+    Raises:
+        TypeError: If `dst` is not an integer or `group` is not a string.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(f"For 'send_object', the argument 'group' must be type of string, \
+                          but got 'group' type : {type(group)}.")
+    if not isinstance(dst, int):
+        raise TypeError("For send_object, the dst must be int.")
+    obj_tensor, tensor_size = _object_to_tensor(obj)
+    obj_size = Tensor([tensor_size], dtype=mstype.int32)
+    send(obj_size, dst, group)
+    send(obj_tensor, dst, group)
+
+
+def recv_object(src=0, group=None):
+    """
+    receive Python object from src rank.
+
+    Note:
+        - Similar to :func:`mindspore.mint.distributed.recv`, but Python objects can be received.
+        - Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        src (int, optional): Specifies the rank(global rank) of the process that receive the Python object.
+            Default: ``0`` .
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+
+    Raises:
+        TypeError: If `src` is not an integer or `group` is not a string.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(f"For 'recv_object', the argument 'group' must be type of string, \
+                          but got 'group' type : {type(group)}.")
+    if not isinstance(src, int):
+        raise TypeError("For recv_object, the src must be int.")
+    obj_size = Tensor([0], dtype=mstype.int32)
+    recv(obj_size, src, group)
+    size_val = obj_size.item()
+    obj_tensor = mint.empty([size_val], dtype=mstype.int8)
+    recv(obj_tensor, src, group)
+    buf = obj_tensor.asnumpy().tobytes()[:size_val]
+    return pickle.Unpickler(io.BytesIO(buf)).load()

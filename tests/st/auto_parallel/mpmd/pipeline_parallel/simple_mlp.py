@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""simple mlp"""
 import time
 import numpy as np
 import mindspore as ms
 from mindspore import nn, Tensor, mint
-from mindspore.communication.management import init, get_rank, get_group_size, create_group
-from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage, P2PInfo
+from mindspore.communication.management import init, get_rank, get_group_size
+from mindspore.parallel.mpmd.pipeline_parallel import Schedule1F1B, PipelineStage
 from mindspore.parallel import Layout
 from mindspore.parallel.spmd.hsdp import hsdp
 
 
 class MLP(nn.Cell):
+    """MLP net."""
     def __init__(self, hidden_size, compute_dtype=np.float32):
         super().__init__()
         # initializing with "ones" is for the convenience of precision compare
@@ -38,6 +40,7 @@ class MLP(nn.Cell):
 
 
 class SimpleMLP(nn.Cell):
+    """SimpleMLP net."""
     def __init__(self, num_layers, hidden_size):
         super().__init__()
         self.mlp_layers = nn.CellDict()
@@ -51,33 +54,15 @@ class SimpleMLP(nn.Cell):
 
 
 def model_split_manual(model, stage_index, stage_num):
+    """pipeline parallel split."""
     for i in range(stage_num):
         if i == stage_index:
             continue
         del model.mlp_layers[str(i)]
 
 
-def build_send_recv_info(stage_index, per_batch_size, hidden_size, layout):
-    recv_info_list = []
-    send_info_list = []
-    if stage_index == 0:
-        send_info = P2PInfo(shape=[per_batch_size, hidden_size], dtype=ms.float32)
-        send_info_list.append(send_info)
-    elif stage_index == 3:
-        # for forward recv
-        recv_info = P2PInfo(shape=[per_batch_size, hidden_size], dtype=ms.float32, layout=layout)
-        recv_info_list.append(recv_info)
-    else:
-        # for forward recv
-        recv_info = P2PInfo(shape=[per_batch_size, hidden_size], dtype=ms.float32, layout=layout)
-        recv_info_list.append(recv_info)
-        # for forward send
-        send_info = P2PInfo(shape=[per_batch_size, hidden_size], dtype=ms.float32, layout=layout)
-        send_info_list.append(send_info)
-    return send_info_list, recv_info_list
-
-
 def check_loss_and_grads(loss, grads, stage_index):
+    """validate loss and grads."""
     if stage_index == 3:
         assert np.all(loss[0].asnumpy() == 131072)
     if stage_index == 0:
@@ -102,10 +87,6 @@ def test_simple_mlp():
     device_num = get_group_size()
     device_num_per_stage = device_num // num_stages
     stage_index = rank_id // device_num_per_stage
-    rank_ids = [rank_id + device_num_per_stage * (i - stage_index) for i in range(num_stages)]
-    # if the names are the same, an error will be reported
-    pp_group = f"pipeline_group_{rank_id%2}"
-    create_group(pp_group, rank_ids)
 
     # model config
     local_batch_size = 8
@@ -141,11 +122,7 @@ def test_simple_mlp():
     optimizer = nn.Adam(model.trainable_params(), learning_rate=learning_rate)
 
     # pp stage
-    recv_layout = layout("dp", "None")
-    send_info_list, recv_info_list = build_send_recv_info(stage_index, local_batch_size//micro_batch_num,
-                                                          local_hidden_size, layout=recv_layout)
-    pipeline_stage = PipelineStage(model, stage_index, num_stages, pp_group,
-                                   recv_info=recv_info_list, send_info=send_info_list)
+    pipeline_stage = PipelineStage(model, stage_index, num_stages)
 
     schedule = Schedule1F1B(pipeline_stage, micro_batch_num)
 

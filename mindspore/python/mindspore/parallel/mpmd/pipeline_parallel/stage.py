@@ -15,33 +15,11 @@
 """pipeline stage"""
 from abc import ABC
 import mindspore as ms
-from mindspore import ops, Tensor, mint, Parameter
+from mindspore import ops, mint, Parameter
 from mindspore.mint.distributed import isend, irecv, get_global_rank, broadcast, all_reduce
-from mindspore.communication.management import create_group
+from mindspore.communication.management import create_group, get_group_size, get_rank
 from mindspore.parallel.spmd.hsdp.hsdp import HSDPCell
-from ._utils import _RecvInfo
-
-
-class TypeConverter:
-    """
-    Used for converting mindspore dtype to int value and vice versa.
-
-    This function provides conversion functionality between mindspore data types
-    and their corresponding integer representations.
-    """
-    from mindspore.common import dtype as mstype
-    _type_map = {
-        0: mstype.float16,
-        1: mstype.bfloat16,
-        2: mstype.float32
-    }
-    _reverse_map = {v: k for k, v in _type_map.items()}
-
-    @staticmethod
-    def convert(key):
-        if isinstance(key, int):
-            return TypeConverter._type_map.get(key, None)
-        return TypeConverter._reverse_map.get(key, None)
+from ._utils import _RecvInfo, send_object, recv_object
 
 
 class SharedParameterInfo:
@@ -55,9 +33,11 @@ class SharedParameterInfo:
     """
     def __init__(self, parameter, shared_stage):
         if not isinstance(parameter, Parameter):
-            raise TypeError(f"Argument 'parameter' must be type of Parameter.")
+            raise TypeError(f"Argument 'parameter' must be type of Parameter, \
+                             but got type {type(parameter)}.")
         if not isinstance(shared_stage, (list, tuple)):
-            raise TypeError(f"Argument 'shared_stage' must be list or tuple.")
+            raise TypeError(f"Argument 'shared_stage' must be list or tuple, \
+                             but got type {type(shared_stage)}.")
         self._shared_stage = shared_stage
         self._parameter = parameter
         self.group = None
@@ -75,60 +55,6 @@ class SharedParameterInfo:
 
     def __str__(self):
         return f"Shared parameter name:({self.parameter.name}), shared stage:({self.shared_stage})"
-
-
-class P2PInfo:
-    """
-    Used for inputing P2P communication information, including
-    shape, dtype, rank and param_name.
-
-    Args:
-        dtype (dtype): The dtype of p2p input tensor.
-        shape (list): The shape of p2p input tensor. In dynamic shape scenarios, the dynamic dim should be set to -1.
-        layout (Layout): The Layout of received tensor. Default ``None``.
-        src_stage(int): The source stage of receive op. Default ``None``.
-        dst_stage(int): The destination stage of send op. Default ``None``.
-        dyn_shape(bool): Specify whether the P2P operator has a dynamic shape. Default ``False``.
-        dyn_rank(bool): Specify whether the P2P operator has a dynamic rank. Default ``False``.
-    """
-    def __init__(self, shape, dtype, layout=None, src_stage=None, dst_stage=None, dyn_shape=False, dyn_rank=False):
-        self._shape = shape
-        self._dtype = dtype
-        self._src_stage = src_stage
-        self._dst_stage = dst_stage
-        self._dyn_shape = dyn_shape
-        self._dyn_rank = dyn_rank
-        self._layout = layout
-        if self._dyn_rank and not self._dyn_shape:
-            self._dyn_shape = True
-
-    @property
-    def shape(self):
-        return self._shape
-
-    @property
-    def dtype(self):
-        return self._dtype
-
-    @property
-    def layout(self):
-        return self._layout
-
-    @property
-    def src_stage(self):
-        return self._src_stage
-
-    @property
-    def dst_stage(self):
-        return self._dst_stage
-
-    @property
-    def dyn_shape(self):
-        return self._dyn_shape
-
-    @property
-    def dyn_rank(self):
-        return self._dyn_rank
 
 
 class PipelineStage(ABC):
@@ -149,50 +75,75 @@ class PipelineStage(ABC):
         recv_info(P2PInfo, optional): Specify Receive information. Default ``None``.
         send_info(P2PInfo, optional): Specify Send information. Default ``None``.
     """
-    def __init__(self, submodule: HSDPCell, stage_index: int, stage_num: int, group: str,
-                 has_backward=True, recv_info=None, send_info=None, shared_parameters=None):
+    def __init__(self, submodule: HSDPCell, stage_index: int, stage_num: int, group=None,
+                 src_stage=None, dst_stage=None, dyn_shape=False, has_backward=True, shared_parameters=None):
         super().__init__()
         if not isinstance(submodule, HSDPCell):
-            raise TypeError(f"Argument submodule must be of type HSDPCell.")
+            raise TypeError(f"Argument submodule must be of type HSDPCell, but got type {type(submodule)}.")
         self.submodule = submodule
         self.stage_index = stage_index
         self.stage_num = stage_num
-        self.pp_group = group
+        self.pp_group = self._check_pp_group(group)
         self._has_backward = has_backward
-        self._recv_info = self._check_p2p_info(recv_info)
-        self._send_info = self._check_p2p_info(send_info)
-        self._recv_num = len(recv_info) if recv_info is not None else 0
+        self._recv_info = []
+        self._send_info = []
+        self._src_stage = self._check_src_stage(src_stage)
+        self._dst_stage = self._check_dst_stage(dst_stage)
+        self._recv_num = len(self._src_stage)
         self._backward_func = None
+        self._has_init = False
         if self._has_backward:
             self.submodule.set_grad(True)
             self._construct_backward_func()
+        self._layout_been_communicated = False
+        self._shape_been_communicated = False
         self.fwd_inputs_cache = {}
         self.fwd_outputs_cache = {}
         self.args_recv_info = {}
         self.grad_recv_info = {}
         self.bwd_cache = {}
-        self._microbatches_num = 0
+        self._layout_been_send = False
+        self._layout_been_recv = False
+        self._shape_been_send = False
+        self._shape_been_recv = False
+        self._layout_cache = []
+        self._dtype_cache = []
+        self._shape_cache = []
+        self._dyn_shape = dyn_shape
         self._shared_parameters = self._check_shared_parameters(shared_parameters)
         self._sync_shared_parameters()
 
     def clear_cache(self):
+        """clear cache."""
         self.fwd_inputs_cache.clear()
         self.fwd_outputs_cache.clear()
         self.bwd_cache.clear()
-
-    def init_states(self, microbatches_num):
-        self._microbatches_num = microbatches_num
-        if self._recv_info is not None:
-            self._prepare_forward_infra(microbatches_num)
-        if self._has_backward and self._send_info is not None:
-            self._prepare_backward_infra(microbatches_num)
+        self._layout_cache.clear()
+        self._dtype_cache.clear()
+        self._shape_cache.clear()
 
     def clear_states(self):
+        """clear fwd and bwd recv_info list."""
         self.args_recv_info.clear()
         self.grad_recv_info.clear()
 
+    def _check_pp_group(self, group):
+        """check the type of pipeline group, if it is None, perform default initialization."""
+        if group is None:
+            rank_id = get_rank()
+            device_num = get_group_size()
+            device_num_per_stage = device_num // self.stage_num
+            rank_ids = [rank_id + device_num_per_stage * (i - self.stage_index) for i in range(self.stage_num)]
+            # if the names are the same, an error will be reported
+            pp_group = f"pipeline_group_{rank_ids}"
+            create_group(pp_group, rank_ids)
+            return pp_group
+        if not isinstance(group, str):
+            raise TypeError("Argument 'group' must be type of str, but got type of {type(group)}.")
+        return group
+
     def _check_shared_parameters(self, shared_parameters):
-        """check type for shared_parameters"""
+        """check type for shared_parameters."""
         if shared_parameters is None:
             return shared_parameters
 
@@ -202,11 +153,12 @@ class PipelineStage(ABC):
         if isinstance(shared_parameters, (list, tuple)):
             for shared_param in shared_parameters:
                 if not isinstance(shared_param, SharedParameterInfo):
-                    raise TypeError(f"The elements in shared_parameters must be of type SharedParameterInfo.")
+                    raise TypeError(f"The elements in shared_parameters must be of type SharedParameterInfo, but \
+                                     got type {type(shared_parameters)}.")
             return shared_parameters
 
         raise TypeError(f"Argument 'shared_parameters' must be of type None, SharedParameterInfo, \
-                          list/tuple of SharedParameterInfo.")
+                         list/tuple of SharedParameterInfo, but got type {type(shared_parameters)}.")
 
     def _sync_shared_parameters(self):
         """sync shared parameters with Broadcast."""
@@ -215,17 +167,17 @@ class PipelineStage(ABC):
         for shared_param_info in self._shared_parameters:
             param = shared_param_info.parameter
             shared_stage = shared_param_info.shared_stage
-            group, group_ranks = self._init_shared_group(shared_stage)
+            group, group_ranks = self._init_group(shared_stage)
             shared_param_info.group = group
             broadcast(param, group_ranks[0], group)
 
-    def _init_shared_group(self, shared_stage):
+    def _init_group(self, shared_stage):
         """init group of shared parameter."""
         group_ranks = []
-        for stage in sorted(shared_stage):
+        for stage in shared_stage:
             global_rank = get_global_rank(self.pp_group, stage)
             group_ranks.append(global_rank)
-        group = "shared_group_" + str(group_ranks)
+        group = "group_" + str(group_ranks)
         create_group(group, group_ranks)
         return group, group_ranks
 
@@ -241,172 +193,112 @@ class PipelineStage(ABC):
             group = shared_param_info.group
             all_reduce(grad, group=group)
 
-    def _check_p2p_info(self, p2p_info):
-        """check type for send_info and recv_info"""
-        if p2p_info is None:
-            return p2p_info
+    def _check_src_stage(self, src_stage):
+        """check type for src_stage."""
+        if src_stage is None:
+            return [self.stage_index - 1]
 
-        if isinstance(p2p_info, P2PInfo):
-            p2p_info_list = [p2p_info]
-            return p2p_info_list
+        if isinstance(src_stage, int):
+            return [src_stage]
 
-        if isinstance(p2p_info, (list, tuple)):
-            for each_info in p2p_info:
-                if not isinstance(each_info, P2PInfo):
-                    raise TypeError(f"Argument send_info and recv_info must be of type None, P2PInfo, \
-                                     list/tuple of P2PInfo, but got type list/tuple of {each_info}.")
-            return p2p_info
+        if isinstance(src_stage, (list, tuple)):
+            for each_stage in src_stage:
+                if not isinstance(each_stage, int):
+                    raise TypeError(f"Argument src_stage must be of type None, int, \
+                                     list/tuple of int, but got type list/tuple of {type(each_stage)}.")
+            return src_stage
 
-        raise TypeError(f"Argument send_info and recv_info must be of type None, P2PInfo, \
-                          list/tuple of P2PInfo, but got {p2p_info}.")
+        raise TypeError(f"Argument src_stage must be of type None, int, \
+                          list/tuple of int, but got {type(src_stage)}.")
 
-    def communicate_p2p_info(self, micro_batch_num, send_out=False):
-        """used for communicate p2p info when not given"""
-        if send_out:
-            fwd_output = self.fwd_outputs_cache[0]
-            out_size = Tensor([len(fwd_output)], dtype=ms.int64)
-            global_rank = get_global_rank(self.pp_group, self.stage_index + 1)
-            self._communicate_value(global_rank, tensor_send=out_size)
-            send_info_list = []
-            for out_idx in range(out_size):
-                cur_dtype = Tensor([TypeConverter.convert(fwd_output[out_idx].dtype)], ms.int64)
-                self._communicate_value(global_rank, tensor_send=Tensor(cur_dtype))
-                # send shape dim
-                self._communicate_rank(global_rank, tensor_send=fwd_output[out_idx])
-                # send shape
-                self._communicate_shape(global_rank, tensor_send=fwd_output[out_idx])
-                send_info = P2PInfo(shape=fwd_output[out_idx].shape, dtype=fwd_output[out_idx].dtype)
-                send_info_list.append(send_info)
-            self.send_info = send_info_list
-            self._prepare_backward_infra(micro_batch_num)
-        else:
-            global_rank = get_global_rank(self.pp_group, self.stage_index - 1)
-            out_size = self._communicate_value(global_rank, shape_dim=1)
-            recv_info_list = []
-            for out_idx in range(out_size):
-                dtype = TypeConverter.convert(self._communicate_value(global_rank, shape_dim=1))
-                # recv shape dim
-                shape_dim = self._communicate_rank(global_rank)
-                # recv shape
-                shape = self._communicate_shape(global_rank, shape_dim)
-                recv_info = P2PInfo(shape, dtype)
-                recv_info_list.append(recv_info)
-            self.recv_info = recv_info_list
-            self._prepare_forward_infra(micro_batch_num)
-            self._recv_num = len(recv_info_list)
+    def _check_dst_stage(self, dst_stage):
+        """check type for dst_stage."""
+        if dst_stage is None:
+            return [self.stage_index + 1]
 
-    def _make_tensor(self, recv_info, global_rank):
-        """create recv buffer."""
-        shape_dim = None
-        if recv_info.dyn_rank:
-            shape_dim = self._communicate_rank(global_rank)
-        else:
-            shape_dim = len(recv_info.shape)
-        shape = None
-        if recv_info.dyn_shape:
-            shape = self._communicate_shape(global_rank, shape_dim)
-        else:
-            shape = recv_info.shape
-        return mint.empty(shape, dtype=recv_info.dtype)
+        if isinstance(dst_stage, int):
+            return [dst_stage]
 
-    def _communicate_value(self, global_rank, shape_dim=None, tensor_send=None):
+        if isinstance(dst_stage, (list, tuple)):
+            for each_stage in dst_stage:
+                if not isinstance(each_stage, int):
+                    raise TypeError(f"Argument dst_stage must be of type None, int, \
+                                     list/tuple of int, but got type list/tuple of {type(each_stage)}.")
+            return dst_stage
+
+        raise TypeError(f"Argument dst_stage must be of type None, int, \
+                          list/tuple of int, but got {type(dst_stage)}.")
+
+    def _communicate_shape(self, global_rank, idx, tensor_send=None):
+        """communicate shape obj."""
         if tensor_send is not None:
-            handle = isend(Tensor(tensor_send, dtype=ms.int64), global_rank)
-            handle.wait()
+            if self._dyn_shape or not self._shape_been_send:
+                shape = tensor_send.local_shape
+                send_object(shape, global_rank)
             return None
 
-        recv_tensor = mint.empty([shape_dim], dtype=ms.int64)
-        handle = irecv(recv_tensor, global_rank)
-        handle.wait()
-        return recv_tensor.tolist()[0]
+        if self._dyn_shape or not self._shape_been_recv:
+            shape = recv_object(global_rank)
+            if not self._dyn_shape:
+                self._shape_cache.append(shape)
+            return shape
+        shape = self._shape_cache[idx]
+        return shape
 
-    def _communicate_shape(self, global_rank, shape_dim=None, tensor_send=None):
+    def _communicate_layout(self, global_rank, idx, tensor_send=None):
+        """communicate layout and type obj."""
         if tensor_send is not None:
-            handle = isend(Tensor(tensor_send.shape, dtype=ms.int64), global_rank)
-            handle.wait()
+            if not self._layout_been_send:
+                layout = tensor_send.layout
+                dtype = repr(tensor_send.dtype).split('.')[-1]
+                send_object([layout, dtype], global_rank)
             return None
 
-        recv_tensor = mint.empty([shape_dim], dtype=ms.int64)
-        handle = irecv(recv_tensor, global_rank)
-        handle.wait()
-        return recv_tensor.tolist()
+        if self._shape_been_recv:
+            return self._layout_cache[idx], self._dtype_cache[idx]
+        layout, dtype_str = recv_object(global_rank)
+        self._update_layout(layout)
+        dtype = getattr(ms, dtype_str)
+        self._layout_cache.append(layout)
+        self._dtype_cache.append(dtype)
+        return layout, dtype
 
-    def _communicate_rank(self, global_rank, tensor_send=None):
-        if tensor_send is not None:
-            handle = isend(Tensor([tensor_send.ndim], dtype=ms.int64), global_rank)
-            handle.wait()
-            return None
-
-        recv_tensor = mint.empty([1], dtype=ms.int64)
-        handle = irecv(recv_tensor, global_rank)
-        handle.wait()
-        return recv_tensor.tolist()[0]
-
-    def _init_recv_buffer(self, recv_info, global_rank):
-        recv_info.buffer = self._make_tensor(recv_info, global_rank)
-        recv_info.buffer.local_to_global(recv_info.layout)
+    def _update_layout(self, layout):
+        """update the received layout."""
+        device_num = get_group_size()
+        device_num_per_stage = device_num // self.stage_num
+        rank_list = list(range(self.stage_index * device_num_per_stage, (self.stage_index + 1) * device_num_per_stage))
+        layout.rank_list = rank_list
+        layout.update_mesh()
+        layout.update_compact_str()
 
     def _clear_recv_buffer(self, micro_index):
-        if micro_index not in self.args_recv_info.keys():
+        """clear fwd and bwd recv buffer."""
+        if micro_index not in self.args_recv_info:
             return
         for info in self.args_recv_info[micro_index]:
             info.buffer = None
-        if micro_index not in self.grad_recv_info.keys():
+        if micro_index not in self.grad_recv_info:
             return
         for info in self.grad_recv_info[micro_index]:
             info.buffer = None
 
     @property
-    def recv_info(self):
-        return self._recv_info
-
-    @recv_info.setter
-    def recv_info(self, val):
-        self._recv_info = self._check_p2p_info(val)
-
-    @property
-    def send_info(self):
-        return self._send_info
-
-    @send_info.setter
-    def send_info(self, val):
-        self._send_info = self._check_p2p_info(val)
-
-    @property
     def is_first_stage(self):
+        """return if is first stage."""
         return self.stage_index == 0
 
     @property
     def is_last_stage(self):
+        """return if is last stage."""
         return self.stage_index == self.stage_num - 1
 
-    def _prepare_forward_infra(self, microbatches_num):
-        """_prepare_forward_infra"""
-        for mbs_index in range(microbatches_num):
-            recv_infos = []
-            for info in self._recv_info:
-                recv_info = _RecvInfo.from_instance(info)
-                src_stage = self.stage_index - 1 if recv_info.src_stage is None else recv_info.src_stage
-                recv_info.src_stage = src_stage
-                recv_infos.append(recv_info)
-            self.args_recv_info[mbs_index] = recv_infos
-
-    def _prepare_backward_infra(self, microbatches_num):
-        """_prepare_backward_infra"""
-        for mbs_index in range(microbatches_num):
-            recv_infos = []
-            for info in self._send_info:
-                recv_info = _RecvInfo.from_instance(info)
-                recv_info.src_stage = self.stage_index + 1 if info.dst_stage is None else info.dst_stage
-                recv_infos.append(recv_info)
-            self.grad_recv_info[mbs_index] = recv_infos
-
     def forward_one_chunk(self, micro_index, args=None, kwargs=None):
-        """Execution a forward function"""
+        """Execution a forward function."""
         composite_args = args or []
         composite_kwargs = kwargs or {}
         recv_args = []
-        if micro_index in self.args_recv_info.keys():
+        if micro_index in self.args_recv_info:
             recv_args = [recv_info.buffer for recv_info in self.args_recv_info[micro_index]]
         composite_args.extend(recv_args)
         out = self.submodule(*composite_args, **composite_kwargs)
@@ -415,15 +307,15 @@ class PipelineStage(ABC):
         self.fwd_outputs_cache[micro_index] = out_tuple
         return out
 
-    def backward_one_chunk(self, micro_index):
-        """Execution a backward function"""
+    def backward_one_chunk(self, micro_index, last_backward=False):
+        """Execution a backward function."""
         if not self._has_backward:
             return None
         fwd_args, fwd_kwargs = self.fwd_inputs_cache.pop(micro_index)
         recv_args = []
-        if micro_index == self._microbatches_num - 1:
+        if last_backward:
             self.submodule.set_requires_grad_sync(True)
-        if micro_index in self.grad_recv_info.keys():
+        if micro_index in self.grad_recv_info:
             recv_args = [recv_info.buffer for recv_info in self.grad_recv_info[micro_index]]
 
         if self.is_first_stage:
@@ -440,57 +332,91 @@ class PipelineStage(ABC):
             return grad_out
         return grad_out[1]
 
+    def _construct_forward_recv_info(self, micro_index, idx, global_rank):
+        """construct forward recv info."""
+        if self._dyn_shape or micro_index not in self.args_recv_info:
+            shape = self._communicate_shape(global_rank, idx)
+            layout, dtype = self._communicate_layout(global_rank, idx)
+            dtensor = mint.empty(shape, dtype=dtype).local_to_global(layout)
+            if micro_index in self.args_recv_info:
+                recv_info = self.args_recv_info[micro_index][idx]
+                recv_info.buffer = dtensor
+                return recv_info
+            return _RecvInfo(global_rank, dtensor)
+        return self.args_recv_info[micro_index][idx]
+
     def exec_fwd_recv_ops(self, micro_index):
-        """Execute the forward recv operation"""
-        if micro_index not in self.args_recv_info.keys():
-            return
-        for recv_info in self.args_recv_info[micro_index]:
-            global_rank = get_global_rank(self.pp_group, recv_info.src_stage)
-            self._init_recv_buffer(recv_info, global_rank)
+        """Execute the forward recv operation."""
+        recv_infos = []
+        for idx in range(self._recv_num):
+            global_rank = get_global_rank(self.pp_group, self._src_stage[idx])
+            recv_info = self._construct_forward_recv_info(micro_index, idx, global_rank)
+            if micro_index not in self.args_recv_info:
+                recv_infos.append(recv_info)
             handle = irecv(recv_info.buffer, global_rank)
             handle.wait()
+        self._layout_been_recv = True
+        self._shape_been_recv = True
+        if recv_infos:
+            self.args_recv_info[micro_index] = recv_infos
+
+    def _construct_backward_recv_info(self, micro_index, idx, global_rank, tensor_send):
+        """construct backward recv info."""
+        if micro_index not in self.grad_recv_info:
+            buffer = mint.empty(tensor_send.local_shape, dtype=tensor_send.dtype)
+            return _RecvInfo(global_rank, buffer)
+        if self._dyn_shape:
+            recv_info = self.grad_recv_info[micro_index][idx]
+            recv_info.buffer = mint.empty(tensor_send.local_shape, dtype=tensor_send.dtype)
+        return None
 
     def exec_fwd_send_ops(self, micro_index):
-        """Execute the forward send operation"""
-        if not self._send_info:
+        """Execute the forward send operation."""
+        if self.is_last_stage:
             return
         out = self.fwd_outputs_cache.pop(micro_index)
-        for idx, send_info in enumerate(self._send_info):
-            dst_stage = self.stage_index + 1 if send_info.dst_stage is None else send_info.dst_stage
+        bwd_recv_infos = []
+        for idx, cur_out in enumerate(out):
+            if len(self._dst_stage) > 1:
+                dst_stage = self._dst_stage[idx]
+            else:
+                dst_stage = self._dst_stage[0]
             global_rank = get_global_rank(self.pp_group, dst_stage)
-            if send_info.dyn_rank:
-                self._communicate_rank(global_rank, tensor_send=out[idx])
-            if send_info.dyn_shape:
-                self._communicate_shape(global_rank, tensor_send=out[idx])
+            self._communicate_shape(global_rank, idx, tensor_send=cur_out)
+            self._communicate_layout(global_rank, idx, tensor_send=cur_out)
+            if self._has_backward:
+                recv_info = self._construct_backward_recv_info(micro_index, idx, global_rank, cur_out)
+                if recv_info is not None:
+                    bwd_recv_infos.append(recv_info)
             handle = isend(out[idx], global_rank)
             handle.wait()
+        self._layout_been_send = True
+        self._shape_been_send = True
+        if bwd_recv_infos:
+            self.grad_recv_info[micro_index] = bwd_recv_infos
 
     def exec_bwd_recv_ops(self, micro_index):
-        """Execute the backward recv operation"""
-        if micro_index not in self.grad_recv_info.keys():
+        """Execute the backward recv operation."""
+        if micro_index not in self.grad_recv_info:
             return
         for recv_info in self.grad_recv_info[micro_index]:
-            src_stage = self.stage_index + 1 if recv_info.src_stage is None else recv_info.src_stage
-            global_rank = get_global_rank(self.pp_group, src_stage)
-            self._init_recv_buffer(recv_info, global_rank)
+            global_rank = recv_info.global_rank
             handle = irecv(recv_info.buffer, global_rank)
             handle.wait()
 
     def exec_bwd_send_ops(self, micro_index):
-        """Execute the backward send operation"""
-        if micro_index not in self.args_recv_info.keys():
+        """Execute the backward send operation."""
+        if micro_index not in self.args_recv_info:
             return
         out = self.bwd_cache.pop(micro_index)
-        for idx, info in enumerate(self.args_recv_info[micro_index]):
-            global_rank = get_global_rank(self.pp_group, info.src_stage)
-            if info.dyn_rank:
-                self._communicate_rank(global_rank, tensor_send=out[idx])
-            if info.dyn_shape:
-                self._communicate_shape(global_rank, tensor_send=out[idx])
-            handle = isend(out[idx], global_rank)
+        for idx, cur_out in enumerate(out):
+            info = self.args_recv_info[micro_index][idx]
+            global_rank = info.global_rank
+            handle = isend(cur_out, global_rank)
             handle.wait()
 
     def _construct_backward_func(self):
+        """construct backward func."""
         self._backward_func = None
         if self.is_first_stage:
             self._backward_func = ops.GradOperation(get_by_list=True, sens_param=True)(

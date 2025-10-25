@@ -13,4 +13,4 @@
 # limitations under the License.
 # ============================================================================
 """Interfaces for multiple program multiple data-related"""
-from .pipeline_parallel import PipelineStage, P2PInfo, Schedule1F1B, ScheduleGPipe
+from .pipeline_parallel import PipelineStage, Schedule1F1B, ScheduleGPipe
