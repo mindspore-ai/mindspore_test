@@ -180,6 +180,8 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("del_net_res", &GraphExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
     .def("get_func_graph", &GraphExecutorPy::GetFuncGraph, py::arg("phase") = py::str(""), "Get graph pointer.")
+    .def("check_func_graph_sequence_parameter", &GraphExecutorPy::CheckFuncGraphSequenceParamAbstract,
+         py::arg("phase") = py::str(""), "Check the abstract of graph sequence parameter.")
     .def("get_func_graph_proto", &GraphExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.")
@@ -266,6 +268,8 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
          "Delete network resource.")
     .def("get_func_graph", &JitExecutorPy::GetFuncGraph, py::arg("phase") = py::str(""), "Get graph pointer.")
+    .def("check_func_graph_sequence_parameter", &JitExecutorPy::CheckFuncGraphSequenceParamAbstract,
+         py::arg("phase") = py::str(""), "Check the abstract of graph sequence parameter.")
     .def("split_graph", &JitExecutorPy::SplitGraph, "Split graph.")
     .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
          py::arg("phase") = py::str(""), py::arg("jit_config") = py::dict(), "Compile obj by executor.")

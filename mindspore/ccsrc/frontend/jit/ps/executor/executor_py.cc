@@ -25,7 +25,9 @@
 #include <iomanip>
 #include <unordered_map>
 #include <functional>
-
+#include <utility>
+#include <vector>
+#include <string>
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"
 
@@ -300,6 +302,40 @@ FuncGraphPtr ExecutorPy::GetFuncGraph(const std::string &phase) {
     return nullptr;
   }
   return it->second->func_graph;
+}
+
+std::vector<bool> ExecutorPy::CheckFuncGraphSequenceParamAbstract(const std::string &phase) {
+  MS_LOG(DEBUG) << "phase: " << phase;
+  std::vector<bool> sequence_used_by_inplace;
+  const auto it = info_.find(phase);
+  if (it == info_.end()) {
+    MS_LOG(INFO) << "No executor info. found for phase: " << phase;
+    return sequence_used_by_inplace;
+  }
+  const auto &func = it->second->func_graph;
+  MS_EXCEPTION_IF_NULL(func);
+  const auto &params = func->parameters();
+  MS_LOG(DEBUG) << "params.size(): " << params.size();
+  for (const auto &param_node : params) {
+    const auto &param_abs = param_node->abstract();
+    MS_EXCEPTION_IF_NULL(param_abs);
+    MS_LOG(DEBUG) << "param_abs: " << param_abs->ToString();
+    if (param_abs->isa<abstract::AbstractSequence>()) {
+      const auto &seq = param_abs->cast<abstract::AbstractSequencePtr>();
+      const auto &elements = seq->elements();
+      bool exist_ref_tensor = false;
+      for (const auto &ele : elements) {
+        const auto &ref_abs = ele->cast<abstract::AbstractRefPtr>();
+        if (ref_abs != nullptr && ref_abs->is_inplace()) {
+          MS_LOG(DEBUG) << "The tuple or list need append.";
+          exist_ref_tensor = true;
+          break;
+        }
+      }
+      (void)sequence_used_by_inplace.emplace_back(exist_ref_tensor);
+    }
+  }
+  return sequence_used_by_inplace;
 }
 
 void ExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase) {
