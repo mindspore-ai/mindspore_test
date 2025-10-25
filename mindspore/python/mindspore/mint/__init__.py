@@ -14,7 +14,7 @@
 # ============================================================================
 """mint module."""
 from __future__ import absolute_import
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.ops.primitive import constexpr
 from mindspore.common.tensor import Tensor
 from mindspore.ops.function.array_func import gather_ext as gather
@@ -1329,6 +1329,9 @@ def swapaxes(input, axis0, axis1):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> import numpy as np
