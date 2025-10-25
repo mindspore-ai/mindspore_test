@@ -16,7 +16,7 @@ if(ENABLE_D OR ENABLE_ACL)
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../plugin/ascend/res_manager/symbol_interface
             _mindspore_ascend_symbol_obj)
         list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/config_manager.cc")
-        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../common/debug/common.cc")
+        list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/common.cc")
 
         if(NOT WIN32)
             list(APPEND _TRANSFORM_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../../../utils/anfalgo.cc")

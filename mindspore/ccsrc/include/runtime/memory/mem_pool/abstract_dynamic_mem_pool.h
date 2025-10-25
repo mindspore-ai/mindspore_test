@@ -30,7 +30,7 @@
 
 #include "include/runtime/memory/mem_pool/dynamic_mem_pool.h"
 #include "include/backend/visible.h"
-#include "include/common/utils/stream_util.h"
+#include "include/utils/stream_util.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
