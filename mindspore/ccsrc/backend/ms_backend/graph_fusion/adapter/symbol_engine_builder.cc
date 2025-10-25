@@ -50,12 +50,12 @@ void SetSymbolShapeEqual(const std::vector<ListSymbolPtr> &shapes) {
         MS_LOG(DEBUG) << "Set symbols equal: " << a->ToString() << ", " << b->ToString();
         if (!ib->is_const()) {
           ia->SetEqual(ib);
-        } else {
+        } else if (ib->HasData()) {
           ia->SetValue(ib->value());
         }
-      } else if (!ib->is_const()) {
+      } else if (!ib->is_const() && ia->HasData()) {
         MS_LOG(DEBUG) << "Set symbols equal: " << a->ToString() << ", " << b->ToString();
-        ib->SetValue(ib->value());
+        ib->SetValue(ia->value());
       }
     }
   }

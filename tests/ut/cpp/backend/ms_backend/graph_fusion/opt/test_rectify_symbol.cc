@@ -82,6 +82,8 @@ TEST_P(TestRectifySymbol, rectify_symbol) {
 
 INSTANTIATE_TEST_CASE_P(TestOpRectifySymbol, TestRectifySymbol,
                         testing::Values(Params{"AddN", {{-1, -1}, {-1, -1}}, kFloat32},
+                                        Params{"AddN", {{2, 4}, {-1, 4}}, kInt32},
+                                        Params{"AddN", {{2, -1}, {-1, 4}}, kInt32},
                                         Params{"GeLUGrad", {{-1, -1}, {-1, -1}}, kFloat32},
                                         Params{"SiLUGrad", {{-1, -1}, {-1, -1}}, kFloat32},
                                         Params{"SiLUGrad", {{-1, 32}, {-1, 32}}, kFloat32},
