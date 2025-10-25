@@ -56,7 +56,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   aclOpExecutor *executor_##FUNC_NAME##_{nullptr};                                                                   \
   CallBackFunc release_func_##FUNC_NAME##_{nullptr};                                                                 \
   template <typename... Args>                                                                                        \
-  void GetWorkspaceForResize##FUNC_NAME(const Args &... args) {                                                      \
+  void GetWorkspaceForResize##FUNC_NAME(const Args &...args) {                                                       \
     size_t cur_workspace = 0;                                                                                        \
     if (capacity_ == 0) {                                                                                            \
       if (is_dynamic_) {                                                                                             \
@@ -106,7 +106,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                                  \
                                                                                                                      \
   template <typename... Args>                                                                                        \
-  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                   \
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &...args) {                    \
     auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
     if (hash_id_##FUNC_NAME##_ == 0 || iter == hash_map_.end()) {                                                    \
       aclOpExecutor *executor;                                                                                       \
@@ -122,7 +122,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                                  \
                                                                                                                      \
   template <typename... Args>                                                                                        \
-  void RunOp##FUNC_NAME(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {      \
+  void RunOp##FUNC_NAME(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &...args) {       \
     if (capacity_ == 0) {                                                                                            \
       size_t ws_size = 0;                                                                                            \
       std::tie(ws_size, executor_##FUNC_NAME##_, release_func_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, std::ignore) = \
@@ -176,7 +176,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 
 #define DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                       \
   template <typename... Args>                                                                                   \
-  void GetWorkspaceForResize(const Args &... args) {                                                            \
+  void GetWorkspaceForResize(const Args &...args) {                                                             \
     size_t cur_workspace = 0;                                                                                   \
     if (capacity_ == 0) {                                                                                       \
       if (is_dynamic_) {                                                                                        \
@@ -222,7 +222,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                             \
                                                                                                                 \
   template <typename... Args>                                                                                   \
-  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                         \
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &...args) {                          \
     auto iter = hash_map_.find(hash_id_);                                                                       \
     if (hash_id_ == 0 || iter == hash_map_.end()) {                                                             \
       aclOpExecutor *executor;                                                                                  \
@@ -238,7 +238,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                             \
                                                                                                                 \
   template <typename... Args>                                                                                   \
-  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {            \
+  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &...args) {             \
     if (capacity_ == 0) {                                                                                       \
       size_t ws_size = 0;                                                                                       \
       std::tie(ws_size, executor_, release_func_, hash_id_, std::ignore) =                                      \
@@ -276,7 +276,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   }                                                                                                             \
                                                                                                                 \
   template <typename... Args>                                                                                   \
-  std::tuple<aclOpExecutor *, ProcessCache, std::function<void()>> GetSyncExecutor(const Args &... args) {      \
+  std::tuple<aclOpExecutor *, ProcessCache, std::function<void()>> GetSyncExecutor(const Args &...args) {       \
     auto iter = hash_map_.find(hash_id_);                                                                       \
     if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
       aclOpExecutor *executor;                                                                                  \
@@ -294,7 +294,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                 \
   template <typename... Args>                                                                                   \
   std::vector<ShapeVector> RunOpSync(void *stream_ptr, const std::vector<KernelTensor *> &workspace,            \
-                                     const Args &... args) {                                                    \
+                                     const Args &...args) {                                                     \
     REGISTER_SYNC_OP(op_type_);                                                                                 \
     auto [executor, cache_func_ptr, release_func] = GetSyncExecutor(args...);                                   \
     if (workspace_size_list_.empty()) {                                                                         \
@@ -429,33 +429,33 @@ class OPS_ASCEND_API AclnnKernelMod : public KernelMod {
 using AclnnKernelModPtr = std::shared_ptr<AclnnKernelMod>;
 using AclnnKernelModPtrList = std::vector<AclnnKernelModPtr>;
 
-#define REGISTER_ACLNN_CLASS(TYPE)                                                                                    \
-  template <size_t N>                                                                                                 \
-  class Aclnn##TYPE##KernelMod : public AclnnKernelMod {                                                              \
-   public:                                                                                                            \
-    explicit Aclnn##TYPE##KernelMod(std::string &&op_type) : AclnnKernelMod(std::move(op_type)) {}                    \
-    ~Aclnn##TYPE##KernelMod() = default;                                                                              \
-    void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,                                                  \
-                          const std::vector<KernelTensor *> &outputs) override {                                      \
-      const auto &res_tuple = GetKernelTuple<N>(inputs, outputs);                                                     \
-      std::apply([this](const auto &... args) { GetWorkspaceForResize(args...); }, res_tuple);                        \
-    }                                                                                                                 \
-    bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,              \
-                const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {                              \
-      CallRun(stream_ptr, workspace, inputs, outputs);                                                                \
-      return true;                                                                                                    \
-    }                                                                                                                 \
-                                                                                                                      \
-   private:                                                                                                           \
-    template <typename... Ts>                                                                                         \
-    void CallRun(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const std::vector<Ts> &... vecs) {   \
-      const auto &res_tuple = GetKernelTuple<N>(vecs...);                                                             \
-      std::apply(                                                                                                     \
-        [this, stream_ptr, &workspace](const auto &... args) { return this->RunOp(stream_ptr, workspace, args...); }, \
-        res_tuple);                                                                                                   \
-    }                                                                                                                 \
-                                                                                                                      \
-    DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                                 \
+#define REGISTER_ACLNN_CLASS(TYPE)                                                                                   \
+  template <size_t N>                                                                                                \
+  class Aclnn##TYPE##KernelMod : public AclnnKernelMod {                                                             \
+   public:                                                                                                           \
+    explicit Aclnn##TYPE##KernelMod(std::string &&op_type) : AclnnKernelMod(std::move(op_type)) {}                   \
+    ~Aclnn##TYPE##KernelMod() = default;                                                                             \
+    void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,                                                 \
+                          const std::vector<KernelTensor *> &outputs) override {                                     \
+      const auto &res_tuple = GetKernelTuple<N>(inputs, outputs);                                                    \
+      std::apply([this](const auto &...args) { GetWorkspaceForResize(args...); }, res_tuple);                        \
+    }                                                                                                                \
+    bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,             \
+                const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {                             \
+      CallRun(stream_ptr, workspace, inputs, outputs);                                                               \
+      return true;                                                                                                   \
+    }                                                                                                                \
+                                                                                                                     \
+   private:                                                                                                          \
+    template <typename... Ts>                                                                                        \
+    void CallRun(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const std::vector<Ts> &...vecs) {   \
+      const auto &res_tuple = GetKernelTuple<N>(vecs...);                                                            \
+      std::apply(                                                                                                    \
+        [this, stream_ptr, &workspace](const auto &...args) { return this->RunOp(stream_ptr, workspace, args...); }, \
+        res_tuple);                                                                                                  \
+    }                                                                                                                \
+                                                                                                                     \
+    DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                                \
   }
 
 #define MS_ACLNN_KERNEL_FACTORY_REG(NAME, DERIVE_CLASS) MS_KERNEL_FACTORY_REG(AclnnKernelMod, NAME, DERIVE_CLASS)

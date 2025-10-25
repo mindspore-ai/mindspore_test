@@ -27,8 +27,7 @@ void RegTyping(py::module *m) {
   py::enum_<TypeId>(m_sub, "TypeId");
   (void)m_sub.def("is_subclass", &IsIdentidityOrSubclass, "is equal or subclass");
   (void)m_sub.def("load_type", &TypeIdToType, "load type");
-  (void)m_sub.def(
-    "dump_type", [](const TypePtr &t) { return t->type_id(); }, py::arg("t").none(false), "dump type");
+  (void)m_sub.def("dump_type", [](const TypePtr &t) { return t->type_id(); }, py::arg("t").none(false), "dump type");
   (void)m_sub.def("str_to_type", &StringToType, "string to typeptr");
   (void)m_sub.def("type_size_in_bytes", &GetTypeByte, "type size in bytes");
   (void)m_sub.def(

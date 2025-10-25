@@ -73,8 +73,8 @@ bool MultiMarginLossCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *>
   return true;
 }
 
-const std::vector<std::pair<KernelAttr, MultiMarginLossCPUKernelMod::KernelRunFunc>>
-  &MultiMarginLossCPUKernelMod::GetFuncList() const {
+const std::vector<std::pair<KernelAttr, MultiMarginLossCPUKernelMod::KernelRunFunc>> &
+MultiMarginLossCPUKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, MultiMarginLossCPUKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat16)

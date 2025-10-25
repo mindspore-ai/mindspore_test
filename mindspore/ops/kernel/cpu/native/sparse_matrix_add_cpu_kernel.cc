@@ -219,27 +219,25 @@ bool SparseMatrixAddCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
 }
 
 #define CPU_SPARSE_MATRIX_SPARSE_MATRIX_ADD_ADD_KERNEL_REGISTER(ms_index_type, ms_value_type, index_type, value_type) \
-  {                                                                                                                   \
-    KernelAttr()                                                                                                      \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_value_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_index_type)                                                                                    \
-      .AddInputAttr(ms_value_type)                                                                                    \
-      .AddInputAttr(ms_value_type)                                                                                    \
-      .AddInputAttr(ms_value_type)                                                                                    \
-      .AddOutputAttr(ms_index_type)                                                                                   \
-      .AddOutputAttr(ms_index_type)                                                                                   \
-      .AddOutputAttr(ms_index_type)                                                                                   \
-      .AddOutputAttr(ms_index_type)                                                                                   \
-      .AddOutputAttr(ms_value_type),                                                                                  \
-      &SparseMatrixAddCpuKernelMod::LaunchKernel<index_type, value_type>                                              \
-  }
+  {KernelAttr()                                                                                                       \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_value_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_index_type)                                                                                     \
+     .AddInputAttr(ms_value_type)                                                                                     \
+     .AddInputAttr(ms_value_type)                                                                                     \
+     .AddInputAttr(ms_value_type)                                                                                     \
+     .AddOutputAttr(ms_index_type)                                                                                    \
+     .AddOutputAttr(ms_index_type)                                                                                    \
+     .AddOutputAttr(ms_index_type)                                                                                    \
+     .AddOutputAttr(ms_index_type)                                                                                    \
+     .AddOutputAttr(ms_value_type),                                                                                   \
+   &SparseMatrixAddCpuKernelMod::LaunchKernel<index_type, value_type>}
 
 const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseMatrixAddCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, KernelRunFunc>> func_list = {

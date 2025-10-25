@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace kernel {
 #define FILL_GPU_REG(MS_T, MS_U, MS_V, T) \
-  { KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_U).AddOutputAttr(MS_V), &FillGpuKernelMod::LaunchKernel<T> }
+  {KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_U).AddOutputAttr(MS_V), &FillGpuKernelMod::LaunchKernel<T>}
 
 template <typename T>
 T FillGpuKernelMod::GetInputDataFromDevice(const std::vector<KernelTensor *> &inputs, size_t idx,

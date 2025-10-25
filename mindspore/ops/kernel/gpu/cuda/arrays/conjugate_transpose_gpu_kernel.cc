@@ -135,18 +135,16 @@ bool ConjugateTransposeGpuKernelMod::LaunchKernel(const std::vector<KernelTensor
   size_t *output_stride_ = GetDeviceAddress<size_t>(workspace, kIndex1);
 
   size_t size = x_one_count_;
-  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaMemcpyAsync(input_stride_, &input_stride[0], sizeof(size_t) * MAX_DIMS,
-                                                     cudaMemcpyHostToDevice,
-                                                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
-                                     "For "
-                                       << "input_stride_ "
-                                       << "cudaMemcpy input 'size' to host failed.");
-  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaMemcpyAsync(output_stride_, &output_stride[0], sizeof(size_t) * MAX_DIMS,
-                                                     cudaMemcpyHostToDevice,
-                                                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
-                                     "For "
-                                       << "output_stride_ "
-                                       << "cudaMemcpy input 'size' to host failed.");
+  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+    cudaMemcpyAsync(input_stride_, &input_stride[0], sizeof(size_t) * MAX_DIMS, cudaMemcpyHostToDevice,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    "For " << "input_stride_ "
+           << "cudaMemcpy input 'size' to host failed.");
+  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+    cudaMemcpyAsync(output_stride_, &output_stride[0], sizeof(size_t) * MAX_DIMS, cudaMemcpyHostToDevice,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    "For " << "output_stride_ "
+           << "cudaMemcpy input 'size' to host failed.");
   CHECK_CUDA_RET_WITH_ERROR_NOTRACE(
     cudaMemsetAsync(y, 0, outputs[kIndex0]->size(), reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "ConjugateTransposeGpuKernelMod cudaMemSet Failed");
@@ -167,18 +165,16 @@ bool ConjugateTransposeGpuKernelMod::LaunchComplexKernel(const std::vector<Kerne
   size_t *output_stride_ = GetDeviceAddress<size_t>(workspace, kIndex1);
 
   size_t size = x_one_count_;
-  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaMemcpyAsync(input_stride_, &input_stride[0], sizeof(size_t) * MAX_DIMS,
-                                                     cudaMemcpyHostToDevice,
-                                                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
-                                     "For "
-                                       << "input_stride_ "
-                                       << "cudaMemcpy input 'size' to host failed.");
-  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaMemcpyAsync(output_stride_, &output_stride[0], sizeof(size_t) * MAX_DIMS,
-                                                     cudaMemcpyHostToDevice,
-                                                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
-                                     "For "
-                                       << "output_stride_ "
-                                       << "cudaMemcpy input 'size' to host failed.");
+  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+    cudaMemcpyAsync(input_stride_, &input_stride[0], sizeof(size_t) * MAX_DIMS, cudaMemcpyHostToDevice,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    "For " << "input_stride_ "
+           << "cudaMemcpy input 'size' to host failed.");
+  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+    cudaMemcpyAsync(output_stride_, &output_stride[0], sizeof(size_t) * MAX_DIMS, cudaMemcpyHostToDevice,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    "For " << "output_stride_ "
+           << "cudaMemcpy input 'size' to host failed.");
   CHECK_CUDA_RET_WITH_ERROR_NOTRACE(
     cudaMemsetAsync(y, 0, outputs[kIndex0]->size(), reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "ConjugateTransposeGpuKernelMod cudaMemSet Failed");

@@ -520,11 +520,13 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
     {kTypeString, [](const py::object &obj,
                      const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractString>(obj); }},
     {kTypeTensor,
-     [](const py::object &obj, const std::vector<AObject *>
-                                 &elements) { return Resource::Current()->pool()->New<AbstractTensor>(obj, false); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return Resource::Current()->pool()->New<AbstractTensor>(obj, false);
+     }},
     {kTypeTuple,
-     [](const py::object &obj,
-        const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractTuple>(obj, elements); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return ConstructAbstract<AbstractTuple>(obj, elements);
+     }},
     {kTypeNamedTuple, [&tp](const py::object &obj,
                             const std::vector<AObject *>
                               &elements) { return Resource::Current()->pool()->New<AbstractNamedTuple>(obj, tp); }},

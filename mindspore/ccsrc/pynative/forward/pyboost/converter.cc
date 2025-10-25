@@ -1246,8 +1246,7 @@ bool ListTypeCheck(PyObject *obj, const ops::OP_DTYPE &type, int &idx, bool full
     case OP_DTYPE::DT_LIST_BOOL:
       return CheckPyListType(obj, idx, IsPyBool, fullcheck);
     case OP_DTYPE::DT_LIST_STR:
-      return CheckPyListType(
-        obj, idx, [](PyObject *obj) { return PyUnicode_Check(obj); }, fullcheck);
+      return CheckPyListType(obj, idx, [](PyObject *obj) { return PyUnicode_Check(obj); }, fullcheck);
     case OP_DTYPE::DT_LIST_NUMBER:
       return CheckPyListType(obj, idx, parse::ParseUtilsCheckScalar, fullcheck);
     case OP_DTYPE::DT_TUPLE_ANY:

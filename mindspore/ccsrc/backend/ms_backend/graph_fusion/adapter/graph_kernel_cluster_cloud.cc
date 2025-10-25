@@ -156,9 +156,8 @@ class DvmSupportChecker {
                                  return Callback::Instance()->GetInputType(node, 0) != kNumberTypeInt32;
                                }};
     // select op
-    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported, [](const AnfNodePtr &node) {
-                               return InputCheck(node, {2, 3});
-                             }};
+    check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported,
+                             [](const AnfNodePtr &node) { return InputCheck(node, {2, 3}); }};
     // int op
     check_func_["Add"] = {int_op_check, input_check_all};
     check_func_["Sub"] = {int_op_check, input_check_all};

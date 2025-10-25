@@ -354,10 +354,8 @@ void RegTFT(py::module *m) {
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
   (void)m->def("_get_optimzer_timestamps", &mindspore::GetOptimizerTimestamps,
                "Get optimizer start and finish timestamps.");
-  (void)m->def(
-    "_tft_sem_post", []() { mindspore::tools::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
-  (void)m->def(
-    "_tft_sem_enable", []() { mindspore::tools::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+  (void)m->def("_tft_sem_post", []() { mindspore::tools::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
+  (void)m->def("_tft_sem_enable", []() { mindspore::tools::TFTWaitSem::Enable(); }, "TFT enable sem feature");
   (void)m->def(
     "_tft_start_record_threads", []() { mindspore::tools::TFTWaitSem::GetInstance().StartRecordThreads(); },
     "TFT start recording newly created threads");

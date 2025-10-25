@@ -438,7 +438,7 @@ PyObject *Wrap(const std::tuple<Args...> &tuple) {
   constexpr size_t size = std::tuple_size<std::tuple<Args...>>::value;
   PyObject *output = PyTuple_New(size);
   std::apply(
-    [&output](const auto &... args) {
+    [&output](const auto &...args) {
       size_t index = 0;
       ((PyTuple_SET_ITEM(output, index++, Wrap(args))), ...);
     },

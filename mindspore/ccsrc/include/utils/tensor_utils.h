@@ -124,7 +124,7 @@ std::vector<std::common_type_t<Ts...>> tuple_to_vector(const std::tuple<Ts...> &
   std::vector<std::common_type_t<Ts...>> vec;
   vec.reserve(sizeof...(Ts));
 
-  std::apply([&vec](const auto &... args) { (vec.push_back(args), ...); }, t);
+  std::apply([&vec](const auto &...args) { (vec.push_back(args), ...); }, t);
 
   return vec;
 }

@@ -50,7 +50,7 @@ GradExecutorPtr PyNativeExecutor::grad_executor_ = nullptr;
 std::mutex PyNativeExecutor::instance_lock_;
 namespace {
 template <typename T, typename... Args>
-T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &... args) {
+T PyNativeExecutorTry(const std::function<T(const Args &...)> &method, const Args &...args) {
   const auto &inst = PyNativeExecutor::GetInstance();
   MS_EXCEPTION_IF_NULL(inst);
   MS_EXCEPTION_IF_NULL(method);

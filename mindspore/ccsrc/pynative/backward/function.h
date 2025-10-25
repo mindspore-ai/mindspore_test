@@ -66,7 +66,7 @@ using forward_t = decltype(X::Forward(nullptr, std::declval<Args>()...));
 template <class T>
 struct Function {
   template <typename X = T, typename... Args>
-  static auto Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T>, forward_t<X, Args...>>;
+  static auto Apply(Args &&...args) -> std::enable_if_t<std::is_same_v<X, T>, forward_t<X, Args...>>;
 };
 
 struct PYNATIVE_EXPORT AutogradContext {
@@ -178,7 +178,7 @@ struct CppFunctionNode : public BackwardNode {
 
 template <class T>
 template <typename X, typename... Args>
-auto Function<T>::Apply(Args &&... args) -> std::enable_if_t<std::is_same_v<X, T>, forward_t<X, Args...>> {
+auto Function<T>::Apply(Args &&...args) -> std::enable_if_t<std::is_same_v<X, T>, forward_t<X, Args...>> {
   // create CppFunctionNode
   auto function_name = std::string("Function[") + GetFunctionTypeName(typeid(T).name()) + "]";
   MS_LOG(DEBUG) << function_name << " Begin Apply";
