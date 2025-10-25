@@ -18,7 +18,7 @@
 #include <map>
 #include <set>
 #include <utility>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "mindspore/ops/infer/sparse_matrix_mul.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_matrix_mul.cuh"
 

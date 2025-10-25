@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <string>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

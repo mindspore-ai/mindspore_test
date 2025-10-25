@@ -16,7 +16,7 @@
 
 #include "ir/value.h"
 
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 // Define python class for values.

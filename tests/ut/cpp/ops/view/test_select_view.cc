@@ -17,7 +17,7 @@
 #include "test_view.h"
 #include "ir/tensor_new.h"
 #include "mindspore/ops/view/selectview_strides_calc.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

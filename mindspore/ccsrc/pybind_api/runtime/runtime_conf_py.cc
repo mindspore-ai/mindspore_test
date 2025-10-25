@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 namespace py = pybind11;
 namespace mindspore {
 namespace runtime {

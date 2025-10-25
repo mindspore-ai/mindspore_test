@@ -21,7 +21,7 @@
 #include <utility>
 #include <complex>
 #include <functional>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 
 #include "mindspore/ops/infer/ops_func_impl/unique_consecutive.h"
 

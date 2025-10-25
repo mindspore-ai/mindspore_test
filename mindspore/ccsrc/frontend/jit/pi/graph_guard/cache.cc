@@ -18,7 +18,7 @@
 #include <utility>
 #include "frontend/jit/ps/pipeline.h"
 #include "frontend/jit/pi/utils/utils.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 
 namespace mindspore {
 namespace pijit {

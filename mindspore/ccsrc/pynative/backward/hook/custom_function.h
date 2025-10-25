@@ -23,7 +23,7 @@
 #include <vector>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 #include "mindspore/ccsrc/pynative/backward/grad_utils.h"
 
 namespace mindspore {

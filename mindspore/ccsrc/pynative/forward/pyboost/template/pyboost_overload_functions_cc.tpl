@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "ir/named.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "pynative/forward/pyboost/auto_generate/tensor_func_utils.h"
 #include "pynative/forward/pyboost/converter.h"
 #include "frontend/ir/arg_handler_py.h"

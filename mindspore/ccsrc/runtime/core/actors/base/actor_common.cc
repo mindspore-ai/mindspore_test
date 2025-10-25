@@ -30,7 +30,7 @@
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

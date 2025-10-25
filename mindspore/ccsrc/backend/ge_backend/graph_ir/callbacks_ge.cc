@@ -17,9 +17,9 @@
 #include "ir/param_info.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/shape_utils.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace callbacks {

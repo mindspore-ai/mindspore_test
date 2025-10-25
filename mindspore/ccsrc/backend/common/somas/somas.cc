@@ -32,10 +32,10 @@
 #include "utils/somas/somas_tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/thread_pool.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

@@ -18,7 +18,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"

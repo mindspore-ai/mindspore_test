@@ -27,7 +27,7 @@
 #include "ir/graph_utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"

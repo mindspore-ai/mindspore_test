@@ -63,7 +63,7 @@
 #include "mindspore/ccsrc/plugin/ascend/res_manager/mem_manager/ascend_memory_manager.h"
 #include "mindspore/ccsrc/runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "mindspore/ccsrc/plugin/ascend/res_manager/mem_manager/ascend_memory_pool.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/ccsrc/runtime/hardware_abstract/device_context/device_context.h"
 #include "mindspore/ccsrc/include/backend/common/ms_device_shape_transfer.h"
 

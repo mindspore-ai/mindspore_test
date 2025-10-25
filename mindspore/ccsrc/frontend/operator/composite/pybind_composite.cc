@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 #include "frontend/operator/composite/composite.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "frontend/operator/composite/list_operation.h"
 #include "frontend/operator/composite/dict_operation.h"
 #include "frontend/operator/composite/map.h"

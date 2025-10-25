@@ -24,7 +24,7 @@
 #include <functional>
 #include "backend/common/pass/ir_fusion/mc2_fusion.h"
 #include "backend/common/pass/common/gllo_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "op_def/math_ops.h"

@@ -24,7 +24,7 @@
 
 #include "utils/hash_map.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"

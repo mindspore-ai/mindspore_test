@@ -24,7 +24,7 @@
 
 #include "ir/anf.h"
 #include "ir/manager.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/ps/parse/parse_base.h"
 #include "abstract/abstract_value.h"
 #include "utils/log_adapter.h"

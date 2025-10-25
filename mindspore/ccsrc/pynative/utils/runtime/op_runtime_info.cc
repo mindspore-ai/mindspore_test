@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
 
 namespace mindspore::runtime {

@@ -15,7 +15,7 @@
  */
 
 #include "backend/ms_backend/graph_fusion/kernel_packet/kernel_packet_common_test_suite.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 
 namespace mindspore::graphkernel::test {

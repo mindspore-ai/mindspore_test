@@ -28,7 +28,7 @@
 #include "ops/op_def.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "tools/profiler/profiler.h"
 #include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/acl_ir/op_api_exec.h"

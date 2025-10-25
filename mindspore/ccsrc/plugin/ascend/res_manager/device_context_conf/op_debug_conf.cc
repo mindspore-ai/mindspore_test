@@ -18,7 +18,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 #include <nlohmann/json.hpp>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

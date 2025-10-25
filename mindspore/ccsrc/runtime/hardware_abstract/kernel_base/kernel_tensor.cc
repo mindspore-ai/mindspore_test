@@ -16,11 +16,11 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/kernel_tensor.h"
 #include "ir/format_utils.h"
-#include "include/common/utils/utils.h"
-#include "include/common/callback.h"
+#include "include/utils/utils.h"
+#include "include/utils/callback.h"
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "ir/dtype/tensor_type.h"
 
 namespace mindspore::kernel {

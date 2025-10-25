@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "include/backend/distributed/init.h"
 
 namespace mindspore {

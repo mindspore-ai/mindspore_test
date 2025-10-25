@@ -16,7 +16,7 @@
 #include <string>
 
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/anf.h"
 
 namespace mindspore::graphkernel::test {

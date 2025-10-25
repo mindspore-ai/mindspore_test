@@ -25,7 +25,7 @@
 #include "pynative/utils/base.h"
 #include "pynative/backward/top_cell.h"
 #include "frontend/jit/ps/resource.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace pynative {

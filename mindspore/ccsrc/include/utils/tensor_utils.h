@@ -21,7 +21,7 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "include/utils/visible.h"
-#include "include/utils/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace tensor {

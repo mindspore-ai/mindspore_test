@@ -25,7 +25,7 @@
 #include <vector>
 #include <utility>
 #include "pybind11/pybind11.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/jit/pi/external.h"
 #include "frontend/jit/pi/graph_build/parameter_manager.h"
 #include "frontend/jit/pi/graph_capture/graph_build.h"
@@ -48,8 +48,8 @@
 #include "frontend/jit/pi/graph_capture/code_generator.h"
 #include "utils/convert_utils_base.h"
 #include "frontend/jit/pi/eval_frame_hook.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/pynative/grad_state.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/pynative/grad_state.h"
 #include "tools/profiler/profiler.h"
 #include "frontend/jit/pi/utils/py_obj_registry.h"
 

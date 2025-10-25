@@ -31,7 +31,7 @@
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "frontend/jit/ps/parse/parse_base.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/ps/parse/function_block.h"
 
 namespace mindspore {

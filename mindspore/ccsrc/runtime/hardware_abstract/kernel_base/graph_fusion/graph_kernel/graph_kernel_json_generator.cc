@@ -27,7 +27,7 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "backend/ms_backend/graph_fusion/core/graph_builder.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_flags.h"
 #include "mindspore/ccsrc/utils/symbol_engine/symbol_engine_impl.h"

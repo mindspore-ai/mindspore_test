@@ -25,9 +25,9 @@
 #include "utils/log_adapter.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "mindspore/ops/op_def/image_op_name.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ms_exception.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 
 namespace mindspore::device::ascend {
 namespace {

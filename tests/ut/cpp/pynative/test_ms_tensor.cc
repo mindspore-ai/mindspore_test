@@ -20,7 +20,7 @@
 #include "mindspore/ccsrc/pyboost/custom/tensor.h"
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
-#include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
+#include "include/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/utils/pynative_utils.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
 #include "mindspore/ccsrc/frontend/ir/tensor_py.h"

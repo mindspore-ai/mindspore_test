@@ -21,7 +21,7 @@
 #include <string>
 
 #include "mindspore/ops/infer/ops_func_impl/matmul.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "mkldnn/mkl_cpu_kernel.h"
 #include "oneapi/dnnl/dnnl.hpp"

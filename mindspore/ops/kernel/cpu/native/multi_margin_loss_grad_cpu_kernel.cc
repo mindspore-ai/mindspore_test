@@ -17,7 +17,7 @@
 #include "kernel/cpu/native/multi_margin_loss_grad_cpu_kernel.h"
 
 #include "mindspore/ops/infer/grad/multi_margin_loss_grad.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

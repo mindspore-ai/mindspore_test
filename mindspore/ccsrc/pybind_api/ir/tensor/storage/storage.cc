@@ -16,7 +16,7 @@
 #include "pybind_api/ir/tensor/storage/storage.h"
 #include <utility>
 #include <string>
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 Storage::~Storage() { storage_base_ = nullptr; }

@@ -21,7 +21,7 @@
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "plugin/ascend/res_manager/collective/multi_ascend_collective_comm_lib.h"
 

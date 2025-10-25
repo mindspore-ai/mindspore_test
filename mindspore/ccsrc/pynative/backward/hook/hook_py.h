@@ -21,8 +21,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
-#include "include/common/visible.h"
-#include "mindspore/ccsrc/include/common/pynative/hook.h"
+#include "include/utils/visible.h"
+#include "include/utils/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;

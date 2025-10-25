@@ -21,7 +21,7 @@
 
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "tools/profiler/profiling_framework_data.h"
 #include "tools/profiler/profiling_python.h"
 #include "plugin/ascend/profiler/mstx/mstx_dispatcher.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <functional>
 
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/tensor.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"

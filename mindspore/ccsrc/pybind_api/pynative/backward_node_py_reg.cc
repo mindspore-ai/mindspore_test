@@ -16,8 +16,8 @@
 
 #include "pybind_api/pynative/backward_node_py.h"
 #include <memory>
-#include "include/common/utils/exception.h"
-#include "include/common/utils/pyobj_manager.h"
+#include "include/utils/exception.h"
+#include "include/utils/pyobj_manager.h"
 
 namespace mindspore::pynative::autograd {
 namespace py = pybind11;

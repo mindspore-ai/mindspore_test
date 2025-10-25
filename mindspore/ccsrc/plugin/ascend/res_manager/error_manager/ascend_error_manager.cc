@@ -17,7 +17,7 @@
 #include "plugin/ascend/res_manager/error_manager/ascend_error_manager.h"
 #include <mutex>
 #include <vector>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/device_type.h"
 #include "ir/tensor_new.h"

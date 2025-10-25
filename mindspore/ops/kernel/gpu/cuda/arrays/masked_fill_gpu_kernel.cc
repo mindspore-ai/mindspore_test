@@ -21,7 +21,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "abstract/utils.h"
 #include "ops_utils/op_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

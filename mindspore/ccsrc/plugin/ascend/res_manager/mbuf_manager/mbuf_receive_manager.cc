@@ -25,7 +25,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "include/common/env_vars.h"
+#include "include/utils/env_vars.h"
 #include "plugin/ascend/res_manager/device_context_conf/op_debug_conf.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"

@@ -21,7 +21,7 @@
 #include "kernel/cpu/eigen/svd_cpu_kernel_function.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {

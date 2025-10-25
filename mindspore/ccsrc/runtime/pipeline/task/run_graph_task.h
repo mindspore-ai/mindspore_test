@@ -21,7 +21,7 @@
 #include <memory>
 #include <utility>
 
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/stub_tensor.h"
 #include "runtime/pipeline/task/task.h"
 #include "runtime/pipeline/visible.h"
 

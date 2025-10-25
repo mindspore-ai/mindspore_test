@@ -23,7 +23,7 @@
 
 #include "abstract/dshape.h"
 #include "ir/core_ops_primitive.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/collective/collective_manager.h"

@@ -22,7 +22,7 @@
 #include <vector>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace parallel {

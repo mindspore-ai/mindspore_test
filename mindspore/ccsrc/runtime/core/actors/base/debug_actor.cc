@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include "utils/log_adapter.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 
 namespace mindspore {
 namespace runtime {

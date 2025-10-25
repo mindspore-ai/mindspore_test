@@ -26,8 +26,8 @@
 #include <set>
 #include "ir/tensor_new.h"
 #include "ir/graph_utils.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
@@ -42,7 +42,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore::opt {
 namespace {

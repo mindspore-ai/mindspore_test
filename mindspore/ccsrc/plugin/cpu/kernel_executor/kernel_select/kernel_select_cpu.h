@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "ir/anf.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"

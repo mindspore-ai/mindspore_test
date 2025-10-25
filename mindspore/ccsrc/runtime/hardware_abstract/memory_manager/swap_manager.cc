@@ -19,8 +19,8 @@
 #include <functional>
 #include <string>
 
-#include "include/common/utils/offload_context.h"
-#include "include/common/debug/common.h"
+#include "include/utils/offload_context.h"
+#include "include/utils/common.h"
 #include "utils/file_utils.h"
 #include "utils/temp_file_manager.h"
 

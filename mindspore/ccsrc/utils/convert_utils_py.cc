@@ -42,7 +42,7 @@
 #include "include/utils/fallback.h"
 #include "include/utils/stub_tensor.h"
 #include "include/utils/convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/utils/tensor_py.h"
 #include "include/utils/tensor_py_wrapper.h"
 

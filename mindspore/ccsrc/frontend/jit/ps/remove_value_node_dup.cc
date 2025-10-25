@@ -19,10 +19,10 @@
 #include "ir/func_graph.h"
 #include "ir/tensor.h"
 #include "ir/manager.h"
-#include "include/common/utils/cse.h"
+#include "include/utils/cse.h"
 #include "utils/log_adapter.h"
 #include "utils/hashing.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 
 namespace mindspore {
 namespace pipeline {

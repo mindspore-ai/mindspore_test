@@ -15,10 +15,10 @@
  */
 
 #include <vector>
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "include/runtime/utils/runtime_conf/runtime_env.h"
 #include "tools/error_handler/exit_handler.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/core/graph_scheduler/base/parameter_store.h"

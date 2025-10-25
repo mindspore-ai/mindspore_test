@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/csr_sparse_matrix_to_dense.cuh"

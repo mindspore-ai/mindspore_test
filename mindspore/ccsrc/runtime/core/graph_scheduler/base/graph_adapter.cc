@@ -21,9 +21,9 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "ir/dtype/tensor_type.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"

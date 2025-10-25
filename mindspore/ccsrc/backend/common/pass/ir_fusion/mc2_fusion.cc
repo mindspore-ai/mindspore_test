@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "base/base.h"
 #include "backend/common/pass/common/gllo_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "op_def/math_ops.h"

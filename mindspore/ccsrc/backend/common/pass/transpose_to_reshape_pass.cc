@@ -16,7 +16,7 @@
 #include "backend/common/pass/transpose_to_reshape_pass.h"
 #include <vector>
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 

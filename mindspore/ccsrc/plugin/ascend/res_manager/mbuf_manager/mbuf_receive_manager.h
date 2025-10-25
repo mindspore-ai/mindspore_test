@@ -35,7 +35,7 @@
 #include "ir/tensor.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "plugin/ascend/res_manager/visible.h"
 
 #ifndef SECUREC_MEM_MAX_LEN

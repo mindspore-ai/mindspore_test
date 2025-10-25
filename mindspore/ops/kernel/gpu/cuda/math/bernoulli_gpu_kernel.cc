@@ -24,7 +24,7 @@
 #include "include/curand.h"
 #include "mindspore/ops/infer/bernoulli.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/bernoulli_impl.cuh"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace profiler {

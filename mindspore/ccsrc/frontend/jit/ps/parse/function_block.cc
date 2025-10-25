@@ -22,8 +22,8 @@
 #include <queue>
 
 #include "frontend/operator/ops.h"
-#include "include/common/utils/python_adapter.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/python_adapter.h"
+#include "include/utils/utils.h"
 #include "ir/cell.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

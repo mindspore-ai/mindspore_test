@@ -22,7 +22,7 @@
 #include "plugin/ascend/res_manager/hccl_adapter/hccl_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "tools/error_handler/error_config.h"
 
 namespace mindspore {

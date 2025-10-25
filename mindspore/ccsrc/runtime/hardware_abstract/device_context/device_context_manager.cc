@@ -29,7 +29,7 @@
 #include "utils/ms_context.h"
 #include "utils/dlopen_macro.h"
 #include "utils/os.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 #include "utils/ms_exception.h"
 

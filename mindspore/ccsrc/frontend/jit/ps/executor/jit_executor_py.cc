@@ -28,8 +28,8 @@
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "utils/phase.h"
-#include "include/common/fallback.h"
-#include "include/common/utils/compile_cache_context.h"
+#include "include/utils/fallback.h"
+#include "include/utils/compile_cache_context.h"
 #include "backend/backend_manager/backend_manager.h"
 
 namespace mindspore {

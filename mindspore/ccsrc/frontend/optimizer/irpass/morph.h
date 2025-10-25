@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_MORPH_H_
 
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/anf_visitor.h"

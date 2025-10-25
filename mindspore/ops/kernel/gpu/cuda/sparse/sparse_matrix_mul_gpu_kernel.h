@@ -22,7 +22,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "kernel/gpu/cuda_impl/cuda_class/cuda_class_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "kernel/gpu/gpu_kernel.h"

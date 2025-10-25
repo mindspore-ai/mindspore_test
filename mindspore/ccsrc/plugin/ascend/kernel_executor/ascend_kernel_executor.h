@@ -26,7 +26,7 @@
 #include <tuple>
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/memory_manager/memory_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

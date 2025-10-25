@@ -28,8 +28,8 @@
 
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
-#include "include/common/utils/cse.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/cse.h"
+#include "include/utils/convert_utils.h"
 #include "frontend/optimizer/cse_pass.h"
 namespace mindspore {
 namespace opt {

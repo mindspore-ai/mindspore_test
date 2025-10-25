@@ -27,7 +27,7 @@
 #include "kernel/ascend/internal/internal_kernel_mod.h"
 #include "kernel/ascend/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/ms_factory.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
 #include "op_def/math_op_name.h"

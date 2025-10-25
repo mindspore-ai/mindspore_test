@@ -26,7 +26,7 @@
 #include "utils/trace_base.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/runtime/hardware_abstract/kernel_base/oplib/oplib.h"
 #include "ir/tensor_new.h"

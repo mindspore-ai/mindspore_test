@@ -17,11 +17,11 @@
 
 #include <vector>
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ops_utils/op_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace opt {

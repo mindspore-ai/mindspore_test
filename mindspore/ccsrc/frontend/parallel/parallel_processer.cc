@@ -54,7 +54,7 @@
 #include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -65,7 +65,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 
 using mindspore::tensor::Tensor;

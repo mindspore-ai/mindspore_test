@@ -16,7 +16,7 @@
 
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

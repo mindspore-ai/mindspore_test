@@ -19,7 +19,7 @@
 #include "include/utils/convert_utils_py.h"
 #include "include/utils/tensor_py.h"
 #include "pybind11/pytypes.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace {

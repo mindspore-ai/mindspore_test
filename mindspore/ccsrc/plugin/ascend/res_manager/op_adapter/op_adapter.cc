@@ -23,12 +23,12 @@
 #include "utils/check_convert_utils.h"
 #include "op_proto/inc/split_combination_ops.h"
 #include "graph/operator_factory.h"
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/utils.h"
 #include "plugin/ascend/res_manager/op_adapter/io_format_map.h"
 #include "plugin/ascend/res_manager/op_adapter/transform_util.h"
 #include "utils/anf_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore::device::ascend {
 ge::graphStatus CustomAkgOpInferFunc(ge::Operator &op);

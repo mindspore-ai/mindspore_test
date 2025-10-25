@@ -22,8 +22,8 @@
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/convert_utils.h"
 
 /* This pass changes the following pattern.
 

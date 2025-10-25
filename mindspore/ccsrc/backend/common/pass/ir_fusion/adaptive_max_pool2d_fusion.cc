@@ -22,7 +22,7 @@
 #include "abstract/dshape.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/value.h"

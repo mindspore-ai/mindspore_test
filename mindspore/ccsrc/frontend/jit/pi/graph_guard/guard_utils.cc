@@ -23,15 +23,15 @@
 #include "pybind11/pybind11.h"
 #include "frontend/operator/primitive_py.h"
 #include "pybind_api/ir/cell_py.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/jit/pi/utils/utils.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/stub_tensor.h"
 #include "frontend/jit/pi/graph_guard/strategy.h"
 #include "frontend/jit/pi/graph_guard/guard.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
 #include "frontend/jit/pi/graph_guard/guard_fail_reason.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

@@ -22,7 +22,7 @@
 #include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "mindapi/base/format.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

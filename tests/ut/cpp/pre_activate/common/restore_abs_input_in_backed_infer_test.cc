@@ -20,7 +20,7 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "ir/primitive.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/backend/optimizer/helper.h"

@@ -20,7 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/ops/infer/grad/lrn_grad.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/local_response_norm_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"

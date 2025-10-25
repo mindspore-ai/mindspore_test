@@ -17,7 +17,7 @@
 #include <vector>
 #include "common/common_test.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 using namespace std;
 namespace mindspore {

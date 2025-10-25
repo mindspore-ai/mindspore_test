@@ -25,7 +25,7 @@
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ordered_map.h"
 
 namespace mindspore::opt::irpass {

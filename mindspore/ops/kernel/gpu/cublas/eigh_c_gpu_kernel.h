@@ -25,7 +25,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/real_to_complex_impl.cuh"

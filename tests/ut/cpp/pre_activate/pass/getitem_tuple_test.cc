@@ -19,7 +19,7 @@
 #include "frontend/operator/ops.h"
 #include "ir/manager.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "backend/common/pass/getitem_tuple.h"
 

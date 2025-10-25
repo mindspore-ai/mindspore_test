@@ -34,7 +34,7 @@
 #include "frontend/jit/ps/resource.h"
 #include "frontend/jit/ps/parse/parse.h"
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"

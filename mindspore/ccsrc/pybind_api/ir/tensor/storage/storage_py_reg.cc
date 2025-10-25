@@ -17,8 +17,8 @@
 #include <utility>
 #include <vector>
 #include "pybind_api/ir/tensor/storage/storage_py.h"
-#include "include/common/utils/exception.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/exception.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 static Py_ssize_t StoragePy_Length(StoragePy *self) {

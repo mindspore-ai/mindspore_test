@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 #include "ir/anf.h"
 #include "base/base_ref.h"
 #include "backend/ms_backend/graph_partition.h"

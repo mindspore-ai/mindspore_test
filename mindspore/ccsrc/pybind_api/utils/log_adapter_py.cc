@@ -18,7 +18,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind_api/pybind_patch.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/python_utils.h"
+#include "include/utils/python_utils.h"
 #include "utils/trace_base.h"
 
 namespace py = pybind11;

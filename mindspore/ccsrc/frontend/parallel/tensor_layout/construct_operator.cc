@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <memory>
 #include "frontend/parallel/ops_info/ops_utils.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "frontend/parallel/device_manager.h"
 
 namespace mindspore {

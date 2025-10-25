@@ -20,7 +20,7 @@
 #include <memory>
 #include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {

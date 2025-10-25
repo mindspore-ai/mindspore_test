@@ -15,7 +15,7 @@
  */
 #include "pybind11/pybind11.h"
 #include "frontend/jit/ps/pipeline.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 namespace py = pybind11;

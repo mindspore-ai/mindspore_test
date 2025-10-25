@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

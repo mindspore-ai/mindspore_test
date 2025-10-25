@@ -19,7 +19,7 @@
 #include <map>
 #include <set>
 #include <utility>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "mindspore/ops/infer/sparse_matrix_mul.h"
 
 namespace mindspore {

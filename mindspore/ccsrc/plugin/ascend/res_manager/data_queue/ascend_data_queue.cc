@@ -20,10 +20,10 @@
 #include <utility>
 #include "graph/types.h"
 #include "include/runtime/hardware_abstract/data_queue/data_queue_mgr.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_rt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/ascend/res_manager/symbol_interface/symbol_utils.h"

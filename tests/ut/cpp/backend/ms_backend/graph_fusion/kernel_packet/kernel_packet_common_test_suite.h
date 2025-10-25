@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/ms_backend/graph_fusion/kernel_packet/symbol_engine_extender.h"
 #include "backend/ms_backend/graph_fusion/convert_call_to_prim.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "abstract/symbolic_shape/utils.h"
 

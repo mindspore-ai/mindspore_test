@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/graph_kernel_json_generator.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 
 namespace mindspore::graphkernel {
 std::string CommonDimInfo::ToString() {

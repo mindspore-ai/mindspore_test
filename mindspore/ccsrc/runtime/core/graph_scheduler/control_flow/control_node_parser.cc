@@ -27,7 +27,7 @@
 #include "runtime/core/actors/base/actor_common.h"
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"

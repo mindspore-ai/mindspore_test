@@ -23,7 +23,7 @@
 #include "mindspore/ops/infer/ops_func_impl/maximum_grad.h"
 #include "mindspore/ops/infer/ops_func_impl/minimum_grad.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

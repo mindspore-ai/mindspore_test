@@ -20,8 +20,8 @@
 #include <cstdlib>
 #include "utils/log_adapter.h"
 #include "utils/distributed_meta.h"
-#include "include/common/utils/offload_context.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/offload_context.h"
+#include "include/utils/comm_manager.h"
 
 namespace mindspore {
 namespace device {

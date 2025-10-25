@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "mindspore/ops/infer/grad/kl_div_loss_grad.h"
 #include "mindspore/ops/op_def/op_name.h"
 

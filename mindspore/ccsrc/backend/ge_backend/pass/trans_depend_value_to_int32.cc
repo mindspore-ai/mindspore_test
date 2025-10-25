@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "ir/tensor_new.h"
 #include "ir/dtype/tensor_type.h"

@@ -23,13 +23,13 @@
 #include <memory>
 
 #include "abstract/abstract_value.h"
-#include "include/common/utils/stub_tensor.h"
+#include "include/utils/stub_tensor.h"
 #include "ir/anf.h"
 #include "ir/device_type.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/pyboost/functions/base.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace pynative {

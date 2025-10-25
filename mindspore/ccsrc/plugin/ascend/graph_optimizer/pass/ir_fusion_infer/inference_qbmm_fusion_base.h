@@ -23,8 +23,8 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "include/api/data_type.h"
 
 namespace mindspore {

@@ -20,8 +20,8 @@
 #include <algorithm>
 #include <complex>
 
-#include "include/common/utils/convert_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/convert_utils.h"
+#include "include/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_util.h"
 #include "ir/device_address_maker.h"
@@ -29,7 +29,7 @@
 #include "utils/misc.h"
 
 #ifndef ENABLE_LITE_ACL
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #endif
 
 namespace mindspore::device::ascend {

@@ -28,7 +28,7 @@
 #include "backend/ms_backend/graph_fusion/model/graph_builder.h"
 #include "backend/ms_backend/graph_fusion/model/node.h"
 #include "backend/ms_backend/graph_fusion/model/op_node.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

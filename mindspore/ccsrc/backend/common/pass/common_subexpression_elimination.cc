@@ -21,8 +21,8 @@
 #include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"

@@ -24,7 +24,7 @@
 
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ir/func_graph.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "utils/ordered_set.h"
 #include "utils/trace_info.h"

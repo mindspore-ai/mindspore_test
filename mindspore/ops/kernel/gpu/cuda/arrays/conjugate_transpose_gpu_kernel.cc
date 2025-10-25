@@ -28,7 +28,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "mindspore/ops/infer/conjugate_transpose.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/conjugate_transpose_impl.cuh"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

@@ -20,8 +20,8 @@
 #include <string>
 #include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/callbacks.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/callbacks.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"

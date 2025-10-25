@@ -23,12 +23,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "frontend/jit/ps/parse/data_converter.h"
 #include "pynative/utils/pynative_utils.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/utils/tensor_utils.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/tensor_utils.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/core/include/utils/value_utils.h"
 

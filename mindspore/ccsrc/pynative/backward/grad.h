@@ -25,13 +25,13 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include "include/common/pynative/grad_state.h"
+#include "include/utils/pynative/grad_state.h"
 #include "pynative/utils/base.h"
 #include "pynative/backward/top_cell.h"
 #include "pynative/backward/jit_grad/jit_grad.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/backward/op_grad/bprop_task.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 #include "frontend/jit/ps/resource.h"
 #include "pynative/backward/hook/custom_function.h"
 

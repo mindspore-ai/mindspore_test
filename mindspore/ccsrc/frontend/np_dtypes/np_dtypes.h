@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_NP_DTYPE_NP_DTYPES_H_
 #include <string>
 #include "pybind11/pybind11.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {

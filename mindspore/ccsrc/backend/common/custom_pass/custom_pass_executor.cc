@@ -20,9 +20,9 @@
 #include <string>
 #include "backend/common/custom_pass/custom_pass_plugin.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 #ifdef ENABLE_DUMP_IR
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

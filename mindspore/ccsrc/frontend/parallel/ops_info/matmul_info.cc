@@ -25,8 +25,8 @@
 #include <vector>
 
 #include "ir/value.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/utils.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_manager.h"

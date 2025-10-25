@@ -30,7 +30,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "pynative/utils/base.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 #include "pynative/backward/hook/custom_function.h"
 #include "pynative/backward/hook/function_py.h"
 #include "pynative/backward/op_grad/func_builder.h"

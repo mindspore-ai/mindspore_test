@@ -23,8 +23,8 @@
 #include <algorithm>
 #include <set>
 #include "pynative/utils/pynative_utils.h"
-#include "include/common/utils/primitive_utils.h"
-#include "include/common/pynative/common_utils.h"
+#include "include/utils/primitive_utils.h"
+#include "include/utils/pynative/common_utils.h"
 #include "frontend/jit/ps/pass.h"
 #include "ir/func_graph_cloner.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

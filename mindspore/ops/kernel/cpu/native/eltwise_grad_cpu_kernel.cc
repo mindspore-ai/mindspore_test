@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 
 #include "nnacl/fp32_grad/activation_grad_fp32.h"
 #include "nnacl/fp32_grad/arithmetic_grad.h"

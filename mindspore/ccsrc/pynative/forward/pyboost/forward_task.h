@@ -24,7 +24,7 @@
 #include "runtime/pipeline/task/task.h"
 #include "pynative/utils/base.h"
 #include "backend/common/kernel_graph/session_basic.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace pynative {

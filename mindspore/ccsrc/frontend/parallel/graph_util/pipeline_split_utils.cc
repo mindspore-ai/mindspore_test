@@ -25,7 +25,7 @@
 #include <unordered_map>
 
 #include "abstract/abstract_function.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/comm_manager.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/node_info.h"
@@ -35,8 +35,8 @@
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/solve_flash_attention_score_for_seqpipe.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/utils.h"
 #include "ir/value.h"
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"

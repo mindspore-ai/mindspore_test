@@ -37,8 +37,8 @@
 #include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/comm_manager.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/comm_manager.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

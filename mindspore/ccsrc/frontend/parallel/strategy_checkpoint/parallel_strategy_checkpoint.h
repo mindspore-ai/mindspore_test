@@ -29,8 +29,8 @@
 #include <utility>
 #include <vector>
 
-#include "include/common/utils/parallel_context.h"
-#include "include/common/visible.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/visible.h"
 #include "ir/dtype/type.h"
 #include "utils/hash_map.h"
 

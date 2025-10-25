@@ -28,7 +28,7 @@
 #include <unordered_set>
 #include "abstract/abstract_value.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "include/common/pynative/variable.h"
+#include "include/utils/pynative/variable.h"
 
 namespace mindspore::pynative::autograd {
 using TensorPtr = tensor::TensorPtr;

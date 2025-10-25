@@ -24,7 +24,7 @@
 #include <unordered_map>
 
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 
 namespace mindspore {
 namespace profiler {

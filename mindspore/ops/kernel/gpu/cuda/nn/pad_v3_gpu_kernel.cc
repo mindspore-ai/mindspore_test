@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/cuda/nn/pad_v3_gpu_kernel.h"
 #include <utility>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindapi/base/type_id.h"
 namespace mindspore {
 namespace kernel {

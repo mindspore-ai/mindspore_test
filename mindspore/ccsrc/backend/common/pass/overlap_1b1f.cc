@@ -22,9 +22,9 @@
 #include <algorithm>
 
 #include "mindspore/ops/op_def/other_ops.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "mindspore/core/include/utils/ms_context.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 
 namespace mindspore {
 namespace opt {

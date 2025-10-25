@@ -15,9 +15,9 @@
  */
 
 #include "plugin/cpu/res_manager/mem_manager/cpu_memory_manager.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 namespace mindspore {
 namespace device {
 namespace cpu {

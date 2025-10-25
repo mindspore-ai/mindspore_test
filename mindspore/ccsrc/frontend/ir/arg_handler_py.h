@@ -22,7 +22,7 @@
 #include <vector>
 #include <Python.h>
 #include "ir/scalar.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 

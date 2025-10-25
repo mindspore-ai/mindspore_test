@@ -29,7 +29,7 @@
 #include "ir/func_graph.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/operator/ops.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 /* namespace to support opt */

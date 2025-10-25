@@ -21,7 +21,7 @@
 
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/cpu/native/fill_cpu_kernel.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {

@@ -27,7 +27,7 @@
 #include "pybind11/pybind11.h"
 #include "ir/tensor.h"
 #include "include/utils/visible.h"
-#include "include/utils/utils/stub_tensor.h"
+#include "include/utils/stub_tensor.h"
 
 namespace py = pybind11;
 

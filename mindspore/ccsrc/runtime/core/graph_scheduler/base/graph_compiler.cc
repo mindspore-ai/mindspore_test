@@ -26,7 +26,7 @@
 #include "runtime/core/graph_scheduler/base/graph_scheduler.h"
 #include "backend/common/device_address_utils.h"
 #include "ir/device_address.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/convert_utils.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/common/pass_manager/common_backend_optimization.h"
 #include "backend/common/custom_pass/custom_pass_executor.h"
@@ -38,7 +38,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "base/base_ref_utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -51,7 +51,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 #include "tools/profiler/profiler.h"
-#include "include/common/utils/compile_cache_context.h"
+#include "include/utils/compile_cache_context.h"
 #include "frontend/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

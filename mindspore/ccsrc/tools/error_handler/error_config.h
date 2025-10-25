@@ -22,7 +22,7 @@
 #include "include/backend/visible.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 constexpr auto kStatusRecord = "HCCL_STATUS_SAVE";

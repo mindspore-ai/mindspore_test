@@ -23,7 +23,7 @@
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/memory/mem_pool/mem_tracker.h"
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
 #include "backend/ge_backend/utils/device_address_utils.h"

@@ -23,7 +23,7 @@
 #include <utility>
 #include <tuple>
 #include "frontend/jit/pi/python_adapter/pydef.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "frontend/jit/pi/graph_guard/trace.h"
 
 namespace mindspore {

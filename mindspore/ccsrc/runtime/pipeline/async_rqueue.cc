@@ -18,7 +18,7 @@
 
 #include <utility>
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/common/utils/signal_util.h"
+#include "include/utils/signal_util.h"
 #endif
 #include "include/runtime/utils/runtime_conf/thread_bind_core.h"
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"

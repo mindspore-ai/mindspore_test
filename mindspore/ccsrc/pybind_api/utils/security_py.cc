@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/utils.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/utils.h"
+#include "include/utils/pybind_api/api_register.h"
 
 namespace mindspore {
 // Get whether security is enable

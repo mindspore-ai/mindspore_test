@@ -15,7 +15,7 @@
  */
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel/fake_abstract_shape.h"
 #include <sstream>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "runtime/hardware_abstract/visible.h"
 
 namespace mindspore::graphkernel {

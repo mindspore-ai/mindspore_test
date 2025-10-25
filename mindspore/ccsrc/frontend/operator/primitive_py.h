@@ -29,7 +29,7 @@
 #include "ir/primitive.h"
 #include "ir/signature.h"
 #include "pybind11/pybind11.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 
 namespace py = pybind11;
 namespace mindspore {

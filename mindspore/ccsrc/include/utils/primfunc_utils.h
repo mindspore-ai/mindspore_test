@@ -21,7 +21,7 @@
 #include <vector>
 #include "ops/op_def.h"
 #include "abstract/abstract_value.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore::ops {
 COMMON_EXPORT bool ValidateArgsType(const AbstractBasePtr &abs_arg, OP_DTYPE type_arg);

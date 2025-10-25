@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 #include "base/base.h"
-#include "include/utils/utils/contract.h"
+#include "include/utils/contract.h"
 #include "include/utils/visible.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"

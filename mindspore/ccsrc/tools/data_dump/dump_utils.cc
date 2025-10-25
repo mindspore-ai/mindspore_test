@@ -32,9 +32,9 @@
 #include "include/backend/debug/tensor_data.h"
 #endif
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
-#include "include/common/debug/common.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
+#include "include/utils/common.h"
 #include "include/runtime/hardware_abstract/kernel_base/device_tensor_store.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

@@ -20,7 +20,7 @@
 #include "tools/data_dump/utils.h"
 #include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/debugger/debugger.h"
-#include "include/common/debug/common.h"
+#include "include/utils/common.h"
 namespace {
 constexpr auto kInput = "input";
 constexpr auto kOutput = "output";

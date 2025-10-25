@@ -23,7 +23,7 @@
 #include "ir/func_graph.h"
 #include "ir/dtype/tensor_type.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"

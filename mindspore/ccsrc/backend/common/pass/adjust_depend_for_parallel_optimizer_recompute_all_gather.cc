@@ -18,11 +18,11 @@
 #include <algorithm>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

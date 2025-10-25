@@ -32,7 +32,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/kernel_constants.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_types.cuh"
 
 namespace mindspore {

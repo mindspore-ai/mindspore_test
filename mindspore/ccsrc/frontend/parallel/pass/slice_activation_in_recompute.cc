@@ -24,8 +24,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/utils.h"
 #include "frontend/parallel/tensor_layout/construct_operator.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/step_parallel.h"

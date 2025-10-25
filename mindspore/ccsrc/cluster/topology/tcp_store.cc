@@ -15,7 +15,7 @@
  */
 #include "include/backend/distributed/cluster/tcp_store.h"
 #include "utils/ms_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace distributed {

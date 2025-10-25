@@ -21,7 +21,7 @@
 #include <sstream>
 #include <cstdlib>
 #include "nlohmann/json.hpp"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_utils.h"
 
 namespace {

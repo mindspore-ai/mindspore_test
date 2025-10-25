@@ -16,7 +16,7 @@
 
 #include "runtime/core/graph_executor/pipeline/async_lf_queue.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
-#include "include/common/utils/signal_util.h"
+#include "include/utils/signal_util.h"
 #endif
 #include "utils/ms_exception.h"
 #include "tools/profiler/profiler.h"

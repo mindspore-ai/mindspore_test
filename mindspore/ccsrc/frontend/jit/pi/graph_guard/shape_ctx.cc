@@ -19,7 +19,7 @@
 #include <string>
 #include "ir/tensor.h"
 #include "frontend/jit/pi/python_adapter/pydef.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 
 namespace py = pybind11;
 

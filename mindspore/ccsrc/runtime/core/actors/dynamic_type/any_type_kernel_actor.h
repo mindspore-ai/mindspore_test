@@ -24,7 +24,7 @@
 #include <vector>
 #include "runtime/core/actors/base/super_kernel_actor.h"
 #include "runtime/core/actors/base/actor_common.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "ir/anf.h"
 
 namespace mindspore {

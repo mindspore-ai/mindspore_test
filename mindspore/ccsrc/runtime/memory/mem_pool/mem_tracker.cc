@@ -31,7 +31,7 @@
 #include "utils/ms_context.h"
 #include "utils/distributed_meta.h"
 #include "ir/device_type.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace device {

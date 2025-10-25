@@ -35,7 +35,7 @@
 #include "utils/hash_map.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "async/spinlock.h"
 #include "tools/profiler/profiling.h"
 

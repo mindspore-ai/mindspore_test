@@ -23,7 +23,7 @@
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/fill_impl.cuh"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {

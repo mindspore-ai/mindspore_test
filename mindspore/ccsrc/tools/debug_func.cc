@@ -22,7 +22,7 @@
 #include <set>
 #include <algorithm>
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "tools/data_dump/cpu_e2e_dump.h"
 #include "tools/data_dump/data_dump.h"
 #include "tools/silent_detect/checksum/checksum.h"

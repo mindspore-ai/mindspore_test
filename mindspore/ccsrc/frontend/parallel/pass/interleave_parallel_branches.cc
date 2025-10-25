@@ -32,7 +32,7 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/pass/interleave_branches_utils.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

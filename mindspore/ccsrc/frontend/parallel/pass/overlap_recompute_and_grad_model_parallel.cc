@@ -23,8 +23,8 @@
 #include <queue>
 
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/utils.h"
 #include "ir/func_graph_flag.h"
 #include "utils/convert_utils_base.h"
 #include "frontend/parallel/step_parallel.h"

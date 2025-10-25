@@ -27,7 +27,7 @@
 #include "mindspore/ccsrc/utils/ir_dump/draw.h"
 #include "frontend/operator/ops.h"
 #include "frontend/jit/ps/static_analysis/static_analysis.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 #include "frontend/parallel/auto_parallel/stage_compute.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"

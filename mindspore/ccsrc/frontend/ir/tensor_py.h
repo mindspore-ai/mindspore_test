@@ -25,8 +25,8 @@
 #include "frontend/ir/dlpack_utils.h"
 
 #include "ir/tensor.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/visible.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/visible.h"
 #include "frontend/np_dtypes/np_dtypes.h"
 
 namespace py = pybind11;

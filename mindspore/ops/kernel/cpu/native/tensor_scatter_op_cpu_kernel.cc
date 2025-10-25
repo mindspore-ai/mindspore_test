@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 
 #include "include/runtime/hardware_abstract/kernel_base/common_utils.h"
 #include "utils/profile.h"

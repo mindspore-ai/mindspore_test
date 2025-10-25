@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "backend/ms_backend/graph_fusion/core/split_umonad.h"
 #include "backend/ms_backend/graph_fusion/substitute_dropout.h"
 #include "backend/ms_backend/graph_fusion/graph_kernel_helper.h"

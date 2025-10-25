@@ -20,9 +20,9 @@
 #include <utility>
 #include <map>
 #include <unordered_map>
-#include "include/common/utils/tensor_py.h"
-#include "include/common/pynative/adapter.h"
-#include "include/common/pynative/hook.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/pynative/adapter.h"
+#include "include/utils/pynative/hook.h"
 #include "frontend/jit/ps/pipeline.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/backward/grad_utils.h"

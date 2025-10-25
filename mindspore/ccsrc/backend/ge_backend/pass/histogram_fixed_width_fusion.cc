@@ -17,8 +17,8 @@
 #include "backend/ge_backend/pass/histogram_fixed_width_fusion.h"
 
 #include <memory>
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/convert_utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/convert_utils.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 

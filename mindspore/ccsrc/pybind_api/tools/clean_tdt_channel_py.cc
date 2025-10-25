@@ -16,7 +16,7 @@
 #include <utility>
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
 
 namespace mindspore {

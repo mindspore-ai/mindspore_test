@@ -16,7 +16,7 @@
 #include "backend/ge_backend/pass/bce_with_logits_loss_for_ge.h"
 #include <vector>
 #include <memory>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"

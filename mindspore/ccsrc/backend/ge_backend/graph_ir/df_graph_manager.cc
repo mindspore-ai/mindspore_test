@@ -21,11 +21,11 @@
 #include "backend/ge_backend/graph_ir/aoe_util.h"
 #include "utils/ms_context.h"
 #ifndef ENABLE_LITE_ACL
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #endif
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/debug/common.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/common.h"
+#include "include/utils/utils.h"
 
 namespace mindspore::backend::ge_backend {
 DfGraphWrapper::DfGraphWrapper(const std::string &name, const int &id, const DfGraphPtr &graph_ptr,

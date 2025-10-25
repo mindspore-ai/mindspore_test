@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 #include <list>
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 

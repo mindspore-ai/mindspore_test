@@ -21,7 +21,7 @@
 #include <tuple>
 #include <utility>
 #include <nlohmann/json.hpp>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/graph_ir/utils.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"

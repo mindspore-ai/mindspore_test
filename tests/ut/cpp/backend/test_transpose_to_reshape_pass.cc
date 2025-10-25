@@ -17,7 +17,7 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/common_test.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "backend/common/pass/transpose_to_reshape_pass.h"

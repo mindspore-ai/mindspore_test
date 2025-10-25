@@ -26,7 +26,7 @@
 #include <functional>
 #include <algorithm>
 #include "kernel/gpu/gpu_kernel.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {

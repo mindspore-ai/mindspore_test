@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/func_graph.h"
 #include "utils/ms_context.h"
-#include "include/common/callback.h"
+#include "include/utils/callback.h"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/graph_kernel_flags.h"
 #include "backend/ms_backend/graph_fusion/add_atomic_clean.h"
 #include "backend/ms_backend/graph_fusion/add_stitch_atomic_clean_gpu.h"

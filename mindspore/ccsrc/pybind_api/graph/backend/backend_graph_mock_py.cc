@@ -24,9 +24,9 @@
 #include "mindspore/ccsrc/frontend/jit/ps/pipeline.h"
 #include "mindspore/ccsrc/frontend/jit/ps/action.h"
 #include "mindspore/ccsrc/frontend/jit/ps/parse/data_converter.h"
-#include "include/common/utils/python_adapter.h"
-#include "include/common/utils/tensor_py.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/python_adapter.h"
+#include "include/utils/tensor_py.h"
+#include "include/utils/pybind_api/api_register.h"
 #ifdef ENABLE_DUMP_IR
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #endif

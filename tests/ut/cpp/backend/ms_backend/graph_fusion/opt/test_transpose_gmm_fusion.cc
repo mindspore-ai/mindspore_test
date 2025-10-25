@@ -18,7 +18,7 @@
 
 #include "backend/ms_backend/graph_fusion/common/graph_kernel_common_test_suite.h"
 #include "abstract/abstract_value.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "common/graph_optimizer_test_framework.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "backend/ms_backend/graph_fusion/transpose_matmul_fusion.h"

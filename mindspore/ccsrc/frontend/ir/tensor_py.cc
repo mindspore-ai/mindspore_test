@@ -21,13 +21,13 @@
 #include <map>
 
 #include "pybind11/complex.h"
-#include "include/common/utils/convert_utils_py.h"
+#include "include/utils/convert_utils_py.h"
 
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "utils/cache_embedding_hashmap_struct.h"
-#include "include/common/utils/python_adapter.h"
+#include "include/utils/python_adapter.h"
 #include "tools/profiler/profiler.h"
-#include "include/common/pynative/adapter.h"
+#include "include/utils/pynative/adapter.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"

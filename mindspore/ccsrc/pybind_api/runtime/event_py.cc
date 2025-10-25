@@ -19,7 +19,7 @@
 #include "pynative/utils/runtime/task/device_task.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/ms_context.h"
-#include "include/common/pybind_api/api_register.h"
+#include "include/utils/pybind_api/api_register.h"
 #include "pynative/forward/pyboost/forward_task.h"
 #include "pynative/utils/pynative_utils.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"

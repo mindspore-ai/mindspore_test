@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "include/common/utils/callbacks.h"
+#include "include/utils/callbacks.h"
 #include <map>
 #include <string>
 #include <memory>
 #include "pybind11/pybind11.h"
-#include "include/common/utils/python_adapter.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/python_adapter.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace callbacks {

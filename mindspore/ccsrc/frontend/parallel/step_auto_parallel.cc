@@ -42,7 +42,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/parallel_context.h"
 #include "ir/anf.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"

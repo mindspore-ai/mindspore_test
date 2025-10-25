@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <numeric>
 #include <memory>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"

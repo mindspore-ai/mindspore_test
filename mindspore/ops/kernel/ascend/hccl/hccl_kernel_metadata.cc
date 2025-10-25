@@ -24,11 +24,11 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "include/backend/common/ms_device_shape_transfer.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "kernel/ascend/hccl/hcom_util.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/parallel_context.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
 
 namespace mindspore {
 namespace kernel {

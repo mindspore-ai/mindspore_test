@@ -20,7 +20,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "utils/check_convert_utils.h"
 #include "plugin/ascend/res_manager/op_adapter/op_adapter_base.h"
 #include "plugin/ascend/res_manager/op_adapter/transform_util.h"

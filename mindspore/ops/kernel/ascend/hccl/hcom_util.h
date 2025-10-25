@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include "hccl/base.h"
-#include "include/common/utils/contract.h"
+#include "include/utils/contract.h"
 #include "hccl/hccl_types.h"
 #include "runtime/hardware_abstract/collective/collective_communication_lib.h"
 #include "utils/shape_utils.h"

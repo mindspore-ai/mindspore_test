@@ -25,9 +25,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/offload_context.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/anfalgo.h"
+#include "include/utils/offload_context.h"
+#include "include/utils/tensor_py.h"
 
 namespace mindspore {
 namespace opt {

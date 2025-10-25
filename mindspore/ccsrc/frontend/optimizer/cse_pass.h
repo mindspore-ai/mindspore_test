@@ -21,7 +21,7 @@
 
 #include <memory>
 
-#include "include/common/utils/cse.h"
+#include "include/utils/cse.h"
 
 #include "frontend/optimizer/optimizer.h"
 

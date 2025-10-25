@@ -30,7 +30,7 @@
 #include "ir/tensor.h"
 #include "abstract/abstract_value.h"
 #include "utils/simple_info.h"
-#include "mindspore/ccsrc/include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace stub {

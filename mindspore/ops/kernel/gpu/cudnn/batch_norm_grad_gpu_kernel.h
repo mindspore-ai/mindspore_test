@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/batchnorm_grad_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

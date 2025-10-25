@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "backend/ge_backend/graph_ir/storage_format_config_factory.h"
 #include "ir/func_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/runtime/hardware_abstract/kernel_base/kernel_info.h"
 #include "plugin/ascend/res_manager/op_adapter/transform_util.h"
 #include "mindspore/ops/op_def/framework_op_name.h"

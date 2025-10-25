@@ -18,7 +18,7 @@
 
 #include <algorithm>
 #include <unordered_set>
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/device_address.h"
 #include "include/backend/distributed/collective/collective_manager.h"

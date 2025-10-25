@@ -29,9 +29,9 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/forward/pyboost/forward_task.h"
-#include "include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace mindspore {
 namespace pynative {

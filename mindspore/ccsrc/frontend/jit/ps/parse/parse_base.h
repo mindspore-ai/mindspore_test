@@ -23,7 +23,7 @@
 #include "ir/func_graph.h"
 #include "ir/manager.h"
 #include "frontend/jit/ps/parse/parse_flags.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {

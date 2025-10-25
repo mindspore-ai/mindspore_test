@@ -21,12 +21,12 @@
 #include <utility>
 #include <fstream>
 #include "frontend/jit/ps/parse/data_converter.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/debug/common.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/common.h"
 #include "mindspore/ccsrc/utils/ir_dump/anf_ir_dump.h"
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
 #include "utils/system/sha256.h"
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/tensor_layout/shared_parameter.h"
 #include "utils/file_utils.h"
@@ -36,8 +36,8 @@
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/utils/config_manager.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/config_manager.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {

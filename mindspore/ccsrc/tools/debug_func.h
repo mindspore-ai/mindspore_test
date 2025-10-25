@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "include/backend/kernel_graph.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "runtime/hardware_abstract/device_context/device_context.h"
 
 namespace mindspore {

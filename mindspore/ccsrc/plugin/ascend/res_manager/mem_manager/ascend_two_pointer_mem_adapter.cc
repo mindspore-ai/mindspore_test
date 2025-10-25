@@ -17,7 +17,7 @@
 #include "plugin/ascend/res_manager/mem_manager/ascend_two_pointer_mem_adapter.h"
 #include <algorithm>
 #include <set>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #include "ir/func_graph.h"
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"

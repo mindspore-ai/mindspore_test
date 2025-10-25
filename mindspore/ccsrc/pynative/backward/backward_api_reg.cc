@@ -15,7 +15,7 @@
  */
 #include "pybind11/pybind11.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "mindspore/ccsrc/include/common/utils/tensor_py.h"
+#include "include/utils/tensor_py.h"
 #include "mindspore/ccsrc/pynative/backward/op_grad/func_grad.h"
 
 namespace mindspore {

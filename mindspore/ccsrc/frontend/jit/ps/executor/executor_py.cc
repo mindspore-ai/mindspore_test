@@ -33,10 +33,10 @@
 #include "tools/profiler/profiler.h"
 
 #include "mindspore/ccsrc/utils/ir_dump/dump_proto.h"
-#include "include/common/utils/compile_cache_context.h"
-#include "include/common/utils/config_manager.h"
-#include "include/common/utils/python_utils.h"
-#include "include/common/utils/tensor_py_wrapper.h"
+#include "include/utils/compile_cache_context.h"
+#include "include/utils/config_manager.h"
+#include "include/utils/python_utils.h"
+#include "include/utils/tensor_py_wrapper.h"
 
 #include "frontend/jit/ps/compile_cache_manager.h"
 #include "frontend/jit/ps/debug/trace.h"

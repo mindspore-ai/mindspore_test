@@ -18,7 +18,7 @@
 #include <map>
 #include <algorithm>
 #include <sstream>
-#include "include/common/utils/utils.h"
+#include "include/utils/utils.h"
 #define google ascend_private
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/opskernel/ops_kernel_builder.h"
@@ -30,8 +30,8 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/distributed/constants.h"
-#include "include/common/utils/parallel_context.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/parallel_context.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "tools/profiler/mstx/mstx_impl.h"

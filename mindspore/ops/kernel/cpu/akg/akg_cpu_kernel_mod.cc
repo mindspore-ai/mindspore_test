@@ -26,10 +26,10 @@
 #include <utility>
 #include "nlohmann/json.hpp"
 #include "runtime/hardware_abstract/kernel_base/graph_fusion/framework_utils.h"
-#include "include/common/thread_pool.h"
+#include "include/utils/thread_pool.h"
 #include "utils/ms_utils.h"
 #include "utils/file_utils.h"
-#include "mindspore/ccsrc/include/common/debug/common.h"
+#include "include/utils/common.h"
 
 namespace mindspore {
 namespace kernel {

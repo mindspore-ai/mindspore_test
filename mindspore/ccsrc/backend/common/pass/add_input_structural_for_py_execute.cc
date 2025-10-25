@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {

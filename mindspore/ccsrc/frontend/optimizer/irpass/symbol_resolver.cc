@@ -19,7 +19,7 @@
 #include <string>
 #include <memory>
 
-#include "include/common/fallback.h"
+#include "include/utils/fallback.h"
 #include "ir/cell.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

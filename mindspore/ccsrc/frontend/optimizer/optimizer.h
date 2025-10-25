@@ -26,9 +26,9 @@
 #include "base/base.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/jit/ps/validator.h"
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/visible.h"
+#include "include/utils/visible.h"
 #include "frontend/jit/ps/resource.h"
 
 namespace mindspore {

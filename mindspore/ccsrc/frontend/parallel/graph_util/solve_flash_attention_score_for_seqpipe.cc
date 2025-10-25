@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <set>
 
-#include "include/common/utils/anfalgo.h"
+#include "include/utils/anfalgo.h"
 #include "mindspore/core/include/ir/graph_utils.h"
 #include "mindspore/core/include/ir/value.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
