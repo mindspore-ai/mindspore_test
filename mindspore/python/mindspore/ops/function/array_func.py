@@ -27,7 +27,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr
 from mindspore.ops.primitive import _primexpr
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.ops.operations._inner_ops import DynamicBroadcastTo
 from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
@@ -444,8 +444,7 @@ def hamming_window(window_length, periodic=True, alpha=0.54, beta=0.46, *, dtype
         raise TypeError(f"For array function 'hamming_window', 'window_length' must be int, but got"
                         f" {type(window_length)}.")
     if window_length < 0:
-        raise ValueError(
-            f"For array function 'hamming_window', 'window_length' must be non negative number.")
+        raise ValueError("For array function 'hamming_window', 'window_length' must be non negative number.")
     if not isinstance(periodic, bool):
         raise TypeError(
             f"For array function 'hamming_window', 'periodic' must be bool, but got {type(periodic)}.")
@@ -1313,8 +1312,7 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
         [0 1 2 1]
     """
     if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
-        raise ValueError(
-            f"For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
+        raise ValueError("For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
     if dim is None:
         y, inverse, counts = unique2_(
             input, sorted, return_inverse, return_counts)
@@ -1418,8 +1416,7 @@ def unique_consecutive(input, return_inverse=False, return_counts=False, dim=Non
     """
 
     if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
-        raise ValueError(
-            f"For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
+        raise ValueError("For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
     output, idx, counts = unique_consecutive_impl(input, return_inverse, return_counts, dim)
     if return_inverse and return_counts:
         return output, idx, counts
@@ -1470,8 +1467,8 @@ def searchsorted(sorted_sequence, values, *, out_int32=False, right=False, side=
     validator.check_value_type("right", right, [bool], "search_sorted")
     dtype = mstype.int32 if bool(out_int32) else mstype.int64
     if (side == "left" and right is True):
-        raise ValueError(f"For 'searchsorted', side and right can't be set to opposites,"
-                         f"got side of left while right was True.")
+        raise ValueError("For 'searchsorted', side and right can't be set to opposites, "
+                         "got side of left while right was True.")
     if side == "right":
         right = True
     return search_sorted_(sorted_sequence, values, sorter, dtype, right)
@@ -1688,11 +1685,11 @@ def flatten(input, order='C', *, start_dim=1, end_dim=-1):
 
     # Check the types of arguments.
     if not isinstance(input, Tensor):
-        raise TypeError(f"For 'flatten', argument 'input' must be Tensor.")
+        raise TypeError("For 'flatten', argument 'input' must be Tensor.")
     if not isinstance(start_dim, int) or not isinstance(end_dim, int) or \
             isinstance(start_dim, bool) or isinstance(end_dim, bool):
         raise TypeError(
-            f"For 'flatten', both 'start_dim' and 'end_dim' must be int.")
+            "For 'flatten', both 'start_dim' and 'end_dim' must be int.")
     check_flatten_order_const(order)
     if order == 'F':
         x_rank = rank_(input)
@@ -3593,6 +3590,8 @@ def meshgrid_ext(*tensors, indexing=None):
     """
     if indexing is None:
         indexing = 'ij'
+    if len(tensors) == 1 and isinstance(tensors[0], (tuple, list)):
+        tensors = tensors[0]
     return meshgrid_impl(tensors, indexing)
 
 
@@ -3974,7 +3973,7 @@ def index_select(input, axis, index):
     """
     if not (isinstance(input, Tensor) and isinstance(index, Tensor)):
         raise TypeError(
-            f"For 'index_select', `input` and `index` must be all tensors.")
+            "For 'index_select', `input` and `index` must be all tensors.")
     if index.ndim != 1:
         raise ValueError(
             f"For 'index_select', the dimension of `index` must be 1, but got {index.ndim}")
@@ -4618,7 +4617,7 @@ def _canonicalize_axis(axis, ndim):
     def canonicalizer(ax):
         return ax + ndim if ax < 0 else ax
 
-    axis = tuple([canonicalizer(ax) for ax in axis])
+    axis = tuple(canonicalizer(ax) for ax in axis)
     if all(axis.count(el) <= 1 for el in axis):
         return tuple(sorted(axis)) if len(axis) > 1 else axis[0]
     raise ValueError(f"duplicate axis in {axis}.")
@@ -5876,7 +5875,7 @@ def column_stack(tensors):
         trans_x += (tensor,)
     if not trans_x:
         raise ValueError(
-            f"For column_stack, the input must have at least 1 tensor, but got 0.")
+            "For column_stack, the input must have at least 1 tensor, but got 0.")
     _concat = _get_cache_prim(P.Concat)(1)
     return _concat(trans_x)
 
