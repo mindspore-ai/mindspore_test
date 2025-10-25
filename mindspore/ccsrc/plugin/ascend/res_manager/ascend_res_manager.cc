@@ -25,6 +25,10 @@
 #include <algorithm>
 #include <numeric>
 #include <set>
+#include <unordered_map>
+#include <memory>
+#include <map>
+#include <string>
 
 #include "ir/tensor_new.h"
 #include "hccl/hccl.h"
@@ -980,7 +984,13 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceAddressPtr &dst_device_sync
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
+  auto is_contigous = [](const TensorStorageInfoPtr &info) {
+    return SizeOf(info->shape) == SizeOf(info->ori_shape) && info->is_contiguous;
+  };
+  if ((src_device_address->GetTensorStorageInfo() != nullptr &&
+       !is_contigous(src_device_address->GetTensorStorageInfo())) ||
+      (dst_device_address->GetTensorStorageInfo() != nullptr &&
+       !is_contigous(dst_device_address->GetTensorStorageInfo()))) {
     MS_LOG(WARNING) << "Invalid sync device to host for tensor storage info in device address:"
                     << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
@@ -1155,7 +1165,14 @@ bool AscendResManager::AsyncHostToDevice(const DeviceAddressPtr &dst_device_sync
   const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
-  if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
+
+  auto is_contigous = [](const TensorStorageInfoPtr &info) {
+    return SizeOf(info->shape) == SizeOf(info->ori_shape) && info->is_contiguous;
+  };
+  if ((src_device_address->GetTensorStorageInfo() != nullptr &&
+       !is_contigous(src_device_address->GetTensorStorageInfo())) ||
+      (dst_device_address->GetTensorStorageInfo() != nullptr &&
+       !is_contigous(dst_device_address->GetTensorStorageInfo()))) {
     MS_LOG(EXCEPTION) << "Invalid sync host to device for tensor storage info in device address:"
                       << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
@@ -1608,7 +1625,7 @@ tensor::TensorPtr AscendResManager::GetSliceByTensorListIndexHandle(const std::v
   }
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
-  ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
+  ShapeVector shape = {SizeToLong(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
   auto tensor = tensor::from_spec(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
