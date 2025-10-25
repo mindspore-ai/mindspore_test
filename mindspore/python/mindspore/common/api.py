@@ -2744,5 +2744,59 @@ def _graph_split(script_graph):
     return fragments
 
 
+def register_saved_tensors_hooks(pack_hook, unpack_hook):
+    """
+    A decorator used in graph mode to customize the packing and unpacking of saved tensors.
+
+    It is functionally equivalent to using `with mindspore.saved_tensors_hooks(pack_hook, unpack_hook)` in
+    PyNative mode. 
+
+    For more details, please refer to :func:`mindspore.saved_tensors_hooks`.
+
+    .. note::
+        - This decorator only supports graph mode.
+        - `pack_hook` and `unpack_hook` must satisfy the syntax constraints of the graph mode.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import register_saved_tensors_hooks
+        >>> from mindspore import ops
+        >>>
+        >>> def pack_hook(x):
+        ...     print("packing ", x)
+        ...     return x + 1
+        >>>
+        >>> def unpack_hook(x):
+        ...     print("unpacking ", x)
+        ...     return x
+        >>>
+        >>> @register_saved_tensors_hooks(pack_hook, unpack_hook)
+        ... def forward_fn(x, y):
+        ...     out = x * y
+        ...     return out
+        >>>
+        >>> x = ops.ones(2, dtype=ms.float32)
+        >>> y = ops.ones(2, dtype=ms.float32)
+        >>> ms.jit(ms.value_and_grad(forward_fn, grad_position=(0,1)))(x, y)
+        packing
+        Tensor(shape=[2], dtype=Float32, value=[ 1.00000000e+00  1.00000000e+00])
+        packing
+        Tensor(shape=[2], dtype=Float32, value=[ 1.00000000e+00  1.00000000e+00])
+        unpacking
+        Tensor(shape=[2], dtype=Float32, value=[ 2.00000000e+00  2.00000000e+00])
+        unpacking
+        Tensor(shape=[2], dtype=Float32, value=[ 2.00000000e+00  2.00000000e+00])
+    """
+
+    def decorator(func):
+        # If the function is wrapped (e.g., by functools.wraps), apply hooks to the original function
+        # to ensure they are accessible even when multiple decorators are stacked.
+        wrapped_func = inspect.unwrap(func)
+        setattr(wrapped_func, "_saved_tensors_pack_hook", pack_hook)
+        setattr(wrapped_func, "_saved_tensors_unpack_hook", unpack_hook)
+        return func
+    return decorator
+
+
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()

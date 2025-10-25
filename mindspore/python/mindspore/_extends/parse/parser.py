@@ -855,14 +855,6 @@ def check_attrs(target_object, func_name: str):
     return False
 
 
-def get_function_obj_attrs(function_obj):
-    """Get the attributes iof function object."""
-    if not isinstance(function_obj, types.FunctionType) and type(function_obj).__name__ != 'cython_function_or_method':
-        return {}
-    logger.debug(f'The attributes of {function_obj} is {function_obj.__dict__}')
-    return function_obj.__dict__
-
-
 def check_is_subclass(target_object, parent):
     """Check if target_object is a subclass."""
     if issubclass(target_object.__class__, parent):
@@ -930,6 +922,28 @@ def hook_wrapper(hook_fn):
             return dout
         return fdout
     return inner
+
+
+def get_original_cell_construct(obj):
+    """Returns the original (unwrapped) 'construct' function of a Cell subclass.
+
+    If `obj` is an instance of a subclass of Cell and its class defines a 'construct' method,
+    return the unwrapped (via inspect.unwrap) unbound 'construct' function.
+    Otherwise, return None.
+
+    Args:
+        obj: An instance of a subclass of ``mindspore.nn.Cell``.
+
+    Returns:
+        The original unbound 'construct' function if `obj` is a Cell instance and its class
+        has a callable 'construct' method; otherwise None.
+    """
+    if not isinstance(obj, nn.Cell):
+        return None
+    construct_func = getattr(type(obj), 'construct', None)
+    if not callable(construct_func):
+        return None
+    return inspect.unwrap(construct_func)
 
 
 class Parser:

@@ -34,7 +34,7 @@ bool EmptyLikeAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   auto device_name_opt = inputs[kIndex2]->GetOptionalValueWithCheck<int64_t>();
   if (device_name_opt.has_value()) {
     auto device_name_enum = device_name_opt.value();
-    if (device_name_enum != DEVICE_ASCEND && device_name_enum != DEVICE_NPU_LOWER && device_name_enum != DEVICE_NPU) {
+    if (device_name_enum != DEVICE_ASCEND && device_name_enum != DEVICE_NPU_LOWER) {
       MS_LOG(EXCEPTION) << "EmptyLike kbk mode only support ['Ascend', 'npu'] for device";
     }
   }

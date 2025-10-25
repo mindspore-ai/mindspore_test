@@ -658,38 +658,6 @@ void CheckJITForbiddenAPI(const py::object &obj) {
   }
 }
 
-void SetFuncGraphAttr(const FuncGraphPtr &func_graph, const py::object &obj, const ResolveType &obj_type) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_LOG(DEBUG) << "obj: " << py::str(obj) << " obj_type: " << obj_type;
-  MS_LOG(DEBUG) << "func_graph: " << func_graph->ToString();
-  // If obj is not function, return
-  if (obj_type != RESOLVE_TYPE_FUNCTION) {
-    return;
-  }
-  // Get all attrs of the function obj
-  constexpr auto get_attrs = "get_function_obj_attrs";
-  auto module = python_adapter::GetPyModule(PYTHON_MOD_PARSE_MODULE);
-  const auto &attr_dict = python_adapter::CallPyModFn(module, get_attrs, obj);
-  auto dict_values = attr_dict.cast<py::dict>();
-  for (auto item : dict_values) {
-    auto key = py::cast<py::object>(item.first);
-    auto value = py::cast<py::object>(item.second);
-    py::str key_name = py::str(key);
-    MS_LOG(DEBUG) << "key_name: " << key_name;
-    if (py::hasattr(obj, key_name)) {
-      auto attr_obj = py::getattr(obj, key_name);
-      if (!attr_obj.is_none()) {
-        ValuePtr obj_value = std::make_shared<InterpretedObject>(attr_obj);
-        MS_LOG(DEBUG) << "AddAttr " << key_name << ", the value is: " << obj_value->ToString();
-        func_graph->set_attr(key_name, obj_value);
-        // Set no_inline flag for the func_graph
-        MS_LOG(DEBUG) << "Set no_inline flag for the func_graph: " << func_graph->ToString();
-        func_graph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      }
-    }
-  }
-}
-
 ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
   auto obj_type = data_converter::GetObjType(obj);
   MS_LOG(DEBUG) << "Converting the object(" << ((std::string)py::str(obj)) << ") detail type: " << obj_type << " ";
@@ -726,7 +694,6 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
       MS_LOG(ERROR) << "Parse resolve function error.";
       return nullptr;
     }
-    SetFuncGraphAttr(func_graph, obj, obj_type);
     return func_graph;
   }
   if (obj_type == RESOLVE_TYPE_CLASS_INSTANCE) {

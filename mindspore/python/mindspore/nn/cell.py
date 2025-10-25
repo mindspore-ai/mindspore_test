@@ -244,9 +244,8 @@ class Cell(Cell_):
         super().__setattr__("_in_strategy", None)
         super().__setattr__("_out_strategy", None)
         super().__setattr__("has_bprop", False)
-
-        super().__setattr__("_saved_tensor_pack_hook", None)
-        super().__setattr__("_saved_tensor_unpack_hook", None)
+        super().__setattr__("_saved_tensors_pack_hook", None)
+        super().__setattr__("_saved_tensors_unpack_hook", None)
 
         if hasattr(self, "bprop"):
             super().__setattr__("has_bprop", True)
@@ -1074,8 +1073,8 @@ class Cell(Cell_):
         if self._shard_fn is not None:
             output = self._shard_fn(*args, **kwargs)
         elif _pynative_executor.requires_grad():
-            if self._saved_tensor_pack_hook is not None:
-                with ms.saved_tensors_hooks(self._saved_tensor_pack_hook, self._saved_tensor_unpack_hook):
+            if self._saved_tensors_pack_hook is not None:
+                with ms.saved_tensors_hooks(self._saved_tensors_pack_hook, self._saved_tensors_unpack_hook):
                     output = self._run_grad_construct(*args, **kwargs)
             else:
                 output = self._run_grad_construct(*args, **kwargs)
@@ -1391,7 +1390,7 @@ class Cell(Cell_):
         self._call_pre_process(*args, **kwargs)
 
         if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
-                self._shard_fn or self._recompute_cell or self.has_bprop or self._saved_tensor_pack_hook):
+                self._shard_fn or self._recompute_cell or self.has_bprop or self._saved_tensors_pack_hook):
             output = self.construct(*args, **kwargs)
         else:
             output = self._run_construct(*args, **kwargs)
@@ -3530,17 +3529,14 @@ class Cell(Cell_):
         The effective scope of this method is limited to the :func:`mindspore.nn.Cell.construct` function.
         For more details, please refer to :class:`mindspore.saved_tensors_hooks` .
 
-        .. note::
-            This method is currently not supported in Graph and Jit mode.
-
         Args:
             pack_hook (Callable): A function that defines how to process a tensor
                                   before it is saved during the forward pass.
             unpack_hook (Callable): A function that defines how to recover the tensor
                                     when it is needed during the backward computation.
         """
-        self._saved_tensor_pack_hook = pack_hook
-        self._saved_tensor_unpack_hook = unpack_hook
+        self._saved_tensors_pack_hook = pack_hook
+        self._saved_tensors_unpack_hook = unpack_hook
 
     def set_comm_fusion(self, fusion_type, recurse=True):
         """

@@ -60,14 +60,9 @@ const char kFuncGraphFlagRecursive[] = "recursive";
 const char kFuncGraphFlagMetaFuncGraphBprop[] = "meta_fg_bprop";
 const char kFuncGraphFlagAddedForwardU[] = "added_forward_u";
 
-// offload flags
-const char FUNC_GRAPH_FLAG_PACK_FN[] = "pack_fn";
-const char FUNC_GRAPH_FLAG_UNPACK_FN[] = "unpack_fn";
-const char FUNC_GRAPH_FLAG_PREFETCH[] = "count";
-const char FUNC_GRAPH_FLAG_PACK_FN_GRAD[] = "pack_fn_grad";
-const char FUNC_GRAPH_FLAG_UNPACK_FN_GRAD[] = "unpack_fn_grad";
-const char FUNC_GRAPH_FLAG_PREFETCH_GRAD[] = "count_grad";
-const char FUNC_GRAPH_FLAG_NOT_CHECK[] = "not_check";
+// saved tensors hooks flag
+const char FUNC_GRAPH_FLAG_PACK_HOOK[] = "_saved_tensors_pack_hook";
+const char FUNC_GRAPH_FLAG_UNPACK_HOOK[] = "_saved_tensors_unpack_hook";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_FUNC_GRAPH_FLAG_H_

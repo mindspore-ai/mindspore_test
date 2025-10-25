@@ -107,6 +107,7 @@ const char PYTHON_MOD_CHECK_IS_SUBCLASS[] = "check_is_subclass";
 const char PYTHON_MOD_GET_METHOD_INFO[] = "get_method_info";
 const char PYTHON_MOD_CAN_CONSTANT_FOLD[] = "can_constant_fold";
 const char PYTHON_MOD_HOOK_WRAPPER[] = "hook_wrapper";
+const char PYTHON_MOD_GET_ORIGINAL_CELL_CONSTRUCT[] = "get_original_cell_construct";
 
 const char PYTHON_PARSE_GET_ARGS[] = "get_args";
 const char PYTHON_PARSE_GET_ARGS_DEFAULT_VALUES[] = "get_args_default_values";
