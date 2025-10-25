@@ -1919,6 +1919,36 @@ def unsqueeze(input, dim):
     return expand_dims(input, dim)
 
 
+def unsqueeze_view(input, dim):
+    """
+    Adds an additional dimension to the input tensor at the given dimension.
+
+    Args:
+        input (Tensor): The input tensor.
+        dim (int): The dimension specified.
+
+    Returns:
+        Tensor
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> input = mindspore.tensor([1, 2, 3, 4])
+        >>> mindspore.ops.function.array_func.unsqueeze_view(input, 0)
+        Tensor(shape=[1, 4], dtype=Int64, value=
+        [[1, 2, 3, 4]])
+        >>> mindspore.ops.function.array_func.unsqueeze_view(input, 1)
+        Tensor(shape=[4, 1], dtype=Int64, value=
+        [[1],
+         [2],
+         [3],
+         [4]])
+    """
+    return ops.auto_generate.expand_dims_view(input, dim)
+
+
 def squeeze(input, axis=None):
     """
     Remove length one axes from input tensor.

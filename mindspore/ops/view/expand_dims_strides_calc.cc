@@ -17,11 +17,14 @@
 #include "view/expand_dims_strides_calc.h"
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace mindspore::ops {
 TensorStorageInfoPtrList ExpandDimsStrideCalc(const std::vector<int64_t> &old_shape,
                                               const std::vector<int64_t> &old_strides,
                                               const TensorStorageInfoPtr &storage_info, const int64_t &axis) {
+  MS_LOG(DEBUG) << "ExpandDims: input shape " << old_shape << ", input stride " << old_strides << ", storage_info "
+                << (storage_info != nullptr ? storage_info->ToString() : "null") << ", dim " << axis;
   auto [ori_shape, ori_strides, storage_offset] = GetOriShapeStridesAndOffset(old_shape, old_strides, storage_info);
 
   bool is_contiguous = storage_info ? storage_info->is_contiguous : true;
@@ -39,6 +42,7 @@ TensorStorageInfoPtrList ExpandDimsStrideCalc(const std::vector<int64_t> &old_sh
     std::make_shared<TensorStorageInfo>(std::move(new_shape), std::move(new_strides), storage_offset,
                                         std::move(ori_shape), std::move(ori_strides), is_contiguous);
 
+  MS_LOG(DEBUG) << "ExpandDims: output storage_info " << new_storage_info->ToString();
   return {std::move(new_storage_info)};
 }
 

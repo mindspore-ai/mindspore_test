@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/expand_dims_view.h"
-
+#include <vector>
 #include "kernel/ascend/aclnn/kernel_mod_impl/customize/view/view_utils.h"
 #include "mindspore/ops/view/expand_dims_strides_calc.h"
 
@@ -23,11 +23,10 @@ namespace kernel {
 
 void ExpandDimsView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   auto axis = inputs[kIndex1]->GetValueWithCheck<int64_t>();
-
+  const auto &input = inputs[kIndex0];
   info_ =
-    ops::ExpandDimsStrideCalc(old_info->old_shape, old_info->old_strides, inputs[kIndex0]->tensor_storage_info(), axis);
+    ops::ExpandDimsStrideCalc(input->GetShapeVector(), GetTensorStride(input), input->tensor_storage_info(), axis);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
 }
 
