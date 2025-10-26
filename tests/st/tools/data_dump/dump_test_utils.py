@@ -297,6 +297,14 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
     elif test_key == "test_async_kbyk_dump":
         data = async_kbyk_dump_dict
         data["common_dump_settings"]["path"] = dump_path
+    elif test_key == "test_lenet_sink_false_kbk_dump_sync":
+        data = sync_kbyk_dump_dict
+        data["common_dump_settings"]["path"] = dump_path
+        data["common_dump_settings"]["net_name"] = 'lenet'
+        data["common_dump_settings"]["saved_data"] = "tensor"
+        data["common_dump_settings"]["input_output"] = 1
+        data["common_dump_settings"]["iteration"] = "all"
+        data["common_dump_settings"]["kernels"] = []
     else:
         raise ValueError(
             "Failed to generate dump json file. The test name value " + test_key + " is invalid.")
