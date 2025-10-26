@@ -17,7 +17,12 @@
 #include <algorithm>
 #include <unordered_set>
 #include <utility>
+#include <map>
+#include <memory>
 #include <set>
+#include <string>
+#include <stack>
+#include <vector>
 #include <tuple>
 
 #include "include/backend/anf_runtime_algorithm.h"
@@ -32,7 +37,9 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/ascend/res_manager/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "op_def/other_ops.h"
 
 namespace mindspore {
 namespace device {
@@ -143,6 +150,123 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
                    << group_value->ToString();
     }
   }
+}
+
+bool GetBlockingValue(const mindspore::AnfNodePtr &anf_node) {
+  constexpr size_t kBlockInputIndex = 3;
+  MS_EXCEPTION_IF_NULL(anf_node);
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(kBlockInputIndex), 0, true);
+  auto block_input = kernel_with_index.first;
+  MS_EXCEPTION_IF_NULL(block_input);
+  if (!block_input->isa<ValueNode>()) {
+    MS_LOG(WARNING) << "Get to value failed, the second input of MoveTo is not a ValueNode.";
+    return true;
+  }
+  auto block_value_node = block_input->cast<ValueNodePtr>();
+  auto block_value = block_value_node->value();
+  if (!block_value->isa<BoolImm>()) {
+    return true;
+  }
+  return block_value->cast<BoolImmPtr>()->value();
+}
+
+std::vector<std::pair<CNodePtr, size_t>> GetAllUserNode(const AnfNodePtr &node, int index,
+                                                        const NodeUsersMap &node_users) {
+  std::vector<std::pair<CNodePtr, size_t>> ret;
+  std::stack<std::pair<AnfNodePtr, int>> to_visit;
+  std::stack<int> make_tuple_idx;
+  to_visit.emplace(node, index);
+  while (!to_visit.empty()) {
+    auto [user, idx] = to_visit.top();
+    to_visit.pop();
+    if (IsPrimitiveCNode(user, prim::kPrimDepend)) {
+      if (idx != kIndex1) {
+        continue;
+      }
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+    } else if (IsPrimitiveCNode(user, prim::kPrimMakeTuple)) {
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+      make_tuple_idx.push(idx);
+    } else if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem)) {
+      const auto get_item_idx = common::AnfAlgo::GetTupleGetItemOutIndex(user->cast<CNodePtr>());
+      if (SizeToInt(get_item_idx) != make_tuple_idx.top()) {
+        continue;
+      }
+      make_tuple_idx.pop();
+      const auto &iter = node_users.find(user);
+      if (iter == node_users.end()) {
+        continue;
+      }
+      for (const auto &node_idx : iter->second) {
+        to_visit.push(node_idx);
+      }
+    } else {
+      ret.emplace_back(user->cast<CNodePtr>(), idx);
+    }
+  }
+  return ret;
+}
+
+bool CheckNonBlockingMoveTo(const NotNull<mindspore::KernelGraphPtr> &kernel_graph, const CNodePtr &kernel,
+                            size_t exec_idx, const std::vector<CNodePtr> &exec_order) {
+  if (GetBlockingValue(kernel)) {
+    return true;
+  }
+  const auto manager = kernel_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users = manager->node_users();
+  const auto &users_iter = node_users.find(kernel);
+  if (users_iter == node_users.end()) {
+    return true;
+  }
+  std::vector<std::pair<CNodePtr, size_t>> all_real_users;
+  for (const auto &user : users_iter->second) {
+    auto users = GetAllUserNode(user.first, user.second, node_users);
+    all_real_users.insert(all_real_users.end(), users.begin(), users.end());
+  }
+  static const std::map<std::string, std::set<std::string>> kNonBlockingMoveToCheckMap = {
+    {prim::kPrimAlltoAllV->name(), {prim::kPrimNonZero->name()}}};
+  for (const auto &user : all_real_users) {
+    const auto blocking_prim = kNonBlockingMoveToCheckMap.find(GetCNodePrimitive(user.first)->name());
+    if (blocking_prim == kNonBlockingMoveToCheckMap.end()) {
+      continue;
+    }
+    bool blocked = false;
+    for (size_t i = exec_idx + 1; i < exec_order.size(); ++i) {
+      const auto &prim = GetCNodePrimitive(exec_order[i]);
+      if (blocking_prim->second.count(prim->name()) != 0) {
+        MS_LOG(DEBUG) << "MoveTo[" << kernel->fullname_with_scope() << "] is blocked before user ["
+                      << user.first->fullname_with_scope() << "] by [" << exec_order[i]->fullname_with_scope() << "].";
+        blocked = true;
+      }
+      if (exec_order[i] == user.first) {
+        if (blocked) {
+          return true;
+        } else {
+          MS_LOG(ERROR) << "MoveTo[" << kernel->fullname_with_scope() << "] should be blocked before user ["
+                        << user.first->fullname_with_scope() << "], but it is not.";
+          return false;
+        }
+      }
+    }
+    MS_LOG(WARNING) << "MoveTo's user[" << user.first->fullname_with_scope()
+                    << "] is not found in execution order after MoveTo.";
+  }
+  return true;
 }
 }  // namespace
 
@@ -314,7 +438,7 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
                                                const std::vector<CNodePtr> &origin_exec_order,
                                                std::vector<CNodePtr> *exec_order,
                                                mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes) {
-  constexpr int64_t kDefaultDelayNum = 1;
+  constexpr int64_t kDefaultDelayNum = 0;
   constexpr int64_t kDefaultDelayFactor = 3;
   if (IsPrimitiveCNode(kernel, prim::kPrimMoveTo) && common::AnfAlgo::GetMoveToDstStr(kernel) == kToCpu) {
     // Get pre_fetch size.
@@ -351,6 +475,9 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
       node_before_recv_index += 1;
     }
     (*delayed_recv_nodes)[node_before_recv_index].emplace_back(recv_node);
+    if (!CheckNonBlockingMoveTo(kernel_graph, kernel, exec_idx, origin_exec_order)) {
+      MS_LOG(EXCEPTION) << "Validation for non-blocking MoveTo failed.";
+    }
     MS_LOG(DEBUG) << "Add send and recv for MoveTo, send: " << exec_idx << ", recv: " << node_before_recv_index;
   }
   const auto &iter = delayed_recv_nodes->find(exec_idx);
