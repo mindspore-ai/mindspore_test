@@ -32,7 +32,6 @@ class OPS_API AlltoAllVC : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AlltoAllVC);
   AlltoAllVC() : BaseOperator(kNameAlltoAllVC) { InitIOName({"x"}, {"output"}); }
-  void Init() const {}
 };
 }  // namespace ops
 }  // namespace mindspore

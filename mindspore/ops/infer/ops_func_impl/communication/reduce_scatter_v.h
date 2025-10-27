@@ -31,7 +31,6 @@ class OPS_API ReduceScatterV : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ReduceScatterV);
   ReduceScatterV() : BaseOperator(kNameReduceScatterV) { InitIOName({"input_x"}, {"output"}); }
-  void Init() {}
 };
 }  // namespace ops
 }  // namespace mindspore

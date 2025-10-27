@@ -30,7 +30,6 @@ class OPS_API AlltoAll : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AlltoAll);
   AlltoAll() : BaseOperator(kAlltoAll) { InitIOName({"x"}, {"output"}); }
-  void Init() const {}
 };
 }  // namespace ops
 }  // namespace mindspore

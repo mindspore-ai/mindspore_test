@@ -201,3 +201,15 @@ def pi_jit_with_config(function=None, jit_config=None, *, fullgraph=False):
     if function is not None:
         return wrap_func(function)
     return wrap_func
+
+
+def allclose_nparray_recursive(data_expected, data_me, rtol, atol, equal_nan=True):
+    if isinstance(data_me, onp.ndarray):
+        allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=equal_nan)
+    elif isinstance(data_me, tuple):
+        allclose_nparray_recursive(data_expected[0], data_me[0], rtol, atol, equal_nan=equal_nan)
+        if len(data_me) > 1:
+            allclose_nparray_recursive(data_expected[1:], data_me[1:],
+                                       rtol, atol, equal_nan=equal_nan)
+    else:
+        assert False, 'unsupported data type'

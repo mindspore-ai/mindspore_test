@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""
+The tests of mindspore, used to test communication for tcpstore.
+"""
 import os
 from tests.mark_utils import arg_mark
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -23,9 +26,9 @@ def test_hccl_mint_tcp_store1():
     Expectation: success
     """
     return_code = os.system(
-        rf"cp  test_tcp_store.py test_tcp_store1.py && "\
-        rf"sed -i 's/mindspore\.mint\.distributed\.distributed/mindspore.ops.communication/g' "\
-        rf"test_tcp_store1.py && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
-        rf"--master_port=10668 --join=True pytest -s test_tcp_store1.py"
+        r"cp  test_tcp_store.py test_tcp_store1.py && "\
+        r"sed -i 's/mindspore\.mint\.distributed\.distributed/mindspore.ops.communication/g' "\
+        r"test_tcp_store1.py && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
+        r"--master_port=10668 --join=True pytest -s test_tcp_store1.py"
     )
     assert return_code == 0

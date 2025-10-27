@@ -30,7 +30,6 @@ class OPS_API AllReduce : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AllReduce);
   AllReduce() : BaseOperator(kAllReduce) { InitIOName({"x"}, {"output"}); }
-  void Init() const {}
 };
 }  // namespace ops
 }  // namespace mindspore

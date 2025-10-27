@@ -32,7 +32,6 @@ class OPS_API AllGatherV : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(AllGatherV);
   AllGatherV() : BaseOperator(kNameAllGatherV) { InitIOName({"input_x"}, {"output"}); }
-  void Init() {}
 };
 }  // namespace ops
 }  // namespace mindspore
