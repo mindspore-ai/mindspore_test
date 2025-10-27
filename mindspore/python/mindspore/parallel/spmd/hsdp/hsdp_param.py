@@ -14,7 +14,7 @@
 # ============================================================================
 """HSDP parameter"""
 import functools
-import mindspore.ops as ops
+from mindspore import ops
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.communication import get_rank, get_group_size
@@ -70,15 +70,14 @@ class HSDPParam:
             if m < n:
                 m, n = n, m
             if n == 0:
-                raise ValueError(f"HSDP invalid gcd input 0.")
+                raise ValueError("HSDP invalid gcd input 0.")
             r = m % n
             if r == 0:
                 return n
             return _gcd(n, r)
 
         rank_gcd = _gcd(self.param.local_shape[0], self.rank_size)
-        if self.shard_size > rank_gcd:
-            self.shard_size = rank_gcd
+        self.shard_size = min(self.shard_size, rank_gcd)
         if rank_gcd % self.shard_size != 0:
             self.shard_size = 1
         self.param.hsdp_effective_shard_size = self.shard_size
@@ -99,8 +98,8 @@ class HSDPParam:
 
         try:
             self.local_rank = self.param.layout.rank_list.index(self.rank_id)
-        except ValueError:
-            raise ValueError(f"HSDP invalid rank {self.rank_id} with rank list {self.param.layout.rank_list}.")
+        except ValueError as e:
+            raise ValueError(f"HSDP invalid rank {self.rank_id} with rank list {self.param.layout.rank_list}.") from e
 
         tensor_map = self.param.layout.tensor_map
         sharded_axis_set = set()
@@ -168,8 +167,7 @@ class HSDPParam:
                 local_index = local_index % stride
             global_rank = 0
             for axis, index in enumerate(self.rank_indices):
-                if axis in local_indices_dict:
-                    index = local_indices_dict[axis]
+                index = local_indices_dict.get(axis, index)
                 global_rank = global_rank + index * self.global_rank_stride_list[axis]
             if self.param.layout is not None:
                 if global_rank >= len(self.param.layout.rank_list):
@@ -242,7 +240,7 @@ class HSDPParam:
         else:
             dp_slice_index = self.hsdp_rank % self.shard_size
             data_slice_index = self.tp_rank * self.shard_size + dp_slice_index
-            init_shape = [i for i in self.param.init_mode.local_shape]
+            init_shape = list(self.param.init_mode.local_shape)
             init_shape[0] = init_shape[0] // self.shard_size
             init_data = self.param.init_mode.init_data(slice_index=data_slice_index, shape=init_shape)
             self.param.init_mode = None
@@ -282,7 +280,7 @@ class HSDPParam:
             self.param.acc_grad = self.acc_grad
             return
 
-        origin_param_shape = [i for i in self.param.local_shape]
+        origin_param_shape = list(self.param.local_shape)
         self._init_unsharded_param()
         self._init_sharded_param()
         if self.config.requires_acc_grad and self.param.requires_grad:
