@@ -23,6 +23,7 @@
 #include "tools/data_dump/device_statistic/statistic_kernel.h"
 #include "op_def/nn_op_name.h"
 #include "include/backend/visible.h"
+#include "include/runtime/memory/mem_pool/mem_tracker.h"
 
 namespace mindspore {
 
@@ -35,6 +36,8 @@ class BACKEND_COMMON_EXPORT CheckOverflowKernel : public StatisticKernel {
   explicit CheckOverflowKernel(const DeviceContext *device_context)
       : StatisticKernel(device_context, kAllFiniteOpName, overflow_supported_dtype) {}
 
+  std::vector<KernelTensorPtr> GetWorkSpaceDeviceAddressList(const std::vector<KernelTensor *> &inputs,
+                                                             const std::vector<KernelTensor *> &outputs);
   std::vector<KernelTensor *> CheckInputs(std::vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
   KernelTensorPtr LaunchKernelAsync(std::vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;

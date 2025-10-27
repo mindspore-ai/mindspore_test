@@ -234,7 +234,11 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
-    elif test_key in ["test_e2e_dump_trans_true_op_debug_mode", "test_e2e_dump_set_overflow_number"]:
+    elif test_key in [
+            "test_e2e_dump_trans_true_op_debug_mode",
+            "test_e2e_dump_set_overflow_number",
+            "test_e2e_dump_with_uncontiguous_tensor",
+        ]:
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
@@ -296,7 +300,7 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
         raise ValueError(
             "Failed to generate dump json file. The test name value " + test_key + " is invalid.")
     data["common_dump_settings"]["net_name"] = net_name
-    with open(json_file_name, 'w') as f:
+    with open(json_file_name, 'w', encoding="utf-8") as f:
         json.dump(data, f)
 
 def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data, net_name='Net',
@@ -328,7 +332,7 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
     data["common_dump_settings"]["net_name"] = net_name
     if statistic_category:
         data["common_dump_settings"]["statistic_category"] = statistic_category
-    with open(json_file_name, 'w') as f:
+    with open(json_file_name, 'w', encoding="utf-8") as f:
         json.dump(data, f)
 
 
@@ -337,14 +341,14 @@ def check_dump_structure(dump_path, json_file_path, num_card, num_graph, num_ite
     """
     Util to check if the dump structure is correct.
     """
-    with open(json_file_path) as f:
+    with open(json_file_path, encoding="utf-8") as f:
         data = json.load(f)
     net_name = data["common_dump_settings"]["net_name"]
     assert os.path.isdir(dump_path)
     if root_graph_id is None:
-        root_graph_id = [i for i in range(num_graph)]
+        root_graph_id = list(range(num_graph))
     if test_iteration_id is None:
-        test_iteration_id = [i for i in range(num_iteration)]
+        test_iteration_id = list(range(num_iteration))
     for rank_id in range(num_card):
         rank_path = os.path.join(dump_path, "rank_" + str(rank_id))
         assert os.path.exists(rank_path)
@@ -377,10 +381,15 @@ def check_dump_structure(dump_path, json_file_path, num_card, num_graph, num_ite
                     assert os.path.isdir(it_id_path)
 
 def check_statistic_dump(dump_file_path):
+    """
+    Args:
+        dump_path (str): dump文件路径。
+        dump_config (dict): dump配置信息。
+    """
     output_name = "statistic.csv"
     output_path = glob.glob(os.path.join(dump_file_path, output_name))[0]
     real_path = os.path.realpath(output_path)
-    with open(real_path) as f:
+    with open(real_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         stats = list(reader)
 

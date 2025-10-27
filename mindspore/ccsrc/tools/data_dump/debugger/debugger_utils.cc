@@ -27,6 +27,7 @@
 #include "tools/data_dump/overflow_counter.h"
 #include "tools/dump/utils.h"
 #include "tools/data_dump/utils.h"
+#include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -43,6 +44,7 @@
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "runtime/hardware_abstract/utils.h"
 #include "runtime/hardware_abstract/stream/multi_stream_controller.h"
+#include "backend/common/device_address_utils.h"
 
 constexpr int kFailure = 1;
 constexpr int kQint4ShapeModify = 2;
@@ -133,9 +135,10 @@ std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, 
                        << " deviceaddress is nullptr.";
       continue;
     }
-    if (tensor->tensor_storage_info()) {
+    if (tensor->tensor_storage_info() && tensor->dtype_id() == kNumberTypeInt4) {
       MS_LOG(WARNING) << cnode->fullname_with_scope() << (is_input ? " input" : " output") << ", index " << index
-                      << " deviceaddress is not contiguous. Dump currently does not support non-contiguous data and is "
+                      << " deviceaddress is not contiguous and the tensor type is int4 . Dump currently does not "
+                         "support non-contiguous int4 data and is "
                          "currently skipped.";
       continue;
     }
@@ -498,6 +501,15 @@ bool ProcessOverflow(const KernelTensorPtr &overflow_kernel_tensor, uint32_t set
   return is_overflow;
 }
 
+ShapeVector GetOriOutputTensorShape(const TensorInfoForDump &tensor_info, TypeId host_type) {
+  auto tensor_storage_info = tensor_info.kernel_tensor->device_address()->GetTensorStorageInfo();
+  auto host_shape = tensor_storage_info == nullptr ? tensor_info.host_shape : tensor_storage_info->ori_shape;
+  if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
+    host_shape.back() *= 2;
+  }
+  return host_shape;
+}
+
 void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, const DeviceContext *device_context,
                         uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
   bool dump_tensor = DumpJsonParser::GetInstance().IsTensorDump();
@@ -539,10 +551,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
                               tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
                               "." + type_str;
-      auto host_shape = tensor_info.host_shape;
-      if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
-        host_shape.back() *= 2;
-      }
+      auto host_shape = GetOriOutputTensorShape(tensor_info, host_type);
       mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(out_tensor);
       size_t host_size = LongToSize(out_tensor->DataNBytes());
@@ -570,11 +579,17 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       auto ret = host_context->device_res_manager_->CopyDirectly(
         out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size, device::CopyType::kD2H);
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret << file_path;
-
+      auto tensor_storage_info = tensor_info.kernel_tensor->device_address()->GetTensorStorageInfo();
+      // Convert the non-contiguous Tensor to contiguous
+      if (tensor_storage_info != nullptr) {
+        out_tensor = ExtractContiguousTensor(out_tensor, tensor_info.host_shape, tensor_info.host_type,
+                                             tensor_storage_info->storage_offset, tensor_storage_info->strides);
+        host_size = LongToSize(out_tensor->DataNBytes());
+      }
       // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
       // type is int4, if tensor saved after statistic, the tensor value would be wrong.
       if (dump_tensor) {
-        DumpTensorToFile(file_path, out_tensor, host_type, host_size, host_shape);
+        DumpTensorToFile(file_path, out_tensor, host_type, host_size, out_tensor->shape());
       }
 
       if (dump_host_stat) {
@@ -649,6 +664,7 @@ void PrepareOutputDataViaCallback(const CNodePtr &cnode, const DeviceContext *de
     }
 
     MS_EXCEPTION_IF_NULL(output_kernel_tensors[index]);
+
     auto &device_tensor = output_kernel_tensors[index]->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
 
@@ -776,12 +792,6 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
                               uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
   const std::vector<std::string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
   std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
-  auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
-  auto &multi_stream_controller = device::DeviceContextManager::GetInstance().GetMultiStreamController(
-    device_context->device_context_key().device_type_);
-  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
-    multi_stream_controller->DispatchRecordWaitEvent(stream_id, kDefaultStreamIndex);
-  }
   // launch statistic kernel
   for (auto &tensor_info : tensor_info_vec) {
     auto kernel_tensor = tensor_info.kernel_tensor;
@@ -816,9 +826,6 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
   auto callback_ret = host_context->device_res_manager_->LaunchCallback(callback_func, stream_id, true);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
-  }
-  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
-    multi_stream_controller->DispatchRecordWaitEvent(kDefaultStreamIndex, stream_id);
   }
 }
 
