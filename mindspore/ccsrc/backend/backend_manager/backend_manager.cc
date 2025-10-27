@@ -220,7 +220,6 @@ BackendBase *BackendManager::GetOrCreateBackend(BackendType backend_type) {
   MS_LOG(INFO) << "The created backend type: " << backend_type;
   auto backend = (creator_iter->second)();
   MS_EXCEPTION_IF_NULL(backend);
-  backend->SetPyBoostRegistered(func_, call_func_);
   backends_[backend_type] = backend;
   return backend.get();
 }

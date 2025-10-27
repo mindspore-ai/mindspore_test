@@ -82,11 +82,6 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   string ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file, IRFormat ir_format,
                   const std::string &backend_name = "");
 
-  void SetPyBoostRegistered(const IsPyBoostRegisteredFunc &func, const RunPyBoostCallFunc &call_func) {
-    func_ = func;
-    call_func_ = call_func;
-  }
-
  private:
   BackendManager() = default;
   ~BackendManager() = default;
@@ -95,9 +90,6 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   void UnloadBackend();
 
   BackendBase *GetOrCreateBackend(BackendType backend_type);
-
-  IsPyBoostRegisteredFunc func_;
-  RunPyBoostCallFunc call_func_;
 
   // BackendType -> BackendLoadHandle.
   std::map<BackendType, void *> backend_load_handle_;

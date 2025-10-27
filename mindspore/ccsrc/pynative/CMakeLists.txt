@@ -29,9 +29,9 @@ else()
     add_library(mindspore_pynative SHARED ${PYNATIVE_OBJ_SRC})
 endif()
 target_link_libraries(mindspore_pynative PRIVATE mindspore_core mindspore_ops mindspore_frontend mindspore_pyboost
-                      mindspore_common mindspore_backend_manager mindspore::pybind11_module
+                      mindspore_common mindspore::pybind11_module mindspore_memory_pool
                       mindspore_profiler mindspore_runtime_pipeline mindspore_hardware_abstract
-                      mindspore_backend_common mindspore_pynative_utils mindspore_runtime_utils mindspore_memory_pool)
+                      mindspore_backend_common mindspore_pynative_utils mindspore_runtime_utils)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_pynative PROPERTIES MACOSX_RPATH ON)
