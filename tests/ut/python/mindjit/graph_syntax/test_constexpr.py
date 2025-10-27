@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" test_dict_get """
+""" test constexpr"""
+# pylint: disable=C0116
 import math
+import numpy as np
 from mindspore import Tensor, jit, context, mutable
+from mindspore.nn import Cell
 from mindspore.ops.primitive import constexpr
 from mindspore.ops.primitive import _primexpr
 
@@ -188,3 +191,25 @@ def test_constexpr_with_float_input_2():
 
     out = foo(0.9, 20)
     assert out == 18
+
+
+def test_parser_constexpr_slice_ellipsis():
+    """
+    Feature: constexpr with ellipsis.
+    Description: constexpr with ellipsis.
+    Expectation: No exception.
+    """
+    @constexpr
+    def func(x, s, ellipsis):
+        y = Tensor(np.ones(x, dtype=np.float32))
+        i = slice(*s)
+        return y[i, ellipsis]
+
+    class Net(Cell):
+        def construct(self):
+            return func((4, 4, 4), (0, 3, 1), ...)
+
+    net = Net()
+    out_me = net()
+    input_np = np.ones((4, 4, 4), dtype=np.float32)
+    assert np.allclose(out_me.asnumpy(), input_np[(0, 3, 1), ...], 0.001, 0.001)

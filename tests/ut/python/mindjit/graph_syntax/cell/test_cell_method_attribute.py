@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""Test cell method attribute."""
+# pylint: disable=E0213
+# pylint: disable=C0115
+# pylint: disable=W0238
+# pylint: disable=W0212
 import pytest
 
 import mindspore as ms
-import mindspore.nn as nn
+import mindspore.ops.operations as P
+from mindspore import nn, Tensor
+from mindspore.nn import Cell
+from mindspore.common import dtype as mstype
 
 ms.set_context(mode=ms.GRAPH_MODE)
 
@@ -102,7 +110,7 @@ def test_cell_private_attr():
     """
     class AttrNet(nn.Cell):
         def __init__(self):
-            super(AttrNet, self).__init__()
+            super().__init__()
             self.__x = 1
 
         def construct(self):
@@ -112,3 +120,90 @@ def test_cell_private_attr():
     out = net()
     assert isinstance(out[0], int) and out[0] == 1
     assert isinstance(out[1], ms.Tensor) and out[1] == 1
+
+
+class PrivateSubnet(Cell):
+    def __init__(self):
+        super().__init__()
+        self.__tensor = Tensor([1, 2], dtype=mstype.int32)
+        self.__mul = P.Mul()
+
+    def __square(self, input_x):
+        return self.__mul(input_x, input_x)
+
+    def construct(self, input_x):
+        return self.__mul(input_x, self.__tensor)
+
+
+@pytest.mark.skip(reason="has not supported")
+def test_parse_construct_subnet_private_tensor():
+    """
+    Feature: Support use Cell private attribute.
+    Description: Test private attribute startswith "__" which is other net need raise error.
+    Expectation: No exception.
+    """
+    class Net(Cell):
+        def __init__(self, subnet):
+            super().__init__()
+            self.subnet = subnet
+            self.__tensor = Tensor([2, 3], dtype=mstype.int32)
+            self.mul = P.Mul()
+
+        def construct(self, input_x):
+            y = self.subnet.__tensor
+            output = self.mul(input_x, y)
+            return output
+
+    subnet = PrivateSubnet()
+    net = Net(subnet)
+    input_x = Tensor([2, 3], dtype=mstype.int32)
+    with pytest.raises(AttributeError):
+        net(input_x)
+
+
+@pytest.mark.skip(reason="has not supported")
+def test_parse_construct_subnet_private_method():
+    """
+    Feature: Support use Cell private attribute.
+    Description: Test private attribute startswith "__" which is other net need raise error.
+    Expectation: No exception.
+    """
+    class Net(Cell):
+        def __init__(self, subnet):
+            super().__init__()
+            self.subnet = subnet
+            self.mul = P.Mul()
+
+        def construct(self, input_x):
+            output = self.subnet.__square(input_x, input_x)
+            return output
+
+    subnet = PrivateSubnet()
+    net = Net(subnet)
+    input_x = Tensor([2, 3], dtype=mstype.int32)
+    with pytest.raises(AttributeError):
+        net(input_x)
+
+
+@pytest.mark.skip(reason="has not supported")
+def test_parse_construct_subnet_private_op():
+    """
+    Feature: Support use Cell private attribute.
+    Description: Test private attribute startswith "__" which is other net need raise error.
+    Expectation: No exception.
+    """
+    class Net(Cell):
+        def __init__(self, subnet):
+            super().__init__()
+            self.subnet = subnet
+            self.mul = P.Mul()
+
+        def construct(self, input_x):
+            output = self.subnet.__mul(input_x, input_x)
+            return output
+
+    subnet = PrivateSubnet()
+    net = Net(subnet)
+    input_x = Tensor([2, 3], dtype=mstype.int32)
+    with pytest.raises(AttributeError):
+        net(input_x)
