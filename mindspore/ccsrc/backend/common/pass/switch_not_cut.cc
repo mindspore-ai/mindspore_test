@@ -190,7 +190,6 @@ bool IsValidFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *ch
     return false;
   }
   // Check output.
-  MS_LOG(INFO) << "Enable Switch Inline";
   AnfNodePtr return_node = func_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);
   std::vector<AnfNodePtr> all_nodes = TopoSort(return_node);
@@ -231,8 +230,8 @@ bool IsValidFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *ch
 
     if (!IsPrimitiveCNode(primitive_input, prim::kPrimSwitch) ||
         (!IsValidInlineSwitch(primitive_input, checked_graphs)) || (!IsValidAbstract(cnode->abstract()))) {
-      MS_LOG(DEBUG) << "Invalid switch node:" << primitive_input->DebugString()
-                    << " abstract:" << (cnode->abstract() == nullptr ? "null" : cnode->abstract()->ToString());
+      MS_LOG(INFO) << "Invalid switch node:" << primitive_input->DebugString()
+                   << " abstract:" << (cnode->abstract() == nullptr ? "null" : cnode->abstract()->ToString());
       return false;
     }
     if (inline_call_nodes != nullptr) {
@@ -240,6 +239,7 @@ bool IsValidFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *ch
       inline_call_nodes->emplace(cnode);
     }
   }
+  MS_LOG(INFO) << "Enable Switch Inline";
   return true;
 }
 }  // namespace
