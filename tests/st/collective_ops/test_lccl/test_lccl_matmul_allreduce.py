@@ -18,13 +18,14 @@
 import os
 import numpy as np
 
-import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, context, nn
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 from mindspore.communication.management import init, HCCL_WORLD_COMM_GROUP, get_rank, get_group_size
 from mindspore.ops import operations as P
 
+context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
+                    jit_config={"jit_level": "O0", "infer_boost": "on"})
 init()
 rank = get_rank()
 size = get_group_size()
@@ -34,8 +35,11 @@ weight2 = np.random.rand(2048, 16).astype(np.float16)*0.01
 
 
 class Net(nn.Cell):
+    """
+    class for matmul allreduce.
+    """
     def __init__(self):
-        super(Net, self).__init__()
+        super().__init__()
         self.weight1 = Parameter(initializer(
             Tensor(weight1), weight1.shape), name='weight1')
         self.weight2 = Parameter(initializer(

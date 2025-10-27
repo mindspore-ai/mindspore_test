@@ -220,6 +220,19 @@ def test_reduce_scatter_tensor_v():
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
+def test_reduce_scatter_tensor_with_diff_reduce_type():
+    """
+    Feature: test reduce_scatter with different reducing type.
+    Description: test reduce_scatter with different reducing type.
+    Expectation: success
+    """
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True \
+                             pytest -s test_reduce_scatter_tensor.py::test_hccl_reduce_scatter_diff_reduce_type")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
 def test_all_to_all_v_c():
     """
     Feature: mpi run 2P case of 'all_to_all_v_c' communication operator.
