@@ -48,6 +48,7 @@ class FRONTEND_EXPORT ExecutorPy : public std::enable_shared_from_this<ExecutorP
   void SetJitConfig(const py::dict &jit_config);
   virtual void CleanCompileRes(const ResourcePtr &resource) = 0;
   FuncGraphPtr GetFuncGraph(const std::string &phase);
+  std::vector<bool> CheckFuncGraphSequenceParamAbstract(const std::string &phase);
   void SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase);
   FuncGraphPtr GetJitPrimalFuncGraph(const std::string &phase);
   FuncGraphPtr GetJitGradGraph(const std::string &phase);

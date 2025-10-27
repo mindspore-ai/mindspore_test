@@ -67,7 +67,7 @@ ms_compile_cache = set()
 # Store cell compiled pipeline cache.
 cells_compile_cache = {}
 # Store function compiled times information.
-function_phases = dict()
+function_phases = {}
 
 BROADCAST_PHASE = "_broadcast_"
 _PYNATIVE_PARALLEL_FUNC_NAME = "after_shard"
@@ -106,6 +106,7 @@ def _check_recompile_args(compile_args, kwargs):
 
 def _check_recompile(obj, compile_args, kwargs, full_function_name, create_time, echo_function_name):
     """Warning when the function has been compiled."""
+    # pylint: disable=C3002
     ignore_dirs = ["mindspore/ops", "mindspore/nn"]
     if any((lambda x: x in full_function_name)(x) for x in ignore_dirs):
         return
@@ -141,6 +142,7 @@ def _convert_python_data(data):
     Returns:
         data, a data convert C++ to python
     """
+    # pylint: disable=C0200
     if isinstance(data, PythonTensor):
         return data
     if data.__class__ is tuple:
@@ -254,6 +256,7 @@ def _in_sys_path(file_path):
 
 def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
     """Get the dependency files of the network"""
+    # pylint: disable=W1514
     with open(file_path) as fh:
         root = ast.parse(fh.read(), file_path)
     for node in ast.iter_child_nodes(root):
@@ -347,7 +350,7 @@ def _add_mutable_attr(args_list, compile_args, is_grad):
 
 def _get_parameter_layout():
     graph_executor = GraphExecutor_.get_instance()
-    layout = dict()
+    layout = {}
     for phase in ms_compile_cache:
         layout.update(graph_executor.get_parameter_layout(phase))
     return layout
@@ -398,13 +401,19 @@ def _handle_arg_predict(obj, arg, has_mutable_arg):
     return arg
 
 
-def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, is_predict=False):
+def _get_args_for_run(obj, args, kwargs, has_mutable_args_list, sequence_modified, is_predict=False):
     """Get the actual input args and kwargs for runtime."""
     new_args = []
+    sequence_index = 0
     for arg, has_mutable_arg in zip(args, has_mutable_args_list):
         new_arg = _handle_arg(obj, arg, has_mutable_arg, is_predict)
         if new_arg is not None:
             new_args.append(new_arg)
+        elif isinstance(arg, (list, tuple)):
+            if sequence_modified and sequence_modified[sequence_index] is True:
+                logger.debug(f'The list or tuple need append: `{arg}')
+                new_args.append(arg)
+            sequence_index = sequence_index + 1
 
     for _, value in kwargs.items():
         new_value = _handle_arg(obj, value, None, is_predict)
@@ -638,7 +647,11 @@ class _JitExecutor:
                 _pynative_executor.clear_res()
                 raise err
 
-        new_inputs = self._generate_run_args(args_list, kwargs, is_predict=True)
+        # If a sequence is modified in-place, it must be included as an input to the top-level graph.
+        sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(predict_phase)
+        logger.debug(f'The sequence_modified: `{sequence_modified}')
+
+        new_inputs = self._generate_run_args(args_list, kwargs, sequence_modified, is_predict=True)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
@@ -687,7 +700,11 @@ class _JitExecutor:
         if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1':
             return None
 
-        new_inputs = self._generate_run_args(args_list, kwargs)
+        # If a sequence is modified in-place, it must be included as an input to the top-level graph.
+        sequence_modified = self._graph_executor.check_func_graph_sequence_parameter(phase)
+        logger.debug(f'The sequence_modified: `{sequence_modified}')
+
+        new_inputs = self._generate_run_args(args_list, kwargs, sequence_modified)
         if self.jit_config_dict:
             jit_config_dict = self.jit_config_dict
         else:
@@ -868,6 +885,7 @@ class _JitExecutor:
 
     def _generate_compile_args_by_input_signature(self, args_list):
         """Generate compile args by input_signature."""
+        # pylint: disable=R1729
         compile_args = list(_generate_dyn_compile_args(args_list, self.input_signature))
         dyn_shape = any([is_shape_unknown(elem.shape) for elem in compile_args if isinstance(elem, PythonTensor)])
         Validator.check_symbolic_shape(self.input_signature, args_list)
@@ -910,13 +928,14 @@ class _JitExecutor:
         # Case: If the shape of input args is dynamic, get dynamic shape tensor from context and use it to compile.
         return _pynative_executor.get_dynamic_input(args_list)
 
-    def _generate_run_args(self, args_list, kwargs, is_predict=False):
+    def _generate_run_args(self, args_list, kwargs, sequence_modified, is_predict=False):
         """
         Generate input args, which are required for running.
 
         Args:
             args_list (Tuple): Actual input args.
             kwargs (Dict): Actual input kwargs.
+            sequence_modified (List) : The flags of sequence parameter which requires append.
 
         Returns:
             new_inputs, new input args, which are required for running.
@@ -925,7 +944,7 @@ class _JitExecutor:
             mutable_flags = self.obj._mutable_flags
         else:
             mutable_flags = self._mutable_flags
-        return _get_args_for_run(self, args_list, kwargs, mutable_flags, is_predict)
+        return _get_args_for_run(self, args_list, kwargs, mutable_flags, sequence_modified, is_predict)
 
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
         """Get graph proto from pipeline."""
