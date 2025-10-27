@@ -23,6 +23,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
@@ -156,7 +157,7 @@ static void PreProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPtr
                         << index + 1;
         } else {
           auto dtype = NewValueNode(MakeValue<int64_t>(kInt64->type_id()));
-          dtype->set_abstract(abstract::FromValue((int64_t)(kInt64->type_id())));
+          dtype->set_abstract(abstract::FromValue(static_cast<int64_t>(kInt64->type_id())));
           auto tuple_to_tensor_cnode =
             fa_cnode->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleToTensor), input, dtype});
           MS_EXCEPTION_IF_NULL(GetCNodePrimitive(tuple_to_tensor_cnode));
@@ -936,6 +937,9 @@ static std::pair<AnfNodePtr, int64_t> FindParallelCareNode(const AnfNodePtr &nod
     PrimitivePtr node_prim = prim_node_anf->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(node_prim);
     auto node_prim_name = node_prim->name();
+    if (node_prim_name != GET_NEXT && node_prim_name != VIRTUAL_OUTPUT && !cnode->in_forward_flag()) {
+      continue;
+    }
     if ((node_prim_name == DEPEND && node_pair.second != 1) || node_prim_name == RECEIVE || node_prim_name == SEND) {
       continue;
     }
