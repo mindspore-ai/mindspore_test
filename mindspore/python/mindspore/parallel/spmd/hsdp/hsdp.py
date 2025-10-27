@@ -31,7 +31,7 @@ class HSDPCell:
         ``Ascend`` ``GPU`` ``CPU``
     """
     def hsdp_init(self, cell, shard_size, threshold, optimizer_level, enable_grad_accumulation, grad_scale,
-                  reduce_dtype):
+                  reduce_dtype, comm_async):
         """init hsdp scheduler."""
         from mindspore.parallel.spmd.hsdp.hsdp_scheduler import HSDPScheduler
         self.hsdp_scheduler = HSDPScheduler(cell,
@@ -40,7 +40,8 @@ class HSDPCell:
                                             optimizer_level,
                                             enable_grad_accumulation,
                                             grad_scale,
-                                            reduce_dtype)
+                                            reduce_dtype,
+                                            comm_async)
 
     def set_requires_grad_sync(self, requires_grad_sync):
         r"""
@@ -100,7 +101,7 @@ def _extend_cell_with_hsdp_interface(cell):
     cell.__class__ = extend_class
 
 def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_grad_accumulation=False, grad_scale=1.0,
-         reduce_dtype=None):
+         reduce_dtype=None, comm_async=False):
     r"""
         apply hybrid sharded data parallel.
 
@@ -128,10 +129,14 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
                   Splitting is performed on weights, optimizer state,
                   gradients, additionally, before the backward pass, the weights are further applied with
                   allgather communication to release the memory used by the forward pass allgather.
-            enable_grad_accumulation (bool, optional): enable gradient accumulation.
+            enable_grad_accumulation (bool, optional): enable gradient accumulation. When gradient accumulation is
+                enable, gradient synchronization should be explicitly called by `set_requires_grad_sync` interface.
             grad_scale (float, optional): gradient will scale with grad_scale.
             reduce_dtype (float, optional): gradient reduce dtype. Default value is None, which means gradient
                 will be reduced with its origin dtype.
+            comm_async (bool, optional): reduce gradient with async communication op for communication overlap. 
+                When comm_async is enable, ``hsdp_wait_grad_handle`` should be called before using generated
+                gradient. Default value is None, which means gradient will be reduced with sync communication op.
 
         Raises:
             ValueError: If the `cell` is not a cell.
@@ -141,6 +146,7 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
             ValueError: If `enable_grad_accumulation` is not bool.
             ValueError: If `grad_scale` is not float.
             ValueError: If `reduce_dtype` is not mindspore.dtype.
+            ValueError: If `comm_async` is not bool.
         """
     from mindspore.nn.cell import Cell
     if not isinstance(cell, Cell):
@@ -159,6 +165,8 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
     from mindspore._c_expression import typing
     if reduce_dtype is not None and not isinstance(reduce_dtype, typing.Type):
         raise ValueError(f"reduce_dtype must be mindspore.dtype but got {reduce_dtype}.")
+    if not isinstance(comm_async, bool):
+        raise ValueError(f"comm_async must be bool but got {comm_async}.")
     _extend_cell_with_hsdp_interface(cell)
     cell.hsdp_init(
         cell,
@@ -167,6 +175,12 @@ def hsdp(cell, shard_size=-1, threshold=64, optimizer_level="level1", enable_gra
         optimizer_level,
         enable_grad_accumulation,
         grad_scale,
-        reduce_dtype
+        reduce_dtype,
+        comm_async
     )
     return cell
+
+def hsdp_wait_grad_handle():
+    """wait for hsdp gradient handle to be completed"""
+    from mindspore.parallel.spmd.hsdp.hsdp_context import hsdp_context
+    hsdp_context.wait_grad_handle()

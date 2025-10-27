@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test hsdp with slim lenet"""
 from typing import Optional
 import mindspore as ms
 import mindspore.runtime as rt
@@ -19,7 +20,7 @@ import mindspore.dataset as ds
 from mindspore.communication import get_rank, get_group_size
 from mindspore import nn, ops
 from mindspore.communication import init
-from mindspore.parallel import hsdp
+from mindspore.parallel import hsdp, hsdp_wait_grad_handle
 from hsdp_test_common import hsdp_network_ckpt_path
 from tests.mark_utils import arg_mark
 from tests.st.auto_parallel.spmd.common_net import SlimLeNet
@@ -28,6 +29,7 @@ ms.set_seed(1)
 ms.set_deterministic(True)
 
 def create_dataset(local_batch_size: int, num_shards: Optional[int] = None, shard_id: Optional[int] = None):
+    """create mnist dataset"""
     dataset_path = "/home/workspace/mindspore_dataset/mnist/train"
     if (num_shards is None) or (shard_id is None):
         dataset = ds.MnistDataset(dataset_path, shuffle=False)
@@ -62,6 +64,7 @@ learning_rate = 1e-3
 max_step = 10
 
 def make_baseline_by_standalone_run():
+    """single card result"""
     data_set = create_dataset(local_batch_size=local_bs * dp_size)
     net = SlimLeNet()
     param_dict = ms.load_checkpoint(hsdp_network_ckpt_path)
@@ -80,33 +83,41 @@ def make_baseline_by_standalone_run():
         if i >= max_step:
             break
 
-def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"):
+def hsdp_without_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", comm_async=True):
+    """test hsdp without acc grad"""
     data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = SlimLeNet()
-    hsdp(net, shard_size, threshold, optimizer_level)
+    hsdp(net, shard_size, threshold, optimizer_level, comm_async=comm_async)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
     i = 0
+    final_loss = 10
     for data, label in data_set:
         (loss, _), grads = grad_fn(data, label)
+        if comm_async:
+            hsdp_wait_grad_handle()
         optimizer(grads)
         reduced_loss = loss_sync_allreduce(loss)
+        final_loss = reduced_loss / dp_size
         if rank_id == 0:
-            print(f"step: {i}, loss: {reduced_loss / dp_size}")
+            print(f"step: {i}, loss: {final_loss}")
         i += 1
         if i >= max_step:
             break
+    assert final_loss < 0.95
 
-def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1):
+def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1", micro_step=1, comm_async=False):
+    """test hsdp with acc grad"""
     data_set = create_dataset(local_batch_size=local_bs, num_shards=dp_size, shard_id=rank_id)
     net = SlimLeNet()
-    hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True)
+    hsdp(net, shard_size, threshold, optimizer_level, enable_grad_accumulation=True, comm_async=comm_async)
     optimizer = nn.Adam(net.trainable_params(), learning_rate)
     grad_fn = ms.value_and_grad(get_forward_fn(net), None, net.trainable_params(), has_aux=True)
     loss_sync_allreduce = ops.AllReduce(ops.ReduceOp.SUM)
     i = 0
     micro_size = local_bs // micro_step
+    final_loss = 10
     for data, label in data_set:
         data_list = ops.split(data, micro_size)
         label_list = ops.split(label, micro_size)
@@ -119,14 +130,18 @@ def hsdp_with_accumulate_grad(shard_size, threshold=64, optimizer_level="level1"
             if j == micro_step - 1:
                 net.set_requires_grad_sync(True)
             (loss, _), grads = grad_fn(data_list[j], label_list[j])
+            if comm_async:
+                hsdp_wait_grad_handle()
             total_loss = total_loss + loss
         reduced_loss = loss_sync_allreduce(total_loss)
         optimizer(grads)
+        final_loss = reduced_loss / (micro_step * dp_size)
         if rank_id == 0:
-            print(f"step: {i}, loss: {reduced_loss / (micro_step * dp_size)}")
+            print(f"step: {i}, loss: {final_loss}")
         i += 1
         if i >= max_step:
             break
+    assert final_loss < 1.0
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_standalone_run():
@@ -192,6 +207,15 @@ def test_zero3_fully_shard_with_acc_grad():
 def test_zero3_partial_shard_with_acc_grad():
     init()
     hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8)
+
+def test_zero3_partial_shard_with_async_acc_grad():
+    '''
+    Feature: zero3 partial shard data parallel with async grad accumulation.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    init()
+    hsdp_with_accumulate_grad(shard_size=4, optimizer_level="level3", micro_step=8, comm_async=True)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_no_dp():

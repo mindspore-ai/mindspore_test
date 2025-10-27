@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""test hsdp with msrun multi card"""
 import os
 from tests.mark_utils import arg_mark
 
@@ -36,7 +37,7 @@ def test_pure_dp():
     Description: pure data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_pure_dp"
+    case_name = "test_pure_dp"
     _run_hsdp_case_by_name(case_name)
 
 
@@ -47,7 +48,7 @@ def test_zero1_fully_shard():
     Description: zero1 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero1_fully_shard"
+    case_name = "test_zero1_fully_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -57,7 +58,7 @@ def test_zero1_partial_shard():
     Description: zero1 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero1_partial_shard"
+    case_name = "test_zero1_partial_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -67,7 +68,7 @@ def test_zero2_fully_shard():
     Description: zero2 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero2_fully_shard"
+    case_name = "test_zero2_fully_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -77,7 +78,7 @@ def test_zero2_partial_shard():
     Description: zero2 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero2_partial_shard"
+    case_name = "test_zero2_partial_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -87,7 +88,7 @@ def test_zero3_fully_shard():
     Description: zero3 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero3_fully_shard"
+    case_name = "test_zero3_fully_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
@@ -97,7 +98,7 @@ def test_zero3_partial_shard():
     Description: zero3 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero3_partial_shard"
+    case_name = "test_zero3_partial_shard"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -107,7 +108,7 @@ def test_pure_dp_with_acc_grad():
     Description: pure data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_pure_dp_with_acc_grad"
+    case_name = "test_pure_dp_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -117,7 +118,7 @@ def test_zero1_fully_shard_with_acc_grad():
     Description: zero1 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero1_fully_shard_with_acc_grad"
+    case_name = "test_zero1_fully_shard_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -127,7 +128,7 @@ def test_zero1_partial_shard_with_acc_grad():
     Description: zero1 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero1_partial_shard_with_acc_grad"
+    case_name = "test_zero1_partial_shard_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -137,7 +138,7 @@ def test_zero2_fully_shard_with_acc_grad():
     Description: zero2 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero2_fully_shard_with_acc_grad"
+    case_name = "test_zero2_fully_shard_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -147,7 +148,7 @@ def test_zero2_partial_shard_with_acc_grad():
     Description: zero2 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero2_partial_shard_with_acc_grad"
+    case_name = "test_zero2_partial_shard_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -157,15 +158,25 @@ def test_zero3_fully_shard_with_acc_grad():
     Description: zero3 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero3_fully_shard_with_acc_grad"
+    case_name = "test_zero3_fully_shard_with_acc_grad"
     _run_hsdp_case_by_name(case_name)
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 def test_zero3_partial_shard_with_acc_grad():
     '''
     Feature: zero3 partial shard data parallel with grad accumulation.
     Description: zero3 data parallel.
     Expectation: Run success
     '''
-    case_name = f"test_zero3_partial_shard_with_acc_grad"
+    case_name = "test_zero3_partial_shard_with_acc_grad"
+    _run_hsdp_case_by_name(case_name)
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_zero3_partial_shard_with_async_acc_grad():
+    '''
+    Feature: zero3 partial shard data parallel with async grad accumulation.
+    Description: zero3 data parallel.
+    Expectation: Run success
+    '''
+    case_name = "test_zero3_partial_shard_with_async_acc_grad"
     _run_hsdp_case_by_name(case_name)
